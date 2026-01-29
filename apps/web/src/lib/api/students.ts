@@ -132,10 +132,24 @@ export async function getStudentById(id: string): Promise<{ success: boolean; da
 }
 
 export async function createStudent(data: CreateStudentInput): Promise<{ success: boolean; data: { student: Student } }> {
+  // Transform frontend field names to backend expectations
+  const backendData = {
+    firstName: data.firstNameLatin,
+    lastName: data.lastNameLatin,
+    khmerName: data.firstNameKhmer || '',
+    englishName: data.firstNameLatin + ' ' + data.lastNameLatin,
+    gender: data.gender,
+    dateOfBirth: data.dateOfBirth,
+    placeOfBirth: data.placeOfBirth || '',
+    currentAddress: data.currentAddress || '',
+    phoneNumber: data.phoneNumber || '',
+    email: data.email || '',
+  };
+
   const response = await fetch(`${STUDENT_SERVICE_URL}/students`, {
     method: 'POST',
     headers: await getAuthHeaders(),
-    body: JSON.stringify(data),
+    body: JSON.stringify(backendData),
   });
 
   if (!response.ok) {
@@ -147,10 +161,26 @@ export async function createStudent(data: CreateStudentInput): Promise<{ success
 }
 
 export async function updateStudent(id: string, data: Partial<CreateStudentInput>): Promise<{ success: boolean; data: { student: Student } }> {
+  // Transform frontend field names to backend expectations
+  const backendData: any = {};
+  
+  if (data.firstNameLatin !== undefined) backendData.firstName = data.firstNameLatin;
+  if (data.lastNameLatin !== undefined) backendData.lastName = data.lastNameLatin;
+  if (data.firstNameKhmer !== undefined) backendData.khmerName = data.firstNameKhmer;
+  if (data.firstNameLatin && data.lastNameLatin) {
+    backendData.englishName = data.firstNameLatin + ' ' + data.lastNameLatin;
+  }
+  if (data.gender !== undefined) backendData.gender = data.gender;
+  if (data.dateOfBirth !== undefined) backendData.dateOfBirth = data.dateOfBirth;
+  if (data.placeOfBirth !== undefined) backendData.placeOfBirth = data.placeOfBirth;
+  if (data.currentAddress !== undefined) backendData.currentAddress = data.currentAddress;
+  if (data.phoneNumber !== undefined) backendData.phoneNumber = data.phoneNumber;
+  if (data.email !== undefined) backendData.email = data.email;
+
   const response = await fetch(`${STUDENT_SERVICE_URL}/students/${id}`, {
     method: 'PUT',
     headers: await getAuthHeaders(),
-    body: JSON.stringify(data),
+    body: JSON.stringify(backendData),
   });
 
   if (!response.ok) {
