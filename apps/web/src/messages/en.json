@@ -47,7 +47,7 @@
     "backToHome": "Back to Home"
   },
   "dashboard": {
-    "welcome": "Welcome, {{name}}",
+    "welcome": "Welcome, {name}",
     "school": "School",
     "tier": "Subscription Tier",
     "trialDays": "Trial Days Remaining",
@@ -62,5 +62,29 @@
     "manageUsers": "Manage Users",
     "viewReports": "View Reports",
     "settings": "Settings"
+  },
+  "classes": {
+    "title": "Classes",
+    "addClass": "Add Class",
+    "editClass": "Edit Class",
+    "viewRoster": "View Roster",
+    "className": "Class Name",
+    "grade": "Grade",
+    "section": "Section",
+    "students": "Students",
+    "rosterTitle": "Class Roster",
+    "addStudent": "Add Student",
+    "removeStudent": "Remove Student",
+    "noStudents": "No students in this class yet",
+    "searchStudents": "Search students...",
+    "selectStudent": "Select a student to add"
+  },
+  "students": {
+    "title": "Students",
+    "addStudent": "Add Student"
+  },
+  "teachers": {
+    "title": "Teachers",
+    "addTeacher": "Add Teacher"
   }
 }
