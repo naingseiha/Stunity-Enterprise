@@ -98,13 +98,13 @@ export async function getTeachers(params?: {
   const result = await response.json();
   
   // Transform API response to match frontend interface
-  // Backend returns: { success: true, data: [teachers] }
+  // Backend returns: { success: true, data: [teachers], pagination: {...} }
   // Frontend expects: { success: true, data: { teachers: [], pagination: {} } }
   return {
     success: result.success,
     data: {
       teachers: result.data || [],
-      pagination: {
+      pagination: result.pagination || {
         total: result.data?.length || 0,
         page: params?.page || 1,
         limit: params?.limit || 20,
