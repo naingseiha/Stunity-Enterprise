@@ -151,6 +151,9 @@ export async function deleteClass(id: string): Promise<{ success: boolean; messa
   return response.json();
 }
 
+// Alias for consistency with roster page
+export const getClass = getClassById;
+
 export async function assignStudentsToClass(classId: string, studentIds: string[]): Promise<{ success: boolean; message: string }> {
   const response = await fetch(`${CLASS_SERVICE_URL}/classes/${classId}/assign-students`, {
     method: 'POST',
