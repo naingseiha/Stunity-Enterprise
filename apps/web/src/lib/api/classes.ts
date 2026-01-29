@@ -37,14 +37,12 @@ export interface CreateClassInput {
 }
 
 export interface ClassesResponse {
-  success: boolean;
   data: {
     classes: Class[];
     pagination: {
-      total: number;
-      page: number;
-      limit: number;
+      currentPage: number;
       totalPages: number;
+      totalCount: number;
     };
   };
 }
@@ -79,7 +77,21 @@ export async function getClasses(params?: {
     throw new Error(error.message || 'Failed to fetch classes');
   }
 
-  return response.json();
+  const result = await response.json();
+  
+  // Transform API response to match frontend interface
+  // Backend returns: { success: true, data: [classes] }
+  // Frontend expects: { data: { classes: [], pagination: {} } }
+  return {
+    data: {
+      classes: result.data || [],
+      pagination: {
+        currentPage: params?.page || 1,
+        totalPages: 1, // lightweight endpoint doesn't paginate
+        totalCount: result.data?.length || 0,
+      },
+    },
+  };
 }
 
 export async function getClassById(id: string): Promise<{ success: boolean; data: { class: Class } }> {
