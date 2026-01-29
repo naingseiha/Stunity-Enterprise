@@ -2,6 +2,9 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { PrismaClient, Gender } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import { generateStudentId } from './utils/studentIdGenerator';
 import { parseDate } from './utils/dateParser';
 
@@ -11,6 +14,44 @@ const prisma = new PrismaClient();
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from public/uploads
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../public/uploads/students');
+    // Ensure directory exists
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    // Generate unique filename: student-{timestamp}-{random}.ext
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'student-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept images only
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error('Only image files are allowed!'));
+  }
+});
 
 // JWT Authentication Middleware
 interface AuthRequest extends Request {
@@ -838,6 +879,73 @@ app.delete('/students/:id', async (req: AuthRequest, res: Response) => {
   }
 });
 
+/**
+ * POST /students/:id/photo
+ * Upload photo for a student
+ */
+app.post('/students/:id/photo', upload.single('photo'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = req.user!.schoolId;
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No photo file provided',
+      });
+    }
+
+    // Verify student belongs to school
+    const student = await prisma.student.findFirst({
+      where: { id, schoolId },
+    });
+
+    if (!student) {
+      // Delete uploaded file if student not found
+      fs.unlinkSync(req.file.path);
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found in your school',
+      });
+    }
+
+    // Delete old photo if exists
+    if (student.photoUrl) {
+      const oldPhotoPath = path.join(__dirname, '../public', student.photoUrl);
+      if (fs.existsSync(oldPhotoPath)) {
+        fs.unlinkSync(oldPhotoPath);
+      }
+    }
+
+    // Update student with new photo URL
+    const photoUrl = `/uploads/students/${req.file.filename}`;
+    const updatedStudent = await prisma.student.update({
+      where: { id },
+      data: { photoUrl },
+    });
+
+    res.json({
+      success: true,
+      message: 'Photo uploaded successfully',
+      data: {
+        photoUrl,
+        student: updatedStudent,
+      },
+    });
+  } catch (error: any) {
+    // Clean up uploaded file on error
+    if ((req as any).file) {
+      fs.unlinkSync((req as any).file.path);
+    }
+    console.error('Error uploading photo:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload photo',
+      error: error.message,
+    });
+  }
+});
+
 // Health check endpoint (no auth required)
 app.get('/health', (_req, res) => {
   res.json({
@@ -864,6 +972,7 @@ app.listen(PORT, () => {
   console.log(`   POST   /students/bulk - Bulk create`);
   console.log(`   PUT    /students/:id - Update student`);
   console.log(`   DELETE /students/:id - Delete student`);
+  console.log(`   POST   /students/:id/photo - Upload photo`);
   console.log(`   GET    /health - Health check (no auth)`);
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 });

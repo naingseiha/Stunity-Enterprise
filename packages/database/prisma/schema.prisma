@@ -13,41 +13,41 @@ datasource db {
 // ========================================
 
 model School {
-  id                String            @id @default(cuid())
-  name              String
-  slug              String            @unique
-  email             String            @unique
-  phone             String?
-  address           String?
-  logo              String?
-  website           String?
-  
+  id      String  @id @default(cuid())
+  name    String
+  slug    String  @unique
+  email   String  @unique
+  phone   String?
+  address String?
+  logo    String?
+  website String?
+
   // Subscription Management
-  subscriptionTier  SubscriptionTier  @default(FREE_TRIAL_1M)
-  subscriptionStart DateTime          @default(now())
+  subscriptionTier  SubscriptionTier @default(FREE_TRIAL_1M)
+  subscriptionStart DateTime         @default(now())
   subscriptionEnd   DateTime?
-  isActive          Boolean           @default(true)
-  isTrial           Boolean           @default(true)
-  
+  isActive          Boolean          @default(true)
+  isTrial           Boolean          @default(true)
+
   // Usage Limits
-  maxStudents       Int               @default(100)
-  maxTeachers       Int               @default(10)
-  maxStorage        BigInt            @default(1073741824) // 1GB in bytes
-  currentStudents   Int               @default(0)
-  currentTeachers   Int               @default(0)
-  currentStorage    BigInt            @default(0)
-  
+  maxStudents     Int    @default(100)
+  maxTeachers     Int    @default(10)
+  maxStorage      BigInt @default(1073741824) // 1GB in bytes
+  currentStudents Int    @default(0)
+  currentTeachers Int    @default(0)
+  currentStorage  BigInt @default(0)
+
   // Metadata
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  academicYears     AcademicYear[]
-  users             User[]
-  students          Student[]
-  teachers          Teacher[]
-  classes           Class[]
-  
+  academicYears AcademicYear[]
+  users         User[]
+  students      Student[]
+  teachers      Teacher[]
+  classes       Class[]
+
   @@index([slug])
   @@index([subscriptionTier])
   @@index([isActive])
@@ -55,17 +55,17 @@ model School {
 }
 
 model AcademicYear {
-  id          String   @id @default(cuid())
-  schoolId    String
-  name        String   // e.g., "2024-2025"
-  startDate   DateTime
-  endDate     DateTime
-  isCurrent   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  
+  id        String   @id @default(cuid())
+  schoolId  String
+  name      String // e.g., "2024-2025"
+  startDate DateTime
+  endDate   DateTime
+  isCurrent Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
   @@unique([schoolId, name])
   @@index([schoolId, isCurrent])
   @@map("academic_years")
@@ -102,7 +102,7 @@ model Attendance {
 
 model Class {
   id                      String                  @id @default(cuid())
-  schoolId                String                  // Multi-tenant field
+  schoolId                String // Multi-tenant field
   classId                 String?                 @unique
   name                    String
   grade                   String
@@ -117,6 +117,7 @@ model Class {
   grades                  Grade[]
   studentMonthlySummaries StudentMonthlySummary[]
   students                Student[]
+  studentClasses          StudentClass[]
   teacherClasses          TeacherClass[]
   school                  School                  @relation(fields: [schoolId], references: [id])
   homeroomTeacher         Teacher?
@@ -199,7 +200,7 @@ model StudentMonthlySummary {
 
 model Student {
   id                   String                  @id @default(cuid())
-  schoolId             String                  // Multi-tenant field
+  schoolId             String // Multi-tenant field
   studentId            String?                 @unique
   firstName            String
   lastName             String
@@ -243,6 +244,7 @@ model Student {
   grades               Grade[]
   monthlySummaries     StudentMonthlySummary[]
   studentParents       StudentParent[]
+  studentClasses       StudentClass[]
   school               School                  @relation(fields: [schoolId], references: [id])
   class                Class?                  @relation(fields: [classId], references: [id])
   user                 User?
@@ -297,6 +299,26 @@ model StudentParent {
   @@index([studentId])
   @@index([parentId])
   @@map("student_parents")
+}
+
+model StudentClass {
+  id             String   @id @default(cuid())
+  studentId      String
+  classId        String
+  academicYearId String?
+  enrolledAt     DateTime @default(now())
+  status         String   @default("ACTIVE") // ACTIVE, DROPPED, TRANSFERRED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, classId, academicYearId])
+  @@index([studentId])
+  @@index([classId])
+  @@index([status])
+  @@map("student_classes")
 }
 
 model SubjectTeacher {
@@ -381,6 +403,7 @@ model Teacher {
   phoneNumber      String?
   salaryRange      String?
   workingLevel     WorkingLevel?
+  photoUrl         String?
   subjectTeachers  SubjectTeacher[]
   teacherClasses   TeacherClass[]
   homeroomClass    Class?           @relation(fields: [homeroomClassId], references: [id])

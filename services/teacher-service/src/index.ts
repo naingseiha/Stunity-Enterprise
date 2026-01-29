@@ -3,6 +3,9 @@ import cors from 'cors';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -12,6 +15,38 @@ const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from public/uploads
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../public/uploads/teachers');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'teacher-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error('Only image files are allowed!'));
+  }
+});
 
 // ===========================
 // JWT Auth Middleware
@@ -975,6 +1010,46 @@ app.delete('/teachers/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // ===========================
+// PHOTO UPLOAD ENDPOINT
+// ===========================
+app.post('/teachers/:id/photo', upload.single('photo'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = req.user!.schoolId;
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No photo file provided' });
+    }
+
+    const teacher = await prisma.teacher.findFirst({ where: { id, schoolId } });
+    if (!teacher) {
+      fs.unlinkSync(req.file.path);
+      return res.status(404).json({ success: false, message: 'Teacher not found' });
+    }
+
+    if (teacher.photoUrl) {
+      const oldPhotoPath = path.join(__dirname, '../public', teacher.photoUrl);
+      if (fs.existsSync(oldPhotoPath)) {
+        fs.unlinkSync(oldPhotoPath);
+      }
+    }
+
+    const photoUrl = `/uploads/teachers/${req.file.filename}`;
+    const updatedTeacher = await prisma.teacher.update({
+      where: { id },
+      data: { photoUrl },
+    });
+
+    res.json({ success: true, message: 'Photo uploaded successfully', data: { photoUrl, teacher: updatedTeacher } });
+  } catch (error: any) {
+    if ((req as any).file) {
+      fs.unlinkSync((req as any).file.path);
+    }
+    res.status(500).json({ success: false, message: 'Failed to upload photo', error: error.message });
+  }
+});
+
+// ===========================
 // Start Server
 // ===========================
 app.listen(PORT, () => {
@@ -996,6 +1071,7 @@ app.listen(PORT, () => {
 ║   • POST   /teachers/bulk                                 ║
 ║   • PUT    /teachers/:id                                  ║
 ║   • DELETE /teachers/:id                                  ║
+║   • POST   /teachers/:id/photo                            ║
 ║   • GET    /health (no auth)                              ║
 ║                                                            ║
 ║   🔒 Multi-Tenancy: All queries filtered by schoolId      ║
