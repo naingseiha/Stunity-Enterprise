@@ -195,6 +195,13 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
                       </div>
                       <div className="flex gap-2">
                         <button
+                          onClick={() => router.push(`/${locale}/classes/${classItem.id}/roster`)}
+                          className="text-stunity-primary-600 hover:text-stunity-primary-900"
+                          title="View Roster"
+                        >
+                          <Users className="w-5 h-5" />
+                        </button>
+                        <button
                           onClick={() => handleEdit(classItem)}
                           className="text-stunity-primary-600 hover:text-stunity-primary-900"
                         >
