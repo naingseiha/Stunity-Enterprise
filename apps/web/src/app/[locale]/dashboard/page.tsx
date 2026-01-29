@@ -219,15 +219,18 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h3 className="text-lg font-bold text-gray-900 mb-4">{t('quickActions')}</h3>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <button className="p-4 border-2 border-gray-200 rounded-lg hover:border-stunity-primary-500 hover:bg-stunity-primary-50 transition-all text-left group">
-              <BarChart3 className="w-8 h-8 text-gray-400 group-hover:text-stunity-primary-600 mb-2" />
-              <p className="font-semibold text-gray-900">{t('viewFeed')}</p>
-              <p className="text-sm text-gray-500">Coming soon</p>
+            <button 
+              onClick={() => router.push(`/${locale}/students`)}
+              className="p-4 border-2 border-stunity-primary-200 bg-stunity-primary-50 rounded-lg hover:border-stunity-primary-500 hover:bg-stunity-primary-100 transition-all text-left group"
+            >
+              <Users className="w-8 h-8 text-stunity-primary-600 mb-2" />
+              <p className="font-semibold text-gray-900">Manage Students</p>
+              <p className="text-sm text-stunity-primary-600">View and manage</p>
             </button>
 
             <button className="p-4 border-2 border-gray-200 rounded-lg hover:border-stunity-primary-500 hover:bg-stunity-primary-50 transition-all text-left group">
-              <Users className="w-8 h-8 text-gray-400 group-hover:text-stunity-primary-600 mb-2" />
-              <p className="font-semibold text-gray-900">{t('manageUsers')}</p>
+              <GraduationCap className="w-8 h-8 text-gray-400 group-hover:text-stunity-primary-600 mb-2" />
+              <p className="font-semibold text-gray-900">Manage Teachers</p>
               <p className="text-sm text-gray-500">Coming soon</p>
             </button>
 
