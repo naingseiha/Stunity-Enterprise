@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-poppins: 'Poppins', sans-serif;
+  --font-inter: 'Inter', sans-serif;
+  --font-battambang: 'Battambang', sans-serif;
+  --font-koulen: 'Koulen', sans-serif;
+  --font-moul: 'Moul', serif;
+}
+
+body {
+  font-family: var(--font-poppins);
+}
+
+[lang="km"] {
+  font-family: var(--font-battambang);
+}
+
+[lang="km"] h1,
+[lang="km"] h2 {
+  font-family: var(--font-koulen);
+}
+
+[lang="km"] .display-text {
+  font-family: var(--font-moul);
+}
+
+/* Custom scrollbar for Webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #f3f4f6;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #a78bfa;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #8b5cf6;
+}

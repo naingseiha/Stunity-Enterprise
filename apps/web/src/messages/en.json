@@ -1,0 +1,64 @@
+{
+  "common": {
+    "appName": "Stunity Enterprise",
+    "login": "Login",
+    "logout": "Logout",
+    "dashboard": "Dashboard",
+    "language": "Language"
+  },
+  "landing": {
+    "hero": {
+      "title": "Modern School Management System",
+      "subtitle": "Multi-tenant SaaS platform for educational institutions",
+      "ctaRegister": "Register Your School",
+      "ctaLogin": "Login"
+    },
+    "features": {
+      "title": "Why Choose Stunity Enterprise?",
+      "multiTenant": "Multi-Tenant Architecture",
+      "multiTenantDesc": "Each school gets isolated data and customization",
+      "social": "Social Learning Platform",
+      "socialDesc": "Integrated feed, polls, comments, and notifications",
+      "analytics": "Advanced Analytics",
+      "analyticsDesc": "Real-time insights on student performance"
+    },
+    "pricing": {
+      "title": "Subscription Plans",
+      "freeTrial1": "1-Month Trial",
+      "freeTrial3": "3-Month Trial",
+      "basic": "Basic",
+      "standard": "Standard",
+      "premium": "Premium",
+      "enterprise": "Enterprise"
+    }
+  },
+  "login": {
+    "title": "Welcome Back",
+    "subtitle": "Login to your school account",
+    "email": "Email Address",
+    "password": "Password",
+    "submit": "Login",
+    "submitting": "Logging in...",
+    "error": "Invalid email or password",
+    "trialExpired": "Your trial has expired",
+    "schoolInactive": "Your school account is inactive",
+    "backToHome": "Back to Home"
+  },
+  "dashboard": {
+    "welcome": "Welcome, {{name}}",
+    "school": "School",
+    "tier": "Subscription Tier",
+    "trialDays": "Trial Days Remaining",
+    "students": "Students",
+    "teachers": "Teachers",
+    "storage": "Storage Used",
+    "maxStudents": "Max Students",
+    "maxTeachers": "Max Teachers",
+    "maxStorage": "Max Storage",
+    "quickActions": "Quick Actions",
+    "viewFeed": "View Feed",
+    "manageUsers": "Manage Users",
+    "viewReports": "View Reports",
+    "settings": "Settings"
+  }
+}
