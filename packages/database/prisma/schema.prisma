@@ -58,17 +58,72 @@ model AcademicYear {
   id        String   @id @default(cuid())
   schoolId  String
   name      String // e.g., "2024-2025"
-  startDate DateTime
-  endDate   DateTime
+  startDate DateTime // Flexible: Oct 2025, Nov 2026, etc.
+  endDate   DateTime // Flexible: Sep 2026, Aug 2027, etc.
   isCurrent Boolean  @default(false)
+
+  // Enterprise features
+  copiedFromYearId String? // Previous year settings were copied from
+  status           AcademicYearStatus @default(PLANNING)
+  promotionDate    DateTime? // When student promotion happens
+  isPromotionDone  Boolean            @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  school           School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  copiedFromYear   AcademicYear?        @relation("YearCopy", fields: [copiedFromYearId], references: [id])
+  copiedToYears    AcademicYear[]       @relation("YearCopy")
+  classes          Class[]
+  progressionsFrom StudentProgression[] @relation("FromYear")
+  progressionsTo   StudentProgression[] @relation("ToYear")
 
   @@unique([schoolId, name])
   @@index([schoolId, isCurrent])
+  @@index([schoolId, status])
   @@map("academic_years")
+}
+
+enum AcademicYearStatus {
+  PLANNING // Being set up, not started yet
+  ACTIVE // Current academic year
+  ENDED // Finished, but promotion not done
+  ARCHIVED // Historical, read-only
+}
+
+model StudentProgression {
+  id                 String        @id @default(cuid())
+  studentId          String
+  fromAcademicYearId String
+  toAcademicYearId   String
+  fromClassId        String
+  toClassId          String
+  promotionType      PromotionType
+  promotionDate      DateTime
+  promotedBy         String // Admin user ID
+  notes              String? // Admin notes about promotion decision
+  createdAt          DateTime      @default(now())
+
+  student          Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  fromAcademicYear AcademicYear @relation("FromYear", fields: [fromAcademicYearId], references: [id])
+  toAcademicYear   AcademicYear @relation("ToYear", fields: [toAcademicYearId], references: [id])
+  fromClass        Class        @relation("FromClass", fields: [fromClassId], references: [id])
+  toClass          Class        @relation("ToClass", fields: [toClassId], references: [id])
+
+  @@unique([studentId, fromAcademicYearId, toAcademicYearId])
+  @@index([studentId])
+  @@index([fromAcademicYearId])
+  @@index([toAcademicYearId])
+  @@map("student_progressions")
+}
+
+enum PromotionType {
+  AUTOMATIC // Promoted automatically with class
+  MANUAL // Manually placed by admin
+  REPEAT // Failed, repeating same grade
+  NEW_ADMISSION // New student, first year
+  TRANSFER_IN // Transferred from another school
+  TRANSFER_OUT // Transferred to another school
 }
 
 enum SubscriptionTier {
@@ -107,7 +162,7 @@ model Class {
   name                    String
   grade                   String
   section                 String?
-  academicYear            String                  @default("2024-2025")
+  academicYearId          String // FK to AcademicYear
   capacity                Int?
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
@@ -120,11 +175,16 @@ model Class {
   studentClasses          StudentClass[]
   teacherClasses          TeacherClass[]
   school                  School                  @relation(fields: [schoolId], references: [id])
+  academicYear            AcademicYear            @relation(fields: [academicYearId], references: [id])
   homeroomTeacher         Teacher?
+  progressionsFrom        StudentProgression[]    @relation("FromClass")
+  progressionsTo          StudentProgression[]    @relation("ToClass")
 
   @@index([schoolId])
   @@index([grade])
   @@index([schoolId, grade])
+  @@index([academicYearId])
+  @@index([schoolId, academicYearId])
   @@map("classes")
 }
 
@@ -248,6 +308,7 @@ model Student {
   school               School                  @relation(fields: [schoolId], references: [id])
   class                Class?                  @relation(fields: [classId], references: [id])
   user                 User?
+  StudentProgression   StudentProgression[]
 
   @@index([schoolId])
   @@index([classId])

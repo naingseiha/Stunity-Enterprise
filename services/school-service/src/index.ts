@@ -248,6 +248,266 @@ app.get('/schools/:id', async (req: Request, res: Response) => {
   }
 });
 
+// ===========================
+// Academic Year Management Endpoints
+// ===========================
+
+// Get all academic years for a school
+app.get('/schools/:schoolId/academic-years', async (req: Request, res: Response) => {
+  try {
+    const { schoolId } = req.params;
+
+    const academicYears = await prisma.academicYear.findMany({
+      where: { schoolId },
+      orderBy: { startDate: 'desc' },
+    });
+
+    res.json({
+      success: true,
+      data: academicYears,
+    });
+  } catch (error: any) {
+    console.error('Get academic years error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get academic years',
+      details: error.message,
+    });
+  }
+});
+
+// Get current academic year for a school
+app.get('/schools/:schoolId/academic-years/current', async (req: Request, res: Response) => {
+  try {
+    const { schoolId } = req.params;
+
+    const currentYear = await prisma.academicYear.findFirst({
+      where: { 
+        schoolId,
+        isCurrent: true,
+      },
+    });
+
+    if (!currentYear) {
+      return res.status(404).json({
+        success: false,
+        error: 'No current academic year found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: currentYear,
+    });
+  } catch (error: any) {
+    console.error('Get current academic year error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get current academic year',
+      details: error.message,
+    });
+  }
+});
+
+// Create new academic year
+app.post('/schools/:schoolId/academic-years', async (req: Request, res: Response) => {
+  try {
+    const { schoolId } = req.params;
+    const { name, startDate, endDate, setAsCurrent } = req.body;
+
+    // Validation
+    if (!name || !startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: name, startDate, endDate',
+      });
+    }
+
+    // Check if academic year name already exists for this school
+    const existing = await prisma.academicYear.findFirst({
+      where: {
+        schoolId,
+        name,
+      },
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        error: `Academic year "${name}" already exists for this school`,
+      });
+    }
+
+    // If setAsCurrent is true, unset other years first
+    if (setAsCurrent) {
+      await prisma.academicYear.updateMany({
+        where: { schoolId },
+        data: { isCurrent: false },
+      });
+    }
+
+    // Create new academic year
+    const academicYear = await prisma.academicYear.create({
+      data: {
+        schoolId,
+        name,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        isCurrent: setAsCurrent || false,
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Academic year created successfully',
+      data: academicYear,
+    });
+  } catch (error: any) {
+    console.error('Create academic year error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create academic year',
+      details: error.message,
+    });
+  }
+});
+
+// Update academic year
+app.put('/schools/:schoolId/academic-years/:id', async (req: Request, res: Response) => {
+  try {
+    const { schoolId, id } = req.params;
+    const { name, startDate, endDate } = req.body;
+
+    // Verify academic year belongs to school
+    const existing = await prisma.academicYear.findFirst({
+      where: { id, schoolId },
+    });
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        error: 'Academic year not found',
+      });
+    }
+
+    // Update academic year
+    const academicYear = await prisma.academicYear.update({
+      where: { id },
+      data: {
+        ...(name && { name }),
+        ...(startDate && { startDate: new Date(startDate) }),
+        ...(endDate && { endDate: new Date(endDate) }),
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Academic year updated successfully',
+      data: academicYear,
+    });
+  } catch (error: any) {
+    console.error('Update academic year error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update academic year',
+      details: error.message,
+    });
+  }
+});
+
+// Set academic year as current
+app.put('/schools/:schoolId/academic-years/:id/set-current', async (req: Request, res: Response) => {
+  try {
+    const { schoolId, id } = req.params;
+
+    // Verify academic year belongs to school
+    const academicYear = await prisma.academicYear.findFirst({
+      where: { id, schoolId },
+    });
+
+    if (!academicYear) {
+      return res.status(404).json({
+        success: false,
+        error: 'Academic year not found',
+      });
+    }
+
+    // Unset all other years as current
+    await prisma.academicYear.updateMany({
+      where: { schoolId },
+      data: { isCurrent: false },
+    });
+
+    // Set this year as current
+    const updatedYear = await prisma.academicYear.update({
+      where: { id },
+      data: { isCurrent: true },
+    });
+
+    res.json({
+      success: true,
+      message: `Academic year "${updatedYear.name}" set as current`,
+      data: updatedYear,
+    });
+  } catch (error: any) {
+    console.error('Set current academic year error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to set current academic year',
+      details: error.message,
+    });
+  }
+});
+
+// Delete academic year (only if no classes use it)
+app.delete('/schools/:schoolId/academic-years/:id', async (req: Request, res: Response) => {
+  try {
+    const { schoolId, id } = req.params;
+
+    // Verify academic year belongs to school
+    const academicYear = await prisma.academicYear.findFirst({
+      where: { id, schoolId },
+      include: {
+        _count: {
+          select: { classes: true },
+        },
+      },
+    });
+
+    if (!academicYear) {
+      return res.status(404).json({
+        success: false,
+        error: 'Academic year not found',
+      });
+    }
+
+    // Check if there are classes using this academic year
+    if (academicYear._count.classes > 0) {
+      return res.status(400).json({
+        success: false,
+        error: `Cannot delete academic year "${academicYear.name}" because it has ${academicYear._count.classes} class(es) associated with it`,
+      });
+    }
+
+    // Delete academic year
+    await prisma.academicYear.delete({
+      where: { id },
+    });
+
+    res.json({
+      success: true,
+      message: `Academic year "${academicYear.name}" deleted successfully`,
+    });
+  } catch (error: any) {
+    console.error('Delete academic year error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete academic year',
+      details: error.message,
+    });
+  }
+});
+
 // TODO: School registration endpoint (will add in next session)
 // POST /schools/register
 

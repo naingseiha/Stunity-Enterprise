@@ -140,10 +140,25 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
         grade: true,
         section: true,
         track: true,
-        academicYear: true,
+        capacity: true,
+        academicYear: {
+          select: {
+            id: true,
+            name: true,
+            isCurrent: true,
+          },
+        },
         _count: {
           select: {
             studentClasses: true, // Count from junction table instead of direct students
+          },
+        },
+        homeroomTeacher: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            khmerName: true,
           },
         },
       },
@@ -380,31 +395,47 @@ app.post('/classes', async (req: AuthRequest, res: Response) => {
       grade,
       section,
       track,
-      academicYear,
+      academicYearId,
       homeroomTeacherId,
       capacity,
     } = req.body;
 
     // Validation
-    if (!name || !grade) {
+    if (!name || !grade || !academicYearId) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields: name, grade',
+        message: 'Missing required fields: name, grade, academicYearId',
       });
     }
 
-    // Check if class name already exists in this school
+    // Verify academic year belongs to school
+    const academicYear = await prisma.academicYear.findFirst({
+      where: {
+        id: academicYearId,
+        schoolId: schoolId,
+      },
+    });
+
+    if (!academicYear) {
+      return res.status(400).json({
+        success: false,
+        message: 'Academic year not found or does not belong to your school',
+      });
+    }
+
+    // Check if class name already exists in this school for this academic year
     const existingClass = await prisma.class.findFirst({
       where: {
         name,
         schoolId,
+        academicYearId,
       },
     });
 
     if (existingClass) {
       return res.status(400).json({
         success: false,
-        message: 'Class name already exists in your school',
+        message: 'Class name already exists in your school for this academic year',
       });
     }
 
@@ -424,18 +455,19 @@ app.post('/classes', async (req: AuthRequest, res: Response) => {
         });
       }
 
-      // Check if teacher is already a homeroom teacher for another class
+      // Check if teacher is already a homeroom teacher for another class in this academic year
       const existingHomeroom = await prisma.class.findFirst({
         where: {
           homeroomTeacherId: homeroomTeacherId,
           schoolId: schoolId,
+          academicYearId,
         },
       });
 
       if (existingHomeroom) {
         return res.status(400).json({
           success: false,
-          message: `Teacher is already homeroom teacher for class ${existingHomeroom.name}`,
+          message: `Teacher is already homeroom teacher for class ${existingHomeroom.name} in this academic year`,
         });
       }
     }
@@ -448,7 +480,7 @@ app.post('/classes', async (req: AuthRequest, res: Response) => {
         grade,
         section,
         track,
-        academicYear,
+        academicYearId,
         homeroomTeacherId,
         capacity,
         schoolId: schoolId, // ✅ Multi-tenant
@@ -460,6 +492,13 @@ app.post('/classes', async (req: AuthRequest, res: Response) => {
             khmerName: true,
             firstName: true,
             lastName: true,
+          },
+        },
+        academicYear: {
+          select: {
+            id: true,
+            name: true,
+            isCurrent: true,
           },
         },
       },
