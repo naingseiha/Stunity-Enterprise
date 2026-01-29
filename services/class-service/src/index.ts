@@ -313,7 +313,7 @@ app.get('/classes/:id', async (req: AuthRequest, res: Response) => {
             lastName: true,
             gender: true,
             email: true,
-            phone: true,
+            phoneNumber: true,
           },
           orderBy: {
             khmerName: 'asc',
