@@ -89,7 +89,23 @@ export async function getStudents(params?: {
     throw new Error(error.message || 'Failed to fetch students');
   }
 
-  return response.json();
+  const result = await response.json();
+  
+  // Transform API response to match frontend interface
+  // Backend returns: { success: true, data: [students] }
+  // Frontend expects: { success: true, data: { students: [], pagination: {} } }
+  return {
+    success: result.success,
+    data: {
+      students: result.data || [],
+      pagination: {
+        total: result.data?.length || 0,
+        page: params?.page || 1,
+        limit: params?.limit || 20,
+        totalPages: 1,
+      },
+    },
+  };
 }
 
 export async function getStudentById(id: string): Promise<{ success: boolean; data: { student: Student } }> {

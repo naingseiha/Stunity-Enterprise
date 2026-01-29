@@ -95,7 +95,23 @@ export async function getTeachers(params?: {
     throw new Error(error.message || 'Failed to fetch teachers');
   }
 
-  return response.json();
+  const result = await response.json();
+  
+  // Transform API response to match frontend interface
+  // Backend returns: { success: true, data: [teachers] }
+  // Frontend expects: { success: true, data: { teachers: [], pagination: {} } }
+  return {
+    success: result.success,
+    data: {
+      teachers: result.data || [],
+      pagination: {
+        total: result.data?.length || 0,
+        page: params?.page || 1,
+        limit: params?.limit || 20,
+        totalPages: 1,
+      },
+    },
+  };
 }
 
 export async function getTeacherById(id: string): Promise<{ success: boolean; data: { teacher: Teacher } }> {

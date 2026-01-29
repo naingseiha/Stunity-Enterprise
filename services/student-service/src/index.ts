@@ -75,7 +75,7 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'stunity-enterprise-secret-2026') as any;
     
     // Verify user exists and is active
     const user = await prisma.user.findUnique({
