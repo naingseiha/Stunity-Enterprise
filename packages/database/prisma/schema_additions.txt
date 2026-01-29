@@ -1,0 +1,136 @@
+// ============================================
+// MULTI-TENANT SAAS MODELS & ENUMS
+// Added: January 29, 2026
+// Purpose: Support multiple schools with subscription management
+// ============================================
+
+// Subscription Tier Enum
+enum SubscriptionTier {
+  FREE_TRIAL_1M    // 1 month free trial (100 students)
+  FREE_TRIAL_3M    // 3 months free trial (300 students)
+  BASIC            // Small schools (<500 students) - $49/mo
+  STANDARD         // Medium schools (<2000 students) - $149/mo
+  PREMIUM          // Large schools (<5000 students) - $399/mo
+  ENTERPRISE       // Unlimited students - Custom pricing
+}
+
+// Subscription Status Enum
+enum SubscriptionStatus {
+  TRIAL            // Active trial period
+  ACTIVE           // Paid and active
+  EXPIRED          // Trial/subscription ended
+  CANCELLED        // Manually cancelled by admin
+  SUSPENDED        // Suspended due to payment failure
+  GRACE_PERIOD     // Expired but in grace period (read-only)
+}
+
+// Payment Status Enum
+enum PaymentStatus {
+  UNPAID           // No payment made yet
+  PAID             // Payment successful
+  OVERDUE          // Payment due but not received
+  REFUNDED         // Payment refunded
+  FAILED           // Payment attempt failed
+}
+
+// School Model - Tenant Root
+model School {
+  id                    String             @id @default(cuid())
+  name                  String             // Official school name
+  slug                  String             @unique // URL-friendly: my-school
+  domain                String?            @unique // Custom domain (enterprise only)
+  email                 String             @unique
+  phone                 String?
+  address               String?
+  city                  String?
+  province              String?
+  country               String             @default("Cambodia")
+  
+  // Subscription Management
+  subscriptionTier      SubscriptionTier   @default(FREE_TRIAL_1M)
+  subscriptionStatus    SubscriptionStatus @default(TRIAL)
+  trialStartedAt        DateTime           @default(now())
+  trialEndsAt           DateTime           // Auto-calculated based on tier
+  subscriptionStartedAt DateTime?          // When paid subscription started
+  subscriptionEndsAt    DateTime?          // When subscription ends
+  
+  // Usage Limits (based on tier)
+  studentLimit          Int                @default(100)
+  teacherLimit          Int                @default(10)
+  storageLimit          Int                @default(1024) // MB
+  classLimit            Int                @default(20)
+  
+  // Feature Flags (JSON object)
+  features              Json?              @default("{\"analytics\": true, \"portfolio\": false, \"reports\": true}")
+  
+  // Payment Information
+  paymentStatus         PaymentStatus      @default(UNPAID)
+  lastPaymentDate       DateTime?
+  nextBillingDate       DateTime?
+  stripeCustomerId      String?            @unique
+  stripeSubscriptionId  String?            @unique
+  
+  // Branding & Settings
+  logo                  String?
+  primaryColor          String?            @default("#3B82F6")
+  timezone              String             @default("Asia/Phnom_Penh")
+  language              String             @default("en")
+  currency              String             @default("USD")
+  
+  // Admin Contact
+  adminUserId           String?            @unique // First user who registered
+  
+  // Status
+  isActive              Boolean            @default(true)
+  isVerified            Boolean            @default(false)
+  verifiedAt            DateTime?
+  
+  // Metadata
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  
+  // Relations - All entities belong to a school
+  users                 User[]
+  students              Student[]
+  teachers              Teacher[]
+  parents               Parent[]
+  classes               Class[]
+  subjects              Subject[]
+  academicYears         AcademicYear[]
+  posts                 Post[]
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+  
+  @@index([slug])
+  @@index([subscriptionStatus])
+  @@index([subscriptionTier])
+  @@index([email])
+  @@index([isActive])
+  @@map("schools")
+}
+
+// Academic Year Model - Multi-Year Support
+model AcademicYear {
+  id          String   @id @default(cuid())
+  schoolId    String
+  name        String   // "2024-2025", "2025-2026"
+  startDate   DateTime
+  endDate     DateTime
+  isCurrent   Boolean  @default(false) // Only one can be current per school
+  isActive    Boolean  @default(true)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  classes     Class[]
+  grades      Grade[]
+  attendance  Attendance[]
+  
+  @@unique([schoolId, name])
+  @@index([schoolId, isCurrent])
+  @@index([schoolId, isActive])
+  @@map("academic_years")
+}
+
