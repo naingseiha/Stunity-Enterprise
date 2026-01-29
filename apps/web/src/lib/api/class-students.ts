@@ -21,13 +21,19 @@ export interface AssignStudentRequest {
   academicYearId?: string;
 }
 
+async function getAuthHeaders(): Promise<HeadersInit> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+  };
+}
+
 // Get all students in a specific class
-export async function getClassStudents(classId: string, token: string): Promise<StudentInClass[]> {
+export async function getClassStudents(classId: string): Promise<StudentInClass[]> {
   const response = await fetch(`${CLASS_SERVICE_URL}/classes/${classId}/students`, {
     method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
+    headers: await getAuthHeaders(),
   });
 
   if (!response.ok) {
@@ -42,15 +48,11 @@ export async function getClassStudents(classId: string, token: string): Promise<
 // Assign a student to a class
 export async function assignStudentToClass(
   classId: string,
-  data: AssignStudentRequest,
-  token: string
+  data: AssignStudentRequest
 ): Promise<void> {
   const response = await fetch(`${CLASS_SERVICE_URL}/classes/${classId}/students`, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
+    headers: await getAuthHeaders(),
     body: JSON.stringify(data),
   });
 
@@ -65,14 +67,11 @@ export async function assignStudentToClass(
 // Remove a student from a class
 export async function removeStudentFromClass(
   classId: string,
-  studentId: string,
-  token: string
+  studentId: string
 ): Promise<void> {
   const response = await fetch(`${CLASS_SERVICE_URL}/classes/${classId}/students/${studentId}`, {
     method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
+    headers: await getAuthHeaders(),
   });
 
   if (!response.ok) {
