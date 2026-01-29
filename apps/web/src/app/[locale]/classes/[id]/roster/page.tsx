@@ -72,7 +72,7 @@ export default function ClassRosterPage({
       // Reload students
       const updatedStudents = await getClassStudents(id);
       setStudents(updatedStudents);
-      setShowAddModal(false);
+      // Don't close modal - allow multiple additions
       setSearchQuery('');
     } catch (error: any) {
       alert(error.message || 'Failed to add student');
