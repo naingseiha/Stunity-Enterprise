@@ -45,6 +45,7 @@ model School {
   academicYears     AcademicYear[]
   users             User[]
   students          Student[]
+  teachers          Teacher[]
   classes           Class[]
   
   @@index([slug])
@@ -351,6 +352,7 @@ model TeacherClass {
 
 model Teacher {
   id               String           @id @default(cuid())
+  schoolId         String
   teacherId        String?          @unique
   firstName        String
   lastName         String
@@ -382,8 +384,10 @@ model Teacher {
   subjectTeachers  SubjectTeacher[]
   teacherClasses   TeacherClass[]
   homeroomClass    Class?           @relation(fields: [homeroomClassId], references: [id])
+  school           School           @relation(fields: [schoolId], references: [id])
   user             User?
 
+  @@index([schoolId])
   @@map("teachers")
 }
 
