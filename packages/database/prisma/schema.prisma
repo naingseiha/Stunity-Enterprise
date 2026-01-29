@@ -8,6 +8,75 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ========================================
+// Multi-Tenant SaaS Models
+// ========================================
+
+model School {
+  id                String            @id @default(cuid())
+  name              String
+  slug              String            @unique
+  email             String            @unique
+  phone             String?
+  address           String?
+  logo              String?
+  website           String?
+  
+  // Subscription Management
+  subscriptionTier  SubscriptionTier  @default(FREE_TRIAL_1M)
+  subscriptionStart DateTime          @default(now())
+  subscriptionEnd   DateTime?
+  isActive          Boolean           @default(true)
+  isTrial           Boolean           @default(true)
+  
+  // Usage Limits
+  maxStudents       Int               @default(100)
+  maxTeachers       Int               @default(10)
+  maxStorage        BigInt            @default(1073741824) // 1GB in bytes
+  currentStudents   Int               @default(0)
+  currentTeachers   Int               @default(0)
+  currentStorage    BigInt            @default(0)
+  
+  // Metadata
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  // Relations
+  academicYears     AcademicYear[]
+  users             User[]
+  
+  @@index([slug])
+  @@index([subscriptionTier])
+  @@index([isActive])
+  @@map("schools")
+}
+
+model AcademicYear {
+  id          String   @id @default(cuid())
+  schoolId    String
+  name        String   // e.g., "2024-2025"
+  startDate   DateTime
+  endDate     DateTime
+  isCurrent   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  
+  @@unique([schoolId, name])
+  @@index([schoolId, isCurrent])
+  @@map("academic_years")
+}
+
+enum SubscriptionTier {
+  FREE_TRIAL_1M
+  FREE_TRIAL_3M
+  BASIC
+  STANDARD
+  PREMIUM
+  ENTERPRISE
+}
+
 model Attendance {
   id        String            @id @default(cuid())
   studentId String
@@ -310,6 +379,7 @@ model Teacher {
 
 model User {
   id                  String    @id @default(cuid())
+  schoolId            String?
   email               String?   @unique
   password            String
   firstName           String
@@ -403,6 +473,7 @@ model User {
   blocking         UserBlock[]       @relation("Blocker")
   blockedBy        UserBlock[]       @relation("Blocked")
   postViews        PostView[]
+  school           School?           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   @@index([email, isActive])
   @@index([phone, isActive])
@@ -410,6 +481,7 @@ model User {
   @@index([parentId, isActive])
   @@index([isDefaultPassword])
   @@index([passwordExpiresAt])
+  @@index([schoolId])
   @@map("users")
 }
 
