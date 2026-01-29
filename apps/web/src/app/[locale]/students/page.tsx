@@ -17,6 +17,9 @@ import {
 import { TokenManager } from '@/lib/api/auth';
 import { getStudents, deleteStudent, type Student } from '@/lib/api/students';
 import StudentModal from '@/components/students/StudentModal';
+import Pagination from '@/components/Pagination';
+import { TableSkeleton } from '@/components/LoadingSkeleton';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export default function StudentsPage({ params: { locale } }: { params: { locale: string } }) {
   const t = useTranslations('students');
@@ -26,10 +29,13 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 300); // 300ms delay
   const [showModal, setShowModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const ITEMS_PER_PAGE = 20;
 
   const user = TokenManager.getUserData().user;
   const school = TokenManager.getUserData().school;
@@ -41,14 +47,19 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
       return;
     }
     fetchStudents();
-  }, [page]);
+  }, [page, debouncedSearch]); // Use debounced search instead of direct searchTerm
 
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const response = await getStudents({ page, limit: 20, search: searchTerm });
+      const response = await getStudents({ 
+        page, 
+        limit: ITEMS_PER_PAGE, 
+        search: debouncedSearch 
+      });
       setStudents(response.data.students);
       setTotalPages(response.data.pagination.totalPages);
+      setTotalCount(response.data.pagination.total || response.data.pagination.totalCount || 0);
     } catch (error: any) {
       console.error('Failed to fetch students:', error);
     } finally {
