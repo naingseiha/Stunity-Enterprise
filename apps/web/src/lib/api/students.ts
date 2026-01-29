@@ -91,13 +91,23 @@ export async function getStudents(params?: {
 
   const result = await response.json();
   
+  // Transform backend field names to frontend expectations
+  const transformedStudents = (result.data || []).map((student: any) => ({
+    ...student,
+    studentId: student.studentId || student.id,
+    firstNameLatin: student.firstName || student.englishName || '',
+    lastNameLatin: student.lastName || '',
+    firstNameKhmer: student.khmerName || null,
+    lastNameKhmer: null,
+  }));
+  
   // Transform API response to match frontend interface
   // Backend returns: { success: true, data: [students], pagination: {...} }
   // Frontend expects: { success: true, data: { students: [], pagination: {} } }
   return {
     success: result.success,
     data: {
-      students: result.data || [],
+      students: transformedStudents,
       pagination: result.pagination || {
         total: result.data?.length || 0,
         page: params?.page || 1,
