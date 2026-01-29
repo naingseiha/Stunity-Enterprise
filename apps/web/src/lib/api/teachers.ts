@@ -139,10 +139,27 @@ export async function getTeacherById(id: string): Promise<{ success: boolean; da
 }
 
 export async function createTeacher(data: CreateTeacherInput): Promise<{ success: boolean; data: { teacher: Teacher } }> {
+  // Transform frontend field names to backend expectations
+  const backendData = {
+    firstName: data.firstNameLatin,
+    lastName: data.lastNameLatin,
+    khmerName: data.firstNameKhmer || '',
+    englishName: data.firstNameLatin + ' ' + data.lastNameLatin,
+    email: data.email || '',
+    phone: data.phoneNumber || '',
+    gender: data.gender,
+    dateOfBirth: data.dateOfBirth,
+    address: data.address || '',
+    hireDate: data.hireDate,
+    position: data.position || '',
+    department: data.department || '',
+    salary: data.salary || null,
+  };
+
   const response = await fetch(`${TEACHER_SERVICE_URL}/teachers`, {
     method: 'POST',
     headers: await getAuthHeaders(),
-    body: JSON.stringify(data),
+    body: JSON.stringify(backendData),
   });
 
   if (!response.ok) {
