@@ -801,6 +801,266 @@ app.delete('/classes/:id/students/:studentId', async (req: AuthRequest, res: Res
 });
 
 // ===========================
+// GET /classes/:id/students
+// Get all students in a class
+// ===========================
+app.get('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = req.user!.schoolId;
+    console.log(`📋 [School ${schoolId}] Fetching students for class: ${id}`);
+
+    // Verify class belongs to school
+    const classData = await prisma.class.findFirst({
+      where: {
+        id,
+        schoolId: schoolId,
+      },
+    });
+
+    if (!classData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Class not found or does not belong to your school',
+      });
+    }
+
+    // Get all students in this class via StudentClass junction table
+    const studentClasses = await prisma.studentClass.findMany({
+      where: {
+        classId: id,
+        status: 'ACTIVE',
+      },
+      include: {
+        student: {
+          select: {
+            id: true,
+            studentId: true,
+            firstName: true,
+            lastName: true,
+            nameKh: true,
+            gender: true,
+            dateOfBirth: true,
+            photoUrl: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: {
+        student: {
+          firstName: 'asc',
+        },
+      },
+    });
+
+    const students = studentClasses.map(sc => ({
+      ...sc.student,
+      enrolledAt: sc.enrolledAt,
+      studentClassId: sc.id,
+    }));
+
+    console.log(`✅ [School ${schoolId}] Found ${students.length} students in class`);
+
+    res.json({
+      success: true,
+      data: students,
+      count: students.length,
+    });
+  } catch (error: any) {
+    console.error('❌ Error fetching class students:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching class students',
+      error: error.message,
+    });
+  }
+});
+
+// ===========================
+// POST /classes/:id/students
+// Assign a single student to class (using StudentClass junction)
+// ===========================
+app.post('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { studentId, academicYearId } = req.body;
+    const schoolId = req.user!.schoolId;
+    console.log(`➕ [School ${schoolId}] Assigning student ${studentId} to class: ${id}`);
+
+    if (!studentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'studentId is required',
+      });
+    }
+
+    // Verify class belongs to school
+    const classData = await prisma.class.findFirst({
+      where: {
+        id,
+        schoolId: schoolId,
+      },
+    });
+
+    if (!classData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Class not found or does not belong to your school',
+      });
+    }
+
+    // Verify student belongs to school
+    const student = await prisma.student.findFirst({
+      where: {
+        id: studentId,
+        schoolId: schoolId,
+      },
+    });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found or does not belong to your school',
+      });
+    }
+
+    // Check if student is already in this class
+    const existingAssignment = await prisma.studentClass.findFirst({
+      where: {
+        studentId,
+        classId: id,
+        academicYearId: academicYearId || null,
+        status: 'ACTIVE',
+      },
+    });
+
+    if (existingAssignment) {
+      return res.status(400).json({
+        success: false,
+        message: 'Student is already assigned to this class',
+      });
+    }
+
+    // Create StudentClass assignment
+    const studentClass = await prisma.studentClass.create({
+      data: {
+        studentId,
+        classId: id,
+        academicYearId: academicYearId || null,
+        status: 'ACTIVE',
+      },
+      include: {
+        student: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            nameKh: true,
+          },
+        },
+      },
+    });
+
+    console.log(
+      `✅ [School ${schoolId}] Assigned student ${student.firstName} ${student.lastName} to class ${classData.name}`
+    );
+
+    res.json({
+      success: true,
+      message: 'Student assigned to class successfully',
+      data: studentClass,
+    });
+  } catch (error: any) {
+    console.error('❌ Error assigning student:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error assigning student to class',
+      error: error.message,
+    });
+  }
+});
+
+// ===========================
+// DELETE /classes/:id/students/:studentId (UPDATED)
+// Remove student from class (using StudentClass junction)
+// ===========================
+app.delete('/classes/:id/students/:studentId', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, studentId } = req.params;
+    const schoolId = req.user!.schoolId;
+    console.log(`➖ [School ${schoolId}] Removing student ${studentId} from class ${id}`);
+
+    // Verify class belongs to school
+    const classData = await prisma.class.findFirst({
+      where: {
+        id,
+        schoolId: schoolId,
+      },
+    });
+
+    if (!classData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Class not found or does not belong to your school',
+      });
+    }
+
+    // Verify student belongs to school
+    const student = await prisma.student.findFirst({
+      where: {
+        id: studentId,
+        schoolId: schoolId,
+      },
+    });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found or does not belong to your school',
+      });
+    }
+
+    // Find and delete the StudentClass assignment
+    const studentClass = await prisma.studentClass.findFirst({
+      where: {
+        studentId,
+        classId: id,
+        status: 'ACTIVE',
+      },
+    });
+
+    if (!studentClass) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student is not assigned to this class',
+      });
+    }
+
+    // Update status to DROPPED instead of deleting (for audit trail)
+    await prisma.studentClass.update({
+      where: { id: studentClass.id },
+      data: { status: 'DROPPED' },
+    });
+
+    console.log(
+      `✅ [School ${schoolId}] Removed student ${student.firstName} ${student.lastName} from class ${classData.name}`
+    );
+
+    res.json({
+      success: true,
+      message: 'Student removed from class successfully',
+    });
+  } catch (error: any) {
+    console.error('❌ Error removing student:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error removing student from class',
+      error: error.message,
+    });
+  }
+});
+
+// ===========================
 // Start Server
 // ===========================
 app.listen(PORT, () => {
@@ -819,7 +1079,9 @@ app.listen(PORT, () => {
 ║   • GET    /classes                                       ║
 ║   • GET    /classes/grade/:grade                          ║
 ║   • GET    /classes/:id                                   ║
+║   • GET    /classes/:id/students (NEW)                    ║
 ║   • POST   /classes                                       ║
+║   • POST   /classes/:id/students (NEW)                    ║
 ║   • PUT    /classes/:id                                   ║
 ║   • DELETE /classes/:id                                   ║
 ║   • POST   /classes/:id/assign-students                   ║
@@ -827,7 +1089,7 @@ app.listen(PORT, () => {
 ║   • GET    /health (no auth)                              ║
 ║                                                            ║
 ║   🔒 Multi-Tenancy: All queries filtered by schoolId      ║
-║   ✅ Student Assignment: Validated ownership              ║
+║   ✅ Student Assignment: StudentClass junction table      ║
 ║   🌐 Khmer/English: Full bilingual support                ║
 ║                                                            ║
 ╚════════════════════════════════════════════════════════════╝
