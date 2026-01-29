@@ -199,6 +199,9 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Photo
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Teacher ID
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -221,6 +224,19 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
                   <tbody className="bg-white divide-y divide-gray-200">
                     {teachers.map((teacher) => (
                       <tr key={teacher.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {teacher.photoUrl ? (
+                            <img
+                              src={`${process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004'}${teacher.photoUrl}`}
+                              alt={`${teacher.firstNameLatin} ${teacher.lastNameLatin}`}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm font-medium">
+                              {teacher.firstNameLatin.charAt(0)}{teacher.lastNameLatin.charAt(0)}
+                            </div>
+                          )}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {teacher.teacherId}
                         </td>

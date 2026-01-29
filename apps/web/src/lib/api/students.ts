@@ -16,6 +16,7 @@ export interface Student {
   phoneNumber?: string | null;
   email?: string | null;
   classId?: string | null;
+  photoUrl?: string | null;
   schoolId: string;
   isActive: boolean;
   createdAt: string;
@@ -143,6 +144,29 @@ export async function deleteStudent(id: string): Promise<{ success: boolean; mes
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Failed to delete student' }));
     throw new Error(error.message || 'Failed to delete student');
+  }
+
+  return response.json();
+}
+
+export async function uploadStudentPhoto(id: string, file: File): Promise<{ success: boolean; data: { photoUrl: string; student: Student } }> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  
+  const formData = new FormData();
+  formData.append('photo', file);
+
+  const response = await fetch(`${STUDENT_SERVICE_URL}/students/${id}/photo`, {
+    method: 'POST',
+    headers: {
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+      // Don't set Content-Type - browser will set it with boundary for multipart
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Failed to upload photo' }));
+    throw new Error(error.message || 'Failed to upload photo');
   }
 
   return response.json();

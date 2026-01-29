@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import { createStudent, updateStudent, type Student, type CreateStudentInput } from '@/lib/api/students';
+import { useState, useEffect, useRef } from 'react';
+import { X, Upload, Camera } from 'lucide-react';
+import { createStudent, updateStudent, uploadStudentPhoto, type Student, type CreateStudentInput } from '@/lib/api/students';
 
 interface StudentModalProps {
   student: Student | null;
@@ -12,6 +12,9 @@ interface StudentModalProps {
 export default function StudentModal({ student, onClose }: StudentModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState<CreateStudentInput>({
     firstNameLatin: '',
@@ -40,8 +43,37 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
         phoneNumber: student.phoneNumber || '',
         email: student.email || '',
       });
+      // Set existing photo as preview
+      if (student.photoUrl) {
+        const STUDENT_SERVICE_URL = process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003';
+        setPhotoPreview(`${STUDENT_SERVICE_URL}${student.photoUrl}`);
+      }
     }
   }, [student]);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select an image file');
+        return;
+      }
+      // Validate file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size must be less than 5MB');
+        return;
+      }
+      setPhotoFile(file);
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      setError('');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,11 +81,21 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
     setLoading(true);
 
     try {
+      let savedStudent: Student;
+      
       if (student) {
-        await updateStudent(student.id, formData);
+        const result = await updateStudent(student.id, formData);
+        savedStudent = result.data.student;
       } else {
-        await createStudent(formData);
+        const result = await createStudent(formData);
+        savedStudent = result.data.student;
       }
+
+      // Upload photo if a new one was selected
+      if (photoFile && savedStudent.id) {
+        await uploadStudentPhoto(savedStudent.id, photoFile);
+      }
+
       onClose(true);
     } catch (err: any) {
       setError(err.message);
@@ -90,6 +132,52 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
               {error}
             </div>
           )}
+
+          {/* Photo Upload */}
+          <div className="flex flex-col items-center space-y-4 p-6 bg-gray-50 rounded-lg">
+            <div className="relative">
+              {photoPreview ? (
+                <div className="relative group">
+                  <img
+                    src={photoPreview}
+                    alt="Student photo"
+                    className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Camera className="w-8 h-8 text-white" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-32 h-32 rounded-full bg-gray-200 border-4 border-white shadow-lg flex items-center justify-center">
+                  <Camera className="w-12 h-12 text-gray-400" />
+                </div>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoChange}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <Upload className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                {photoPreview ? 'Change Photo' : 'Upload Photo'}
+              </span>
+            </button>
+            <p className="text-xs text-gray-500">
+              PNG, JPG, GIF up to 5MB
+            </p>
+          </div>
 
           {/* Latin Names */}
           <div className="grid md:grid-cols-2 gap-4">

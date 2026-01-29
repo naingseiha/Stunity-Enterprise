@@ -18,6 +18,7 @@ export interface Teacher {
   position?: string | null;
   department?: string | null;
   salary?: number | null;
+  photoUrl?: string | null;
   schoolId: string;
   isActive: boolean;
   createdAt: string;
@@ -149,6 +150,28 @@ export async function deleteTeacher(id: string): Promise<{ success: boolean; mes
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Failed to delete teacher' }));
     throw new Error(error.message || 'Failed to delete teacher');
+  }
+
+  return response.json();
+}
+
+export async function uploadTeacherPhoto(id: string, file: File): Promise<{ success: boolean; data: { photoUrl: string; teacher: Teacher } }> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  
+  const formData = new FormData();
+  formData.append('photo', file);
+
+  const response = await fetch(`${TEACHER_SERVICE_URL}/teachers/${id}/photo`, {
+    method: 'POST',
+    headers: {
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Failed to upload photo' }));
+    throw new Error(error.message || 'Failed to upload photo');
   }
 
   return response.json();

@@ -199,6 +199,9 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Photo
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Student ID
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -221,6 +224,19 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
                   <tbody className="bg-white divide-y divide-gray-200">
                     {students.map((student) => (
                       <tr key={student.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {student.photoUrl ? (
+                            <img
+                              src={`${process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003'}${student.photoUrl}`}
+                              alt={`${student.firstNameLatin} ${student.lastNameLatin}`}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm font-medium">
+                              {student.firstNameLatin.charAt(0)}{student.lastNameLatin.charAt(0)}
+                            </div>
+                          )}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {student.studentId}
                         </td>
