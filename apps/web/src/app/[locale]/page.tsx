@@ -12,9 +12,11 @@ export default function HomePage({ params: { locale } }: { params: { locale: str
       <section className="container mx-auto px-4 pt-20 pb-32">
         <div className="max-w-4xl mx-auto text-center">
           <div className="mb-8 flex justify-center">
-            <div className="p-4 bg-white rounded-full shadow-lg">
-              <GraduationCap className="w-16 h-16 text-stunity-primary-600" />
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="Stunity Enterprise" 
+              className="h-24 w-auto"
+            />
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
             {t('hero.title')}

@@ -30,8 +30,8 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
         TokenManager.setTokens(response.tokens.accessToken, response.tokens.refreshToken);
         TokenManager.setUserData(response.user, response.school);
 
-        // Redirect to dashboard
-        router.push(`/${locale}/dashboard`);
+        // Redirect to dashboard with replace to prevent back button
+        window.location.href = `/${locale}/dashboard`;
       } else {
         setError(response.message || t('error'));
       }
@@ -47,10 +47,13 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-stunity-primary-600 rounded-full mb-4">
-            <GraduationCap className="w-10 h-10 text-white" />
+          <div className="flex justify-center mb-4">
+            <img 
+              src="/logo.png" 
+              alt="Stunity Enterprise" 
+              className="h-20 w-auto"
+            />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">{tc('appName')}</h1>
           <p className="text-gray-600 mt-2">{t('subtitle')}</p>
         </div>
 
