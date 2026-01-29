@@ -21,8 +21,13 @@ const prisma = new PrismaClient();
   return this.toString();
 };
 
-// Middleware
-app.use(cors());
+// Middleware - CORS configuration
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json());
 
 // Types
@@ -207,13 +212,22 @@ app.post(
         },
       });
 
-      // Generate tokens
+      // Generate tokens (include school data to avoid DB queries on every request)
       const accessToken = jwt.sign(
         {
           userId: user.id,
           email: user.email,
           role: user.role,
           schoolId: user.schoolId,
+          school: user.school ? {
+            id: user.school.id,
+            name: user.school.name,
+            slug: user.school.slug,
+            subscriptionTier: user.school.subscriptionTier,
+            subscriptionEnd: user.school.subscriptionEnd,
+            isTrial: user.school.isTrial,
+            isActive: user.school.isActive,
+          } : null,
         },
         JWT_SECRET,
         { expiresIn: JWT_EXPIRATION } as jwt.SignOptions

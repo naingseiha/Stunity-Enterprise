@@ -18,12 +18,24 @@
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "array-flatten": "^1.1.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.6",
+    "destroy": "^1.2.0",
     "dotenv": "^16.6.1",
+    "encodeurl": "^2.0.0",
+    "escape-html": "^1.0.3",
+    "etag": "^1.8.1",
     "express": "^4.18.0",
     "express-validator": "^7.3.1",
-    "jsonwebtoken": "^9.0.3"
+    "fresh": "^0.5.2",
+    "jsonwebtoken": "^9.0.3",
+    "mime": "^1.6.0",
+    "ms": "^2.1.3",
+    "on-finished": "^2.4.1",
+    "parseurl": "^1.3.3",
+    "range-parser": "^1.2.1",
+    "statuses": "^2.0.2"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

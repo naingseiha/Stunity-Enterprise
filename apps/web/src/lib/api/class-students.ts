@@ -81,3 +81,23 @@ export async function removeStudentFromClass(
 
   return response.json();
 }
+
+// Batch assign multiple students to a class
+export async function assignMultipleStudentsToClass(
+  classId: string,
+  data: { studentIds: string[]; academicYearId?: string }
+): Promise<{ assigned: number; skipped: number; total: number }> {
+  const response = await fetch(`${CLASS_SERVICE_URL}/classes/${classId}/students/batch`, {
+    method: 'POST',
+    headers: await getAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Failed to assign students' }));
+    throw new Error(error.message || 'Failed to assign students');
+  }
+
+  const result = await response.json();
+  return result.data;
+}

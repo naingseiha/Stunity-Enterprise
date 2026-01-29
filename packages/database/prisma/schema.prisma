@@ -256,6 +256,9 @@ model Student {
   @@index([isAccountActive])
   @@index([classId, studentRole])
   @@index([schoolId, classId])
+  @@index([schoolId, isAccountActive])
+  @@index([schoolId, firstName, lastName])
+  @@index([schoolId, createdAt])
   @@map("students")
 }
 
@@ -411,6 +414,9 @@ model Teacher {
   user             User?
 
   @@index([schoolId])
+  @@index([schoolId, position])
+  @@index([schoolId, createdAt])
+  @@index([email])
   @@map("teachers")
 }
 
@@ -519,6 +525,8 @@ model User {
   @@index([isDefaultPassword])
   @@index([passwordExpiresAt])
   @@index([schoolId])
+  @@index([schoolId, role, isActive])
+  @@index([schoolId, isActive])
   @@map("users")
 }
 
