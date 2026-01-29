@@ -141,7 +141,7 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
         academicYear: true,
         _count: {
           select: {
-            students: true,
+            studentClasses: true, // Count from junction table instead of direct students
           },
         },
       },
