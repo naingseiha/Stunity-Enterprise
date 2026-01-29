@@ -842,7 +842,6 @@ app.get('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: R
             gender: true,
             dateOfBirth: true,
             photoUrl: true,
-            status: true,
           },
         },
       },
@@ -856,6 +855,7 @@ app.get('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: R
     const students = studentClasses.map(sc => ({
       ...sc.student,
       nameKh: sc.student.khmerName, // Map to match frontend interface
+      status: sc.status, // Get status from StudentClass, not Student
       enrolledAt: sc.enrolledAt,
       studentClassId: sc.id,
     }));
