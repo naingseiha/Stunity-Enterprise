@@ -10,7 +10,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.AUTH_SERVICE_PORT || 3001;
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '7d';
 const REFRESH_TOKEN_EXPIRATION = '30d';
 
