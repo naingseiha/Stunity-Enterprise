@@ -67,11 +67,10 @@ export default function ClassRosterPage({
   const handleAddStudent = async (studentId: string) => {
     setSubmitting(true);
     try {
-      const token = TokenManager.getAccessToken()!;
-      await assignStudentToClass(id, { studentId }, token);
+      await assignStudentToClass(id, { studentId });
       
       // Reload students
-      const updatedStudents = await getClassStudents(id, token);
+      const updatedStudents = await getClassStudents(id);
       setStudents(updatedStudents);
       setShowAddModal(false);
       setSearchQuery('');
@@ -87,11 +86,10 @@ export default function ClassRosterPage({
 
     setSubmitting(true);
     try {
-      const token = TokenManager.getAccessToken()!;
-      await removeStudentFromClass(id, studentId, token);
+      await removeStudentFromClass(id, studentId);
       
       // Reload students
-      const updatedStudents = await getClassStudents(id, token);
+      const updatedStudents = await getClassStudents(id);
       setStudents(updatedStudents);
     } catch (error: any) {
       alert(error.message || 'Failed to remove student');
