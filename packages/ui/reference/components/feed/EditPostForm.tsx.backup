@@ -1,0 +1,615 @@
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import {
+  X,
+  Loader2,
+  FileText,
+  GraduationCap,
+  Brain,
+  HelpCircle,
+  ClipboardCheck,
+  Megaphone,
+  BookOpen,
+  BarChart3,
+  FolderOpen,
+  ChevronDown,
+  Globe,
+  Users,
+  Lock,
+  Briefcase,
+  Book,
+  Microscope,
+  Trophy,
+  Lightbulb,
+  Calendar,
+  ArrowLeft,
+  Save,
+  GripVertical,
+  ImageIcon,
+} from "lucide-react";
+import {
+  updatePost,
+  PostType,
+  PostVisibility,
+  POST_TYPE_INFO,
+} from "@/lib/api/feed";
+import { compressImage } from "@/lib/utils/imageCompression";
+
+interface EditPostFormProps {
+  post: {
+    id: string;
+    content: string;
+    postType: PostType;
+    visibility: PostVisibility;
+    mediaUrls?: string[];
+  };
+  userProfilePicture?: string | null;
+  userName: string;
+}
+
+const POST_TYPES: {
+  type: PostType;
+  icon: React.ElementType;
+  label: string;
+  labelKh: string;
+}[] = [
+  { type: "ARTICLE", icon: FileText, label: "Article", labelKh: "អត្ថបទ" },
+  { type: "COURSE", icon: GraduationCap, label: "Course", labelKh: "វគ្គសិក្សា" },
+  { type: "QUIZ", icon: Brain, label: "Quiz", labelKh: "សំណួរក្លាយ" },
+  { type: "QUESTION", icon: HelpCircle, label: "Question", labelKh: "សំណួរ" },
+  { type: "EXAM", icon: ClipboardCheck, label: "Exam", labelKh: "ប្រឡង" },
+  { type: "ANNOUNCEMENT", icon: Megaphone, label: "Announcement", labelKh: "ប្រកាស" },
+  { type: "ASSIGNMENT", icon: BookOpen, label: "Assignment", labelKh: "កិច្ចការផ្ទះ" },
+  { type: "POLL", icon: BarChart3, label: "Poll", labelKh: "មតិ" },
+  { type: "RESOURCE", icon: FolderOpen, label: "Resource", labelKh: "ធនធាន" },
+  { type: "PROJECT", icon: Briefcase, label: "Project", labelKh: "គម្រោង" },
+  { type: "TUTORIAL", icon: Book, label: "Tutorial", labelKh: "មេរៀន" },
+  { type: "RESEARCH", icon: Microscope, label: "Research", labelKh: "ការស្រាវជ្រាវ" },
+  { type: "ACHIEVEMENT", icon: Trophy, label: "Achievement", labelKh: "សមិទ្ធិផល" },
+  { type: "REFLECTION", icon: Lightbulb, label: "Reflection", labelKh: "ការពិចារណា" },
+  { type: "COLLABORATION", icon: Users, label: "Collaboration", labelKh: "កិច្ចសហការ" },
+];
+
+const VISIBILITY_OPTIONS: {
+  value: PostVisibility;
+  label: string;
+  labelKh: string;
+  icon: React.ElementType;
+}[] = [
+  { value: "SCHOOL", label: "School", labelKh: "សាលារៀន", icon: Users },
+  { value: "PUBLIC", label: "Public", labelKh: "សាធារណៈ", icon: Globe },
+  { value: "CLASS", label: "Class", labelKh: "ថ្នាក់រៀន", icon: Users },
+  { value: "PRIVATE", label: "Private", labelKh: "ឯកជន", icon: Lock },
+];
+
+export default function EditPostForm({ post, userProfilePicture, userName }: EditPostFormProps) {
+  const router = useRouter();
+  const [content, setContent] = useState(post.content);
+  const [postType, setPostType] = useState<PostType>(post.postType);
+  const [visibility, setVisibility] = useState<PostVisibility>(post.visibility);
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [mediaPreviews, setMediaPreviews] = useState<string[]>(post.mediaUrls || []);
+  const [isPosting, setIsPosting] = useState(false);
+  const [showVisibilitySelector, setShowVisibilitySelector] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  // Type-specific state
+  const [assignmentDueDate, setAssignmentDueDate] = useState<string>("");
+  const [assignmentPoints, setAssignmentPoints] = useState<number>(100);
+  const [assignmentSubmissionType, setAssignmentSubmissionType] = useState<"file" | "text" | "link">("file");
+  
+  const [announcementUrgency, setAnnouncementUrgency] = useState<"low" | "medium" | "high" | "urgent">("medium");
+  const [announcementExpiryDate, setAnnouncementExpiryDate] = useState<string>("");
+  
+  const [courseCode, setCourseCode] = useState<string>("");
+  const [courseLevel, setCourseLevel] = useState<"beginner" | "intermediate" | "advanced">("beginner");
+  const [courseDuration, setCourseDuration] = useState<string>("");
+  
+  const [tutorialDifficulty, setTutorialDifficulty] = useState<"easy" | "medium" | "hard">("medium");
+  const [tutorialEstimatedTime, setTutorialEstimatedTime] = useState<string>("");
+  const [tutorialPrerequisites, setTutorialPrerequisites] = useState<string>("");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    textareaRef.current?.focus();
+    // Debug: Log post media URLs
+    console.log('📸 Edit Post - Media URLs:', post.mediaUrls);
+    console.log('📸 Edit Post - Media Previews State:', mediaPreviews);
+  }, []);
+
+  const handleMediaSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const totalImages = mediaFiles.length + mediaPreviews.length;
+    const remainingSlots = 4 - totalImages;
+    const filesToAdd = files.slice(0, remainingSlots);
+
+    for (const file of filesToAdd) {
+      if (file.type.startsWith("image/")) {
+        try {
+          const compressed = await compressImage(file);
+          setMediaFiles((prev) => [...prev, compressed]);
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            setMediaPreviews((prev) => [...prev, e.target?.result as string]);
+          };
+          reader.readAsDataURL(compressed);
+        } catch (error) {
+          console.error("Error compressing image:", error);
+        }
+      }
+    }
+  };
+
+  const removeMedia = (index: number, isFile: boolean) => {
+    if (isFile) {
+      setMediaFiles((prev) => prev.filter((_, i) => i !== index - (mediaPreviews.length - mediaFiles.length)));
+    }
+    setMediaPreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newPreviews = [...mediaPreviews];
+    const draggedItem = newPreviews[draggedIndex];
+    newPreviews.splice(draggedIndex, 1);
+    newPreviews.splice(index, 0, draggedItem);
+    
+    setMediaPreviews(newPreviews);
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
+  const handleSave = async () => {
+    if (!content.trim() && mediaPreviews.length === 0) {
+      alert("សូមបញ្ចូលខ្លឹមសារឬរូបភាពយ៉ាងតិច!");
+      return;
+    }
+
+    setIsPosting(true);
+    try {
+      await updatePost(post.id, {
+        content: content.trim(),
+        visibility,
+      });
+      router.push("/feed");
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to update post:", error);
+      alert("មានបញ្ហាក្នុងការកែសម្រួលការផ្សាយ!");
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
+  const selectedTypeInfo = POST_TYPE_INFO[postType];
+  const selectedVisibility = VISIBILITY_OPTIONS.find((opt) => opt.value === visibility);
+  const VisibilityIcon = selectedVisibility?.icon || Globe;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors font-medium"
+            disabled={isPosting}
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="hidden sm:inline">បោះបង់</span>
+          </button>
+          
+          <h1 className="text-base sm:text-lg font-bold text-gray-900">កែសម្រួលការផ្សាយ</h1>
+          
+          <button
+            onClick={handleSave}
+            disabled={isPosting || (!content.trim() && mediaPreviews.length === 0)}
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 sm:px-6 py-2.5 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none font-medium"
+          >
+            {isPosting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="hidden sm:inline">កំពុងរក្សាទុក...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span className="hidden sm:inline">រក្សាទុក</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-20">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+            {/* User Info Section */}
+            <div className="p-4 sm:p-6 bg-gradient-to-br from-blue-50 to-purple-50 border-b border-gray-200">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg sm:text-xl overflow-hidden flex-shrink-0 ring-4 ring-white shadow-lg">
+                  {userProfilePicture ? (
+                    <Image
+                      src={userProfilePicture}
+                      alt={userName}
+                      width={56}
+                      height={56}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    userName.charAt(0).toUpperCase()
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="font-bold text-gray-900 text-lg">{userName}</div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <button
+                      onClick={() => setShowVisibilitySelector(!showVisibilitySelector)}
+                      className="flex items-center gap-1.5 text-sm text-gray-700 bg-white/80 px-3 py-1.5 rounded-full cursor-pointer hover:bg-white transition-all shadow-sm hover:shadow border border-gray-200 font-medium"
+                    >
+                      <VisibilityIcon className="w-4 h-4" />
+                      <span>{selectedVisibility?.labelKh}</span>
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Visibility Selector */}
+              {showVisibilitySelector && (
+                <div className="mt-4 p-3 bg-white/90 rounded-xl border border-gray-200 shadow-lg">
+                  <div className="grid grid-cols-2 gap-2">
+                    {VISIBILITY_OPTIONS.map((option) => {
+                      const Icon = option.icon;
+                      return (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            setVisibility(option.value);
+                            setShowVisibilitySelector(false);
+                          }}
+                          className={`flex items-center gap-2 p-3 rounded-lg transition-all font-medium ${
+                            visibility === option.value
+                              ? "bg-blue-500 text-white shadow-lg shadow-blue-500/50 scale-105"
+                              : "bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 hover:border-blue-300"
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                          <span className="text-sm">{option.labelKh}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Post Type Badge (Read-only) */}
+            <div className="px-4 sm:px-6 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg shadow-sm"
+                    style={{
+                      background: selectedTypeInfo?.gradient || "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                      color: "white",
+                    }}
+                  >
+                    {selectedTypeInfo?.icon && <selectedTypeInfo.icon className="w-4 h-4" />}
+                    <span className="font-semibold text-sm">{selectedTypeInfo?.labelKh}</span>
+                  </div>
+                </div>
+                <span className="text-xs text-gray-500 font-medium">ប្រភេទមិនអាចផ្លាស់ប្តូរ</span>
+              </div>
+            </div>
+
+            {/* Content Editor */}
+            <div className="p-4 sm:p-6">
+              <textarea
+                ref={textareaRef}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="អ្វីដែលអ្នកកំពុងគិត?"
+                className="w-full min-h-[180px] text-gray-900 text-base sm:text-lg leading-relaxed resize-none focus:outline-none placeholder:text-gray-400"
+              />
+            </div>
+
+            {/* Image Gallery with Drag-and-Drop */}
+            {mediaPreviews.length > 0 && (
+              <div className="px-4 sm:px-6 pb-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-blue-600" />
+                    រូបភាព ({mediaPreviews.length})
+                  </h3>
+                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">អូសដើម្បីប្តូរលំដាប់</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {mediaPreviews.map((preview, index) => (
+                    <div
+                      key={index}
+                      draggable
+                      onDragStart={() => handleDragStart(index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragEnd={handleDragEnd}
+                      className={`relative group rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 aspect-square cursor-move border-2 border-transparent hover:border-blue-400 transition-all ${
+                        draggedIndex === index ? "opacity-50 scale-95" : "hover:scale-105"
+                      }`}
+                    >
+                      <Image
+                        src={preview}
+                        alt={`Preview ${index + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                      {/* Drag Handle */}
+                      <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-all shadow-lg">
+                        <GripVertical className="w-5 h-5 text-white" />
+                      </div>
+                      {/* Remove Button */}
+                      <button
+                        onClick={() => removeMedia(index, index >= (mediaPreviews.length - mediaFiles.length))}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100 shadow-lg hover:scale-110"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                      {/* Image Number Badge */}
+                      <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-md text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg">
+                        {index + 1}/{mediaPreviews.length}
+                      </div>
+                      {/* Drag Hint Overlay */}
+                      <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/10 transition-colors pointer-events-none" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Type-Specific Fields */}
+            {postType === "ASSIGNMENT" && (
+              <div className="px-4 sm:px-6 pb-4">
+                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50 via-red-50 to-orange-50 border-2 border-orange-200 shadow-sm">
+                  <h3 className="text-sm font-bold text-orange-900 mb-4 flex items-center gap-2">
+                  <BookOpen className="w-4 h-4" />
+                  ព័ត៌មានលម្អិតកិច្ចការផ្ទះ
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <Calendar className="w-4 h-4 inline mr-1" />
+                      កាលបរិច្ឆេទផុតកំណត់
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={assignmentDueDate}
+                      onChange={(e) => setAssignmentDueDate(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-orange-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">ពិន្ទុ</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={assignmentPoints}
+                        onChange={(e) => setAssignmentPoints(Number(e.target.value))}
+                        className="w-full px-3 py-2 rounded-lg border border-orange-300 focus:ring-2 focus:ring-orange-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">ប្រភេទការបញ្ជូន</label>
+                      <select
+                        value={assignmentSubmissionType}
+                        onChange={(e) => setAssignmentSubmissionType(e.target.value as "file" | "text" | "link")}
+                        className="w-full px-3 py-2 rounded-lg border border-orange-300 focus:ring-2 focus:ring-orange-500"
+                      >
+                        <option value="file">ឯកសារ</option>
+                        <option value="text">អត្ថបទ</option>
+                        <option value="link">តំណភ្ជាប់</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {postType === "ANNOUNCEMENT" && (
+            <div className="px-4 pb-4">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-200">
+                <h3 className="text-sm font-semibold text-yellow-900 mb-3 flex items-center gap-2">
+                  <Megaphone className="w-4 h-4" />
+                  ព័ត៌មានលម្អិតប្រកាស
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">កម្រិតអាទិភាព</label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { value: "low", label: "ទាប", color: "bg-green-100 border-green-300 text-green-700" },
+                        { value: "medium", label: "មធ្យម", color: "bg-blue-100 border-blue-300 text-blue-700" },
+                        { value: "high", label: "ខ្ពស់", color: "bg-orange-100 border-orange-300 text-orange-700" },
+                        { value: "urgent", label: "បន្ទាន់", color: "bg-red-100 border-red-300 text-red-700" },
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => setAnnouncementUrgency(option.value as any)}
+                          className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                            announcementUrgency === option.value ? option.color : "bg-white border-gray-200 text-gray-600"
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <Calendar className="w-4 h-4 inline mr-1" />
+                      កាលបរិច្ឆេទផុតកំណត់
+                    </label>
+                    <input
+                      type="date"
+                      value={announcementExpiryDate}
+                      onChange={(e) => setAnnouncementExpiryDate(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-yellow-300 focus:ring-2 focus:ring-yellow-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {postType === "COURSE" && (
+            <div className="px-4 pb-4">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200">
+                <h3 className="text-sm font-semibold text-purple-900 mb-3 flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4" />
+                  ព័ត៌មានលម្អិតវគ្គសិក្សា
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">លេខកូដវគ្គសិក្សា</label>
+                    <input
+                      type="text"
+                      value={courseCode}
+                      onChange={(e) => setCourseCode(e.target.value)}
+                      placeholder="CS101, MATH201..."
+                      className="w-full px-3 py-2 rounded-lg border border-purple-300 focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">កម្រិត</label>
+                      <select
+                        value={courseLevel}
+                        onChange={(e) => setCourseLevel(e.target.value as any)}
+                        className="w-full px-3 py-2 rounded-lg border border-purple-300 focus:ring-2 focus:ring-purple-500"
+                      >
+                        <option value="beginner">ដំបូង</option>
+                        <option value="intermediate">មធ្យម</option>
+                        <option value="advanced">កម្រិតខ្ពស់</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">រយៈពេល</label>
+                      <input
+                        type="text"
+                        value={courseDuration}
+                        onChange={(e) => setCourseDuration(e.target.value)}
+                        placeholder="8 សប្តាហ៍"
+                        className="w-full px-3 py-2 rounded-lg border border-purple-300 focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {postType === "TUTORIAL" && (
+            <div className="px-4 pb-4">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 border border-cyan-200">
+                <h3 className="text-sm font-semibold text-cyan-900 mb-3 flex items-center gap-2">
+                  <Book className="w-4 h-4" />
+                  ព័ត៌មានលម្អិតមេរៀន
+                </h3>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">កម្រិតពិបាក</label>
+                      <select
+                        value={tutorialDifficulty}
+                        onChange={(e) => setTutorialDifficulty(e.target.value as any)}
+                        className="w-full px-3 py-2 rounded-lg border border-cyan-300 focus:ring-2 focus:ring-cyan-500"
+                      >
+                        <option value="easy">ងាយស្រួល</option>
+                        <option value="medium">មធ្យម</option>
+                        <option value="hard">ពិបាក</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">រយៈពេលប៉ាន់ស្មាន</label>
+                      <input
+                        type="text"
+                        value={tutorialEstimatedTime}
+                        onChange={(e) => setTutorialEstimatedTime(e.target.value)}
+                        placeholder="30 នាទី"
+                        className="w-full px-3 py-2 rounded-lg border border-cyan-300 focus:ring-2 focus:ring-cyan-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">លក្ខខណ្ឌជាមុន</label>
+                    <textarea
+                      value={tutorialPrerequisites}
+                      onChange={(e) => setTutorialPrerequisites(e.target.value)}
+                      placeholder="មូលដ្ឋានគ្រឹះអំពី..."
+                      className="w-full px-3 py-2 rounded-lg border border-cyan-300 focus:ring-2 focus:ring-cyan-500 resize-none"
+                      rows={2}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+            {/* Actions Bar */}
+            <div className="p-4 sm:p-6 border-t-2 border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleMediaSelect}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={mediaPreviews.length >= 4}
+                    className="relative flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-white border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md group"
+                  >
+                    <ImageIcon className="w-5 h-5 text-blue-600 group-hover:scale-110 transition-transform" />
+                    <span className="text-sm font-semibold text-gray-700">បន្ថែមរូបភាព</span>
+                    {mediaPreviews.length > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/50 ring-2 ring-white">
+                        {mediaPreviews.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <div className="text-sm font-medium text-gray-600 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-200">
+                    {mediaPreviews.length}/4
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

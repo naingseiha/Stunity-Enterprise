@@ -1,0 +1,835 @@
+import { Request, Response } from "express";
+import { prisma } from "../utils/db";
+
+export class DashboardController {
+  /**
+   * Get comprehensive dashboard statistics
+   */
+  static async getDashboardStats(req: Request, res: Response) {
+    try {
+      const currentYear = new Date().getFullYear();
+
+      // Get counts
+      const [
+        totalStudents,
+        totalTeachers,
+        totalClasses,
+        totalSubjects,
+        studentsWithClass,
+        teachersWithClass,
+        activeSubjects,
+        recentGrades,
+        recentAttendance,
+      ] = await Promise.all([
+        // Total students
+        prisma.student.count(),
+
+        // Total teachers
+        prisma.teacher.count(),
+
+        // Total classes
+        prisma.class.count(),
+
+        // Total subjects
+        prisma.subject.count(),
+
+        // Students with class assignment
+        prisma.student.count({
+          where: {
+            classId: { not: null },
+          },
+        }),
+
+        // Teachers with class assignment
+        prisma.teacher.count({
+          where: {
+            OR: [
+              { homeroomClass: { isNot: null } },
+              { teacherClasses: { some: {} } },
+            ],
+          },
+        }),
+
+        // Active subjects
+        prisma.subject.count({
+          where: { isActive: true },
+        }),
+
+        // Recent grade entries (last 7 days)
+        prisma.grade.count({
+          where: {
+            createdAt: {
+              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+            },
+          },
+        }),
+
+        // Recent attendance records (last 7 days)
+        prisma.attendance.count({
+          where: {
+            date: {
+              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+            },
+          },
+        }),
+      ]);
+
+      // Get grade distribution
+      const allGrades = await prisma.grade.findMany({
+        where: {
+          year: currentYear,
+        },
+        select: {
+          percentage: true,
+        },
+      });
+
+      const gradeDistribution = {
+        A: allGrades.filter((g) => (g.percentage || 0) >= 80).length,
+        B: allGrades.filter(
+          (g) => (g.percentage || 0) >= 70 && (g.percentage || 0) < 80
+        ).length,
+        C: allGrades.filter(
+          (g) => (g.percentage || 0) >= 60 && (g.percentage || 0) < 70
+        ).length,
+        D: allGrades.filter(
+          (g) => (g.percentage || 0) >= 50 && (g.percentage || 0) < 60
+        ).length,
+        E: allGrades.filter(
+          (g) => (g.percentage || 0) >= 40 && (g.percentage || 0) < 50
+        ).length,
+        F: allGrades.filter((g) => (g.percentage || 0) < 40).length,
+      };
+
+      // Get attendance statistics
+      const attendanceRecords = await prisma.attendance.findMany({
+        where: {
+          date: {
+            gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
+          },
+        },
+        select: {
+          status: true,
+        },
+      });
+
+      const attendanceStats = {
+        present: attendanceRecords.filter((a) => a.status === "PRESENT").length,
+        absent: attendanceRecords.filter((a) => a.status === "ABSENT").length,
+        late: attendanceRecords.filter((a) => a.status === "LATE").length,
+        excused: attendanceRecords.filter((a) => a.status === "EXCUSED").length,
+      };
+
+      // Get class distribution by grade
+      const classByGrade = await prisma.class.groupBy({
+        by: ["grade"],
+        _count: {
+          id: true,
+        },
+        orderBy: {
+          grade: "asc",
+        },
+      });
+
+      // Get top performing classes (by average)
+      const classSummaries = await prisma.studentMonthlySummary.groupBy({
+        by: ["classId"],
+        _avg: {
+          average: true,
+        },
+        _count: {
+          studentId: true,
+        },
+        orderBy: {
+          _avg: {
+            average: "desc",
+          },
+        },
+        take: 5,
+      });
+
+      const topClasses = await Promise.all(
+        classSummaries.map(async (summary) => {
+          const classData = await prisma.class.findUnique({
+            where: { id: summary.classId },
+            select: {
+              id: true,
+              name: true,
+              grade: true,
+              section: true,
+            },
+          });
+
+          return {
+            ...classData,
+            averageScore: summary._avg.average,
+            studentCount: summary._count.studentId,
+          };
+        })
+      );
+
+      // Calculate completion rates
+      const studentEnrollmentRate =
+        totalStudents > 0 ? (studentsWithClass / totalStudents) * 100 : 0;
+      const teacherAssignmentRate =
+        totalTeachers > 0 ? (teachersWithClass / totalTeachers) * 100 : 0;
+
+      res.json({
+        success: true,
+        data: {
+          overview: {
+            totalStudents,
+            totalTeachers,
+            totalClasses,
+            totalSubjects,
+            studentsWithClass,
+            teachersWithClass,
+            activeSubjects,
+            studentEnrollmentRate: parseFloat(
+              studentEnrollmentRate.toFixed(1)
+            ),
+            teacherAssignmentRate: parseFloat(teacherAssignmentRate.toFixed(1)),
+          },
+          recentActivity: {
+            recentGradeEntries: recentGrades,
+            recentAttendanceRecords: recentAttendance,
+          },
+          gradeDistribution,
+          attendanceStats,
+          classByGrade: classByGrade.map((c) => ({
+            grade: c.grade,
+            count: c._count.id,
+          })),
+          topPerformingClasses: topClasses.filter((c) => c !== null),
+        },
+      });
+    } catch (error) {
+      console.error("❌ Error fetching dashboard stats:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch dashboard statistics",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  /**
+   * Get teacher-specific dashboard
+   */
+  static async getTeacherDashboard(req: Request, res: Response) {
+    try {
+      const { teacherId } = req.params;
+
+      const teacher = await prisma.teacher.findUnique({
+        where: { id: teacherId },
+        include: {
+          homeroomClass: {
+            include: {
+              students: true,
+            },
+          },
+          teacherClasses: {
+            include: {
+              class: {
+                include: {
+                  students: true,
+                },
+              },
+            },
+          },
+          subjectTeachers: {
+            include: {
+              subject: true,
+            },
+          },
+        },
+      });
+
+      if (!teacher) {
+        return res.status(404).json({
+          success: false,
+          message: "Teacher not found",
+        });
+      }
+
+      // Get all classes taught by this teacher
+      const classIds = [
+        ...(teacher.homeroomClass ? [teacher.homeroomClass.id] : []),
+        ...teacher.teacherClasses.map((tc) => tc.class.id),
+      ];
+
+      // Get total students
+      const uniqueStudentIds = new Set<string>();
+      if (teacher.homeroomClass) {
+        teacher.homeroomClass.students.forEach((s) =>
+          uniqueStudentIds.add(s.id)
+        );
+      }
+      teacher.teacherClasses.forEach((tc) => {
+        tc.class.students.forEach((s) => uniqueStudentIds.add(s.id));
+      });
+
+      // Recent grade entries by this teacher's classes
+      const recentGrades = await prisma.grade.count({
+        where: {
+          classId: { in: classIds },
+          createdAt: {
+            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+          },
+        },
+      });
+
+      res.json({
+        success: true,
+        data: {
+          teacher: {
+            id: teacher.id,
+            name: teacher.khmerName || `${teacher.firstName} ${teacher.lastName}`,
+            homeroomClass: teacher.homeroomClass
+              ? {
+                  id: teacher.homeroomClass.id,
+                  name: teacher.homeroomClass.name,
+                  studentCount: teacher.homeroomClass.students.length,
+                }
+              : null,
+            totalClasses: classIds.length,
+            totalStudents: uniqueStudentIds.size,
+            subjects: teacher.subjectTeachers.map((st) => ({
+              id: st.subject.id,
+              name: st.subject.nameKh || st.subject.name,
+              code: st.subject.code,
+            })),
+          },
+          recentActivity: {
+            recentGradeEntries: recentGrades,
+          },
+        },
+      });
+    } catch (error) {
+      console.error("❌ Error fetching teacher dashboard:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch teacher dashboard",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  /**
+   * Get grade-level statistics (for grades 7-12) - Using real grade data
+   */
+  static async getGradeLevelStats(req: Request, res: Response) {
+    try {
+      const currentYear = new Date().getFullYear();
+
+      // Get Khmer month name (grades are stored in Khmer)
+      const monthNames = [
+        "មករា", "កុម្ភៈ", "មីនា", "មេសា", "ឧសភា", "មិថុនា",
+        "កក្កដា", "សីហា", "កញ្ញា", "តុលា", "វិច្ឆិកា", "ធ្នូ"
+      ];
+      const currentMonth = monthNames[new Date().getMonth()];
+
+      // Get all grades 7-12
+      const grades = ["7", "8", "9", "10", "11", "12"];
+
+      const gradeStats = await Promise.all(
+        grades.map(async (grade) => {
+          // Get all classes for this grade
+          const classes = await prisma.class.findMany({
+            where: { grade },
+            include: {
+              students: {
+                select: {
+                  id: true,
+                  khmerName: true,
+                  firstName: true,
+                  lastName: true,
+                }
+              },
+              homeroomTeacher: {
+                select: {
+                  id: true,
+                  khmerName: true,
+                  firstName: true,
+                  lastName: true,
+                }
+              }
+            },
+          });
+
+          const classIds = classes.map(c => c.id);
+          const totalStudents = classes.reduce((sum, c) => sum + c.students.length, 0);
+
+          // Get all subjects for this grade
+          // ✅ For grades 11 & 12, we need to calculate per-track subject count
+          // Instead of getting all subjects, we'll calculate based on each class's track
+          const subjects = await prisma.subject.findMany({
+            where: {
+              grade,
+            },
+            orderBy: { code: "asc" }
+          });
+
+          // For display purposes, show total unique subjects
+          // But for calculations, we'll use track-specific counts per class
+          const totalSubjects = subjects.length;
+
+          // Get all student monthly summaries for current month
+          const studentSummaries = await prisma.studentMonthlySummary.findMany({
+            where: {
+              classId: { in: classIds },
+              month: currentMonth,
+              year: currentYear,
+            },
+            select: {
+              studentId: true,
+              classId: true,
+              average: true,
+            },
+          });
+
+          // Get all grades for calculating subject completion
+          const allGrades = await prisma.grade.findMany({
+            where: {
+              classId: { in: classIds },
+              month: currentMonth,
+              year: currentYear,
+            },
+            select: {
+              classId: true,
+              subjectId: true,
+              studentId: true,
+              percentage: true,
+            },
+          });
+
+          // Calculate statistics
+          const totalSummaries = studentSummaries.length;
+
+          // Grade distribution (based on average scores)
+          const gradeDistribution = {
+            A: studentSummaries.filter(s => (s.average || 0) >= 80).length,
+            B: studentSummaries.filter(s => (s.average || 0) >= 70 && (s.average || 0) < 80).length,
+            C: studentSummaries.filter(s => (s.average || 0) >= 60 && (s.average || 0) < 70).length,
+            D: studentSummaries.filter(s => (s.average || 0) >= 50 && (s.average || 0) < 60).length,
+            E: studentSummaries.filter(s => (s.average || 0) < 50).length,
+          };
+
+          // Calculate average across all students
+          const averageScore = totalSummaries > 0
+            ? studentSummaries.reduce((sum, s) => sum + (s.average || 0), 0) / totalSummaries
+            : 0;
+
+          // Pass/Fail counts (passing is >= 50)
+          const passCount = studentSummaries.filter(s => (s.average || 0) >= 50).length;
+          const failCount = studentSummaries.filter(s => (s.average || 0) < 50).length;
+          const passPercentage = totalSummaries > 0 ? (passCount / totalSummaries) * 100 : 0;
+
+          // Subject completion by class
+          const classDetails = classes.map((cls) => {
+            const classGrades = allGrades.filter(g => g.classId === cls.id);
+            const uniqueSubjects = new Set(classGrades.map(g => g.subjectId));
+            const completedSubjects = uniqueSubjects.size;
+
+            // ✅ Calculate track-specific total subjects for grades 11 & 12
+            let classSpecificTotalSubjects = totalSubjects;
+            const gradeNum = parseInt(grade);
+
+            if ((gradeNum === 11 || gradeNum === 12) && cls.track) {
+              // Filter subjects for this class's track
+              const trackSubjects = subjects.filter(subj => {
+                return subj.track === cls.track || subj.track === null || subj.track === "common";
+              });
+              classSpecificTotalSubjects = trackSubjects.length;
+            }
+
+            const completionPercentage = classSpecificTotalSubjects > 0
+              ? (completedSubjects / classSpecificTotalSubjects) * 100
+              : 0;
+
+            // Get class average from summaries
+            const classSummaries = studentSummaries.filter(s => s.classId === cls.id);
+            const classAverage = classSummaries.length > 0
+              ? classSummaries.reduce((sum, s) => sum + (s.average || 0), 0) / classSummaries.length
+              : 0;
+
+            return {
+              id: cls.id,
+              name: cls.name,
+              section: cls.section || "",
+              studentCount: cls.students.length,
+              totalSubjects: classSpecificTotalSubjects, // ✅ Use track-specific count
+              completedSubjects,
+              completionPercentage: Math.round(completionPercentage),
+              averageScore: Math.round(classAverage * 10) / 10,
+              teacherName: cls.homeroomTeacher?.khmerName ||
+                          `${cls.homeroomTeacher?.firstName || ""} ${cls.homeroomTeacher?.lastName || ""}`.trim() ||
+                          "គ្មានគ្រូថ្នាក់",
+            };
+          });
+
+          // Calculate overall subject completion for this grade
+          const totalPossibleEntries = totalStudents * totalSubjects;
+          const completedEntries = allGrades.length;
+          const overallCompletion = totalPossibleEntries > 0
+            ? (completedEntries / totalPossibleEntries) * 100
+            : 0;
+
+          return {
+            grade,
+            totalStudents,
+            totalClasses: classes.length,
+            totalSubjects,
+            averageScore: Math.round(averageScore * 10) / 10,
+            passPercentage: Math.round(passPercentage * 10) / 10,
+            passCount,
+            failCount,
+            gradeDistribution: {
+              A: totalSummaries > 0 ? Math.round((gradeDistribution.A / totalSummaries) * 1000) / 10 : 0,
+              B: totalSummaries > 0 ? Math.round((gradeDistribution.B / totalSummaries) * 1000) / 10 : 0,
+              C: totalSummaries > 0 ? Math.round((gradeDistribution.C / totalSummaries) * 1000) / 10 : 0,
+              D: totalSummaries > 0 ? Math.round((gradeDistribution.D / totalSummaries) * 1000) / 10 : 0,
+              E: totalSummaries > 0 ? Math.round((gradeDistribution.E / totalSummaries) * 1000) / 10 : 0,
+            },
+            subjectCompletionPercentage: Math.round(overallCompletion * 10) / 10,
+            classes: classDetails.sort((a, b) => a.name.localeCompare(b.name)),
+          };
+        })
+      );
+
+      res.json({
+        success: true,
+        data: {
+          currentMonth,
+          currentYear,
+          grades: gradeStats,
+        },
+      });
+    } catch (error) {
+      console.error("❌ Error fetching grade level stats:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch grade level statistics",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  /**
+   * Get student-specific dashboard
+   */
+  static async getStudentDashboard(req: Request, res: Response) {
+    try {
+      const { studentId } = req.params;
+
+      const student = await prisma.student.findUnique({
+        where: { id: studentId },
+        include: {
+          class: true,
+          grades: {
+            orderBy: {
+              createdAt: "desc",
+            },
+            take: 10,
+            include: {
+              subject: true,
+            },
+          },
+          attendance: {
+            where: {
+              date: {
+                gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+              },
+            },
+          },
+        },
+      });
+
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          message: "Student not found",
+        });
+      }
+
+      // Calculate average grade
+      const gradesWithScore = student.grades.filter(
+        (g) => g.percentage !== null
+      );
+      const averageGrade =
+        gradesWithScore.length > 0
+          ? gradesWithScore.reduce((sum, g) => sum + (g.percentage || 0), 0) /
+            gradesWithScore.length
+          : 0;
+
+      // Attendance stats
+      const attendanceStats = {
+        present: student.attendance.filter((a) => a.status === "PRESENT")
+          .length,
+        absent: student.attendance.filter((a) => a.status === "ABSENT").length,
+        late: student.attendance.filter((a) => a.status === "LATE").length,
+        excused: student.attendance.filter((a) => a.status === "EXCUSED")
+          .length,
+      };
+
+      res.json({
+        success: true,
+        data: {
+          student: {
+            id: student.id,
+            name: student.khmerName || `${student.firstName} ${student.lastName}`,
+            class: student.class
+              ? {
+                  id: student.class.id,
+                  name: student.class.name,
+                  grade: student.class.grade,
+                }
+              : null,
+            averageGrade: parseFloat(averageGrade.toFixed(2)),
+          },
+          recentGrades: student.grades.map((g) => ({
+            subject: g.subject.nameKh || g.subject.name,
+            score: g.score,
+            maxScore: g.maxScore,
+            percentage: g.percentage,
+            month: g.month,
+          })),
+          attendanceStats,
+          totalAttendanceRecords: student.attendance.length,
+        },
+      });
+    } catch (error) {
+      console.error("❌ Error fetching student dashboard:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch student dashboard",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  /**
+   * Get comprehensive statistics with month/year filter and gender breakdown
+   * For mobile statistics dashboard
+   */
+  static async getComprehensiveStats(req: Request, res: Response) {
+    try {
+      const { month, year } = req.query;
+
+      // Get Khmer month name
+      const monthNames = [
+        "មករា", "កុម្ភៈ", "មីនា", "មេសា", "ឧសភា", "មិថុនា",
+        "កក្កដា", "សីហា", "កញ្ញា", "តុលា", "វិច្ឆិកា", "ធ្នូ"
+      ];
+
+      const currentMonth = month ? String(month) : monthNames[new Date().getMonth()];
+      const currentYear = year ? parseInt(String(year)) : new Date().getFullYear();
+
+      // Get all grades 7-12
+      const grades = ["7", "8", "9", "10", "11", "12"];
+
+      const gradeStats = await Promise.all(
+        grades.map(async (grade) => {
+          // Get all classes for this grade
+          const classes = await prisma.class.findMany({
+            where: { grade },
+            include: {
+              students: {
+                select: {
+                  id: true,
+                  khmerName: true,
+                  firstName: true,
+                  lastName: true,
+                  gender: true,
+                }
+              },
+              homeroomTeacher: {
+                select: {
+                  id: true,
+                  khmerName: true,
+                  firstName: true,
+                  lastName: true,
+                }
+              }
+            },
+          });
+
+          const classIds = classes.map(c => c.id);
+
+          // Get all students with their gender
+          const allStudents = classes.flatMap(c => c.students);
+          const totalStudents = allStudents.length;
+          const maleStudents = allStudents.filter(s => String(s.gender) === "ប" || s.gender === "MALE").length;
+          const femaleStudents = allStudents.filter(s => String(s.gender) === "ស" || s.gender === "FEMALE").length;
+
+          // Get all student monthly summaries for current month
+          const studentSummaries = await prisma.studentMonthlySummary.findMany({
+            where: {
+              classId: { in: classIds },
+              month: currentMonth,
+              year: currentYear,
+            },
+            include: {
+              student: {
+                select: {
+                  gender: true,
+                }
+              }
+            },
+          });
+
+          const totalSummaries = studentSummaries.length;
+
+          // Pass/Fail with gender breakdown (passing is >= 50)
+          const passedStudents = studentSummaries.filter(s => (s.average || 0) >= 50);
+          const failedStudents = studentSummaries.filter(s => (s.average || 0) < 50);
+
+          const passedMale = passedStudents.filter(s => String(s.student.gender) === "ប" || s.student.gender === "MALE").length;
+          const passedFemale = passedStudents.filter(s => String(s.student.gender) === "ស" || s.student.gender === "FEMALE").length;
+          const failedMale = failedStudents.filter(s => String(s.student.gender) === "ប" || s.student.gender === "MALE").length;
+          const failedFemale = failedStudents.filter(s => String(s.student.gender) === "ស" || s.student.gender === "FEMALE").length;
+
+          // Grade distribution with gender breakdown
+          const getGenderBreakdown = (students: any[], gradeFilter: (avg: number) => boolean) => {
+            const filtered = students.filter(s => gradeFilter(s.average || 0));
+            return {
+              total: filtered.length,
+              male: filtered.filter(s => String(s.student.gender) === "ប" || s.student.gender === "MALE").length,
+              female: filtered.filter(s => String(s.student.gender) === "ស" || s.student.gender === "FEMALE").length,
+            };
+          };
+
+          const gradeDistribution = {
+            A: getGenderBreakdown(studentSummaries, avg => avg >= 80),
+            B: getGenderBreakdown(studentSummaries, avg => avg >= 70 && avg < 80),
+            C: getGenderBreakdown(studentSummaries, avg => avg >= 60 && avg < 70),
+            D: getGenderBreakdown(studentSummaries, avg => avg >= 50 && avg < 60),
+            E: getGenderBreakdown(studentSummaries, avg => avg >= 40 && avg < 50),
+            F: getGenderBreakdown(studentSummaries, avg => avg < 40),
+          };
+
+          // Calculate average scores
+          const averageScore = totalSummaries > 0
+            ? studentSummaries.reduce((sum, s) => sum + (s.average || 0), 0) / totalSummaries
+            : 0;
+
+          const maleAverage = passedMale + failedMale > 0
+            ? studentSummaries.filter(s => String(s.student.gender) === "ប" || s.student.gender === "MALE")
+                .reduce((sum, s) => sum + (s.average || 0), 0) / (passedMale + failedMale)
+            : 0;
+
+          const femaleAverage = passedFemale + failedFemale > 0
+            ? studentSummaries.filter(s => String(s.student.gender) === "ស" || s.student.gender === "FEMALE")
+                .reduce((sum, s) => sum + (s.average || 0), 0) / (passedFemale + failedFemale)
+            : 0;
+
+          // Calculate pass percentage
+          const passPercentage = totalSummaries > 0 ? (passedStudents.length / totalSummaries) * 100 : 0;
+          const malePassPercentage = (passedMale + failedMale) > 0 ? (passedMale / (passedMale + failedMale)) * 100 : 0;
+          const femalePassPercentage = (passedFemale + failedFemale) > 0 ? (passedFemale / (passedFemale + failedFemale)) * 100 : 0;
+
+          // Class-level statistics
+          const classDetails = await Promise.all(classes.map(async (cls) => {
+            const classSummaries = studentSummaries.filter(s => s.classId === cls.id);
+            const classStudents = cls.students;
+
+            const classPassed = classSummaries.filter(s => (s.average || 0) >= 50);
+            const classPassPercentage = classSummaries.length > 0
+              ? (classPassed.length / classSummaries.length) * 100
+              : 0;
+
+            const classAverage = classSummaries.length > 0
+              ? classSummaries.reduce((sum, s) => sum + (s.average || 0), 0) / classSummaries.length
+              : 0;
+
+            const classMale = classStudents.filter(s => s.gender === "ប").length;
+            const classFemale = classStudents.filter(s => s.gender === "ส").length;
+
+            const classPassedMale = classSummaries.filter(s =>
+              (s.average || 0) >= 50 && s.student.gender === "ប"
+            ).length;
+            const classPassedFemale = classSummaries.filter(s =>
+              (s.average || 0) >= 50 && s.student.gender === "ส"
+            ).length;
+
+            const classMaleCount = classSummaries.filter(s => s.student.gender === "ប").length;
+            const classFemaleCount = classSummaries.filter(s => s.student.gender === "ស").length;
+
+            const classMalePassPercentage = classMaleCount > 0
+              ? (classPassedMale / classMaleCount) * 100
+              : 0;
+            const classFemalePassPercentage = classFemaleCount > 0
+              ? (classPassedFemale / classFemaleCount) * 100
+              : 0;
+
+            return {
+              id: cls.id,
+              name: cls.name,
+              section: cls.section || "",
+              grade: cls.grade,
+              track: (cls as any).track || null,
+              studentCount: classStudents.length,
+              maleCount: classMale,
+              femaleCount: classFemale,
+              averageScore: Math.round(classAverage * 10) / 10,
+              passPercentage: Math.round(classPassPercentage * 10) / 10,
+              malePassPercentage: Math.round(classMalePassPercentage * 10) / 10,
+              femalePassPercentage: Math.round(classFemalePassPercentage * 10) / 10,
+              passedCount: classPassed.length,
+              failedCount: classSummaries.length - classPassed.length,
+              teacherName: cls.homeroomTeacher?.khmerName ||
+                          `${cls.homeroomTeacher?.firstName || ""} ${cls.homeroomTeacher?.lastName || ""}`.trim() ||
+                          "គ្មានគ្រូថ្នាក់",
+            };
+          }));
+
+          return {
+            grade,
+            totalStudents,
+            maleStudents,
+            femaleStudents,
+            totalClasses: classes.length,
+            averageScore: Math.round(averageScore * 10) / 10,
+            maleAverageScore: Math.round(maleAverage * 10) / 10,
+            femaleAverageScore: Math.round(femaleAverage * 10) / 10,
+            passPercentage: Math.round(passPercentage * 10) / 10,
+            malePassPercentage: Math.round(malePassPercentage * 10) / 10,
+            femalePassPercentage: Math.round(femalePassPercentage * 10) / 10,
+            passedCount: passedStudents.length,
+            passedMale,
+            passedFemale,
+            failedCount: failedStudents.length,
+            failedMale,
+            failedFemale,
+            gradeDistribution,
+            classes: classDetails.sort((a, b) => b.passPercentage - a.passPercentage),
+          };
+        })
+      );
+
+      // Get top performing classes across all grades
+      const allClasses = gradeStats.flatMap(g => g.classes);
+      const topClasses = allClasses
+        .filter(c => c.passPercentage > 0)
+        .sort((a, b) => b.passPercentage - a.passPercentage)
+        .slice(0, 10);
+
+      res.json({
+        success: true,
+        data: {
+          month: currentMonth,
+          year: currentYear,
+          grades: gradeStats,
+          topPerformingClasses: topClasses,
+        },
+      });
+    } catch (error) {
+      console.error("❌ Error fetching comprehensive stats:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch comprehensive statistics",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+}

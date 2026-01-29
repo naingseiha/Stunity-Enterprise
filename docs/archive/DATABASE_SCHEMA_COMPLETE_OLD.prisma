@@ -1,0 +1,1189 @@
+// ========================================
+// COMPLETE DATABASE SCHEMA
+// Multi-Tenant, Multi-Academic-Year
+// Enterprise School Management System
+// Cambodia Education System
+// ========================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// CORE ENTITIES - MULTI-TENANT FOUNDATION
+// ========================================
+
+model School {
+  id                String    @id @default(cuid())
+  schoolId          String    @unique // "SCH-PP-001" (Phnom Penh School 001)
+  name              String    // Full school name
+  nameKh            String    // Khmer name
+  nameEn            String?   // English name (optional)
+  
+  // Location
+  province          String    // Province in Cambodia (e.g., "Phnom Penh", "Siem Reap")
+  district          String?
+  commune           String?
+  village           String?
+  address           String
+  latitude          Float?
+  longitude         Float?
+  
+  // Contact Information
+  phone             String?
+  email             String?   @unique
+  website           String?
+  
+  // Branding
+  logo              String?   // Logo URL
+  banner            String?   // Banner image URL
+  primaryColor      String?   @default("#3B82F6")
+  secondaryColor    String?   @default("#10B981")
+  
+  // School Information
+  schoolType        SchoolType // PRIMARY, SECONDARY, HIGH_SCHOOL, COMBINED
+  isPublic          Boolean   @default(true)
+  principalName     String?
+  vicePrincipalName String?
+  foundedYear       Int?
+  studentCapacity   Int?
+  teacherCount      Int?
+  classroomCount    Int?
+  
+  // Ministry of Education
+  moeSchoolCode     String?   @unique // Official MoE code
+  moeRegistered     Boolean   @default(false)
+  
+  // System Status
+  status            SchoolStatus @default(PENDING)
+  subscriptionTier  SubscriptionTier @default(FREE)
+  subscriptionStart DateTime?
+  subscriptionExpiry DateTime?
+  isActive          Boolean   @default(true)
+  isTrial           Boolean   @default(true)
+  trialEndsAt       DateTime?
+  
+  // Customization & Settings
+  settings          Json?     // School-specific settings
+  gradeScale        Json?     // Custom grading scale
+  features          Json?     // Enabled features
+  locale            String    @default("km") // "km", "en"
+  timezone          String    @default("Asia/Phnom_Penh")
+  
+  // Academic Configuration
+  academicYearStart Int       @default(9) // September
+  weeklyHoursPerDay Float     @default(6.0)
+  gradeLevels       String[]  @default(["GRADE_7", "GRADE_8", "GRADE_9", "GRADE_10", "GRADE_11", "GRADE_12"])
+  
+  // Billing
+  billingEmail      String?
+  billingAddress    String?
+  paymentMethod     String?
+  lastPaymentDate   DateTime?
+  
+  // Audit
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  activatedAt       DateTime?
+  deactivatedAt     DateTime?
+  createdBy         String?
+  
+  // Relations
+  academicYears     AcademicYear[]
+  students          Student[]
+  teachers          Teacher[]
+  classes           Class[]
+  subjects          Subject[]
+  users             User[]
+  attendance        Attendance[]
+  grades            Grade[]
+  studentEnrollments StudentEnrollment[]
+  teacherAssignments TeacherAssignment[]
+  studentHistories  StudentHistory[]
+  yearTransitions   YearTransition[]
+  announcements     Announcement[]
+  auditLogs         AuditLog[]
+  
+  @@index([province, district])
+  @@index([status, isActive])
+  @@index([subscriptionExpiry])
+  @@index([schoolType])
+  @@map("schools")
+}
+
+model AcademicYear {
+  id                String    @id @default(cuid())
+  schoolId          String
+  name              String    // "2024-2025"
+  displayName       String?   // "Academic Year 2024-2025"
+  
+  // Date Range
+  startDate         DateTime
+  endDate           DateTime
+  
+  // Status
+  isActive          Boolean   @default(false)
+  isCurrent         Boolean   @default(false)
+  status            YearStatus @default(PLANNING)
+  
+  // Semesters/Terms
+  semesters         Json?     // [{name: "Semester 1", start: "...", end: "..."}]
+  holidays          Json?     // [{name: "Khmer New Year", start: "...", end: "..."}]
+  
+  // Statistics
+  totalStudents     Int?
+  totalTeachers     Int?
+  totalClasses      Int?
+  
+  // Audit
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  activatedAt       DateTime?
+  closedAt          DateTime?
+  createdBy         String?
+  
+  school            School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  
+  // Relations
+  classes           Class[]
+  grades            Grade[]
+  attendance        Attendance[]
+  studentEnrollments StudentEnrollment[]
+  teacherAssignments TeacherAssignment[]
+  studentHistories  StudentHistory[]
+  sourceTransitions YearTransition[] @relation("SourceYear")
+  targetTransitions YearTransition[] @relation("TargetYear")
+  studentMonthlySummaries StudentMonthlySummary[]
+  
+  @@unique([schoolId, name])
+  @@index([schoolId, isCurrent])
+  @@index([schoolId, status])
+  @@index([startDate, endDate])
+  @@map("academic_years")
+}
+
+// ========================================
+// STUDENT MANAGEMENT
+// ========================================
+
+model Student {
+  id                        String   @id @default(cuid())
+  schoolId                  String
+  studentId                 String?  @unique // School-assigned student ID
+  
+  // Basic Information
+  firstName                 String
+  lastName                  String
+  khmerName                 String
+  englishName               String?
+  dateOfBirth               String
+  gender                    Gender
+  nationality               String?  @default("Cambodian")
+  
+  // Birth Information
+  placeOfBirth              String?  @default("ភ្នំពេញ")
+  birthCertificateNumber    String?
+  
+  // Contact
+  currentAddress            String?  @default("ភ្នំពេញ")
+  phoneNumber               String?
+  email                     String?  @unique
+  photoUrl                  String?
+  
+  // Current Enrollment
+  classId                   String?  // Current class (can be null if not enrolled)
+  currentGrade              String?  // Current grade level
+  
+  // Family Information
+  fatherName                String?  @default("ឪពុក")
+  fatherPhone               String?
+  fatherOccupation          String?
+  motherName                String?  @default("ម្តាយ")
+  motherPhone               String?
+  motherOccupation          String?
+  guardianName              String?
+  guardianPhone             String?
+  guardianRelationship      String?
+  parentPhone               String?  // Legacy field
+  parentOccupation          String?  @default("កសិករ") // Legacy field
+  emergencyContact          String?
+  emergencyPhone            String?
+  
+  // Previous Education
+  previousSchool            String?
+  previousGrade             String?
+  transferredFrom           String?
+  transferDate              DateTime?
+  
+  // Academic Status
+  admissionDate             DateTime? @default(now())
+  enrollmentStatus          EnrollmentStatus @default(ACTIVE)
+  repeatingGrade            String?  // If student is repeating
+  
+  // Grade 9 National Exam (if applicable)
+  grade9ExamCenter          String?
+  grade9ExamRoom            String?
+  grade9ExamDesk            String?
+  grade9ExamSession         String?
+  grade9PassStatus          String?
+  grade9Result              Json?    // Detailed results
+  
+  // Grade 12 National Exam (if applicable)
+  grade12Track              String?  // "SCIENCE", "SOCIAL", etc.
+  grade12ExamCenter         String?
+  grade12ExamRoom           String?
+  grade12ExamDesk           String?
+  grade12ExamSession        String?
+  grade12PassStatus         String?
+  grade12Result             Json?    // Detailed results
+  
+  // Student Role & Responsibilities
+  studentRole               StudentRole @default(GENERAL)
+  responsibilities          Json?     // Additional responsibilities
+  
+  // Health Information
+  bloodType                 String?
+  allergies                 String?
+  medicalConditions         String?
+  
+  // Financial
+  scholarshipStatus         String?
+  feesPaid                  Boolean  @default(false)
+  
+  // Account Status
+  isAccountActive           Boolean  @default(true)
+  accountDeactivatedAt      DateTime?
+  deactivationReason        String?
+  
+  // Additional Information
+  remarks                   String?
+  tags                      String[] @default([])
+  
+  // Audit
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  createdBy                 String?
+  
+  school                    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  class                     Class?   @relation(fields: [classId], references: [id])
+  
+  // Relations
+  attendance                Attendance[]
+  grades                    Grade[]
+  monthlySummaries          StudentMonthlySummary[]
+  enrollments               StudentEnrollment[]
+  histories                 StudentHistory[]
+  user                      User?
+  
+  @@index([schoolId, classId])
+  @@index([schoolId, currentGrade])
+  @@index([schoolId, enrollmentStatus])
+  @@index([schoolId, grade12PassStatus])
+  @@index([schoolId, gender])
+  @@index([schoolId, isAccountActive])
+  @@index([schoolId, studentRole])
+  @@map("students")
+}
+
+model StudentEnrollment {
+  id              String       @id @default(cuid())
+  schoolId        String
+  studentId       String
+  classId         String
+  academicYearId  String
+  
+  // Enrollment Details
+  enrollmentDate  DateTime     @default(now())
+  status          EnrollmentStatus @default(ACTIVE)
+  enrollmentType  String       @default("REGULAR") // REGULAR, TRANSFER, READMISSION
+  
+  // Academic Performance (end of year)
+  finalAverage    Float?
+  classRank       Int?
+  gradeRank       Int?       // Rank within grade level
+  totalRank       Int?       // Rank in entire school
+  
+  // Attendance Summary
+  totalDaysPresent  Int      @default(0)
+  totalDaysAbsent   Int      @default(0)
+  totalDaysLate     Int      @default(0)
+  attendanceRate    Float?
+  
+  // Promotion Decision
+  promotionStatus   String?  // "PROMOTED", "RETAINED", "CONDITIONAL"
+  promotedToGrade   String?
+  promotionDate     DateTime?
+  retentionReason   String?
+  
+  // Exit Information
+  exitDate          DateTime?
+  exitReason        String?  // "GRADUATED", "TRANSFERRED", "WITHDRAWN", "EXPELLED"
+  transferTo        String?  // If transferred
+  
+  // Remarks
+  remarks         String?
+  awards          Json?      // [{award: "Best Student", date: "..."}]
+  
+  // Audit
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  
+  school          School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student         Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class           Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
+  academicYear    AcademicYear   @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  histories       StudentHistory[]
+  
+  @@unique([schoolId, studentId, academicYearId])
+  @@index([schoolId, academicYearId, classId])
+  @@index([studentId, academicYearId])
+  @@index([schoolId, academicYearId, status])
+  @@map("student_enrollments")
+}
+
+model StudentHistory {
+  id              String    @id @default(cuid())
+  schoolId        String
+  studentId       String
+  academicYearId  String
+  classId         String
+  enrollmentId    String
+  
+  // Snapshot of enrollment data at year end
+  grade           String
+  section         String?
+  
+  // Academic Performance
+  finalAverage    Float
+  classRank       Int?
+  gradeRank       Int?
+  totalRank       Int?
+  gpa             Float?
+  
+  // Attendance Summary
+  totalDaysPresent  Int
+  totalDaysAbsent   Int
+  totalDaysLate     Int
+  attendanceRate    Float
+  
+  // Behavior & Conduct
+  conductGrade      String?
+  behaviorScore     Float?
+  disciplinaryActions Json?
+  
+  // Status & Promotion
+  status            String    // "PROMOTED", "RETAINED", "TRANSFERRED", "GRADUATED"
+  promotedToGrade   String?
+  
+  // Awards & Recognition
+  awards            Json?     // [{award: "Best Student", date: "..."}]
+  achievements      Json?
+  
+  // Comments
+  teacherComments   String?
+  remarks           String?
+  
+  // Audit
+  createdAt       DateTime  @default(now())
+  
+  school          School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student         Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  academicYear    AcademicYear     @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  class           Class            @relation(fields: [classId], references: [id], onDelete: Cascade)
+  enrollment      StudentEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  
+  @@unique([schoolId, studentId, academicYearId])
+  @@index([studentId, academicYearId])
+  @@index([schoolId, academicYearId])
+  @@map("student_histories")
+}
+
+// ========================================
+// TEACHER MANAGEMENT
+// ========================================
+
+model Teacher {
+  id               String       @id @default(cuid())
+  schoolId         String
+  teacherId        String?      @unique // School-assigned teacher ID
+  employeeId       String?      @unique
+  
+  // Basic Information
+  firstName        String
+  lastName         String
+  khmerName        String?
+  englishName      String?
+  dateOfBirth      String?
+  gender           Gender?
+  nationality      String?      @default("Cambodian")
+  
+  // Contact Information
+  email            String?      @unique
+  phone            String       @unique
+  phoneNumber      String?
+  address          String?
+  emergencyContact String?
+  emergencyPhone   String?
+  
+  // Education
+  degree           DegreeLevel?
+  major1           String?
+  major2           String?
+  university       String?
+  graduationYear   Int?
+  
+  // Identification
+  idCard           String?
+  passport         String?
+  
+  // Employment
+  position         String?
+  role             TeacherRole  @default(TEACHER)
+  workingLevel     WorkingLevel?
+  hireDate         String?
+  employmentType   String?      @default("FULL_TIME") // FULL_TIME, PART_TIME, CONTRACT
+  salaryRange      String?
+  
+  // Current Assignment
+  homeroomClassId  String?      @unique // If homeroom teacher
+  
+  // Account Status
+  isActive         Boolean      @default(true)
+  
+  // Audit
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  
+  school           School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  homeroomClass    Class?       @relation(fields: [homeroomClassId], references: [id])
+  
+  // Relations
+  subjectTeachers  SubjectTeacher[]
+  teacherClasses   TeacherClass[]
+  assignments      TeacherAssignment[]
+  user             User?
+  
+  @@index([schoolId, isActive])
+  @@index([schoolId, role])
+  @@map("teachers")
+}
+
+model TeacherAssignment {
+  id             String       @id @default(cuid())
+  schoolId       String
+  teacherId      String
+  classId        String
+  subjectId      String
+  academicYearId String
+  
+  // Assignment Type
+  assignmentType String       @default("SUBJECT") // SUBJECT, HOMEROOM, SUBSTITUTE
+  isHomeroom     Boolean      @default(false)
+  
+  // Schedule
+  weeklyHours    Float?
+  schedule       Json?        // [{day: "Monday", period: 1, time: "08:00-09:00"}]
+  
+  // Status
+  isActive       Boolean      @default(true)
+  startDate      DateTime     @default(now())
+  endDate        DateTime?
+  
+  // Audit
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
+  school         School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  teacher        Teacher      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  class          Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject        Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  
+  @@unique([schoolId, teacherId, classId, subjectId, academicYearId])
+  @@index([schoolId, academicYearId, classId])
+  @@index([teacherId, academicYearId])
+  @@map("teacher_assignments")
+}
+
+// ========================================
+// CLASS MANAGEMENT
+// ========================================
+
+model Class {
+  id                        String                @id @default(cuid())
+  schoolId                  String
+  academicYearId            String
+  classId                   String?               @unique
+  
+  // Class Information
+  name                      String                // "7A", "8B", etc.
+  grade                     String                // "GRADE_7", "GRADE_8", etc.
+  section                   String?               // "A", "B", "C"
+  track                     String?               // "SCIENCE", "SOCIAL" (for Grade 12)
+  
+  // Capacity
+  capacity                  Int?
+  currentEnrollment         Int?                  @default(0)
+  
+  // Classroom
+  roomNumber                String?
+  building                  String?
+  floor                     Int?
+  
+  // Homeroom Teacher
+  homeroomTeacherId         String?               @unique
+  
+  // Status
+  isActive                  Boolean               @default(true)
+  
+  // Audit
+  createdAt                 DateTime              @default(now())
+  updatedAt                 DateTime              @updatedAt
+  
+  school                    School                @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  academicYear              AcademicYear          @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  homeroomTeacher           Teacher?
+  
+  // Relations
+  students                  Student[]
+  attendance                Attendance[]
+  grades                    Grade[]
+  studentMonthlySummaries   StudentMonthlySummary[]
+  teacherClasses            TeacherClass[]
+  enrollments               StudentEnrollment[]
+  histories                 StudentHistory[]
+  teacherAssignments        TeacherAssignment[]
+  
+  @@unique([schoolId, academicYearId, name])
+  @@index([schoolId, academicYearId, grade])
+  @@index([schoolId, academicYearId, isActive])
+  @@map("classes")
+}
+
+model TeacherClass {
+  id        String   @id @default(cuid())
+  schoolId  String
+  teacherId String
+  classId   String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  
+  @@unique([schoolId, teacherId, classId])
+  @@index([schoolId, classId])
+  @@map("teacher_classes")
+}
+
+// ========================================
+// SUBJECT MANAGEMENT
+// ========================================
+
+model Subject {
+  id              String           @id @default(cuid())
+  schoolId        String
+  
+  // Subject Information
+  name            String
+  nameKh          String
+  nameEn          String?
+  code            String           @unique
+  description     String?
+  
+  // Classification
+  grade           String           // "GRADE_7", "GRADE_8", etc.
+  track           String?          // "SCIENCE", "SOCIAL" (for Grade 12)
+  category        String           // "CORE", "ELECTIVE", "EXTRACURRICULAR"
+  subjectType     String?          @default("ACADEMIC") // ACADEMIC, VOCATIONAL, ARTS, SPORTS
+  
+  // Academic Hours
+  weeklyHours     Float            @default(0)
+  annualHours     Int              @default(0)
+  
+  // Grading
+  maxScore        Int              @default(100)
+  coefficient     Float            @default(1.0)
+  passingScore    Float?           @default(50)
+  
+  // Status
+  isActive        Boolean          @default(true)
+  isMandatory     Boolean          @default(true)
+  
+  // Audit
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  
+  school          School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  
+  // Relations
+  grades          Grade[]
+  subjectTeachers SubjectTeacher[]
+  teacherAssignments TeacherAssignment[]
+  
+  @@unique([schoolId, code, grade])
+  @@index([schoolId, grade, isActive])
+  @@index([schoolId, grade, track, isActive])
+  @@map("subjects")
+}
+
+model SubjectTeacher {
+  id        String   @id @default(cuid())
+  schoolId  String
+  subjectId String
+  teacherId String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  
+  @@unique([schoolId, subjectId, teacherId])
+  @@index([schoolId, teacherId])
+  @@map("subject_teachers")
+}
+
+// ========================================
+// GRADE MANAGEMENT
+// ========================================
+
+model Grade {
+  id            String       @id @default(cuid())
+  schoolId      String
+  academicYearId String
+  studentId     String
+  subjectId     String
+  classId       String
+  
+  // Score Information
+  score         Float
+  maxScore      Float
+  percentage    Float?
+  weightedScore Float?
+  
+  // Time Period
+  month         String?      // "JANUARY", "FEBRUARY", etc.
+  monthNumber   Int?         // 1-12
+  year          Int?
+  term          String?      // "SEMESTER_1", "SEMESTER_2"
+  examType      String?      // "MONTHLY", "MIDTERM", "FINAL"
+  
+  // Additional Info
+  remarks       String?
+  isConfirmed   Boolean      @default(false)
+  confirmedBy   String?
+  confirmedAt   DateTime?
+  
+  // Audit
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  enteredBy     String?
+  
+  school        School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  academicYear  AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  class         Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student       Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject       Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  
+  @@unique([schoolId, academicYearId, studentId, subjectId, classId, month, year])
+  @@index([schoolId, academicYearId, classId, month, year])
+  @@index([schoolId, academicYearId, studentId, month, year])
+  @@index([schoolId, academicYearId, subjectId, classId])
+  @@map("grades")
+}
+
+model GradeConfirmation {
+  id          String   @id @default(cuid())
+  schoolId    String
+  classId     String
+  subjectId   String
+  month       String
+  year        Int
+  
+  isConfirmed Boolean  @default(false)
+  confirmedBy String
+  confirmedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User     @relation(fields: [confirmedBy], references: [id], onDelete: Cascade)
+  
+  @@unique([schoolId, classId, subjectId, month, year])
+  @@index([schoolId, classId, month, year])
+  @@index([confirmedBy])
+  @@map("grade_confirmations")
+}
+
+model StudentMonthlySummary {
+  id                 String       @id @default(cuid())
+  schoolId           String
+  academicYearId     String
+  studentId          String
+  classId            String
+  
+  // Time Period
+  month              String
+  monthNumber        Int
+  year               Int
+  
+  // Scores
+  totalScore         Float
+  totalMaxScore      Float
+  totalWeightedScore Float
+  totalCoefficient   Float
+  average            Float
+  
+  // Rankings
+  classRank          Int?
+  gradeRank          Int?
+  totalRank          Int?
+  
+  // Grade Level
+  gradeLevel         String?      // "A", "B", "C", "D", "E", "F"
+  
+  // Audit
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  
+  school             School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  academicYear       AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  class              Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student            Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  @@unique([schoolId, academicYearId, studentId, classId, month, year])
+  @@index([schoolId, academicYearId, classId, month, year])
+  @@index([schoolId, academicYearId, studentId, year])
+  @@index([schoolId, academicYearId, month, year, average])
+  @@map("student_monthly_summaries")
+}
+
+// ========================================
+// ATTENDANCE MANAGEMENT
+// ========================================
+
+model Attendance {
+  id        String            @id @default(cuid())
+  schoolId  String
+  academicYearId String
+  studentId String
+  classId   String?
+  
+  // Attendance Details
+  date      DateTime
+  session   AttendanceSession @default(MORNING)
+  status    AttendanceStatus
+  
+  // Additional Info
+  remarks   String?
+  markedBy  String?           // User ID who marked attendance
+  
+  // Audit
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  
+  school    School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  academicYear AcademicYear   @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  class     Class?            @relation(fields: [classId], references: [id])
+  student   Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  @@unique([schoolId, academicYearId, studentId, classId, date, session])
+  @@index([schoolId, academicYearId, classId, date])
+  @@index([schoolId, academicYearId, studentId, date])
+  @@index([schoolId, academicYearId, date, status])
+  @@map("attendance")
+}
+
+// ========================================
+// YEAR TRANSITION MANAGEMENT
+// ========================================
+
+model YearTransition {
+  id                String       @id @default(cuid())
+  schoolId          String
+  sourceYearId      String
+  targetYearId      String
+  
+  // Execution Details
+  status            TransitionStatus @default(PENDING)
+  executedBy        String?
+  executedAt        DateTime?
+  completedAt       DateTime?
+  
+  // Statistics
+  totalStudents     Int
+  promotedCount     Int          @default(0)
+  retainedCount     Int          @default(0)
+  transferredCount  Int          @default(0)
+  graduatedCount    Int          @default(0)
+  
+  // Configuration
+  rules             Json         // Promotion rules used
+  errors            Json?        // Any errors encountered
+  
+  // Audit
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  
+  school            School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  sourceYear        AcademicYear @relation("SourceYear", fields: [sourceYearId], references: [id], onDelete: Cascade)
+  targetYear        AcademicYear @relation("TargetYear", fields: [targetYearId], references: [id], onDelete: Cascade)
+  
+  @@unique([schoolId, sourceYearId, targetYearId])
+  @@index([schoolId, status])
+  @@map("year_transitions")
+}
+
+// ========================================
+// USER MANAGEMENT & AUTHENTICATION
+// ========================================
+
+model User {
+  id                 String              @id @default(cuid())
+  schoolId           String?             // Null for super admins
+  
+  // Authentication
+  email              String?             @unique
+  phone              String?             @unique
+  password           String
+  
+  // Personal Information
+  firstName          String
+  lastName           String
+  
+  // Role & Permissions
+  role               UserRole            @default(TEACHER)
+  permissions        Json?               @default("{\"canEnterGrades\": true, \"canViewReports\": true, \"canMarkAttendance\": true}")
+  
+  // Linked Entities
+  studentId          String?             @unique
+  teacherId          String?             @unique
+  
+  // Account Status
+  isActive           Boolean             @default(true)
+  emailVerified      Boolean             @default(false)
+  phoneVerified      Boolean             @default(false)
+  
+  // Security
+  failedAttempts     Int                 @default(0)
+  lockedUntil        DateTime?
+  passwordChangedAt  DateTime?
+  twoFactorEnabled   Boolean             @default(false)
+  twoFactorSecret    String?
+  
+  // Activity
+  lastLogin          DateTime?
+  lastLoginIp        String?
+  loginCount         Int                 @default(0)
+  
+  // Audit
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  
+  school             School?             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student            Student?            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher            Teacher?            @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  
+  // Relations
+  gradeConfirmations GradeConfirmation[]
+  superAdmin         SuperAdmin?
+  auditLogs          AuditLog[]
+  
+  @@index([schoolId, email, isActive])
+  @@index([schoolId, phone, isActive])
+  @@index([schoolId, studentId, isActive])
+  @@index([schoolId, role, isActive])
+  @@map("users")
+}
+
+// ========================================
+// SUPER ADMIN MANAGEMENT
+// ========================================
+
+model SuperAdmin {
+  id              String     @id @default(cuid())
+  userId          String     @unique
+  
+  // Admin Level
+  level           AdminLevel @default(ADMIN)
+  department      String?
+  
+  // Permissions
+  canCreateSchool Boolean    @default(true)
+  canDeleteSchool Boolean    @default(false)
+  canViewAllData  Boolean    @default(true)
+  canManageAdmins Boolean    @default(false)
+  
+  // Audit
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("super_admins")
+}
+
+// ========================================
+// AUDIT & LOGGING
+// ========================================
+
+model AuditLog {
+  id            String    @id @default(cuid())
+  schoolId      String?
+  userId        String
+  
+  // Action Details
+  action        String    // "CREATE_SCHOOL", "UPDATE_USER", "DELETE_STUDENT", etc.
+  entityType    String    // "School", "User", "Student", etc.
+  entityId      String?
+  
+  // Changes
+  changes       Json?     // Before/after values
+  metadata      Json?     // Additional context
+  
+  // Request Info
+  ipAddress     String?
+  userAgent     String?
+  
+  // Timestamp
+  timestamp     DateTime  @default(now())
+  
+  school        School?   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([schoolId, timestamp])
+  @@index([userId, timestamp])
+  @@index([action, timestamp])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+// ========================================
+// SYSTEM SETTINGS & TEMPLATES
+// ========================================
+
+model SystemSettings {
+  id                  String    @id @default(cuid())
+  key                 String    @unique
+  value               Json
+  category            String    // "SUBSCRIPTION", "LIMITS", "FEATURES", "NOTIFICATION"
+  description         String?
+  isEditable          Boolean   @default(true)
+  updatedAt           DateTime  @updatedAt
+  updatedBy           String?
+  
+  @@index([category])
+  @@map("system_settings")
+}
+
+model SchoolTemplate {
+  id              String    @id @default(cuid())
+  name            String
+  description     String?
+  type            TemplateType // SUBJECTS, CLASSES, COMPLETE
+  
+  // Target
+  targetGrades    String[]  // ["GRADE_7", "GRADE_8"]
+  targetSchoolType SchoolType?
+  
+  // Template Data
+  data            Json      // Template data structure
+  
+  // Metadata
+  version         String    @default("1.0")
+  isActive        Boolean   @default(true)
+  isDefault       Boolean   @default(false)
+  usageCount      Int       @default(0)
+  
+  // Audit
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String?
+  
+  @@index([type, isActive])
+  @@index([isDefault, isActive])
+  @@map("school_templates")
+}
+
+// ========================================
+// COMMUNICATION
+// ========================================
+
+model Announcement {
+  id              String    @id @default(cuid())
+  schoolId        String
+  
+  // Content
+  title           String
+  content         String
+  priority        AnnouncementPriority @default(NORMAL)
+  
+  // Targeting
+  targetAudience  String[]  // ["STUDENTS", "TEACHERS", "PARENTS"]
+  targetGrades    String[]  @default([])
+  targetClasses   String[]  @default([])
+  
+  // Status
+  isPublished     Boolean   @default(false)
+  publishedAt     DateTime?
+  expiresAt       DateTime?
+  
+  // Audit
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String
+  
+  school          School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  
+  @@index([schoolId, isPublished, publishedAt])
+  @@map("announcements")
+}
+
+// ========================================
+// ENUMS
+// ========================================
+
+enum SchoolType {
+  PRIMARY
+  SECONDARY
+  HIGH_SCHOOL
+  COMBINED
+}
+
+enum SchoolStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+  CLOSED
+}
+
+enum SubscriptionTier {
+  FREE
+  BASIC
+  PREMIUM
+  ENTERPRISE
+}
+
+enum YearStatus {
+  PLANNING
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  TRANSFERRED
+  WITHDRAWN
+  GRADUATED
+  SUSPENDED
+}
+
+enum TransitionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  ROLLED_BACK
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum StudentRole {
+  GENERAL
+  CLASS_LEADER
+  VICE_LEADER_1
+  VICE_LEADER_2
+}
+
+enum TeacherRole {
+  TEACHER
+  INSTRUCTOR
+  DEPARTMENT_HEAD
+  VICE_PRINCIPAL
+  PRINCIPAL
+}
+
+enum DegreeLevel {
+  CERTIFICATE
+  ASSOCIATE
+  BACHELOR
+  MASTER
+  DOCTORATE
+  OTHER
+}
+
+enum WorkingLevel {
+  FRAMEWORK_A
+  FRAMEWORK_B
+  FRAMEWORK_C
+  CONTRACT
+  PROBATION
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  TEACHER
+  STUDENT
+  PARENT
+  STAFF
+}
+
+enum AdminLevel {
+  SUPER_ADMIN
+  ADMIN
+  SUPPORT
+  VIEWER
+}
+
+enum AttendanceSession {
+  MORNING
+  AFTERNOON
+  FULL_DAY
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+  PERMISSION
+  SICK
+}
+
+enum TemplateType {
+  SUBJECTS
+  CLASSES
+  COMPLETE
+  CUSTOM
+}
+
+enum AnnouncementPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+// ========================================
+// INDEXES FOR PERFORMANCE
+// ========================================
+
+// Additional composite indexes are defined within models
+// Focus on common query patterns:
+// 1. School-scoped queries (schoolId + otherFilters)
+// 2. Academic year queries (academicYearId + otherFilters)
+// 3. Time-based queries (date, timestamp ranges)
+// 4. Status filtering (isActive, status fields)
+// 5. Multi-tenant isolation (schoolId on all queries)
