@@ -47,7 +47,7 @@
     "backToHome": "ត្រឡប់ទៅទំព័រដើម"
   },
   "dashboard": {
-    "welcome": "សូមស្វាគមន៍, {{name}}",
+    "welcome": "សូមស្វាគមន៍, {name}",
     "school": "សាលា",
     "tier": "កម្រិតជាវ",
     "trialDays": "ថ្ងៃសាកល្បងនៅសល់",
@@ -62,5 +62,29 @@
     "manageUsers": "គ្រប់គ្រងអ្នកប្រើប្រាស់",
     "viewReports": "មើលរបាយការណ៍",
     "settings": "ការកំណត់"
+  },
+  "classes": {
+    "title": "ថ្នាក់រៀន",
+    "addClass": "បន្ថែមថ្នាក់",
+    "editClass": "កែសម្រួលថ្នាក់",
+    "viewRoster": "មើលបញ្ជីសិស្ស",
+    "className": "ឈ្មោះថ្នាក់",
+    "grade": "ថ្នាក់",
+    "section": "ផ្នែក",
+    "students": "សិស្ស",
+    "rosterTitle": "បញ្ជីសិស្សក្នុងថ្នាក់",
+    "addStudent": "បន្ថែមសិស្ស",
+    "removeStudent": "លុបសិស្ស",
+    "noStudents": "មិនទាន់មានសិស្សក្នុងថ្នាក់នេះទេ",
+    "searchStudents": "ស្វែងរកសិស្ស...",
+    "selectStudent": "ជ្រើសរើសសិស្សដើម្បីបន្ថែម"
+  },
+  "students": {
+    "title": "សិស្ស",
+    "addStudent": "បន្ថែមសិស្ស"
+  },
+  "teachers": {
+    "title": "គ្រូបង្រៀន",
+    "addTeacher": "បន្ថែមគ្រូ"
   }
 }
