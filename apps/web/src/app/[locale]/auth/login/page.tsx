@@ -45,10 +45,11 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
         TokenManager.setTokens(response.tokens.accessToken, response.tokens.refreshToken);
         TokenManager.setUserData(response.user, response.school);
 
-        // Use router.push instead of window.location to let middleware handle it
-        router.push(`/${locale}/dashboard`);
-        // Force a small delay to ensure localStorage is written
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Force a small delay to ensure localStorage is written before redirect
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Use window.location for hard redirect to ensure clean navigation
+        window.location.href = `/${locale}/dashboard`;
       } else {
         setError(response.message || t('error'));
       }
