@@ -956,7 +956,7 @@ app.post('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: 
             id: true,
             firstName: true,
             lastName: true,
-            nameKh: true,
+            khmerName: true,
           },
         },
       },
