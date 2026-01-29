@@ -43,18 +43,16 @@ export default function ClassRosterPage({
       if (!checkAuth()) return;
 
       try {
-        const token = TokenManager.getAccessToken()!;
-        
         // Load class details and students in parallel
         const [classResult, studentsResult, allStudentsResult] = await Promise.all([
-          getClass(id, token),
-          getClassStudents(id, token),
-          getStudents(token),
+          getClass(id),
+          getClassStudents(id),
+          getStudents({ limit: 1000 }),
         ]);
 
-        setClassData(classResult);
+        setClassData(classResult.data.class);
         setStudents(studentsResult);
-        setAllStudents(allStudentsResult);
+        setAllStudents(allStudentsResult.data.students);
       } catch (error: any) {
         console.error('Error loading data:', error);
         alert(error.message || 'Failed to load class data');
