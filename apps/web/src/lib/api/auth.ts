@@ -67,7 +67,21 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
     throw new Error(error.message || 'Login failed');
   }
 
-  return response.json();
+  const result = await response.json();
+  
+  // Backend returns data wrapped in { success, message, data: { user, school, tokens } }
+  // Transform to match our interface
+  if (result.data) {
+    return {
+      success: result.success,
+      message: result.message,
+      user: result.data.user,
+      school: result.data.school,
+      tokens: result.data.tokens,
+    };
+  }
+  
+  return result;
 }
 
 export async function verifyToken(token: string): Promise<VerifyTokenResponse> {

@@ -50,12 +50,14 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
         
         // Use window.location for hard redirect to ensure clean navigation
         window.location.href = `/${locale}/dashboard`;
+        // Don't set loading to false - we're redirecting
+        return;
       } else {
         setError(response.message || t('error'));
+        setLoading(false);
       }
     } catch (err: any) {
       setError(err.message || t('error'));
-    } finally {
       setLoading(false);
     }
   };
