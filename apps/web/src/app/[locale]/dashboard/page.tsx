@@ -51,7 +51,7 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
       const token = TokenManager.getAccessToken();
       
       if (!token) {
-        router.push(`/${locale}/auth/login`);
+        router.replace(`/${locale}/auth/login`);
         return;
       }
 
@@ -75,7 +75,7 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
         } else {
           // No valid session, redirect to login
           TokenManager.clearTokens();
-          router.push(`/${locale}/auth/login`);
+          router.replace(`/${locale}/auth/login`);
           return;
         }
       } finally {

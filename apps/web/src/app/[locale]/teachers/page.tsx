@@ -37,7 +37,7 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
   useEffect(() => {
     const token = TokenManager.getAccessToken();
     if (!token) {
-      router.push(`/${locale}/auth/login`);
+      router.replace(`/${locale}/auth/login`);
       return;
     }
     fetchTeachers();
@@ -92,7 +92,7 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
 
   const handleLogout = () => {
     TokenManager.clearTokens();
-    router.push(`/${locale}/auth/login`);
+    router.replace(`/${locale}/auth/login`);
   };
 
   return (

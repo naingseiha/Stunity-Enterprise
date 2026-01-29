@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -17,6 +17,21 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Check if already logged in on component mount
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = TokenManager.getAccessToken();
+      const user = TokenManager.getUserData();
+      
+      if (token && user.user) {
+        // Already logged in, redirect to dashboard
+        router.replace(`/${locale}/dashboard`);
+      }
+    };
+    
+    checkAuth();
+  }, [locale, router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -30,8 +45,10 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
         TokenManager.setTokens(response.tokens.accessToken, response.tokens.refreshToken);
         TokenManager.setUserData(response.user, response.school);
 
-        // Redirect to dashboard with replace to prevent back button
-        window.location.href = `/${locale}/dashboard`;
+        // Use router.push instead of window.location to let middleware handle it
+        router.push(`/${locale}/dashboard`);
+        // Force a small delay to ensure localStorage is written
+        await new Promise(resolve => setTimeout(resolve, 100));
       } else {
         setError(response.message || t('error'));
       }
