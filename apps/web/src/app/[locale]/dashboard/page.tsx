@@ -218,32 +218,32 @@ export default function DashboardPage({ params: { locale } }: { params: { locale
         {/* Quick Actions */}
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h3 className="text-lg font-bold text-gray-900 mb-4">{t('quickActions')}</h3>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             <button 
               onClick={() => router.push(`/${locale}/students`)}
               className="p-4 border-2 border-stunity-primary-200 bg-stunity-primary-50 rounded-lg hover:border-stunity-primary-500 hover:bg-stunity-primary-100 transition-all text-left group"
             >
               <Users className="w-8 h-8 text-stunity-primary-600 mb-2" />
-              <p className="font-semibold text-gray-900">Manage Students</p>
-              <p className="text-sm text-stunity-primary-600">View and manage</p>
+              <p className="font-semibold text-gray-900">Students</p>
+              <p className="text-sm text-stunity-primary-600">Manage students</p>
             </button>
 
-            <button className="p-4 border-2 border-gray-200 rounded-lg hover:border-stunity-primary-500 hover:bg-stunity-primary-50 transition-all text-left group">
-              <GraduationCap className="w-8 h-8 text-gray-400 group-hover:text-stunity-primary-600 mb-2" />
-              <p className="font-semibold text-gray-900">Manage Teachers</p>
-              <p className="text-sm text-gray-500">Coming soon</p>
+            <button 
+              onClick={() => router.push(`/${locale}/teachers`)}
+              className="p-4 border-2 border-stunity-primary-200 bg-stunity-primary-50 rounded-lg hover:border-stunity-primary-500 hover:bg-stunity-primary-100 transition-all text-left group"
+            >
+              <GraduationCap className="w-8 h-8 text-stunity-primary-600 mb-2" />
+              <p className="font-semibold text-gray-900">Teachers</p>
+              <p className="text-sm text-stunity-primary-600">Manage teachers</p>
             </button>
 
-            <button className="p-4 border-2 border-gray-200 rounded-lg hover:border-stunity-primary-500 hover:bg-stunity-primary-50 transition-all text-left group">
-              <BarChart3 className="w-8 h-8 text-gray-400 group-hover:text-stunity-primary-600 mb-2" />
-              <p className="font-semibold text-gray-900">{t('viewReports')}</p>
-              <p className="text-sm text-gray-500">Coming soon</p>
-            </button>
-
-            <button className="p-4 border-2 border-gray-200 rounded-lg hover:border-stunity-primary-500 hover:bg-stunity-primary-50 transition-all text-left group">
-              <Settings className="w-8 h-8 text-gray-400 group-hover:text-stunity-primary-600 mb-2" />
-              <p className="font-semibold text-gray-900">{t('settings')}</p>
-              <p className="text-sm text-gray-500">Coming soon</p>
+            <button 
+              onClick={() => router.push(`/${locale}/classes`)}
+              className="p-4 border-2 border-stunity-primary-200 bg-stunity-primary-50 rounded-lg hover:border-stunity-primary-500 hover:bg-stunity-primary-100 transition-all text-left group"
+            >
+              <BarChart3 className="w-8 h-8 text-stunity-primary-600 mb-2" />
+              <p className="font-semibold text-gray-900">Classes</p>
+              <p className="text-sm text-stunity-primary-600">Manage classes</p>
             </button>
           </div>
         </div>

@@ -15,19 +15,19 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
-import { getStudents, deleteStudent, type Student } from '@/lib/api/students';
-import StudentModal from '@/components/students/StudentModal';
+import { getTeachers, deleteTeacher, type Teacher } from '@/lib/api/teachers';
+import TeacherModal from '@/components/teachers/TeacherModal';
 
-export default function StudentsPage({ params: { locale } }: { params: { locale: string } }) {
-  const t = useTranslations('students');
+export default function TeachersPage({ params: { locale } }: { params: { locale: string } }) {
+  const t = useTranslations('teachers');
   const tc = useTranslations('common');
   const router = useRouter();
 
-  const [students, setStudents] = useState<Student[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -40,17 +40,17 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
       router.push(`/${locale}/auth/login`);
       return;
     }
-    fetchStudents();
+    fetchTeachers();
   }, [page]);
 
-  const fetchStudents = async () => {
+  const fetchTeachers = async () => {
     setLoading(true);
     try {
-      const response = await getStudents({ page, limit: 20, search: searchTerm });
-      setStudents(response.data.students);
+      const response = await getTeachers({ page, limit: 20, search: searchTerm });
+      setTeachers(response.data.teachers);
       setTotalPages(response.data.pagination.totalPages);
     } catch (error: any) {
-      console.error('Failed to fetch students:', error);
+      console.error('Failed to fetch teachers:', error);
     } finally {
       setLoading(false);
     }
@@ -58,35 +58,35 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
 
   const handleSearch = () => {
     setPage(1);
-    fetchStudents();
+    fetchTeachers();
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this student?')) return;
+    if (!confirm('Are you sure you want to delete this teacher?')) return;
 
     try {
-      await deleteStudent(id);
-      fetchStudents();
+      await deleteTeacher(id);
+      fetchTeachers();
     } catch (error: any) {
       alert(error.message);
     }
   };
 
-  const handleEdit = (student: Student) => {
-    setSelectedStudent(student);
+  const handleEdit = (teacher: Teacher) => {
+    setSelectedTeacher(teacher);
     setShowModal(true);
   };
 
   const handleAdd = () => {
-    setSelectedStudent(null);
+    setSelectedTeacher(null);
     setShowModal(true);
   };
 
   const handleModalClose = (refresh?: boolean) => {
     setShowModal(false);
-    setSelectedStudent(null);
+    setSelectedTeacher(null);
     if (refresh) {
-      fetchStudents();
+      fetchTeachers();
     }
   };
 
@@ -111,14 +111,14 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
               </button>
               <div className="flex items-center gap-2">
                 <button
-                  className="px-4 py-2 bg-stunity-primary-50 text-stunity-primary-700 rounded-lg text-sm font-medium"
+                  onClick={() => router.push(`/${locale}/students`)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors text-sm"
                 >
                   <Users className="w-4 h-4 inline mr-2" />
                   Students
                 </button>
                 <button
-                  onClick={() => router.push(`/${locale}/teachers`)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors text-sm"
+                  className="px-4 py-2 bg-stunity-primary-50 text-stunity-primary-700 rounded-lg text-sm font-medium"
                 >
                   <GraduationCap className="w-4 h-4 inline mr-2" />
                   Teachers
@@ -135,7 +135,7 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
             <div className="flex items-center gap-3">
               <div className="text-right">
                 <p className="text-sm font-medium text-gray-900">{school?.name || 'School'}</p>
-                <p className="text-xs text-gray-600">Students Management</p>
+                <p className="text-xs text-gray-600">Teachers Management</p>
               </div>
               <button
                 onClick={handleLogout}
@@ -156,7 +156,7 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search students..."
+                placeholder="Search teachers..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -175,22 +175,22 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
             className="flex items-center gap-2 px-4 py-2 bg-stunity-primary-600 text-white rounded-lg hover:bg-stunity-primary-700 transition-colors"
           >
             <Plus className="w-5 h-5" />
-            Add Student
+            Add Teacher
           </button>
         </div>
 
-        {/* Students Table */}
+        {/* Teachers Table */}
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           {loading ? (
             <div className="p-12 text-center">
               <div className="w-12 h-12 border-4 border-stunity-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-gray-600">Loading students...</p>
+              <p className="text-gray-600">Loading teachers...</p>
             </div>
-          ) : students.length === 0 ? (
+          ) : teachers.length === 0 ? (
             <div className="p-12 text-center">
-              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">No students found</p>
-              <p className="text-gray-500 text-sm mt-2">Click "Add Student" to create your first student</p>
+              <GraduationCap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-600 text-lg">No teachers found</p>
+              <p className="text-gray-500 text-sm mt-2">Click "Add Teacher" to create your first teacher</p>
             </div>
           ) : (
             <>
@@ -199,7 +199,7 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Student ID
+                        Teacher ID
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Name
@@ -208,10 +208,10 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
                         Gender
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date of Birth
+                        Position
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Class
+                        Contact
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
@@ -219,39 +219,40 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {students.map((student) => (
-                      <tr key={student.id} className="hover:bg-gray-50">
+                    {teachers.map((teacher) => (
+                      <tr key={teacher.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {student.studentId}
+                          {teacher.teacherId}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">
-                            {student.firstNameLatin} {student.lastNameLatin}
+                            {teacher.firstNameLatin} {teacher.lastNameLatin}
                           </div>
-                          {student.firstNameKhmer && (
+                          {teacher.firstNameKhmer && (
                             <div className="text-sm text-gray-500">
-                              {student.firstNameKhmer} {student.lastNameKhmer}
+                              {teacher.firstNameKhmer} {teacher.lastNameKhmer}
                             </div>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {student.gender}
+                          {teacher.gender}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(student.dateOfBirth).toLocaleDateString()}
+                          {teacher.position || '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {student.class?.name || '-'}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{teacher.phoneNumber || '-'}</div>
+                          <div className="text-sm text-gray-500">{teacher.email || '-'}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button
-                            onClick={() => handleEdit(student)}
+                            onClick={() => handleEdit(teacher)}
                             className="text-stunity-primary-600 hover:text-stunity-primary-900 mr-3"
                           >
                             <Edit className="w-4 h-4 inline" />
                           </button>
                           <button
-                            onClick={() => handleDelete(student.id)}
+                            onClick={() => handleDelete(teacher.id)}
                             className="text-red-600 hover:text-red-900"
                           >
                             <Trash2 className="w-4 h-4 inline" />
@@ -290,10 +291,10 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
         </div>
       </div>
 
-      {/* Student Modal */}
+      {/* Teacher Modal */}
       {showModal && (
-        <StudentModal
-          student={selectedStudent}
+        <TeacherModal
+          teacher={selectedTeacher}
           onClose={handleModalClose}
         />
       )}
