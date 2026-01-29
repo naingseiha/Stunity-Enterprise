@@ -209,19 +209,34 @@ app.get('/classes', async (req: AuthRequest, res: Response) => {
             role: true,
           },
         },
-        students: {
+        academicYear: {
           select: {
             id: true,
-            khmerName: true,
-            firstName: true,
-            lastName: true,
-            gender: true,
-            studentId: true,
+            name: true,
+            isCurrent: true,
+            startDate: true,
+            endDate: true,
+            status: true,
+          },
+        },
+        studentClasses: {
+          include: {
+            student: {
+              select: {
+                id: true,
+                khmerName: true,
+                firstName: true,
+                lastName: true,
+                gender: true,
+                studentId: true,
+                photoUrl: true,
+              },
+            },
           },
         },
         _count: {
           select: {
-            students: true,
+            studentClasses: true,
           },
         },
       },
@@ -257,7 +272,7 @@ app.get('/classes/grade/:grade', async (req: AuthRequest, res: Response) => {
     const classes = await prisma.class.findMany({
       where: {
         schoolId: schoolId,
-        grade: parseInt(grade),
+        grade: grade, // Already a string from params
       },
       include: {
         homeroomTeacher: {
@@ -321,19 +336,35 @@ app.get('/classes/:id', async (req: AuthRequest, res: Response) => {
             role: true,
           },
         },
-        students: {
+        academicYear: {
           select: {
             id: true,
-            studentId: true,
-            khmerName: true,
-            firstName: true,
-            lastName: true,
-            gender: true,
-            email: true,
-            phoneNumber: true,
+            name: true,
+            isCurrent: true,
+            startDate: true,
+            endDate: true,
+            status: true,
+          },
+        },
+        studentClasses: {
+          include: {
+            student: {
+              select: {
+                id: true,
+                studentId: true,
+                khmerName: true,
+                firstName: true,
+                lastName: true,
+                gender: true,
+                email: true,
+                phoneNumber: true,
+                photoUrl: true,
+                dateOfBirth: true,
+              },
+            },
           },
           orderBy: {
-            khmerName: 'asc',
+            createdAt: 'asc',
           },
         },
         teacherClasses: {
@@ -351,7 +382,7 @@ app.get('/classes/:id', async (req: AuthRequest, res: Response) => {
         },
         _count: {
           select: {
-            students: true,
+            studentClasses: true,
           },
         },
       },
@@ -364,7 +395,7 @@ app.get('/classes/:id', async (req: AuthRequest, res: Response) => {
       });
     }
 
-    console.log(`✅ [School ${schoolId}] Found class: ${classData.name}`);
+    console.log(`✅ [School ${schoolId}] Found class: ${classData.name} (${classData.academicYear.name})`);
 
     res.json({
       success: true,
@@ -552,10 +583,27 @@ app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
       grade,
       section,
       track,
-      academicYear,
+      academicYearId,
       homeroomTeacherId,
       capacity,
     } = req.body;
+
+    // If changing academic year, verify new year exists and belongs to school
+    if (academicYearId && academicYearId !== existingClass.academicYearId) {
+      const academicYear = await prisma.academicYear.findFirst({
+        where: {
+          id: academicYearId,
+          schoolId: schoolId,
+        },
+      });
+
+      if (!academicYear) {
+        return res.status(400).json({
+          success: false,
+          message: 'Academic year not found or does not belong to your school',
+        });
+      }
+    }
 
     // Verify new homeroom teacher belongs to school (if provided)
     if (homeroomTeacherId && homeroomTeacherId !== existingClass.homeroomTeacherId) {
@@ -573,11 +621,13 @@ app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
         });
       }
 
-      // Check if teacher is already a homeroom teacher for another class
+      // Check if teacher is already a homeroom teacher for another class in this academic year
+      const finalAcademicYearId = academicYearId || existingClass.academicYearId;
       const existingHomeroom = await prisma.class.findFirst({
         where: {
           homeroomTeacherId: homeroomTeacherId,
           schoolId: schoolId,
+          academicYearId: finalAcademicYearId,
           id: { not: id }, // Exclude current class
         },
       });
@@ -585,7 +635,7 @@ app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
       if (existingHomeroom) {
         return res.status(400).json({
           success: false,
-          message: `Teacher is already homeroom teacher for class ${existingHomeroom.name}`,
+          message: `Teacher is already homeroom teacher for class ${existingHomeroom.name} in this academic year`,
         });
       }
     }
@@ -594,14 +644,14 @@ app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
     const updatedClass = await prisma.class.update({
       where: { id },
       data: {
-        classId,
-        name,
-        grade,
-        section,
-        track,
-        academicYear,
-        homeroomTeacherId,
-        capacity,
+        ...(classId !== undefined && { classId }),
+        ...(name !== undefined && { name }),
+        ...(grade !== undefined && { grade }),
+        ...(section !== undefined && { section }),
+        ...(track !== undefined && { track }),
+        ...(academicYearId !== undefined && { academicYearId }),
+        ...(homeroomTeacherId !== undefined && { homeroomTeacherId }),
+        ...(capacity !== undefined && { capacity }),
       },
       include: {
         homeroomTeacher: {
@@ -612,9 +662,16 @@ app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
             lastName: true,
           },
         },
+        academicYear: {
+          select: {
+            id: true,
+            name: true,
+            isCurrent: true,
+          },
+        },
         _count: {
           select: {
-            students: true,
+            studentClasses: true,
           },
         },
       },
