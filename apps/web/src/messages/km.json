@@ -4,7 +4,9 @@
     "login": "ចូល",
     "logout": "ចាកចេញ",
     "dashboard": "ផ្ទាំងគ្រប់គ្រង",
-    "language": "ភាសា"
+    "language": "ភាសា",
+    "back": "ត្រឡប់ក្រោយ",
+    "loading": "កំពុងផ្ទុក..."
   },
   "landing": {
     "hero": {

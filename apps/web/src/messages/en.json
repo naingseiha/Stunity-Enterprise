@@ -4,7 +4,9 @@
     "login": "Login",
     "logout": "Logout",
     "dashboard": "Dashboard",
-    "language": "Language"
+    "language": "Language",
+    "back": "Back",
+    "loading": "Loading..."
   },
   "landing": {
     "hero": {
