@@ -171,10 +171,29 @@ export async function createTeacher(data: CreateTeacherInput): Promise<{ success
 }
 
 export async function updateTeacher(id: string, data: Partial<CreateTeacherInput>): Promise<{ success: boolean; data: { teacher: Teacher } }> {
+  // Transform frontend field names to backend expectations
+  const backendData: any = {};
+  
+  if (data.firstNameLatin !== undefined) backendData.firstName = data.firstNameLatin;
+  if (data.lastNameLatin !== undefined) backendData.lastName = data.lastNameLatin;
+  if (data.firstNameKhmer !== undefined) backendData.khmerName = data.firstNameKhmer;
+  if (data.firstNameLatin && data.lastNameLatin) {
+    backendData.englishName = data.firstNameLatin + ' ' + data.lastNameLatin;
+  }
+  if (data.email !== undefined) backendData.email = data.email;
+  if (data.phoneNumber !== undefined) backendData.phone = data.phoneNumber;
+  if (data.gender !== undefined) backendData.gender = data.gender;
+  if (data.dateOfBirth !== undefined) backendData.dateOfBirth = data.dateOfBirth;
+  if (data.address !== undefined) backendData.address = data.address;
+  if (data.hireDate !== undefined) backendData.hireDate = data.hireDate;
+  if (data.position !== undefined) backendData.position = data.position;
+  if (data.department !== undefined) backendData.department = data.department;
+  if (data.salary !== undefined) backendData.salary = data.salary;
+
   const response = await fetch(`${TEACHER_SERVICE_URL}/teachers/${id}`, {
     method: 'PUT',
     headers: await getAuthHeaders(),
-    body: JSON.stringify(data),
+    body: JSON.stringify(backendData),
   });
 
   if (!response.ok) {
