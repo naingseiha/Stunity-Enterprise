@@ -43,12 +43,20 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedYear, setSelectedYear] = useState<AcademicYear | null>(null);
 
   // Create form
   const [newYearName, setNewYearName] = useState('');
   const [newStartDate, setNewStartDate] = useState('');
   const [newEndDate, setNewEndDate] = useState('');
   const [copyFromYearId, setCopyFromYearId] = useState('');
+
+  // Edit form
+  const [editYearName, setEditYearName] = useState('');
+  const [editStartDate, setEditStartDate] = useState('');
+  const [editEndDate, setEditEndDate] = useState('');
 
   useEffect(() => {
     loadAcademicYears();
@@ -139,9 +147,13 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
   const handleSetCurrent = async (yearId: string) => {
     try {
       const token = TokenManager.getAccessToken();
+      const userData = TokenManager.getUserData();
+      const schoolId = userData?.user?.schoolId || userData?.school?.id;
+
+      if (!token || !schoolId) return;
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/academic-years/${yearId}/set-current`,
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years/${yearId}/set-current`,
         {
           method: 'PUT',
           headers: {
@@ -159,6 +171,99 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
       }
     } catch (err: any) {
       setError('Error setting current year: ' + err.message);
+    }
+  };
+
+  const handleEditYear = (year: AcademicYear) => {
+    setSelectedYear(year);
+    setEditYearName(year.name);
+    setEditStartDate(year.startDate.split('T')[0]);
+    setEditEndDate(year.endDate.split('T')[0]);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateYear = async () => {
+    if (!editYearName || !editStartDate || !editEndDate || !selectedYear) {
+      setError('Please fill all fields');
+      return;
+    }
+
+    try {
+      const token = TokenManager.getAccessToken();
+      const userData = TokenManager.getUserData();
+      const schoolId = userData?.user?.schoolId || userData?.school?.id;
+
+      if (!token || !schoolId) return;
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years/${selectedYear.id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: editYearName,
+            startDate: new Date(editStartDate).toISOString(),
+            endDate: new Date(editEndDate).toISOString(),
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setShowEditModal(false);
+        setSelectedYear(null);
+        setEditYearName('');
+        setEditStartDate('');
+        setEditEndDate('');
+        loadAcademicYears();
+      } else {
+        setError(data.message || 'Failed to update year');
+      }
+    } catch (err: any) {
+      setError('Error updating year: ' + err.message);
+    }
+  };
+
+  const handleDeleteYear = (year: AcademicYear) => {
+    setSelectedYear(year);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteYear = async () => {
+    if (!selectedYear) return;
+
+    try {
+      const token = TokenManager.getAccessToken();
+      const userData = TokenManager.getUserData();
+      const schoolId = userData?.user?.schoolId || userData?.school?.id;
+
+      if (!token || !schoolId) return;
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years/${selectedYear.id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setShowDeleteModal(false);
+        setSelectedYear(null);
+        loadAcademicYears();
+      } else {
+        setError(data.message || 'Failed to delete year');
+      }
+    } catch (err: any) {
+      setError('Error deleting year: ' + err.message);
     }
   };
 
@@ -395,6 +500,24 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
                         <Copy className="w-4 h-4" />
                         Copy Settings
                       </button>
+
+                      <button
+                        onClick={() => handleEditYear(year)}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Edit
+                      </button>
+
+                      {!year.isCurrent && (
+                        <button
+                          onClick={() => handleDeleteYear(year)}
+                          className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium hover:bg-red-200 transition-colors text-sm"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -523,6 +646,140 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
           </div>
         </div>
       )}
+
+      {/* Edit Modal */}
+      {showEditModal && selectedYear && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900">Edit Academic Year</h2>
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSelectedYear(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <span className="text-2xl">×</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Year Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Academic Year Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editYearName}
+                  onChange={(e) => setEditYearName(e.target.value)}
+                  placeholder="e.g., 2026-2027"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              {/* Start Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Start Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={editStartDate}
+                  onChange={(e) => setEditStartDate(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Usually starts in October or November
+                </p>
+              </div>
+
+              {/* End Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  End Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={editEndDate}
+                  onChange={(e) => setEditEndDate(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Usually ends in August or September
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setSelectedYear(null);
+                }}
+                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateYear}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all shadow-md"
+              >
+                Update Academic Year
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && selectedYear && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            <div className="p-6">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
+                Delete Academic Year?
+              </h2>
+              <p className="text-gray-600 text-center mb-6">
+                Are you sure you want to delete <strong>{selectedYear.name}</strong>? This action
+                cannot be undone.
+              </p>
+
+              {/* Warning */}
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-red-800 font-medium">
+                  ⚠️ This will only work if no classes are associated with this year.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setSelectedYear(null);
+                }}
+                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteYear}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-semibold hover:from-red-600 hover:to-red-700 transition-all shadow-md"
+              >
+                Delete Year
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

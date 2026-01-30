@@ -139,18 +139,15 @@ export default function AcademicYearDetailPage({ params }: { params: { locale: s
   };
 
   const handleCopySettings = () => {
-    // TODO: Implement copy settings to new year
-    alert('Copy Settings - Coming soon!');
+    router.push(`/${params.locale}/settings/academic-years?action=create&copyFrom=${id}`);
   };
 
   const handleEditYear = () => {
-    // TODO: Implement edit year modal
-    alert('Edit Year - Coming soon!');
+    router.push(`/${params.locale}/settings/academic-years?action=edit&yearId=${id}`);
   };
 
   const handleDeleteYear = () => {
-    // TODO: Implement delete confirmation
-    alert('Delete Year - Coming soon!');
+    router.push(`/${params.locale}/settings/academic-years?action=delete&yearId=${id}`);
   };
 
   if (loading) {
