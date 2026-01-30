@@ -2,11 +2,13 @@
 
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { Calendar, ChevronDown, Check, Settings } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 
 export default function AcademicYearSelector() {
   const router = useRouter();
+  const pathname = usePathname();
+  const locale = pathname.split('/')[1] || 'en'; // Extract locale from path
   const { currentYear, selectedYear, allYears, setSelectedYear, loading } = useAcademicYear();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -72,7 +74,7 @@ export default function AcademicYearSelector() {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  router.push('/en/settings/academic-years');
+                  router.push(`/${locale}/settings/academic-years`);
                   setIsOpen(false);
                 }}
                 className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
@@ -134,7 +136,7 @@ export default function AcademicYearSelector() {
           <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
             <button
               onClick={() => {
-                router.push('/en/settings/academic-years');
+                router.push(`/${locale}/settings/academic-years`);
                 setIsOpen(false);
               }}
               className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium"
