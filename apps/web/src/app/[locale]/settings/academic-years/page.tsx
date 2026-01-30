@@ -4,35 +4,51 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import {
-  getAcademicYears,
-  createAcademicYear,
-  setCurrentAcademicYear,
-  getCopyPreview,
-  copySettings,
-  deleteAcademicYear,
-  type AcademicYear,
-} from '@/lib/api/academic-years';
+  Calendar,
+  Plus,
+  TrendingUp,
+  Users,
+  BookOpen,
+  CheckCircle2,
+  Clock,
+  Archive,
+  Settings,
+  Copy,
+  Play,
+  AlertCircle,
+  ChevronRight,
+  GraduationCap,
+  Edit,
+  Trash2,
+  Star,
+} from 'lucide-react';
 
-export default function AcademicYearsPage({ params }: { params: { locale: string } }) {
+interface AcademicYear {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+  status: 'PLANNING' | 'ACTIVE' | 'ENDED' | 'ARCHIVED';
+  copiedFromYearId?: string;
+  isPromotionDone: boolean;
+  createdAt: string;
+}
+
+export default function AcademicYearsManagementPage({ params }: { params: { locale: string } }) {
   const router = useRouter();
   const { locale } = params;
+
   const [years, setYears] = useState<AcademicYear[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showCopyModal, setShowCopyModal] = useState(false);
-  const [selectedSourceYear, setSelectedSourceYear] = useState<AcademicYear | null>(null);
-  const [copyPreview, setCopyPreview] = useState<any>(null);
 
-  // Form states
-  const [name, setName] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [setAsCurrent, setSetAsCurrent] = useState(false);
-  const [copyFromYear, setCopyFromYear] = useState('');
-  const [copySubjects, setCopySubjects] = useState(true);
-  const [copyTeachers, setCopyTeachers] = useState(true);
-  const [copyClasses, setCopyClasses] = useState(true);
+  // Create form
+  const [newYearName, setNewYearName] = useState('');
+  const [newStartDate, setNewStartDate] = useState('');
+  const [newEndDate, setNewEndDate] = useState('');
+  const [copyFromYearId, setCopyFromYearId] = useState('');
 
   useEffect(() => {
     loadAcademicYears();
@@ -40,7 +56,6 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
 
   const loadAcademicYears = async () => {
     try {
-      setLoading(true);
       const token = TokenManager.getAccessToken();
       const schoolId = TokenManager.getUserData().user.schoolId;
 
@@ -49,424 +64,459 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
         return;
       }
 
-      const data = await getAcademicYears(schoolId, token);
-      setYears(data);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/academic-years`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Sort by start date descending (newest first)
+        const sortedYears = data.data.sort(
+          (a: AcademicYear, b: AcademicYear) =>
+            new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+        );
+        setYears(sortedYears);
+      } else {
+        setError(data.message || 'Failed to load academic years');
+      }
     } catch (err: any) {
-      setError(err.message);
+      setError('Error loading academic years: ' + err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreateYear = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreateYear = async () => {
+    if (!newYearName || !newStartDate || !newEndDate) {
+      setError('Please fill all fields');
+      return;
+    }
+
     try {
       const token = TokenManager.getAccessToken();
-      const schoolId = TokenManager.getUserData().user.schoolId;
 
-      await createAcademicYear(
-        schoolId,
-        { name, startDate, endDate, setAsCurrent },
-        token!
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/academic-years`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: newYearName,
+            startDate: new Date(newStartDate).toISOString(),
+            endDate: new Date(newEndDate).toISOString(),
+            copiedFromYearId: copyFromYearId || undefined,
+          }),
+        }
       );
 
-      setShowCreateModal(false);
-      setName('');
-      setStartDate('');
-      setEndDate('');
-      setSetAsCurrent(false);
-      loadAcademicYears();
+      const data = await response.json();
+
+      if (data.success) {
+        setShowCreateModal(false);
+        setNewYearName('');
+        setNewStartDate('');
+        setNewEndDate('');
+        setCopyFromYearId('');
+        loadAcademicYears();
+      } else {
+        setError(data.message || 'Failed to create academic year');
+      }
     } catch (err: any) {
-      alert(err.message);
+      setError('Error creating academic year: ' + err.message);
     }
   };
 
   const handleSetCurrent = async (yearId: string) => {
     try {
       const token = TokenManager.getAccessToken();
-      const schoolId = TokenManager.getUserData().user.schoolId;
 
-      await setCurrentAcademicYear(schoolId, yearId, token!);
-      loadAcademicYears();
-    } catch (err: any) {
-      alert(err.message);
-    }
-  };
-
-  const handleShowCopyPreview = async (year: AcademicYear) => {
-    try {
-      const token = TokenManager.getAccessToken();
-      const schoolId = TokenManager.getUserData().user.schoolId;
-
-      const preview = await getCopyPreview(schoolId, year.id, token!);
-      setSelectedSourceYear(year);
-      setCopyPreview(preview);
-      setShowCopyModal(true);
-    } catch (err: any) {
-      alert(err.message);
-    }
-  };
-
-  const handleCopySettings = async () => {
-    if (!copyFromYear || !selectedSourceYear) return;
-
-    try {
-      const token = TokenManager.getAccessToken();
-      const schoolId = TokenManager.getUserData().user.schoolId;
-
-      await copySettings(
-        schoolId,
-        selectedSourceYear.id,
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/academic-years/${yearId}/set-current`,
         {
-          toAcademicYearId: copyFromYear,
-          copySettings: {
-            subjects: copySubjects,
-            teachers: copyTeachers,
-            classes: copyClasses,
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-        },
-        token!
+        }
       );
 
-      setShowCopyModal(false);
-      setCopyFromYear('');
-      setSelectedSourceYear(null);
-      setCopyPreview(null);
-      alert('Settings copied successfully!');
-      loadAcademicYears();
+      const data = await response.json();
+
+      if (data.success) {
+        loadAcademicYears();
+      } else {
+        setError(data.message || 'Failed to set current year');
+      }
     } catch (err: any) {
-      alert(err.message);
+      setError('Error setting current year: ' + err.message);
     }
   };
 
-  const handleDelete = async (yearId: string) => {
-    if (!confirm('Are you sure you want to delete this academic year?')) return;
-
-    try {
-      const token = TokenManager.getAccessToken();
-      const schoolId = TokenManager.getUserData().user.schoolId;
-
-      await deleteAcademicYear(schoolId, yearId, token!);
-      loadAcademicYears();
-    } catch (err: any) {
-      alert(err.message);
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    const colors = {
-      PLANNING: 'bg-blue-100 text-blue-800',
-      ACTIVE: 'bg-green-100 text-green-800',
-      ENDED: 'bg-gray-100 text-gray-800',
-      ARCHIVED: 'bg-purple-100 text-purple-800',
+  const getStatusInfo = (status: string) => {
+    const statuses = {
+      PLANNING: {
+        label: 'Planning',
+        color: 'bg-blue-100 text-blue-700 border-blue-200',
+        icon: Clock,
+        description: 'In preparation phase',
+      },
+      ACTIVE: {
+        label: 'Active',
+        color: 'bg-green-100 text-green-700 border-green-200',
+        icon: CheckCircle2,
+        description: 'Currently in progress',
+      },
+      ENDED: {
+        label: 'Ended',
+        color: 'bg-orange-100 text-orange-700 border-orange-200',
+        icon: AlertCircle,
+        description: 'Completed, needs archiving',
+      },
+      ARCHIVED: {
+        label: 'Archived',
+        color: 'bg-gray-100 text-gray-700 border-gray-200',
+        icon: Archive,
+        description: 'Archived for records',
+      },
     };
-    return colors[status as keyof typeof colors] || colors.PLANNING;
+    return statuses[status as keyof typeof statuses] || statuses.PLANNING;
   };
+
+  const currentYear = years.find((y) => y.isCurrent);
 
   if (loading) {
     return (
-      <div className="p-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading academic years...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Academic Years</h1>
-          <p className="text-gray-600 mt-2">Manage academic years and settings</p>
-        </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-        >
-          + Create New Year
-        </button>
-      </div>
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Academic Year Management</h1>
+              <p className="text-gray-600">
+                Manage your school's academic years, student promotions, and settings
+              </p>
+            </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all shadow-md"
+            >
+              <Plus className="w-5 h-5" />
+              Create New Year
+            </button>
+          </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-          {error}
-        </div>
-      )}
-
-      {/* Academic Years List */}
-      <div className="bg-white rounded-lg shadow-sm border">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                Academic Year
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                Period
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                Status
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                Current
-              </th>
-              <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {years.map((year) => (
-              <tr key={year.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4">
-                  <div className="font-medium text-gray-900">{year.name}</div>
-                  {year.copiedFromYearId && (
-                    <div className="text-xs text-gray-500 mt-1">
-                      📋 Copied from previous year
-                    </div>
-                  )}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-600">
-                  {new Date(year.startDate).toLocaleDateString()} -{' '}
-                  {new Date(year.endDate).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4">
+          {/* Current Year Highlight */}
+          {currentYear && (
+            <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-yellow-400 rounded-full flex items-center justify-center">
+                  <Star className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-orange-700">Current Academic Year</p>
+                  <h2 className="text-2xl font-bold text-gray-900">{currentYear.name}</h2>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-600">
+                    {new Date(currentYear.startDate).toLocaleDateString()} -{' '}
+                    {new Date(currentYear.endDate).toLocaleDateString()}
+                  </p>
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(
-                      year.status
-                    )}`}
+                    className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${
+                      getStatusInfo(currentYear.status).color
+                    }`}
                   >
-                    {year.status}
+                    {getStatusInfo(currentYear.status).label}
                   </span>
-                </td>
-                <td className="px-6 py-4">
-                  {year.isCurrent ? (
-                    <span className="text-green-600 font-medium">✓ Current</span>
-                  ) : (
-                    <button
-                      onClick={() => handleSetCurrent(year.id)}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      Set as Current
-                    </button>
-                  )}
-                </td>
-                <td className="px-6 py-4 text-right space-x-2">
-                  <button
-                    onClick={() => handleShowCopyPreview(year)}
-                    className="px-3 py-1 text-sm bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
-                  >
-                    Copy Settings
-                  </button>
-                  {!year.isCurrent && (
-                    <button
-                      onClick={() => handleDelete(year.id)}
-                      className="px-3 py-1 text-sm bg-red-50 text-red-600 rounded hover:bg-red-100"
-                    >
-                      Delete
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
-        {years.length === 0 && (
-          <div className="text-center py-12 text-gray-500">
-            <p className="text-lg mb-2">No academic years found</p>
-            <p className="text-sm">Create your first academic year to get started</p>
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-red-900">Error</p>
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+            <button onClick={() => setError('')} className="text-red-600 hover:text-red-800">
+              ×
+            </button>
           </div>
         )}
+
+        {/* Academic Years Timeline */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">All Academic Years</h2>
+
+          {years.length === 0 ? (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Calendar className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Academic Years Yet</h3>
+              <p className="text-gray-600 mb-4">Create your first academic year to get started</p>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all shadow-md"
+              >
+                <Plus className="w-5 h-5" />
+                Create Academic Year
+              </button>
+            </div>
+          ) : (
+            years.map((year) => {
+              const statusInfo = getStatusInfo(year.status);
+              const StatusIcon = statusInfo.icon;
+
+              return (
+                <div
+                  key={year.id}
+                  className={`bg-white rounded-2xl shadow-sm border transition-all hover:shadow-md ${
+                    year.isCurrent ? 'border-orange-300 ring-2 ring-orange-100' : 'border-gray-200'
+                  }`}
+                >
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-xl font-bold text-gray-900">{year.name}</h3>
+                          {year.isCurrent && (
+                            <span className="px-3 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full flex items-center gap-1">
+                              <Star className="w-3 h-3" />
+                              Current
+                            </span>
+                          )}
+                          <span
+                            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${statusInfo.color}`}
+                          >
+                            <StatusIcon className="w-3 h-3" />
+                            {statusInfo.label}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">
+                          {new Date(year.startDate).toLocaleDateString('en-US', {
+                            month: 'short',
+                            year: 'numeric',
+                          })}{' '}
+                          -{' '}
+                          {new Date(year.endDate).toLocaleDateString('en-US', {
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </p>
+                        <p className="text-xs text-gray-500">{statusInfo.description}</p>
+                      </div>
+                    </div>
+
+                    {/* Quick Stats */}
+                    <div className="grid grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 rounded-xl">
+                      <div className="text-center">
+                        <Users className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                        <p className="text-xs text-gray-500">Students</p>
+                        <p className="text-lg font-bold text-gray-900">-</p>
+                      </div>
+                      <div className="text-center">
+                        <BookOpen className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                        <p className="text-xs text-gray-500">Classes</p>
+                        <p className="text-lg font-bold text-gray-900">-</p>
+                      </div>
+                      <div className="text-center">
+                        <GraduationCap className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                        <p className="text-xs text-gray-500">Promoted</p>
+                        <p className="text-lg font-bold text-gray-900">
+                          {year.isPromotionDone ? '✓' : '-'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-wrap gap-2">
+                      {!year.isCurrent && year.status !== 'ARCHIVED' && (
+                        <button
+                          onClick={() => handleSetCurrent(year.id)}
+                          className="flex items-center gap-2 px-4 py-2 bg-orange-100 text-orange-700 rounded-lg font-medium hover:bg-orange-200 transition-colors text-sm"
+                        >
+                          <Play className="w-4 h-4" />
+                          Set as Current
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => router.push(`/${locale}/settings/academic-years/${year.id}`)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium hover:bg-blue-200 transition-colors text-sm"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Manage
+                      </button>
+
+                      {year.isCurrent && (
+                        <button
+                          onClick={() => router.push(`/${locale}/settings/promotion`)}
+                          className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg font-medium hover:bg-green-200 transition-colors text-sm"
+                        >
+                          <TrendingUp className="w-4 h-4" />
+                          Promote Students
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() =>
+                          router.push(
+                            `/${locale}/settings/academic-years/create?copyFrom=${year.id}`
+                          )
+                        }
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg font-medium hover:bg-purple-200 transition-colors text-sm"
+                      >
+                        <Copy className="w-4 h-4" />
+                        Copy Settings
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
 
       {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full">
-            <h2 className="text-2xl font-bold mb-6">Create Academic Year</h2>
-            <form onSubmit={handleCreateYear} className="space-y-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900">Create New Academic Year</h2>
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <span className="text-2xl">×</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Year Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Name (e.g., 2026-2027)
+                  Academic Year Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  required
+                  value={newYearName}
+                  onChange={(e) => setNewYearName(e.target.value)}
+                  placeholder="e.g., 2026-2027"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Usually in format: YYYY-YYYY (e.g., 2026-2027)
+                </p>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={setAsCurrent}
-                  onChange={(e) => setSetAsCurrent(e.target.checked)}
-                  className="mr-2"
-                />
-                <label className="text-sm text-gray-700">Set as current academic year</label>
-              </div>
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 border rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Create
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
-      {/* Copy Settings Modal */}
-      {showCopyModal && selectedSourceYear && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-6">
-              Copy Settings from {selectedSourceYear.name}
-            </h2>
-
-            {/* Preview */}
-            {copyPreview && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <h3 className="font-semibold text-blue-900 mb-3">Preview:</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Subjects:</span>
-                    <span className="font-medium">{copyPreview.preview.subjects.total}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Teachers:</span>
-                    <span className="font-medium">{copyPreview.preview.teachers.total}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Classes:</span>
-                    <span className="font-medium">{copyPreview.preview.classes.total}</span>
-                  </div>
+              {/* Date Range */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Start Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={newStartDate}
+                    onChange={(e) => setNewStartDate(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Usually starts in October or November</p>
                 </div>
-                {copyPreview.warnings && copyPreview.warnings.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-blue-200">
-                    <p className="font-semibold text-yellow-700 mb-2">⚠️ Warnings:</p>
-                    <ul className="list-disc list-inside text-sm text-yellow-700 space-y-1">
-                      {copyPreview.warnings.map((warning: string, idx: number) => (
-                        <li key={idx}>{warning}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
 
-            {/* Target Year Selection */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Copy to Academic Year:
-              </label>
-              <select
-                value={copyFromYear}
-                onChange={(e) => setCopyFromYear(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                <option value="">Select target year...</option>
-                {years
-                  .filter((y) => y.id !== selectedSourceYear.id)
-                  .map((year) => (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    End Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={newEndDate}
+                    onChange={(e) => setNewEndDate(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Usually ends in August or September</p>
+                </div>
+              </div>
+
+              {/* Copy Settings */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Copy Settings From (Optional)
+                </label>
+                <select
+                  value={copyFromYearId}
+                  onChange={(e) => setCopyFromYearId(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="">Start from scratch</option>
+                  {years.map((year) => (
                     <option key={year.id} value={year.id}>
-                      {year.name}
+                      {year.name} (Classes, Subjects, Teachers)
                     </option>
                   ))}
-              </select>
-            </div>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Copy classes, subjects, and teachers from a previous year
+                </p>
+              </div>
 
-            {/* Copy Options */}
-            <div className="space-y-3 mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                What to copy:
-              </label>
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={copySubjects}
-                  onChange={(e) => setCopySubjects(e.target.checked)}
-                  className="mr-2"
-                />
-                <label className="text-sm text-gray-700">Subjects</label>
-              </div>
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={copyTeachers}
-                  onChange={(e) => setCopyTeachers(e.target.checked)}
-                  className="mr-2"
-                />
-                <label className="text-sm text-gray-700">Teachers</label>
-              </div>
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={copyClasses}
-                  onChange={(e) => setCopyClasses(e.target.checked)}
-                  className="mr-2"
-                />
-                <label className="text-sm text-gray-700">Class Structure (without students)</label>
+              {/* Info Box */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="flex gap-3">
+                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-blue-900">
+                    <p className="font-semibold mb-1">What happens after creating:</p>
+                    <ul className="list-disc list-inside space-y-1 text-blue-800">
+                      <li>New academic year will be created in PLANNING status</li>
+                      <li>If copying, classes and settings will be duplicated</li>
+                      <li>You can then promote students from the previous year</li>
+                      <li>Set it as current when ready to use</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="flex justify-end space-x-3">
+            <div className="p-6 border-t border-gray-200 flex gap-3">
               <button
-                type="button"
-                onClick={() => {
-                  setShowCopyModal(false);
-                  setSelectedSourceYear(null);
-                  setCopyPreview(null);
-                }}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                onClick={() => setShowCreateModal(false)}
+                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={handleCopySettings}
-                disabled={!copyFromYear}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handleCreateYear}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all shadow-md"
               >
-                Copy Settings
+                Create Academic Year
               </button>
             </div>
           </div>
