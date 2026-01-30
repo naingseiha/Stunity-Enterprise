@@ -1,69 +1,88 @@
 #!/bin/bash
 
-echo "🚀 Starting Stunity Enterprise Services..."
+# ========================================
+# Start All Stunity Services (Clean Version)
+# ========================================
+
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+echo -e "${BLUE}🚀 Starting Stunity Enterprise Services${NC}"
 echo ""
 
-PROJECT_ROOT="/Users/naingseiha/Documents/Stunity-Enterprise"
-
-# Start Auth Service
-echo "Starting auth-service on port 3001..."
-cd "$PROJECT_ROOT/services/auth-service"
-nohup npm run dev > /tmp/auth-service.log 2>&1 &
-AUTH_PID=$!
-echo "  → PID: $AUTH_PID"
-sleep 2
-
-# Start School Service  
-echo "Starting school-service on port 3002..."
-cd "$PROJECT_ROOT/services/school-service"
-nohup npm run dev > /tmp/school-service.log 2>&1 &
-SCHOOL_PID=$!
-echo "  → PID: $SCHOOL_PID"
-sleep 2
-
-# Start Student Service
-echo "Starting student-service on port 3003..."
-cd "$PROJECT_ROOT/services/student-service"
-nohup npm run dev > /tmp/student-service.log 2>&1 &
-STUDENT_PID=$!
-echo "  → PID: $STUDENT_PID"
-sleep 2
-
-# Start Teacher Service
-echo "Starting teacher-service on port 3004..."
-cd "$PROJECT_ROOT/services/teacher-service"
-nohup npm run dev > /tmp/teacher-service.log 2>&1 &
-TEACHER_PID=$!
-echo "  → PID: $TEACHER_PID"
-sleep 2
-
-# Start Class Service
-echo "Starting class-service on port 3005..."
-cd "$PROJECT_ROOT/services/class-service"
-nohup npm run dev > /tmp/class-service.log 2>&1 &
-CLASS_PID=$!
-echo "  → PID: $CLASS_PID"
-
-echo ""
-echo "⏳ Waiting 10 seconds for services to start..."
-sleep 10
-
-echo ""
-echo "📊 Service Status:"
-echo "─────────────────────────────────────"
-
-for port in 3001 3002 3003 3004 3005; do
-    status=$(curl -s http://localhost:$port/health 2>/dev/null | jq -r '.service // .success // "unknown"' 2>/dev/null)
-    if [ "$status" != "unknown" ] && [ ! -z "$status" ]; then
-        echo "✅ Port $port: $status"
-    else
-        echo "❌ Port $port: Not responding yet (check logs)"
-    fi
+# Check for port conflicts
+echo "🔍 Checking for port conflicts..."
+PORTS_IN_USE=0
+for port in 3000 3001 3002 3003 3004 3005 3006; do
+  if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1 ; then
+    pid=$(lsof -ti:$port)
+    echo -e "${YELLOW}⚠️  Port $port is already in use (PID: $pid)${NC}"
+    PORTS_IN_USE=1
+  fi
 done
 
-echo ""
-echo "📝 Logs location: /tmp/*-service.log"
-echo "📝 To view logs: tail -f /tmp/auth-service.log"
-echo ""
-echo "To stop all services, run: ./stop-all-services.sh"
+if [ $PORTS_IN_USE -eq 1 ]; then
+  echo ""
+  echo -e "${RED}❌ Some ports are already in use!${NC}"
+  echo ""
+  echo "Options:"
+  echo "  1. Stop all: ./stop-all-services.sh"
+  echo "  2. Then start: ./start-all-services.sh"
+  echo "  OR"
+  echo "  3. Restart: ./restart-all-services.sh"
+  echo ""
+  exit 1
+fi
 
+echo -e "${GREEN}✅ All ports are free!${NC}"
+echo ""
+
+# Start services
+BASE="/Users/naingseiha/Documents/Stunity-Enterprise"
+
+start_service() {
+    local name=$1
+    local path=$2
+    local port=$3
+    
+    echo -e "${YELLOW}Starting $name on port $port...${NC}"
+    cd "$path"
+    npm run dev > /tmp/stunity-$name.log 2>&1 &
+    sleep 2
+    
+    if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null ; then
+        echo -e "${GREEN}✅ $name started${NC}"
+    else
+        echo -e "${RED}❌ $name failed (check /tmp/stunity-$name.log)${NC}"
+    fi
+    echo ""
+}
+
+start_service "auth" "$BASE/services/auth-service" 3001
+start_service "school" "$BASE/services/school-service" 3002
+start_service "student" "$BASE/services/student-service" 3003
+start_service "teacher" "$BASE/services/teacher-service" 3004
+start_service "class" "$BASE/services/class-service" 3005
+start_service "subject" "$BASE/services/subject-service" 3006
+start_service "web" "$BASE/apps/web" 3000
+
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}✅ All services started!${NC}"
+echo -e "${GREEN}========================================${NC}"
+echo ""
+echo "📝 Access:"
+echo "   🌐 Web: http://localhost:3000"
+echo "   🔐 Auth: http://localhost:3001"
+echo "   🏫 School: http://localhost:3002"
+echo "   👨‍🎓 Student: http://localhost:3003"
+echo "   👨‍🏫 Teacher: http://localhost:3004"
+echo "   📚 Class: http://localhost:3005"
+echo "   🎓 Subject: http://localhost:3006"
+echo ""
+echo "📋 Logs: /tmp/stunity-*.log"
+echo "🛑 Stop: ./stop-all-services.sh"
+echo "🔄 Restart: ./restart-all-services.sh"
+echo "🔍 Check: ./check-services.sh"
