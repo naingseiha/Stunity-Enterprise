@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
+import UnifiedNavigation from '@/components/UnifiedNavigation';
 import {
   Calendar,
   CheckCircle,
@@ -30,6 +31,15 @@ export default function YearEndWorkflowPage({ params }: { params: { locale: stri
   const router = useRouter();
   const searchParams = useSearchParams();
   const yearId = searchParams.get('yearId');
+
+  const userData = TokenManager.getUserData();
+  const user = userData?.user;
+  const school = userData?.school;
+
+  const handleLogout = () => {
+    TokenManager.clearAccessToken();
+    router.push(`/${params.locale}/login`);
+  };
 
   const [currentYear, setCurrentYear] = useState<AcademicYear | null>(null);
   const [loading, setLoading] = useState(true);
@@ -240,10 +250,14 @@ export default function YearEndWorkflowPage({ params }: { params: { locale: stri
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <>
+      <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
+      
+      {/* Main Content - Add left margin for sidebar */}
+      <div className="lg:ml-64 min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <button
             onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
             className="flex items-center gap-2 text-white/80 hover:text-white mb-4 transition-colors"
@@ -443,6 +457,8 @@ export default function YearEndWorkflowPage({ params }: { params: { locale: stri
           )}
         </div>
       </div>
+      {/* End main content wrapper */}
     </div>
+    </>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { getCopyPreview, copySettings } from '@/lib/api/academic-years';
+import UnifiedNavigation from '@/components/UnifiedNavigation';
 import {
   Calendar,
   Plus,
@@ -41,6 +42,15 @@ interface AcademicYear {
 export default function AcademicYearsManagementPage({ params }: { params: { locale: string } }) {
   const router = useRouter();
   const { locale } = params;
+
+  const userData = TokenManager.getUserData();
+  const user = userData?.user;
+  const school = userData?.school;
+
+  const handleLogout = () => {
+    TokenManager.clearAccessToken();
+    router.push(`/${locale}/login`);
+  };
 
   const [years, setYears] = useState<AcademicYear[]>([]);
   const [loading, setLoading] = useState(true);
@@ -403,8 +413,12 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
+    <>
+      <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
+      
+      {/* Main Content - Add left margin for sidebar */}
+      <div className="lg:ml-64 min-h-screen bg-gray-50 py-8 px-4">
+        <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -1116,7 +1130,9 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
           </div>
         </div>
       )}
+      {/* End main content wrapper */}
     </div>
+    </>
   );
 }
 

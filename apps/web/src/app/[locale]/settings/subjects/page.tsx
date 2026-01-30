@@ -316,10 +316,12 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-white">
+    <>
       <UnifiedNavigation user={userData?.user} school={userData?.school} onLogout={handleLogout} />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main Content - Add left margin for sidebar */}
+      <div className="lg:ml-64 min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
@@ -1215,6 +1217,8 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
           </div>
         </div>
       )}
+      {/* End main content wrapper */}
     </div>
+    </>
   );
 }

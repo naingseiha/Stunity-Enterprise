@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
+import UnifiedNavigation from '@/components/UnifiedNavigation';
 import {
   ArrowRight,
   Users,
@@ -48,6 +49,15 @@ interface PromotionPreview {
 export default function StudentPromotionPage({ params: { locale } }: { params: { locale: string } }) {
   const router = useRouter();
   const { academicYears, selectedYear, selectYear } = useAcademicYear();
+  
+  const userData = TokenManager.getUserData();
+  const user = userData?.user;
+  const school = userData?.school;
+
+  const handleLogout = () => {
+    TokenManager.clearAccessToken();
+    router.push(`/${locale}/login`);
+  };
   
   const [step, setStep] = useState(1); // 1: Select Years, 2: Preview, 3: Execute, 4: Complete
   const [fromYearId, setFromYearId] = useState('');
@@ -167,8 +177,12 @@ export default function StudentPromotionPage({ params: { locale } }: { params: {
   const nonPromotableStudents = totalStudents - promotableStudents;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-6xl mx-auto">
+    <>
+      <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
+      
+      {/* Main Content - Add left margin for sidebar */}
+      <div className="lg:ml-64 min-h-screen bg-gray-50 py-8 px-4">
+        <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Student Promotion Wizard</h1>
@@ -501,6 +515,8 @@ export default function StudentPromotionPage({ params: { locale } }: { params: {
           </div>
         )}
       </div>
+      {/* End main content wrapper */}
     </div>
+    </>
   );
 }

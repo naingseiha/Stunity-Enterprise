@@ -491,15 +491,17 @@ export default function GradeEntryPage() {
   const maxScore = subject?.maxScore || 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-orange-100">
+    <>
       <UnifiedNavigation user={user} />
       
-      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Grade Entry</h1>
-          <p className="text-gray-600">Enter and manage student grades with Excel-like grid</p>
-        </div>
+      {/* Main Content - Add left margin for sidebar */}
+      <div className="lg:ml-64 min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-orange-100">
+        <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Grade Entry</h1>
+            <p className="text-gray-600">Enter and manage student grades with Excel-like grid</p>
+          </div>
 
         {/* Selectors Section */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
@@ -840,6 +842,8 @@ export default function GradeEntryPage() {
           </details>
         </div>
       </div>
+      {/* End main content wrapper */}
     </div>
+    </>
   );
 }

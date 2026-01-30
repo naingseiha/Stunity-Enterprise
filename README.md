@@ -1,213 +1,234 @@
-# 🎓 Stunity Enterprise - Multi-Tenant School Management Platform
+# Stunity Enterprise V2
 
-**Version:** 2.0.0  
-**Architecture:** Microservices  
-**Status:** Ready for Development  
-**Location:** `~/Documents/Stunity-Enterprise/`
+**Multi-Tenant School Management SaaS for Cambodia**
 
----
-
-## ✅ Setup Complete!
-
-Your professional enterprise microservices platform is ready!
-
-### What's Been Created:
-
-✅ **Professional folder structure** (197 directories)  
-✅ **622 files copied** from v1.0  
-✅ **Configuration files** (Turborepo, TypeScript, ESLint)  
-✅ **Documentation** (setup guides, migration strategy, roadmap)  
-✅ **Ready for Git & development**
+A modern, microservices-based school management system built with Next.js 14 and TypeScript.
 
 ---
 
-## 📁 Structure
+## 🎯 Overview
+
+Stunity Enterprise V2 is a complete school management solution designed specifically for Cambodian schools, featuring:
+
+- **Multi-tenant SaaS architecture** - One platform, multiple schools
+- **Microservices backend** - 9 independent services
+- **Modern UI** - Next.js 14 with TailwindCSS
+- **Bilingual support** - English & Khmer
+- **Mobile responsive** - Works on all devices
+
+---
+
+## ✨ Current Features
+
+### **Core Management:**
+- ✅ **Students** - Complete student management with profiles
+- ✅ **Teachers** - Teacher management with subject specialization
+- ✅ **Classes** - Class management with sections and grade levels
+- ✅ **Academic Years** - Multi-year support with rollover
+- ✅ **Subjects** - Subject catalog with categories and grade levels
+
+### **Academic Operations:**
+- ✅ **Grade Entry** - Excel-like grade entry interface with auto-save
+- ✅ **Attendance** - Daily attendance marking with 5 status types
+- ✅ **Settings Rollover** - Copy subjects, teachers, classes between years
+
+### **System Features:**
+- ✅ **Unified Navigation** - Consistent sidebar navigation across all pages
+- ✅ **Academic Year Context** - Global academic year selection
+- ✅ **Multi-language** - English and Khmer support
+- ✅ **JWT Authentication** - Secure token-based auth
+
+---
+
+## 🚀 Quick Start
+
+### **Prerequisites:**
+- Node.js 18+
+- PostgreSQL  
+- Git
+
+### **Installation:**
+
+```bash
+# Clone repository
+git clone <repository-url>
+cd Stunity-Enterprise
+
+# Install dependencies
+npm install
+
+# Start all services
+./start-all-services.sh
+
+# Check service status
+./check-services.sh
+
+# Open browser
+open http://localhost:3000
+```
+
+See **QUICK_START.md** for detailed instructions.
+
+---
+
+## 📁 Project Structure
 
 ```
 Stunity-Enterprise/
-├── apps/                    # Frontend applications
-│   ├── web/                 # Next.js web platform (Port 3000)
-│   ├── mobile/              # React Native mobile app
-│   ├── admin-portal/        # Super admin dashboard
-│   └── docs/                # Documentation site
-│
-├── services/                # Backend microservices
-│   ├── auth-service/        # Authentication (Port 3001)
-│   ├── school-service/      # School management (Port 3002)
-│   ├── user-service/        # User profiles (Port 3003)
-│   ├── grade-service/       # Grades & classes (Port 3004)
-│   ├── feed-service/        # Social feed (Port 3005)
-│   ├── notification-service/# Notifications (Port 3006)
-│   ├── storage-service/     # File uploads (Port 3007)
-│   ├── analytics-service/   # Analytics (Port 3008)
-│   └── search-service/      # Search (Port 3009)
-│
-├── packages/                # Shared code ✅ FROM v1.0
-│   ├── database/            # Prisma schemas ✅
-│   ├── types/               # TypeScript types ✅
-│   ├── utils/               # Utilities ✅
-│   └── ui/                  # UI components (reference) ✅
-│
-├── infrastructure/          # DevOps
-│   ├── docker/
-│   ├── kubernetes/
-│   └── scripts/
-│
-└── docs/                    # Documentation ✅ FROM v1.0
-    ├── migration/
-    │   └── v1-reference/    # Controllers & routes from v1.0
-    └── [all other docs]
-```
-
----
-
-## 🚀 Quick Start (5 Commands)
-
-```bash
-# 1. Navigate
-cd ~/Documents/Stunity-Enterprise
-
-# 2. Install dependencies
-npm install
-
-# 3. Setup database
-cd packages/database && npm init -y && npm install prisma @prisma/client && npx prisma generate
-
-# 4. Create environment
-cd ../.. && cp .env.example .env
-# Edit .env with your DATABASE_URL
-
-# 5. Start first service
-cd services/auth-service && npm init -y
-npm install express cors dotenv jsonwebtoken bcryptjs @prisma/client
-npm install --save-dev typescript @types/node @types/express ts-node nodemon
+├── apps/web/                   # Next.js Frontend (Port 3000)
+├── services/
+│   ├── auth-service/           # Authentication (Port 3001)
+│   ├── school-service/         # School Management (Port 3002)
+│   ├── student-service/        # Students (Port 3003)
+│   ├── teacher-service/        # Teachers (Port 3004)
+│   ├── class-service/          # Classes (Port 3005)
+│   ├── subject-service/        # Subjects (Port 3006)
+│   ├── grade-service/          # Grades (Port 3007)
+│   └── attendance-service/     # Attendance (Port 3008)
+├── *.sh                        # Service management scripts
+└── docs/                       # Documentation
 ```
 
 ---
 
 ## 📚 Documentation
 
-### Getting Started:
-- **QUICKSTART.txt** - 5-minute overview
-- **SETUP_GUIDE.md** - Detailed step-by-step setup (read this next!)
-- **README.md** - This file
+### **Essential Docs:**
+- **QUICK_START.md** - Get started in 5 minutes
+- **COMPLETE_SYSTEM_STATUS.md** - Full system overview and features
+- **IMPLEMENTATION_ROADMAP.md** - Next features to implement
+- **SERVICE_MANAGEMENT.md** - Service operations guide
 
-### Planning:
-- **COMPLETE_STRATEGIC_ROADMAP.md** - 18-month roadmap (Path C strategy)
-- **PRODUCTION_MIGRATION_STRATEGY.md** - Complete migration guide
-- **ANALYTICS_COMPLETE_SUMMARY.md** - Analytics implementation
-
-### Reference:
-- `docs/migration/v1-reference/` - v1.0 code to extract from
-- `packages/` - Reusable code from v1.0
+### **Read First:**
+1. Start with **QUICK_START.md**
+2. Review **COMPLETE_SYSTEM_STATUS.md** for current features
+3. Check **IMPLEMENTATION_ROADMAP.md** for what's next
+4. Use **SERVICE_MANAGEMENT.md** when working with services
 
 ---
 
-## 🎯 What Was Copied from v1.0
+## 🛠️ Technology Stack
 
-### ✅ Ready to Use (adapt for multi-tenancy):
-- **Database schema** - `packages/database/prisma/schema.prisma`
-- **TypeScript types** - `packages/types/`
-- **Utilities** - `packages/utils/`
-- **Documentation** - `docs/`
+### **Frontend:**
+- Next.js 14 (App Router)
+- TypeScript
+- TailwindCSS
+- next-intl (i18n)
 
-### 📚 Reference (extract logic):
-- **UI components** - `packages/ui/reference/components/`
-- **Controllers** - `docs/migration/v1-reference/controllers/`
-- **Routes** - `docs/migration/v1-reference/routes/`
-
----
-
-## 🏗️ Technology Stack
-
-- **Monorepo:** Turborepo
-- **Frontend:** Next.js 14, React Native (Expo), TypeScript
-- **Backend:** Node.js, Express.js, TypeScript
-- **Database:** PostgreSQL (Neon), Prisma ORM
-- **Cache:** Redis
-- **Storage:** Cloudflare R2
-- **Realtime:** Socket.io
-- **Deployment:** Vercel (frontend), Render (backend)
+### **Backend:**
+- Node.js + Express
+- TypeScript
+- Prisma ORM
+- PostgreSQL
+- JWT Authentication
 
 ---
 
-## 🎯 Next Steps
+## 🎯 Next Features
 
-### Today (2-3 hours):
-1. ✅ Structure created (DONE)
-2. ✅ Files copied (DONE)
-3. [ ] Read `SETUP_GUIDE.md`
-4. [ ] Initialize Git
-5. [ ] Install dependencies
-6. [ ] Setup database
-7. [ ] Create first service (auth)
+### **Priority 1: Feature Completeness** (Week 1)
+- Attendance Reports & Analytics
+- Grade Reports & Analytics
+- Student/Teacher Profile Enhancements
 
-### This Week:
-- Build auth, school, grade, feed services
-- Update Prisma schema for multi-tenancy
-- Create Next.js web app
-- Test local development
+### **Priority 2: Timetable Generator** (Week 2-3)
+- Automatic timetable generation
+- Teacher-Subject-Class assignment
+- Conflict detection and resolution
+- Class/Teacher/Student timetable views
+- **This is NEW and unique to V2!**
 
-### Next 6 Months:
-Follow the **18-month roadmap** in `COMPLETE_STRATEGIC_ROADMAP.md`
+See **IMPLEMENTATION_ROADMAP.md** for full details.
 
 ---
 
-## 🔄 Migration Strategy
+## 🧪 Service Management
 
-**Two repositories coexist:**
+### **Common Commands:**
 
-| Repository | Purpose | Status |
-|------------|---------|--------|
-| **SchoolManagementApp** (v1.0) | Current production (1 school) | Maintenance only |
-| **Stunity-Enterprise** (v2.0) | New multi-tenant platform | Active development |
+```bash
+# Start all services
+./start-all-services.sh
 
-- v1.0 stays in production (safe)
-- v2.0 gets all new schools
-- Migrate v1.0 school after 6 months testing
+# Stop all services
+./stop-all-services.sh
 
----
+# Restart all services
+./restart-all-services.sh
 
-## 📊 Project Stats
+# Check status
+./check-services.sh
 
-- **Directories:** 197
-- **Files:** 622 (copied + created)
-- **Services:** 9 microservices planned
-- **Apps:** 3 frontend apps planned
-- **Shared packages:** 5
+# Kill specific port
+./kill-port.sh <port>
 
----
-
-## ✅ Verification Checklist
-
-Before starting development:
-
-- [ ] Git initialized and pushed to GitHub
-- [ ] Dependencies installed (`npm install` in root)
-- [ ] Database package setup (`packages/database`)
-- [ ] Prisma client generated
-- [ ] .env file created with DATABASE_URL
-- [ ] Auth service skeleton created
-- [ ] Auth service runs (`npm run dev`)
-- [ ] Health check works (http://localhost:3001/health)
+# Create academic year (helper)
+./create-academic-year.sh
+```
 
 ---
 
-## 🆘 Need Help?
+## 📊 System Status
 
-1. **Setup questions:** Read `SETUP_GUIDE.md`
-2. **Architecture questions:** Read `PRODUCTION_MIGRATION_STRATEGY.md`
-3. **Roadmap questions:** Read `COMPLETE_STRATEGIC_ROADMAP.md`
-4. **v1.0 code reference:** Check `docs/migration/v1-reference/`
+**Current Phase:** ✅ Core System Complete
+
+**Services:** 9/9 Running  
+**Features:** 8 Major Features Complete  
+**Documentation:** 4 Essential Docs  
+
+**Next Phase:** 🚀 Feature Enhancement & Timetable System
+
+---
+
+## 🐛 Troubleshooting
+
+### **Port Already in Use:**
+```bash
+./kill-port.sh <port>
+./restart-all-services.sh
+```
+
+### **Service Won't Start:**
+```bash
+# Check logs
+tail -f /tmp/stunity-*.log
+
+# Restart specific service
+cd services/<service-name>
+npm run dev
+```
+
+### **Database Issues:**
+```bash
+# Run migrations
+cd services/<service-name>
+npx prisma migrate dev
+```
 
 ---
 
 ## 📞 Support
 
-This is a private enterprise project. For support, contact the development team.
+- **Logs:** `/tmp/stunity-*.log`
+- **Documentation:** `/docs` and root `.md` files
+- **Service Status:** `./check-services.sh`
 
 ---
 
-**Built with ❤️ for the future of education**
+## 🎓 For Developers
 
-Next: Read `SETUP_GUIDE.md` or `QUICKSTART.txt`
+1. **Read QUICK_START.md** - Setup and first run
+2. **Read COMPLETE_SYSTEM_STATUS.md** - Understand the system
+3. **Read IMPLEMENTATION_ROADMAP.md** - See what's next
+4. **Review SERVICE_MANAGEMENT.md** - Learn service operations
+5. **Start building!** 🚀
+
+---
+
+## 📄 License
+
+Proprietary - Stunity Enterprise
+
+---
+
+**Built with ❤️ for Cambodian Schools**

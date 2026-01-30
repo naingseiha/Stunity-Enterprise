@@ -424,10 +424,12 @@ export default function MarkAttendancePage() {
     selectedAcademicYear && selectedClass && selectedDate && isDateValid;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="max-w-[1600px] mx-auto px-4 py-8">
+      {/* Main Content - Add left margin for sidebar */}
+      <div className="lg:ml-64 min-h-screen bg-gray-50">
+        <div className="max-w-[1600px] mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-6">
           {/* Breadcrumbs */}
@@ -870,6 +872,8 @@ export default function MarkAttendancePage() {
           </div>
         </div>
       )}
+      {/* End main content wrapper */}
     </div>
+    </>
   );
 }

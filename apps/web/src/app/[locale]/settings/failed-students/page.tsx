@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
+import UnifiedNavigation from '@/components/UnifiedNavigation';
 import {
   AlertTriangle,
   Users,
@@ -34,6 +35,16 @@ interface Student {
 
 export default function FailedStudentsPage({ params }: { params: { locale: string } }) {
   const router = useRouter();
+
+  const userData = TokenManager.getUserData();
+  const user = userData?.user;
+  const school = userData?.school;
+
+  const handleLogout = () => {
+    TokenManager.clearAccessToken();
+    router.push(`/${params.locale}/login`);
+  };
+
   const [years, setYears] = useState<AcademicYear[]>([]);
   const [fromYearId, setFromYearId] = useState('');
   const [toYearId, setToYearId] = useState('');
@@ -206,10 +217,14 @@ export default function FailedStudentsPage({ params }: { params: { locale: strin
   const toYear = years.find(y => y.id === toYearId);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <>
+      <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
+      
+      {/* Main Content - Add left margin for sidebar */}
+      <div className="lg:ml-64 min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <button
             onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
             className="flex items-center gap-2 text-white/80 hover:text-white mb-4"
@@ -412,6 +427,8 @@ export default function FailedStudentsPage({ params }: { params: { locale: strin
           </div>
         )}
       </div>
+      {/* End main content wrapper */}
     </div>
+    </>
   );
 }

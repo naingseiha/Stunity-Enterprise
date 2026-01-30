@@ -271,40 +271,35 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
         )}
       </nav>
 
-      {/* School Context Sidebar */}
+      {/* School Context Sidebar - Fixed Position */}
       {isSchoolContext && (
-        <div className="flex">
-          <aside className="hidden lg:block w-64 bg-white border-r border-gray-200 min-h-screen">
-            <div className="p-4 space-y-1">
-              <p className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                School Management
-              </p>
-              {schoolMenuItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.path;
-                return (
-                  <button
-                    key={item.name}
-                    onClick={() => router.push(item.path)}
-                    className={`
-                      w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm transition-colors
-                      ${isActive 
-                        ? 'text-blue-600 bg-blue-50' 
-                        : 'text-gray-700 hover:bg-gray-50'
-                      }
-                    `}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span>{item.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </aside>
-          <main className="flex-1">
-            {/* Content will be rendered here */}
-          </main>
-        </div>
+        <aside className="hidden lg:block fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 overflow-y-auto">
+          <div className="p-4 space-y-1">
+            <p className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              School Management
+            </p>
+            {schoolMenuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.path;
+              return (
+                <button
+                  key={item.name}
+                  onClick={() => router.push(item.path)}
+                  className={`
+                    w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm transition-colors
+                    ${isActive 
+                      ? 'text-blue-600 bg-blue-50' 
+                      : 'text-gray-700 hover:bg-gray-50'
+                    }
+                  `}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span>{item.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </aside>
       )}
     </>
   );

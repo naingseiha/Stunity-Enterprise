@@ -20,6 +20,7 @@ import TeacherModal from '@/components/teachers/TeacherModal';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import AcademicYearSelector from '@/components/AcademicYearSelector';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import UnifiedNavigation from '@/components/UnifiedNavigation';
 
 export default function TeachersPage({ params: { locale } }: { params: { locale: string } }) {
   const t = useTranslations('teachers');
@@ -37,6 +38,11 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
 
   const user = TokenManager.getUserData().user;
   const school = TokenManager.getUserData().school;
+
+  const handleLogout = () => {
+    TokenManager.clearAccessToken();
+    router.push(`/${locale}/login`);
+  };
 
   useEffect(() => {
     const token = TokenManager.getAccessToken();
@@ -94,67 +100,13 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
     }
   };
 
-  const handleLogout = () => {
-    TokenManager.clearTokens();
-    router.replace(`/${locale}/auth/login`);
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push(`/${locale}/dashboard`)}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <Home className="w-4 h-4" />
-                Dashboard
-              </button>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => router.push(`/${locale}/students`)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors text-sm"
-                >
-                  <Users className="w-4 h-4 inline mr-2" />
-                  Students
-                </button>
-                <button
-                  className="px-4 py-2 bg-stunity-primary-50 text-stunity-primary-700 rounded-lg text-sm font-medium"
-                >
-                  <GraduationCap className="w-4 h-4 inline mr-2" />
-                  Teachers
-                </button>
-                <button
-                  onClick={() => router.push(`/${locale}/classes`)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors text-sm"
-                >
-                  <BookOpen className="w-4 h-4 inline mr-2" />
-                  Classes
-                </button>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <LanguageSwitcher />
-              <AcademicYearSelector />
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{school?.name || 'School'}</p>
-                <p className="text-xs text-gray-600">Teachers Management</p>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <>
+      <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="container mx-auto px-4 py-8">
+      {/* Main Content - Add left margin for sidebar */}
+      <div className="lg:ml-64 min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
         {/* Academic Year Info */}
         {selectedYear && (
           <div className="mb-4 flex items-center gap-2 text-sm">
@@ -331,6 +283,8 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
           onClose={handleModalClose}
         />
       )}
+      {/* End main content wrapper */}
     </div>
+    </>
   );
 }
