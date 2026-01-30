@@ -986,6 +986,489 @@ app.post('/students/:id/photo', upload.single('photo'), async (req: AuthRequest,
   }
 });
 
+// ============================================
+// STUDENT PROMOTION & PROGRESSION ENDPOINTS
+// ============================================
+
+/**
+ * Preview automatic promotion
+ * Shows which students will be promoted from current year to next
+ */
+app.post('/students/promote/preview', async (req: AuthRequest, res: Response) => {
+  try {
+    const { fromAcademicYearId, toAcademicYearId } = req.body;
+    const schoolId = req.user?.schoolId;
+
+    if (!schoolId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    if (!fromAcademicYearId || !toAcademicYearId) {
+      return res.status(400).json({
+        success: false,
+        message: 'fromAcademicYearId and toAcademicYearId are required',
+      });
+    }
+
+    // Get all classes from source year
+    const fromClasses = await prisma.class.findMany({
+      where: {
+        academicYearId: fromAcademicYearId,
+        schoolId,
+      },
+      include: {
+        studentClasses: {
+          include: {
+            student: {
+              select: {
+                id: true,
+                studentId: true,
+                firstName: true,
+                lastName: true,
+                khmerName: true,
+                gender: true,
+                photoUrl: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Get target year classes
+    const toClasses = await prisma.class.findMany({
+      where: {
+        academicYearId: toAcademicYearId,
+        schoolId,
+      },
+      select: {
+        id: true,
+        name: true,
+        grade: true,
+        section: true,
+      },
+    });
+
+    // Build promotion preview
+    const promotionPreview = fromClasses.map((fromClass) => {
+      // Find matching class in next year (same grade + 1)
+      const nextGrade = (parseInt(fromClass.grade) + 1).toString();
+      const suggestedToClass = toClasses.find(
+        (c) => c.grade === nextGrade && c.section === fromClass.section
+      );
+
+      return {
+        fromClass: {
+          id: fromClass.id,
+          name: fromClass.name,
+          grade: fromClass.grade,
+          section: fromClass.section,
+          studentCount: fromClass.studentClasses.length,
+        },
+        toClass: suggestedToClass || null,
+        students: fromClass.studentClasses.map((sc) => ({
+          id: sc.student.id,
+          studentId: sc.student.studentId,
+          name: {
+            latin: `${sc.student.firstName} ${sc.student.lastName}`,
+            khmer: sc.student.khmerName,
+          },
+          gender: sc.student.gender,
+          photo: sc.student.photoUrl,
+          canPromote: !!suggestedToClass,
+        })),
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        fromAcademicYearId,
+        toAcademicYearId,
+        totalStudents: promotionPreview.reduce((sum, p) => sum + p.students.length, 0),
+        promotableStudents: promotionPreview
+          .filter((p) => p.toClass)
+          .reduce((sum, p) => sum + p.students.length, 0),
+        preview: promotionPreview,
+      },
+    });
+  } catch (error: any) {
+    console.error('Error previewing promotion:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to preview promotion',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * Execute automatic promotion
+ * Promotes students from one academic year to the next automatically
+ */
+app.post('/students/promote/automatic', async (req: AuthRequest, res: Response) => {
+  try {
+    const { fromAcademicYearId, toAcademicYearId, promotions } = req.body;
+    const schoolId = req.user?.schoolId;
+    const userId = req.user?.id;
+
+    if (!schoolId || !userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    if (!fromAcademicYearId || !toAcademicYearId || !Array.isArray(promotions)) {
+      return res.status(400).json({
+        success: false,
+        message: 'fromAcademicYearId, toAcademicYearId, and promotions array are required',
+      });
+    }
+
+    // Validate academic years exist
+    const [fromYear, toYear] = await Promise.all([
+      prisma.academicYear.findFirst({
+        where: { id: fromAcademicYearId, schoolId },
+      }),
+      prisma.academicYear.findFirst({
+        where: { id: toAcademicYearId, schoolId },
+      }),
+    ]);
+
+    if (!fromYear || !toYear) {
+      return res.status(404).json({
+        success: false,
+        message: 'Academic year not found',
+      });
+    }
+
+    const results = {
+      successful: [] as any[],
+      failed: [] as any[],
+    };
+
+    // Process each promotion
+    for (const promo of promotions) {
+      try {
+        const { studentId, fromClassId, toClassId } = promo;
+
+        // Verify student exists and belongs to from class
+        const studentClass = await prisma.studentClass.findFirst({
+          where: {
+            studentId,
+            classId: fromClassId,
+          },
+        });
+
+        if (!studentClass) {
+          results.failed.push({
+            studentId,
+            reason: 'Student not found in source class',
+          });
+          continue;
+        }
+
+        // Check if already promoted
+        const existingProgression = await prisma.studentProgression.findFirst({
+          where: {
+            studentId,
+            fromAcademicYearId,
+            toAcademicYearId,
+          },
+        });
+
+        if (existingProgression) {
+          results.failed.push({
+            studentId,
+            reason: 'Already promoted to this academic year',
+          });
+          continue;
+        }
+
+        // Create progression record and assign to new class
+        await prisma.$transaction(async (tx) => {
+          // Create progression record
+          await tx.studentProgression.create({
+            data: {
+              studentId,
+              fromAcademicYearId,
+              toAcademicYearId,
+              fromClassId,
+              toClassId,
+              promotionType: 'AUTOMATIC',
+              promotionDate: new Date(),
+              promotedBy: userId,
+            },
+          });
+
+          // Assign student to new class
+          const existingAssignment = await tx.studentClass.findFirst({
+            where: {
+              studentId,
+              classId: toClassId,
+            },
+          });
+
+          if (!existingAssignment) {
+            await tx.studentClass.create({
+              data: {
+                studentId,
+                classId: toClassId,
+                enrolledAt: new Date(),
+              },
+            });
+          }
+        });
+
+        results.successful.push({
+          studentId,
+          fromClassId,
+          toClassId,
+        });
+      } catch (error: any) {
+        results.failed.push({
+          studentId: promo.studentId,
+          reason: error.message,
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Promoted ${results.successful.length} students successfully`,
+      data: {
+        successCount: results.successful.length,
+        failureCount: results.failed.length,
+        results,
+      },
+    });
+  } catch (error: any) {
+    console.error('Error executing automatic promotion:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to execute promotion',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * Manual promotion - promote individual student to specific class
+ */
+app.post('/students/promote/manual', async (req: AuthRequest, res: Response) => {
+  try {
+    const {
+      studentId,
+      fromAcademicYearId,
+      toAcademicYearId,
+      fromClassId,
+      toClassId,
+      notes,
+    } = req.body;
+    const schoolId = req.user?.schoolId;
+    const userId = req.user?.id;
+
+    if (!schoolId || !userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    if (!studentId || !fromAcademicYearId || !toAcademicYearId || !fromClassId || !toClassId) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required',
+      });
+    }
+
+    // Validate student belongs to school
+    const student = await prisma.student.findFirst({
+      where: { id: studentId, schoolId },
+    });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found',
+      });
+    }
+
+    // Check if already promoted
+    const existingProgression = await prisma.studentProgression.findFirst({
+      where: {
+        studentId,
+        fromAcademicYearId,
+        toAcademicYearId,
+      },
+    });
+
+    if (existingProgression) {
+      return res.status(400).json({
+        success: false,
+        message: 'Student already promoted to this academic year',
+      });
+    }
+
+    // Create progression and assign to class
+    const progression = await prisma.$transaction(async (tx) => {
+      // Create progression record
+      const prog = await tx.studentProgression.create({
+        data: {
+          studentId,
+          fromAcademicYearId,
+          toAcademicYearId,
+          fromClassId,
+          toClassId,
+          promotionType: 'MANUAL',
+          promotionDate: new Date(),
+          promotedBy: userId,
+          notes,
+        },
+        include: {
+          student: {
+            select: {
+              studentId: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          fromClass: {
+            select: {
+              name: true,
+              grade: true,
+            },
+          },
+          toClass: {
+            select: {
+              name: true,
+              grade: true,
+            },
+          },
+        },
+      });
+
+      // Assign to new class if not already assigned
+      const existingAssignment = await tx.studentClass.findFirst({
+        where: {
+          studentId,
+          classId: toClassId,
+        },
+      });
+
+      if (!existingAssignment) {
+        await tx.studentClass.create({
+          data: {
+            studentId,
+            classId: toClassId,
+            enrolledAt: new Date(),
+          },
+        });
+      }
+
+      return prog;
+    });
+
+    res.json({
+      success: true,
+      message: 'Student promoted successfully',
+      data: progression,
+    });
+  } catch (error: any) {
+    console.error('Error executing manual promotion:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to promote student',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * Get student progression history
+ */
+app.get('/students/:id/progression', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = req.user?.schoolId;
+
+    if (!schoolId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    // Verify student belongs to school
+    const student = await prisma.student.findFirst({
+      where: { id, schoolId },
+    });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found',
+      });
+    }
+
+    // Get progression history
+    const progressions = await prisma.studentProgression.findMany({
+      where: { studentId: id },
+      include: {
+        fromAcademicYear: {
+          select: {
+            id: true,
+            name: true,
+            startDate: true,
+            endDate: true,
+          },
+        },
+        toAcademicYear: {
+          select: {
+            id: true,
+            name: true,
+            startDate: true,
+            endDate: true,
+          },
+        },
+        fromClass: {
+          select: {
+            id: true,
+            name: true,
+            grade: true,
+            section: true,
+          },
+        },
+        toClass: {
+          select: {
+            id: true,
+            name: true,
+            grade: true,
+            section: true,
+          },
+        },
+      },
+      orderBy: {
+        promotionDate: 'asc',
+      },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        student: {
+          id: student.id,
+          studentId: student.studentId,
+          name: {
+            latin: `${student.firstName} ${student.lastName}`,
+            khmer: student.khmerName,
+          },
+        },
+        progressions,
+      },
+    });
+  } catch (error: any) {
+    console.error('Error fetching progression history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch progression history',
+      error: error.message,
+    });
+  }
+});
+
 // Health check endpoint (no auth required)
 app.get('/health', (_req, res) => {
   res.json({
@@ -1013,6 +1496,11 @@ app.listen(PORT, () => {
   console.log(`   PUT    /students/:id - Update student`);
   console.log(`   DELETE /students/:id - Delete student`);
   console.log(`   POST   /students/:id/photo - Upload photo`);
+  console.log(`🎓 Student Promotion:`);
+  console.log(`   POST   /students/promote/preview - Preview promotion`);
+  console.log(`   POST   /students/promote/automatic - Bulk promotion`);
+  console.log(`   POST   /students/promote/manual - Manual promotion`);
+  console.log(`   GET    /students/:id/progression - History`);
   console.log(`   GET    /health - Health check (no auth)`);
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 });
