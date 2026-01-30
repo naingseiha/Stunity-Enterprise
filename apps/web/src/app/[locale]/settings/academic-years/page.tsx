@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { TokenManager } from '@/lib/api/auth';
 import {
   getAcademicYears,
   createAcademicYear,
@@ -12,8 +13,9 @@ import {
   type AcademicYear,
 } from '@/lib/api/academic-years';
 
-export default function AcademicYearsPage() {
+export default function AcademicYearsPage({ params }: { params: { locale: string } }) {
   const router = useRouter();
+  const { locale } = params;
   const [years, setYears] = useState<AcademicYear[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,11 +41,11 @@ export default function AcademicYearsPage() {
   const loadAcademicYears = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const schoolId = JSON.parse(localStorage.getItem('user') || '{}').schoolId;
+      const token = TokenManager.getAccessToken();
+      const schoolId = TokenManager.getUserData().user.schoolId;
 
       if (!token || !schoolId) {
-        router.push('/auth/login');
+        router.push(`/${locale}/auth/login`);
         return;
       }
 
@@ -59,8 +61,8 @@ export default function AcademicYearsPage() {
   const handleCreateYear = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      const schoolId = JSON.parse(localStorage.getItem('user') || '{}').schoolId;
+      const token = TokenManager.getAccessToken();
+      const schoolId = TokenManager.getUserData().user.schoolId;
 
       await createAcademicYear(
         schoolId,
@@ -81,8 +83,8 @@ export default function AcademicYearsPage() {
 
   const handleSetCurrent = async (yearId: string) => {
     try {
-      const token = localStorage.getItem('token');
-      const schoolId = JSON.parse(localStorage.getItem('user') || '{}').schoolId;
+      const token = TokenManager.getAccessToken();
+      const schoolId = TokenManager.getUserData().user.schoolId;
 
       await setCurrentAcademicYear(schoolId, yearId, token!);
       loadAcademicYears();
@@ -93,8 +95,8 @@ export default function AcademicYearsPage() {
 
   const handleShowCopyPreview = async (year: AcademicYear) => {
     try {
-      const token = localStorage.getItem('token');
-      const schoolId = JSON.parse(localStorage.getItem('user') || '{}').schoolId;
+      const token = TokenManager.getAccessToken();
+      const schoolId = TokenManager.getUserData().user.schoolId;
 
       const preview = await getCopyPreview(schoolId, year.id, token!);
       setSelectedSourceYear(year);
@@ -109,8 +111,8 @@ export default function AcademicYearsPage() {
     if (!copyFromYear || !selectedSourceYear) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const schoolId = JSON.parse(localStorage.getItem('user') || '{}').schoolId;
+      const token = TokenManager.getAccessToken();
+      const schoolId = TokenManager.getUserData().user.schoolId;
 
       await copySettings(
         schoolId,
@@ -141,8 +143,8 @@ export default function AcademicYearsPage() {
     if (!confirm('Are you sure you want to delete this academic year?')) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const schoolId = JSON.parse(localStorage.getItem('user') || '{}').schoolId;
+      const token = TokenManager.getAccessToken();
+      const schoolId = TokenManager.getUserData().user.schoolId;
 
       await deleteAcademicYear(schoolId, yearId, token!);
       loadAcademicYears();
