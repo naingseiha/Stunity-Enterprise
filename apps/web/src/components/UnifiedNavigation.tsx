@@ -18,6 +18,7 @@ import {
   BarChart3,
   FileText,
   TrendingUp,
+  ClipboardList,
 } from 'lucide-react';
 import AcademicYearSelector from './AcademicYearSelector';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -41,6 +42,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                           pathname.includes('/students') || 
                           pathname.includes('/teachers') || 
                           pathname.includes('/classes') ||
+                          pathname.includes('/grades') ||
                           pathname.includes('/settings');
   
   const isFeedContext = pathname.includes('/feed');
@@ -76,6 +78,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
     { name: 'Teachers', icon: User, path: `/${locale}/teachers` },
     { name: 'Classes', icon: BookOpen, path: `/${locale}/classes` },
     { name: 'Subjects', icon: BookOpen, path: `/${locale}/settings/subjects` },
+    { name: 'Grade Entry', icon: ClipboardList, path: `/${locale}/grades/entry` },
     { name: 'Promotion', icon: TrendingUp, path: `/${locale}/settings/promotion` },
     { name: 'Reports', icon: FileText, path: `/${locale}/reports` },
     { name: 'Settings', icon: Settings, path: `/${locale}/settings/academic-years` },
