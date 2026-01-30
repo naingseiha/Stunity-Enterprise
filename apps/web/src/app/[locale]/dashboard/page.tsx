@@ -11,6 +11,7 @@ import {
   Calendar,
   Activity,
   ArrowUpRight,
+  CalendarRange,
   ArrowDownRight,
   Clock,
   Award,
@@ -448,6 +449,13 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
                   onClick={() => alert('Reports feature coming soon!')}
                   color="bg-gradient-to-br from-orange-500 to-orange-600"
                 />
+                <QuickActionCard
+                  title="Academic Years"
+                  description="Manage academic years and copy settings"
+                  icon={Calendar}
+                  onClick={() => router.push(`/${locale}/settings/academic-years`)}
+                  color="bg-gradient-to-br from-indigo-500 to-indigo-600"
+                />
               </div>
             </div>
 
@@ -550,6 +558,13 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
               <h3 className="font-bold text-gray-900 mb-4">Quick Links</h3>
               
               <div className="space-y-2">
+                <button 
+                  onClick={() => router.push(`/${locale}/settings/academic-years`)}
+                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors text-left"
+                >
+                  <span className="text-sm text-gray-700">Academic Years</span>
+                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                </button>
                 <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors text-left">
                   <span className="text-sm text-gray-700">Settings</span>
                   <ChevronRight className="w-4 h-4 text-gray-400" />
