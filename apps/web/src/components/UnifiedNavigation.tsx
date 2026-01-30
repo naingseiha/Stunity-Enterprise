@@ -1,0 +1,303 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import {
+  Home,
+  GraduationCap,
+  BookOpen,
+  Bell,
+  Search,
+  Menu,
+  X,
+  User,
+  Settings,
+  LogOut,
+  Users,
+  Calendar,
+  BarChart3,
+  FileText,
+} from 'lucide-react';
+import AcademicYearSelector from './AcademicYearSelector';
+import LanguageSwitcher from './LanguageSwitcher';
+
+interface UnifiedNavProps {
+  user?: any;
+  school?: any;
+  onLogout?: () => void;
+}
+
+export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNavProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const locale = pathname.split('/')[1] || 'en';
+  
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+
+  // Determine current context
+  const isSchoolContext = pathname.includes('/dashboard') || 
+                          pathname.includes('/students') || 
+                          pathname.includes('/teachers') || 
+                          pathname.includes('/classes') ||
+                          pathname.includes('/settings');
+  
+  const isFeedContext = pathname.includes('/feed');
+  const isLearnContext = pathname.includes('/learn');
+
+  const navItems = [
+    { 
+      name: 'Feed', 
+      icon: Home, 
+      path: `/${locale}/feed`,
+      active: isFeedContext,
+      badge: null,
+    },
+    { 
+      name: 'School', 
+      icon: GraduationCap, 
+      path: `/${locale}/dashboard`,
+      active: isSchoolContext,
+      badge: null,
+    },
+    { 
+      name: 'Learn', 
+      icon: BookOpen, 
+      path: `/${locale}/learn`,
+      active: isLearnContext,
+      badge: 'Soon',
+    },
+  ];
+
+  const schoolMenuItems = [
+    { name: 'Dashboard', icon: BarChart3, path: `/${locale}/dashboard` },
+    { name: 'Students', icon: Users, path: `/${locale}/students` },
+    { name: 'Teachers', icon: User, path: `/${locale}/teachers` },
+    { name: 'Classes', icon: BookOpen, path: `/${locale}/classes` },
+    { name: 'Reports', icon: FileText, path: `/${locale}/reports` },
+    { name: 'Settings', icon: Settings, path: `/${locale}/settings/academic-years` },
+  ];
+
+  return (
+    <>
+      {/* Main Navigation Bar */}
+      <nav className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            
+            {/* Logo & Brand */}
+            <div className="flex items-center gap-8">
+              <button 
+                onClick={() => router.push(`/${locale}/feed`)}
+                className="flex items-center gap-2 group"
+              >
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
+                  <GraduationCap className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hidden sm:block">
+                  Stunity
+                </span>
+              </button>
+
+              {/* Main Navigation Items */}
+              <div className="hidden md:flex items-center gap-1">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.name}
+                      onClick={() => router.push(item.path)}
+                      className={`
+                        relative flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all
+                        ${item.active 
+                          ? 'text-blue-600 bg-blue-50' 
+                          : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                        }
+                      `}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span>{item.name}</span>
+                      {item.badge && (
+                        <span className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-purple-500 text-white text-xs rounded-full">
+                          {item.badge}
+                        </span>
+                      )}
+                      {item.active && (
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="hidden lg:flex flex-1 max-w-md mx-8">
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Right Actions */}
+            <div className="flex items-center gap-2">
+              {/* Language Switcher */}
+              <div className="hidden sm:block">
+                <LanguageSwitcher />
+              </div>
+
+              {/* Academic Year Selector (only in school context) */}
+              {isSchoolContext && (
+                <div className="hidden sm:block">
+                  <AcademicYearSelector />
+                </div>
+              )}
+
+              {/* Notifications */}
+              <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                <Bell className="w-5 h-5" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+              </button>
+
+              {/* Profile Menu */}
+              <div className="relative">
+                <button
+                  onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+                  className="flex items-center gap-2 p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                    {user?.firstName?.[0]}{user?.lastName?.[0]}
+                  </div>
+                </button>
+
+                {/* Profile Dropdown */}
+                {profileMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50">
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="font-semibold text-gray-900">{user?.firstName} {user?.lastName}</p>
+                      <p className="text-sm text-gray-500">{school?.name}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setProfileMenuOpen(false);
+                        router.push(`/${locale}/profile`);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <User className="w-4 h-4" />
+                      <span>My Profile</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setProfileMenuOpen(false);
+                        router.push(`/${locale}/settings`);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <Settings className="w-4 h-4" />
+                      <span>Settings</span>
+                    </button>
+                    <div className="border-t border-gray-100 my-2"></div>
+                    <button
+                      onClick={() => {
+                        setProfileMenuOpen(false);
+                        onLogout?.();
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-gray-200 bg-white">
+            <div className="px-4 py-3 space-y-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.name}
+                    onClick={() => {
+                      router.push(item.path);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`
+                      w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors
+                      ${item.active 
+                        ? 'text-blue-600 bg-blue-50' 
+                        : 'text-gray-700 hover:bg-gray-50'
+                      }
+                    `}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span>{item.name}</span>
+                    {item.badge && (
+                      <span className="ml-auto px-2 py-0.5 bg-purple-500 text-white text-xs rounded-full">
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </nav>
+
+      {/* School Context Sidebar */}
+      {isSchoolContext && (
+        <div className="flex">
+          <aside className="hidden lg:block w-64 bg-white border-r border-gray-200 min-h-screen">
+            <div className="p-4 space-y-1">
+              <p className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                School Management
+              </p>
+              {schoolMenuItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.path;
+                return (
+                  <button
+                    key={item.name}
+                    onClick={() => router.push(item.path)}
+                    className={`
+                      w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm transition-colors
+                      ${isActive 
+                        ? 'text-blue-600 bg-blue-50' 
+                        : 'text-gray-700 hover:bg-gray-50'
+                      }
+                    `}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span>{item.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+          <main className="flex-1">
+            {/* Content will be rendered here */}
+          </main>
+        </div>
+      )}
+    </>
+  );
+}

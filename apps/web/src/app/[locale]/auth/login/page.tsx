@@ -25,7 +25,7 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
       
       if (token && user.user) {
         // Already logged in, redirect to dashboard
-        router.replace(`/${locale}/dashboard`);
+        router.replace(`/${locale}/feed`);
       }
     };
     
