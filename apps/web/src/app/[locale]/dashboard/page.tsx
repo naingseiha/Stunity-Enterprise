@@ -21,6 +21,8 @@ import {
   UserPlus,
   CalendarPlus,
   Settings as SettingsIcon,
+  ClipboardList,
+  ClipboardCheck,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 
@@ -231,6 +233,36 @@ export default function DashboardPage({ params }: { params: { locale: string } }
                   <div className="text-left">
                     <h3 className="font-semibold text-gray-900">View Reports</h3>
                     <p className="text-sm text-gray-600">Analytics & insights</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400 ml-auto" />
+                </button>
+
+                {/* Grade Entry */}
+                <button
+                  onClick={() => router.push(`/${params.locale}/grades/entry`)}
+                  className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-indigo-400 hover:bg-indigo-50 transition-all group"
+                >
+                  <div className="p-3 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg group-hover:scale-110 transition-transform">
+                    <ClipboardList className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="font-semibold text-gray-900">Grade Entry</h3>
+                    <p className="text-sm text-gray-600">Enter student grades</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400 ml-auto" />
+                </button>
+
+                {/* Attendance */}
+                <button
+                  onClick={() => router.push(`/${params.locale}/attendance/mark`)}
+                  className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-teal-400 hover:bg-teal-50 transition-all group"
+                >
+                  <div className="p-3 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-lg group-hover:scale-110 transition-transform">
+                    <ClipboardCheck className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="font-semibold text-gray-900">Attendance</h3>
+                    <p className="text-sm text-gray-600">Mark attendance</p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-400 ml-auto" />
                 </button>
