@@ -166,6 +166,17 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
       </header>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Academic Year Info */}
+        {selectedYear && (
+          <div className="mb-4 flex items-center gap-2 text-sm">
+            <span className="text-gray-600">Academic Year:</span>
+            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
+              {selectedYear.name}
+            </span>
+            <span className="text-xs text-gray-500">(Showing all students - filter by class to see year-specific enrollments)</span>
+          </div>
+        )}
+
         {/* Actions Bar */}
         <div className="mb-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 flex-1">
