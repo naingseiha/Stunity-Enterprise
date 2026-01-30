@@ -13,6 +13,7 @@ import {
   LogOut,
   Home,
   BookOpen,
+  Eye,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import { getStudents, deleteStudent, type Student } from '@/lib/api/students';
@@ -288,6 +289,13 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
                           {student.class?.name || '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button
+                            onClick={() => router.push(`/${locale}/students/${student.id}`)}
+                            className="text-orange-600 hover:text-orange-900 mr-3"
+                            title="View Details"
+                          >
+                            <Eye className="w-4 h-4 inline" />
+                          </button>
                           <button
                             onClick={() => handleEdit(student)}
                             className="text-stunity-primary-600 hover:text-stunity-primary-900 mr-3"
