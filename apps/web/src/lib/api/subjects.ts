@@ -1,4 +1,4 @@
-import { TokenManager } from '../tokenManager';
+import { TokenManager } from './auth';
 
 const API_BASE_URL = 'http://localhost:3006';
 

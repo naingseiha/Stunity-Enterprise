@@ -7,7 +7,7 @@ import { gradeAPI, GradeGridItem, getGradeLevelColor, getScoreColor } from '@/li
 import { getClasses, Class } from '@/lib/api/classes';
 import { subjectAPI, Subject } from '@/lib/api/subjects';
 import { getAcademicYears, AcademicYear } from '@/lib/api/academic-years';
-import { TokenManager } from '@/lib/tokenManager';
+import { TokenManager } from '@/lib/api/auth';
 import {
   Download,
   Upload,
