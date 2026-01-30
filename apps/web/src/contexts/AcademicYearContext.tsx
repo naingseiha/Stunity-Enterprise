@@ -22,11 +22,15 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
 
   const loadYears = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken'); // Changed from 'token' to 'accessToken'
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const schoolId = user.schoolId;
 
-      if (!token || !schoolId) return;
+      if (!token || !schoolId) {
+        console.log('No token or schoolId found', { token: !!token, schoolId });
+        setLoading(false);
+        return;
+      }
 
       // Load all years
       const years = await getAcademicYears(schoolId, token);
@@ -52,6 +56,7 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Failed to load academic years:', error);
+      setLoading(false); // Make sure to set loading to false even on error
     } finally {
       setLoading(false);
     }
