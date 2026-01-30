@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
+import { getCopyPreview, copySettings } from '@/lib/api/academic-years';
 import {
   Calendar,
   Plus,
@@ -21,6 +22,8 @@ import {
   Edit,
   Trash2,
   Star,
+  X,
+  Loader2,
 } from 'lucide-react';
 
 interface AcademicYear {
@@ -57,6 +60,18 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
   const [editYearName, setEditYearName] = useState('');
   const [editStartDate, setEditStartDate] = useState('');
   const [editEndDate, setEditEndDate] = useState('');
+
+  // Copy Settings Modal state
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const [copySourceYear, setCopySourceYear] = useState<AcademicYear | null>(null);
+  const [copyTargetYearId, setCopyTargetYearId] = useState('');
+  const [copyPreviewData, setCopyPreviewData] = useState<any>(null);
+  const [copyLoading, setCopyLoading] = useState(false);
+  const [copyError, setCopyError] = useState('');
+  const [copySubjects, setCopySubjects] = useState(true);
+  const [copyTeachers, setCopyTeachers] = useState(true);
+  const [copyClasses, setCopyClasses] = useState(true);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     loadAcademicYears();
@@ -274,6 +289,76 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
     }
   };
 
+  const handleOpenCopyModal = async (year: AcademicYear) => {
+    setCopySourceYear(year);
+    setCopyTargetYearId('');
+    setCopySubjects(true);
+    setCopyTeachers(true);
+    setCopyClasses(true);
+    setCopyError('');
+    setCopyPreviewData(null);
+    setShowCopyModal(true);
+
+    // Fetch preview data
+    try {
+      setCopyLoading(true);
+      const token = TokenManager.getAccessToken();
+      const userData = TokenManager.getUserData();
+      const schoolId = userData?.user?.schoolId || userData?.school?.id;
+
+      if (!token || !schoolId) return;
+
+      const preview = await getCopyPreview(schoolId, year.id, token);
+      setCopyPreviewData(preview);
+    } catch (err: any) {
+      setCopyError('Failed to load preview: ' + err.message);
+    } finally {
+      setCopyLoading(false);
+    }
+  };
+
+  const handleExecuteCopy = async () => {
+    if (!copySourceYear || !copyTargetYearId) {
+      setCopyError('Please select a target year');
+      return;
+    }
+
+    if (!copySubjects && !copyTeachers && !copyClasses) {
+      setCopyError('Please select at least one option to copy');
+      return;
+    }
+
+    try {
+      setCopyLoading(true);
+      setCopyError('');
+      const token = TokenManager.getAccessToken();
+      const userData = TokenManager.getUserData();
+      const schoolId = userData?.user?.schoolId || userData?.school?.id;
+
+      if (!token || !schoolId) return;
+
+      await copySettings(schoolId, copySourceYear.id, {
+        toAcademicYearId: copyTargetYearId,
+        copySettings: {
+          subjects: copySubjects,
+          teachers: copyTeachers,
+          classes: copyClasses,
+        },
+      }, token);
+
+      setSuccessMessage('Settings copied successfully!');
+      setShowCopyModal(false);
+      loadAcademicYears();
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      setCopyError('Failed to copy settings: ' + err.message);
+    } finally {
+      setCopyLoading(false);
+    }
+  };
+
   const getStatusInfo = (status: string) => {
     const statuses = {
       PLANNING: {
@@ -376,6 +461,20 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
               <p className="text-sm text-red-700">{error}</p>
             </div>
             <button onClick={() => setError('')} className="text-red-600 hover:text-red-800">
+              ×
+            </button>
+          </div>
+        )}
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
+            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-green-900">Success</p>
+              <p className="text-sm text-green-700">{successMessage}</p>
+            </div>
+            <button onClick={() => setSuccessMessage('')} className="text-green-600 hover:text-green-800">
               ×
             </button>
           </div>
@@ -497,11 +596,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
                       )}
 
                       <button
-                        onClick={() =>
-                          router.push(
-                            `/${locale}/settings/academic-years/create?copyFrom=${year.id}`
-                          )
-                        }
+                        onClick={() => handleOpenCopyModal(year)}
                         className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg font-medium hover:bg-purple-200 transition-colors text-sm"
                       >
                         <Copy className="w-4 h-4" />
@@ -781,6 +876,241 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-semibold hover:from-red-600 hover:to-red-700 transition-all shadow-md"
               >
                 Delete Year
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Copy Settings Modal */}
+      {showCopyModal && copySourceYear && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Copy Settings</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    From: <span className="font-semibold text-gray-900">{copySourceYear.name}</span>
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowCopyModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Copy Preview Section */}
+              {copyLoading && !copyPreviewData ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <Loader2 className="w-12 h-12 text-orange-500 animate-spin mx-auto mb-4" />
+                    <p className="text-gray-600">Loading preview...</p>
+                  </div>
+                </div>
+              ) : copyPreviewData ? (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">What will be copied:</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    {/* Subjects Card */}
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                          <BookOpen className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold text-blue-900">
+                            {copyPreviewData.subjectsCount || 0}
+                          </p>
+                          <p className="text-sm text-blue-700">Subjects</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Teachers Card */}
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                          <Users className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold text-green-900">
+                            {copyPreviewData.teachersCount || 0}
+                          </p>
+                          <p className="text-sm text-green-700">Active Teachers</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Classes Card */}
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                          <GraduationCap className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold text-purple-900">
+                            {copyPreviewData.classesCount || 0}
+                          </p>
+                          <p className="text-sm text-purple-700">Classes</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Target Year Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Copy to Academic Year <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={copyTargetYearId}
+                  onChange={(e) => setCopyTargetYearId(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  disabled={copyLoading}
+                >
+                  <option value="">Select target year...</option>
+                  {years
+                    .filter((year) => year.id !== copySourceYear.id)
+                    .map((year) => (
+                      <option key={year.id} value={year.id}>
+                        {year.name}
+                      </option>
+                    ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Choose which academic year to copy the settings to
+                </p>
+              </div>
+
+              {/* Checkbox Options */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Select what to copy:
+                </label>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={copySubjects}
+                      onChange={(e) => setCopySubjects(e.target.checked)}
+                      className="w-5 h-5 text-orange-500 rounded focus:ring-orange-500"
+                      disabled={copyLoading}
+                    />
+                    <div className="flex items-center gap-2 flex-1">
+                      <BookOpen className="w-5 h-5 text-blue-600" />
+                      <div>
+                        <p className="font-medium text-gray-900">Copy Subjects</p>
+                        <p className="text-xs text-gray-500">
+                          Duplicate all subjects to the target year
+                        </p>
+                      </div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={copyTeachers}
+                      onChange={(e) => setCopyTeachers(e.target.checked)}
+                      className="w-5 h-5 text-orange-500 rounded focus:ring-orange-500"
+                      disabled={copyLoading}
+                    />
+                    <div className="flex items-center gap-2 flex-1">
+                      <Users className="w-5 h-5 text-green-600" />
+                      <div>
+                        <p className="font-medium text-gray-900">Copy Teachers</p>
+                        <p className="text-xs text-gray-500">
+                          Assign active teachers to the target year
+                        </p>
+                      </div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={copyClasses}
+                      onChange={(e) => setCopyClasses(e.target.checked)}
+                      className="w-5 h-5 text-orange-500 rounded focus:ring-orange-500"
+                      disabled={copyLoading}
+                    />
+                    <div className="flex items-center gap-2 flex-1">
+                      <GraduationCap className="w-5 h-5 text-purple-600" />
+                      <div>
+                        <p className="font-medium text-gray-900">Copy Classes</p>
+                        <p className="text-xs text-gray-500">
+                          Duplicate class structures to the target year
+                        </p>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Warning/Info Messages */}
+              <div className="space-y-3">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                  <div className="flex gap-3">
+                    <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-yellow-900">
+                      <p className="font-semibold mb-1">Important Information:</p>
+                      <ul className="list-disc list-inside space-y-1 text-yellow-800">
+                        <li>This will create duplicates in the target year</li>
+                        <li>Existing data in target year won't be affected</li>
+                        <li>Students are not copied - use "Promote Students" for that</li>
+                        <li>You can run this multiple times if needed</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {copyError && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                    <div className="flex gap-3">
+                      <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="font-semibold text-red-900">Error</p>
+                        <p className="text-sm text-red-700">{copyError}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-gray-200 flex gap-3 bg-gray-50">
+              <button
+                onClick={() => setShowCopyModal(false)}
+                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-white transition-colors"
+                disabled={copyLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleExecuteCopy}
+                disabled={copyLoading || !copyTargetYearId}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {copyLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Copying...
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-5 h-5" />
+                    Copy Settings
+                  </>
+                )}
               </button>
             </div>
           </div>
