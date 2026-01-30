@@ -109,9 +109,16 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
 
     try {
       const token = TokenManager.getAccessToken();
+      const userData = TokenManager.getUserData();
+      const schoolId = userData?.user?.schoolId || userData?.school?.id;
+
+      if (!token || !schoolId) {
+        router.push(`/${locale}/auth/login`);
+        return;
+      }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/academic-years`,
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years`,
         {
           method: 'POST',
           headers: {
