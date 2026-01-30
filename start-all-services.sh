@@ -67,6 +67,7 @@ start_service "student" "$BASE/services/student-service" 3003
 start_service "teacher" "$BASE/services/teacher-service" 3004
 start_service "class" "$BASE/services/class-service" 3005
 start_service "subject" "$BASE/services/subject-service" 3006
+start_service "grade" "$BASE/services/grade-service" 3007
 start_service "web" "$BASE/apps/web" 3000
 
 echo -e "${GREEN}========================================${NC}"
@@ -81,6 +82,7 @@ echo "   👨‍🎓 Student: http://localhost:3003"
 echo "   👨‍🏫 Teacher: http://localhost:3004"
 echo "   📚 Class: http://localhost:3005"
 echo "   🎓 Subject: http://localhost:3006"
+echo "   📊 Grade: http://localhost:3007"
 echo ""
 echo "📋 Logs: /tmp/stunity-*.log"
 echo "🛑 Stop: ./stop-all-services.sh"
