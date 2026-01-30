@@ -2,6 +2,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { Poppins, Inter } from 'next/font/google';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import ClientProviders from '@/components/ClientProviders';
 
 const poppins = Poppins({ 
   weight: ['400', '500', '600', '700'],
@@ -30,10 +31,12 @@ export default async function LocaleLayout({
       </head>
       <body className="font-poppins bg-gradient-to-br from-stunity-primary-50 via-white to-stunity-primary-100 min-h-screen">
         <NextIntlClientProvider messages={messages}>
-          <div className="fixed top-4 right-4 z-50">
-            <LanguageSwitcher />
-          </div>
-          {children}
+          <ClientProviders>
+            <div className="fixed top-4 right-4 z-50">
+              <LanguageSwitcher />
+            </div>
+            {children}
+          </ClientProviders>
         </NextIntlClientProvider>
       </body>
     </html>

@@ -29,6 +29,7 @@ import {
   X,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
+import AcademicYearSelector from '@/components/AcademicYearSelector';
 
 interface UserData {
   id: number;
@@ -287,6 +288,9 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
 
             {/* Right Actions */}
             <div className="flex items-center gap-3">
+              {/* Academic Year Selector */}
+              <AcademicYearSelector />
+              
               <button className="relative p-2 hover:bg-gray-100 rounded-xl transition-colors">
                 <Bell className="w-5 h-5 text-gray-600" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
@@ -448,13 +452,6 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
                   icon={BarChart3}
                   onClick={() => alert('Reports feature coming soon!')}
                   color="bg-gradient-to-br from-orange-500 to-orange-600"
-                />
-                <QuickActionCard
-                  title="Academic Years"
-                  description="Manage academic years and copy settings"
-                  icon={Calendar}
-                  onClick={() => router.push(`/${locale}/settings/academic-years`)}
-                  color="bg-gradient-to-br from-indigo-500 to-indigo-600"
                 />
               </div>
             </div>
