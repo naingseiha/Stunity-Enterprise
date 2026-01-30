@@ -96,11 +96,8 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                 <img 
                   src="/stunity-logo.png" 
                   alt="Stunity Logo" 
-                  className="w-10 h-10 object-contain group-hover:scale-105 transition-transform"
+                  className="h-10 w-auto object-contain group-hover:scale-105 transition-transform"
                 />
-                <span className="text-xl font-bold bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent hidden sm:block">
-                  Stunity
-                </span>
               </button>
 
               {/* Main Navigation Items */}
