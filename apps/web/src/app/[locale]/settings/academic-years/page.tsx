@@ -57,7 +57,8 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
   const loadAcademicYears = async () => {
     try {
       const token = TokenManager.getAccessToken();
-      const schoolId = TokenManager.getUserData().user.schoolId;
+      const userData = TokenManager.getUserData();
+      const schoolId = userData?.user?.schoolId || userData?.school?.id;
 
       if (!token || !schoolId) {
         router.push(`/${locale}/auth/login`);
@@ -65,7 +66,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/academic-years`,
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
