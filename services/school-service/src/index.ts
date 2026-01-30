@@ -459,6 +459,99 @@ app.put('/schools/:schoolId/academic-years/:id/set-current', async (req: Request
   }
 });
 
+// Get single academic year with detailed statistics
+app.get('/schools/:schoolId/academic-years/:id', async (req: Request, res: Response) => {
+  try {
+    const { schoolId, id } = req.params;
+
+    // Get academic year with all related data
+    const academicYear = await prisma.academicYear.findFirst({
+      where: { id, schoolId },
+      include: {
+        classes: {
+          include: {
+            studentClasses: {
+              where: { status: 'ACTIVE' },
+            },
+            _count: {
+              select: { studentClasses: true },
+            },
+          },
+          orderBy: [{ grade: 'asc' }, { section: 'asc' }],
+        },
+        _count: {
+          select: { 
+            classes: true,
+            progressionsTo: true,
+          },
+        },
+      },
+    });
+
+    if (!academicYear) {
+      return res.status(404).json({
+        success: false,
+        error: 'Academic year not found',
+      });
+    }
+
+    // Calculate statistics
+    const totalStudents = academicYear.classes.reduce((sum: number, cls: any) => sum + cls._count.studentClasses, 0);
+    const totalClasses = academicYear._count.classes;
+    const totalPromotions = academicYear._count.progressionsTo;
+
+    // Group students by grade
+    const studentsByGrade: Record<number, number> = {};
+    academicYear.classes.forEach((cls: any) => {
+      if (!studentsByGrade[cls.grade]) {
+        studentsByGrade[cls.grade] = 0;
+      }
+      studentsByGrade[cls.grade] += cls._count.studentClasses;
+    });
+
+    // Format class data
+    const classes = academicYear.classes.map((cls: any) => ({
+      id: cls.id,
+      name: cls.name,
+      grade: cls.grade,
+      section: cls.section,
+      track: cls.track,
+      capacity: cls.capacity,
+      studentCount: cls._count.studentClasses,
+      isAtCapacity: cls._count.studentClasses >= cls.capacity,
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        id: academicYear.id,
+        name: academicYear.name,
+        startDate: academicYear.startDate,
+        endDate: academicYear.endDate,
+        isCurrent: academicYear.isCurrent,
+        status: academicYear.status,
+        copiedFromYearId: academicYear.copiedFromYearId,
+        createdAt: academicYear.createdAt,
+        updatedAt: academicYear.updatedAt,
+        statistics: {
+          totalStudents,
+          totalClasses,
+          totalPromotions,
+          studentsByGrade,
+        },
+        classes,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get academic year detail error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get academic year details',
+      details: error.message,
+    });
+  }
+});
+
 // Delete academic year (only if no classes use it)
 app.delete('/schools/:schoolId/academic-years/:id', async (req: Request, res: Response) => {
   try {
