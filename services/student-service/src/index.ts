@@ -1469,6 +1469,141 @@ app.get('/students/:id/progression', async (req: AuthRequest, res: Response) => 
   }
 });
 
+// Mark students as failed (repeat same grade)
+app.post('/students/mark-failed', async (req: any, res: Response) => {
+  try {
+    const { studentIds, fromAcademicYearId, toAcademicYearId, notes } = req.body;
+    const schoolId = req.user.schoolId;
+
+    if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'studentIds array is required',
+      });
+    }
+
+    if (!fromAcademicYearId || !toAcademicYearId) {
+      return res.status(400).json({
+        success: false,
+        error: 'fromAcademicYearId and toAcademicYearId are required',
+      });
+    }
+
+    // Verify academic years belong to school
+    const [fromYear, toYear] = await Promise.all([
+      prisma.academicYear.findFirst({
+        where: { id: fromAcademicYearId, schoolId },
+      }),
+      prisma.academicYear.findFirst({
+        where: { id: toAcademicYearId, schoolId },
+      }),
+    ]);
+
+    if (!fromYear || !toYear) {
+      return res.status(404).json({
+        success: false,
+        error: 'Academic year not found',
+      });
+    }
+
+    const results = {
+      processed: 0,
+      failed: [] as any[],
+    };
+
+    // Process each student
+    for (const studentId of studentIds) {
+      try {
+        // Get student with current class
+        const student = await prisma.student.findFirst({
+          where: { id: studentId, schoolId },
+          include: {
+            studentClasses: {
+              where: { status: 'ACTIVE' },
+              include: {
+                class: true,
+              },
+              orderBy: { enrolledAt: 'desc' },
+              take: 1,
+            },
+          },
+        });
+
+        if (!student || student.studentClasses.length === 0) {
+          results.failed.push({
+            studentId,
+            error: 'Student not found or not enrolled in any class',
+          });
+          continue;
+        }
+
+        const currentClass = student.studentClasses[0].class;
+
+        // Find class in new year with same grade
+        const repeatClass = await prisma.class.findFirst({
+          where: {
+            schoolId,
+            academicYearId: toAcademicYearId,
+            grade: currentClass.grade, // Same grade
+          },
+        });
+
+        if (!repeatClass) {
+          results.failed.push({
+            studentId,
+            error: `No class found for grade ${currentClass.grade} in target year`,
+          });
+          continue;
+        }
+
+        // Create progression record with REPEAT type
+        await prisma.studentProgression.create({
+          data: {
+            studentId,
+            fromAcademicYearId,
+            toAcademicYearId,
+            fromClassId: currentClass.id,
+            toClassId: repeatClass.id,
+            promotionType: 'REPEAT',
+            promotionDate: new Date(),
+            promotedBy: req.user.userId,
+            notes: notes || 'Student marked as failed - repeating grade',
+          },
+        });
+
+        // Add student to new class
+        await prisma.studentClass.create({
+          data: {
+            studentId,
+            classId: repeatClass.id,
+            status: 'ACTIVE',
+          },
+        });
+
+        results.processed++;
+      } catch (err: any) {
+        results.failed.push({
+          studentId,
+          error: err.message,
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Processed ${results.processed} student(s)`,
+      data: results,
+    });
+  } catch (error: any) {
+    console.error('Mark failed error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to mark students as failed',
+      details: error.message,
+    });
+  }
+});
+
 // Health check endpoint (no auth required)
 app.get('/health', (_req, res) => {
   res.json({
