@@ -32,9 +32,6 @@ export default async function LocaleLayout({
       <body className="font-poppins bg-gradient-to-br from-stunity-primary-50 via-white to-stunity-primary-100 min-h-screen">
         <NextIntlClientProvider messages={messages}>
           <ClientProviders>
-            <div className="fixed top-4 right-4 z-50">
-              <LanguageSwitcher />
-            </div>
             {children}
           </ClientProviders>
         </NextIntlClientProvider>

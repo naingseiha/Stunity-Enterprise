@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import AcademicYearSelector from '@/components/AcademicYearSelector';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 interface UserData {
   id: number;
@@ -288,6 +289,9 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
 
             {/* Right Actions */}
             <div className="flex items-center gap-3">
+              {/* Language Switcher */}
+              <LanguageSwitcher />
+              
               {/* Academic Year Selector */}
               <AcademicYearSelector />
               

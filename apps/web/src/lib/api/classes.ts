@@ -59,11 +59,13 @@ export async function getClasses(params?: {
   page?: number;
   limit?: number;
   grade?: number;
+  academicYearId?: string;
 }): Promise<ClassesResponse> {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());
   if (params?.limit) queryParams.append('limit', params.limit.toString());
   if (params?.grade) queryParams.append('grade', params.grade.toString());
+  if (params?.academicYearId) queryParams.append('academicYearId', params.academicYearId);
 
   const response = await fetch(
     `${CLASS_SERVICE_URL}/classes/lightweight?${queryParams}`,

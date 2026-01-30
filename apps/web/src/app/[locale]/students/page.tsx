@@ -20,6 +20,9 @@ import StudentModal from '@/components/students/StudentModal';
 import Pagination from '@/components/Pagination';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useAcademicYear } from '@/contexts/AcademicYearContext';
+import AcademicYearSelector from '@/components/AcademicYearSelector';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 export default function StudentsPage({ params: { locale } }: { params: { locale: string } }) {
   const t = useTranslations('students');
@@ -36,6 +39,7 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const ITEMS_PER_PAGE = 20;
+  const { selectedYear } = useAcademicYear();
 
   const user = TokenManager.getUserData().user;
   const school = TokenManager.getUserData().school;
@@ -144,6 +148,8 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <LanguageSwitcher />
+              <AcademicYearSelector />
               <div className="text-right">
                 <p className="text-sm font-medium text-gray-900">{school?.name || 'School'}</p>
                 <p className="text-xs text-gray-600">Students Management</p>
