@@ -508,6 +508,238 @@ app.delete('/schools/:schoolId/academic-years/:id', async (req: Request, res: Re
   }
 });
 
+// ===========================
+// Settings Rollover / Copy Endpoints
+// ===========================
+
+// Get copy preview - shows what will be copied from previous year
+app.get('/schools/:schoolId/academic-years/:yearId/copy-preview', async (req: Request, res: Response) => {
+  try {
+    const { schoolId, yearId } = req.params;
+
+    // Verify academic year belongs to school
+    const academicYear = await prisma.academicYear.findFirst({
+      where: { id: yearId, schoolId },
+    });
+
+    if (!academicYear) {
+      return res.status(404).json({
+        success: false,
+        error: 'Academic year not found',
+      });
+    }
+
+    // Get all subjects (subjects are school-wide, not year-specific)
+    const subjects = await prisma.subject.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        nameKh: true,
+        coefficient: true,
+        grade: true,
+      },
+    });
+
+    // Get all teachers from this school
+    const teachers = await prisma.teacher.findMany({
+      where: { schoolId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        khmerName: true,
+      },
+    });
+
+    // Note: Teachers don't have isActive field, so all are considered active
+    const activeTeachers = teachers;
+    const inactiveTeachers: typeof teachers = [];
+
+    // Get all classes for this academic year
+    const classes = await prisma.class.findMany({
+      where: {
+        schoolId,
+        academicYearId: yearId,
+      },
+      select: {
+        id: true,
+        name: true,
+        grade: true,
+        section: true,
+        capacity: true,
+      },
+    });
+
+    // Generate warnings
+    const warnings = [];
+    if (subjects.length === 0) {
+      warnings.push('No subjects found to copy');
+    }
+    if (classes.length === 0) {
+      warnings.push('No classes found to copy');
+    }
+
+    res.json({
+      success: true,
+      data: {
+        sourceYear: {
+          id: academicYear.id,
+          name: academicYear.name,
+        },
+        preview: {
+          subjects: {
+            total: subjects.length,
+            items: subjects.slice(0, 5), // Preview first 5
+          },
+          teachers: {
+            total: activeTeachers.length,
+            active: activeTeachers.length,
+            inactive: inactiveTeachers.length,
+            items: activeTeachers.slice(0, 5), // Preview first 5
+          },
+          classes: {
+            total: classes.length,
+            items: classes.slice(0, 5), // Preview first 5
+          },
+        },
+        warnings,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get copy preview error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get copy preview',
+      details: error.message,
+    });
+  }
+});
+
+// Execute settings copy to new year
+app.post('/schools/:schoolId/academic-years/:fromYearId/copy-settings', async (req: Request, res: Response) => {
+  try {
+    const { schoolId, fromYearId } = req.params;
+    const { toAcademicYearId, copySettings } = req.body;
+
+    // Validation
+    if (!toAcademicYearId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required field: toAcademicYearId',
+      });
+    }
+
+    // Verify both years belong to school
+    const [fromYear, toYear] = await Promise.all([
+      prisma.academicYear.findFirst({ where: { id: fromYearId, schoolId } }),
+      prisma.academicYear.findFirst({ where: { id: toAcademicYearId, schoolId } }),
+    ]);
+
+    if (!fromYear || !toYear) {
+      return res.status(404).json({
+        success: false,
+        error: 'One or both academic years not found',
+      });
+    }
+
+    const results = {
+      subjects: 0,
+      teachers: 0,
+      classes: 0,
+    };
+
+    // Copy subjects (if requested)
+    if (copySettings?.subjects) {
+      const existingSubjects = await prisma.subject.findMany({
+        where: { isActive: true },
+      });
+
+      // Subjects are school-wide, not year-specific in current schema
+      // Just count them as "already available"
+      results.subjects = existingSubjects.length;
+    }
+
+    // Copy teachers (if requested)
+    if (copySettings?.teachers) {
+      const teachers = await prisma.teacher.findMany({
+        where: { 
+          schoolId,
+        },
+      });
+
+      // Teachers are also school-wide, count as available
+      results.teachers = teachers.length;
+    }
+
+    // Copy class structure (if requested)
+    if (copySettings?.classes) {
+      const sourceClasses = await prisma.class.findMany({
+        where: {
+          schoolId,
+          academicYearId: fromYearId,
+        },
+        select: {
+          classId: true,
+          name: true,
+          grade: true,
+          section: true,
+          track: true,
+          capacity: true,
+        },
+      });
+
+      // Create classes for new year (generate new IDs, keep structure)
+      for (const sourceClass of sourceClasses) {
+        await prisma.class.create({
+          data: {
+            schoolId,
+            academicYearId: toAcademicYearId,
+            // Don't copy classId, let Prisma generate new cuid
+            name: sourceClass.name,
+            grade: sourceClass.grade,
+            section: sourceClass.section,
+            track: sourceClass.track,
+            capacity: sourceClass.capacity,
+          },
+        });
+        results.classes++;
+      }
+    }
+
+    // Update toYear with copiedFromYearId
+    await prisma.academicYear.update({
+      where: { id: toAcademicYearId },
+      data: {
+        copiedFromYearId: fromYearId,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Settings copied successfully',
+      data: {
+        fromYear: {
+          id: fromYear.id,
+          name: fromYear.name,
+        },
+        toYear: {
+          id: toYear.id,
+          name: toYear.name,
+        },
+        copied: results,
+      },
+    });
+  } catch (error: any) {
+    console.error('Copy settings error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to copy settings',
+      details: error.message,
+    });
+  }
+});
+
 // TODO: School registration endpoint (will add in next session)
 // POST /schools/register
 
