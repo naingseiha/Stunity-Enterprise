@@ -20,6 +20,8 @@ import { getStudents, deleteStudent, type Student } from '@/lib/api/students';
 import StudentModal from '@/components/students/StudentModal';
 import Pagination from '@/components/Pagination';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
+import BlurLoader from '@/components/BlurLoader';
+import AnimatedContent from '@/components/AnimatedContent';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import AcademicYearSelector from '@/components/AcademicYearSelector';
@@ -161,14 +163,34 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
           </button>
         </div>
 
-        {/* Students Table */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          {loading ? (
-            <div className="p-12 text-center">
-              <div className="w-12 h-12 border-4 border-stunity-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-gray-600">Loading students...</p>
-            </div>
-          ) : students.length === 0 ? (
+        {/* Students Table with Blur Loading */}
+        <AnimatedContent animation="slide-up" delay={100}>
+          <BlurLoader
+            isLoading={loading}
+            skeleton={
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Photo</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student ID</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gender</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <TableSkeleton rows={10} />
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            }
+          >
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              {students.length === 0 ? (
             <div className="p-12 text-center">
               <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-600 text-lg">No students found</p>
@@ -292,7 +314,9 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
               )}
             </>
           )}
-        </div>
+            </div>
+          </BlurLoader>
+        </AnimatedContent>
       </div>
 
       {/* Student Modal */}

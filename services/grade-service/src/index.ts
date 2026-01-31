@@ -5,9 +5,39 @@ import jwt from 'jsonwebtoken';
 import ExcelJS from 'exceljs';
 
 const app = express();
-const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3007;
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
+
+// ✅ Singleton pattern to prevent multiple Prisma instances
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+
+const prisma = globalForPrisma.prisma || new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
+  log: ['error'],
+});
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
+
+// Keep database connection warm to avoid Neon cold starts
+let isDbWarm = false;
+const warmUpDb = async () => {
+  if (isDbWarm) return;
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    isDbWarm = true;
+    console.log('✅ Grade Service - Database ready');
+  } catch (error) {
+    console.error('⚠️ Grade Service - Database warmup failed');
+  }
+};
+warmUpDb();
+setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000); // Every 4 minutes
 
 // ========================================
 // Middleware

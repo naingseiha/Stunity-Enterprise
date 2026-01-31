@@ -21,6 +21,9 @@ import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import AcademicYearSelector from '@/components/AcademicYearSelector';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import BlurLoader from '@/components/BlurLoader';
+import AnimatedContent from '@/components/AnimatedContent';
+import { CardSkeleton } from '@/components/LoadingSkeleton';
 
 export default function ClassesPage({ params: { locale } }: { params: { locale: string } }) {
   const t = useTranslations('classes');
@@ -144,14 +147,20 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
           </button>
         </div>
 
-        {/* Classes Grid */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          {loading ? (
-            <div className="p-12 text-center">
-              <div className="w-12 h-12 border-4 border-stunity-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-gray-600">Loading classes...</p>
-            </div>
-          ) : classes.length === 0 ? (
+        {/* Classes Grid with Blur Loading */}
+        <AnimatedContent animation="slide-up" delay={100}>
+          <BlurLoader
+            isLoading={loading}
+            skeleton={
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, i) => (
+                  <CardSkeleton key={i} />
+                ))}
+              </div>
+            }
+          >
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              {classes.length === 0 ? (
             <div className="p-12 text-center">
               <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-600 text-lg">No classes found</p>
@@ -259,7 +268,9 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
               )}
             </>
           )}
-        </div>
+            </div>
+          </BlurLoader>
+        </AnimatedContent>
       </div>
 
       {/* Class Modal */}

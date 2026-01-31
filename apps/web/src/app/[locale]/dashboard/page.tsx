@@ -18,6 +18,8 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 import StatCard from '@/components/dashboard/StatCard';
 import ActionCard from '@/components/dashboard/ActionCard';
 import { TokenManager } from '@/lib/api/auth';
+import { PageLoader } from '@/components/BlurLoader';
+import AnimatedContent, { StaggeredList } from '@/components/AnimatedContent';
 
 interface UserData {
   id: string;
@@ -63,14 +65,7 @@ export default function DashboardPage({ params }: { params: { locale: string } }
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader isLoading={true} message="Loading dashboard..." />;
   }
 
   const stats = [
@@ -169,40 +164,47 @@ export default function DashboardPage({ params }: { params: { locale: string } }
       <div className="lg:ml-64 min-h-screen bg-gray-50">
         <main className="max-w-7xl mx-auto px-6 py-8">
             {/* Page Header */}
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Welcome back! Here's what's happening with your school today.
-              </p>
-            </div>
+            <AnimatedContent animation="fade" delay={0}>
+              <div className="mb-8">
+                <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+                <p className="text-sm text-gray-600 mt-1">
+                  Welcome back! Here's what's happening with your school today.
+                </p>
+              </div>
+            </AnimatedContent>
 
-            {/* Stats Grid */}
+            {/* Stats Grid with Staggered Animation */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {stats.map((stat, index) => (
-                <StatCard key={index} {...stat} />
+                <AnimatedContent key={index} animation="slide-up" delay={100 + index * 50}>
+                  <StatCard {...stat} />
+                </AnimatedContent>
               ))}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Quick Actions */}
               <div className="lg:col-span-2">
-                <div className="mb-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                    Quick Actions
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {quickActions.map((action, index) => (
-                      <ActionCard key={index} {...action} />
-                    ))}
+                <AnimatedContent animation="slide-up" delay={400}>
+                  <div className="mb-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                      Quick Actions
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {quickActions.map((action, index) => (
+                        <ActionCard key={index} {...action} />
+                      ))}
+                    </div>
                   </div>
-                </div>
+                </AnimatedContent>
 
                 {/* Recent Activity */}
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                    Recent Activity
-                  </h2>
-                  <div className="bg-white rounded-lg border border-gray-200 divide-y">
+                <AnimatedContent animation="slide-up" delay={500}>
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                      Recent Activity
+                    </h2>
+                    <div className="bg-white rounded-lg border border-gray-200 divide-y">
                     {[
                       {
                         action: 'New student enrolled',
@@ -232,11 +234,13 @@ export default function DashboardPage({ params }: { params: { locale: string } }
                       </div>
                     ))}
                   </div>
-                </div>
+                  </div>
+                </AnimatedContent>
               </div>
 
               {/* Sidebar */}
-              <div className="space-y-6">
+              <AnimatedContent animation="slide-left" delay={600}>
+                <div className="space-y-6">
                 {/* Academic Year */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <h3 className="text-sm font-semibold text-gray-900 mb-4">
@@ -301,7 +305,8 @@ export default function DashboardPage({ params }: { params: { locale: string } }
                     </div>
                   </div>
                 </div>
-              </div>
+                </div>
+              </AnimatedContent>
             </div>
         </main>
       </div>

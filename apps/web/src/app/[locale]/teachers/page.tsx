@@ -21,6 +21,9 @@ import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import AcademicYearSelector from '@/components/AcademicYearSelector';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import BlurLoader from '@/components/BlurLoader';
+import AnimatedContent from '@/components/AnimatedContent';
+import { TableSkeleton } from '@/components/LoadingSkeleton';
 
 export default function TeachersPage({ params: { locale } }: { params: { locale: string } }) {
   const t = useTranslations('teachers');
@@ -157,14 +160,33 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
           </button>
         </div>
 
-        {/* Teachers Table */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          {loading ? (
-            <div className="p-12 text-center">
-              <div className="w-12 h-12 border-4 border-stunity-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-gray-600">Loading teachers...</p>
-            </div>
-          ) : teachers.length === 0 ? (
+        {/* Teachers Table with Blur Loading */}
+        <AnimatedContent animation="slide-up" delay={100}>
+          <BlurLoader
+            isLoading={loading}
+            skeleton={
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Photo</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Teacher ID</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subjects</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <TableSkeleton rows={8} />
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            }
+          >
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              {teachers.length === 0 ? (
             <div className="p-12 text-center">
               <GraduationCap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-600 text-lg">No teachers found</p>
@@ -282,7 +304,9 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
               )}
             </>
           )}
-        </div>
+            </div>
+          </BlurLoader>
+        </AnimatedContent>
       </div>
 
       {/* Teacher Modal */}

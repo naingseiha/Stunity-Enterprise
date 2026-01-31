@@ -15,7 +15,36 @@ const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '7d';
 const REFRESH_TOKEN_EXPIRATION = '30d';
 
-const prisma = new PrismaClient();
+// ✅ Singleton pattern to prevent multiple Prisma instances
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+
+const prisma = globalForPrisma.prisma || new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
+  log: ['error'],
+});
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
+
+// Keep database connection warm to avoid Neon cold starts
+let isDbWarm = false;
+const warmUpDb = async () => {
+  if (isDbWarm) return;
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    isDbWarm = true;
+    console.log('✅ Auth Service - Database ready');
+  } catch (error) {
+    console.error('⚠️ Auth Service - Database warmup failed');
+  }
+};
+warmUpDb();
+setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000); // Every 4 minutes
 
 // Fix BigInt JSON serialization
 (BigInt.prototype as any).toJSON = function () {

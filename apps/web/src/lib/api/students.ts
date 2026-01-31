@@ -1,4 +1,5 @@
 // API client for student service
+import { cachedFetch, invalidateCache } from '../cache';
 
 const STUDENT_SERVICE_URL = process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003';
 
@@ -79,19 +80,29 @@ export async function getStudents(params?: {
   if (params?.search) queryParams.append('search', params.search);
   if (params?.academicYearId) queryParams.append('academicYearId', params.academicYearId);
 
-  const response = await fetch(
-    `${STUDENT_SERVICE_URL}/students/lightweight?${queryParams}`,
-    {
-      headers: await getAuthHeaders(),
-    }
+  // Create cache key from params
+  const cacheKey = `students:${queryParams.toString()}`;
+
+  // Use cached fetch with 2 minute TTL
+  const result = await cachedFetch(
+    cacheKey,
+    async () => {
+      const response = await fetch(
+        `${STUDENT_SERVICE_URL}/students/lightweight?${queryParams}`,
+        {
+          headers: await getAuthHeaders(),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Failed to fetch students' }));
+        throw new Error(error.message || 'Failed to fetch students');
+      }
+
+      return await response.json();
+    },
+    2 * 60 * 1000 // 2 minutes cache
   );
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Failed to fetch students' }));
-    throw new Error(error.message || 'Failed to fetch students');
-  }
-
-  const result = await response.json();
   
   // Transform backend field names to frontend expectations
   const transformedStudents = (result.data || []).map((student: any) => ({
@@ -159,7 +170,12 @@ export async function createStudent(data: CreateStudentInput): Promise<{ success
     throw new Error(error.message || 'Failed to create student');
   }
 
-  return response.json();
+  const result = await response.json();
+
+  // Invalidate students cache when creating new student
+  invalidateCache('students:');
+
+  return result;
 }
 
 export async function updateStudent(id: string, data: Partial<CreateStudentInput>): Promise<{ success: boolean; data: { student: Student } }> {
@@ -190,7 +206,12 @@ export async function updateStudent(id: string, data: Partial<CreateStudentInput
     throw new Error(error.message || 'Failed to update student');
   }
 
-  return response.json();
+  const result = await response.json();
+
+  // Invalidate students cache when updating
+  invalidateCache('students:');
+
+  return result;
 }
 
 export async function deleteStudent(id: string): Promise<{ success: boolean; message: string }> {
@@ -204,7 +225,12 @@ export async function deleteStudent(id: string): Promise<{ success: boolean; mes
     throw new Error(error.message || 'Failed to delete student');
   }
 
-  return response.json();
+  const result = await response.json();
+
+  // Invalidate students cache when deleting
+  invalidateCache('students:');
+
+  return result;
 }
 
 export async function uploadStudentPhoto(id: string, file: File): Promise<{ success: boolean; data: { photoUrl: string; student: Student } }> {

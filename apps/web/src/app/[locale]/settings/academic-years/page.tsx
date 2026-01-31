@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { getCopyPreview, copySettings } from '@/lib/api/academic-years';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import { PageLoader } from '@/components/BlurLoader';
+import AnimatedContent from '@/components/AnimatedContent';
+import { CardSkeleton } from '@/components/LoadingSkeleton';
 import {
   Calendar,
   Plus,
@@ -450,14 +453,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
   const currentYear = years.find((y) => y.isCurrent);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading academic years...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader isLoading={true} message="Loading academic years..." />;
   }
 
   return (
@@ -543,10 +539,11 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
         )}
 
         {/* Academic Years Timeline */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">All Academic Years</h2>
+        <AnimatedContent animation="slide-up" delay={100}>
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">All Academic Years</h2>
 
-          {years.length === 0 ? (
+            {years.length === 0 ? (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Calendar className="w-8 h-8 text-gray-400" />
@@ -716,7 +713,8 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
               );
             })
           )}
-        </div>
+          </div>
+        </AnimatedContent>
       </div>
 
       {/* Create Modal */}

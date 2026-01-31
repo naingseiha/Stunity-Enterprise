@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "Bash(done)",
+      "Bash(for dir in analytics-service feed-service notification-service search-service storage-service user-service)",
+      "Bash(do echo \"=== $dir ===\")",
+      "Bash(test -f:*)",
+      "Bash(./stop-all-services.sh:*)",
+      "Bash(./start-all-services.sh:*)",
+      "Bash(./check-services.sh:*)",
+      "Bash(curl:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
