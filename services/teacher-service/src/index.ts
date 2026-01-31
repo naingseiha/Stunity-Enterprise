@@ -6,18 +6,51 @@ import { PrismaClient } from '@prisma/client';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import dotenv from 'dotenv';
+
+// Load environment variables from root .env
+dotenv.config({ path: '../../.env' });
+
+// Simple in-memory cache with stale-while-revalidate
+const cache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const STALE_TTL = 10 * 60 * 1000; // 10 minutes (serve stale while refreshing)
 
 const app = express();
-const prisma = new PrismaClient({
+
+// ✅ Singleton pattern to prevent multiple Prisma instances
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+
+const prisma = globalForPrisma.prisma || new PrismaClient({
   datasources: {
     db: {
       url: process.env.DATABASE_URL,
     },
   },
-  log: ['warn', 'error'],
+  log: ['error'],
 });
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
+
 const PORT = process.env.PORT || 3004;
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
+
+// Keep database connection warm
+let isDbWarm = false;
+const warmUpDb = async () => {
+  if (isDbWarm) return;
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    isDbWarm = true;
+    console.log('✅ Database ready');
+  } catch (error) {
+    console.error('⚠️ Database warmup failed');
+  }
+};
+warmUpDb();
+setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000);
 
 // Middleware - CORS configuration
 app.use(cors({
@@ -151,6 +184,112 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
+// ===========================
+// POST /teachers/batch
+// Batch create teachers (for onboarding - no auth required)
+// ===========================
+app.post('/teachers/batch', async (req: Request, res: Response) => {
+  try {
+    const { schoolId, teachers } = req.body;
+
+    if (!schoolId) {
+      return res.status(400).json({
+        success: false,
+        message: 'schoolId is required',
+      });
+    }
+
+    if (!teachers || !Array.isArray(teachers) || teachers.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'teachers array is required',
+      });
+    }
+
+    console.log(`➕ [Onboarding] Batch creating ${teachers.length} teachers for school ${schoolId}...`);
+
+    const createdTeachers = [];
+    const errors = [];
+
+    for (const teacherData of teachers) {
+      try {
+        const {
+          firstName,
+          lastName,
+          email,
+          phone,
+          gender,
+          dateOfBirth,
+          address,
+        } = teacherData;
+
+        // Basic validation
+        if (!firstName || !lastName || !phone) {
+          errors.push({
+            teacher: teacherData,
+            error: 'Missing required fields (firstName, lastName, phone)',
+          });
+          continue;
+        }
+
+        // Check for duplicate email
+        if (email) {
+          const existingByEmail = await prisma.teacher.findFirst({
+            where: { email, schoolId },
+          });
+          if (existingByEmail) {
+            errors.push({
+              teacher: teacherData,
+              error: `Teacher with email ${email} already exists`,
+            });
+            continue;
+          }
+        }
+
+        // Create teacher
+        const teacher = await prisma.teacher.create({
+          data: {
+            schoolId,
+            firstName,
+            lastName,
+            email: email || null,
+            phone,
+            gender: gender || null,
+            dateOfBirth: dateOfBirth || null,
+            address: address || null,
+          },
+        });
+
+        createdTeachers.push(teacher);
+        console.log(`✅ Created teacher: ${teacher.firstName} ${teacher.lastName}`);
+      } catch (error: any) {
+        console.error(`❌ Error creating teacher:`, error);
+        errors.push({
+          teacher: teacherData,
+          error: error.message,
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Created ${createdTeachers.length} teachers`,
+      data: {
+        teachersCreated: createdTeachers.length,
+        teachers: createdTeachers,
+        errors: errors.length > 0 ? errors : undefined,
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ Batch create error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error creating teachers',
+      error: error.message,
+    });
+  }
+});
+
 // Apply auth middleware to all routes below
 app.use(authMiddleware);
 
@@ -161,12 +300,29 @@ app.use(authMiddleware);
 app.get('/teachers/lightweight', async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.user!.schoolId;
+    const academicYearId = req.query.academicYearId as string | undefined;
     console.log(`⚡ [School ${schoolId}] Fetching teachers (lightweight)...`);
+    if (academicYearId) {
+      console.log(`📅 Filtering by Academic Year: ${academicYearId}`);
+    }
+
+    const where: any = {
+      schoolId: schoolId,
+    };
+    
+    // Add academic year filter through teacherClasses relationship
+    if (academicYearId) {
+      where.teacherClasses = {
+        some: {
+          class: {
+            academicYearId: academicYearId
+          }
+        }
+      };
+    }
 
     const teachers = await prisma.teacher.findMany({
-      where: {
-        schoolId: schoolId,
-      },
+      where,
       select: {
         id: true,
         employeeId: true,
@@ -213,6 +369,11 @@ app.get('/teachers/lightweight', async (req: AuthRequest, res: Response) => {
           },
         },
         teacherClasses: {
+          where: academicYearId ? {
+            class: {
+              academicYearId: academicYearId
+            }
+          } : {},
           select: {
             classId: true,
             class: {
@@ -221,6 +382,7 @@ app.get('/teachers/lightweight', async (req: AuthRequest, res: Response) => {
                 name: true,
                 grade: true,
                 section: true,
+                academicYearId: true,
                 _count: {
                   select: {
                     students: true,
@@ -265,113 +427,200 @@ app.get('/teachers/lightweight', async (req: AuthRequest, res: Response) => {
 });
 
 // ===========================
+// Background cache refresh for teachers
+// ===========================
+async function refreshTeachersCache(schoolId: string, cacheKey: string) {
+  try {
+    const teachers = await prisma.teacher.findMany({
+      where: { schoolId },
+      select: {
+        id: true, schoolId: true, firstName: true, lastName: true, email: true, phone: true,
+        gender: true, dateOfBirth: true, address: true, photoUrl: true, createdAt: true, updatedAt: true, homeroomClassId: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const teacherIds = teachers.map(t => t.id);
+    
+    const [teacherClasses, subjectTeachers, users, homeroomClasses] = await Promise.all([
+      prisma.teacherClass.findMany({
+        where: { teacherId: { in: teacherIds } },
+        select: { teacherId: true, classId: true, class: { select: { id: true, name: true, grade: true, section: true, track: true } } }
+      }),
+      prisma.subjectTeacher.findMany({
+        where: { teacherId: { in: teacherIds } },
+        select: { teacherId: true, subjectId: true, subject: { select: { id: true, name: true, nameKh: true, nameEn: true, code: true, grade: true, track: true } } }
+      }),
+      prisma.user.findMany({
+        where: { teacherId: { in: teacherIds } },
+        select: { teacherId: true, id: true, isActive: true, lastLogin: true }
+      }),
+      prisma.class.findMany({
+        where: { id: { in: teachers.filter(t => t.homeroomClassId).map(t => t.homeroomClassId!) } },
+        select: { id: true, name: true, grade: true, section: true, track: true }
+      })
+    ]);
+
+    const tcMap = new Map<string, typeof teacherClasses>();
+    teacherClasses.forEach(tc => { if (!tcMap.has(tc.teacherId)) tcMap.set(tc.teacherId, []); tcMap.get(tc.teacherId)!.push(tc); });
+    const stMap = new Map<string, typeof subjectTeachers>();
+    subjectTeachers.forEach(st => { if (!stMap.has(st.teacherId)) stMap.set(st.teacherId, []); stMap.get(st.teacherId)!.push(st); });
+    const userMap = new Map<string, typeof users[0]>();
+    users.forEach(u => u.teacherId && userMap.set(u.teacherId, u));
+    const classMap = new Map<string, typeof homeroomClasses[0]>();
+    homeroomClasses.forEach(c => classMap.set(c.id, c));
+
+    const transformedTeachers = teachers.map((teacher) => {
+      const tcs = tcMap.get(teacher.id) || [];
+      const sts = stMap.get(teacher.id) || [];
+      const user = userMap.get(teacher.id);
+      const homeroom = teacher.homeroomClassId ? classMap.get(teacher.homeroomClassId) : null;
+      return {
+        ...teacher, subjectIds: sts.map(st => st.subjectId), teachingClassIds: tcs.map(tc => tc.classId),
+        subjects: sts.map(st => st.subject), teacherClasses: tcs.map(tc => tc.class), teachingClasses: tcs.map(tc => tc.class),
+        homeroomClass: homeroom || null, subject: sts.map(st => st.subject.nameKh || st.subject.name).join(', '),
+        hasLoginAccount: !!user, canLogin: user?.isActive || false, user: user || null,
+      };
+    });
+
+    const response = { success: true, data: transformedTeachers };
+    cache.set(cacheKey, { data: response, timestamp: Date.now() });
+    console.log(`🔄 Background refresh completed for teachers`);
+  } catch (error) {
+    console.error('❌ Background refresh failed:', error);
+  }
+}
+
+// ===========================
 // GET /teachers
 // Full data with all relations
 // ===========================
 app.get('/teachers', async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.user!.schoolId;
-    console.log(`📋 [School ${schoolId}] Fetching all teachers (full data)...`);
+    
+    // ✅ Check cache with stale-while-revalidate
+    const cacheKey = `teachers_${schoolId}`;
+    const cached = cache.get(cacheKey);
+    const now = Date.now();
+    const isFresh = cached && (now - cached.timestamp) < CACHE_TTL;
+    const isStale = cached && (now - cached.timestamp) < STALE_TTL;
+    
+    if (isFresh) {
+      console.log(`📋 [Cache hit] Teachers for school ${schoolId}`);
+      return res.json(cached.data);
+    }
+    
+    // Serve stale data immediately while refreshing in background
+    if (isStale) {
+      console.log(`⏳ Serving stale teachers cache while refreshing...`);
+      refreshTeachersCache(schoolId, cacheKey).catch(console.error);
+      return res.json(cached.data);
+    }
 
+    console.log(`📋 [School ${schoolId}] Fetching all teachers (optimized)...`);
+
+    // ✅ Step 1: Get basic teacher data first (fast query)
     const teachers = await prisma.teacher.findMany({
-      where: {
-        schoolId: schoolId,
+      where: { schoolId },
+      select: {
+        id: true,
+        schoolId: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        gender: true,
+        dateOfBirth: true,
+        address: true,
+        photoUrl: true,
+        createdAt: true,
+        updatedAt: true,
+        homeroomClassId: true,
       },
-      include: {
-        // Homeroom class (one-to-one)
-        homeroomClass: {
-          select: {
-            id: true,
-            name: true,
-            grade: true,
-            section: true,
-            track: true,
-            _count: {
-              select: {
-                students: true,
-              },
-            },
-          },
-        },
-        // Teaching classes (many-to-many)
-        teacherClasses: {
-          include: {
-            class: {
-              select: {
-                id: true,
-                name: true,
-                grade: true,
-                section: true,
-                track: true,
-                _count: {
-                  select: {
-                    students: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        // Subject assignments (many-to-many)
-        subjectTeachers: {
-          include: {
-            subject: {
-              select: {
-                id: true,
-                name: true,
-                nameKh: true,
-                nameEn: true,
-                code: true,
-                grade: true,
-                track: true,
-              },
-            },
-          },
-        },
-        // User account (for login status)
-        user: {
-          select: {
-            id: true,
-            phone: true,
-            email: true,
-            isActive: true,
-            lastLogin: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
     });
 
-    // Transform data for frontend
-    const transformedTeachers = teachers.map((teacher) => ({
-      ...teacher,
-      // Extract IDs for easy access
-      subjectIds: teacher.subjectTeachers.map((sa) => sa.subjectId),
-      teachingClassIds: teacher.teacherClasses.map((tc) => tc.classId),
+    // ✅ Step 2: Batch fetch related data in parallel
+    const teacherIds = teachers.map(t => t.id);
+    
+    const [teacherClasses, subjectTeachers, users, homeroomClasses] = await Promise.all([
+      // Teaching classes
+      prisma.teacherClass.findMany({
+        where: { teacherId: { in: teacherIds } },
+        select: {
+          teacherId: true,
+          classId: true,
+          class: { select: { id: true, name: true, grade: true, section: true, track: true } }
+        }
+      }),
+      // Subject assignments
+      prisma.subjectTeacher.findMany({
+        where: { teacherId: { in: teacherIds } },
+        select: {
+          teacherId: true,
+          subjectId: true,
+          subject: { select: { id: true, name: true, nameKh: true, nameEn: true, code: true, grade: true, track: true } }
+        }
+      }),
+      // User accounts
+      prisma.user.findMany({
+        where: { teacherId: { in: teacherIds } },
+        select: { teacherId: true, id: true, isActive: true, lastLogin: true }
+      }),
+      // Homeroom classes
+      prisma.class.findMany({
+        where: { id: { in: teachers.filter(t => t.homeroomClassId).map(t => t.homeroomClassId!) } },
+        select: { id: true, name: true, grade: true, section: true, track: true }
+      })
+    ]);
 
-      // Flatten nested data
-      subjects: teacher.subjectTeachers.map((sa) => sa.subject),
-      teacherClasses: teacher.teacherClasses.map((tc) => tc.class),
-      teachingClasses: teacher.teacherClasses.map((tc) => tc.class),
+    // ✅ Step 3: Build lookup maps
+    const tcMap = new Map<string, typeof teacherClasses>();
+    teacherClasses.forEach(tc => {
+      if (!tcMap.has(tc.teacherId)) tcMap.set(tc.teacherId, []);
+      tcMap.get(tc.teacherId)!.push(tc);
+    });
 
-      // Create subject string for display
-      subject: teacher.subjectTeachers
-        .map((sa) => sa.subject.nameKh || sa.subject.name)
-        .join(', '),
+    const stMap = new Map<string, typeof subjectTeachers>();
+    subjectTeachers.forEach(st => {
+      if (!stMap.has(st.teacherId)) stMap.set(st.teacherId, []);
+      stMap.get(st.teacherId)!.push(st);
+    });
 
-      // Login status
-      hasLoginAccount: !!teacher.user,
-      canLogin: teacher.user?.isActive || false,
-    }));
+    const userMap = new Map<string, typeof users[0]>();
+    users.forEach(u => u.teacherId && userMap.set(u.teacherId, u));
+
+    const classMap = new Map<string, typeof homeroomClasses[0]>();
+    homeroomClasses.forEach(c => classMap.set(c.id, c));
+
+    // ✅ Step 4: Transform data
+    const transformedTeachers = teachers.map((teacher) => {
+      const tcs = tcMap.get(teacher.id) || [];
+      const sts = stMap.get(teacher.id) || [];
+      const user = userMap.get(teacher.id);
+      const homeroom = teacher.homeroomClassId ? classMap.get(teacher.homeroomClassId) : null;
+
+      return {
+        ...teacher,
+        subjectIds: sts.map(st => st.subjectId),
+        teachingClassIds: tcs.map(tc => tc.classId),
+        subjects: sts.map(st => st.subject),
+        teacherClasses: tcs.map(tc => tc.class),
+        teachingClasses: tcs.map(tc => tc.class),
+        homeroomClass: homeroom || null,
+        subject: sts.map(st => st.subject.nameKh || st.subject.name).join(', '),
+        hasLoginAccount: !!user,
+        canLogin: user?.isActive || false,
+        user: user || null,
+      };
+    });
+
+    const response = { success: true, data: transformedTeachers };
+    cache.set(cacheKey, { data: response, timestamp: Date.now() });
 
     console.log(`✅ [School ${schoolId}] Found ${transformedTeachers.length} teachers`);
-
-    res.json({
-      success: true,
-      data: transformedTeachers,
-    });
+    res.json(response);
   } catch (error: any) {
     console.error('❌ Error fetching teachers:', error);
     res.status(500).json({

@@ -7,6 +7,7 @@ interface AcademicYearContextType {
   currentYear: AcademicYear | null;
   selectedYear: AcademicYear | null;
   allYears: AcademicYear[];
+  schoolId: string | null;
   setSelectedYear: (year: AcademicYear) => void;
   loading: boolean;
   refreshYears: () => Promise<void>;
@@ -18,6 +19,7 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
   const [currentYear, setCurrentYear] = useState<AcademicYear | null>(null);
   const [selectedYear, setSelectedYearState] = useState<AcademicYear | null>(null);
   const [allYears, setAllYears] = useState<AcademicYear[]>([]);
+  const [schoolId, setSchoolId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadYears = async () => {
@@ -32,20 +34,23 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
       }
 
       const userData = JSON.parse(userDataStr);
-      const schoolId = userData?.user?.schoolId || userData?.school?.id;
+      // userData is the user object directly, not nested under user property
+      const schoolIdFromData = userData?.schoolId || userData?.school?.id;
 
-      if (!schoolId) {
+      if (!schoolIdFromData) {
         console.log('No schoolId found in user data', userData);
         setLoading(false);
         return;
       }
 
+      setSchoolId(schoolIdFromData);
+
       // Load all years
-      const years = await getAcademicYears(schoolId, token);
+      const years = await getAcademicYears(schoolIdFromData, token);
       setAllYears(years);
 
       // Get current year
-      const current = await getCurrentAcademicYear(schoolId, token);
+      const current = await getCurrentAcademicYear(schoolIdFromData, token);
       setCurrentYear(current);
 
       // Check if there's a saved selected year in localStorage
@@ -88,6 +93,7 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
         currentYear,
         selectedYear,
         allYears,
+        schoolId,
         setSelectedYear,
         loading,
         refreshYears,

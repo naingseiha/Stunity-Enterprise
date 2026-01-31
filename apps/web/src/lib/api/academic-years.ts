@@ -166,3 +166,77 @@ export async function deleteAcademicYear(schoolId: string, yearId: string, token
     throw new Error(error.error || 'Failed to delete academic year');
   }
 }
+
+export async function updateAcademicYear(
+  schoolId: string,
+  yearId: string,
+  updateData: Partial<CreateAcademicYearData>,
+  token: string
+): Promise<AcademicYear> {
+  const response = await fetch(`${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${yearId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(updateData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to update academic year');
+  }
+
+  const data = await response.json();
+  return data.data;
+}
+
+export async function archiveAcademicYear(
+  schoolId: string,
+  yearId: string,
+  token: string
+): Promise<AcademicYear> {
+  const response = await fetch(
+    `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${yearId}/archive`,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to archive academic year');
+  }
+
+  const data = await response.json();
+  return data.data;
+}
+
+export async function getAcademicYearStats(
+  schoolId: string,
+  yearId: string,
+  token: string
+): Promise<{ students: number; classes: number; teachers: number }> {
+  const response = await fetch(
+    `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${yearId}/stats`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    // Return zeros if stats endpoint doesn't exist yet
+    if (response.status === 404) {
+      return { students: 0, classes: 0, teachers: 0 };
+    }
+    throw new Error('Failed to fetch year statistics');
+  }
+
+  const data = await response.json();
+  return data.data;
+}

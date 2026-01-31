@@ -69,6 +69,7 @@ export async function getStudents(params?: {
   classId?: string;
   gender?: string;
   search?: string;
+  academicYearId?: string;
 }): Promise<StudentsResponse> {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());
@@ -76,6 +77,7 @@ export async function getStudents(params?: {
   if (params?.classId) queryParams.append('classId', params.classId);
   if (params?.gender) queryParams.append('gender', params.gender);
   if (params?.search) queryParams.append('search', params.search);
+  if (params?.academicYearId) queryParams.append('academicYearId', params.academicYearId);
 
   const response = await fetch(
     `${STUDENT_SERVICE_URL}/students/lightweight?${queryParams}`,

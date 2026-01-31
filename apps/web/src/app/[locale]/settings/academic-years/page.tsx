@@ -91,10 +91,19 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
     try {
       const token = TokenManager.getAccessToken();
       const userData = TokenManager.getUserData();
-      const schoolId = userData?.user?.schoolId || userData?.school?.id;
+      const schoolId = userData?.schoolId || userData?.school?.id;
 
-      if (!token || !schoolId) {
+      console.log('User data:', userData);
+      console.log('School ID:', schoolId);
+
+      if (!token) {
         router.push(`/${locale}/auth/login`);
+        return;
+      }
+
+      if (!schoolId) {
+        setError('No schoolId found in user data');
+        setLoading(false);
         return;
       }
 
@@ -135,7 +144,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
     try {
       const token = TokenManager.getAccessToken();
       const userData = TokenManager.getUserData();
-      const schoolId = userData?.user?.schoolId || userData?.school?.id;
+      const schoolId = userData?.schoolId || userData?.school?.id;
 
       if (!token || !schoolId) {
         router.push(`/${locale}/auth/login`);
@@ -180,7 +189,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
     try {
       const token = TokenManager.getAccessToken();
       const userData = TokenManager.getUserData();
-      const schoolId = userData?.user?.schoolId || userData?.school?.id;
+      const schoolId = userData?.schoolId || userData?.school?.id;
 
       if (!token || !schoolId) return;
 
@@ -223,14 +232,14 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
     try {
       const token = TokenManager.getAccessToken();
       const userData = TokenManager.getUserData();
-      const schoolId = userData?.user?.schoolId || userData?.school?.id;
+      const schoolId = userData?.schoolId || userData?.school?.id;
 
       if (!token || !schoolId) return;
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years/${selectedYear.id}`,
         {
-          method: 'PATCH',
+          method: 'PUT',
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -271,7 +280,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
     try {
       const token = TokenManager.getAccessToken();
       const userData = TokenManager.getUserData();
-      const schoolId = userData?.user?.schoolId || userData?.school?.id;
+      const schoolId = userData?.schoolId || userData?.school?.id;
 
       if (!token || !schoolId) return;
 
@@ -299,6 +308,45 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
     }
   };
 
+  const handleArchiveYear = async (year: AcademicYear) => {
+    if (!confirm(`Archive academic year "${year.name}"? This will make it read-only.`)) {
+      return;
+    }
+
+    try {
+      const token = TokenManager.getAccessToken();
+      const userData = TokenManager.getUserData();
+      const schoolId = userData?.schoolId || userData?.school?.id;
+
+      if (!token || !schoolId) {
+        router.push(`/${locale}/auth/login`);
+        return;
+      }
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years/${year.id}/archive`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSuccessMessage(`Academic year "${year.name}" has been archived successfully!`);
+        loadAcademicYears();
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setError(data.message || 'Failed to archive year');
+      }
+    } catch (err: any) {
+      setError('Error archiving year: ' + err.message);
+    }
+  };
+
   const handleOpenCopyModal = async (year: AcademicYear) => {
     setCopySourceYear(year);
     setCopyTargetYearId('');
@@ -314,7 +362,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
       setCopyLoading(true);
       const token = TokenManager.getAccessToken();
       const userData = TokenManager.getUserData();
-      const schoolId = userData?.user?.schoolId || userData?.school?.id;
+      const schoolId = userData?.schoolId || userData?.school?.id;
 
       if (!token || !schoolId) return;
 
@@ -343,7 +391,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
       setCopyError('');
       const token = TokenManager.getAccessToken();
       const userData = TokenManager.getUserData();
-      const schoolId = userData?.user?.schoolId || userData?.school?.id;
+      const schoolId = userData?.schoolId || userData?.school?.id;
 
       if (!token || !schoolId) return;
 
@@ -561,17 +609,21 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
                     {/* Quick Stats */}
                     <div className="grid grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 rounded-xl">
                       <div className="text-center">
-                        <Users className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                        <Users className="w-5 h-5 text-blue-500 mx-auto mb-1" />
                         <p className="text-xs text-gray-500">Students</p>
-                        <p className="text-lg font-bold text-gray-900">-</p>
+                        <p className="text-lg font-bold text-gray-900">
+                          {year.id === currentYear?.id ? '~' : '-'}
+                        </p>
                       </div>
                       <div className="text-center">
-                        <BookOpen className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                        <BookOpen className="w-5 h-5 text-purple-500 mx-auto mb-1" />
                         <p className="text-xs text-gray-500">Classes</p>
-                        <p className="text-lg font-bold text-gray-900">-</p>
+                        <p className="text-lg font-bold text-gray-900">
+                          {year.id === currentYear?.id ? '~' : '-'}
+                        </p>
                       </div>
                       <div className="text-center">
-                        <GraduationCap className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                        <GraduationCap className="w-5 h-5 text-green-500 mx-auto mb-1" />
                         <p className="text-xs text-gray-500">Promoted</p>
                         <p className="text-lg font-bold text-gray-900">
                           {year.isPromotionDone ? '✓' : '-'}
@@ -591,6 +643,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
                         </button>
                       )}
 
+                      {/* Manage button disabled - detail page coming soon
                       <button
                         onClick={() => router.push(`/${locale}/settings/academic-years/${year.id}`)}
                         className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium hover:bg-blue-200 transition-colors text-sm"
@@ -598,15 +651,23 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
                         <Settings className="w-4 h-4" />
                         Manage
                       </button>
+                      */}
 
-                      {year.isCurrent && (
+                      {(year.isCurrent || year.status === 'ENDED') && !year.isPromotionDone && (
                         <button
-                          onClick={() => router.push(`/${locale}/settings/promotion`)}
+                          onClick={() => router.push(`/${locale}/settings/academic-years/${year.id}/promote`)}
                           className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg font-medium hover:bg-green-200 transition-colors text-sm"
                         >
                           <TrendingUp className="w-4 h-4" />
                           Promote Students
                         </button>
+                      )}
+                      
+                      {year.isPromotionDone && (
+                        <span className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-lg text-sm font-medium">
+                          <CheckCircle2 className="w-4 h-4" />
+                          Promotion Complete
+                        </span>
                       )}
 
                       <button
@@ -619,13 +680,28 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
 
                       <button
                         onClick={() => handleEditYear(year)}
-                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm"
+                        disabled={year.status === 'ARCHIVED'}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
+                          year.status === 'ARCHIVED'
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
                       >
                         <Edit className="w-4 h-4" />
                         Edit
                       </button>
 
-                      {!year.isCurrent && (
+                      {year.status === 'ENDED' && !year.isPromotionDone && (
+                        <button
+                          onClick={() => handleArchiveYear(year)}
+                          className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm"
+                        >
+                          <Archive className="w-4 h-4" />
+                          Archive
+                        </button>
+                      )}
+
+                      {!year.isCurrent && year.status === 'PLANNING' && (
                         <button
                           onClick={() => handleDeleteYear(year)}
                           className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium hover:bg-red-200 transition-colors text-sm"

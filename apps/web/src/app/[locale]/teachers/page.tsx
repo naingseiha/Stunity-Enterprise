@@ -50,13 +50,22 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
       router.replace(`/${locale}/auth/login`);
       return;
     }
-    fetchTeachers();
-  }, [page]);
+    if (selectedYear) {
+      fetchTeachers();
+    }
+  }, [page, selectedYear]);
 
   const fetchTeachers = async () => {
+    if (!selectedYear) return;
+    
     setLoading(true);
     try {
-      const response = await getTeachers({ page, limit: 20, search: searchTerm });
+      const response = await getTeachers({ 
+        page, 
+        limit: 20, 
+        search: searchTerm,
+        academicYearId: selectedYear.id 
+      });
       setTeachers(response.data.teachers);
       setTotalPages(response.data.pagination.totalPages);
     } catch (error: any) {
@@ -114,7 +123,7 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
             <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
               {selectedYear.name}
             </span>
-            <span className="text-xs text-gray-500">(Teachers are school-wide across all years)</span>
+            <span className="text-xs text-gray-500">(Teachers assigned to classes in this year)</span>
           </div>
         )}
 

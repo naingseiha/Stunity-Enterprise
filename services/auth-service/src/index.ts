@@ -6,7 +6,8 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { body, validationResult } from 'express-validator';
 
-dotenv.config();
+// Load environment variables from root .env
+dotenv.config({ path: '../../.env' });
 
 const app = express();
 const PORT = process.env.AUTH_SERVICE_PORT || 3001;
@@ -141,6 +142,13 @@ app.post(
 
       const { email, password } = req.body;
 
+      // Debug logging
+      console.log('🔐 Login attempt:', {
+        email,
+        passwordLength: password?.length,
+        timestamp: new Date().toISOString()
+      });
+
       // Find user with school
       const user = await prisma.user.findUnique({
         where: { email },
@@ -160,11 +168,14 @@ app.post(
       });
 
       if (!user) {
+        console.log('❌ User not found:', email);
         return res.status(401).json({
           success: false,
           error: 'Invalid email or password',
         });
       }
+
+      console.log('✅ User found:', user.email);
 
       // Check if user is active
       if (!user.isActive) {
@@ -196,12 +207,20 @@ app.post(
       // Verify password
       const isPasswordValid = await bcrypt.compare(password, user.password);
 
+      console.log('🔑 Password check:', {
+        email: user.email,
+        valid: isPasswordValid
+      });
+
       if (!isPasswordValid) {
+        console.log('❌ Invalid password for:', user.email);
         return res.status(401).json({
           success: false,
           error: 'Invalid email or password',
         });
       }
+
+      console.log('✅ Login successful for:', user.email);
 
       // Update last login
       await prisma.user.update({

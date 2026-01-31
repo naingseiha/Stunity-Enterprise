@@ -58,7 +58,7 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
       return;
     }
     fetchStudents();
-  }, [page, debouncedSearch]); // Use debounced search instead of direct searchTerm
+  }, [page, debouncedSearch, selectedYear]); // Add selectedYear to dependencies
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -66,7 +66,8 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
       const response = await getStudents({ 
         page, 
         limit: ITEMS_PER_PAGE, 
-        search: debouncedSearch 
+        search: debouncedSearch,
+        academicYearId: selectedYear?.id, // Pass selected year ID
       });
       setStudents(response.data.students);
       setTotalPages(response.data.pagination.totalPages);

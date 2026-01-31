@@ -5,22 +5,50 @@ import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import dotenv from 'dotenv';
 import { generateStudentId } from './utils/studentIdGenerator';
 import { parseDate } from './utils/dateParser';
 
-// Simple in-memory cache
+// Load environment variables from root .env
+dotenv.config({ path: '../../.env' });
+
+// Simple in-memory cache with stale-while-revalidate
 const cache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 30000; // 30 seconds
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const STALE_TTL = 10 * 60 * 1000; // 10 minutes (serve stale while refreshing)
 
 const app = express();
-const prisma = new PrismaClient({
+
+// ✅ Singleton pattern to prevent multiple Prisma instances
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+
+const prisma = globalForPrisma.prisma || new PrismaClient({
   datasources: {
     db: {
       url: process.env.DATABASE_URL,
     },
   },
-  log: ['warn', 'error'],
+  log: ['error'],
 });
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
+
+// Keep database connection warm
+let isDbWarm = false;
+const warmUpDb = async () => {
+  if (isDbWarm) return;
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    isDbWarm = true;
+    console.log('✅ Database ready');
+  } catch (error) {
+    console.error('⚠️ Database warmup failed');
+  }
+};
+warmUpDb();
+setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000);
 
 // Middleware - CORS configuration
 app.use(cors({
@@ -139,8 +167,192 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
   }
 };
 
+// ===========================
+// POST /students/batch
+// Batch create students (for onboarding - no auth required)
+// ===========================
+app.post('/students/batch', async (req: Request, res: Response) => {
+  try {
+    const { schoolId, students } = req.body;
+
+    if (!schoolId) {
+      return res.status(400).json({
+        success: false,
+        message: 'schoolId is required',
+      });
+    }
+
+    if (!students || !Array.isArray(students) || students.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'students array is required',
+      });
+    }
+
+    console.log(`➕ [Onboarding] Batch creating ${students.length} students for school ${schoolId}...`);
+
+    const createdStudents = [];
+    const errors = [];
+
+    for (const studentData of students) {
+      try {
+        const {
+          firstName,
+          lastName,
+          gender,
+          dateOfBirth,
+          grade,
+          classId,
+          parentPhone,
+        } = studentData;
+
+        // Basic validation
+        if (!firstName || !lastName) {
+          errors.push({
+            student: studentData,
+            error: 'Missing required fields (firstName, lastName)',
+          });
+          continue;
+        }
+
+        // Create student
+        const student = await prisma.student.create({
+          data: {
+            schoolId,
+            firstName,
+            lastName,
+            khmerName: `${firstName} ${lastName}`, // Default Khmer name
+            gender: gender || 'M',
+            dateOfBirth: dateOfBirth || '2008-01-01',
+            classId: classId || null,
+            phoneNumber: parentPhone || null,
+          },
+        });
+
+        createdStudents.push(student);
+        console.log(`✅ Created student: ${student.firstName} ${student.lastName}`);
+      } catch (error: any) {
+        console.error(`❌ Error creating student:`, error);
+        errors.push({
+          student: studentData,
+          error: error.message,
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Created ${createdStudents.length} students`,
+      data: {
+        studentsCreated: createdStudents.length,
+        students: createdStudents,
+        errors: errors.length > 0 ? errors : undefined,
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ Batch create error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error creating students',
+      error: error.message,
+    });
+  }
+});
+
 // Apply auth middleware to all routes
 app.use(authenticateToken);
+
+// ==========================================
+// Background cache refresh helper
+// ==========================================
+async function refreshCache(
+  cacheKey: string,
+  schoolId: string,
+  page: number,
+  limit: number,
+  skip: number,
+  classId?: string,
+  gender?: string,
+  academicYearId?: string
+) {
+  try {
+    const where: any = { schoolId };
+    if (classId && classId !== "all") where.classId = classId;
+    if (gender && gender !== "all") where.gender = gender === "male" ? "MALE" : "FEMALE";
+
+    let students: any[];
+    let totalCount: number;
+
+    if (!academicYearId) {
+      [totalCount, students] = await Promise.all([
+        prisma.student.count({ where }),
+        prisma.student.findMany({
+          where,
+          select: {
+            id: true, studentId: true, firstName: true, lastName: true, khmerName: true, englishName: true,
+            email: true, dateOfBirth: true, gender: true, phoneNumber: true, classId: true, isAccountActive: true,
+            class: { select: { id: true, name: true, grade: true } },
+            fatherName: true, motherName: true, parentPhone: true, createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+      ]);
+    } else {
+      const enrollments = await prisma.studentClass.findMany({
+        where: {
+          academicYearId,
+          status: { in: ['ACTIVE', 'INACTIVE'] },
+          class: { schoolId },
+          ...(classId && classId !== 'all' ? { classId } : {}),
+        },
+        select: { studentId: true, classId: true, status: true, class: { select: { id: true, name: true, grade: true } } },
+        distinct: ['studentId'],
+      });
+
+      const studentIds = enrollments.map(e => e.studentId);
+      const enrollmentMap = new Map(enrollments.map(e => [e.studentId, e]));
+      const studentWhere: any = {
+        id: { in: studentIds },
+        ...(gender && gender !== 'all' ? { gender: gender === 'male' ? 'MALE' : 'FEMALE' } : {}),
+      };
+
+      [totalCount, students] = await Promise.all([
+        prisma.student.count({ where: studentWhere }),
+        prisma.student.findMany({
+          where: studentWhere,
+          select: {
+            id: true, studentId: true, firstName: true, lastName: true, khmerName: true, englishName: true,
+            email: true, dateOfBirth: true, gender: true, phoneNumber: true, classId: true, isAccountActive: true,
+            fatherName: true, motherName: true, parentPhone: true, createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+      ]);
+
+      students = students.map(s => ({
+        ...s,
+        class: enrollmentMap.get(s.id)?.class || null,
+        enrollmentStatus: enrollmentMap.get(s.id)?.status || null,
+      }));
+    }
+
+    const totalPages = Math.ceil(totalCount / limit);
+    const response = {
+      success: true,
+      data: students,
+      pagination: { page, limit, total: totalCount, totalPages, hasMore: page < totalPages },
+    };
+    
+    cache.set(cacheKey, { data: response, timestamp: Date.now() });
+    console.log(`🔄 Background cache refreshed for ${cacheKey}`);
+  } catch (error) {
+    console.error('❌ Background refresh failed:', error);
+  }
+}
 
 // ==========================================
 // STUDENT ENDPOINTS (Multi-Tenant)
@@ -148,12 +360,12 @@ app.use(authenticateToken);
 
 /**
  * GET /students/lightweight
- * Get students with pagination and filters (lightweight)
+ * ⚡ OPTIMIZED - Fast loading for grid/list views
  */
 app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
   try {
-    console.log("⚡ Fetching students (lightweight)...");
-    const schoolId = req.user!.schoolId; // Multi-tenant filter
+    const startTime = Date.now();
+    const schoolId = req.user!.schoolId;
 
     // Pagination
     const page = parseInt(req.query.page as string) || 1;
@@ -163,22 +375,32 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
     // Filters
     const classId = req.query.classId as string | undefined;
     const gender = req.query.gender as string | undefined;
+    const academicYearId = req.query.academicYearId as string | undefined;
 
     // Create cache key
-    const cacheKey = `students:${schoolId}:${page}:${limit}:${classId || 'all'}:${gender || 'all'}`;
+    const cacheKey = `students:${schoolId}:${page}:${limit}:${classId || 'all'}:${gender || 'all'}:${academicYearId || 'all'}`;
     
-    // Check cache
+    // Check cache with stale-while-revalidate pattern
     const cached = cache.get(cacheKey);
-    if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
-      console.log(`✅ Cache hit for ${cacheKey}`);
+    const now = Date.now();
+    const isFresh = cached && (now - cached.timestamp) < CACHE_TTL;
+    const isStale = cached && (now - cached.timestamp) < STALE_TTL;
+    
+    if (isFresh) {
+      console.log(`✅ Cache hit (${now - startTime}ms)`);
+      return res.json(cached.data);
+    }
+    
+    // Serve stale data immediately while refreshing in background
+    if (isStale) {
+      console.log(`⏳ Serving stale cache while refreshing...`);
+      // Trigger background refresh (non-blocking)
+      refreshCache(cacheKey, schoolId, page, limit, skip, classId, gender, academicYearId).catch(console.error);
       return res.json(cached.data);
     }
 
-    console.log(`📄 Page: ${page}, Limit: ${limit}, Skip: ${skip}`);
-    console.log(`🏫 School ID: ${schoolId}`);
-
-    // Build where clause
-    const where: any = { schoolId }; // Multi-tenant filter
+    // Build simple where clause
+    const where: any = { schoolId };
     
     if (classId && classId !== "all") {
       where.classId = classId;
@@ -187,51 +409,111 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
       where.gender = gender === "male" ? "MALE" : "FEMALE";
     }
 
-    // Get total count and students in parallel
-    const [totalCount, students] = await Promise.all([
-      prisma.student.count({ where }),
-      prisma.student.findMany({
-        where,
-        select: {
-          id: true,
-          studentId: true,
-          firstName: true,
-          lastName: true,
-          khmerName: true,
-          englishName: true,
-          email: true,
-          dateOfBirth: true,
-          gender: true,
-          placeOfBirth: true,
-          currentAddress: true,
-          phoneNumber: true,
-          classId: true,
-          isAccountActive: true,
-          studentRole: true,
-          class: {
-            select: {
-              id: true,
-              name: true,
-              grade: true,
+    let students: any[];
+    let totalCount: number;
+
+    // OPTIMIZATION: Use simpler query when no year filter
+    if (!academicYearId) {
+      // Fast path: simple query
+      [totalCount, students] = await Promise.all([
+        prisma.student.count({ where }),
+        prisma.student.findMany({
+          where,
+          select: {
+            id: true,
+            studentId: true,
+            firstName: true,
+            lastName: true,
+            khmerName: true,
+            englishName: true,
+            email: true,
+            dateOfBirth: true,
+            gender: true,
+            phoneNumber: true,
+            classId: true,
+            isAccountActive: true,
+            class: {
+              select: { id: true, name: true, grade: true },
             },
+            fatherName: true,
+            motherName: true,
+            parentPhone: true,
+            createdAt: true,
           },
-          fatherName: true,
-          motherName: true,
-          parentPhone: true,
-          createdAt: true,
-          updatedAt: true,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+      ]);
+    } else {
+      // Year filter: First get enrollments, then fetch students
+      const enrollments = await prisma.studentClass.findMany({
+        where: {
+          academicYearId,
+          status: { in: ['ACTIVE', 'INACTIVE'] },
+          class: { schoolId },
+          ...(classId && classId !== 'all' ? { classId } : {}),
         },
-        orderBy: {
-          createdAt: "desc",
+        select: {
+          studentId: true,
+          classId: true,
+          status: true,
+          class: { select: { id: true, name: true, grade: true } },
         },
-        skip,
-        take: limit,
-      }),
-    ]);
+        distinct: ['studentId'],
+      });
+
+      const studentIds = enrollments.map(e => e.studentId);
+      const enrollmentMap = new Map(enrollments.map(e => [e.studentId, e]));
+
+      // Apply additional filters
+      const studentWhere: any = {
+        id: { in: studentIds },
+        ...(gender && gender !== 'all' ? { gender: gender === 'male' ? 'MALE' : 'FEMALE' } : {}),
+      };
+
+      [totalCount, students] = await Promise.all([
+        prisma.student.count({ where: studentWhere }),
+        prisma.student.findMany({
+          where: studentWhere,
+          select: {
+            id: true,
+            studentId: true,
+            firstName: true,
+            lastName: true,
+            khmerName: true,
+            englishName: true,
+            email: true,
+            dateOfBirth: true,
+            gender: true,
+            phoneNumber: true,
+            classId: true,
+            isAccountActive: true,
+            fatherName: true,
+            motherName: true,
+            parentPhone: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+      ]);
+
+      // Add year-specific class info
+      students = students.map((s: any) => {
+        const enrollment = enrollmentMap.get(s.id);
+        return {
+          ...s,
+          class: enrollment?.class || null,
+          enrollmentStatus: enrollment?.status,
+        };
+      });
+    }
 
     const totalPages = Math.ceil(totalCount / limit);
-
-    console.log(`⚡ Fetched ${students.length} students (page ${page}/${totalPages})`);
+    const queryTime = Date.now() - startTime;
+    console.log(`⚡ Fetched ${students.length} students in ${queryTime}ms`);
 
     const response = {
       success: true,
@@ -250,7 +532,7 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
 
     res.json(response);
   } catch (error: any) {
-    console.error("❌ Error fetching students (lightweight):", error);
+    console.error("❌ Error fetching students:", error);
     res.status(500).json({
       success: false,
       message: "Error fetching students",
@@ -991,6 +1273,107 @@ app.post('/students/:id/photo', upload.single('photo'), async (req: AuthRequest,
 // ============================================
 
 /**
+ * Get eligible students for promotion
+ * Returns all students enrolled in a specific academic year
+ */
+app.get('/students/promote/eligible/:yearId', async (req: AuthRequest, res: Response) => {
+  try {
+    const { yearId } = req.params;
+    const schoolId = req.user?.schoolId;
+
+    if (!schoolId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    // Verify academic year belongs to school
+    const academicYear = await prisma.academicYear.findFirst({
+      where: { id: yearId, schoolId },
+    });
+
+    if (!academicYear) {
+      return res.status(404).json({
+        success: false,
+        message: 'Academic year not found',
+      });
+    }
+
+    // Get all classes for this academic year with their students
+    const classes = await prisma.class.findMany({
+      where: {
+        academicYearId: yearId,
+        schoolId,
+      },
+      include: {
+        studentClasses: {
+          where: {
+            status: 'ACTIVE',
+          },
+          include: {
+            student: {
+              select: {
+                id: true,
+                studentId: true,
+                firstName: true,
+                lastName: true,
+                khmerName: true,
+                gender: true,
+                dateOfBirth: true,
+                photoUrl: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        grade: 'asc',
+      },
+    });
+
+    // Transform data for easier frontend consumption
+    const eligibleStudents = classes.map((cls) => ({
+      classId: cls.id,
+      className: cls.name,
+      grade: cls.grade,
+      section: cls.section,
+      track: cls.track,
+      studentCount: cls.studentClasses.length,
+      students: cls.studentClasses.map((sc) => ({
+        id: sc.student.id,
+        studentId: sc.student.studentId,
+        firstName: sc.student.firstName,
+        lastName: sc.student.lastName,
+        khmerName: sc.student.khmerName,
+        gender: sc.student.gender,
+        dateOfBirth: sc.student.dateOfBirth,
+        photoUrl: sc.student.photoUrl,
+      })),
+    }));
+
+    const totalStudents = eligibleStudents.reduce((sum, cls) => sum + cls.studentCount, 0);
+
+    res.json({
+      success: true,
+      data: {
+        academicYear: {
+          id: academicYear.id,
+          name: academicYear.name,
+          status: academicYear.status,
+        },
+        classes: eligibleStudents,
+        totalStudents,
+      },
+    });
+  } catch (error: any) {
+    console.error('Error fetching eligible students:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch eligible students',
+      error: error.message,
+    });
+  }
+});
+
+/**
  * Preview automatic promotion
  * Shows which students will be promoted from current year to next
  */
@@ -1632,9 +2015,11 @@ app.listen(PORT, () => {
   console.log(`   DELETE /students/:id - Delete student`);
   console.log(`   POST   /students/:id/photo - Upload photo`);
   console.log(`🎓 Student Promotion:`);
+  console.log(`   GET    /students/promote/eligible/:yearId - Get eligible`);
   console.log(`   POST   /students/promote/preview - Preview promotion`);
   console.log(`   POST   /students/promote/automatic - Bulk promotion`);
   console.log(`   POST   /students/promote/manual - Manual promotion`);
+  console.log(`   POST   /students/mark-failed - Mark as failed`);
   console.log(`   GET    /students/:id/progression - History`);
   console.log(`   GET    /health - Health check (no auth)`);
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");

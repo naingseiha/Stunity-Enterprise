@@ -22,6 +22,16 @@ model School {
   logo    String?
   website String?
 
+  // School Configuration
+  schoolType  SchoolType @default(HIGH_SCHOOL)
+  gradeRange  String     @default("7-12") // "7-12", "1-6", "1-12"
+  workingDays Int[]      @default([1, 2, 3, 4, 5]) // Monday=1, Friday=5
+
+  // Onboarding Tracking
+  setupCompleted   Boolean   @default(false)
+  onboardingStep   Int       @default(0)
+  setupCompletedAt DateTime?
+
   // Subscription Management
   subscriptionTier  SubscriptionTier @default(FREE_TRIAL_1M)
   subscriptionStart DateTime         @default(now())
@@ -42,16 +52,26 @@ model School {
   updatedAt DateTime @updatedAt
 
   // Relations
-  academicYears AcademicYear[]
-  users         User[]
-  students      Student[]
-  teachers      Teacher[]
-  classes       Class[]
+  academicYears       AcademicYear[]
+  users               User[]
+  students            Student[]
+  teachers            Teacher[]
+  classes             Class[]
+  onboardingChecklist OnboardingChecklist?
+  schoolSettings      SchoolSettings?
 
   @@index([slug])
   @@index([subscriptionTier])
   @@index([isActive])
   @@map("schools")
+}
+
+enum SchoolType {
+  PRIMARY_SCHOOL // Grades 1-6
+  MIDDLE_SCHOOL // Grades 7-9
+  HIGH_SCHOOL // Grades 10-12
+  COMPLETE_SCHOOL // Grades 1-12
+  INTERNATIONAL // Custom grades
 }
 
 model AcademicYear {
@@ -77,6 +97,10 @@ model AcademicYear {
   classes          Class[]
   progressionsFrom StudentProgression[] @relation("FromYear")
   progressionsTo   StudentProgression[] @relation("ToYear")
+  terms            AcademicTerm[]
+  examTypes        ExamType[]
+  gradingScales    GradingScale[]
+  calendars        AcademicCalendar[]
 
   @@unique([schoolId, name])
   @@index([schoolId, isCurrent])
@@ -1272,4 +1296,190 @@ model PostView {
   @@index([userId])
   @@index([viewedAt])
   @@map("post_views")
+}
+
+// ========================================
+// Multi-Tenant Onboarding Models
+// ========================================
+
+model OnboardingChecklist {
+  id       String @id @default(cuid())
+  schoolId String @unique
+
+  // Steps completed
+  registrationDone Boolean @default(false)
+  schoolInfoDone   Boolean @default(false)
+  calendarDone     Boolean @default(false)
+  subjectsDone     Boolean @default(false)
+  teachersAdded    Boolean @default(false)
+  classesCreated   Boolean @default(false)
+  studentsAdded    Boolean @default(false)
+
+  // Progress tracking
+  currentStep       Int       @default(1)
+  totalSteps        Int       @default(7)
+  completionPercent Float     @default(0)
+  completedAt       DateTime?
+  skippedSteps      String[]  @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_checklists")
+}
+
+model SchoolSettings {
+  id       String @id @default(cuid())
+  schoolId String @unique
+
+  // Academic Settings
+  defaultAcademicYearStart String @default("09-01") // MM-DD format
+  defaultAcademicYearEnd   String @default("08-31")
+  defaultTermCount         Int    @default(2)
+
+  // Class Settings
+  defaultClassCapacity Int      @default(40)
+  defaultSections      String[] @default(["A", "B", "C"])
+
+  // Grading Settings
+  passingGrade Float   @default(50)
+  usesGPA      Boolean @default(true)
+
+  // Notification Settings
+  emailNotifications Boolean @default(true)
+  smsNotifications   Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@map("school_settings")
+}
+
+model AcademicTerm {
+  id             String   @id @default(cuid())
+  academicYearId String
+  name           String // "Semester 1", "Term 1", "Quarter 1"
+  termNumber     Int // 1, 2, 3, 4
+  startDate      DateTime
+  endDate        DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  examTypes    ExamType[]
+
+  @@unique([academicYearId, termNumber])
+  @@index([academicYearId])
+  @@map("academic_terms")
+}
+
+model ExamType {
+  id             String  @id @default(cuid())
+  academicYearId String
+  termId         String?
+  name           String // "Monthly Test", "Midterm", "Final"
+  weight         Float // 10, 30, 60 (percentage)
+  maxScore       Int     @default(100)
+  order          Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  academicYear AcademicYear  @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  term         AcademicTerm? @relation(fields: [termId], references: [id])
+
+  @@index([academicYearId])
+  @@index([termId])
+  @@map("exam_types")
+}
+
+model GradingScale {
+  id             String  @id @default(cuid())
+  academicYearId String
+  name           String // "Standard", "IB", "A-Level"
+  isDefault      Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ranges       GradeRange[]
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+
+  @@index([academicYearId])
+  @@map("grading_scales")
+}
+
+model GradeRange {
+  id             String @id @default(cuid())
+  gradingScaleId String
+  grade          String // "A", "B+", "5.0"
+  minScore       Float // 90
+  maxScore       Float // 100
+  gpa            Float? // 4.0
+  description    String // "Excellent"
+  color          String @default("#10B981") // For UI
+  order          Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  gradingScale GradingScale @relation(fields: [gradingScaleId], references: [id], onDelete: Cascade)
+
+  @@index([gradingScaleId])
+  @@map("grade_ranges")
+}
+
+model AcademicCalendar {
+  id             String @id @default(cuid())
+  academicYearId String
+  name           String @default("School Calendar")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  academicYear AcademicYear    @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  events       CalendarEvent[]
+
+  @@index([academicYearId])
+  @@map("academic_calendars")
+}
+
+model CalendarEvent {
+  id          String    @id @default(cuid())
+  calendarId  String
+  type        EventType
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  isSchoolDay Boolean   @default(true)
+  isPublic    Boolean   @default(true) // Visible to parents
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  calendar AcademicCalendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+
+  @@index([calendarId])
+  @@index([startDate])
+  @@index([type])
+  @@map("calendar_events")
+}
+
+enum EventType {
+  SCHOOL_DAY
+  HOLIDAY
+  VACATION
+  EXAM_PERIOD
+  REGISTRATION
+  ORIENTATION
+  PARENT_MEETING
+  SPORTS_DAY
+  CULTURAL_EVENT
+  SPECIAL_EVENT
 }

@@ -1,31 +1,26 @@
 'use client';
 
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
-import { Calendar, ChevronDown, Check, Settings } from 'lucide-react';
-import { useRouter, usePathname } from 'next/navigation';
+import { ChevronDown, Calendar, Check } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
 export default function AcademicYearSelector() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const locale = pathname.split('/')[1] || 'en'; // Extract locale from path
   const { currentYear, selectedYear, allYears, setSelectedYear, loading } = useAcademicYear();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
-    };
-
+    }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  if (loading || !selectedYear) {
+  if (loading) {
     return (
       <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg animate-pulse">
         <Calendar className="w-4 h-4 text-gray-400" />
@@ -34,63 +29,56 @@ export default function AcademicYearSelector() {
     );
   }
 
-  const getStatusBadge = (status: string) => {
-    const badges = {
-      ACTIVE: { label: 'Active', className: 'bg-green-100 text-green-700' },
-      PLANNING: { label: 'Planning', className: 'bg-blue-100 text-blue-700' },
-      ENDED: { label: 'Ended', className: 'bg-gray-100 text-gray-700' },
-      ARCHIVED: { label: 'Archived', className: 'bg-purple-100 text-purple-700' },
-    };
-    return badges[status as keyof typeof badges] || badges.PLANNING;
+  if (!selectedYear || allYears.length === 0) {
+    return null;
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'ACTIVE':
+        return 'bg-green-100 text-green-700';
+      case 'PLANNING':
+        return 'bg-blue-100 text-blue-700';
+      case 'ENDED':
+        return 'bg-orange-100 text-orange-700';
+      case 'ARCHIVED':
+        return 'bg-gray-100 text-gray-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
+    }
   };
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Selector Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+        className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm"
       >
-        <Calendar className="w-4 h-4 text-blue-600" />
-        <div className="text-left">
-          <div className="text-sm font-semibold text-gray-900">{selectedYear.name}</div>
-          {selectedYear.isCurrent && (
-            <div className="text-xs text-green-600">Current Year</div>
-          )}
-        </div>
-        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <Calendar className="w-4 h-4 text-gray-600" />
+        <span className="font-medium text-gray-900 hidden md:inline">
+          {selectedYear.name}
+        </span>
+        {selectedYear.isCurrent && (
+          <span className="hidden lg:inline px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded">
+            Current
+          </span>
+        )}
+        <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full mt-2 right-0 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
-          {/* Header */}
-          <div className="px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-sm">Academic Year</h3>
-                <p className="text-xs text-blue-100 mt-0.5">Select year to view</p>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  router.push(`/${locale}/settings/academic-years`);
-                  setIsOpen(false);
-                }}
-                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
-                title="Manage Academic Years"
-              >
-                <Settings className="w-4 h-4" />
-              </button>
-            </div>
+        <div className="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+          <div className="p-2 border-b border-gray-100 bg-gray-50">
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide px-2">
+              Select Academic Year
+            </p>
           </div>
-
-          {/* Years List */}
-          <div className="max-h-96 overflow-y-auto">
+          
+          <div className="max-h-80 overflow-y-auto">
             {allYears.map((year) => {
               const isSelected = year.id === selectedYear.id;
-              const status = getStatusBadge(year.status);
-
+              const isCurrent = year.id === currentYear?.id;
+              
               return (
                 <button
                   key={year.id}
@@ -98,51 +86,57 @@ export default function AcademicYearSelector() {
                     setSelectedYear(year);
                     setIsOpen(false);
                   }}
-                  className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 ${
+                  className={`w-full px-3 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors ${
                     isSelected ? 'bg-blue-50' : ''
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`font-semibold text-sm ${isSelected ? 'text-blue-600' : 'text-gray-900'}`}>
+                  <div className="flex items-center gap-3 flex-1">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-semibold text-sm ${isSelected ? 'text-blue-700' : 'text-gray-900'}`}>
                           {year.name}
                         </span>
-                        {year.isCurrent && (
-                          <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                        {isCurrent && (
+                          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded">
                             Current
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-gray-500">
-                        {new Date(year.startDate).toLocaleDateString()} - {new Date(year.endDate).toLocaleDateString()}
-                      </div>
-                      <div className="mt-1">
-                        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${status.className}`}>
-                          {status.label}
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs text-gray-500">
+                          {new Date(year.startDate).toLocaleDateString('en-US', {
+                            month: 'short',
+                            year: 'numeric',
+                          })}{' '}
+                          -{' '}
+                          {new Date(year.endDate).toLocaleDateString('en-US', {
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </span>
+                        <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${getStatusColor(year.status)}`}>
+                          {year.status}
                         </span>
                       </div>
                     </div>
-                    {isSelected && (
-                      <Check className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    )}
                   </div>
+                  
+                  {isSelected && (
+                    <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                  )}
                 </button>
               );
             })}
           </div>
 
-          {/* Footer */}
-          <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
-            <button
-              onClick={() => {
-                router.push(`/${locale}/settings/academic-years`);
-                setIsOpen(false);
-              }}
-              className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium"
+          <div className="p-2 border-t border-gray-100 bg-gray-50">
+            <a
+              href="/en/settings/academic-years"
+              className="block w-full px-3 py-2 text-xs font-medium text-center text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
+              onClick={() => setIsOpen(false)}
             >
               Manage Academic Years →
-            </button>
+            </a>
           </div>
         </div>
       )}

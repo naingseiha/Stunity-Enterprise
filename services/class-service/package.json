@@ -12,6 +12,7 @@
     "array-flatten": "^1.1.1",
     "cors": "^2.8.5",
     "destroy": "^1.2.0",
+    "dotenv": "^17.2.3",
     "encodeurl": "^2.0.0",
     "escape-html": "^1.0.3",
     "etag": "^1.8.1",

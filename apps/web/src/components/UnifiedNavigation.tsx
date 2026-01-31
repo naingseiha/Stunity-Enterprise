@@ -97,8 +97,9 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
             {/* Logo & Brand */}
             <div className="flex items-center gap-8">
               <button 
-                onClick={() => router.push(`/${locale}/feed`)}
+                onClick={() => router.push(isSchoolContext ? `/${locale}/dashboard` : `/${locale}/feed`)}
                 className="flex items-center gap-2 group"
+                title={isSchoolContext ? "Go to Dashboard" : "Go to Feed"}
               >
                 <img 
                   src="/stunity-logo.png" 

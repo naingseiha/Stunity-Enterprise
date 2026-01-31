@@ -2,16 +2,28 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
+import dotenv from 'dotenv';
+
+// Load environment variables from root .env
+dotenv.config({ path: '../../.env' });
+
+// Simple in-memory cache
+const cache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 const app = express();
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
-    },
-  },
-  log: ['warn', 'error'],
+
+// ✅ Singleton Prisma pattern
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+const prisma = globalForPrisma.prisma || new PrismaClient({
+  datasources: { db: { url: process.env.DATABASE_URL } },
+  log: ['error'],
 });
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+
+// Database warmup
+(async () => { try { await prisma.$queryRaw`SELECT 1`; console.log('✅ Database ready'); } catch (e) { console.error('⚠️ DB warmup failed'); } })();
+
 const PORT = process.env.PORT || 3005;
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 
@@ -116,6 +128,118 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
+// ===========================
+// POST /classes/batch
+// Batch create classes (for onboarding - no auth required)
+// ===========================
+app.post('/classes/batch', async (req: Request, res: Response) => {
+  try {
+    const { schoolId, academicYearId, classes } = req.body;
+
+    if (!schoolId) {
+      return res.status(400).json({
+        success: false,
+        message: 'schoolId is required',
+      });
+    }
+
+    if (!academicYearId) {
+      return res.status(400).json({
+        success: false,
+        message: 'academicYearId is required',
+      });
+    }
+
+    if (!classes || !Array.isArray(classes) || classes.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'classes array is required',
+      });
+    }
+
+    console.log(`➕ [Onboarding] Batch creating ${classes.length} classes for school ${schoolId}...`);
+
+    const createdClasses = [];
+    const errors = [];
+
+    for (const classData of classes) {
+      try {
+        const {
+          name,
+          nameKh,
+          grade,
+          section,
+          capacity,
+        } = classData;
+
+        // Basic validation
+        if (!name || !grade) {
+          errors.push({
+            class: classData,
+            error: 'Missing required fields (name, grade)',
+          });
+          continue;
+        }
+
+        // Check for duplicate class name
+        const existingClass = await prisma.class.findFirst({
+          where: {
+            schoolId,
+            academicYearId,
+            name,
+          },
+        });
+
+        if (existingClass) {
+          errors.push({
+            class: classData,
+            error: `Class with name ${name} already exists`,
+          });
+          continue;
+        }
+
+        // Create class
+        const newClass = await prisma.class.create({
+          data: {
+            schoolId,
+            academicYearId,
+            name,
+            grade,
+            section: section || null,
+            capacity: capacity || 40,
+          },
+        });
+
+        createdClasses.push(newClass);
+        console.log(`✅ Created class: ${newClass.name}`);
+      } catch (error: any) {
+        console.error(`❌ Error creating class:`, error);
+        errors.push({
+          class: classData,
+          error: error.message,
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Created ${createdClasses.length} classes`,
+      data: {
+        classesCreated: createdClasses.length,
+        classes: createdClasses,
+        errors: errors.length > 0 ? errors : undefined,
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ Batch create error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error creating classes',
+      error: error.message,
+    });
+  }
+});
+
 // Apply auth middleware to all routes below
 app.use(authMiddleware);
 
@@ -126,13 +250,24 @@ app.use(authMiddleware);
 app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.user!.schoolId;
+    const academicYearId = req.query.academicYearId as string | undefined;
     const startTime = Date.now();
     console.log(`⚡ [School ${schoolId}] Fetching classes (lightweight)...`);
+    if (academicYearId) {
+      console.log(`📅 Filtering by Academic Year: ${academicYearId}`);
+    }
+
+    const where: any = {
+      schoolId: schoolId,
+    };
+    
+    // Add academic year filter if provided
+    if (academicYearId) {
+      where.academicYearId = academicYearId;
+    }
 
     const classes = await prisma.class.findMany({
-      where: {
-        schoolId: schoolId,
-      },
+      where,
       select: {
         id: true,
         classId: true,
@@ -191,12 +326,23 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
 app.get('/classes', async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.user!.schoolId;
+    const academicYearId = req.query.academicYearId as string | undefined;
     console.log(`📚 [School ${schoolId}] Fetching all classes (full data)...`);
+    if (academicYearId) {
+      console.log(`📅 Filtering by Academic Year: ${academicYearId}`);
+    }
+
+    const where: any = {
+      schoolId: schoolId,
+    };
+    
+    // Add academic year filter if provided
+    if (academicYearId) {
+      where.academicYearId = academicYearId;
+    }
 
     const classes = await prisma.class.findMany({
-      where: {
-        schoolId: schoolId,
-      },
+      where,
       include: {
         homeroomTeacher: {
           select: {

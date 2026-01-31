@@ -8,7 +8,9 @@ async function main() {
 
   // Clean existing data (optional - be careful in production!)
   console.log('🗑️  Cleaning existing data...');
+  await prisma.studentProgression.deleteMany();
   await prisma.studentClass.deleteMany();
+  await prisma.teacherClass.deleteMany();
   await prisma.student.deleteMany();
   await prisma.teacher.deleteMany();
   await prisma.class.deleteMany();
@@ -60,29 +62,61 @@ async function main() {
 
   // Create Academic Years
   console.log('📅 Creating academic years...');
-  const academicYear1 = await prisma.academicYear.create({
+  
+  // Previous year (2024-2025) - ENDED status, ready for promotion
+  const academicYear2024 = await prisma.academicYear.create({
+    data: {
+      id: 'academic-year-2024-2025',
+      schoolId: testHighSchool.id,
+      name: '2024-2025',
+      startDate: new Date('2024-11-01'),
+      endDate: new Date('2025-09-30'),
+      isCurrent: false,
+      status: 'ENDED',
+      isPromotionDone: false, // Ready for promotion
+    },
+  });
+
+  // Current year (2025-2026) - ACTIVE
+  const academicYear2025 = await prisma.academicYear.create({
+    data: {
+      id: 'academic-year-2025-2026',
+      schoolId: testHighSchool.id,
+      name: '2025-2026',
+      startDate: new Date('2025-11-01'),
+      endDate: new Date('2026-09-30'),
+      isCurrent: true,
+      status: 'ACTIVE',
+    },
+  });
+
+  // Next year (2026-2027) - PLANNING
+  const academicYear2026 = await prisma.academicYear.create({
     data: {
       id: 'academic-year-2026-2027',
       schoolId: testHighSchool.id,
       name: '2026-2027',
-      startDate: new Date('2026-09-01'),
-      endDate: new Date('2027-06-30'),
-      isCurrent: true,
+      startDate: new Date('2026-11-01'),
+      endDate: new Date('2027-09-30'),
+      isCurrent: false,
+      status: 'PLANNING',
     },
   });
 
-  const academicYear2 = await prisma.academicYear.create({
+  // For Stunity Academy
+  const academicYear2025Stunity = await prisma.academicYear.create({
     data: {
-      id: 'academic-year-2026-2027-stunity',
+      id: 'academic-year-2025-2026-stunity',
       schoolId: stunityAcademy.id,
-      name: '2026-2027',
-      startDate: new Date('2026-09-01'),
-      endDate: new Date('2027-06-30'),
+      name: '2025-2026',
+      startDate: new Date('2025-11-01'),
+      endDate: new Date('2026-09-30'),
       isCurrent: true,
+      status: 'ACTIVE',
     },
   });
 
-  console.log(`✅ Created academic years for both schools`);
+  console.log(`✅ Created academic years: 2024-2025, 2025-2026, 2026-2027`);
 
   // Create Test Users (Admin, Teachers)
   console.log('👤 Creating test users...');
@@ -104,51 +138,235 @@ async function main() {
 
   console.log(`✅ Created admin user: ${adminUser.email} / SecurePass123!`);
 
-  // Create Classes
-  console.log('📚 Creating classes...');
-  const grade10A = await prisma.class.create({
+  // Create Classes for 2024-2025 (source year for promotion)
+  console.log('📚 Creating classes for 2024-2025...');
+  
+  // Grade 7 classes (2024-2025)
+  const grade7A_2024 = await prisma.class.create({
     data: {
-      id: 'class-grade10a',
       schoolId: testHighSchool.id,
-      classId: 'G10A',
+      classId: 'G7A-2024',
+      name: 'Grade 7A',
+      grade: '7',
+      section: 'A',
+      academicYearId: academicYear2024.id,
+      capacity: 35,
+      track: 'General',
+    },
+  });
+
+  const grade7B_2024 = await prisma.class.create({
+    data: {
+      schoolId: testHighSchool.id,
+      classId: 'G7B-2024',
+      name: 'Grade 7B',
+      grade: '7',
+      section: 'B',
+      academicYearId: academicYear2024.id,
+      capacity: 35,
+      track: 'General',
+    },
+  });
+
+  // Grade 8 classes (2024-2025)
+  const grade8A_2024 = await prisma.class.create({
+    data: {
+      schoolId: testHighSchool.id,
+      classId: 'G8A-2024',
+      name: 'Grade 8A',
+      grade: '8',
+      section: 'A',
+      academicYearId: academicYear2024.id,
+      capacity: 35,
+      track: 'General',
+    },
+  });
+
+  const grade8B_2024 = await prisma.class.create({
+    data: {
+      schoolId: testHighSchool.id,
+      classId: 'G8B-2024',
+      name: 'Grade 8B',
+      grade: '8',
+      section: 'B',
+      academicYearId: academicYear2024.id,
+      capacity: 35,
+      track: 'General',
+    },
+  });
+
+  // Grade 9 classes (2024-2025)
+  const grade9A_2024 = await prisma.class.create({
+    data: {
+      schoolId: testHighSchool.id,
+      classId: 'G9A-2024',
+      name: 'Grade 9A',
+      grade: '9',
+      section: 'A',
+      academicYearId: academicYear2024.id,
+      capacity: 35,
+      track: 'General',
+    },
+  });
+
+  console.log(`✅ Created 5 classes for 2024-2025 (Grades 7-9)`);
+
+  // Create Classes for 2025-2026 (current year)
+  console.log('📚 Creating classes for 2025-2026...');
+  
+  // Grade 7 classes (2025-2026) - For repeating students
+  const grade7A_2025 = await prisma.class.create({
+    data: {
+      schoolId: testHighSchool.id,
+      classId: 'G7A-2025',
+      name: 'Grade 7A',
+      grade: '7',
+      section: 'A',
+      academicYearId: academicYear2025.id,
+      capacity: 35,
+      track: 'General',
+    },
+  });
+
+  const grade7B_2025 = await prisma.class.create({
+    data: {
+      schoolId: testHighSchool.id,
+      classId: 'G7B-2025',
+      name: 'Grade 7B',
+      grade: '7',
+      section: 'B',
+      academicYearId: academicYear2025.id,
+      capacity: 35,
+      track: 'General',
+    },
+  });
+
+  // Grade 8 classes (2025-2026) - Promotion target for Grade 7
+  const grade8A_2025 = await prisma.class.create({
+    data: {
+      schoolId: testHighSchool.id,
+      classId: 'G8A-2025',
+      name: 'Grade 8A',
+      grade: '8',
+      section: 'A',
+      academicYearId: academicYear2025.id,
+      capacity: 35,
+      track: 'General',
+    },
+  });
+
+  const grade8B_2025 = await prisma.class.create({
+    data: {
+      schoolId: testHighSchool.id,
+      classId: 'G8B-2025',
+      name: 'Grade 8B',
+      grade: '8',
+      section: 'B',
+      academicYearId: academicYear2025.id,
+      capacity: 35,
+      track: 'General',
+    },
+  });
+
+  // Grade 9 classes (2025-2026) - Promotion target for Grade 8
+  const grade9A_2025 = await prisma.class.create({
+    data: {
+      schoolId: testHighSchool.id,
+      classId: 'G9A-2025',
+      name: 'Grade 9A',
+      grade: '9',
+      section: 'A',
+      academicYearId: academicYear2025.id,
+      capacity: 35,
+      track: 'General',
+    },
+  });
+
+  const grade9B_2025 = await prisma.class.create({
+    data: {
+      schoolId: testHighSchool.id,
+      classId: 'G9B-2025',
+      name: 'Grade 9B',
+      grade: '9',
+      section: 'B',
+      academicYearId: academicYear2025.id,
+      capacity: 35,
+      track: 'General',
+    },
+  });
+
+  // Grade 10 classes (2025-2026) - Promotion target for Grade 9
+  const grade10A_2025 = await prisma.class.create({
+    data: {
+      schoolId: testHighSchool.id,
+      classId: 'G10A-2025',
       name: 'Grade 10A',
       grade: '10',
       section: 'A',
-      academicYear: '2026-2027',
+      academicYearId: academicYear2025.id,
       capacity: 40,
       track: 'Science',
     },
   });
 
-  const grade11B = await prisma.class.create({
+  const grade10B_2025 = await prisma.class.create({
     data: {
-      id: 'class-grade11b',
       schoolId: testHighSchool.id,
-      classId: 'G11B',
-      name: 'Grade 11B',
-      grade: '11',
+      classId: 'G10B-2025',
+      name: 'Grade 10B',
+      grade: '10',
       section: 'B',
-      academicYear: '2026-2027',
-      capacity: 35,
+      academicYearId: academicYear2025.id,
+      capacity: 40,
       track: 'Social Science',
     },
   });
 
-  const grade12A = await prisma.class.create({
+  console.log(`✅ Created 8 classes for 2025-2026 (Grades 7-10)`);
+
+  // Create Classes for 2026-2027 (next year, for promotion target)
+  console.log('📚 Creating classes for 2026-2027...');
+  
+  const grade8A_2026 = await prisma.class.create({
     data: {
-      id: 'class-grade12a',
       schoolId: testHighSchool.id,
-      classId: 'G12A',
-      name: 'Grade 12A',
-      grade: '12',
+      classId: 'G8A-2026',
+      name: 'Grade 8A',
+      grade: '8',
       section: 'A',
-      academicYear: '2026-2027',
-      capacity: 30,
+      academicYearId: academicYear2026.id,
+      capacity: 35,
+      track: 'General',
+    },
+  });
+
+  const grade9A_2026 = await prisma.class.create({
+    data: {
+      schoolId: testHighSchool.id,
+      classId: 'G9A-2026',
+      name: 'Grade 9A',
+      grade: '9',
+      section: 'A',
+      academicYearId: academicYear2026.id,
+      capacity: 35,
+      track: 'General',
+    },
+  });
+
+  const grade10A_2026 = await prisma.class.create({
+    data: {
+      schoolId: testHighSchool.id,
+      classId: 'G10A-2026',
+      name: 'Grade 10A',
+      grade: '10',
+      section: 'A',
+      academicYearId: academicYear2026.id,
+      capacity: 40,
       track: 'Science',
     },
   });
 
-  console.log(`✅ Created classes: ${grade10A.name}, ${grade11B.name}, ${grade12A.name}`);
+  console.log(`✅ Created 3 classes for 2026-2027 (Grades 8-10)`);
 
   // Create Teachers
   console.log('👨‍🏫 Creating teachers...');
@@ -219,132 +437,228 @@ async function main() {
 
   console.log(`✅ Created ${teachers.length} teachers`);
 
-  // Create Students
-  console.log('👨‍🎓 Creating students...');
-  const studentsData = [
-    // Grade 10A students
-    {
-      firstName: 'Sophea',
-      lastName: 'Mao',
-      khmerName: 'សុភា ម៉ៅ',
-      gender: 'FEMALE',
-      dateOfBirth: '2010-01-15',
-      classId: grade10A.id,
-    },
-    {
-      firstName: 'Vuthy',
-      lastName: 'Lim',
-      khmerName: 'វុធី លឹម',
-      gender: 'MALE',
-      dateOfBirth: '2010-03-22',
-      classId: grade10A.id,
-    },
-    {
-      firstName: 'Sopheak',
-      lastName: 'Heng',
-      khmerName: 'សុភាព ហេង',
-      gender: 'MALE',
-      dateOfBirth: '2010-05-10',
-      classId: grade10A.id,
-    },
-    {
-      firstName: 'Mealea',
-      lastName: 'Seng',
-      khmerName: 'មាលា សេង',
-      gender: 'FEMALE',
-      dateOfBirth: '2010-07-08',
-      classId: grade10A.id,
-    },
-    {
-      firstName: 'Borey',
-      lastName: 'Tan',
-      khmerName: 'បូរី តាន់',
-      gender: 'MALE',
-      dateOfBirth: '2010-02-14',
-      classId: grade10A.id,
-    },
-    // Grade 11B students
-    {
-      firstName: 'Chanthy',
-      lastName: 'Kem',
-      khmerName: 'ចន្ថី កែម',
-      gender: 'FEMALE',
-      dateOfBirth: '2009-04-20',
-      classId: grade11B.id,
-    },
-    {
-      firstName: 'Virak',
-      lastName: 'Chhay',
-      khmerName: 'វីរៈ ឆាយ',
-      gender: 'MALE',
-      dateOfBirth: '2009-06-18',
-      classId: grade11B.id,
-    },
-    {
-      firstName: 'Sreymom',
-      lastName: 'Touch',
-      khmerName: 'ស្រីម៉ម ទូច',
-      gender: 'FEMALE',
-      dateOfBirth: '2009-08-25',
-      classId: grade11B.id,
-    },
-    {
-      firstName: 'Ratha',
-      lastName: 'Chea',
-      khmerName: 'រ័ត្ន ជា',
-      gender: 'MALE',
-      dateOfBirth: '2009-10-30',
-      classId: grade11B.id,
-    },
-    // Grade 12A students
-    {
-      firstName: 'Vanna',
-      lastName: 'Chhouk',
-      khmerName: 'វណ្ណា ឈូក',
-      gender: 'FEMALE',
-      dateOfBirth: '2008-03-12',
-      classId: grade12A.id,
-    },
-    {
-      firstName: 'Piseth',
-      lastName: 'Sok',
-      khmerName: 'ពិសិដ្ឋ សុខ',
-      gender: 'MALE',
-      dateOfBirth: '2008-05-28',
-      classId: grade12A.id,
-    },
-    {
-      firstName: 'Srey',
-      lastName: 'Neang',
-      khmerName: 'ស្រី នាង',
-      gender: 'FEMALE',
-      dateOfBirth: '2008-07-15',
-      classId: grade12A.id,
-    },
-  ];
+  // Create TeacherClass assignments (teachers assigned to classes by year)
+  console.log('👨‍🏫 Assigning teachers to classes...');
+  
+  // Get created teachers
+  const createdTeachers = await prisma.teacher.findMany({
+    where: { schoolId: testHighSchool.id },
+    select: { id: true, firstName: true }
+  });
+  
+  // Assign teachers to 2024-2025 classes
+  const classes2024 = [grade7A_2024, grade7B_2024, grade8A_2024, grade8B_2024, grade9A_2024];
+  for (let i = 0; i < classes2024.length; i++) {
+    const teacher = createdTeachers[i % createdTeachers.length];
+    await prisma.teacherClass.create({
+      data: {
+        teacherId: teacher.id,
+        classId: classes2024[i].id,
+      }
+    });
+  }
+  
+  // Assign teachers to 2025-2026 classes  
+  const classes2025 = [grade7A_2025, grade7B_2025, grade8A_2025, grade8B_2025, grade9A_2025, grade9B_2025, grade10A_2025, grade10B_2025];
+  for (let i = 0; i < classes2025.length; i++) {
+    const teacher = createdTeachers[i % createdTeachers.length];
+    await prisma.teacherClass.create({
+      data: {
+        teacherId: teacher.id,
+        classId: classes2025[i].id,
+      }
+    });
+  }
+  
+  // Assign teachers to 2026-2027 classes
+  const classes2026 = [grade8A_2026, grade9A_2026, grade10A_2026];
+  for (let i = 0; i < classes2026.length; i++) {
+    const teacher = createdTeachers[i % createdTeachers.length];
+    await prisma.teacherClass.create({
+      data: {
+        teacherId: teacher.id,
+        classId: classes2026[i].id,
+      }
+    });
+  }
+  
+  console.log(`✅ Assigned teachers to ${classes2024.length + classes2025.length + classes2026.length} classes`);
 
-  for (const studentData of studentsData) {
-    await prisma.student.create({
+  // Create Students for 2024-2025 (ready for promotion)
+  console.log('👨‍🎓 Creating students for 2024-2025...');
+  
+  // Grade 7A students (20 students)
+  const grade7A_students = [];
+  const firstNames = ['Sophea', 'Vuthy', 'Mealea', 'Borey', 'Chanthy', 'Virak', 'Sreymom', 'Ratha', 'Vanna', 'Piseth', 
+                       'Srey', 'Dara', 'Kunthea', 'Rithy', 'Nita', 'Sokha', 'Leakhena', 'Pheaktra', 'Samnang', 'Rotana'];
+  const lastNames = ['Mao', 'Lim', 'Seng', 'Tan', 'Kem', 'Chhay', 'Touch', 'Chea', 'Chhouk', 'Sok', 
+                     'Neang', 'Kong', 'Hour', 'Yin', 'Sok', 'Pheap', 'Chan', 'Keo', 'San', 'Long'];
+  
+  for (let i = 0; i < 20; i++) {
+    const student = await prisma.student.create({
       data: {
         schoolId: testHighSchool.id,
-        studentId: `S${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
-        firstName: studentData.firstName,
-        lastName: studentData.lastName,
-        khmerName: studentData.khmerName,
-        gender: studentData.gender as any,
-        dateOfBirth: studentData.dateOfBirth,
-        classId: studentData.classId,
+        studentId: `S7A-${(i + 1).toString().padStart(3, '0')}`,
+        firstName: firstNames[i],
+        lastName: lastNames[i],
+        khmerName: `${firstNames[i]} ${lastNames[i]}`,
+        gender: i % 2 === 0 ? 'FEMALE' : 'MALE',
+        dateOfBirth: `2011-${((i % 12) + 1).toString().padStart(2, '0')}-15`,
+        classId: grade7A_2024.id,
         placeOfBirth: 'ភ្នំពេញ',
         currentAddress: 'ភ្នំពេញ',
       },
     });
+    grade7A_students.push(student);
   }
 
-  console.log(`✅ Created ${studentsData.length} students`);
+  // Grade 7B students (18 students)
+  const grade7B_students = [];
+  for (let i = 0; i < 18; i++) {
+    const student = await prisma.student.create({
+      data: {
+        schoolId: testHighSchool.id,
+        studentId: `S7B-${(i + 1).toString().padStart(3, '0')}`,
+        firstName: firstNames[i % 20],
+        lastName: lastNames[(i + 10) % 20],
+        khmerName: `${firstNames[i % 20]} ${lastNames[(i + 10) % 20]}`,
+        gender: i % 2 === 0 ? 'MALE' : 'FEMALE',
+        dateOfBirth: `2011-${((i % 12) + 1).toString().padStart(2, '0')}-20`,
+        classId: grade7B_2024.id,
+        placeOfBirth: 'ភ្នំពេញ',
+        currentAddress: 'ភ្នំពេញ',
+      },
+    });
+    grade7B_students.push(student);
+  }
+
+  // Grade 8A students (22 students)
+  const grade8A_students = [];
+  for (let i = 0; i < 22; i++) {
+    const student = await prisma.student.create({
+      data: {
+        schoolId: testHighSchool.id,
+        studentId: `S8A-${(i + 1).toString().padStart(3, '0')}`,
+        firstName: firstNames[i % 20],
+        lastName: lastNames[i % 20],
+        khmerName: `${firstNames[i % 20]} ${lastNames[i % 20]}`,
+        gender: i % 3 === 0 ? 'FEMALE' : 'MALE',
+        dateOfBirth: `2010-${((i % 12) + 1).toString().padStart(2, '0')}-10`,
+        classId: grade8A_2024.id,
+        placeOfBirth: 'ភ្នំពេញ',
+        currentAddress: 'ភ្នំពេញ',
+      },
+    });
+    grade8A_students.push(student);
+  }
+
+  // Grade 8B students (20 students)
+  const grade8B_students = [];
+  for (let i = 0; i < 20; i++) {
+    const student = await prisma.student.create({
+      data: {
+        schoolId: testHighSchool.id,
+        studentId: `S8B-${(i + 1).toString().padStart(3, '0')}`,
+        firstName: firstNames[(i + 5) % 20],
+        lastName: lastNames[(i + 5) % 20],
+        khmerName: `${firstNames[(i + 5) % 20]} ${lastNames[(i + 5) % 20]}`,
+        gender: i % 3 === 0 ? 'MALE' : 'FEMALE',
+        dateOfBirth: `2010-${((i % 12) + 1).toString().padStart(2, '0')}-15`,
+        classId: grade8B_2024.id,
+        placeOfBirth: 'ភ្នំពេញ',
+        currentAddress: 'ភ្នំពេញ',
+      },
+    });
+    grade8B_students.push(student);
+  }
+
+  // Grade 9A students (25 students)
+  const grade9A_students = [];
+  for (let i = 0; i < 25; i++) {
+    const student = await prisma.student.create({
+      data: {
+        schoolId: testHighSchool.id,
+        studentId: `S9A-${(i + 1).toString().padStart(3, '0')}`,
+        firstName: firstNames[i % 20],
+        lastName: lastNames[(i + 7) % 20],
+        khmerName: `${firstNames[i % 20]} ${lastNames[(i + 7) % 20]}`,
+        gender: i % 2 === 0 ? 'FEMALE' : 'MALE',
+        dateOfBirth: `2009-${((i % 12) + 1).toString().padStart(2, '0')}-05`,
+        classId: grade9A_2024.id,
+        placeOfBirth: 'ភ្នំពេញ',
+        currentAddress: 'ភ្នំពេញ',
+      },
+    });
+    grade9A_students.push(student);
+  }
+
+  const totalStudents2024 = 20 + 18 + 22 + 20 + 25;
+  console.log(`✅ Created ${totalStudents2024} students for 2024-2025 (105 total)`);
+
+  // Create StudentClass enrollments for 2024-2025
+  console.log('📝 Creating student-class enrollments for 2024-2025...');
+  
+  for (const student of grade7A_students) {
+    await prisma.studentClass.create({
+      data: {
+        studentId: student.id,
+        classId: grade7A_2024.id,
+        academicYearId: academicYear2024.id,
+        status: 'ACTIVE',
+      },
+    });
+  }
+
+  for (const student of grade7B_students) {
+    await prisma.studentClass.create({
+      data: {
+        studentId: student.id,
+        classId: grade7B_2024.id,
+        academicYearId: academicYear2024.id,
+        status: 'ACTIVE',
+      },
+    });
+  }
+
+  for (const student of grade8A_students) {
+    await prisma.studentClass.create({
+      data: {
+        studentId: student.id,
+        classId: grade8A_2024.id,
+        academicYearId: academicYear2024.id,
+        status: 'ACTIVE',
+      },
+    });
+  }
+
+  for (const student of grade8B_students) {
+    await prisma.studentClass.create({
+      data: {
+        studentId: student.id,
+        classId: grade8B_2024.id,
+        academicYearId: academicYear2024.id,
+        status: 'ACTIVE',
+      },
+    });
+  }
+
+  for (const student of grade9A_students) {
+    await prisma.studentClass.create({
+      data: {
+        studentId: student.id,
+        classId: grade9A_2024.id,
+        academicYearId: academicYear2024.id,
+        status: 'ACTIVE',
+      },
+    });
+  }
+
+  console.log(`✅ Created ${totalStudents2024} student-class enrollments`);
 
   // Update school counts
   const studentCount = await prisma.student.count({ where: { schoolId: testHighSchool.id } });
   const teacherCount = await prisma.teacher.count({ where: { schoolId: testHighSchool.id } });
+  const classCount = await prisma.class.count({ where: { schoolId: testHighSchool.id } });
 
   await prisma.school.update({
     where: { id: testHighSchool.id },
@@ -368,12 +682,31 @@ async function main() {
   console.log(`   Email:    ${adminUser.email}`);
   console.log(`   Password: SecurePass123!`);
   console.log('');
-  console.log('📊 Test Data:');
+  console.log('📅 Academic Years:');
+  console.log(`   • 2024-2025 (ENDED) - Ready for promotion ✅`);
+  console.log(`   • 2025-2026 (ACTIVE - Current)`);
+  console.log(`   • 2026-2027 (PLANNING)`);
+  console.log('');
+  console.log('📊 Test Data for Test High School:');
   console.log(`   • ${teacherCount} Teachers`);
   console.log(`   • ${studentCount} Students`);
-  console.log(`   • 3 Classes`);
+  console.log(`   • ${classCount} Classes across 3 academic years`);
   console.log('');
-  console.log('🌐 Access the app at: http://localhost:3000/en');
+  console.log('👨‍🎓 Students by Year & Grade (2024-2025):');
+  console.log(`   • Grade 7A: 20 students`);
+  console.log(`   • Grade 7B: 18 students`);
+  console.log(`   • Grade 8A: 22 students`);
+  console.log(`   • Grade 8B: 20 students`);
+  console.log(`   • Grade 9A: 25 students`);
+  console.log(`   Total: 105 students ready for promotion!`);
+  console.log('');
+  console.log('🎯 Next Steps:');
+  console.log(`   1. Login at http://localhost:3000`);
+  console.log(`   2. Navigate to Academic Years`);
+  console.log(`   3. View 2024-2025 year (ENDED status)`);
+  console.log(`   4. Click "Promote Students" to start promotion wizard`);
+  console.log('');
+  console.log('🌐 Access the app at: http://localhost:3000');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 }
 

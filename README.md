@@ -1,73 +1,61 @@
-# Stunity Enterprise V2
+# 🎓 Stunity Enterprise - School Management System
 
-**Multi-Tenant School Management SaaS for Cambodia**
+**Version:** 2.0  
+**Status:** Phase 2 Complete ✅  
+**Last Updated:** January 31, 2026
 
-A modern, microservices-based school management system built with Next.js 14 and TypeScript.
-
----
-
-## 🎯 Overview
-
-Stunity Enterprise V2 is a complete school management solution designed specifically for Cambodian schools, featuring:
-
-- **Multi-tenant SaaS architecture** - One platform, multiple schools
-- **Microservices backend** - 9 independent services
-- **Modern UI** - Next.js 14 with TailwindCSS
-- **Bilingual support** - English & Khmer
-- **Mobile responsive** - Works on all devices
-
----
-
-## ✨ Current Features
-
-### **Core Management:**
-- ✅ **Students** - Complete student management with profiles
-- ✅ **Teachers** - Teacher management with subject specialization
-- ✅ **Classes** - Class management with sections and grade levels
-- ✅ **Academic Years** - Multi-year support with rollover
-- ✅ **Subjects** - Subject catalog with categories and grade levels
-
-### **Academic Operations:**
-- ✅ **Grade Entry** - Excel-like grade entry interface with auto-save
-- ✅ **Attendance** - Daily attendance marking with 5 status types
-- ✅ **Settings Rollover** - Copy subjects, teachers, classes between years
-
-### **System Features:**
-- ✅ **Unified Navigation** - Consistent sidebar navigation across all pages
-- ✅ **Academic Year Context** - Global academic year selection
-- ✅ **Multi-language** - English and Khmer support
-- ✅ **JWT Authentication** - Secure token-based auth
+A comprehensive, multi-tenant school management SaaS platform with full academic year support and historical data tracking.
 
 ---
 
 ## 🚀 Quick Start
 
-### **Prerequisites:**
-- Node.js 18+
-- PostgreSQL  
-- Git
-
-### **Installation:**
-
 ```bash
-# Clone repository
-git clone <repository-url>
-cd Stunity-Enterprise
-
-# Install dependencies
-npm install
-
 # Start all services
-./start-all-services.sh
-
-# Check service status
-./check-services.sh
+./quick-start.sh
 
 # Open browser
 open http://localhost:3000
+
+# Login
+Email: john.doe@testhighschool.edu
+Password: SecurePass123!
 ```
 
-See **QUICK_START.md** for detailed instructions.
+---
+
+## 📊 System Architecture
+
+### Microservices (Ports)
+- **Web** (3000) - Next.js frontend
+- **Auth** (3001) - Authentication
+- **School** (3002) - School & Academic Years
+- **Student** (3003) - Student management
+- **Teacher** (3004) - Teacher management
+- **Class** (3005) - Class management
+
+### Tech Stack
+- **Frontend:** Next.js 14, React, TypeScript, TailwindCSS
+- **Backend:** Node.js, Express, TypeScript
+- **Database:** PostgreSQL, Prisma ORM
+- **Auth:** JWT tokens
+
+---
+
+## ✅ Features Implemented
+
+### Phase 1: Academic Year Management
+- ✅ Create, edit, delete academic years
+- ✅ Set current year
+- ✅ Archive old years
+- ✅ Status management (PLANNING → ACTIVE → ENDED → ARCHIVED)
+
+### Phase 2: Year-Based Data Scoping
+- ✅ Global year context
+- ✅ Year selector in navigation
+- ✅ All data filtered by selected year
+- ✅ Students, Teachers, Classes pages year-aware
+- ✅ Historical data preservation
 
 ---
 
@@ -75,160 +63,94 @@ See **QUICK_START.md** for detailed instructions.
 
 ```
 Stunity-Enterprise/
-├── apps/web/                   # Next.js Frontend (Port 3000)
-├── services/
-│   ├── auth-service/           # Authentication (Port 3001)
-│   ├── school-service/         # School Management (Port 3002)
-│   ├── student-service/        # Students (Port 3003)
-│   ├── teacher-service/        # Teachers (Port 3004)
-│   ├── class-service/          # Classes (Port 3005)
-│   ├── subject-service/        # Subjects (Port 3006)
-│   ├── grade-service/          # Grades (Port 3007)
-│   └── attendance-service/     # Attendance (Port 3008)
-├── *.sh                        # Service management scripts
-└── docs/                       # Documentation
+├── apps/web/              # Frontend
+├── services/              # Backend microservices
+│   ├── auth-service/
+│   ├── school-service/
+│   ├── student-service/
+│   ├── teacher-service/
+│   └── class-service/
+├── packages/database/     # Prisma schema
+├── docs/                  # Documentation
+├── quick-start.sh         # Start services
+└── stop-all-services.sh   # Stop services
 ```
+
+---
+
+## 🛠️ Commands
+
+```bash
+# Service Management
+./quick-start.sh           # Start all
+./stop-all-services.sh     # Stop all
+./restart-all-services.sh  # Restart all
+./check-services.sh        # Check status
+
+# Database
+cd packages/database
+npm run seed              # Seed test data
+npx prisma studio         # Open database GUI
+npx prisma migrate dev    # Run migrations
+```
+
+---
+
+## 🧪 Test Data
+
+**School:** Test High School  
+**Academic Year:** 2025-2026 (Nov 2025 - Sep 2026)  
+**Students:** 12  
+**Teachers:** 4  
+**Classes:** 3  
+
+**Admin Login:**
+```
+Email: john.doe@testhighschool.edu
+Password: SecurePass123!
+```
+
+---
+
+## 🎯 Next: Phase 3
+
+**Student Promotion System**
+- Promotion wizard
+- Bulk student transitions
+- Year-to-year tracking
+- Failed student management
 
 ---
 
 ## 📚 Documentation
 
-### **Essential Docs:**
-- **QUICK_START.md** - Get started in 5 minutes
-- **COMPLETE_SYSTEM_STATUS.md** - Full system overview and features
-- **IMPLEMENTATION_ROADMAP.md** - Next features to implement
-- **SERVICE_MANAGEMENT.md** - Service operations guide
-
-### **Read First:**
-1. Start with **QUICK_START.md**
-2. Review **COMPLETE_SYSTEM_STATUS.md** for current features
-3. Check **IMPLEMENTATION_ROADMAP.md** for what's next
-4. Use **SERVICE_MANAGEMENT.md** when working with services
+- **QUICK_START.md** - Quick reference
+- **docs/ACADEMIC_YEAR_ARCHITECTURE.md** - System design
+- **docs/PHASE2_COMPLETE.md** - Implementation details
+- **docs/archive/** - Historical docs
 
 ---
 
-## 🛠️ Technology Stack
+## 🔧 Troubleshooting
 
-### **Frontend:**
-- Next.js 14 (App Router)
-- TypeScript
-- TailwindCSS
-- next-intl (i18n)
-
-### **Backend:**
-- Node.js + Express
-- TypeScript
-- Prisma ORM
-- PostgreSQL
-- JWT Authentication
-
----
-
-## 🎯 Next Features
-
-### **Priority 1: Feature Completeness** (Week 1)
-- Attendance Reports & Analytics
-- Grade Reports & Analytics
-- Student/Teacher Profile Enhancements
-
-### **Priority 2: Timetable Generator** (Week 2-3)
-- Automatic timetable generation
-- Teacher-Subject-Class assignment
-- Conflict detection and resolution
-- Class/Teacher/Student timetable views
-- **This is NEW and unique to V2!**
-
-See **IMPLEMENTATION_ROADMAP.md** for full details.
-
----
-
-## 🧪 Service Management
-
-### **Common Commands:**
-
+**Services won't start?**
 ```bash
-# Start all services
-./start-all-services.sh
-
-# Stop all services
 ./stop-all-services.sh
-
-# Restart all services
-./restart-all-services.sh
-
-# Check status
-./check-services.sh
-
-# Kill specific port
-./kill-port.sh <port>
-
-# Create academic year (helper)
-./create-academic-year.sh
+./quick-start.sh
 ```
 
----
-
-## 📊 System Status
-
-**Current Phase:** ✅ Core System Complete
-
-**Services:** 9/9 Running  
-**Features:** 8 Major Features Complete  
-**Documentation:** 4 Essential Docs  
-
-**Next Phase:** 🚀 Feature Enhancement & Timetable System
-
----
-
-## 🐛 Troubleshooting
-
-### **Port Already in Use:**
+**Login fails?**
 ```bash
-./kill-port.sh <port>
-./restart-all-services.sh
+cd packages/database
+npm run seed
 ```
 
-### **Service Won't Start:**
-```bash
-# Check logs
-tail -f /tmp/stunity-*.log
-
-# Restart specific service
-cd services/<service-name>
-npm run dev
-```
-
-### **Database Issues:**
-```bash
-# Run migrations
-cd services/<service-name>
-npx prisma migrate dev
-```
+**Data not showing?**
+- Check year selector (should show 2025-2026)
+- Hard reload browser (Cmd+Shift+R)
 
 ---
 
-## 📞 Support
-
-- **Logs:** `/tmp/stunity-*.log`
-- **Documentation:** `/docs` and root `.md` files
-- **Service Status:** `./check-services.sh`
-
----
-
-## 🎓 For Developers
-
-1. **Read QUICK_START.md** - Setup and first run
-2. **Read COMPLETE_SYSTEM_STATUS.md** - Understand the system
-3. **Read IMPLEMENTATION_ROADMAP.md** - See what's next
-4. **Review SERVICE_MANAGEMENT.md** - Learn service operations
-5. **Start building!** 🚀
-
----
-
-## 📄 License
-
-Proprietary - Stunity Enterprise
-
----
-
-**Built with ❤️ for Cambodian Schools**
+**System Status:** ✅ Production Ready  
+**Current Phase:** Phase 2 Complete  
+**Next Phase:** Student Promotion

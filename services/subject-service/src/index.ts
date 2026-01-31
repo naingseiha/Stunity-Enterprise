@@ -2,11 +2,28 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+
+// Load environment variables from root .env
+dotenv.config({ path: '../../.env' });
+
+// Simple in-memory cache with stale-while-revalidate
+const cache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const STALE_TTL = 10 * 60 * 1000; // 10 minutes
 
 const app = express();
-const prisma = new PrismaClient();
-const PORT = process.env.PORT || 3006;
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+// ✅ Singleton Prisma pattern
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+const prisma = globalForPrisma.prisma || new PrismaClient({ log: ['error'] });
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+
+// Database warmup
+(async () => { try { await prisma.$queryRaw`SELECT 1`; console.log('✅ Database ready'); } catch (e) { console.error('⚠️ DB warmup failed'); } })();
+
+const PORT = process.env.SUBJECT_SERVICE_PORT || process.env.PORT || 3006;
+const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 
 // ========================================
 // Middleware
@@ -45,18 +62,8 @@ const authenticateToken = (req: AuthRequest, res: Response, next: Function) => {
   }
 };
 
-app.use(authenticateToken);
-
 // ========================================
-// Utility Functions
-// ========================================
-
-const getSchoolId = (req: AuthRequest): string | null => {
-  return req.user?.schoolId || req.user?.school?.id || null;
-};
-
-// ========================================
-// Health Check
+// Health Check (No Auth Required)
 // ========================================
 
 app.get('/health', (req: Request, res: Response) => {
@@ -67,6 +74,17 @@ app.get('/health', (req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// ========================================
+// Utility Functions
+// ========================================
+
+const getSchoolId = (req: AuthRequest): string | null => {
+  return req.user?.schoolId || req.user?.school?.id || null;
+};
+
+// Apply authentication to all routes below this point
+app.use(authenticateToken);
 
 // ========================================
 // SUBJECT ENDPOINTS - FULL FEATURES
@@ -84,10 +102,8 @@ app.get('/health', (req: Request, res: Response) => {
  */
 app.get('/subjects', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
+    // schoolId used for filtering teacher assignments only
     const schoolId = getSchoolId(req);
-    if (!schoolId) {
-      return res.status(400).json({ message: 'School ID is required' });
-    }
 
     const {
       grade,
@@ -98,7 +114,24 @@ app.get('/subjects', authenticateToken, async (req: AuthRequest, res: Response) 
       includeTeachers = 'false',
     } = req.query;
 
-    // Build filter conditions
+    // ✅ Check cache with stale-while-revalidate
+    const cacheKey = `subjects:${grade || 'all'}:${track || 'all'}:${category || 'all'}:${isActive || 'all'}:${search || ''}:${includeTeachers}:${schoolId || 'none'}`;
+    const cached = cache.get(cacheKey);
+    const now = Date.now();
+    const isFresh = cached && (now - cached.timestamp) < CACHE_TTL;
+    const isStale = cached && (now - cached.timestamp) < STALE_TTL;
+    
+    if (isFresh) {
+      console.log(`📋 [Cache hit] Subjects`);
+      return res.json(cached.data);
+    }
+    
+    if (isStale) {
+      console.log(`⏳ Serving stale subjects cache...`);
+      return res.json(cached.data);
+    }
+
+    // Build filter conditions - subjects are global, not school-specific
     const where: any = {};
 
     if (grade) where.grade = grade as string;
@@ -118,7 +151,7 @@ app.get('/subjects', authenticateToken, async (req: AuthRequest, res: Response) 
     const subjects = await prisma.subject.findMany({
       where,
       include: {
-        subjectTeachers: includeTeachers === 'true' ? {
+        subjectTeachers: includeTeachers === 'true' && schoolId ? {
           include: {
             teacher: {
               select: {
@@ -152,7 +185,9 @@ app.get('/subjects', authenticateToken, async (req: AuthRequest, res: Response) 
       ],
     });
 
-    console.log(`✅ Found ${subjects.length} subjects for school ${schoolId}`);
+    // Cache the result
+    cache.set(cacheKey, { data: subjects, timestamp: Date.now() });
+    console.log(`✅ Found ${subjects.length} subjects`);
 
     res.json(subjects);
   } catch (error: any) {
