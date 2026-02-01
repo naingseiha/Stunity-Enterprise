@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import {
   Home,
   GraduationCap,
@@ -20,6 +21,7 @@ import {
   TrendingUp,
   ClipboardList,
   ClipboardCheck,
+  Loader2,
 } from 'lucide-react';
 import AcademicYearSelector from './AcademicYearSelector';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -34,6 +36,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'en';
+  const [isPending, startTransition] = useTransition();
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -116,9 +119,10 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <button
+                    <Link
                       key={item.name}
-                      onClick={() => router.push(item.path)}
+                      href={item.path}
+                      prefetch={true}
                       className={`
                         relative flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all
                         ${item.active 
@@ -137,7 +141,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                       {item.active && (
                         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
                       )}
-                    </button>
+                    </Link>
                   );
                 })}
               </div>
@@ -193,26 +197,24 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                       <p className="font-semibold text-gray-900">{user?.firstName} {user?.lastName}</p>
                       <p className="text-sm text-gray-500">{school?.name}</p>
                     </div>
-                    <button
-                      onClick={() => {
-                        setProfileMenuOpen(false);
-                        router.push(`/${locale}/profile`);
-                      }}
+                    <Link
+                      href={`/${locale}/profile`}
+                      prefetch={true}
+                      onClick={() => setProfileMenuOpen(false)}
                       className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                       <User className="w-4 h-4" />
                       <span>My Profile</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setProfileMenuOpen(false);
-                        router.push(`/${locale}/settings`);
-                      }}
+                    </Link>
+                    <Link
+                      href={`/${locale}/settings`}
+                      prefetch={true}
+                      onClick={() => setProfileMenuOpen(false)}
                       className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                       <Settings className="w-4 h-4" />
                       <span>Settings</span>
-                    </button>
+                    </Link>
                     <div className="border-t border-gray-100 my-2"></div>
                     <button
                       onClick={() => {
@@ -246,12 +248,11 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
               {navItems.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <button
+                  <Link
                     key={item.name}
-                    onClick={() => {
-                      router.push(item.path);
-                      setMobileMenuOpen(false);
-                    }}
+                    href={item.path}
+                    prefetch={true}
+                    onClick={() => setMobileMenuOpen(false)}
                     className={`
                       w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors
                       ${item.active 
@@ -267,7 +268,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                         {item.badge}
                       </span>
                     )}
-                  </button>
+                  </Link>
                 );
               })}
             </div>
@@ -286,9 +287,10 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
               const Icon = item.icon;
               const isActive = pathname === item.path;
               return (
-                <button
+                <Link
                   key={item.name}
-                  onClick={() => router.push(item.path)}
+                  href={item.path}
+                  prefetch={true}
                   className={`
                     w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm transition-colors
                     ${isActive 
@@ -299,7 +301,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                 >
                   <Icon className="w-5 h-5" />
                   <span>{item.name}</span>
-                </button>
+                </Link>
               );
             })}
           </div>
