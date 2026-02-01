@@ -281,4 +281,369 @@ export const timetableAPI = {
     const params = academicYearId ? `?academicYearId=${academicYearId}` : '';
     return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/stats${params}`);
   },
+
+  // Auto-assign teachers to class timetable
+  async autoAssign(
+    classId: string,
+    academicYearId: string,
+    options?: {
+      respectTeacherPreferences?: boolean;
+      balanceWorkload?: boolean;
+      clearExisting?: boolean;
+    }
+  ): Promise<{
+    data: {
+      assignedCount: number;
+      unassignedCount: number;
+      unassignedSlots: Array<{ day: DayOfWeek; periodId: string; periodName: string }>;
+      subjectCoverage: Array<{
+        subjectId: string;
+        subjectName: string;
+        required: number;
+        assigned: number;
+      }>;
+    };
+  }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/auto-assign`, {
+      method: 'POST',
+      body: JSON.stringify({ classId, academicYearId, options }),
+    });
+  },
+
+  // Get available teachers for a slot
+  async getAvailableTeachers(params: {
+    periodId: string;
+    dayOfWeek: DayOfWeek;
+    academicYearId: string;
+    subjectId?: string;
+  }): Promise<{
+    data: {
+      teachers: Array<{
+        id: string;
+        firstName: string;
+        lastName: string;
+        khmerName?: string;
+        isBusy: boolean;
+        busyWith?: string;
+        currentWorkload: number;
+        subjects: Array<{ id: string; name: string; isPrimary: boolean }>;
+        canTeachSubject: boolean;
+        available: boolean;
+      }>;
+    };
+  }> {
+    const query = new URLSearchParams({
+      periodId: params.periodId,
+      dayOfWeek: params.dayOfWeek,
+      academicYearId: params.academicYearId,
+      ...(params.subjectId && { subjectId: params.subjectId }),
+    }).toString();
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/available-teachers?${query}`);
+  },
+
+  // Move entry to new slot
+  async moveEntry(
+    entryId: string,
+    newPeriodId: string,
+    newDayOfWeek: DayOfWeek
+  ): Promise<{ data: TimetableEntry }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/move`, {
+      method: 'POST',
+      body: JSON.stringify({ entryId, newPeriodId, newDayOfWeek }),
+    });
+  },
+
+  // Move entry using period number
+  async moveEntryByPeriod(
+    entryId: string,
+    newDayOfWeek: DayOfWeek,
+    newPeriodNumber: number
+  ): Promise<{ data: TimetableEntry }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/move-entry`, {
+      method: 'POST',
+      body: JSON.stringify({ entryId, newDayOfWeek, newPeriodNumber }),
+    });
+  },
+
+  // Create entry using period number
+  async createEntryByPeriod(data: {
+    classId: string;
+    subjectId?: string;
+    teacherId?: string;
+    periodNumber: number;
+    dayOfWeek: DayOfWeek;
+    room?: string;
+    academicYearId: string;
+  }): Promise<{ data: TimetableEntry }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/entry-by-period`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Get teacher availability for a time slot
+  async getTeacherAvailability(params: {
+    dayOfWeek: DayOfWeek;
+    periodNumber: number;
+    academicYearId: string;
+  }): Promise<{
+    data: {
+      busyTeachers: string[];
+      teacherBusyInfo: Record<string, string>;
+      totalTeachers: number;
+      availableCount: number;
+    };
+  }> {
+    const query = new URLSearchParams({
+      dayOfWeek: params.dayOfWeek,
+      periodNumber: params.periodNumber.toString(),
+      academicYearId: params.academicYearId,
+    }).toString();
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/teacher-availability?${query}`);
+  },
+
+  // Get master timetable stats
+  async getMasterStats(academicYearId: string): Promise<{
+    data: {
+      totalClasses: number;
+      totalSlots: number;
+      filledSlots: number;
+      coverage: number;
+      secondary: {
+        classes: number;
+        slots: number;
+        filled: number;
+        coverage: number;
+      };
+      highSchool: {
+        classes: number;
+        slots: number;
+        filled: number;
+        coverage: number;
+      };
+      teacherStats: {
+        total: number;
+        avgHoursPerTeacher: number;
+      };
+    };
+  }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/master-stats?academicYearId=${academicYearId}`);
+  },
+
+  // Get all teacher workloads
+  async getAllTeacherWorkloads(academicYearId: string): Promise<{
+    data: {
+      teachers: Array<{
+        id: string;
+        firstName?: string;
+        lastName?: string;
+        firstNameLatin?: string;
+        lastNameLatin?: string;
+        khmerName?: string;
+        totalHoursAssigned: number;
+        maxHoursPerWeek: number;
+      }>;
+    };
+  }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/all-teacher-workloads?academicYearId=${academicYearId}`);
+  },
+
+  // Swap two entries
+  async swapEntries(
+    entryId1: string,
+    entryId2: string
+  ): Promise<{ data: { entry1: TimetableEntry; entry2: TimetableEntry } }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/swap`, {
+      method: 'POST',
+      body: JSON.stringify({ entryId1, entryId2 }),
+    });
+  },
+
+  // Get all classes with timetable stats
+  async getAllClasses(
+    academicYearId: string,
+    gradeLevel?: 'SECONDARY' | 'HIGH_SCHOOL'
+  ): Promise<{
+    data: {
+      classes: Array<{
+        id: string;
+        name: string;
+        grade: string;
+        section?: string;
+        entryCount: number;
+        totalSlots: number;
+        coverage: number;
+      }>;
+    };
+  }> {
+    const params = new URLSearchParams({ academicYearId });
+    if (gradeLevel) params.append('gradeLevel', gradeLevel);
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/all-classes?${params}`);
+  },
+
+  // Publish timetable
+  async publish(data: {
+    academicYearId: string;
+    notifyTeachers?: boolean;
+    notifyClasses?: boolean;
+    notes?: string;
+  }): Promise<{ data: any }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/publish`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+};
+
+// ========================================
+// Shift API
+// ========================================
+
+export interface SchoolShift {
+  id: string;
+  schoolId: string;
+  name: string;
+  nameKh?: string;
+  startTime: string;
+  endTime: string;
+  isDefault: boolean;
+  gradeLevel?: 'PRIMARY' | 'SECONDARY' | 'HIGH_SCHOOL';
+  color?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClassShift {
+  id: string;
+  classId: string;
+  shiftId: string;
+  shift?: SchoolShift;
+}
+
+export interface ClassShiftOverride {
+  id: string;
+  classId: string;
+  dayOfWeek: DayOfWeek;
+  shiftId: string;
+  shift?: SchoolShift;
+}
+
+export const shiftAPI = {
+  // Get all shifts
+  async list(): Promise<{ data: { shifts: SchoolShift[] } }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/shifts`);
+  },
+
+  // Create default shifts
+  async createDefaults(): Promise<{ data: { shifts: SchoolShift[]; count: number } }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/shifts/defaults`, {
+      method: 'POST',
+    });
+  },
+
+  // Create a shift
+  async create(data: Omit<SchoolShift, 'id' | 'schoolId' | 'createdAt' | 'updatedAt'>): Promise<{ data: SchoolShift }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/shifts`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Update a shift
+  async update(id: string, data: Partial<SchoolShift>): Promise<{ data: SchoolShift }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/shifts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Delete a shift
+  async delete(id: string): Promise<{ message: string }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/shifts/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Assign shift to class
+  async assignToClass(classId: string, shiftId: string): Promise<{ data: ClassShift }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/shifts/assign-class`, {
+      method: 'POST',
+      body: JSON.stringify({ classId, shiftId }),
+    });
+  },
+
+  // Override shift for specific day
+  async createOverride(classId: string, dayOfWeek: DayOfWeek, shiftId: string): Promise<{ data: ClassShiftOverride }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/shifts/override`, {
+      method: 'POST',
+      body: JSON.stringify({ classId, dayOfWeek, shiftId }),
+    });
+  },
+
+  // Get class shift info
+  async getClassShift(classId: string): Promise<{
+    data: { classShift: ClassShift | null; overrides: ClassShiftOverride[] };
+  }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/shifts/class/${classId}`);
+  },
+};
+
+// ========================================
+// Teacher Subject Assignment API
+// ========================================
+
+export interface TeacherSubjectAssignment {
+  id: string;
+  teacherId: string;
+  subjectId: string;
+  isPrimary: boolean;
+  maxPeriodsPerWeek: number;
+  preferredGrades: string[];
+  isActive: boolean;
+  teacher?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    khmerName?: string;
+  };
+  subject?: {
+    id: string;
+    name: string;
+    nameKh: string;
+    code: string;
+    category: string;
+  };
+}
+
+export const teacherSubjectAPI = {
+  // Get all assignments
+  async list(): Promise<{ data: { assignments: TeacherSubjectAssignment[] } }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/teacher-subjects`);
+  },
+
+  // Get assignments for a teacher
+  async getByTeacher(teacherId: string): Promise<{ data: { assignments: TeacherSubjectAssignment[] } }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/teacher-subjects/${teacherId}`);
+  },
+
+  // Assign subject to teacher
+  async assign(data: {
+    teacherId: string;
+    subjectId: string;
+    isPrimary?: boolean;
+    maxPeriodsPerWeek?: number;
+    preferredGrades?: string[];
+  }): Promise<{ data: TeacherSubjectAssignment }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/teacher-subjects`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Remove assignment
+  async remove(teacherId: string, subjectId: string): Promise<{ message: string }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/teacher-subjects/${teacherId}/${subjectId}`, {
+      method: 'DELETE',
+    });
+  },
 };

@@ -45,6 +45,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                           pathname.includes('/classes') ||
                           pathname.includes('/grades') ||
                           pathname.includes('/attendance') ||
+                          pathname.includes('/timetable') ||
                           pathname.includes('/settings');
   
   const isFeedContext = pathname.includes('/feed');
@@ -81,6 +82,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
     { name: 'Classes', icon: BookOpen, path: `/${locale}/classes` },
     { name: 'Subjects', icon: BookOpen, path: `/${locale}/settings/subjects` },
     { name: 'Timetable', icon: Calendar, path: `/${locale}/timetable` },
+    { name: 'Master Timetable', icon: Calendar, path: `/${locale}/timetable/master` },
     { name: 'Grade Entry', icon: ClipboardList, path: `/${locale}/grades/entry` },
     { name: 'Report Cards', icon: FileText, path: `/${locale}/grades/reports` },
     { name: 'Attendance', icon: ClipboardCheck, path: `/${locale}/attendance/mark` },
