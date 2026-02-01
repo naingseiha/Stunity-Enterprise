@@ -80,6 +80,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
     { name: 'Teachers', icon: User, path: `/${locale}/teachers` },
     { name: 'Classes', icon: BookOpen, path: `/${locale}/classes` },
     { name: 'Subjects', icon: BookOpen, path: `/${locale}/settings/subjects` },
+    { name: 'Timetable', icon: Calendar, path: `/${locale}/timetable` },
     { name: 'Grade Entry', icon: ClipboardList, path: `/${locale}/grades/entry` },
     { name: 'Report Cards', icon: FileText, path: `/${locale}/grades/reports` },
     { name: 'Attendance', icon: ClipboardCheck, path: `/${locale}/attendance/mark` },

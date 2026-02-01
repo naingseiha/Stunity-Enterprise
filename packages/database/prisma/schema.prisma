@@ -59,6 +59,8 @@ model School {
   classes             Class[]
   onboardingChecklist OnboardingChecklist?
   schoolSettings      SchoolSettings?
+  periods             Period[]
+  timetableEntries    TimetableEntry[]
 
   @@index([slug])
   @@index([subscriptionTier])
@@ -101,6 +103,7 @@ model AcademicYear {
   examTypes        ExamType[]
   gradingScales    GradingScale[]
   calendars        AcademicCalendar[]
+  timetableEntries TimetableEntry[]
 
   @@unique([schoolId, name])
   @@index([schoolId, isCurrent])
@@ -203,6 +206,7 @@ model Class {
   homeroomTeacher         Teacher?
   progressionsFrom        StudentProgression[]    @relation("FromClass")
   progressionsTo          StudentProgression[]    @relation("ToClass")
+  timetableEntries        TimetableEntry[]
 
   @@index([schoolId])
   @@index([grade])
@@ -423,24 +427,25 @@ model SubjectTeacher {
 }
 
 model Subject {
-  id              String           @id @default(cuid())
-  name            String
-  nameKh          String
-  nameEn          String?
-  code            String           @unique
-  description     String?
-  grade           String
-  track           String?
-  category        String
-  weeklyHours     Float            @default(0)
-  annualHours     Int              @default(0)
-  maxScore        Int              @default(100)
-  coefficient     Float            @default(1.0)
-  isActive        Boolean          @default(true)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  grades          Grade[]
-  subjectTeachers SubjectTeacher[]
+  id               String           @id @default(cuid())
+  name             String
+  nameKh           String
+  nameEn           String?
+  code             String           @unique
+  description      String?
+  grade            String
+  track            String?
+  category         String
+  weeklyHours      Float            @default(0)
+  annualHours      Int              @default(0)
+  maxScore         Int              @default(100)
+  coefficient      Float            @default(1.0)
+  isActive         Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  grades           Grade[]
+  subjectTeachers  SubjectTeacher[]
+  timetableEntries TimetableEntry[]
 
   @@index([grade, isActive])
   @@index([grade, track, isActive])
@@ -497,6 +502,7 @@ model Teacher {
   homeroomClass    Class?           @relation(fields: [homeroomClassId], references: [id])
   school           School           @relation(fields: [schoolId], references: [id])
   user             User?
+  timetableEntries TimetableEntry[]
 
   @@index([schoolId])
   @@index([schoolId, position])
@@ -1482,4 +1488,69 @@ enum EventType {
   SPORTS_DAY
   CULTURAL_EVENT
   SPECIAL_EVENT
+}
+
+// ========================================
+// Timetable/Schedule Management
+// ========================================
+
+model Period {
+  id        String  @id @default(cuid())
+  schoolId  String
+  name      String  // "Period 1", "Morning Assembly", "Lunch Break"
+  startTime String  // "08:00"
+  endTime   String  // "08:45"
+  order     Int     // Display order
+  isBreak   Boolean @default(false)
+  duration  Int     @default(45) // Duration in minutes
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school           School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  timetableEntries TimetableEntry[]
+
+  @@unique([schoolId, order])
+  @@index([schoolId])
+  @@map("periods")
+}
+
+model TimetableEntry {
+  id             String    @id @default(cuid())
+  schoolId       String
+  classId        String
+  subjectId      String?
+  teacherId      String?
+  periodId       String
+  dayOfWeek      DayOfWeek
+  room           String?
+  academicYearId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school       School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  class        Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject      Subject?     @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  teacher      Teacher?     @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  period       Period       @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, periodId, dayOfWeek, academicYearId])
+  @@index([schoolId])
+  @@index([classId])
+  @@index([teacherId])
+  @@index([periodId])
+  @@index([academicYearId])
+  @@map("timetable_entries")
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
 }

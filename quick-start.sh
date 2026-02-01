@@ -60,6 +60,11 @@ echo "  ⚙️  Starting Attendance Service (3008)..."
 cd /Users/naingseiha/Documents/Stunity-Enterprise/services/attendance-service && npm run dev > /tmp/attendance.log 2>&1 &
 sleep 2
 
+# Start timetable service
+echo "  ⚙️  Starting Timetable Service (3009)..."
+cd /Users/naingseiha/Documents/Stunity-Enterprise/services/timetable-service && npm run dev > /tmp/timetable.log 2>&1 &
+sleep 2
+
 # Start web app
 echo "  ⚙️  Starting Web App (3000)..."
 cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/web && npm run dev > /tmp/web.log 2>&1 &
@@ -72,7 +77,7 @@ echo "Checking status..."
 sleep 3
 
 # Check which services are running
-for port in 3001 3002 3003 3004 3005 3006 3007 3008 3000; do
+for port in 3001 3002 3003 3004 3005 3006 3007 3008 3009 3000; do
   if lsof -ti:$port > /dev/null 2>&1; then
     echo "  ✅ Port $port: Running"
   else

@@ -79,7 +79,8 @@ export default function ReportCardsPage({ params }: { params: { locale: string }
 
   const loadAcademicYears = async () => {
     try {
-      const years = await getAcademicYears(school.id);
+      const tokens = TokenManager.getTokens();
+      const years = await getAcademicYears(school.id, tokens?.accessToken || '');
       setAcademicYears(years);
       // Select current year
       const currentYear = years.find((y: AcademicYear) => y.isCurrent);
