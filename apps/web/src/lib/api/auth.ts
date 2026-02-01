@@ -108,6 +108,16 @@ export const TokenManager = {
     }
   },
 
+  getTokens(): { accessToken: string | null; refreshToken: string | null } | null {
+    if (typeof window !== 'undefined') {
+      const accessToken = localStorage.getItem('accessToken');
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (!accessToken) return null;
+      return { accessToken, refreshToken };
+    }
+    return null;
+  },
+
   getAccessToken(): string | null {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('accessToken');

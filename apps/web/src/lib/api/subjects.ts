@@ -74,8 +74,8 @@ class SubjectAPI {
   }
 
   /**
-   * Get all subjects with optional filters
-   */
+  * Get all subjects with optional filters
+  */
   async getSubjects(filters?: SubjectFilters): Promise<Subject[]> {
     const params = new URLSearchParams();
     
@@ -99,6 +99,14 @@ class SubjectAPI {
     }
 
     return response.json();
+  }
+
+  /**
+   * Get all subjects (alias for getSubjects)
+   */
+  async getAll(): Promise<{ data: { subjects: Subject[] } }> {
+    const subjects = await this.getSubjects({ isActive: true });
+    return { data: { subjects } };
   }
 
   /**

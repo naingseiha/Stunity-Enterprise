@@ -31,6 +31,31 @@ export interface CopySettingsData {
   };
 }
 
+// Helper to get academic years using TokenManager
+export async function getAcademicYearsAuto(): Promise<{ data: { academicYears: AcademicYear[] } }> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+  const userData = userStr ? JSON.parse(userStr) : null;
+  const schoolId = userData?.schoolId;
+
+  if (!token || !schoolId) {
+    return { data: { academicYears: [] } };
+  }
+
+  const response = await fetch(`${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch academic years');
+  }
+
+  const data = await response.json();
+  return { data: { academicYears: data.data || [] } };
+}
+
 export async function getAcademicYears(schoolId: string, token: string): Promise<AcademicYear[]> {
   const response = await fetch(`${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years`, {
     headers: {

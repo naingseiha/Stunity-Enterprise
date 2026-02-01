@@ -625,7 +625,7 @@ app.get('/timetable/stats', authenticate, async (req, res) => {
     ]);
 
     // Calculate coverage
-    const totalSlots = totalPeriods * totalClasses * 5; // 5 days
+    const totalSlots = totalPeriods * totalClasses * 6; // 6 days (Mon-Sat)
     const coverage = totalSlots > 0 ? Math.round((totalEntries / totalSlots) * 100) : 0;
 
     res.json({
@@ -1011,7 +1011,7 @@ app.post('/timetable/auto-assign', authenticate, async (req, res) => {
 
     const assignedEntries: any[] = [];
     const unassignedSlots: any[] = [];
-    const days: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
+    const days: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
     // Calculate required periods per subject based on weeklyHours
     const subjectPeriods = new Map<string, number>();
@@ -1400,7 +1400,7 @@ app.get('/timetable/all-classes', authenticate, async (req, res) => {
       where: { schoolId, isBreak: false },
     });
 
-    const totalSlots = periods * 5; // 5 days
+    const totalSlots = periods * 6; // 6 days (Mon-Sat)
 
     const classesWithStats = classes.map((c) => ({
       ...c,
@@ -1451,8 +1451,6 @@ app.get('/timetable/teacher-availability', authenticate, async (req, res) => {
         id: true,
         firstName: true,
         lastName: true,
-        firstNameLatin: true,
-        lastNameLatin: true,
         khmerName: true,
       },
     });
@@ -1753,8 +1751,6 @@ app.get('/timetable/all-teacher-workloads', authenticate, async (req, res) => {
         id: true,
         firstName: true,
         lastName: true,
-        firstNameLatin: true,
-        lastNameLatin: true,
         khmerName: true,
       },
     });
@@ -1772,9 +1768,11 @@ app.get('/timetable/all-teacher-workloads', authenticate, async (req, res) => {
 
     const countMap = new Map(entryCounts.map((c) => [c.teacherId, c._count.id]));
 
-    // Get teacher subject assignments
+    // Get teacher subject assignments (filter by teacher's school)
     const assignments = await db.teacherSubjectAssignment.findMany({
-      where: { schoolId },
+      where: {
+        teacher: { schoolId },
+      },
       select: {
         teacherId: true,
         maxPeriodsPerWeek: true,
@@ -1797,6 +1795,180 @@ app.get('/timetable/all-teacher-workloads', authenticate, async (req, res) => {
   } catch (error) {
     console.error('Error fetching teacher workloads:', error);
     res.status(500).json({ error: 'Failed to fetch workloads' });
+  }
+});
+
+// ========================================
+// Clear Class Timetable
+// ========================================
+
+// DELETE /timetable/clear-class/:classId - Clear all entries for a class
+app.delete('/timetable/clear-class/:classId', authenticate, async (req, res) => {
+  try {
+    const { schoolId } = (req as any).user;
+    const { classId } = req.params;
+    const { academicYearId } = req.query;
+    const db = getPrisma();
+
+    // Verify class belongs to school
+    const classInfo = await db.class.findFirst({
+      where: { id: classId, schoolId },
+    });
+
+    if (!classInfo) {
+      return res.status(404).json({ error: 'Class not found' });
+    }
+
+    // Delete all entries for this class
+    const deleted = await db.timetableEntry.deleteMany({
+      where: {
+        classId,
+        schoolId,
+        ...(academicYearId && { academicYearId: academicYearId as string }),
+      },
+    });
+
+    res.json({
+      data: {
+        deletedCount: deleted.count,
+        message: `Cleared ${deleted.count} timetable entries for ${classInfo.name}`,
+      },
+    });
+  } catch (error) {
+    console.error('Error clearing class timetable:', error);
+    res.status(500).json({ error: 'Failed to clear timetable' });
+  }
+});
+
+// ========================================
+// Copy Class Timetable
+// ========================================
+
+// POST /timetable/copy-class - Copy timetable from one class to another
+app.post('/timetable/copy-class', authenticate, async (req, res) => {
+  try {
+    const { schoolId } = (req as any).user;
+    const { sourceClassId, targetClassId, academicYearId, clearTarget } = req.body;
+    const db = getPrisma();
+
+    // Verify both classes belong to school
+    const [sourceClass, targetClass] = await Promise.all([
+      db.class.findFirst({ where: { id: sourceClassId, schoolId } }),
+      db.class.findFirst({ where: { id: targetClassId, schoolId } }),
+    ]);
+
+    if (!sourceClass) {
+      return res.status(404).json({ error: 'Source class not found' });
+    }
+    if (!targetClass) {
+      return res.status(404).json({ error: 'Target class not found' });
+    }
+
+    // Get source entries
+    const sourceEntries = await db.timetableEntry.findMany({
+      where: {
+        classId: sourceClassId,
+        schoolId,
+        academicYearId,
+      },
+    });
+
+    if (sourceEntries.length === 0) {
+      return res.status(400).json({ error: 'Source class has no timetable entries' });
+    }
+
+    // Clear target if requested
+    if (clearTarget) {
+      await db.timetableEntry.deleteMany({
+        where: {
+          classId: targetClassId,
+          schoolId,
+          academicYearId,
+        },
+      });
+    }
+
+    // Check for conflicts at target
+    const existingTargetEntries = await db.timetableEntry.findMany({
+      where: {
+        classId: targetClassId,
+        schoolId,
+        academicYearId,
+      },
+    });
+
+    const existingSlots = new Set(
+      existingTargetEntries.map((e) => `${e.dayOfWeek}-${e.periodId}`)
+    );
+
+    // Filter entries that can be copied (no slot conflicts)
+    const entriesToCopy = sourceEntries.filter((e) => {
+      const slotKey = `${e.dayOfWeek}-${e.periodId}`;
+      return !existingSlots.has(slotKey);
+    });
+
+    // Check for teacher conflicts
+    const conflictingEntries: any[] = [];
+    const validEntries: any[] = [];
+
+    for (const entry of entriesToCopy) {
+      if (entry.teacherId) {
+        // Check if teacher is busy at this slot
+        const teacherConflict = await db.timetableEntry.findFirst({
+          where: {
+            teacherId: entry.teacherId,
+            dayOfWeek: entry.dayOfWeek,
+            periodId: entry.periodId,
+            academicYearId,
+            classId: { not: targetClassId },
+          },
+          include: { class: true },
+        });
+
+        if (teacherConflict) {
+          conflictingEntries.push({
+            entry,
+            conflict: `Teacher busy with ${teacherConflict.class?.name || 'another class'}`,
+          });
+          continue;
+        }
+      }
+      validEntries.push(entry);
+    }
+
+    // Create new entries for target class
+    if (validEntries.length > 0) {
+      await db.timetableEntry.createMany({
+        data: validEntries.map((e) => ({
+          schoolId,
+          classId: targetClassId,
+          subjectId: e.subjectId,
+          teacherId: e.teacherId,
+          periodId: e.periodId,
+          dayOfWeek: e.dayOfWeek,
+          room: e.room,
+          academicYearId,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    res.json({
+      data: {
+        copiedCount: validEntries.length,
+        conflictCount: conflictingEntries.length,
+        skippedCount: sourceEntries.length - entriesToCopy.length,
+        conflicts: conflictingEntries.map((c) => ({
+          dayOfWeek: c.entry.dayOfWeek,
+          periodId: c.entry.periodId,
+          reason: c.conflict,
+        })),
+        message: `Copied ${validEntries.length} entries from ${sourceClass.name} to ${targetClass.name}`,
+      },
+    });
+  } catch (error) {
+    console.error('Error copying timetable:', error);
+    res.status(500).json({ error: 'Failed to copy timetable' });
   }
 });
 

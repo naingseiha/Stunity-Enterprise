@@ -8,8 +8,8 @@ echo "🔍 Checking Stunity service ports..."
 echo ""
 
 # Define service ports
-PORTS=(3000 3001 3002 3003 3004 3005 3006 3007 3008)
-SERVICE_NAMES=("Web App" "Auth Service" "School Service" "Student Service" "Teacher Service" "Class Service" "Subject Service" "Grade Service" "Attendance Service")
+PORTS=(3000 3001 3002 3003 3004 3005 3006 3007 3008 3009)
+SERVICE_NAMES=("Web App" "Auth Service" "School Service" "Student Service" "Teacher Service" "Class Service" "Subject Service" "Grade Service" "Attendance Service" "Timetable Service")
 
 running_count=0
 free_count=0

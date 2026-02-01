@@ -61,6 +61,7 @@ model School {
   schoolSettings      SchoolSettings?
   periods             Period[]
   timetableEntries    TimetableEntry[]
+  schoolShifts        SchoolShift[]
 
   @@index([slug])
   @@index([subscriptionTier])
@@ -207,6 +208,8 @@ model Class {
   progressionsFrom        StudentProgression[]    @relation("FromClass")
   progressionsTo          StudentProgression[]    @relation("ToClass")
   timetableEntries        TimetableEntry[]
+  classShift              ClassShift?
+  classShiftOverrides     ClassShiftOverride[]
 
   @@index([schoolId])
   @@index([grade])
@@ -446,6 +449,7 @@ model Subject {
   grades           Grade[]
   subjectTeachers  SubjectTeacher[]
   timetableEntries TimetableEntry[]
+  teacherSubjectAssignments TeacherSubjectAssignment[] @relation("TeacherSubjectAssignments")
 
   @@index([grade, isActive])
   @@index([grade, track, isActive])
@@ -503,6 +507,7 @@ model Teacher {
   school           School           @relation(fields: [schoolId], references: [id])
   user             User?
   timetableEntries TimetableEntry[]
+  teacherSubjectAssignments TeacherSubjectAssignment[]
 
   @@index([schoolId])
   @@index([schoolId, position])
@@ -1553,4 +1558,145 @@ enum DayOfWeek {
   FRIDAY
   SATURDAY
   SUNDAY
+}
+
+// ========================================
+// School Shift & Schedule Configuration
+// ========================================
+
+model SchoolShift {
+  id          String     @id @default(cuid())
+  schoolId    String
+  name        String     // "Morning", "Afternoon"
+  nameKh      String?    // Khmer name
+  startTime   String     // "07:00"
+  endTime     String     // "12:00"
+  isDefault   Boolean    @default(false)
+  gradeLevel  GradeLevel? // SECONDARY, HIGH_SCHOOL, or null for all
+  color       String?    // Hex color for UI display
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school         School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  classShifts    ClassShift[]
+  shiftOverrides ClassShiftOverride[]
+
+  @@unique([schoolId, name])
+  @@index([schoolId])
+  @@index([gradeLevel])
+  @@map("school_shifts")
+}
+
+model ClassShift {
+  id        String @id @default(cuid())
+  classId   String
+  shiftId   String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  class Class       @relation(fields: [classId], references: [id], onDelete: Cascade)
+  shift SchoolShift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  @@unique([classId])
+  @@index([shiftId])
+  @@map("class_shifts")
+}
+
+model ClassShiftOverride {
+  id        String    @id @default(cuid())
+  classId   String
+  dayOfWeek DayOfWeek
+  shiftId   String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  class Class       @relation(fields: [classId], references: [id], onDelete: Cascade)
+  shift SchoolShift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, dayOfWeek])
+  @@index([shiftId])
+  @@map("class_shift_overrides")
+}
+
+enum GradeLevel {
+  PRIMARY      // Grades 1-6
+  SECONDARY    // Grades 7-9
+  HIGH_SCHOOL  // Grades 10-12
+}
+
+// ========================================
+// Teacher Subject Assignment Enhancement
+// ========================================
+
+model TeacherSubjectAssignment {
+  id                String  @id @default(cuid())
+  teacherId         String
+  subjectId         String
+  isPrimary         Boolean @default(false)  // Main subject specialty
+  maxPeriodsPerWeek Int     @default(25)
+  preferredGrades   String[] // e.g., ["10", "11", "12"]
+  isActive          Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subject Subject @relation("TeacherSubjectAssignments", fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, subjectId])
+  @@index([teacherId])
+  @@index([subjectId])
+  @@index([isPrimary])
+  @@map("teacher_subject_assignments")
+}
+
+// ========================================
+// Timetable Generation & Statistics
+// ========================================
+
+model TimetableTemplate {
+  id             String @id @default(cuid())
+  schoolId       String
+  name           String // "Standard Secondary", "Science Track High School"
+  description    String?
+  gradeLevel     GradeLevel?
+  periodsPerWeek Json   // { "MATH": 5, "KHMER": 5, ... }
+  isDefault      Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([schoolId, name])
+  @@index([schoolId])
+  @@index([gradeLevel])
+  @@map("timetable_templates")
+}
+
+model TimetablePublish {
+  id             String   @id @default(cuid())
+  schoolId       String
+  academicYearId String
+  publishedAt    DateTime @default(now())
+  publishedBy    String   // User ID
+  status         TimetablePublishStatus @default(DRAFT)
+  notifyTeachers Boolean  @default(false)
+  notifyClasses  Boolean  @default(false)
+  notes          String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([schoolId])
+  @@index([academicYearId])
+  @@index([status])
+  @@map("timetable_publishes")
+}
+
+enum TimetablePublishStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }

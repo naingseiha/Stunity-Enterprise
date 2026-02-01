@@ -493,6 +493,38 @@ export const timetableAPI = {
       body: JSON.stringify(data),
     });
   },
+
+  // Clear all entries for a class
+  async clearClass(
+    classId: string,
+    academicYearId?: string
+  ): Promise<{ data: { deletedCount: number; message: string } }> {
+    const params = academicYearId ? `?academicYearId=${academicYearId}` : '';
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/clear-class/${classId}${params}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Copy timetable from one class to another
+  async copyClass(data: {
+    sourceClassId: string;
+    targetClassId: string;
+    academicYearId: string;
+    clearTarget?: boolean;
+  }): Promise<{
+    data: {
+      copiedCount: number;
+      conflictCount: number;
+      skippedCount: number;
+      conflicts: Array<{ dayOfWeek: DayOfWeek; periodId: string; reason: string }>;
+      message: string;
+    };
+  }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/copy-class`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
 };
 
 // ========================================

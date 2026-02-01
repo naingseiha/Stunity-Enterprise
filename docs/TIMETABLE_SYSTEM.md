@@ -213,11 +213,11 @@ interface Teacher {
 - [ ] **Teacher Substitution**: Handle teacher absences and substitutes
 
 ### Medium Priority
-- [ ] **Copy Timetable**: Copy one class's timetable to another class
+- [x] **Copy Timetable**: Copy one class's timetable to another class ✅ Implemented
+- [x] **Clear Timetable**: Clear all entries for a class ✅ Implemented
 - [ ] **Timetable Templates**: Save and load timetable patterns
 - [ ] **Room Management**: Track room availability and conflicts
 - [ ] **Drag & Drop Between Classes**: Move entries across different class timetables
-- [ ] **Bulk Operations**: Clear all, copy week, etc.
 
 ### Low Priority
 - [ ] **Mobile View**: Responsive timetable for phones
@@ -226,6 +226,22 @@ interface Teacher {
 - [ ] **Notifications**: Email teachers when their schedule changes
 - [ ] **Version History**: Undo/redo and revision tracking
 - [ ] **Constraints Editor**: Define rules like "No PE after lunch"
+
+---
+
+## Recent Updates (Feb 2026)
+
+### New Features Added
+1. **Copy Timetable**: Copy entries from one class to another with automatic conflict detection
+2. **Clear Timetable**: Clear all entries for a class in one click
+3. **Saturday Support**: Full Monday-Saturday scheduling support
+4. **Improved Teacher Assignment**: Fixed teacher-subject queries for proper school filtering
+
+### API Endpoints Added
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| DELETE | `/timetable/clear-class/:classId` | Clear all entries for a class |
+| POST | `/timetable/copy-class` | Copy timetable between classes |
 
 ---
 

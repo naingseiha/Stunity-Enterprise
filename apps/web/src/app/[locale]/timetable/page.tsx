@@ -64,6 +64,8 @@ import {
   AlertTriangle,
   Check,
   School,
+  Copy,
+  Eraser,
 } from 'lucide-react';
 
 type ViewMode = 'class' | 'teacher' | 'overview';
@@ -142,12 +144,17 @@ export default function TimetablePage() {
   });
   const [autoAssignResult, setAutoAssignResult] = useState<any>(null);
 
+  // Copy timetable state
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const [copyTargetClassId, setCopyTargetClassId] = useState('');
+  const [copyClearTarget, setCopyClearTarget] = useState(false);
+
   // Drag and drop state
   const [activeTeacher, setActiveTeacher] = useState<AvailableTeacher | null>(null);
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
 
-  // Days to display
-  const days: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
+  // Days to display (Monday-Saturday for Cambodian schools)
+  const days: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
   // DnD sensors
   const sensors = useSensors(
@@ -415,6 +422,71 @@ export default function TimetablePage() {
     }
   };
 
+  // Clear timetable for class
+  const handleClearTimetable = async () => {
+    if (!selectedClassId) return;
+    
+    const selectedClass = classes.find(c => c.id === selectedClassId);
+    if (!confirm(`Are you sure you want to clear ALL timetable entries for ${selectedClass?.name || 'this class'}? This cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+      const response = await timetableAPI.clearClass(selectedClassId, selectedYearId);
+      setSuccessMessage(response.data.message);
+      loadClassTimetable(selectedClassId);
+    } catch (err: any) {
+      setError(err.message || 'Failed to clear timetable');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Copy timetable to another class
+  const handleCopyTimetable = async () => {
+    if (!selectedClassId || !copyTargetClassId) {
+      setError('Please select a target class');
+      return;
+    }
+
+    if (selectedClassId === copyTargetClassId) {
+      setError('Cannot copy to the same class');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+      const response = await timetableAPI.copyClass({
+        sourceClassId: selectedClassId,
+        targetClassId: copyTargetClassId,
+        academicYearId: selectedYearId,
+        clearTarget: copyClearTarget,
+      });
+
+      const { copiedCount, conflictCount, skippedCount } = response.data;
+      let message = response.data.message;
+      
+      if (conflictCount > 0) {
+        message += ` (${conflictCount} entries skipped due to teacher conflicts)`;
+      }
+      if (skippedCount > 0) {
+        message += ` (${skippedCount} entries skipped due to existing slots)`;
+      }
+
+      setSuccessMessage(message);
+      setShowCopyModal(false);
+      setCopyTargetClassId('');
+      setCopyClearTarget(false);
+    } catch (err: any) {
+      setError(err.message || 'Failed to copy timetable');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Drag and drop handlers
   const handleDragStart = (event: DragStartEvent) => {
     const teacher = availableTeachers.find((t) => t.id === event.active.id);
@@ -616,6 +688,25 @@ export default function TimetablePage() {
                         <Wand2 className="h-4 w-4" />
                         Auto-Assign
                       </button>
+                    )}
+                    {viewMode === 'class' && selectedClassId && timetableData && (timetableData as ClassTimetable).entries?.length > 0 && (
+                      <>
+                        <button
+                          onClick={() => setShowCopyModal(true)}
+                          className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                        >
+                          <Copy className="h-4 w-4" />
+                          Copy To...
+                        </button>
+                        <button
+                          onClick={handleClearTimetable}
+                          disabled={saving}
+                          className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                        >
+                          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eraser className="h-4 w-4" />}
+                          Clear
+                        </button>
+                      </>
                     )}
                     {(viewMode === 'class' && selectedClassId || viewMode === 'teacher' && selectedTeacherId) && timetableData && (
                       <button
@@ -1368,6 +1459,97 @@ export default function TimetablePage() {
             </div>
           )}
         </DragOverlay>
+
+        {/* Copy Timetable Modal */}
+        {showCopyModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
+              <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Copy className="h-5 w-5 text-teal-600" />
+                  Copy Timetable
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowCopyModal(false);
+                    setCopyTargetClassId('');
+                    setCopyClearTarget(false);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="p-4 space-y-4">
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+                  <p className="font-medium">
+                    Source: {classes.find((c) => c.id === selectedClassId)?.name || 'Unknown'}
+                  </p>
+                  <p className="text-blue-600 mt-1">
+                    {timetableData && 'entries' in timetableData ? (timetableData as ClassTimetable).entries.length : 0} entries will be copied
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Copy to Class
+                  </label>
+                  <select
+                    value={copyTargetClassId}
+                    onChange={(e) => setCopyTargetClassId(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  >
+                    <option value="">Select target class...</option>
+                    {filteredClasses
+                      .filter((c) => c.id !== selectedClassId)
+                      .map((cls) => (
+                        <option key={cls.id} value={cls.id}>
+                          {cls.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={copyClearTarget}
+                    onChange={(e) => setCopyClearTarget(e.target.checked)}
+                    className="w-4 h-4 text-teal-600 rounded"
+                  />
+                  <span className="text-gray-700">Clear existing entries in target class first</span>
+                </label>
+
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+                  <AlertTriangle className="h-4 w-4 inline mr-1" />
+                  Entries with teacher conflicts will be skipped to avoid double-booking.
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+                <button
+                  onClick={() => {
+                    setShowCopyModal(false);
+                    setCopyTargetClassId('');
+                    setCopyClearTarget(false);
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCopyTimetable}
+                  disabled={saving || !copyTargetClassId}
+                  className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50"
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
+                  Copy Timetable
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Print Styles */}
         <style jsx global>{`
