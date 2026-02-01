@@ -311,9 +311,210 @@ class GradeAPI {
 
     return response.blob();
   }
+
+  /**
+   * Get student report card
+   */
+  async getStudentReportCard(studentId: string, semester: number = 1, year?: number): Promise<StudentReportCard> {
+    const params = new URLSearchParams();
+    params.append('semester', semester.toString());
+    if (year) params.append('year', year.toString());
+
+    const response = await fetch(
+      `${API_BASE_URL}/grades/report-card/${studentId}?${params.toString()}`,
+      {
+        method: 'GET',
+        headers: this.getHeaders(),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch report card');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Get class report (all students' report cards summary)
+   */
+  async getClassReport(classId: string, semester: number = 1, year?: number): Promise<ClassReportSummary> {
+    const params = new URLSearchParams();
+    params.append('semester', semester.toString());
+    if (year) params.append('year', year.toString());
+
+    const response = await fetch(
+      `${API_BASE_URL}/grades/class-report/${classId}?${params.toString()}`,
+      {
+        method: 'GET',
+        headers: this.getHeaders(),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch class report');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Get semester summary
+   */
+  async getSemesterSummary(classId: string, semester: number, year?: number): Promise<SemesterSummary> {
+    const params = new URLSearchParams();
+    if (year) params.append('year', year.toString());
+
+    const response = await fetch(
+      `${API_BASE_URL}/grades/semester-summary/${classId}/${semester}?${params.toString()}`,
+      {
+        method: 'GET',
+        headers: this.getHeaders(),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch semester summary');
+    }
+
+    return response.json();
+  }
 }
 
 export const gradeAPI = new GradeAPI();
+
+// ========================================
+// Report Card Types
+// ========================================
+
+export interface SubjectGradeResult {
+  subject: {
+    id: string;
+    name: string;
+    nameKh: string;
+    code: string;
+    coefficient: number;
+    maxScore: number;
+    category?: string;
+  };
+  monthlyGrades: Array<{
+    month: string;
+    monthNumber: number;
+    score: number;
+    maxScore: number;
+    percentage: number;
+  }>;
+  semesterAverage: number;
+  percentage: number;
+  gradeLevel: string;
+  coefficient: number;
+  weightedScore: number;
+}
+
+export interface AttendanceSummary {
+  present: number;
+  absent: number;
+  late: number;
+  excused: number;
+  permission: number;
+  totalSessions: number;
+  attendedSessions: number;
+  attendanceRate: number;
+}
+
+export interface StudentReportCard {
+  student: {
+    id: string;
+    studentId?: string;
+    firstName: string;
+    lastName: string;
+    khmerName: string;
+    photoUrl?: string;
+    gender: string;
+    dateOfBirth?: string;
+  };
+  class: {
+    id: string;
+    name: string;
+    grade: string;
+  };
+  semester: number;
+  year: number;
+  subjects: SubjectGradeResult[];
+  summary: {
+    totalSubjects: number;
+    overallAverage: number;
+    overallPercentage: number;
+    overallGradeLevel: string;
+    classRank: number;
+    totalStudents: number;
+    isPassing: boolean;
+  };
+  attendance: AttendanceSummary;
+  generatedAt: string;
+}
+
+export interface ClassReportStudent {
+  studentId: string;
+  average: number;
+  rank: number;
+  gradeLevel: string;
+  isPassing: boolean;
+  student: {
+    id: string;
+    studentId?: string;
+    firstName: string;
+    lastName: string;
+    khmerName: string;
+    photoUrl?: string;
+  };
+}
+
+export interface ClassReportSummary {
+  class: {
+    id: string;
+    name: string;
+    grade: string;
+  };
+  semester: number;
+  year: number;
+  totalStudents: number;
+  students: ClassReportStudent[];
+  statistics: {
+    classAverage: number;
+    highestAverage: number;
+    lowestAverage: number;
+    passingCount: number;
+    failingCount: number;
+    passRate: number;
+  };
+  generatedAt: string;
+}
+
+export interface SemesterSummary {
+  class: any;
+  semester: number;
+  year: number;
+  months: string[];
+  subjects: Array<{
+    subject: {
+      id: string;
+      name: string;
+      nameKh: string;
+      code: string;
+      category?: string;
+    };
+    gradesCount: number;
+    averageScore: number;
+    highestScore: number;
+    lowestScore: number;
+  }>;
+  totalSubjects: number;
+  studentCount: number;
+}
 
 /**
  * Helper to get grade level color

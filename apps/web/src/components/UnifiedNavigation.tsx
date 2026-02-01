@@ -81,9 +81,9 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
     { name: 'Classes', icon: BookOpen, path: `/${locale}/classes` },
     { name: 'Subjects', icon: BookOpen, path: `/${locale}/settings/subjects` },
     { name: 'Grade Entry', icon: ClipboardList, path: `/${locale}/grades/entry` },
+    { name: 'Report Cards', icon: FileText, path: `/${locale}/grades/reports` },
     { name: 'Attendance', icon: ClipboardCheck, path: `/${locale}/attendance/mark` },
     { name: 'Promotion', icon: TrendingUp, path: `/${locale}/settings/promotion` },
-    { name: 'Reports', icon: FileText, path: `/${locale}/reports` },
     { name: 'Settings', icon: Settings, path: `/${locale}/settings/academic-years` },
   ];
 

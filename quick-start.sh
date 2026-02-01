@@ -6,7 +6,7 @@ echo "=================================="
 # Kill all existing processes
 echo ""
 echo "🛑 Stopping any running services..."
-for port in 3000 3001 3002 3003 3004 3005 3006 3008; do
+for port in 3000 3001 3002 3003 3004 3005 3006 3007 3008; do
   pid=$(lsof -ti:$port 2>/dev/null)
   if [ ! -z "$pid" ]; then
     kill -9 $pid 2>/dev/null && echo "  Killed process on port $port"
@@ -50,6 +50,11 @@ echo "  ⚙️  Starting Subject Service (3006)..."
 cd /Users/naingseiha/Documents/Stunity-Enterprise/services/subject-service && npm run dev > /tmp/subject.log 2>&1 &
 sleep 2
 
+# Start grade service
+echo "  ⚙️  Starting Grade Service (3007)..."
+cd /Users/naingseiha/Documents/Stunity-Enterprise/services/grade-service && npm run dev > /tmp/grade.log 2>&1 &
+sleep 2
+
 # Start attendance service
 echo "  ⚙️  Starting Attendance Service (3008)..."
 cd /Users/naingseiha/Documents/Stunity-Enterprise/services/attendance-service && npm run dev > /tmp/attendance.log 2>&1 &
@@ -67,7 +72,7 @@ echo "Checking status..."
 sleep 3
 
 # Check which services are running
-for port in 3001 3002 3003 3004 3005 3006 3008 3000; do
+for port in 3001 3002 3003 3004 3005 3006 3007 3008 3000; do
   if lsof -ti:$port > /dev/null 2>&1; then
     echo "  ✅ Port $port: Running"
   else

@@ -18,7 +18,7 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 import StatCard from '@/components/dashboard/StatCard';
 import ActionCard from '@/components/dashboard/ActionCard';
 import { TokenManager } from '@/lib/api/auth';
-import { PageLoader } from '@/components/BlurLoader';
+import PageSkeleton from '@/components/layout/PageSkeleton';
 import AnimatedContent, { StaggeredList } from '@/components/AnimatedContent';
 
 interface UserData {
@@ -65,7 +65,7 @@ export default function DashboardPage({ params }: { params: { locale: string } }
   };
 
   if (loading) {
-    return <PageLoader isLoading={true} message="Loading dashboard..." />;
+    return <PageSkeleton user={user} school={school} type="dashboard" />;
   }
 
   const stats = [

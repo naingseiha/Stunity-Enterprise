@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { TokenManager } from '@/lib/api/auth';
+import BlurLoader from '@/components/BlurLoader';
+import AnimatedContent from '@/components/AnimatedContent';
+import { TableSkeleton } from '@/components/LoadingSkeleton';
 import {
   attendanceAPI,
   AttendanceStatus,
@@ -431,70 +434,73 @@ export default function MarkAttendancePage() {
       <div className="lg:ml-64 min-h-screen bg-gray-50">
         <div className="max-w-[1600px] mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-6">
-          {/* Breadcrumbs */}
-          <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
-            <Home className="w-4 h-4" />
-            <ChevronRight className="w-4 h-4" />
-            <span>School</span>
-            <ChevronRight className="w-4 h-4" />
-            <span>Attendance</span>
-            <ChevronRight className="w-4 h-4" />
-            <span className="text-orange-600 font-medium">Mark</span>
-          </div>
+        <AnimatedContent animation="fade" delay={0}>
+          <div className="mb-6">
+            {/* Breadcrumbs */}
+            <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+              <Home className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4" />
+              <span>School</span>
+              <ChevronRight className="w-4 h-4" />
+              <span>Attendance</span>
+              <ChevronRight className="w-4 h-4" />
+              <span className="text-orange-600 font-medium">Mark</span>
+            </div>
 
-          {/* Title */}
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl text-white">
-              <ClipboardList className="w-7 h-7" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Mark Attendance</h1>
-              <p className="text-gray-600">Record student attendance for the day</p>
+            {/* Title */}
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl text-white">
+                <ClipboardList className="w-7 h-7" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Mark Attendance</h1>
+                <p className="text-gray-600">Record student attendance for the day</p>
+              </div>
             </div>
           </div>
-        </div>
+        </AnimatedContent>
 
         {/* Selectors Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* Academic Year */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Academic Year <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={selectedAcademicYear}
-                onChange={(e) => {
-                  setSelectedAcademicYear(e.target.value);
-                  setSelectedClass('');
-                }}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-              >
-                <option value="">Select Year</option>
-                {academicYears.map((year) => (
-                  <option key={year.id} value={year.id}>
-                    {year.name} {year.isCurrent && '(Current)'}
-                  </option>
-                ))}
-              </select>
-            </div>
+        <AnimatedContent animation="slide-up" delay={50}>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              {/* Academic Year */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Academic Year <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={selectedAcademicYear}
+                  onChange={(e) => {
+                    setSelectedAcademicYear(e.target.value);
+                    setSelectedClass('');
+                  }}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-shadow"
+                >
+                  <option value="">Select Year</option>
+                  {academicYears.map((year) => (
+                    <option key={year.id} value={year.id}>
+                      {year.name} {year.isCurrent && '(Current)'}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            {/* Class */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Class <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-                disabled={!selectedAcademicYear}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              >
-                <option value="">Select Class</option>
-                {classes.map((cls) => (
-                  <option key={cls.id} value={cls.id}>
-                    {cls.name}
+              {/* Class */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Class <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={selectedClass}
+                  onChange={(e) => setSelectedClass(e.target.value)}
+                  disabled={!selectedAcademicYear}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 disabled:bg-gray-100 disabled:cursor-not-allowed transition-shadow"
+                >
+                  <option value="">Select Class</option>
+                  {classes.map((cls) => (
+                    <option key={cls.id} value={cls.id}>
+                      {cls.name}
                   </option>
                 ))}
               </select>
@@ -572,46 +578,49 @@ export default function MarkAttendancePage() {
             </div>
           )}
         </div>
+        </AnimatedContent>
 
         {/* Main Content */}
-        {students.length > 0 ? (
-          <>
-            {/* Quick Actions & Search */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
-              <div className="flex flex-wrap items-center gap-3">
-                {/* Quick Actions */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-700">Quick Actions:</span>
-                  <button
-                    onClick={() => markAllAs(AttendanceStatus.PRESENT)}
-                    className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-all flex items-center gap-2"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Mark All Present
-                  </button>
-                  <button
-                    onClick={() => markAllAs(AttendanceStatus.ABSENT)}
-                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-all flex items-center gap-2"
-                  >
-                    <XCircle className="w-4 h-4" />
-                    Mark All Absent
-                  </button>
-                  <button
-                    onClick={clearAll}
-                    className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-all flex items-center gap-2"
-                  >
-                    <XIcon className="w-4 h-4" />
-                    Clear All
-                  </button>
-                </div>
+        <AnimatedContent animation="slide-up" delay={100}>
+          <BlurLoader isLoading={loading}>
+            {students.length > 0 ? (
+              <>
+                {/* Quick Actions & Search */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    {/* Quick Actions */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700">Quick Actions:</span>
+                      <button
+                        onClick={() => markAllAs(AttendanceStatus.PRESENT)}
+                        className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-all flex items-center gap-2"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        Mark All Present
+                      </button>
+                      <button
+                        onClick={() => markAllAs(AttendanceStatus.ABSENT)}
+                        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-all flex items-center gap-2"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Mark All Absent
+                      </button>
+                      <button
+                        onClick={clearAll}
+                        className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-all flex items-center gap-2"
+                      >
+                        <XIcon className="w-4 h-4" />
+                        Clear All
+                      </button>
+                    </div>
 
-                {/* Search */}
-                <div className="ml-auto relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search students..."
-                    value={searchTerm}
+                    {/* Search */}
+                    <div className="ml-auto relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search students..."
+                        value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 w-64"
                   />
@@ -825,15 +834,17 @@ export default function MarkAttendancePage() {
               </div>
             </div>
           </>
-        ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Class Selected</h3>
-            <p className="text-gray-600">
-              Please select an academic year, class, date, and session, then click "Load" to begin marking attendance.
-            </p>
-          </div>
-        )}
+            ) : (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Class Selected</h3>
+                <p className="text-gray-600">
+                  Please select an academic year, class, date, and session, then click "Load" to begin marking attendance.
+                </p>
+              </div>
+            )}
+          </BlurLoader>
+        </AnimatedContent>
       </div>
 
       {/* Floating Save Indicator */}

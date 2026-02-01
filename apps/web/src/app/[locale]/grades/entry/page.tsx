@@ -8,6 +8,9 @@ import { getClasses, Class } from '@/lib/api/classes';
 import { subjectAPI, Subject } from '@/lib/api/subjects';
 import { getAcademicYears, AcademicYear } from '@/lib/api/academic-years';
 import { TokenManager } from '@/lib/api/auth';
+import BlurLoader from '@/components/BlurLoader';
+import AnimatedContent from '@/components/AnimatedContent';
+import { TableSkeleton } from '@/components/LoadingSkeleton';
 import {
   Download,
   Upload,
@@ -498,63 +501,66 @@ export default function GradeEntryPage() {
       <div className="lg:ml-64 min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-orange-100">
         <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Grade Entry</h1>
-            <p className="text-gray-600">Enter and manage student grades with Excel-like grid</p>
-          </div>
-
-        {/* Selectors Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-            {/* Academic Year */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Academic Year
-              </label>
-              <select
-                value={selectedAcademicYear}
-                onChange={(e) => setSelectedAcademicYear(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              >
-                <option value="">Select Year</option>
-                {academicYears.map(year => (
-                  <option key={year.id} value={year.id}>
-                    {year.name} {year.isCurrent && '(Current)'}
-                  </option>
-                ))}
-              </select>
+          <AnimatedContent animation="fade" delay={0}>
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Grade Entry</h1>
+              <p className="text-gray-600">Enter and manage student grades with Excel-like grid</p>
             </div>
+          </AnimatedContent>
 
-            {/* Class */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Class
-              </label>
-              <select
-                value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-                disabled={!selectedAcademicYear}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-100"
-              >
-                <option value="">Select Class</option>
-                {classes.map(cls => (
-                  <option key={cls.id} value={cls.id}>
-                    {cls.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* Selectors Section */}
+          <AnimatedContent animation="slide-up" delay={50}>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+                {/* Academic Year */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Academic Year
+                  </label>
+                  <select
+                    value={selectedAcademicYear}
+                    onChange={(e) => setSelectedAcademicYear(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-shadow"
+                  >
+                    <option value="">Select Year</option>
+                    {academicYears.map(year => (
+                      <option key={year.id} value={year.id}>
+                        {year.name} {year.isCurrent && '(Current)'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            {/* Subject */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Subject
-              </label>
-              <select
-                value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value)}
-                disabled={!selectedClass}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-100"
+                {/* Class */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Class
+                  </label>
+                  <select
+                    value={selectedClass}
+                    onChange={(e) => setSelectedClass(e.target.value)}
+                    disabled={!selectedAcademicYear}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-100 transition-shadow"
+                  >
+                    <option value="">Select Class</option>
+                    {classes.map(cls => (
+                      <option key={cls.id} value={cls.id}>
+                        {cls.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Subject */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Subject
+                  </label>
+                  <select
+                    value={selectedSubject}
+                    onChange={(e) => setSelectedSubject(e.target.value)}
+                    disabled={!selectedClass}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-100 transition-shadow"
               >
                 <option value="">Select Subject</option>
                 {subjects.map(subject => (
@@ -641,8 +647,9 @@ export default function GradeEntryPage() {
             </button>
           </div>
         </div>
+          </AnimatedContent>
 
-        {/* Save Indicator */}
+          {/* Save Indicator */}
         {saveStatus !== 'idle' && (
           <div className="fixed top-20 right-4 z-50">
             <div className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
@@ -663,20 +670,47 @@ export default function GradeEntryPage() {
         )}
 
         {/* Excel-Like Grid */}
-        {gridData.length > 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white sticky top-0 z-10">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">No.</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold min-w-[80px]">Photo</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold min-w-[200px]">Student Name</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">Student ID</th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold min-w-[120px]">
-                      Score (/{maxScore})
-                    </th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold">Percentage</th>
+        <AnimatedContent animation="slide-up" delay={100}>
+          <BlurLoader 
+            isLoading={loadingGrid}
+            skeleton={
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">No.</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold min-w-[80px]">Photo</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold min-w-[200px]">Student Name</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Student ID</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold min-w-[120px]">Score</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold">Percentage</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold">Grade</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold min-w-[200px]">Remarks</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <TableSkeleton rows={10} />
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            }
+          >
+            {gridData.length > 0 ? (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white sticky top-0 z-10">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">No.</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold min-w-[80px]">Photo</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold min-w-[200px]">Student Name</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Student ID</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold min-w-[120px]">
+                          Score (/{maxScore})
+                        </th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold">Percentage</th>
                     <th className="px-4 py-3 text-center text-sm font-semibold">Grade</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold min-w-[200px]">Remarks</th>
                   </tr>
@@ -802,29 +836,32 @@ export default function GradeEntryPage() {
               </div>
             </div>
           </div>
-        ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Data Available</h3>
-            <p className="text-gray-600">
-              Please select academic year, class, subject, and month, then click "Load Grades" to start entering grades.
-            </p>
-          </div>
-        )}
+            ) : (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Data Available</h3>
+                <p className="text-gray-600">
+                  Please select academic year, class, subject, and month, then click "Load Grades" to start entering grades.
+                </p>
+              </div>
+            )}
+          </BlurLoader>
+        </AnimatedContent>
 
         {/* Keyboard Shortcuts Help */}
-        <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <details>
-            <summary className="cursor-pointer font-semibold text-gray-900 flex items-center gap-2">
-              <ChevronRight className="w-4 h-4" />
-              Keyboard Shortcuts
-            </summary>
-            <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-              <div>
-                <span className="font-medium">Tab:</span> Move to next field
-              </div>
-              <div>
-                <span className="font-medium">Shift+Tab:</span> Move to previous field
+        <AnimatedContent animation="fade" delay={150}>
+          <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <details>
+              <summary className="cursor-pointer font-semibold text-gray-900 flex items-center gap-2">
+                <ChevronRight className="w-4 h-4" />
+                Keyboard Shortcuts
+              </summary>
+              <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                <div>
+                  <span className="font-medium">Tab:</span> Move to next field
+                </div>
+                <div>
+                  <span className="font-medium">Shift+Tab:</span> Move to previous field
               </div>
               <div>
                 <span className="font-medium">Enter:</span> Move down
@@ -840,7 +877,8 @@ export default function GradeEntryPage() {
               </div>
             </div>
           </details>
-        </div>
+          </div>
+        </AnimatedContent>
       </div>
       {/* End main content wrapper */}
     </div>

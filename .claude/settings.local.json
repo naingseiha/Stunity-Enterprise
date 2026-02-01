@@ -13,7 +13,9 @@
       "Bash(./start-all-services.sh:*)",
       "Bash(./check-services.sh:*)",
       "Bash(curl:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Major performance optimization & modern UI animations\n\nPerformance Improvements:\n- Fixed Prisma singleton pattern in 4 services \\(auth, school, grade, attendance\\)\n- Added database warmup to prevent Neon cold starts \\(4min intervals\\)\n- Implemented frontend caching with TTL \\(2min cache + invalidation\\)\n- Response time: 3-7s → ~60ms \\(99% faster\\)\n- Eliminated connection pool exhaustion\n\nUI/UX Enhancements:\n- Added BlurLoader component with skeleton support\n- Created AnimatedContent with smooth transitions \\(fade, slide, scale\\)\n- Enhanced LoadingSkeleton with shimmer effect\n- Applied blur loading to Students, Teachers, Classes, Dashboard, Settings pages\n- Implemented staggered animations on Dashboard \\(orchestrated entrance\\)\n- Added Tailwind animations \\(shimmer, fade, slide\\)\n\nComponents Added:\n- apps/web/src/components/BlurLoader.tsx \\(PageLoader, InlineLoader\\)\n- apps/web/src/components/AnimatedContent.tsx \\(StaggeredList\\)\n- apps/web/src/lib/cache.ts \\(cachedFetch, invalidateCache\\)\n\nDocumentation:\n- PERFORMANCE_OPTIMIZATIONS.md \\(detailed performance audit\\)\n- BLUR_LOADING_ANIMATIONS.md \\(implementation guide\\)\n- BLUR_LOADING_UPDATE.md \\(dashboard & settings updates\\)\n\nBreaking Changes: None\nTested: All services running, animations verified at 60fps\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)"
     ]
   }
 }

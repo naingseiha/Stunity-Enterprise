@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import PageSkeleton from '@/components/layout/PageSkeleton';
 import {
   Users,
   BookOpen,
@@ -23,6 +24,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('feed');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = TokenManager.getAccessToken();
@@ -34,6 +36,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
     const userData = TokenManager.getUserData();
     setUser(userData.user);
     setSchool(userData.school);
+    setLoading(false);
   }, [locale, router]);
 
   const handleLogout = () => {
@@ -41,12 +44,8 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
     router.replace(`/${locale}/auth/login`);
   };
 
-  if (!user || !school) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-pulse text-gray-500">Loading...</div>
-      </div>
-    );
+  if (loading || !user || !school) {
+    return <PageSkeleton user={user} school={school} type="cards" showFilters={false} />;
   }
 
   const tabs = [

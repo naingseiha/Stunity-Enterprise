@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { subjectAPI, Subject, SubjectStatistics } from '@/lib/api/subjects';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import BlurLoader from '@/components/BlurLoader';
+import AnimatedContent from '@/components/AnimatedContent';
+import PageSkeleton from '@/components/layout/PageSkeleton';
 import {
   BookOpen,
   Plus,
@@ -300,19 +303,7 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-white">
-        <UnifiedNavigation user={userData?.user} school={userData?.school} onLogout={handleLogout} />
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-center h-96">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading subjects...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <PageSkeleton user={userData?.user} school={userData?.school} type="cards" />;
   }
 
   return (
@@ -320,80 +311,89 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
       <UnifiedNavigation user={userData?.user} school={userData?.school} onLogout={handleLogout} />
 
       {/* Main Content - Add left margin for sidebar */}
-      <div className="lg:ml-64 min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-white">
+      <div className="lg:ml-64 min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Subject Management</h1>
-              <p className="text-gray-600">Manage subjects, categories, and curriculum</p>
+        <AnimatedContent animation="fade" delay={0}>
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl text-white shadow-lg">
+                  <BookOpen className="w-7 h-7" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">Subject Management</h1>
+                  <p className="text-gray-600 mt-1">Manage subjects, categories, and curriculum</p>
+                </div>
+              </div>
+              <button
+                onClick={handleCreate}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all shadow-lg hover:shadow-xl"
+              >
+                <Plus className="w-5 h-5" />
+                Create Subject
+              </button>
             </div>
-            <button
-              onClick={handleCreate}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all shadow-lg hover:shadow-xl"
-            >
-              <Plus className="w-5 h-5" />
-              Create Subject
-            </button>
-          </div>
 
-          {/* Statistics Cards */}
-          {statistics && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Total Subjects</p>
-                    <p className="text-3xl font-bold text-gray-900">{statistics.total}</p>
-                  </div>
-                  <div className="p-3 bg-blue-100 rounded-lg">
-                    <BookOpen className="w-6 h-6 text-blue-600" />
+            {/* Statistics Cards */}
+            {statistics && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Total Subjects</p>
+                      <p className="text-3xl font-bold text-gray-900">{statistics.total}</p>
+                    </div>
+                    <div className="p-3 bg-blue-100 rounded-lg">
+                      <BookOpen className="w-6 h-6 text-blue-600" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Active</p>
-                    <p className="text-3xl font-bold text-green-600">{statistics.active}</p>
-                  </div>
-                  <div className="p-3 bg-green-100 rounded-lg">
-                    <CheckCircle className="w-6 h-6 text-green-600" />
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Active</p>
+                      <p className="text-3xl font-bold text-green-600">{statistics.active}</p>
+                    </div>
+                    <div className="p-3 bg-green-100 rounded-lg">
+                      <CheckCircle className="w-6 h-6 text-green-600" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Inactive</p>
-                    <p className="text-3xl font-bold text-gray-600">{statistics.inactive}</p>
-                  </div>
-                  <div className="p-3 bg-gray-100 rounded-lg">
-                    <XCircle className="w-6 h-6 text-gray-600" />
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Inactive</p>
+                      <p className="text-3xl font-bold text-gray-600">{statistics.inactive}</p>
+                    </div>
+                    <div className="p-3 bg-gray-100 rounded-lg">
+                      <XCircle className="w-6 h-6 text-gray-600" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Categories</p>
-                    <p className="text-3xl font-bold text-purple-600">{statistics.byCategory.length}</p>
-                  </div>
-                  <div className="p-3 bg-purple-100 rounded-lg">
-                    <Layers className="w-6 h-6 text-purple-600" />
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Categories</p>
+                      <p className="text-3xl font-bold text-purple-600">{statistics.byCategory.length}</p>
+                    </div>
+                    <div className="p-3 bg-purple-100 rounded-lg">
+                      <Layers className="w-6 h-6 text-purple-600" />
                   </div>
                 </div>
               </div>
             </div>
           )}
+          </div>
+        </AnimatedContent>
 
           {/* Search and Filters */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <div className="flex flex-col md:flex-row gap-4">
+          <AnimatedContent animation="slide-up" delay={50}>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+              <div className="flex flex-col md:flex-row gap-4">
               {/* Search */}
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -466,7 +466,7 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
               </div>
             </div>
           </div>
-        </div>
+          </AnimatedContent>
 
         {/* Error Display */}
         {error && (
@@ -479,28 +479,30 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
         )}
 
         {/* Subjects Grid/List */}
-        {filteredSubjects.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No subjects found</h3>
-            <p className="text-gray-600 mb-6">
-              {searchQuery || filterGrade || filterCategory || filterStatus !== 'all'
-                ? 'Try adjusting your filters'
-                : 'Get started by creating your first subject'}
-            </p>
-            {!searchQuery && !filterGrade && !filterCategory && filterStatus === 'all' && (
-              <button
-                onClick={handleCreate}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all"
-              >
-                <Plus className="w-5 h-5" />
-                Create Subject
-              </button>
-            )}
-          </div>
-        ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSubjects.map((subject) => (
+        <AnimatedContent animation="slide-up" delay={100}>
+          <BlurLoader isLoading={loading}>
+            {filteredSubjects.length === 0 ? (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No subjects found</h3>
+                <p className="text-gray-600 mb-6">
+                  {searchQuery || filterGrade || filterCategory || filterStatus !== 'all'
+                    ? 'Try adjusting your filters'
+                    : 'Get started by creating your first subject'}
+                </p>
+                {!searchQuery && !filterGrade && !filterCategory && filterStatus === 'all' && (
+                  <button
+                    onClick={handleCreate}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Create Subject
+                  </button>
+                )}
+              </div>
+            ) : viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredSubjects.map((subject) => (
               <div
                 key={subject.id}
                 className={`bg-white rounded-xl shadow-sm border transition-all hover:shadow-md ${
@@ -694,7 +696,9 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
               </tbody>
             </table>
           </div>
-        )}
+            )}
+          </BlurLoader>
+        </AnimatedContent>
       </div>
 
       {/* Create Modal */}

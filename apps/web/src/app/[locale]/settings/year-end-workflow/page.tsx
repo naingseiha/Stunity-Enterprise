@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import PageSkeleton from '@/components/layout/PageSkeleton';
 import {
   Calendar,
   CheckCircle,
@@ -211,14 +212,8 @@ export default function YearEndWorkflowPage({ params }: { params: { locale: stri
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-orange-200 border-t-orange-500 mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    const userData = TokenManager.getUserData();
+    return <PageSkeleton user={userData?.user} school={userData?.school} type="form" showFilters={false} />;
   }
 
   if (error || !currentYear) {

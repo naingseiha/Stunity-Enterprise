@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { getCopyPreview, copySettings } from '@/lib/api/academic-years';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
-import { PageLoader } from '@/components/BlurLoader';
+import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
-import { CardSkeleton } from '@/components/LoadingSkeleton';
+import PageSkeleton from '@/components/layout/PageSkeleton';
 import {
   Calendar,
   Plus,
@@ -453,7 +453,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
   const currentYear = years.find((y) => y.isCurrent);
 
   if (loading) {
-    return <PageLoader isLoading={true} message="Loading academic years..." />;
+    return <PageSkeleton user={user} school={school} type="cards" showFilters={false} />;
   }
 
   return (
