@@ -16,6 +16,7 @@ import {
   RefreshCw,
   ChevronRight,
   UserCog,
+  Eye,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import { deleteTeacher, type Teacher } from '@/lib/api/teachers';
@@ -294,6 +295,13 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
                           <div className="text-sm text-gray-500">{teacher.email || '-'}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button
+                            onClick={() => router.push(`/${locale}/teachers/${teacher.id}`)}
+                            className="text-gray-600 hover:text-gray-900 mr-3"
+                            title="View Profile"
+                          >
+                            <Eye className="w-4 h-4 inline" />
+                          </button>
                           <button
                             onClick={() => handleEdit(teacher)}
                             className="text-stunity-primary-600 hover:text-stunity-primary-900 mr-3"

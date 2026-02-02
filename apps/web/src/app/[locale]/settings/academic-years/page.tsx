@@ -28,6 +28,8 @@ import {
   Star,
   X,
   Loader2,
+  Sparkles,
+  BarChart3,
 } from 'lucide-react';
 
 interface AcademicYear {
@@ -472,13 +474,29 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
                 Manage your school's academic years, student promotions, and settings
               </p>
             </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all shadow-md"
-            >
-              <Plus className="w-5 h-5" />
-              Create New Year
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => router.push(`/${locale}/reports/year-comparison`)}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all shadow-md"
+              >
+                <BarChart3 className="w-5 h-5" />
+                Compare Years
+              </button>
+              <button
+                onClick={() => router.push(`/${locale}/settings/academic-years/new/wizard`)}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-xl font-semibold hover:from-purple-600 hover:to-indigo-600 transition-all shadow-md"
+              >
+                <Sparkles className="w-5 h-5" />
+                Setup Wizard
+              </button>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all shadow-md"
+              >
+                <Plus className="w-5 h-5" />
+                Quick Create
+              </button>
+            </div>
           </div>
 
           {/* Current Year Highlight */}

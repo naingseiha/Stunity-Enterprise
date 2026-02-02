@@ -16,6 +16,7 @@ import {
   Users,
   Clock,
   CheckCircle2,
+  History,
 } from 'lucide-react';
 
 interface Student {
@@ -284,13 +285,31 @@ export default function StudentDetailPage({
 
         {/* Academic Progression Timeline */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-yellow-100 rounded-xl flex items-center justify-center">
-              <Award className="w-6 h-6 text-orange-600" />
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-yellow-100 rounded-xl flex items-center justify-center">
+                <Award className="w-6 h-6 text-orange-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Academic Progression</h2>
+                <p className="text-gray-600">Complete history of academic years and promotions</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Academic Progression</h2>
-              <p className="text-gray-600">Complete history of academic years and promotions</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => router.push(`/${locale}/students/${student.id}/transcript`)}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:shadow-lg transition-shadow text-sm font-medium"
+              >
+                <Award className="w-4 h-4" />
+                View Transcript
+              </button>
+              <button
+                onClick={() => router.push(`/${locale}/students/${student.id}/history`)}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-lg hover:shadow-lg transition-shadow text-sm font-medium"
+              >
+                <History className="w-4 h-4" />
+                View Full History
+              </button>
             </div>
           </div>
 

@@ -1302,11 +1302,172 @@ app.post('/teachers/:id/photo', upload.single('photo'), async (req: AuthRequest,
 // ===========================
 // Start Server
 // ===========================
+
+// GET /teachers/:id/history - Get teacher assignment history across years
+app.get('/teachers/:id/history', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = req.user!.schoolId;
+    console.log(`📋 [School ${schoolId}] Fetching teacher history: ${id}`);
+
+    // Verify teacher belongs to school
+    const teacher = await prisma.teacher.findFirst({
+      where: { id, schoolId },
+      select: { id: true, firstName: true, lastName: true, khmerName: true, photoUrl: true }
+    });
+
+    if (!teacher) {
+      return res.status(404).json({ success: false, error: 'Teacher not found' });
+    }
+
+    // Get all academic years for this school
+    const academicYears = await prisma.academicYear.findMany({
+      where: { schoolId },
+      orderBy: { startDate: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        startDate: true,
+        endDate: true,
+        status: true,
+        isCurrent: true
+      }
+    });
+
+    // Get all class assignments for this teacher with year info
+    const teacherClasses = await prisma.teacherClass.findMany({
+      where: { teacherId: id },
+      include: {
+        class: {
+          select: {
+            id: true,
+            name: true,
+            grade: true,
+            section: true,
+            academicYearId: true,
+            _count: { select: { students: true } }
+          }
+        }
+      }
+    });
+
+    // Get homeroom assignments
+    const homeroomClasses = await prisma.class.findMany({
+      where: {
+        schoolId,
+        homeroomTeacherId: id
+      },
+      select: {
+        id: true,
+        name: true,
+        grade: true,
+        section: true,
+        academicYearId: true,
+        _count: { select: { students: true } }
+      }
+    });
+
+    // Get subject assignments
+    const subjectAssignments = await prisma.subjectTeacher.findMany({
+      where: { teacherId: id },
+      include: {
+        subject: {
+          select: {
+            id: true,
+            name: true,
+            nameKh: true,
+            code: true,
+            grade: true,
+            category: true
+          }
+        }
+      }
+    });
+
+    // Organize history by academic year
+    const historyByYear = academicYears.map(year => {
+      const yearClasses = teacherClasses
+        .filter(tc => tc.class?.academicYearId === year.id)
+        .map(tc => ({
+          id: tc.class.id,
+          name: tc.class.name,
+          gradeLevel: parseInt(tc.class.grade) || 0,
+          section: tc.class.section || '',
+          studentCount: tc.class._count?.students || 0,
+          isHomeroom: homeroomClasses.some(h => h.id === tc.class.id)
+        }));
+
+      const yearHomerooms = homeroomClasses
+        .filter(h => h.academicYearId === year.id)
+        .map(h => ({
+          id: h.id,
+          name: h.name,
+          gradeLevel: parseInt(h.grade) || 0,
+          section: h.section || '',
+          studentCount: h._count?.students || 0
+        }));
+
+      // For subjects - they don't have academic year directly
+      // We'll show all subjects the teacher is assigned to
+      const yearSubjects = subjectAssignments.map(sa => ({
+        id: sa.subject.id,
+        name: sa.subject.name,
+        nameKh: sa.subject.nameKh,
+        code: sa.subject.code,
+        grade: sa.subject.grade,
+        category: sa.subject.category
+      }));
+
+      // Remove duplicates from subjects
+      const uniqueSubjects = yearSubjects.filter((s, i, arr) => 
+        arr.findIndex(x => x.id === s.id) === i
+      );
+
+      // Only include subjects for years where teacher has class assignments
+      const hasClassAssignments = yearClasses.length > 0 || yearHomerooms.length > 0;
+
+      return {
+        academicYear: year,
+        classes: yearClasses,
+        homerooms: yearHomerooms,
+        subjects: hasClassAssignments ? uniqueSubjects : [],
+        stats: {
+          totalClasses: yearClasses.length,
+          totalHomerooms: yearHomerooms.length,
+          totalSubjects: hasClassAssignments ? uniqueSubjects.length : 0,
+          totalStudents: yearClasses.reduce((sum, c) => sum + c.studentCount, 0)
+        }
+      };
+    });
+
+    // Filter out years with no assignments
+    const activeHistory = historyByYear.filter(
+      h => h.classes.length > 0 || h.homerooms.length > 0
+    );
+
+    res.json({
+      success: true,
+      data: {
+        teacher,
+        history: activeHistory,
+        summary: {
+          totalYears: activeHistory.length,
+          totalClasses: activeHistory.reduce((sum, h) => sum + h.stats.totalClasses, 0),
+          totalSubjects: subjectAssignments.length
+        }
+      }
+    });
+  } catch (error: any) {
+    console.error('Error fetching teacher history:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch teacher history' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════════════════════╗
 ║                                                            ║
-║   🎓 TEACHER SERVICE RUNNING                              ║
+║   🎓 TEACHER SERVICE RUNNING v2.1                         ║
 ║                                                            ║
 ║   Port: ${PORT}                                           ║
 ║   Environment: ${process.env.NODE_ENV || 'development'}                                   ║
@@ -1317,6 +1478,7 @@ app.listen(PORT, () => {
 ║   • GET    /teachers/lightweight                          ║
 ║   • GET    /teachers                                      ║
 ║   • GET    /teachers/:id                                  ║
+║   • GET    /teachers/:id/history (NEW)                    ║
 ║   • POST   /teachers                                      ║
 ║   • POST   /teachers/bulk                                 ║
 ║   • PUT    /teachers/:id                                  ║

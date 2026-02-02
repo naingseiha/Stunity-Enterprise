@@ -2104,19 +2104,883 @@ app.get('/schools/:schoolId/teachers/:teacherId/history', async (req: Request, r
   }
 });
 
+// ==============================================
+// COMPREHENSIVE ACADEMIC YEAR DETAIL ENDPOINT
+// ==============================================
+
+// GET /schools/:schoolId/academic-years/:yearId/comprehensive - Get full year details with all stats
+app.get('/schools/:schoolId/academic-years/:yearId/comprehensive', async (req: Request, res: Response) => {
+  try {
+    const { schoolId, yearId } = req.params;
+
+    // Get academic year with all related data
+    const academicYear = await prisma.academicYear.findUnique({
+      where: { id: yearId, schoolId },
+      include: {
+        terms: { orderBy: { termNumber: 'asc' } },
+        examTypes: { orderBy: { order: 'asc' } },
+        gradingScales: { include: { ranges: { orderBy: { order: 'asc' } } } },
+        calendars: { include: { events: { orderBy: { startDate: 'asc' } } } },
+      },
+    });
+
+    if (!academicYear) {
+      return res.status(404).json({ success: false, error: 'Academic year not found' });
+    }
+
+    // Get class statistics with student counts
+    const classes = await prisma.class.findMany({
+      where: { schoolId, academicYearId: yearId },
+      include: {
+        _count: { select: { students: true } },
+        homeroomTeacher: { select: { id: true, firstName: true, lastName: true, khmerName: true } },
+      },
+      orderBy: [{ grade: 'asc' }, { section: 'asc' }],
+    });
+
+    // Get teacher assignments for this year
+    const teacherAssignments = await prisma.teacherClass.findMany({
+      where: { class: { academicYearId: yearId, schoolId } },
+      include: {
+        teacher: { select: { id: true, firstName: true, lastName: true, khmerName: true, position: true } },
+        class: { select: { id: true, name: true, grade: true } },
+      },
+    });
+
+    // Get unique teachers
+    const uniqueTeachers = [...new Map(teacherAssignments.map(ta => [ta.teacher.id, ta.teacher])).values()];
+
+    // Get promotion statistics (students promoted FROM this year)
+    const promotionsOut = await prisma.studentProgression.findMany({
+      where: { fromAcademicYearId: yearId },
+      include: {
+        student: { select: { id: true, firstName: true, lastName: true, khmerName: true, gender: true } },
+        fromClass: { select: { name: true, grade: true } },
+        toClass: { select: { name: true, grade: true } },
+        toAcademicYear: { select: { id: true, name: true } },
+      },
+    });
+
+    // Get promotion statistics (students promoted INTO this year)
+    const promotionsIn = await prisma.studentProgression.findMany({
+      where: { toAcademicYearId: yearId },
+      include: {
+        student: { select: { id: true, firstName: true, lastName: true, khmerName: true, gender: true } },
+        fromClass: { select: { name: true, grade: true } },
+        toClass: { select: { name: true, grade: true } },
+        fromAcademicYear: { select: { id: true, name: true } },
+      },
+    });
+
+    // Calculate statistics
+    const totalStudents = classes.reduce((sum, c) => sum + c._count.students, 0);
+    const totalClasses = classes.length;
+    const totalTeachers = uniqueTeachers.length;
+
+    // Students by grade
+    const studentsByGrade: Record<string, number> = {};
+    classes.forEach(c => {
+      studentsByGrade[c.grade] = (studentsByGrade[c.grade] || 0) + c._count.students;
+    });
+
+    // Students by gender
+    const genderCounts = await prisma.student.groupBy({
+      by: ['gender'],
+      where: { class: { academicYearId: yearId, schoolId } },
+      _count: { id: true },
+    });
+    const studentsByGender = genderCounts.reduce((acc, g) => {
+      acc[g.gender] = g._count.id;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Promotion statistics
+    const promotionStats = {
+      promotedOut: promotionsOut.filter(p => p.promotionType === 'AUTOMATIC').length,
+      repeated: promotionsOut.filter(p => p.promotionType === 'REPEAT').length,
+      graduated: promotionsOut.filter(p => p.promotionType === 'MANUAL' && p.toClass.grade === '12').length,
+      transferredOut: promotionsOut.filter(p => p.promotionType === 'TRANSFER_OUT').length,
+      newAdmissions: promotionsIn.filter(p => p.promotionType === 'NEW_ADMISSION').length,
+      transferredIn: promotionsIn.filter(p => p.promotionType === 'TRANSFER_IN').length,
+      promotedIn: promotionsIn.filter(p => p.promotionType === 'AUTOMATIC').length,
+    };
+
+    // Attendance summary (if available)
+    const attendanceSummary = await prisma.attendance.groupBy({
+      by: ['status'],
+      where: { class: { academicYearId: yearId, schoolId } },
+      _count: { id: true },
+    });
+
+    // Grade summary (if available)
+    const gradeSummary = await prisma.grade.aggregate({
+      where: { class: { academicYearId: yearId, schoolId } },
+      _avg: { score: true },
+      _count: { id: true },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        academicYear: {
+          id: academicYear.id,
+          name: academicYear.name,
+          startDate: academicYear.startDate,
+          endDate: academicYear.endDate,
+          isCurrent: academicYear.isCurrent,
+          status: academicYear.status,
+          isPromotionDone: academicYear.isPromotionDone,
+          promotionDate: academicYear.promotionDate,
+          copiedFromYearId: academicYear.copiedFromYearId,
+          createdAt: academicYear.createdAt,
+          updatedAt: academicYear.updatedAt,
+        },
+        statistics: {
+          totalStudents,
+          totalClasses,
+          totalTeachers,
+          studentsByGrade,
+          studentsByGender,
+          promotionStats,
+          attendance: attendanceSummary.reduce((acc, a) => {
+            acc[a.status] = a._count.id;
+            return acc;
+          }, {} as Record<string, number>),
+          grades: {
+            averageScore: gradeSummary._avg.score,
+            totalGradeEntries: gradeSummary._count.id,
+          },
+        },
+        classes: classes.map(c => ({
+          id: c.id,
+          name: c.name,
+          grade: c.grade,
+          section: c.section,
+          track: c.track,
+          capacity: c.capacity,
+          studentCount: c._count.students,
+          isAtCapacity: c.capacity ? c._count.students >= c.capacity : false,
+          homeroomTeacher: c.homeroomTeacher ? {
+            id: c.homeroomTeacher.id,
+            name: c.homeroomTeacher.khmerName || `${c.homeroomTeacher.firstName} ${c.homeroomTeacher.lastName}`,
+          } : null,
+        })),
+        teachers: uniqueTeachers.map(t => ({
+          id: t.id,
+          name: t.khmerName || `${t.firstName} ${t.lastName}`,
+          position: t.position,
+          classCount: teacherAssignments.filter(ta => ta.teacher.id === t.id).length,
+        })),
+        terms: academicYear.terms,
+        examTypes: academicYear.examTypes,
+        gradingScales: academicYear.gradingScales,
+        calendar: academicYear.calendars[0] || null,
+        promotionHistory: {
+          promotedOut: promotionsOut.slice(0, 20).map(p => ({
+            studentId: p.student.id,
+            studentName: p.student.khmerName || `${p.student.firstName} ${p.student.lastName}`,
+            gender: p.student.gender,
+            fromClass: p.fromClass.name,
+            toClass: p.toClass.name,
+            toYear: p.toAcademicYear.name,
+            type: p.promotionType,
+            date: p.promotionDate,
+          })),
+          promotedIn: promotionsIn.slice(0, 20).map(p => ({
+            studentId: p.student.id,
+            studentName: p.student.khmerName || `${p.student.firstName} ${p.student.lastName}`,
+            gender: p.student.gender,
+            fromClass: p.fromClass.name,
+            toClass: p.toClass.name,
+            fromYear: p.fromAcademicYear.name,
+            type: p.promotionType,
+            date: p.promotionDate,
+          })),
+          totalPromotedOut: promotionsOut.length,
+          totalPromotedIn: promotionsIn.length,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Error fetching comprehensive year details:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch year details', message: error.message });
+  }
+});
+
+// GET /schools/:schoolId/academic-years/:yearId/calendar - Get academic calendar
+app.get('/schools/:schoolId/academic-years/:yearId/calendar', async (req: Request, res: Response) => {
+  try {
+    const { schoolId, yearId } = req.params;
+
+    const calendar = await prisma.academicCalendar.findFirst({
+      where: { academicYearId: yearId },
+      include: {
+        events: { orderBy: { startDate: 'asc' } },
+        academicYear: { select: { name: true, startDate: true, endDate: true } },
+      },
+    });
+
+    if (!calendar) {
+      // Return empty calendar if none exists
+      return res.json({
+        success: true,
+        data: {
+          id: null,
+          name: 'No calendar',
+          events: [],
+          academicYear: null,
+        },
+      });
+    }
+
+    res.json({ success: true, data: calendar });
+  } catch (error: any) {
+    console.error('Error fetching calendar:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch calendar' });
+  }
+});
+
+// POST /schools/:schoolId/academic-years/:yearId/calendar/events - Add calendar event
+app.post('/schools/:schoolId/academic-years/:yearId/calendar/events', async (req: Request, res: Response) => {
+  try {
+    const { schoolId, yearId } = req.params;
+    const { type, title, description, startDate, endDate, isSchoolDay, isPublic } = req.body;
+
+    // Get or create calendar
+    let calendar = await prisma.academicCalendar.findFirst({
+      where: { academicYearId: yearId },
+    });
+
+    if (!calendar) {
+      calendar = await prisma.academicCalendar.create({
+        data: {
+          academicYearId: yearId,
+          name: 'School Calendar',
+        },
+      });
+    }
+
+    const event = await prisma.calendarEvent.create({
+      data: {
+        calendarId: calendar.id,
+        type: type || 'SPECIAL_EVENT',
+        title,
+        description,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate || startDate),
+        isSchoolDay: isSchoolDay !== false,
+        isPublic: isPublic !== false,
+      },
+    });
+
+    res.json({ success: true, data: event });
+  } catch (error: any) {
+    console.error('Error creating event:', error);
+    res.status(500).json({ success: false, error: 'Failed to create event' });
+  }
+});
+
+// DELETE /schools/:schoolId/academic-years/:yearId/calendar/events/:eventId - Delete event
+app.delete('/schools/:schoolId/academic-years/:yearId/calendar/events/:eventId', async (req: Request, res: Response) => {
+  try {
+    const { eventId } = req.params;
+
+    await prisma.calendarEvent.delete({ where: { id: eventId } });
+
+    res.json({ success: true, message: 'Event deleted' });
+  } catch (error: any) {
+    console.error('Error deleting event:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete event' });
+  }
+});
+
+// ============================================================
+// 📅 NEW YEAR SETUP WIZARD API
+// ============================================================
+
+// GET /schools/:schoolId/academic-years/:yearId/template - Get year as template for copying
+app.get('/schools/:schoolId/academic-years/:yearId/template', async (req: Request, res: Response) => {
+  try {
+    const { schoolId, yearId } = req.params;
+
+    const year = await prisma.academicYear.findFirst({
+      where: { id: yearId, schoolId },
+      include: {
+        terms: { orderBy: { termNumber: 'asc' } },
+        examTypes: { orderBy: { order: 'asc' } },
+        gradingScales: {
+          include: { ranges: { orderBy: { order: 'asc' } } }
+        },
+        classes: {
+          include: { teacherClasses: { include: { teacher: { select: { id: true, firstName: true, lastName: true, photoUrl: true } } } } },
+          orderBy: [{ grade: 'asc' }, { section: 'asc' }]
+        },
+        calendars: {
+          include: { events: { orderBy: { startDate: 'asc' } } }
+        }
+      }
+    });
+
+    if (!year) {
+      return res.status(404).json({ success: false, error: 'Academic year not found' });
+    }
+
+    // Calculate next year suggestion
+    const currentYearMatch = year.name.match(/(\d{4})/);
+    let suggestedName = '';
+    let suggestedStartDate = new Date(year.startDate);
+    let suggestedEndDate = new Date(year.endDate);
+    
+    if (currentYearMatch) {
+      const currentYearNum = parseInt(currentYearMatch[1]);
+      if (year.name.includes('-')) {
+        // Format: 2024-2025
+        suggestedName = `${currentYearNum + 1}-${currentYearNum + 2}`;
+      } else {
+        // Format: 2024
+        suggestedName = `${currentYearNum + 1}`;
+      }
+    }
+    
+    // Move dates forward by 1 year
+    suggestedStartDate.setFullYear(suggestedStartDate.getFullYear() + 1);
+    suggestedEndDate.setFullYear(suggestedEndDate.getFullYear() + 1);
+
+    res.json({
+      success: true,
+      data: {
+        sourceYear: year,
+        suggested: {
+          name: suggestedName,
+          startDate: suggestedStartDate.toISOString().split('T')[0],
+          endDate: suggestedEndDate.toISOString().split('T')[0]
+        },
+        copyOptions: {
+          terms: year.terms?.length || 0,
+          examTypes: year.examTypes?.length || 0,
+          gradingScales: year.gradingScales?.length || 0,
+          classes: year.classes?.length || 0,
+          holidays: year.calendars?.[0]?.events?.filter((e: any) => e.type === 'HOLIDAY').length || 0
+        }
+      }
+    });
+  } catch (error: any) {
+    console.error('Error getting year template:', error);
+    res.status(500).json({ success: false, error: 'Failed to get year template' });
+  }
+});
+
+// POST /schools/:schoolId/academic-years/wizard - Create new year with wizard
+app.post('/schools/:schoolId/academic-years/wizard', async (req: Request, res: Response) => {
+  try {
+    const { schoolId } = req.params;
+    const {
+      // Basic info
+      name,
+      startDate,
+      endDate,
+      copyFromYearId,
+      // Copy options
+      copyTerms = true,
+      copyExamTypes = true,
+      copyGradingScales = true,
+      copyClasses = true,
+      copyHolidays = true,
+      // Custom config (if not copying)
+      terms,
+      examTypes,
+      gradingScales,
+      classes,
+      holidays
+    } = req.body;
+
+    if (!name || !startDate || !endDate) {
+      return res.status(400).json({ success: false, error: 'Name, start date, and end date are required' });
+    }
+
+    // Start transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Create the academic year
+      const newYear = await tx.academicYear.create({
+        data: {
+          schoolId,
+          name,
+          startDate: new Date(startDate),
+          endDate: new Date(endDate),
+          status: 'PLANNING',
+          isCurrent: false,
+          copiedFromYearId: copyFromYearId || null
+        }
+      });
+
+      let sourceYear: any = null;
+      if (copyFromYearId) {
+        sourceYear = await tx.academicYear.findUnique({
+          where: { id: copyFromYearId },
+          include: {
+            terms: { orderBy: { termNumber: 'asc' } },
+            examTypes: { orderBy: { order: 'asc' } },
+            gradingScales: { include: { ranges: { orderBy: { order: 'asc' } } } },
+            classes: { orderBy: [{ grade: 'asc' }, { section: 'asc' }] },
+            calendars: { include: { events: true } }
+          }
+        });
+      }
+
+      // 2. Create terms
+      let createdTerms: any[] = [];
+      if (copyTerms && sourceYear?.terms?.length) {
+        // Calculate date offset
+        const sourceStart = new Date(sourceYear.startDate);
+        const newStart = new Date(startDate);
+        const dayOffset = Math.round((newStart.getTime() - sourceStart.getTime()) / (1000 * 60 * 60 * 24));
+
+        for (const term of sourceYear.terms) {
+          const termStart = new Date(term.startDate);
+          const termEnd = new Date(term.endDate);
+          termStart.setDate(termStart.getDate() + dayOffset);
+          termEnd.setDate(termEnd.getDate() + dayOffset);
+
+          createdTerms.push(await tx.academicTerm.create({
+            data: {
+              academicYearId: newYear.id,
+              name: term.name,
+              termNumber: term.termNumber,
+              startDate: termStart,
+              endDate: termEnd
+            }
+          }));
+        }
+      } else if (terms?.length) {
+        for (const term of terms) {
+          createdTerms.push(await tx.academicTerm.create({
+            data: {
+              academicYearId: newYear.id,
+              name: term.name,
+              termNumber: term.termNumber,
+              startDate: new Date(term.startDate),
+              endDate: new Date(term.endDate)
+            }
+          }));
+        }
+      }
+
+      // 3. Create exam types
+      let createdExamTypes: any[] = [];
+      if (copyExamTypes && sourceYear?.examTypes?.length) {
+        for (const examType of sourceYear.examTypes) {
+          // Map to new term if applicable
+          let newTermId = null;
+          if (examType.termId && createdTerms.length) {
+            const sourceTerm = sourceYear.terms.find((t: any) => t.id === examType.termId);
+            if (sourceTerm) {
+              const newTerm = createdTerms.find(t => t.termNumber === sourceTerm.termNumber);
+              if (newTerm) newTermId = newTerm.id;
+            }
+          }
+
+          createdExamTypes.push(await tx.examType.create({
+            data: {
+              academicYearId: newYear.id,
+              termId: newTermId,
+              name: examType.name,
+              weight: examType.weight,
+              maxScore: examType.maxScore,
+              order: examType.order
+            }
+          }));
+        }
+      } else if (examTypes?.length) {
+        for (const et of examTypes) {
+          createdExamTypes.push(await tx.examType.create({
+            data: {
+              academicYearId: newYear.id,
+              name: et.name,
+              weight: et.weight,
+              maxScore: et.maxScore || 100,
+              order: et.order || 0
+            }
+          }));
+        }
+      }
+
+      // 4. Create grading scales
+      let createdGradingScales: any[] = [];
+      if (copyGradingScales && sourceYear?.gradingScales?.length) {
+        for (const scale of sourceYear.gradingScales) {
+          const newScale = await tx.gradingScale.create({
+            data: {
+              academicYearId: newYear.id,
+              name: scale.name,
+              isDefault: scale.isDefault
+            }
+          });
+
+          for (const range of scale.ranges) {
+            await tx.gradeRange.create({
+              data: {
+                gradingScaleId: newScale.id,
+                grade: range.grade,
+                minScore: range.minScore,
+                maxScore: range.maxScore,
+                gpa: range.gpa,
+                description: range.description,
+                color: range.color,
+                order: range.order
+              }
+            });
+          }
+
+          createdGradingScales.push(newScale);
+        }
+      } else if (gradingScales?.length) {
+        for (const gs of gradingScales) {
+          const newScale = await tx.gradingScale.create({
+            data: {
+              academicYearId: newYear.id,
+              name: gs.name,
+              isDefault: gs.isDefault || false
+            }
+          });
+
+          if (gs.ranges?.length) {
+            for (const range of gs.ranges) {
+              await tx.gradeRange.create({
+                data: {
+                  gradingScaleId: newScale.id,
+                  grade: range.grade,
+                  minScore: range.minScore,
+                  maxScore: range.maxScore,
+                  gpa: range.gpa,
+                  description: range.description,
+                  color: range.color || '#10B981',
+                  order: range.order || 0
+                }
+              });
+            }
+          }
+
+          createdGradingScales.push(newScale);
+        }
+      }
+
+      // 5. Create classes (without students - they need to be promoted separately)
+      let createdClasses: any[] = [];
+      if (copyClasses && sourceYear?.classes?.length) {
+        for (const cls of sourceYear.classes) {
+          createdClasses.push(await tx.class.create({
+            data: {
+              schoolId,
+              academicYearId: newYear.id,
+              name: cls.name,
+              grade: cls.grade,
+              section: cls.section,
+              capacity: cls.capacity
+            }
+          }));
+        }
+      } else if (classes?.length) {
+        for (const cls of classes) {
+          createdClasses.push(await tx.class.create({
+            data: {
+              schoolId,
+              academicYearId: newYear.id,
+              name: cls.name,
+              grade: String(cls.gradeLevel || cls.grade),
+              section: cls.section,
+              capacity: cls.capacity || 40
+            }
+          }));
+        }
+      }
+
+      // 6. Create calendar with holidays
+      const newCalendar = await tx.academicCalendar.create({
+        data: {
+          academicYearId: newYear.id,
+          name: 'School Calendar'
+        }
+      });
+
+      let createdHolidays: any[] = [];
+      if (copyHolidays && sourceYear?.calendars?.[0]?.events?.length) {
+        // Calculate date offset
+        const sourceStart = new Date(sourceYear.startDate);
+        const newStart = new Date(startDate);
+        const dayOffset = Math.round((newStart.getTime() - sourceStart.getTime()) / (1000 * 60 * 60 * 24));
+
+        for (const event of sourceYear.calendars[0].events) {
+          const eventStart = new Date(event.startDate);
+          const eventEnd = new Date(event.endDate);
+          eventStart.setDate(eventStart.getDate() + dayOffset);
+          eventEnd.setDate(eventEnd.getDate() + dayOffset);
+
+          createdHolidays.push(await tx.calendarEvent.create({
+            data: {
+              calendarId: newCalendar.id,
+              type: event.type,
+              title: event.title,
+              description: event.description,
+              startDate: eventStart,
+              endDate: eventEnd,
+              isSchoolDay: event.isSchoolDay,
+              isPublic: event.isPublic
+            }
+          }));
+        }
+      } else if (holidays?.length) {
+        for (const h of holidays) {
+          createdHolidays.push(await tx.calendarEvent.create({
+            data: {
+              calendarId: newCalendar.id,
+              type: h.type || 'HOLIDAY',
+              title: h.title,
+              description: h.description,
+              startDate: new Date(h.startDate),
+              endDate: new Date(h.endDate),
+              isSchoolDay: h.isSchoolDay ?? false,
+              isPublic: h.isPublic ?? true
+            }
+          }));
+        }
+      }
+
+      return {
+        year: newYear,
+        stats: {
+          terms: createdTerms.length,
+          examTypes: createdExamTypes.length,
+          gradingScales: createdGradingScales.length,
+          classes: createdClasses.length,
+          holidays: createdHolidays.length
+        }
+      };
+    });
+
+    res.status(201).json({
+      success: true,
+      data: result,
+      message: `Academic year "${name}" created successfully with all configurations`
+    });
+  } catch (error: any) {
+    console.error('Error creating year with wizard:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to create academic year' });
+  }
+});
+
+// GET /schools/:schoolId/setup-templates - Get default templates for new year setup
+app.get('/schools/:schoolId/setup-templates', async (req: Request, res: Response) => {
+  try {
+    // Return default templates that can be used for new year setup
+    res.json({
+      success: true,
+      data: {
+        defaultTerms: DEFAULT_TERMS,
+        defaultExamTypes: DEFAULT_EXAM_TYPES,
+        defaultGradingScale: STANDARD_GRADING_SCALE,
+        cambodianHolidays: getCambodianHolidays(new Date().getFullYear())
+      }
+    });
+  } catch (error: any) {
+    console.error('Error getting setup templates:', error);
+    res.status(500).json({ success: false, error: 'Failed to get setup templates' });
+  }
+});
+
+// ============================================================
+// 📊 YEAR-OVER-YEAR COMPARISON API
+// ============================================================
+
+// GET /schools/:schoolId/academic-years/comparison - Compare multiple years
+app.get('/schools/:schoolId/academic-years/comparison', async (req: Request, res: Response) => {
+  try {
+    const { schoolId } = req.params;
+    const { yearIds } = req.query; // Comma-separated year IDs or 'all'
+
+    // Get years to compare
+    let years;
+    if (yearIds === 'all') {
+      years = await prisma.academicYear.findMany({
+        where: { schoolId },
+        orderBy: { startDate: 'desc' },
+        take: 5 // Last 5 years
+      });
+    } else if (yearIds) {
+      const ids = (yearIds as string).split(',');
+      years = await prisma.academicYear.findMany({
+        where: { id: { in: ids }, schoolId },
+        orderBy: { startDate: 'desc' }
+      });
+    } else {
+      years = await prisma.academicYear.findMany({
+        where: { schoolId },
+        orderBy: { startDate: 'desc' },
+        take: 3 // Default to last 3 years
+      });
+    }
+
+    // Gather stats for each year
+    const yearComparisons = await Promise.all(years.map(async (year) => {
+      // Get classes for this year
+      const classesForYear = await prisma.class.findMany({
+        where: { schoolId, academicYearId: year.id },
+        select: { id: true, grade: true }
+      });
+      const classIds = classesForYear.map(c => c.id);
+
+      // Student counts - count studentClasses in classes for this year
+      const studentClassEntries = await prisma.studentClass.findMany({
+        where: { classId: { in: classIds } },
+        distinct: ['studentId'],
+        select: { studentId: true }
+      });
+      const students = studentClassEntries.length;
+
+      // Teacher counts - teachers assigned to classes in this year
+      const teacherAssignments = await prisma.teacherClass.findMany({
+        where: { classId: { in: classIds } },
+        distinct: ['teacherId'],
+        select: { teacherId: true }
+      });
+      const teacherCount = teacherAssignments.length;
+
+      const homeroomClasses = await prisma.class.findMany({
+        where: { schoolId, academicYearId: year.id, homeroomTeacherId: { not: null } },
+        distinct: ['homeroomTeacherId'],
+        select: { homeroomTeacherId: true }
+      });
+
+      const teachers = Math.max(teacherCount, homeroomClasses.length);
+
+      // Class counts
+      const classCount = classesForYear.length;
+
+      // Class breakdown by grade
+      const classesByGrade: Record<string, number> = {};
+      classesForYear.forEach(c => {
+        const key = `Grade ${c.grade}`;
+        classesByGrade[key] = (classesByGrade[key] || 0) + 1;
+      });
+
+      // Student counts by gender
+      const enrolledStudentIds = studentClassEntries.map(e => e.studentId);
+      
+      let studentsByGender: Record<string, number> = {};
+      if (enrolledStudentIds.length > 0) {
+        const studentGenders = await prisma.student.groupBy({
+          by: ['gender'],
+          where: { id: { in: enrolledStudentIds } },
+          _count: true
+        });
+        studentGenders.forEach(g => {
+          studentsByGender[g.gender || 'Unknown'] = g._count;
+        });
+      }
+
+      // Promotion stats (if year ended)
+      const promotionStats = await prisma.studentProgression.groupBy({
+        by: ['promotionType'],
+        where: { fromAcademicYearId: year.id },
+        _count: true
+      });
+
+      const promotions: Record<string, number> = {};
+      promotionStats.forEach(p => {
+        promotions[p.promotionType] = p._count;
+      });
+
+      // Subject count
+      const subjects = await prisma.subject.count({
+        where: {}
+      });
+
+      return {
+        year: {
+          id: year.id,
+          name: year.name,
+          startDate: year.startDate,
+          endDate: year.endDate,
+          status: year.status,
+          isCurrent: year.isCurrent
+        },
+        stats: {
+          totalStudents: students,
+          totalTeachers: teachers,
+          totalClasses: classCount,
+          totalSubjects: subjects,
+          studentsByGender,
+          classesByGrade,
+          promotions
+        }
+      };
+    }));
+
+    // Calculate trends (compare with previous year)
+    const trends = yearComparisons.map((current, index) => {
+      if (index === yearComparisons.length - 1) {
+        return { yearId: current.year.id, changes: null };
+      }
+      const previous = yearComparisons[index + 1];
+      return {
+        yearId: current.year.id,
+        changes: {
+          students: {
+            value: current.stats.totalStudents - previous.stats.totalStudents,
+            percentage: previous.stats.totalStudents > 0 
+              ? ((current.stats.totalStudents - previous.stats.totalStudents) / previous.stats.totalStudents * 100).toFixed(1)
+              : null
+          },
+          teachers: {
+            value: current.stats.totalTeachers - previous.stats.totalTeachers,
+            percentage: previous.stats.totalTeachers > 0
+              ? ((current.stats.totalTeachers - previous.stats.totalTeachers) / previous.stats.totalTeachers * 100).toFixed(1)
+              : null
+          },
+          classes: {
+            value: current.stats.totalClasses - previous.stats.totalClasses,
+            percentage: previous.stats.totalClasses > 0
+              ? ((current.stats.totalClasses - previous.stats.totalClasses) / previous.stats.totalClasses * 100).toFixed(1)
+              : null
+          }
+        }
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        years: yearComparisons,
+        trends,
+        summary: {
+          totalYearsCompared: yearComparisons.length,
+          latestYear: yearComparisons[0]?.year.name || null,
+          oldestYear: yearComparisons[yearComparisons.length - 1]?.year.name || null
+        }
+      }
+    });
+  } catch (error: any) {
+    console.error('Error comparing years:', error);
+    res.status(500).json({ success: false, error: 'Failed to compare academic years' });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log('\n╔════════════════════════════════════════════════════╗');
-  console.log('║   🏫 School Service - Stunity Enterprise v2.0    ║');
+  console.log('║   🏫 School Service - Stunity Enterprise v2.3    ║');
   console.log('╚════════════════════════════════════════════════════╝\n');
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`🌐 Health check: http://localhost:${PORT}/health`);
   console.log(`📊 API info: http://localhost:${PORT}/api/info\n`);
-  console.log('📋 Phase 4 Analytics APIs:');
-  console.log('   - Year comparison reports');
-  console.log('   - Enrollment trends');
-  console.log('   - Student history');
-  console.log('   - Teacher history\n');
+  console.log('📋 Academic Year APIs:');
+  console.log('   - GET /schools/:id/academic-years/:yearId/comprehensive');
+  console.log('   - GET /schools/:id/academic-years/:yearId/calendar');
+  console.log('   - POST /schools/:id/academic-years/:yearId/calendar/events');
+  console.log('   - DELETE /schools/:id/academic-years/:yearId/calendar/events/:eventId');
+  console.log('   - GET /schools/:id/academic-years/:yearId/template');
+  console.log('   - POST /schools/:id/academic-years/wizard');
+  console.log('   - GET /schools/:id/setup-templates');
+  console.log('   - GET /schools/:id/academic-years/comparison\n');
   console.log('Press Ctrl+C to stop');
 });
 

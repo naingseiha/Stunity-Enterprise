@@ -8,60 +8,44 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ========================================
-// Multi-Tenant SaaS Models
-// ========================================
-
 model School {
-  id      String  @id @default(cuid())
-  name    String
-  slug    String  @unique
-  email   String  @unique
-  phone   String?
-  address String?
-  logo    String?
-  website String?
-
-  // School Configuration
-  schoolType  SchoolType @default(HIGH_SCHOOL)
-  gradeRange  String     @default("7-12") // "7-12", "1-6", "1-12"
-  workingDays Int[]      @default([1, 2, 3, 4, 5]) // Monday=1, Friday=5
-
-  // Onboarding Tracking
-  setupCompleted   Boolean   @default(false)
-  onboardingStep   Int       @default(0)
-  setupCompletedAt DateTime?
-
-  // Subscription Management
-  subscriptionTier  SubscriptionTier @default(FREE_TRIAL_1M)
-  subscriptionStart DateTime         @default(now())
-  subscriptionEnd   DateTime?
-  isActive          Boolean          @default(true)
-  isTrial           Boolean          @default(true)
-
-  // Usage Limits
-  maxStudents     Int    @default(100)
-  maxTeachers     Int    @default(10)
-  maxStorage      BigInt @default(1073741824) // 1GB in bytes
-  currentStudents Int    @default(0)
-  currentTeachers Int    @default(0)
-  currentStorage  BigInt @default(0)
-
-  // Metadata
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
+  id                  String               @id @default(cuid())
+  name                String
+  slug                String               @unique
+  email               String               @unique
+  phone               String?
+  address             String?
+  logo                String?
+  website             String?
+  subscriptionTier    SubscriptionTier     @default(FREE_TRIAL_1M)
+  subscriptionStart   DateTime             @default(now())
+  subscriptionEnd     DateTime?
+  isActive            Boolean              @default(true)
+  isTrial             Boolean              @default(true)
+  maxStudents         Int                  @default(100)
+  maxTeachers         Int                  @default(10)
+  maxStorage          BigInt               @default(1073741824)
+  currentStudents     Int                  @default(0)
+  currentTeachers     Int                  @default(0)
+  currentStorage      BigInt               @default(0)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  gradeRange          String               @default("7-12")
+  onboardingStep      Int                  @default(0)
+  schoolType          SchoolType           @default(HIGH_SCHOOL)
+  setupCompleted      Boolean              @default(false)
+  setupCompletedAt    DateTime?
+  workingDays         Int[]                @default([1, 2, 3, 4, 5])
   academicYears       AcademicYear[]
-  users               User[]
-  students            Student[]
-  teachers            Teacher[]
   classes             Class[]
   onboardingChecklist OnboardingChecklist?
-  schoolSettings      SchoolSettings?
   periods             Period[]
-  timetableEntries    TimetableEntry[]
+  schoolSettings      SchoolSettings?
   schoolShifts        SchoolShift[]
+  students            Student[]
+  teachers            Teacher[]
+  timetableEntries    TimetableEntry[]
+  users               User[]
 
   @@index([slug])
   @@index([subscriptionTier])
@@ -69,54 +53,35 @@ model School {
   @@map("schools")
 }
 
-enum SchoolType {
-  PRIMARY_SCHOOL // Grades 1-6
-  MIDDLE_SCHOOL // Grades 7-9
-  HIGH_SCHOOL // Grades 10-12
-  COMPLETE_SCHOOL // Grades 1-12
-  INTERNATIONAL // Custom grades
-}
-
 model AcademicYear {
-  id        String   @id @default(cuid())
-  schoolId  String
-  name      String // e.g., "2024-2025"
-  startDate DateTime // Flexible: Oct 2025, Nov 2026, etc.
-  endDate   DateTime // Flexible: Sep 2026, Aug 2027, etc.
-  isCurrent Boolean  @default(false)
-
-  // Enterprise features
-  copiedFromYearId String? // Previous year settings were copied from
-  status           AcademicYearStatus @default(PLANNING)
-  promotionDate    DateTime? // When student promotion happens
-  isPromotionDone  Boolean            @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  school           School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  id               String               @id @default(cuid())
+  schoolId         String
+  name             String
+  startDate        DateTime
+  endDate          DateTime
+  isCurrent        Boolean              @default(false)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  copiedFromYearId String?
+  isPromotionDone  Boolean              @default(false)
+  promotionDate    DateTime?
+  status           AcademicYearStatus   @default(PLANNING)
+  calendars        AcademicCalendar[]
+  terms            AcademicTerm[]
   copiedFromYear   AcademicYear?        @relation("YearCopy", fields: [copiedFromYearId], references: [id])
   copiedToYears    AcademicYear[]       @relation("YearCopy")
+  school           School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   classes          Class[]
-  progressionsFrom StudentProgression[] @relation("FromYear")
-  progressionsTo   StudentProgression[] @relation("ToYear")
-  terms            AcademicTerm[]
   examTypes        ExamType[]
   gradingScales    GradingScale[]
-  calendars        AcademicCalendar[]
+  progressionsFrom StudentProgression[] @relation("FromYear")
+  progressionsTo   StudentProgression[] @relation("ToYear")
   timetableEntries TimetableEntry[]
 
   @@unique([schoolId, name])
   @@index([schoolId, isCurrent])
   @@index([schoolId, status])
   @@map("academic_years")
-}
-
-enum AcademicYearStatus {
-  PLANNING // Being set up, not started yet
-  ACTIVE // Current academic year
-  ENDED // Finished, but promotion not done
-  ARCHIVED // Historical, read-only
 }
 
 model StudentProgression {
@@ -128,39 +93,20 @@ model StudentProgression {
   toClassId          String
   promotionType      PromotionType
   promotionDate      DateTime
-  promotedBy         String // Admin user ID
-  notes              String? // Admin notes about promotion decision
+  promotedBy         String
+  notes              String?
   createdAt          DateTime      @default(now())
-
-  student          Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  fromAcademicYear AcademicYear @relation("FromYear", fields: [fromAcademicYearId], references: [id])
-  toAcademicYear   AcademicYear @relation("ToYear", fields: [toAcademicYearId], references: [id])
-  fromClass        Class        @relation("FromClass", fields: [fromClassId], references: [id])
-  toClass          Class        @relation("ToClass", fields: [toClassId], references: [id])
+  fromAcademicYear   AcademicYear  @relation("FromYear", fields: [fromAcademicYearId], references: [id])
+  fromClass          Class         @relation("FromClass", fields: [fromClassId], references: [id])
+  student            Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  toAcademicYear     AcademicYear  @relation("ToYear", fields: [toAcademicYearId], references: [id])
+  toClass            Class         @relation("ToClass", fields: [toClassId], references: [id])
 
   @@unique([studentId, fromAcademicYearId, toAcademicYearId])
   @@index([studentId])
   @@index([fromAcademicYearId])
   @@index([toAcademicYearId])
   @@map("student_progressions")
-}
-
-enum PromotionType {
-  AUTOMATIC // Promoted automatically with class
-  MANUAL // Manually placed by admin
-  REPEAT // Failed, repeating same grade
-  NEW_ADMISSION // New student, first year
-  TRANSFER_IN // Transferred from another school
-  TRANSFER_OUT // Transferred to another school
-}
-
-enum SubscriptionTier {
-  FREE_TRIAL_1M
-  FREE_TRIAL_3M
-  BASIC
-  STANDARD
-  PREMIUM
-  ENTERPRISE
 }
 
 model Attendance {
@@ -185,31 +131,31 @@ model Attendance {
 
 model Class {
   id                      String                  @id @default(cuid())
-  schoolId                String // Multi-tenant field
+  schoolId                String
   classId                 String?                 @unique
   name                    String
   grade                   String
   section                 String?
-  academicYearId          String // FK to AcademicYear
   capacity                Int?
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
   track                   String?
   homeroomTeacherId       String?                 @unique
+  academicYearId          String
   attendance              Attendance[]
-  grades                  Grade[]
-  studentMonthlySummaries StudentMonthlySummary[]
-  students                Student[]
-  studentClasses          StudentClass[]
-  teacherClasses          TeacherClass[]
-  school                  School                  @relation(fields: [schoolId], references: [id])
+  classShiftOverrides     ClassShiftOverride[]
+  classShift              ClassShift?
   academicYear            AcademicYear            @relation(fields: [academicYearId], references: [id])
-  homeroomTeacher         Teacher?
+  school                  School                  @relation(fields: [schoolId], references: [id])
+  grades                  Grade[]
+  studentClasses          StudentClass[]
+  studentMonthlySummaries StudentMonthlySummary[]
   progressionsFrom        StudentProgression[]    @relation("FromClass")
   progressionsTo          StudentProgression[]    @relation("ToClass")
+  students                Student[]
+  teacherClasses          TeacherClass[]
+  homeroomTeacher         Teacher?
   timetableEntries        TimetableEntry[]
-  classShift              ClassShift?
-  classShiftOverrides     ClassShiftOverride[]
 
   @@index([schoolId])
   @@index([grade])
@@ -291,7 +237,7 @@ model StudentMonthlySummary {
 
 model Student {
   id                   String                  @id @default(cuid())
-  schoolId             String // Multi-tenant field
+  schoolId             String
   studentId            String?                 @unique
   firstName            String
   lastName             String
@@ -333,13 +279,13 @@ model Student {
   studentRole          StudentRole             @default(GENERAL)
   attendance           Attendance[]
   grades               Grade[]
+  studentClasses       StudentClass[]
   monthlySummaries     StudentMonthlySummary[]
   studentParents       StudentParent[]
-  studentClasses       StudentClass[]
-  school               School                  @relation(fields: [schoolId], references: [id])
-  class                Class?                  @relation(fields: [classId], references: [id])
-  user                 User?
   StudentProgression   StudentProgression[]
+  class                Class?                  @relation(fields: [classId], references: [id])
+  school               School                  @relation(fields: [schoolId], references: [id])
+  user                 User?
 
   @@index([schoolId])
   @@index([classId])
@@ -402,12 +348,11 @@ model StudentClass {
   classId        String
   academicYearId String?
   enrolledAt     DateTime @default(now())
-  status         String   @default("ACTIVE") // ACTIVE, DROPPED, TRANSFERRED
+  status         String   @default("ACTIVE")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-
-  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  class          Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, classId, academicYearId])
   @@index([studentId])
@@ -430,26 +375,26 @@ model SubjectTeacher {
 }
 
 model Subject {
-  id               String           @id @default(cuid())
-  name             String
-  nameKh           String
-  nameEn           String?
-  code             String           @unique
-  description      String?
-  grade            String
-  track            String?
-  category         String
-  weeklyHours      Float            @default(0)
-  annualHours      Int              @default(0)
-  maxScore         Int              @default(100)
-  coefficient      Float            @default(1.0)
-  isActive         Boolean          @default(true)
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  grades           Grade[]
-  subjectTeachers  SubjectTeacher[]
-  timetableEntries TimetableEntry[]
+  id                        String                     @id @default(cuid())
+  name                      String
+  nameKh                    String
+  nameEn                    String?
+  code                      String                     @unique
+  description               String?
+  grade                     String
+  track                     String?
+  category                  String
+  weeklyHours               Float                      @default(0)
+  annualHours               Int                        @default(0)
+  maxScore                  Int                        @default(100)
+  coefficient               Float                      @default(1.0)
+  isActive                  Boolean                    @default(true)
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  grades                    Grade[]
+  subjectTeachers           SubjectTeacher[]
   teacherSubjectAssignments TeacherSubjectAssignment[] @relation("TeacherSubjectAssignments")
+  timetableEntries          TimetableEntry[]
 
   @@index([grade, isActive])
   @@index([grade, track, isActive])
@@ -470,44 +415,44 @@ model TeacherClass {
 }
 
 model Teacher {
-  id               String           @id @default(cuid())
-  schoolId         String
-  teacherId        String?          @unique
-  firstName        String
-  lastName         String
-  khmerName        String?
-  email            String?          @unique
-  phone            String           @unique
-  employeeId       String?          @unique
-  gender           Gender?
-  dateOfBirth      String?
-  position         String?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  address          String?
-  hireDate         String?
-  homeroomClassId  String?          @unique
-  role             TeacherRole      @default(TEACHER)
-  englishName      String?
-  degree           DegreeLevel?
-  emergencyContact String?
-  emergencyPhone   String?
-  idCard           String?
-  major1           String?
-  major2           String?
-  nationality      String?
-  passport         String?
-  phoneNumber      String?
-  salaryRange      String?
-  workingLevel     WorkingLevel?
-  photoUrl         String?
-  subjectTeachers  SubjectTeacher[]
-  teacherClasses   TeacherClass[]
-  homeroomClass    Class?           @relation(fields: [homeroomClassId], references: [id])
-  school           School           @relation(fields: [schoolId], references: [id])
-  user             User?
-  timetableEntries TimetableEntry[]
+  id                        String                     @id @default(cuid())
+  schoolId                  String
+  teacherId                 String?                    @unique
+  firstName                 String
+  lastName                  String
+  khmerName                 String?
+  email                     String?                    @unique
+  phone                     String                     @unique
+  employeeId                String?                    @unique
+  gender                    Gender?
+  dateOfBirth               String?
+  position                  String?
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  address                   String?
+  hireDate                  String?
+  homeroomClassId           String?                    @unique
+  role                      TeacherRole                @default(TEACHER)
+  englishName               String?
+  degree                    DegreeLevel?
+  emergencyContact          String?
+  emergencyPhone            String?
+  idCard                    String?
+  major1                    String?
+  major2                    String?
+  nationality               String?
+  passport                  String?
+  phoneNumber               String?
+  salaryRange               String?
+  workingLevel              WorkingLevel?
+  photoUrl                  String?
+  subjectTeachers           SubjectTeacher[]
+  teacherClasses            TeacherClass[]
   teacherSubjectAssignments TeacherSubjectAssignment[]
+  homeroomClass             Class?                     @relation(fields: [homeroomClassId], references: [id])
+  school                    School                     @relation(fields: [schoolId], references: [id])
+  timetableEntries          TimetableEntry[]
+  user                      User?
 
   @@index([schoolId])
   @@index([schoolId, position])
@@ -517,102 +462,90 @@ model Teacher {
 }
 
 model User {
-  id                  String    @id @default(cuid())
-  schoolId            String?
-  email               String?   @unique
-  password            String
-  firstName           String
-  lastName            String
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  failedAttempts      Int       @default(0)
-  isActive            Boolean   @default(true)
-  lastLogin           DateTime?
-  lockedUntil         DateTime?
-  loginCount          Int       @default(0)
-  permissions         Json?     @default("{\"canEnterGrades\": true, \"canViewReports\": true, \"canMarkAttendance\": true}")
-  phone               String?   @unique
-  studentId           String?   @unique
-  teacherId           String?   @unique
-  role                UserRole  @default(TEACHER)
-  accountSuspendedAt  DateTime?
-  isDefaultPassword   Boolean   @default(true)
-  isSuperAdmin        Boolean   @default(false)
-  lastPasswordHashes  String[]
-  passwordChangedAt   DateTime?
-  passwordExpiresAt   DateTime?
-  passwordResetExpiry DateTime?
-  passwordResetToken  String?   @unique
-  suspensionReason    String?
-  parentId            String?   @unique
-
-  // Profile Enhancement Fields
-  profilePictureUrl   String?
-  profilePictureKey   String? // R2 object key for deletion
-  coverPhotoUrl       String?
-  coverPhotoKey       String?
-  bio                 String?           @db.Text
-  headline            String? // Short tagline (e.g., "Grade 10 Student | Math Enthusiast")
-  interests           String[] // Learning interests
-  skills              String[] // Academic skills
-  socialLinks         Json? // { facebook?, linkedin?, github?, portfolio? }
-  profileCompleteness Int               @default(0) // Percentage 0-100
-  profileUpdatedAt    DateTime?
-  profileVisibility   ProfileVisibility @default(SCHOOL)
-
-  // Career Profile Fields
-  careerGoals           String?   @db.Text // Career objectives
-  location              String? // City/Country
-  languages             String[] // Languages spoken
-  professionalTitle     String? // Current professional title
-  isVerified            Boolean   @default(false) // Verified account
+  id                    String              @id @default(cuid())
+  schoolId              String?
+  email                 String?             @unique
+  password              String
+  firstName             String
+  lastName              String
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  failedAttempts        Int                 @default(0)
+  isActive              Boolean             @default(true)
+  lastLogin             DateTime?
+  lockedUntil           DateTime?
+  loginCount            Int                 @default(0)
+  permissions           Json?               @default("{\"canEnterGrades\": true, \"canViewReports\": true, \"canMarkAttendance\": true}")
+  phone                 String?             @unique
+  studentId             String?             @unique
+  teacherId             String?             @unique
+  role                  UserRole            @default(TEACHER)
+  accountSuspendedAt    DateTime?
+  isDefaultPassword     Boolean             @default(true)
+  isSuperAdmin          Boolean             @default(false)
+  lastPasswordHashes    String[]
+  passwordChangedAt     DateTime?
+  passwordExpiresAt     DateTime?
+  passwordResetExpiry   DateTime?
+  passwordResetToken    String?             @unique
+  suspensionReason      String?
+  parentId              String?             @unique
+  profilePictureUrl     String?
+  profilePictureKey     String?
+  coverPhotoUrl         String?
+  coverPhotoKey         String?
+  bio                   String?
+  headline              String?
+  interests             String[]
+  skills                String[]
+  socialLinks           Json?
+  profileCompleteness   Int                 @default(0)
+  profileUpdatedAt      DateTime?
+  profileVisibility     ProfileVisibility   @default(SCHOOL)
+  careerGoals           String?
+  location              String?
+  languages             String[]
+  professionalTitle     String?
+  isVerified            Boolean             @default(false)
   verifiedAt            DateTime?
-  totalLearningHours    Int       @default(0) // Tracked learning time
-  currentStreak         Int       @default(0) // Days of consecutive activity
-  longestStreak         Int       @default(0)
-  totalPoints           Int       @default(0) // Gamification points
-  level                 Int       @default(1) // User level
-  isOpenToOpportunities Boolean   @default(false) // Open to jobs/internships
-  resumeUrl             String? // Generated resume URL
+  totalLearningHours    Int                 @default(0)
+  currentStreak         Int                 @default(0)
+  longestStreak         Int                 @default(0)
+  totalPoints           Int                 @default(0)
+  level                 Int                 @default(1)
+  isOpenToOpportunities Boolean             @default(false)
+  resumeUrl             String?
   resumeKey             String?
-
-  // Relations - Existing
-  adminAuditLogs     AuditLog[]          @relation("AuditLogAdmin")
-  teacherAuditLogs   AuditLog[]          @relation("AuditLogTeacher")
-  gradeConfirmations GradeConfirmation[]
-  parent             Parent?             @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  student            Student?            @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  teacher            Teacher?            @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-
-  // Relations - Social Features
-  posts             Post[]
-  comments          Comment[]
-  likes             Like[]
-  pollVotes         PollVote[]     @relation("PollVotes")
-  followers         Follow[]       @relation("Followers")
-  following         Follow[]       @relation("Following")
-  notifications     Notification[] @relation("NotificationRecipient")
-  sentNotifications Notification[] @relation("NotificationActor")
-
-  // Relations - Career Profile Features
-  userSkills           UserSkill[]
-  experiences          Experience[]
-  certifications       Certification[]
-  projects             Project[]
-  achievements         Achievement[]
-  recommendations      Recommendation[]   @relation("RecommendationRecipient")
-  givenRecommendations Recommendation[]   @relation("RecommendationAuthor")
-  endorsementsReceived SkillEndorsement[] @relation("EndorsementRecipient")
-  endorsementsGiven    SkillEndorsement[] @relation("EndorsementGiver")
-
-  // Relations - New Features
-  commentReactions CommentReaction[]
-  reportedPosts    PostReport[]      @relation("PostReporter")
-  reviewedReports  PostReport[]      @relation("ReportReviewer")
-  blocking         UserBlock[]       @relation("Blocker")
-  blockedBy        UserBlock[]       @relation("Blocked")
-  postViews        PostView[]
-  school           School?           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  achievements          Achievement[]
+  adminAuditLogs        AuditLog[]          @relation("AuditLogAdmin")
+  teacherAuditLogs      AuditLog[]          @relation("AuditLogTeacher")
+  certifications        Certification[]
+  commentReactions      CommentReaction[]
+  comments              Comment[]
+  experiences           Experience[]
+  following             Follow[]            @relation("Following")
+  followers             Follow[]            @relation("Followers")
+  gradeConfirmations    GradeConfirmation[]
+  likes                 Like[]
+  sentNotifications     Notification[]      @relation("NotificationActor")
+  notifications         Notification[]      @relation("NotificationRecipient")
+  pollVotes             PollVote[]          @relation("PollVotes")
+  reportedPosts         PostReport[]        @relation("PostReporter")
+  reviewedReports       PostReport[]        @relation("ReportReviewer")
+  postViews             PostView[]
+  posts                 Post[]
+  projects              Project[]
+  givenRecommendations  Recommendation[]    @relation("RecommendationAuthor")
+  recommendations       Recommendation[]    @relation("RecommendationRecipient")
+  endorsementsGiven     SkillEndorsement[]  @relation("EndorsementGiver")
+  endorsementsReceived  SkillEndorsement[]  @relation("EndorsementRecipient")
+  blockedBy             UserBlock[]         @relation("Blocked")
+  blocking              UserBlock[]         @relation("Blocker")
+  userSkills            UserSkill[]
+  parent                Parent?             @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  school                School?             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student               Student?            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher               Teacher?            @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@index([email, isActive])
   @@index([phone, isActive])
@@ -641,6 +574,733 @@ model AuditLog {
   @@index([teacherId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+model Post {
+  id                       String         @id @default(cuid())
+  authorId                 String
+  content                  String
+  mediaUrls                String[]
+  mediaKeys                String[]
+  postType                 PostType       @default(ARTICLE)
+  visibility               PostVisibility @default(SCHOOL)
+  likesCount               Int            @default(0)
+  commentsCount            Int            @default(0)
+  sharesCount              Int            @default(0)
+  isEdited                 Boolean        @default(false)
+  isPinned                 Boolean        @default(false)
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+  pollExpiresAt            DateTime?
+  pollAllowMultiple        Boolean        @default(false)
+  pollMaxChoices           Int?
+  pollIsAnonymous          Boolean        @default(false)
+  assignmentDueDate        DateTime?
+  assignmentPoints         Int?
+  assignmentSubmissionType String?
+  courseCode               String?
+  courseLevel              String?
+  courseDuration           String?
+  announcementUrgency      String?
+  announcementExpiryDate   DateTime?
+  tutorialDifficulty       String?
+  tutorialEstimatedTime    String?
+  tutorialPrerequisites    String?
+  examDate                 DateTime?
+  examDuration             Int?
+  examTotalPoints          Int?
+  examPassingScore         Int?
+  resourceType             String?
+  resourceUrl              String?
+  researchField            String?
+  researchCollaborators    String?
+  projectStatus            String?
+  projectDeadline          DateTime?
+  projectTeamSize          Int?
+  comments                 Comment[]
+  likes                    Like[]
+  pollOptions              PollOption[]
+  views                    PostView[]
+  author                   User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  quizQuestions            QuizQuestion[]
+
+  @@index([authorId, createdAt(sort: Desc)])
+  @@index([postType, createdAt(sort: Desc)])
+  @@index([visibility, createdAt(sort: Desc)])
+  @@index([pollExpiresAt])
+  @@map("posts")
+}
+
+model Comment {
+  id        String            @id @default(cuid())
+  postId    String
+  authorId  String
+  content   String
+  parentId  String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  reactions CommentReaction[]
+  author    User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent    Comment?          @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[]         @relation("CommentReplies")
+  post      Post              @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt(sort: Desc)])
+  @@index([authorId])
+  @@index([parentId])
+  @@map("comments")
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([userId])
+  @@map("likes")
+}
+
+model PollOption {
+  id         String     @id @default(cuid())
+  postId     String
+  text       String
+  position   Int        @default(0)
+  votesCount Int        @default(0)
+  createdAt  DateTime   @default(now())
+  post       Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  votes      PollVote[]
+
+  @@index([postId])
+  @@map("poll_options")
+}
+
+model QuizQuestion {
+  id            String   @id @default(cuid())
+  postId        String
+  question      String
+  options       String[]
+  correctAnswer Int
+  points        Int      @default(10)
+  position      Int      @default(0)
+  explanation   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  post          Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@map("quiz_questions")
+}
+
+model PollVote {
+  id        String     @id @default(cuid())
+  postId    String
+  optionId  String
+  userId    String
+  createdAt DateTime   @default(now())
+  option    PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  user      User       @relation("PollVotes", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, optionId, userId])
+  @@index([userId])
+  @@index([postId, userId])
+  @@map("poll_votes")
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+  follower    User     @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+  @@index([followerId])
+  @@map("follows")
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  recipientId String
+  actorId     String?
+  type        NotificationType
+  title       String
+  message     String
+  link        String?
+  postId      String?
+  commentId   String?
+  isRead      Boolean          @default(false)
+  readAt      DateTime?
+  createdAt   DateTime         @default(now())
+  actor       User?            @relation("NotificationActor", fields: [actorId], references: [id])
+  recipient   User             @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, isRead, createdAt(sort: Desc)])
+  @@index([actorId])
+  @@map("notifications")
+}
+
+model UserSkill {
+  id           String             @id @default(cuid())
+  userId       String
+  skillName    String
+  category     SkillCategory
+  level        SkillLevel         @default(BEGINNER)
+  yearsOfExp   Float?
+  isVerified   Boolean            @default(false)
+  verifiedBy   String?
+  verifiedAt   DateTime?
+  description  String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  endorsements SkillEndorsement[]
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillName])
+  @@index([userId, category])
+  @@index([skillName])
+  @@map("user_skills")
+}
+
+model SkillEndorsement {
+  id          String    @id @default(cuid())
+  skillId     String
+  endorserId  String
+  recipientId String
+  comment     String?
+  createdAt   DateTime  @default(now())
+  endorser    User      @relation("EndorsementGiver", fields: [endorserId], references: [id], onDelete: Cascade)
+  recipient   User      @relation("EndorsementRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  skill       UserSkill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([skillId, endorserId])
+  @@index([recipientId])
+  @@index([endorserId])
+  @@map("skill_endorsements")
+}
+
+model Experience {
+  id           String         @id @default(cuid())
+  userId       String
+  type         ExperienceType
+  title        String
+  organization String
+  location     String?
+  startDate    DateTime
+  endDate      DateTime?
+  isCurrent    Boolean        @default(false)
+  description  String?
+  achievements String[]
+  skills       String[]
+  mediaUrls    String[]
+  mediaKeys    String[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startDate(sort: Desc)])
+  @@index([type])
+  @@map("experiences")
+}
+
+model Certification {
+  id             String    @id @default(cuid())
+  userId         String
+  name           String
+  issuingOrg     String
+  issueDate      DateTime
+  expiryDate     DateTime?
+  credentialId   String?
+  credentialUrl  String?
+  certificateUrl String?
+  certificateKey String?
+  description    String?
+  skills         String[]
+  isVerified     Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, issueDate(sort: Desc)])
+  @@map("certifications")
+}
+
+model Project {
+  id            String            @id @default(cuid())
+  userId        String
+  title         String
+  description   String
+  category      ProjectCategory
+  status        ProjectStatus     @default(COMPLETED)
+  startDate     DateTime?
+  endDate       DateTime?
+  role          String?
+  teamSize      Int?
+  technologies  String[]
+  skills        String[]
+  mediaUrls     String[]
+  mediaKeys     String[]
+  projectUrl    String?
+  githubUrl     String?
+  demoUrl       String?
+  achievements  String[]
+  collaborators String[]
+  visibility    ProfileVisibility @default(PUBLIC)
+  viewsCount    Int               @default(0)
+  likesCount    Int               @default(0)
+  isFeatured    Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([category, visibility])
+  @@index([isFeatured])
+  @@map("projects")
+}
+
+model Achievement {
+  id             String            @id @default(cuid())
+  userId         String
+  type           AchievementType
+  title          String
+  description    String
+  issuedBy       String?
+  issuedDate     DateTime          @default(now())
+  badgeUrl       String?
+  badgeKey       String?
+  certificateUrl String?
+  certificateKey String?
+  points         Int               @default(0)
+  rarity         AchievementRarity @default(COMMON)
+  isPublic       Boolean           @default(true)
+  metadata       Json?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, issuedDate(sort: Desc)])
+  @@index([type, rarity])
+  @@map("achievements")
+}
+
+model Recommendation {
+  id           String                 @id @default(cuid())
+  recipientId  String
+  authorId     String
+  relationship RecommendationRelation
+  content      String
+  skills       String[]
+  rating       Int?
+  isPublic     Boolean                @default(true)
+  isAccepted   Boolean                @default(false)
+  acceptedAt   DateTime?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  author       User                   @relation("RecommendationAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  recipient    User                   @relation("RecommendationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@unique([recipientId, authorId])
+  @@index([recipientId, isAccepted])
+  @@index([authorId])
+  @@map("recommendations")
+}
+
+model CommentReaction {
+  id        String       @id @default(cuid())
+  commentId String
+  userId    String
+  type      ReactionType
+  createdAt DateTime     @default(now())
+  comment   Comment      @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId, type])
+  @@index([commentId])
+  @@index([userId])
+  @@map("comment_reactions")
+}
+
+model PostReport {
+  id         String       @id @default(cuid())
+  postId     String
+  reporterId String
+  reason     ReportReason
+  details    String?
+  status     ReportStatus @default(PENDING)
+  reviewedBy String?
+  reviewedAt DateTime?
+  createdAt  DateTime     @default(now())
+  reporter   User         @relation("PostReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reviewer   User?        @relation("ReportReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([postId, status])
+  @@index([reporterId])
+  @@index([status, createdAt])
+  @@map("post_reports")
+}
+
+model UserBlock {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+  @@map("user_blocks")
+}
+
+model PostView {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String?
+  viewedAt  DateTime @default(now())
+  duration  Int?
+  source    String?  @default("feed")
+  ipAddress String?
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([postId])
+  @@index([userId])
+  @@index([viewedAt])
+  @@map("post_views")
+}
+
+model OnboardingChecklist {
+  id                String    @id @default(cuid())
+  schoolId          String    @unique
+  registrationDone  Boolean   @default(false)
+  schoolInfoDone    Boolean   @default(false)
+  calendarDone      Boolean   @default(false)
+  subjectsDone      Boolean   @default(false)
+  teachersAdded     Boolean   @default(false)
+  classesCreated    Boolean   @default(false)
+  studentsAdded     Boolean   @default(false)
+  currentStep       Int       @default(1)
+  totalSteps        Int       @default(7)
+  completionPercent Float     @default(0)
+  completedAt       DateTime?
+  skippedSteps      String[]  @default([])
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  school            School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_checklists")
+}
+
+model SchoolSettings {
+  id                       String   @id @default(cuid())
+  schoolId                 String   @unique
+  defaultAcademicYearStart String   @default("09-01")
+  defaultAcademicYearEnd   String   @default("08-31")
+  defaultTermCount         Int      @default(2)
+  defaultClassCapacity     Int      @default(40)
+  defaultSections          String[] @default(["A", "B", "C"])
+  passingGrade             Float    @default(50)
+  usesGPA                  Boolean  @default(true)
+  emailNotifications       Boolean  @default(true)
+  smsNotifications         Boolean  @default(false)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  school                   School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@map("school_settings")
+}
+
+model AcademicTerm {
+  id             String       @id @default(cuid())
+  academicYearId String
+  name           String
+  termNumber     Int
+  startDate      DateTime
+  endDate        DateTime
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  examTypes      ExamType[]
+
+  @@unique([academicYearId, termNumber])
+  @@index([academicYearId])
+  @@map("academic_terms")
+}
+
+model ExamType {
+  id             String        @id @default(cuid())
+  academicYearId String
+  termId         String?
+  name           String
+  weight         Float
+  maxScore       Int           @default(100)
+  order          Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  academicYear   AcademicYear  @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  term           AcademicTerm? @relation(fields: [termId], references: [id])
+
+  @@index([academicYearId])
+  @@index([termId])
+  @@map("exam_types")
+}
+
+model GradingScale {
+  id             String       @id @default(cuid())
+  academicYearId String
+  name           String
+  isDefault      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  ranges         GradeRange[]
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+
+  @@index([academicYearId])
+  @@map("grading_scales")
+}
+
+model GradeRange {
+  id             String       @id @default(cuid())
+  gradingScaleId String
+  grade          String
+  minScore       Float
+  maxScore       Float
+  gpa            Float?
+  description    String
+  color          String       @default("#10B981")
+  order          Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  gradingScale   GradingScale @relation(fields: [gradingScaleId], references: [id], onDelete: Cascade)
+
+  @@index([gradingScaleId])
+  @@map("grade_ranges")
+}
+
+model AcademicCalendar {
+  id             String          @id @default(cuid())
+  academicYearId String
+  name           String          @default("School Calendar")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  academicYear   AcademicYear    @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  events         CalendarEvent[]
+
+  @@index([academicYearId])
+  @@map("academic_calendars")
+}
+
+model CalendarEvent {
+  id          String           @id @default(cuid())
+  calendarId  String
+  type        EventType
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  isSchoolDay Boolean          @default(true)
+  isPublic    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  calendar    AcademicCalendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+
+  @@index([calendarId])
+  @@index([startDate])
+  @@index([type])
+  @@map("calendar_events")
+}
+
+model Period {
+  id               String           @id @default(cuid())
+  schoolId         String
+  name             String
+  startTime        String
+  endTime          String
+  order            Int
+  isBreak          Boolean          @default(false)
+  duration         Int              @default(45)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  school           School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  timetableEntries TimetableEntry[]
+
+  @@unique([schoolId, order])
+  @@index([schoolId])
+  @@map("periods")
+}
+
+model TimetableEntry {
+  id             String       @id @default(cuid())
+  schoolId       String
+  classId        String
+  subjectId      String?
+  teacherId      String?
+  periodId       String
+  dayOfWeek      DayOfWeek
+  room           String?
+  academicYearId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  class          Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  period         Period       @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  school         School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  subject        Subject?     @relation(fields: [subjectId], references: [id])
+  teacher        Teacher?     @relation(fields: [teacherId], references: [id])
+
+  @@unique([classId, periodId, dayOfWeek, academicYearId])
+  @@index([schoolId])
+  @@index([classId])
+  @@index([teacherId])
+  @@index([periodId])
+  @@index([academicYearId])
+  @@map("timetable_entries")
+}
+
+model SchoolShift {
+  id             String               @id @default(cuid())
+  schoolId       String
+  name           String
+  nameKh         String?
+  startTime      String
+  endTime        String
+  isDefault      Boolean              @default(false)
+  gradeLevel     GradeLevel?
+  color          String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  shiftOverrides ClassShiftOverride[]
+  classShifts    ClassShift[]
+  school         School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, name])
+  @@index([schoolId])
+  @@index([gradeLevel])
+  @@map("school_shifts")
+}
+
+model ClassShift {
+  id        String      @id @default(cuid())
+  classId   String      @unique
+  shiftId   String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  class     Class       @relation(fields: [classId], references: [id], onDelete: Cascade)
+  shift     SchoolShift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  @@index([shiftId])
+  @@map("class_shifts")
+}
+
+model ClassShiftOverride {
+  id        String      @id @default(cuid())
+  classId   String
+  dayOfWeek DayOfWeek
+  shiftId   String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  class     Class       @relation(fields: [classId], references: [id], onDelete: Cascade)
+  shift     SchoolShift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, dayOfWeek])
+  @@index([shiftId])
+  @@map("class_shift_overrides")
+}
+
+model TeacherSubjectAssignment {
+  id                String   @id @default(cuid())
+  teacherId         String
+  subjectId         String
+  isPrimary         Boolean  @default(false)
+  maxPeriodsPerWeek Int      @default(25)
+  preferredGrades   String[]
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  subject           Subject  @relation("TeacherSubjectAssignments", fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher           Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, subjectId])
+  @@index([teacherId])
+  @@index([subjectId])
+  @@index([isPrimary])
+  @@map("teacher_subject_assignments")
+}
+
+model TimetableTemplate {
+  id             String      @id @default(cuid())
+  schoolId       String
+  name           String
+  description    String?
+  gradeLevel     GradeLevel?
+  periodsPerWeek Json
+  isDefault      Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@unique([schoolId, name])
+  @@index([schoolId])
+  @@index([gradeLevel])
+  @@map("timetable_templates")
+}
+
+model TimetablePublish {
+  id             String                 @id @default(cuid())
+  schoolId       String
+  academicYearId String
+  publishedAt    DateTime               @default(now())
+  publishedBy    String
+  status         TimetablePublishStatus @default(DRAFT)
+  notifyTeachers Boolean                @default(false)
+  notifyClasses  Boolean                @default(false)
+  notes          String?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@index([schoolId])
+  @@index([academicYearId])
+  @@index([status])
+  @@map("timetable_publishes")
+}
+
+enum SchoolType {
+  PRIMARY_SCHOOL
+  MIDDLE_SCHOOL
+  HIGH_SCHOOL
+  COMPLETE_SCHOOL
+  INTERNATIONAL
+}
+
+enum AcademicYearStatus {
+  PLANNING
+  ACTIVE
+  ENDED
+  ARCHIVED
+}
+
+enum PromotionType {
+  AUTOMATIC
+  MANUAL
+  REPEAT
+  NEW_ADMISSION
+  TRANSFER_IN
+  TRANSFER_OUT
+}
+
+enum SubscriptionTier {
+  FREE_TRIAL_1M
+  FREE_TRIAL_3M
+  BASIC
+  STANDARD
+  PREMIUM
+  ENTERPRISE
 }
 
 enum AttendanceSession {
@@ -708,42 +1368,38 @@ enum ParentRelationship {
   OTHER
 }
 
-// Profile visibility settings
 enum ProfileVisibility {
-  PUBLIC // Everyone can see
-  SCHOOL // Only school members
-  CLASS // Only classmates
-  PRIVATE // Only self
+  PUBLIC
+  SCHOOL
+  CLASS
+  PRIVATE
 }
 
-// Post type for activity feed
 enum PostType {
-  ARTICLE // Educational articles
-  COURSE // Course materials
-  QUIZ // Quizzes and tests
-  QUESTION // Student questions
-  EXAM // Exam announcements
-  ANNOUNCEMENT // Official announcements
-  ASSIGNMENT // Homework assignments
-  POLL // Surveys and polls
-  RESOURCE // Learning resources
-  PROJECT // Project showcase (Portfolio)
-  TUTORIAL // How-to guides and tutorials
-  RESEARCH // Research papers and findings
-  ACHIEVEMENT // Milestones and accomplishments
-  REFLECTION // Learning journey reflections
-  COLLABORATION // Team-up calls
+  ARTICLE
+  COURSE
+  QUIZ
+  QUESTION
+  EXAM
+  ANNOUNCEMENT
+  ASSIGNMENT
+  POLL
+  RESOURCE
+  PROJECT
+  TUTORIAL
+  RESEARCH
+  ACHIEVEMENT
+  REFLECTION
+  COLLABORATION
 }
 
-// Post visibility
 enum PostVisibility {
-  PUBLIC // Everyone can see
-  SCHOOL // Only school members
-  CLASS // Only classmates
-  PRIVATE // Only author
+  PUBLIC
+  SCHOOL
+  CLASS
+  PRIVATE
 }
 
-// Notification type
 enum NotificationType {
   LIKE
   COMMENT
@@ -784,10 +1440,6 @@ enum ReportStatus {
   APPROVED
   REMOVED
 }
-
-// ==========================================
-// CAREER PROFILE ENUMS
-// ==========================================
 
 enum SkillCategory {
   PROGRAMMING
@@ -876,612 +1528,6 @@ enum RecommendationRelation {
   OTHER
 }
 
-// ==========================================
-// SOCIAL MEDIA MODELS FOR E-LEARNING
-// ==========================================
-
-model Post {
-  id            String         @id @default(cuid())
-  authorId      String
-  author        User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  content       String         @db.Text
-  mediaUrls     String[] // Array of R2 URLs
-  mediaKeys     String[] // R2 keys for cleanup
-  postType      PostType       @default(ARTICLE)
-  visibility    PostVisibility @default(SCHOOL)
-  likesCount    Int            @default(0)
-  commentsCount Int            @default(0)
-  sharesCount   Int            @default(0)
-  isEdited      Boolean        @default(false)
-  isPinned      Boolean        @default(false)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-
-  // Poll-specific fields
-  pollExpiresAt     DateTime? // When poll closes
-  pollAllowMultiple Boolean   @default(false) // Allow selecting multiple options
-  pollMaxChoices    Int? // Max number of choices (for multiple choice)
-  pollIsAnonymous   Boolean   @default(false) // Hide who voted
-
-  // Assignment-specific fields
-  assignmentDueDate        DateTime? // When assignment is due
-  assignmentPoints         Int? // Points for the assignment
-  assignmentSubmissionType String? // "file", "text", "link"
-
-  // Course-specific fields
-  courseCode     String? // e.g., "CS101"
-  courseLevel    String? // "beginner", "intermediate", "advanced"
-  courseDuration String? // e.g., "8 weeks", "3 months"
-
-  // Announcement-specific fields
-  announcementUrgency    String? // "low", "medium", "high", "urgent"
-  announcementExpiryDate DateTime? // When announcement expires
-
-  // Tutorial-specific fields
-  tutorialDifficulty    String? // "easy", "medium", "hard"
-  tutorialEstimatedTime String? // e.g., "30 min", "2 hours"
-  tutorialPrerequisites String? @db.Text // What learners should know
-
-  // Exam-specific fields
-  examDate         DateTime? // When exam is scheduled
-  examDuration     Int? // Duration in minutes
-  examTotalPoints  Int? // Total points for exam
-  examPassingScore Int? // Minimum score to pass
-
-  // Resource-specific fields
-  resourceType String? // "document", "video", "link", "tool"
-  resourceUrl  String? // External URL if applicable
-
-  // Research-specific fields
-  researchField         String? // Field of research
-  researchCollaborators String? // Comma-separated collaborators
-
-  // Project-specific fields
-  projectStatus   String? // "planning", "in_progress", "completed"
-  projectDeadline DateTime? // Project deadline
-  projectTeamSize Int? // Number of team members
-
-  comments      Comment[]
-  likes         Like[]
-  pollOptions   PollOption[]
-  quizQuestions QuizQuestion[]
-  views         PostView[] // Analytics: post views
-
-  @@index([authorId, createdAt(sort: Desc)])
-  @@index([postType, createdAt(sort: Desc)])
-  @@index([visibility, createdAt(sort: Desc)])
-  @@index([pollExpiresAt])
-  @@map("posts")
-}
-
-model Comment {
-  id        String            @id @default(cuid())
-  postId    String
-  post      Post              @relation(fields: [postId], references: [id], onDelete: Cascade)
-  authorId  String
-  author    User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  content   String            @db.Text
-  parentId  String? // For nested/threaded replies
-  parent    Comment?          @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   Comment[]         @relation("CommentReplies")
-  reactions CommentReaction[]
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-
-  @@index([postId, createdAt(sort: Desc)])
-  @@index([authorId])
-  @@index([parentId])
-  @@map("comments")
-}
-
-model Like {
-  id        String   @id @default(cuid())
-  postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-
-  @@unique([postId, userId])
-  @@index([userId])
-  @@map("likes")
-}
-
-// ✅ Poll system for interactive surveys
-model PollOption {
-  id         String   @id @default(cuid())
-  postId     String
-  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  text       String   @db.Text
-  position   Int      @default(0) // Order of options
-  votesCount Int      @default(0)
-  createdAt  DateTime @default(now())
-
-  votes PollVote[]
-
-  @@index([postId])
-  @@map("poll_options")
-}
-
-// ✅ Quiz system for educational quizzes
-model QuizQuestion {
-  id            String   @id @default(cuid())
-  postId        String
-  post          Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  question      String   @db.Text
-  options       String[] // Array of option texts
-  correctAnswer Int // Index of correct answer (0-based)
-  points        Int      @default(10)
-  position      Int      @default(0) // Order of questions
-  explanation   String?  @db.Text // Optional explanation for the answer
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@index([postId])
-  @@map("quiz_questions")
-}
-
-model PollVote {
-  id        String     @id @default(cuid())
-  postId    String // Added for easier querying
-  optionId  String
-  option    PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User       @relation("PollVotes", fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime   @default(now())
-
-  @@unique([postId, optionId, userId]) // Prevent duplicate votes on same option
-  @@index([userId])
-  @@index([postId, userId]) // For finding user's votes in a poll
-  @@map("poll_votes")
-}
-
-model Follow {
-  id          String   @id @default(cuid())
-  followerId  String
-  follower    User     @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
-  followingId String
-  following   User     @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-
-  @@unique([followerId, followingId])
-  @@index([followingId])
-  @@index([followerId])
-  @@map("follows")
-}
-
-model Notification {
-  id          String           @id @default(cuid())
-  recipientId String
-  recipient   User             @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
-  actorId     String?
-  actor       User?            @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
-  type        NotificationType
-  title       String
-  message     String           @db.Text
-  link        String? // Link to related content
-  postId      String? // Related post ID
-  commentId   String? // Related comment ID
-  isRead      Boolean          @default(false)
-  readAt      DateTime?
-  createdAt   DateTime         @default(now())
-
-  @@index([recipientId, isRead, createdAt(sort: Desc)])
-  @@index([actorId])
-  @@map("notifications")
-}
-
-// ============================================
-// CAREER PROFILE SYSTEM MODELS
-// ============================================
-
-model UserSkill {
-  id          String        @id @default(cuid())
-  userId      String
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  skillName   String // e.g., "JavaScript", "Mathematics", "Teaching"
-  category    SkillCategory // Programming, Languages, Teaching, etc.
-  level       SkillLevel    @default(BEGINNER)
-  yearsOfExp  Float? // Years of experience with this skill
-  isVerified  Boolean       @default(false) // Verified by teacher/platform
-  verifiedBy  String? // Who verified it
-  verifiedAt  DateTime?
-  description String?       @db.Text // How you use this skill
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  endorsements SkillEndorsement[]
-
-  @@unique([userId, skillName])
-  @@index([userId, category])
-  @@index([skillName])
-  @@map("user_skills")
-}
-
-model SkillEndorsement {
-  id          String    @id @default(cuid())
-  skillId     String
-  skill       UserSkill @relation(fields: [skillId], references: [id], onDelete: Cascade)
-  endorserId  String
-  endorser    User      @relation("EndorsementGiver", fields: [endorserId], references: [id], onDelete: Cascade)
-  recipientId String
-  recipient   User      @relation("EndorsementRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
-  comment     String?   @db.Text
-  createdAt   DateTime  @default(now())
-
-  @@unique([skillId, endorserId])
-  @@index([recipientId])
-  @@index([endorserId])
-  @@map("skill_endorsements")
-}
-
-model Experience {
-  id           String         @id @default(cuid())
-  userId       String
-  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type         ExperienceType
-  title        String // Job title or position
-  organization String // School/Company name
-  location     String?
-  startDate    DateTime
-  endDate      DateTime?
-  isCurrent    Boolean        @default(false)
-  description  String?        @db.Text
-  achievements String[] // Key achievements
-  skills       String[] // Skills used
-  mediaUrls    String[] // Images/documents
-  mediaKeys    String[] // R2 keys for cleanup
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-
-  @@index([userId, startDate(sort: Desc)])
-  @@index([type])
-  @@map("experiences")
-}
-
-model Certification {
-  id             String    @id @default(cuid())
-  userId         String
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name           String
-  issuingOrg     String // Organization that issued
-  issueDate      DateTime
-  expiryDate     DateTime?
-  credentialId   String? // Certificate ID/number
-  credentialUrl  String? // Verification URL
-  certificateUrl String? // R2 URL for certificate image/PDF
-  certificateKey String? // R2 key for cleanup
-  description    String?   @db.Text
-  skills         String[] // Skills this certification validates
-  isVerified     Boolean   @default(false)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  @@index([userId, issueDate(sort: Desc)])
-  @@map("certifications")
-}
-
-model Project {
-  id            String            @id @default(cuid())
-  userId        String
-  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title         String
-  description   String            @db.Text
-  category      ProjectCategory
-  status        ProjectStatus     @default(COMPLETED)
-  startDate     DateTime?
-  endDate       DateTime?
-  role          String? // Your role in the project
-  teamSize      Int? // Number of people involved
-  technologies  String[] // Technologies/tools used
-  skills        String[] // Skills demonstrated
-  mediaUrls     String[] // Images, videos, documents
-  mediaKeys     String[] // R2 keys
-  projectUrl    String? // Live project URL
-  githubUrl     String? // GitHub repository
-  demoUrl       String? // Demo video/site
-  achievements  String[] // Key achievements/metrics
-  collaborators String[] // User IDs of team members
-  visibility    ProfileVisibility @default(PUBLIC)
-  viewsCount    Int               @default(0)
-  likesCount    Int               @default(0)
-  isFeatured    Boolean           @default(false) // Featured on profile
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([category, visibility])
-  @@index([isFeatured])
-  @@map("projects")
-}
-
-model Achievement {
-  id             String            @id @default(cuid())
-  userId         String
-  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type           AchievementType
-  title          String
-  description    String            @db.Text
-  issuedBy       String? // Organization/person who awarded
-  issuedDate     DateTime          @default(now())
-  badgeUrl       String? // Badge/icon URL
-  badgeKey       String? // R2 key
-  certificateUrl String? // Certificate URL
-  certificateKey String? // R2 key
-  points         Int               @default(0) // Gamification points
-  rarity         AchievementRarity @default(COMMON)
-  isPublic       Boolean           @default(true)
-  metadata       Json? // Additional data (stats, metrics, etc.)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-
-  @@index([userId, issuedDate(sort: Desc)])
-  @@index([type, rarity])
-  @@map("achievements")
-}
-
-model Recommendation {
-  id           String                 @id @default(cuid())
-  recipientId  String
-  recipient    User                   @relation("RecommendationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
-  authorId     String
-  author       User                   @relation("RecommendationAuthor", fields: [authorId], references: [id], onDelete: Cascade)
-  relationship RecommendationRelation
-  content      String                 @db.Text
-  skills       String[] // Skills being endorsed
-  rating       Int? // Optional 1-5 rating
-  isPublic     Boolean                @default(true)
-  isAccepted   Boolean                @default(false) // Recipient must accept
-  acceptedAt   DateTime?
-  createdAt    DateTime               @default(now())
-  updatedAt    DateTime               @updatedAt
-
-  @@unique([recipientId, authorId])
-  @@index([recipientId, isAccepted])
-  @@index([authorId])
-  @@map("recommendations")
-}
-
-// ==================== ADDITIONAL MODELS ====================
-
-model CommentReaction {
-  id        String       @id @default(cuid())
-  commentId String
-  comment   Comment      @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      ReactionType
-  createdAt DateTime     @default(now())
-
-  @@unique([commentId, userId, type])
-  @@index([commentId])
-  @@index([userId])
-  @@map("comment_reactions")
-}
-
-model PostReport {
-  id         String       @id @default(cuid())
-  postId     String
-  reporterId String
-  reporter   User         @relation("PostReporter", fields: [reporterId], references: [id], onDelete: Cascade)
-  reason     ReportReason
-  details    String?      @db.Text
-  status     ReportStatus @default(PENDING)
-  reviewedBy String?
-  reviewer   User?        @relation("ReportReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
-  reviewedAt DateTime?
-  createdAt  DateTime     @default(now())
-
-  @@index([postId, status])
-  @@index([reporterId])
-  @@index([status, createdAt])
-  @@map("post_reports")
-}
-
-model UserBlock {
-  id        String   @id @default(cuid())
-  blockerId String
-  blocker   User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
-  blockedId String
-  blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-
-  @@unique([blockerId, blockedId])
-  @@index([blockerId])
-  @@index([blockedId])
-  @@map("user_blocks")
-}
-
-model PostView {
-  id        String   @id @default(cuid())
-  postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  viewedAt  DateTime @default(now())
-  duration  Int? // Time spent in seconds
-  source    String?  @default("feed") // feed, profile, search, notification
-  ipAddress String? // For anonymous tracking
-
-  @@index([postId])
-  @@index([userId])
-  @@index([viewedAt])
-  @@map("post_views")
-}
-
-// ========================================
-// Multi-Tenant Onboarding Models
-// ========================================
-
-model OnboardingChecklist {
-  id       String @id @default(cuid())
-  schoolId String @unique
-
-  // Steps completed
-  registrationDone Boolean @default(false)
-  schoolInfoDone   Boolean @default(false)
-  calendarDone     Boolean @default(false)
-  subjectsDone     Boolean @default(false)
-  teachersAdded    Boolean @default(false)
-  classesCreated   Boolean @default(false)
-  studentsAdded    Boolean @default(false)
-
-  // Progress tracking
-  currentStep       Int       @default(1)
-  totalSteps        Int       @default(7)
-  completionPercent Float     @default(0)
-  completedAt       DateTime?
-  skippedSteps      String[]  @default([])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-
-  @@map("onboarding_checklists")
-}
-
-model SchoolSettings {
-  id       String @id @default(cuid())
-  schoolId String @unique
-
-  // Academic Settings
-  defaultAcademicYearStart String @default("09-01") // MM-DD format
-  defaultAcademicYearEnd   String @default("08-31")
-  defaultTermCount         Int    @default(2)
-
-  // Class Settings
-  defaultClassCapacity Int      @default(40)
-  defaultSections      String[] @default(["A", "B", "C"])
-
-  // Grading Settings
-  passingGrade Float   @default(50)
-  usesGPA      Boolean @default(true)
-
-  // Notification Settings
-  emailNotifications Boolean @default(true)
-  smsNotifications   Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-
-  @@map("school_settings")
-}
-
-model AcademicTerm {
-  id             String   @id @default(cuid())
-  academicYearId String
-  name           String // "Semester 1", "Term 1", "Quarter 1"
-  termNumber     Int // 1, 2, 3, 4
-  startDate      DateTime
-  endDate        DateTime
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
-  examTypes    ExamType[]
-
-  @@unique([academicYearId, termNumber])
-  @@index([academicYearId])
-  @@map("academic_terms")
-}
-
-model ExamType {
-  id             String  @id @default(cuid())
-  academicYearId String
-  termId         String?
-  name           String // "Monthly Test", "Midterm", "Final"
-  weight         Float // 10, 30, 60 (percentage)
-  maxScore       Int     @default(100)
-  order          Int     @default(0)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  academicYear AcademicYear  @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
-  term         AcademicTerm? @relation(fields: [termId], references: [id])
-
-  @@index([academicYearId])
-  @@index([termId])
-  @@map("exam_types")
-}
-
-model GradingScale {
-  id             String  @id @default(cuid())
-  academicYearId String
-  name           String // "Standard", "IB", "A-Level"
-  isDefault      Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  ranges       GradeRange[]
-  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
-
-  @@index([academicYearId])
-  @@map("grading_scales")
-}
-
-model GradeRange {
-  id             String @id @default(cuid())
-  gradingScaleId String
-  grade          String // "A", "B+", "5.0"
-  minScore       Float // 90
-  maxScore       Float // 100
-  gpa            Float? // 4.0
-  description    String // "Excellent"
-  color          String @default("#10B981") // For UI
-  order          Int    @default(0)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  gradingScale GradingScale @relation(fields: [gradingScaleId], references: [id], onDelete: Cascade)
-
-  @@index([gradingScaleId])
-  @@map("grade_ranges")
-}
-
-model AcademicCalendar {
-  id             String @id @default(cuid())
-  academicYearId String
-  name           String @default("School Calendar")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  academicYear AcademicYear    @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
-  events       CalendarEvent[]
-
-  @@index([academicYearId])
-  @@map("academic_calendars")
-}
-
-model CalendarEvent {
-  id          String    @id @default(cuid())
-  calendarId  String
-  type        EventType
-  title       String
-  description String?
-  startDate   DateTime
-  endDate     DateTime
-  isSchoolDay Boolean   @default(true)
-  isPublic    Boolean   @default(true) // Visible to parents
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  calendar AcademicCalendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
-
-  @@index([calendarId])
-  @@index([startDate])
-  @@index([type])
-  @@map("calendar_events")
-}
-
 enum EventType {
   SCHOOL_DAY
   HOLIDAY
@@ -1495,61 +1541,6 @@ enum EventType {
   SPECIAL_EVENT
 }
 
-// ========================================
-// Timetable/Schedule Management
-// ========================================
-
-model Period {
-  id        String  @id @default(cuid())
-  schoolId  String
-  name      String  // "Period 1", "Morning Assembly", "Lunch Break"
-  startTime String  // "08:00"
-  endTime   String  // "08:45"
-  order     Int     // Display order
-  isBreak   Boolean @default(false)
-  duration  Int     @default(45) // Duration in minutes
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  school           School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  timetableEntries TimetableEntry[]
-
-  @@unique([schoolId, order])
-  @@index([schoolId])
-  @@map("periods")
-}
-
-model TimetableEntry {
-  id             String    @id @default(cuid())
-  schoolId       String
-  classId        String
-  subjectId      String?
-  teacherId      String?
-  periodId       String
-  dayOfWeek      DayOfWeek
-  room           String?
-  academicYearId String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  school       School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  class        Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
-  subject      Subject?     @relation(fields: [subjectId], references: [id], onDelete: SetNull)
-  teacher      Teacher?     @relation(fields: [teacherId], references: [id], onDelete: SetNull)
-  period       Period       @relation(fields: [periodId], references: [id], onDelete: Cascade)
-  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
-
-  @@unique([classId, periodId, dayOfWeek, academicYearId])
-  @@index([schoolId])
-  @@index([classId])
-  @@index([teacherId])
-  @@index([periodId])
-  @@index([academicYearId])
-  @@map("timetable_entries")
-}
-
 enum DayOfWeek {
   MONDAY
   TUESDAY
@@ -1560,139 +1551,10 @@ enum DayOfWeek {
   SUNDAY
 }
 
-// ========================================
-// School Shift & Schedule Configuration
-// ========================================
-
-model SchoolShift {
-  id          String     @id @default(cuid())
-  schoolId    String
-  name        String     // "Morning", "Afternoon"
-  nameKh      String?    // Khmer name
-  startTime   String     // "07:00"
-  endTime     String     // "12:00"
-  isDefault   Boolean    @default(false)
-  gradeLevel  GradeLevel? // SECONDARY, HIGH_SCHOOL, or null for all
-  color       String?    // Hex color for UI display
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  school         School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  classShifts    ClassShift[]
-  shiftOverrides ClassShiftOverride[]
-
-  @@unique([schoolId, name])
-  @@index([schoolId])
-  @@index([gradeLevel])
-  @@map("school_shifts")
-}
-
-model ClassShift {
-  id        String @id @default(cuid())
-  classId   String
-  shiftId   String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  class Class       @relation(fields: [classId], references: [id], onDelete: Cascade)
-  shift SchoolShift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-
-  @@unique([classId])
-  @@index([shiftId])
-  @@map("class_shifts")
-}
-
-model ClassShiftOverride {
-  id        String    @id @default(cuid())
-  classId   String
-  dayOfWeek DayOfWeek
-  shiftId   String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  class Class       @relation(fields: [classId], references: [id], onDelete: Cascade)
-  shift SchoolShift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-
-  @@unique([classId, dayOfWeek])
-  @@index([shiftId])
-  @@map("class_shift_overrides")
-}
-
 enum GradeLevel {
-  PRIMARY      // Grades 1-6
-  SECONDARY    // Grades 7-9
-  HIGH_SCHOOL  // Grades 10-12
-}
-
-// ========================================
-// Teacher Subject Assignment Enhancement
-// ========================================
-
-model TeacherSubjectAssignment {
-  id                String  @id @default(cuid())
-  teacherId         String
-  subjectId         String
-  isPrimary         Boolean @default(false)  // Main subject specialty
-  maxPeriodsPerWeek Int     @default(25)
-  preferredGrades   String[] // e.g., ["10", "11", "12"]
-  isActive          Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  subject Subject @relation("TeacherSubjectAssignments", fields: [subjectId], references: [id], onDelete: Cascade)
-
-  @@unique([teacherId, subjectId])
-  @@index([teacherId])
-  @@index([subjectId])
-  @@index([isPrimary])
-  @@map("teacher_subject_assignments")
-}
-
-// ========================================
-// Timetable Generation & Statistics
-// ========================================
-
-model TimetableTemplate {
-  id             String @id @default(cuid())
-  schoolId       String
-  name           String // "Standard Secondary", "Science Track High School"
-  description    String?
-  gradeLevel     GradeLevel?
-  periodsPerWeek Json   // { "MATH": 5, "KHMER": 5, ... }
-  isDefault      Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([schoolId, name])
-  @@index([schoolId])
-  @@index([gradeLevel])
-  @@map("timetable_templates")
-}
-
-model TimetablePublish {
-  id             String   @id @default(cuid())
-  schoolId       String
-  academicYearId String
-  publishedAt    DateTime @default(now())
-  publishedBy    String   // User ID
-  status         TimetablePublishStatus @default(DRAFT)
-  notifyTeachers Boolean  @default(false)
-  notifyClasses  Boolean  @default(false)
-  notes          String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([schoolId])
-  @@index([academicYearId])
-  @@index([status])
-  @@map("timetable_publishes")
+  PRIMARY
+  SECONDARY
+  HIGH_SCHOOL
 }
 
 enum TimetablePublishStatus {

@@ -1987,6 +1987,263 @@ app.post('/students/mark-failed', async (req: any, res: Response) => {
   }
 });
 
+// ========================================
+// Student Academic Transcript
+// ========================================
+
+// GET /students/:id/transcript - Get complete academic transcript
+app.get('/students/:id/transcript', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = req.user?.schoolId;
+
+    if (!schoolId) {
+      return res.status(400).json({ success: false, error: 'School ID required' });
+    }
+
+    // Get student with school validation
+    const student = await prisma.student.findFirst({
+      where: { id, schoolId },
+      include: {
+        studentClasses: {
+          include: {
+            class: {
+              include: {
+                academicYear: true,
+              }
+            }
+          },
+          orderBy: { enrolledAt: 'desc' }
+        },
+        StudentProgression: {
+          include: {
+            fromClass: true,
+            toClass: true,
+            fromAcademicYear: true,
+            toAcademicYear: true,
+          },
+          orderBy: { createdAt: 'desc' }
+        },
+      }
+    });
+
+    if (!student) {
+      return res.status(404).json({ success: false, error: 'Student not found' });
+    }
+
+    // Get all classes student has been enrolled in
+    const classIds = student.studentClasses.map((sc) => sc.classId);
+
+    // Get all grades for student across all classes
+    const grades = await prisma.grade.findMany({
+      where: { studentId: id },
+      include: {
+        subject: true,
+        class: {
+          include: {
+            academicYear: true,
+          }
+        }
+      },
+      orderBy: [
+        { year: 'desc' },
+        { monthNumber: 'desc' }
+      ]
+    });
+
+    // Get all monthly summaries
+    const monthlySummaries = await prisma.studentMonthlySummary.findMany({
+      where: { studentId: id },
+      orderBy: [
+        { year: 'desc' },
+        { monthNumber: 'desc' }
+      ]
+    });
+
+    // Get attendance summaries by class
+    const attendanceByClass: Record<string, any> = {};
+    for (const sc of student.studentClasses) {
+      const attendance = await prisma.attendance.findMany({
+        where: {
+          studentId: id,
+          classId: sc.classId,
+        }
+      });
+
+      const total = attendance.length;
+      const present = attendance.filter((a) => a.status === 'PRESENT').length;
+      const absent = attendance.filter((a) => a.status === 'ABSENT').length;
+      const late = attendance.filter((a) => a.status === 'LATE').length;
+      const excused = attendance.filter((a) => a.status === 'EXCUSED').length;
+
+      attendanceByClass[sc.classId] = {
+        total,
+        present,
+        absent,
+        late,
+        excused,
+        rate: total > 0 ? Math.round((present / total) * 100) : 0,
+      };
+    }
+
+    // Group grades by academic year
+    const gradesByYear: Record<string, any> = {};
+    grades.forEach((grade: any) => {
+      const yearId = grade.class?.academicYear?.id || 'unknown';
+      const yearName = grade.class?.academicYear?.name || 'Unknown Year';
+      
+      if (!gradesByYear[yearId]) {
+        gradesByYear[yearId] = {
+          yearId,
+          yearName,
+          startDate: grade.class?.academicYear?.startDate,
+          endDate: grade.class?.academicYear?.endDate,
+          className: grade.class?.name,
+          gradeLevel: grade.class?.grade,
+          subjects: {},
+        };
+      }
+
+      const subjectId = grade.subjectId;
+      if (!gradesByYear[yearId].subjects[subjectId]) {
+        gradesByYear[yearId].subjects[subjectId] = {
+          subjectId,
+          subjectName: grade.subject?.name,
+          subjectCode: grade.subject?.code,
+          grades: [],
+        };
+      }
+
+      gradesByYear[yearId].subjects[subjectId].grades.push({
+        id: grade.id,
+        score: grade.score,
+        maxScore: grade.maxScore,
+        percentage: grade.percentage,
+        month: grade.month,
+        monthNumber: grade.monthNumber,
+        year: grade.year,
+        remarks: grade.remarks,
+      });
+    });
+
+    // Calculate yearly averages
+    Object.keys(gradesByYear).forEach(yearId => {
+      const yearData = gradesByYear[yearId];
+      const subjects = Object.values(yearData.subjects) as any[];
+      
+      let totalAvg = 0;
+      let subjectCount = 0;
+
+      subjects.forEach((subject: any) => {
+        const subjectGrades = subject.grades;
+        if (subjectGrades.length > 0) {
+          const avg = subjectGrades.reduce((sum: number, g: any) => sum + (g.percentage || 0), 0) / subjectGrades.length;
+          subject.average = Math.round(avg * 100) / 100;
+          subject.letterGrade = getLetterGrade(avg);
+          totalAvg += avg;
+          subjectCount++;
+        }
+      });
+
+      yearData.overallAverage = subjectCount > 0 ? Math.round((totalAvg / subjectCount) * 100) / 100 : null;
+      yearData.overallGrade = yearData.overallAverage ? getLetterGrade(yearData.overallAverage) : null;
+      yearData.subjectCount = subjectCount;
+    });
+
+    // Format progressions
+    const progressions = student.StudentProgression.map((p) => ({
+      id: p.id,
+      fromYear: p.fromAcademicYear?.name,
+      toYear: p.toAcademicYear?.name,
+      fromClass: p.fromClass?.name,
+      toClass: p.toClass?.name,
+      promotionType: p.promotionType,
+      notes: p.notes,
+      createdAt: p.createdAt,
+    }));
+
+    // Calculate overall statistics
+    const allYears = Object.values(gradesByYear);
+    const totalYears = allYears.length;
+    const automaticPromoCount = progressions.filter((p) => p.promotionType === 'AUTOMATIC').length;
+    const repeatCount = progressions.filter((p) => p.promotionType === 'REPEAT').length;
+    const manualPromoCount = progressions.filter((p) => p.promotionType === 'MANUAL').length;
+
+    let overallGPA = 0;
+    let gpaCount = 0;
+    allYears.forEach((year: any) => {
+      if (year.overallAverage) {
+        overallGPA += year.overallAverage;
+        gpaCount++;
+      }
+    });
+
+    // Build transcript response
+    const transcript = {
+      student: {
+        id: student.id,
+        studentId: student.studentId,
+        firstName: student.firstName,
+        lastName: student.lastName,
+        dateOfBirth: student.dateOfBirth,
+        gender: student.gender,
+        photo: student.photoUrl,
+        enrolledAt: student.createdAt,
+        status: student.isAccountActive ? 'ACTIVE' : 'INACTIVE',
+      },
+      summary: {
+        totalYears,
+        currentClass: student.studentClasses[0]?.class?.name || null,
+        currentGrade: student.studentClasses[0]?.class?.grade || null,
+        cumulativeAverage: gpaCount > 0 ? Math.round((overallGPA / gpaCount) * 100) / 100 : null,
+        cumulativeGrade: gpaCount > 0 ? getLetterGrade(overallGPA / gpaCount) : null,
+        promotions: automaticPromoCount + manualPromoCount,
+        repeats: repeatCount,
+        totalProgressions: progressions.length,
+      },
+      academicYears: Object.values(gradesByYear).map((year: any) => ({
+        ...year,
+        subjects: Object.values(year.subjects),
+        attendance: attendanceByClass[student.studentClasses.find((sc) => 
+          sc.class?.academicYearId === year.yearId)?.classId || ''] || null,
+      })).sort((a: any, b: any) => {
+        return new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime();
+      }),
+      progressions,
+      monthlySummaries: monthlySummaries.map((ms) => ({
+        month: ms.month,
+        monthNumber: ms.monthNumber,
+        year: ms.year,
+        totalScore: ms.totalScore,
+        totalMaxScore: ms.totalMaxScore,
+        average: ms.average,
+        classRank: ms.classRank,
+        gradeLevel: ms.gradeLevel,
+      })),
+    };
+
+    res.json({ success: true, data: transcript });
+
+  } catch (error: any) {
+    console.error('Transcript error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get student transcript',
+      details: error.message,
+    });
+  }
+});
+
+// Helper function for letter grades
+function getLetterGrade(percentage: number): string {
+  if (percentage >= 90) return 'A';
+  if (percentage >= 80) return 'B';
+  if (percentage >= 70) return 'C';
+  if (percentage >= 60) return 'D';
+  if (percentage >= 50) return 'E';
+  return 'F';
+}
+
 // Health check endpoint (no auth required)
 app.get('/health', (_req, res) => {
   res.json({
