@@ -26,6 +26,7 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
     try {
       const token = localStorage.getItem('accessToken');
       const userDataStr = localStorage.getItem('user');
+      const schoolDataStr = localStorage.getItem('school');
       
       if (!token || !userDataStr) {
         console.log('No token or user data found');
@@ -34,11 +35,13 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
       }
 
       const userData = JSON.parse(userDataStr);
-      // userData is the user object directly, not nested under user property
-      const schoolIdFromData = userData?.school?.id || userData?.school?.id;
+      const schoolData = schoolDataStr ? JSON.parse(schoolDataStr) : null;
+      
+      // Try multiple ways to get schoolId: user.schoolId, school.id, or user.school.id
+      const schoolIdFromData = userData?.schoolId || schoolData?.id || userData?.school?.id;
 
       if (!schoolIdFromData) {
-        console.log('No schoolId found in user data', userData);
+        console.log('No schoolId found in user/school data', { userData, schoolData });
         setLoading(false);
         return;
       }

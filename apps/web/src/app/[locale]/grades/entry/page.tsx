@@ -23,6 +23,8 @@ import {
   Loader2,
   ChevronRight,
   ChevronDown,
+  Home,
+  ClipboardList,
 } from 'lucide-react';
 
 interface GradeEntry {
@@ -498,13 +500,55 @@ export default function GradeEntryPage() {
       <UnifiedNavigation user={user} />
       
       {/* Main Content - Add left margin for sidebar */}
-      <div className="lg:ml-64 min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-orange-100">
-        <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="lg:ml-64 min-h-screen bg-gray-50">
+        <main className="p-4 lg:p-8">
           {/* Header */}
           <AnimatedContent animation="fade" delay={0}>
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Grade Entry</h1>
-              <p className="text-gray-600">Enter and manage student grades with Excel-like grid</p>
+            <div className="mb-6">
+              {/* Breadcrumb */}
+              <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                <Home className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4" />
+                <span>Grades</span>
+                <ChevronRight className="h-4 w-4" />
+                <span className="text-gray-900 font-medium">Grade Entry</span>
+              </nav>
+
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-orange-100 rounded-xl">
+                    <ClipboardList className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Grade Entry</h1>
+                    <p className="text-gray-600 mt-1">
+                      Enter and manage student grades with Excel-like grid
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Save Status */}
+                  {saveStatus === 'saving' && (
+                    <span className="flex items-center gap-2 text-sm text-gray-500">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Saving...
+                    </span>
+                  )}
+                  {saveStatus === 'saved' && (
+                    <span className="flex items-center gap-2 text-sm text-green-600">
+                      <CheckCircle className="h-4 w-4" />
+                      Saved
+                    </span>
+                  )}
+                  {saveStatus === 'error' && (
+                    <span className="flex items-center gap-2 text-sm text-red-600">
+                      <XCircle className="h-4 w-4" />
+                      Error
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </AnimatedContent>
 
@@ -862,26 +906,25 @@ export default function GradeEntryPage() {
                 </div>
                 <div>
                   <span className="font-medium">Shift+Tab:</span> Move to previous field
+                </div>
+                <div>
+                  <span className="font-medium">Enter:</span> Move down
+                </div>
+                <div>
+                  <span className="font-medium">↑/↓:</span> Navigate up/down
+                </div>
+                <div>
+                  <span className="font-medium">Escape:</span> Cancel edit
+                </div>
+                <div>
+                  <span className="font-medium">Auto-save:</span> 2 seconds after typing
+                </div>
               </div>
-              <div>
-                <span className="font-medium">Enter:</span> Move down
-              </div>
-              <div>
-                <span className="font-medium">↑/↓:</span> Navigate up/down
-              </div>
-              <div>
-                <span className="font-medium">Escape:</span> Cancel edit
-              </div>
-              <div>
-                <span className="font-medium">Auto-save:</span> 2 seconds after typing
-              </div>
-            </div>
-          </details>
+            </details>
           </div>
         </AnimatedContent>
+        </main>
       </div>
-      {/* End main content wrapper */}
-    </div>
     </>
   );
 }

@@ -82,11 +82,20 @@ export async function getClasses(params?: {
   const result = await response.json();
   
   // Transform API response to match frontend interface
-  // Backend returns: { success: true, data: [classes] }
+  // Backend returns: { success: true, data: [classes] } with different field names
   // Frontend expects: { data: { classes: [], pagination: {} } }
+  const transformedClasses = (result.data || []).map((c: any) => ({
+    ...c,
+    grade: typeof c.grade === 'string' ? parseInt(c.grade, 10) : c.grade,
+    academicYearId: c.academicYear?.id || c.academicYearId,
+    _count: c._count ? {
+      students: c._count.studentClasses ?? c._count.students ?? 0
+    } : undefined
+  }));
+  
   return {
     data: {
-      classes: result.data || [],
+      classes: transformedClasses,
       pagination: {
         currentPage: params?.page || 1,
         totalPages: 1, // lightweight endpoint doesn't paginate

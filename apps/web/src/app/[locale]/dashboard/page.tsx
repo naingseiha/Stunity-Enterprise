@@ -13,6 +13,9 @@ import {
   BarChart3,
   Calendar,
   Settings,
+  Home,
+  ChevronRight,
+  LayoutDashboard,
 } from 'lucide-react';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import StatCard from '@/components/dashboard/StatCard';
@@ -162,16 +165,32 @@ export default function DashboardPage({ params }: { params: { locale: string } }
       
       {/* Main Content - Add left margin for sidebar */}
       <div className="lg:ml-64 min-h-screen bg-gray-50">
-        <main className="max-w-7xl mx-auto px-6 py-8">
-            {/* Page Header */}
-            <AnimatedContent animation="fade" delay={0}>
-              <div className="mb-8">
-                <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  Welcome back! Here's what's happening with your school today.
-                </p>
+        <main className="p-4 lg:p-8">
+          {/* Header */}
+          <AnimatedContent animation="fade" delay={0}>
+            <div className="mb-6">
+              {/* Breadcrumb */}
+              <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                <Home className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4" />
+                <span className="text-gray-900 font-medium">Dashboard</span>
+              </nav>
+
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-indigo-100 rounded-xl">
+                    <LayoutDashboard className="h-6 w-6 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Dashboard</h1>
+                    <p className="text-gray-600 mt-1">
+                      Welcome back, {user?.firstName || 'Admin'}! Here's your school overview.
+                    </p>
+                  </div>
+                </div>
               </div>
-            </AnimatedContent>
+            </div>
+          </AnimatedContent>
 
             {/* Stats Grid with Staggered Animation */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

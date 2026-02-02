@@ -14,6 +14,8 @@ import {
   Home,
   BookOpen,
   RefreshCw,
+  ChevronRight,
+  UserCog,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import { deleteTeacher, type Teacher } from '@/lib/api/teachers';
@@ -111,47 +113,79 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
 
       {/* Main Content - Add left margin for sidebar */}
       <div className="lg:ml-64 min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-8">
-        {/* Academic Year Info */}
-        {selectedYear && (
-          <div className="mb-4 flex items-center gap-2 text-sm">
-            <span className="text-gray-600">Viewing teachers for:</span>
-            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
-              {selectedYear.name}
-            </span>
-            <span className="text-xs text-gray-500">(Teachers assigned to classes in this year)</span>
-          </div>
-        )}
+        <main className="p-4 lg:p-8">
+          {/* Header */}
+          <AnimatedContent animation="fade" delay={0}>
+            <div className="mb-6">
+              {/* Breadcrumb */}
+              <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                <Home className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4" />
+                <span className="text-gray-900 font-medium">Teachers</span>
+              </nav>
 
-        {/* Actions Bar */}
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 flex-1">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search teachers..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-              />
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-purple-100 rounded-xl">
+                    <UserCog className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Teacher Management</h1>
+                    <p className="text-gray-600 mt-1">
+                      {selectedYear ? `${selectedYear.name}` : 'All teachers'} • {pagination.total || 0} teachers
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => mutate()}
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </button>
+                  <button
+                    onClick={handleAdd}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Teacher
+                  </button>
+                </div>
+              </div>
             </div>
-            <button
-              onClick={handleSearch}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              Search
-            </button>
-          </div>
-          <button
-            onClick={handleAdd}
-            className="flex items-center gap-2 px-4 py-2 bg-stunity-primary-600 text-white rounded-lg hover:bg-stunity-primary-700 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Add Teacher
-          </button>
-        </div>
+          </AnimatedContent>
+
+          {/* Filters */}
+          <AnimatedContent animation="slide-up" delay={50}>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+              <div className="flex flex-wrap items-center gap-4">
+                {/* Search */}
+                <div className="relative flex-1 min-w-[200px] max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by name or subject..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  />
+                </div>
+
+                {/* Academic Year Badge */}
+                {selectedYear && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">Year:</span>
+                    <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                      {selectedYear.name}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </AnimatedContent>
 
         {/* Teachers Table with Blur Loading */}
         <AnimatedContent animation="slide-up" delay={100}>
@@ -306,17 +340,16 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
             </div>
           </BlurLoader>
         </AnimatedContent>
-      </div>
 
-      {/* Teacher Modal */}
-      {showModal && (
-        <TeacherModal
-          teacher={selectedTeacher}
-          onClose={handleModalClose}
-        />
-      )}
-      {/* End main content wrapper */}
-    </div>
+        {/* Teacher Modal */}
+        {showModal && (
+          <TeacherModal
+            teacher={selectedTeacher}
+            onClose={handleModalClose}
+          />
+        )}
+        </main>
+      </div>
     </>
   );
 }

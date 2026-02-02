@@ -13,6 +13,10 @@ import {
   LogOut,
   Home,
   BookOpen,
+  ChevronRight,
+  School,
+  RefreshCw,
+  Eye,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import { getClasses, deleteClass, type Class } from '@/lib/api/classes';
@@ -55,6 +59,9 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
     }
     if (selectedYear) {
       fetchClasses();
+    } else {
+      // No academic year selected - stop loading but show empty state
+      setLoading(false);
     }
   }, [page, selectedGrade, selectedYear]);
 
@@ -113,39 +120,81 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
 
       {/* Main Content - Add left margin for sidebar */}
       <div className="lg:ml-64 min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-8">
-        {/* Academic Year Info */}
-        {selectedYear && (
-          <div className="mb-4 flex items-center gap-2 text-sm">
-            <span className="text-gray-600">Viewing classes for:</span>
-            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
-              {selectedYear.name}
-            </span>
-          </div>
-        )}
+        <main className="p-4 lg:p-8">
+          {/* Header */}
+          <AnimatedContent animation="fade" delay={0}>
+            <div className="mb-6">
+              {/* Breadcrumb */}
+              <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                <Home className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4" />
+                <span className="text-gray-900 font-medium">Classes</span>
+              </nav>
 
-        {/* Actions Bar */}
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 flex-1">
-            <select
-              value={selectedGrade || ''}
-              onChange={(e) => setSelectedGrade(e.target.value ? parseInt(e.target.value) : undefined)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-            >
-              <option value="">All Grades</option>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(grade => (
-                <option key={grade} value={grade}>Grade {grade}</option>
-              ))}
-            </select>
-          </div>
-          <button
-            onClick={handleAdd}
-            className="flex items-center gap-2 px-4 py-2 bg-stunity-primary-600 text-white rounded-lg hover:bg-stunity-primary-700 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Add Class
-          </button>
-        </div>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-green-100 rounded-xl">
+                    <School className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Class Management</h1>
+                    <p className="text-gray-600 mt-1">
+                      {selectedYear ? `${selectedYear.name}` : 'All classes'} • {classes.length} classes
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={fetchClasses}
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </button>
+                  <button
+                    onClick={handleAdd}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Class
+                  </button>
+                </div>
+              </div>
+            </div>
+          </AnimatedContent>
+
+          {/* Filters */}
+          <AnimatedContent animation="slide-up" delay={50}>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+              <div className="flex flex-wrap items-center gap-4">
+                {/* Grade Filter */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">Grade:</span>
+                  <select
+                    value={selectedGrade || ''}
+                    onChange={(e) => setSelectedGrade(e.target.value ? parseInt(e.target.value) : undefined)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  >
+                    <option value="">All Grades</option>
+                    {[7, 8, 9, 10, 11, 12].map(grade => (
+                      <option key={grade} value={grade}>Grade {grade}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Academic Year Badge */}
+                {selectedYear && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">Year:</span>
+                    <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                      {selectedYear.name}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </AnimatedContent>
 
         {/* Classes Grid with Blur Loading */}
         <AnimatedContent animation="slide-up" delay={100}>
@@ -163,8 +212,17 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
               {classes.length === 0 ? (
             <div className="p-12 text-center">
               <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">No classes found</p>
-              <p className="text-gray-500 text-sm mt-2">Click "Add Class" to create your first class</p>
+              {!selectedYear ? (
+                <>
+                  <p className="text-gray-600 text-lg">No academic year selected</p>
+                  <p className="text-gray-500 text-sm mt-2">Please select an academic year from the dropdown in the navigation bar</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-gray-600 text-lg">No classes found</p>
+                  <p className="text-gray-500 text-sm mt-2">Click "Add Class" to create your first class</p>
+                </>
+              )}
             </div>
           ) : (
             <>
@@ -271,17 +329,16 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
             </div>
           </BlurLoader>
         </AnimatedContent>
-      </div>
 
-      {/* Class Modal */}
-      {showModal && (
-        <ClassModal
-          classItem={selectedClass}
-          onClose={handleModalClose}
-        />
-      )}
-      {/* End main content wrapper */}
-    </div>
+        {/* Class Modal */}
+        {showModal && (
+          <ClassModal
+            classItem={selectedClass}
+            onClose={handleModalClose}
+          />
+        )}
+        </main>
+      </div>
     </>
   );
 }

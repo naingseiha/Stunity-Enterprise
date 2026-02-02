@@ -3,11 +3,14 @@
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { ChevronDown, Calendar, Check } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function AcademicYearSelector() {
   const { currentYear, selectedYear, allYears, setSelectedYear, loading } = useAcademicYear();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const locale = pathname.split('/')[1] || 'en';
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -29,8 +32,19 @@ export default function AcademicYearSelector() {
     );
   }
 
+  // Show empty state button if no academic years available (instead of hiding)
   if (!selectedYear || allYears.length === 0) {
-    return null;
+    return (
+      <a
+        href={`/${locale}/settings/academic-years`}
+        className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors text-sm"
+      >
+        <Calendar className="w-4 h-4 text-amber-600" />
+        <span className="font-medium text-amber-700 hidden md:inline">
+          Set Academic Year
+        </span>
+      </a>
+    );
   }
 
   const getStatusColor = (status: string) => {
@@ -131,7 +145,7 @@ export default function AcademicYearSelector() {
 
           <div className="p-2 border-t border-gray-100 bg-gray-50">
             <a
-              href="/en/settings/academic-years"
+              href={`/${locale}/settings/academic-years`}
               className="block w-full px-3 py-2 text-xs font-medium text-center text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
               onClick={() => setIsOpen(false)}
             >

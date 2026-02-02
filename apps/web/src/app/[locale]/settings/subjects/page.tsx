@@ -28,6 +28,9 @@ import {
   Award,
   Calendar,
   Hash,
+  Home,
+  ChevronRight,
+  Settings,
 } from 'lucide-react';
 
 type ViewMode = 'grid' | 'list';
@@ -312,31 +315,46 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
 
       {/* Main Content - Add left margin for sidebar */}
       <div className="lg:ml-64 min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <AnimatedContent animation="fade" delay={0}>
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl text-white shadow-lg">
-                  <BookOpen className="w-7 h-7" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Subject Management</h1>
-                  <p className="text-gray-600 mt-1">Manage subjects, categories, and curriculum</p>
-                </div>
-              </div>
-              <button
-                onClick={handleCreate}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all shadow-lg hover:shadow-xl"
-              >
-                <Plus className="w-5 h-5" />
-                Create Subject
-              </button>
-            </div>
+        <main className="p-4 lg:p-8">
+          {/* Header */}
+          <AnimatedContent animation="fade" delay={0}>
+            <div className="mb-6">
+              {/* Breadcrumb */}
+              <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                <Home className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4" />
+                <span>Settings</span>
+                <ChevronRight className="h-4 w-4" />
+                <span className="text-gray-900 font-medium">Subjects</span>
+              </nav>
 
-            {/* Statistics Cards */}
-            {statistics && (
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-orange-100 rounded-xl">
+                    <BookOpen className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Subject Management</h1>
+                    <p className="text-gray-600 mt-1">
+                      Manage subjects, categories, and curriculum • {statistics?.total || 0} subjects
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleCreate}
+                  className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  Create Subject
+                </button>
+              </div>
+            </div>
+          </AnimatedContent>
+
+          {/* Statistics Cards */}
+          {statistics && (
+            <AnimatedContent animation="slide-up" delay={25}>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
                   <div className="flex items-center justify-between">
@@ -382,13 +400,12 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
                     </div>
                     <div className="p-3 bg-purple-100 rounded-lg">
                       <Layers className="w-6 h-6 text-purple-600" />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </AnimatedContent>
           )}
-          </div>
-        </AnimatedContent>
 
           {/* Search and Filters */}
           <AnimatedContent animation="slide-up" delay={50}>
@@ -699,7 +716,6 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
             )}
           </BlurLoader>
         </AnimatedContent>
-      </div>
 
       {/* Create Modal */}
       {showCreateModal && (
@@ -1221,8 +1237,8 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
           </div>
         </div>
       )}
-      {/* End main content wrapper */}
-    </div>
+        </main>
+      </div>
     </>
   );
 }
