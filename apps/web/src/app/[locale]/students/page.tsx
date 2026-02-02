@@ -471,195 +471,300 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
           <BlurLoader
             isLoading={isLoading}
             skeleton={
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Photo</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student ID</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gender</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <TableSkeleton rows={10} />
-                    </tbody>
-                  </table>
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                {/* Skeleton Header */}
+                <div className="hidden md:grid md:grid-cols-12 gap-4 px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100/50">
+                  <div className="col-span-1"><div className="w-5 h-5 bg-gray-200 rounded animate-pulse" /></div>
+                  <div className="col-span-3"><div className="w-20 h-4 bg-gray-200 rounded animate-pulse" /></div>
+                  <div className="col-span-2"><div className="w-12 h-4 bg-gray-200 rounded animate-pulse" /></div>
+                  <div className="col-span-1"><div className="w-16 h-4 bg-gray-200 rounded animate-pulse" /></div>
+                  <div className="col-span-2"><div className="w-24 h-4 bg-gray-200 rounded animate-pulse" /></div>
+                  <div className="col-span-2"><div className="w-16 h-4 bg-gray-200 rounded animate-pulse" /></div>
+                  <div className="col-span-1"><div className="w-16 h-4 bg-gray-200 rounded animate-pulse ml-auto" /></div>
                 </div>
+                {/* Skeleton Rows */}
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="grid grid-cols-12 gap-4 px-6 py-4 border-t border-gray-100 items-center">
+                    <div className="col-span-1"><div className="w-5 h-5 bg-gray-100 rounded animate-pulse" /></div>
+                    <div className="col-span-3 flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gray-200 rounded-xl animate-pulse" />
+                      <div className="space-y-2">
+                        <div className="w-32 h-4 bg-gray-200 rounded animate-pulse" />
+                        <div className="w-24 h-3 bg-gray-100 rounded animate-pulse" />
+                      </div>
+                    </div>
+                    <div className="col-span-2"><div className="w-20 h-6 bg-gray-100 rounded-lg animate-pulse" /></div>
+                    <div className="col-span-1"><div className="w-14 h-6 bg-gray-100 rounded-lg animate-pulse" /></div>
+                    <div className="col-span-2"><div className="w-24 h-4 bg-gray-100 rounded animate-pulse" /></div>
+                    <div className="col-span-2"><div className="w-20 h-6 bg-gray-100 rounded-lg animate-pulse" /></div>
+                    <div className="col-span-1 flex justify-end gap-1">
+                      <div className="w-8 h-8 bg-gray-100 rounded-lg animate-pulse" />
+                      <div className="w-8 h-8 bg-gray-100 rounded-lg animate-pulse" />
+                      <div className="w-8 h-8 bg-gray-100 rounded-lg animate-pulse" />
+                    </div>
+                  </div>
+                ))}
               </div>
             }
           >
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden relative">
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 relative">
               {/* Show subtle loading indicator when revalidating */}
               {isValidating && !isLoading && (
-                <div className="absolute top-2 right-2 z-10">
-                  <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+                <div className="absolute top-4 right-4 z-10">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-medium">
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                    Updating...
+                  </div>
                 </div>
               )}
               {isEmpty ? (
-            <div className="p-12 text-center">
-              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">No students found</p>
-              <p className="text-gray-500 text-sm mt-2">Click "Add Student" to create your first student</p>
+            <div className="p-16 text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Users className="w-10 h-10 text-blue-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No students found</h3>
+              <p className="text-gray-500 mb-6">Get started by adding your first student to the system</p>
+              <button
+                onClick={handleAdd}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all shadow-lg shadow-blue-200"
+              >
+                <Plus className="w-5 h-5" />
+                Add First Student
+              </button>
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="px-4 py-3 text-left">
-                        <button
-                          onClick={toggleSelectAll}
-                          className="p-1 hover:bg-gray-200 rounded"
-                        >
-                          {selectedStudents.size === filteredStudents.length && filteredStudents.length > 0 ? (
-                            <CheckSquare className="w-5 h-5 text-blue-600" />
-                          ) : (
-                            <Square className="w-5 h-5 text-gray-400" />
-                          )}
-                        </button>
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Photo
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Student ID
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Name
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Gender
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date of Birth
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Class
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredStudents.map((student) => (
-                      <tr key={student.id} className={`hover:bg-gray-50 ${selectedStudents.has(student.id) ? 'bg-blue-50' : ''}`}>
-                        <td className="px-4 py-4">
-                          <button
-                            onClick={() => toggleStudentSelection(student.id)}
-                            className="p-1 hover:bg-gray-200 rounded"
-                          >
-                            {selectedStudents.has(student.id) ? (
-                              <CheckSquare className="w-5 h-5 text-blue-600" />
-                            ) : (
-                              <Square className="w-5 h-5 text-gray-400" />
-                            )}
-                          </button>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          {student.photoUrl ? (
-                            <img
-                              src={`${process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003'}${student.photoUrl}`}
-                              alt={`${student.firstNameLatin} ${student.lastNameLatin}`}
-                              className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm font-medium">
-                              {student.firstNameLatin.charAt(0)}{student.lastNameLatin.charAt(0)}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {student.studentId}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {student.firstNameLatin} {student.lastNameLatin}
+              {/* Card-based Student List */}
+              <div className="divide-y divide-gray-100">
+                {/* Table Header */}
+                <div className="hidden md:grid md:grid-cols-12 gap-4 px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100/50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <div className="col-span-1 flex items-center">
+                    <button
+                      onClick={toggleSelectAll}
+                      className="p-1.5 hover:bg-white rounded-lg transition-colors"
+                    >
+                      {selectedStudents.size === filteredStudents.length && filteredStudents.length > 0 ? (
+                        <CheckSquare className="w-5 h-5 text-blue-600" />
+                      ) : (
+                        <Square className="w-5 h-5 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                  <div className="col-span-3">Student</div>
+                  <div className="col-span-2">ID</div>
+                  <div className="col-span-1">Gender</div>
+                  <div className="col-span-2">Date of Birth</div>
+                  <div className="col-span-2">Class</div>
+                  <div className="col-span-1 text-right">Actions</div>
+                </div>
+
+                {/* Student Rows */}
+                {filteredStudents.map((student, index) => (
+                  <div
+                    key={student.id}
+                    className={`group grid grid-cols-1 md:grid-cols-12 gap-4 px-6 py-4 items-center transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent ${
+                      selectedStudents.has(student.id) ? 'bg-blue-50/70 border-l-4 border-l-blue-500' : 'border-l-4 border-l-transparent'
+                    }`}
+                  >
+                    {/* Checkbox */}
+                    <div className="col-span-1 hidden md:flex items-center">
+                      <button
+                        onClick={() => toggleStudentSelection(student.id)}
+                        className="p-1.5 hover:bg-white rounded-lg transition-colors"
+                      >
+                        {selectedStudents.has(student.id) ? (
+                          <CheckSquare className="w-5 h-5 text-blue-600" />
+                        ) : (
+                          <Square className="w-5 h-5 text-gray-300 group-hover:text-gray-400" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Student Info - Photo & Name */}
+                    <div className="col-span-3 flex items-center gap-4">
+                      <div className="relative">
+                        {student.photoUrl ? (
+                          <img
+                            src={`${process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003'}${student.photoUrl}`}
+                            alt={`${student.firstNameLatin} ${student.lastNameLatin}`}
+                            className="w-12 h-12 rounded-xl object-cover ring-2 ring-white shadow-md"
+                          />
+                        ) : (
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-md ${
+                            student.gender === 'MALE' 
+                              ? 'bg-gradient-to-br from-blue-400 to-blue-600' 
+                              : 'bg-gradient-to-br from-pink-400 to-pink-600'
+                          }`}>
+                            {student.firstNameLatin.charAt(0)}{student.lastNameLatin.charAt(0)}
                           </div>
-                          {student.firstNameKhmer && (
-                            <div className="text-sm text-gray-500">
-                              {student.firstNameKhmer} {student.lastNameKhmer}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {student.gender}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(student.dateOfBirth).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          {student.class?.name ? (
-                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                              {student.class.name}
-                            </span>
-                          ) : (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded-full text-xs">
-                              Unassigned
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            onClick={() => handleOpenReassign(student)}
-                            className="text-green-600 hover:text-green-900 mr-2"
-                            title="Assign to Class"
-                          >
-                            <ArrowRightLeft className="w-4 h-4 inline" />
-                          </button>
-                          <button
-                            onClick={() => router.push(`/${locale}/students/${student.id}`)}
-                            className="text-orange-600 hover:text-orange-900 mr-2"
-                            title="View Details"
-                          >
-                            <Eye className="w-4 h-4 inline" />
-                          </button>
-                          <button
-                            onClick={() => handleEdit(student)}
-                            className="text-blue-600 hover:text-blue-900 mr-2"
-                            title="Edit"
-                          >
-                            <Edit className="w-4 h-4 inline" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(student.id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4 inline" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        )}
+                        {/* Online indicator style badge */}
+                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
+                          student.class?.name ? 'bg-green-400' : 'bg-gray-300'
+                        }`} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-gray-900 truncate">
+                          {student.firstNameLatin} {student.lastNameLatin}
+                        </p>
+                        {student.firstNameKhmer && (
+                          <p className="text-sm text-gray-500 truncate" style={{ fontFamily: 'Battambang, sans-serif' }}>
+                            {student.firstNameKhmer} {student.lastNameKhmer}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Student ID */}
+                    <div className="col-span-2">
+                      <span className="inline-flex items-center px-2.5 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm font-mono">
+                        {student.studentId}
+                      </span>
+                    </div>
+
+                    {/* Gender */}
+                    <div className="col-span-1">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${
+                        student.gender === 'MALE' 
+                          ? 'bg-blue-50 text-blue-700' 
+                          : 'bg-pink-50 text-pink-700'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          student.gender === 'MALE' ? 'bg-blue-500' : 'bg-pink-500'
+                        }`} />
+                        {student.gender === 'MALE' ? 'Male' : 'Female'}
+                      </span>
+                    </div>
+
+                    {/* Date of Birth */}
+                    <div className="col-span-2 text-sm text-gray-600">
+                      {new Date(student.dateOfBirth).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </div>
+
+                    {/* Class */}
+                    <div className="col-span-2">
+                      {student.class?.name ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 rounded-lg text-sm font-medium border border-green-100">
+                          <GraduationCap className="w-3.5 h-3.5" />
+                          {student.class.name}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 text-gray-500 rounded-lg text-sm border border-gray-200 border-dashed">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          Unassigned
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="col-span-1 flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => handleOpenReassign(student)}
+                        className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                        title="Assign to Class"
+                      >
+                        <ArrowRightLeft className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => router.push(`/${locale}/students/${student.id}`)}
+                        className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all"
+                        title="View Details"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleEdit(student)}
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                        title="Edit"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(student.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Mobile View - Additional Info */}
+                    <div className="col-span-full md:hidden flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-gray-100">
+                      <button
+                        onClick={() => toggleStudentSelection(student.id)}
+                        className="p-1.5 hover:bg-gray-100 rounded-lg"
+                      >
+                        {selectedStudents.has(student.id) ? (
+                          <CheckSquare className="w-5 h-5 text-blue-600" />
+                        ) : (
+                          <Square className="w-5 h-5 text-gray-400" />
+                        )}
+                      </button>
+                      <span className="text-xs text-gray-500">ID: {student.studentId}</span>
+                      <span className="text-xs text-gray-500">•</span>
+                      <span className="text-xs text-gray-500">{student.gender}</span>
+                      <span className="text-xs text-gray-500">•</span>
+                      <span className="text-xs text-gray-500">{new Date(student.dateOfBirth).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              {/* Pagination */}
+              {/* Enhanced Pagination */}
               {totalPages > 1 && (
-                <div className="px-6 py-4 border-t flex items-center justify-between">
-                  <button
-                    onClick={() => setPage(Math.max(1, page - 1))}
-                    disabled={page === 1}
-                    className="px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </button>
-                  <span className="text-sm text-gray-600">
-                    Page {page} of {totalPages}
-                  </span>
-                  <button
-                    onClick={() => setPage(Math.min(totalPages, page + 1))}
-                    disabled={page === totalPages}
-                    className="px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
+                <div className="px-6 py-4 border-t border-gray-100 bg-gradient-to-r from-gray-50/50 to-transparent flex items-center justify-between">
+                  <p className="text-sm text-gray-600">
+                    Showing <span className="font-semibold text-gray-900">{(page - 1) * ITEMS_PER_PAGE + 1}</span> to{' '}
+                    <span className="font-semibold text-gray-900">{Math.min(page * ITEMS_PER_PAGE, totalCount)}</span> of{' '}
+                    <span className="font-semibold text-gray-900">{totalCount}</span> students
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setPage(Math.max(1, page - 1))}
+                      disabled={page === 1}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (page <= 3) {
+                          pageNum = i + 1;
+                        } else if (page >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = page - 2 + i;
+                        }
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setPage(pageNum)}
+                            className={`w-10 h-10 text-sm font-medium rounded-lg transition-colors ${
+                              page === pageNum
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
+                                : 'text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button
+                      onClick={() => setPage(Math.min(totalPages, page + 1))}
+                      disabled={page === totalPages}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
               )}
             </>
