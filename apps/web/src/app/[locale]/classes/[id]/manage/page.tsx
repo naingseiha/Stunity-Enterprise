@@ -209,6 +209,33 @@ export default function ClassManagePage() {
     const idsToAssign = studentIds || Array.from(selectedUnassigned);
     if (idsToAssign.length === 0) return;
 
+    // Store original state for potential rollback
+    const originalUnassigned = [...unassignedStudents];
+    const originalEnrolled = [...enrolledStudents];
+
+    // OPTIMISTIC UPDATE: Move students to enrolled list immediately for instant UI feedback
+    const studentsToMove = unassignedStudents.filter(s => idsToAssign.includes(s.id));
+    const newUnassigned = unassignedStudents.filter(s => !idsToAssign.includes(s.id));
+    const newEnrolled = [
+      ...enrolledStudents,
+      ...studentsToMove.map(s => ({
+        id: s.id,
+        studentId: s.studentId,
+        firstName: s.firstName,
+        lastName: s.lastName,
+        khmerName: s.khmerName,
+        gender: s.gender,
+        dateOfBirth: s.dateOfBirth,
+        photoUrl: s.photoUrl,
+        enrolledAt: new Date().toISOString(),
+        status: 'ACTIVE',
+      })),
+    ];
+    
+    setUnassignedStudents(newUnassigned);
+    setEnrolledStudents(newEnrolled);
+    setSelectedUnassigned(new Set());
+
     try {
       setIsAssigning(true);
       setActionMessage(null);
@@ -230,9 +257,10 @@ export default function ClassManagePage() {
 
       if (data.success) {
         setActionMessage({ type: 'success', text: `✓ ${data.data?.assigned || idsToAssign.length} student(s) assigned successfully` });
-        setSelectedUnassigned(new Set());
-        fetchClassData();
       } else {
+        // ROLLBACK on failure: restore original state
+        setUnassignedStudents(originalUnassigned);
+        setEnrolledStudents(originalEnrolled);
         if (data.alreadyInOtherClass && data.alreadyInOtherClass.length > 0) {
           const names = data.alreadyInOtherClass.map((s: any) => `${s.studentName} (in ${s.existingClass})`).join(', ');
           setActionMessage({ 
@@ -244,6 +272,9 @@ export default function ClassManagePage() {
         }
       }
     } catch (err: any) {
+      // ROLLBACK on error: restore original state
+      setUnassignedStudents(originalUnassigned);
+      setEnrolledStudents(originalEnrolled);
       setActionMessage({ type: 'error', text: err.message || 'Failed to assign students' });
     } finally {
       setIsAssigning(false);
@@ -255,6 +286,31 @@ export default function ClassManagePage() {
     if (idsToRemove.length === 0) return;
 
     if (!studentIds && !confirm(`Remove ${idsToRemove.length} student(s) from this class?`)) return;
+
+    // Store original state for potential rollback
+    const originalEnrolled = [...enrolledStudents];
+    const originalUnassigned = [...unassignedStudents];
+
+    // OPTIMISTIC UPDATE: Move students to unassigned list immediately for instant UI feedback
+    const studentsToMove = enrolledStudents.filter(s => idsToRemove.includes(s.id));
+    const newEnrolled = enrolledStudents.filter(s => !idsToRemove.includes(s.id));
+    const newUnassigned = [
+      ...studentsToMove.map(s => ({
+        id: s.id,
+        studentId: s.studentId,
+        firstName: s.firstName,
+        lastName: s.lastName,
+        khmerName: s.khmerName,
+        gender: s.gender,
+        dateOfBirth: s.dateOfBirth,
+        photoUrl: s.photoUrl,
+      })),
+      ...unassignedStudents,
+    ];
+    
+    setEnrolledStudents(newEnrolled);
+    setUnassignedStudents(newUnassigned);
+    setSelectedEnrolled(new Set());
 
     try {
       setIsRemoving(true);
@@ -275,12 +331,16 @@ export default function ClassManagePage() {
       
       if (data.success) {
         setActionMessage({ type: 'success', text: `✓ ${data.count} student(s) removed` });
-        setSelectedEnrolled(new Set());
-        fetchClassData();
       } else {
+        // ROLLBACK on failure: restore original state
+        setEnrolledStudents(originalEnrolled);
+        setUnassignedStudents(originalUnassigned);
         setActionMessage({ type: 'error', text: data.message || 'Failed to remove students' });
       }
     } catch (err: any) {
+      // ROLLBACK on error: restore original state
+      setEnrolledStudents(originalEnrolled);
+      setUnassignedStudents(originalUnassigned);
       setActionMessage({ type: 'error', text: err.message || 'Failed to remove students' });
     } finally {
       setIsRemoving(false);
@@ -340,6 +400,11 @@ export default function ClassManagePage() {
   const handleDragStart = (studentId: string, source: 'enrolled' | 'unassigned') => {
     setDraggedStudent(studentId);
     setDragSource(source);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedStudent(null);
+    setDragSource(null);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -710,12 +775,19 @@ export default function ClassManagePage() {
           {/* Left: Unassigned Students */}
           <AnimatedContent delay={200}>
             <div 
-              className={`bg-white rounded-2xl shadow-lg overflow-hidden border-2 transition-colors ${
-                dragSource === 'enrolled' ? 'border-blue-400 bg-blue-50/50' : 'border-transparent'
+              className={`bg-white rounded-2xl shadow-lg overflow-hidden border-2 transition-all duration-200 ${
+                dragSource === 'enrolled' ? 'border-blue-400 bg-blue-50/50 ring-4 ring-blue-200' : 'border-transparent'
               }`}
               onDragOver={handleDragOver}
               onDrop={handleDropOnUnassigned}
             >
+              {/* Drop indicator when dragging from enrolled */}
+              {dragSource === 'enrolled' && (
+                <div className="bg-blue-100 px-4 py-2 text-sm text-blue-700 font-medium flex items-center gap-2 animate-pulse">
+                  <UserMinus className="w-4 h-4" />
+                  Drop here to remove from class
+                </div>
+              )}
               <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-5 text-white">
                 <div className="flex items-center justify-between">
                   <div>
@@ -774,10 +846,11 @@ export default function ClassManagePage() {
                       key={student.id}
                       draggable
                       onDragStart={() => handleDragStart(student.id, 'unassigned')}
+                      onDragEnd={handleDragEnd}
                       onClick={() => toggleUnassignedSelection(student.id)}
-                      className={`flex items-center gap-3 p-4 border-b cursor-pointer transition-all hover:bg-blue-50 ${
+                      className={`flex items-center gap-3 p-4 border-b cursor-grab active:cursor-grabbing transition-all hover:bg-blue-50 ${
                         selectedUnassigned.has(student.id) ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
-                      } ${draggedStudent === student.id ? 'opacity-50' : ''}`}
+                      } ${draggedStudent === student.id ? 'opacity-50 scale-95' : ''}`}
                     >
                       <div className="flex-shrink-0">
                         {selectedUnassigned.has(student.id) ? (
@@ -812,12 +885,19 @@ export default function ClassManagePage() {
           {/* Right: Enrolled Students */}
           <AnimatedContent delay={250}>
             <div 
-              className={`bg-white rounded-2xl shadow-lg overflow-hidden border-2 transition-colors ${
-                dragSource === 'unassigned' ? 'border-green-400 bg-green-50/50' : 'border-transparent'
+              className={`bg-white rounded-2xl shadow-lg overflow-hidden border-2 transition-all duration-200 ${
+                dragSource === 'unassigned' ? 'border-green-400 bg-green-50/50 ring-4 ring-green-200' : 'border-transparent'
               }`}
               onDragOver={handleDragOver}
               onDrop={handleDropOnEnrolled}
             >
+              {/* Drop indicator when dragging from unassigned */}
+              {dragSource === 'unassigned' && (
+                <div className="bg-green-100 px-4 py-2 text-sm text-green-700 font-medium flex items-center gap-2 animate-pulse">
+                  <UserPlus className="w-4 h-4" />
+                  Drop here to enroll in class
+                </div>
+              )}
               <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-5 text-white">
                 <div className="flex items-center justify-between">
                   <div>
@@ -866,10 +946,11 @@ export default function ClassManagePage() {
                       key={student.id}
                       draggable
                       onDragStart={() => handleDragStart(student.id, 'enrolled')}
+                      onDragEnd={handleDragEnd}
                       onClick={() => toggleEnrolledSelection(student.id)}
-                      className={`flex items-center gap-3 p-4 border-b cursor-pointer transition-all hover:bg-green-50 ${
+                      className={`flex items-center gap-3 p-4 border-b cursor-grab active:cursor-grabbing transition-all hover:bg-green-50 ${
                         selectedEnrolled.has(student.id) ? 'bg-green-50 border-l-4 border-l-green-500' : ''
-                      } ${draggedStudent === student.id ? 'opacity-50' : ''}`}
+                      } ${draggedStudent === student.id ? 'opacity-50 scale-95' : ''}`}
                     >
                       <div className="flex-shrink-0">
                         {selectedEnrolled.has(student.id) ? (
