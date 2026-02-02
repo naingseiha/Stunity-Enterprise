@@ -41,7 +41,7 @@ export default function FailedStudentsPage({ params }: { params: { locale: strin
   const school = userData?.school;
 
   const handleLogout = () => {
-    TokenManager.clearAccessToken();
+    TokenManager.clearTokens();
     router.push(`/${params.locale}/login`);
   };
 

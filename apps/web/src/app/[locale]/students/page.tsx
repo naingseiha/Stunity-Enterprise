@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -14,9 +14,11 @@ import {
   Home,
   BookOpen,
   Eye,
+  RefreshCw,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
-import { getStudents, deleteStudent, type Student } from '@/lib/api/students';
+import { deleteStudent, type Student } from '@/lib/api/students';
+import { useStudents } from '@/hooks/useStudents';
 import StudentModal from '@/components/students/StudentModal';
 import Pagination from '@/components/Pagination';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
@@ -33,23 +35,34 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
   const tc = useTranslations('common');
   const router = useRouter();
 
-  const [students, setStudents] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearch = useDebounce(searchTerm, 300); // 300ms delay
+  const debouncedSearch = useDebounce(searchTerm, 300);
   const [showModal, setShowModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
   const ITEMS_PER_PAGE = 20;
   const { selectedYear } = useAcademicYear();
 
   const user = TokenManager.getUserData().user;
   const school = TokenManager.getUserData().school;
 
+  // Use SWR hook for data fetching with automatic caching
+  const { 
+    students, 
+    pagination, 
+    isLoading, 
+    isValidating, 
+    mutate,
+    isEmpty 
+  } = useStudents({
+    page,
+    limit: ITEMS_PER_PAGE,
+    search: debouncedSearch,
+    academicYearId: selectedYear?.id,
+  });
+
   const handleLogout = () => {
-    TokenManager.clearAccessToken();
+    TokenManager.clearTokens();
     router.push(`/${locale}/login`);
   };
 
@@ -57,63 +70,45 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
     const token = TokenManager.getAccessToken();
     if (!token) {
       router.replace(`/${locale}/auth/login`);
-      return;
     }
-    fetchStudents();
-  }, [page, debouncedSearch, selectedYear]); // Add selectedYear to dependencies
+  }, [locale, router]);
 
-  const fetchStudents = async () => {
-    setLoading(true);
-    try {
-      const response = await getStudents({ 
-        page, 
-        limit: ITEMS_PER_PAGE, 
-        search: debouncedSearch,
-        academicYearId: selectedYear?.id, // Pass selected year ID
-      });
-      setStudents(response.data.students);
-      setTotalPages(response.data.pagination.totalPages);
-      setTotalCount(response.data.pagination.total || response.data.pagination.totalCount || 0);
-    } catch (error: any) {
-      console.error('Failed to fetch students:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     setPage(1);
-    fetchStudents();
-  };
+  }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     if (!confirm('Are you sure you want to delete this student?')) return;
 
     try {
       await deleteStudent(id);
-      fetchStudents();
+      // Revalidate the cache after deletion
+      mutate();
     } catch (error: any) {
       alert(error.message);
     }
-  };
+  }, [mutate]);
 
-  const handleEdit = (student: Student) => {
+  const handleEdit = useCallback((student: Student) => {
     setSelectedStudent(student);
     setShowModal(true);
-  };
+  }, []);
 
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
     setSelectedStudent(null);
     setShowModal(true);
-  };
+  }, []);
 
-  const handleModalClose = (refresh?: boolean) => {
+  const handleModalClose = useCallback((refresh?: boolean) => {
     setShowModal(false);
     setSelectedStudent(null);
     if (refresh) {
-      fetchStudents();
+      mutate(); // Revalidate the cache
     }
-  };
+  }, [mutate]);
+
+  const totalPages = pagination.totalPages;
+  const totalCount = pagination.total;
 
   return (
     <>
@@ -166,7 +161,7 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
         {/* Students Table with Blur Loading */}
         <AnimatedContent animation="slide-up" delay={100}>
           <BlurLoader
-            isLoading={loading}
+            isLoading={isLoading}
             skeleton={
               <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
@@ -189,8 +184,14 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
               </div>
             }
           >
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              {students.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden relative">
+              {/* Show subtle loading indicator when revalidating */}
+              {isValidating && !isLoading && (
+                <div className="absolute top-2 right-2 z-10">
+                  <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+                </div>
+              )}
+              {isEmpty ? (
             <div className="p-12 text-center">
               <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-600 text-lg">No students found</p>

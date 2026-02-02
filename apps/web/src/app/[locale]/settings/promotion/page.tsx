@@ -48,14 +48,14 @@ interface PromotionPreview {
 
 export default function StudentPromotionPage({ params: { locale } }: { params: { locale: string } }) {
   const router = useRouter();
-  const { academicYears, selectedYear, selectYear } = useAcademicYear();
+  const { allYears: academicYears, selectedYear, setSelectedYear: selectYear } = useAcademicYear();
   
   const userData = TokenManager.getUserData();
   const user = userData?.user;
   const school = userData?.school;
 
   const handleLogout = () => {
-    TokenManager.clearAccessToken();
+    TokenManager.clearTokens();
     router.push(`/${locale}/login`);
   };
   

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -13,9 +13,11 @@ import {
   LogOut,
   Home,
   BookOpen,
+  RefreshCw,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
-import { getTeachers, deleteTeacher, type Teacher } from '@/lib/api/teachers';
+import { deleteTeacher, type Teacher } from '@/lib/api/teachers';
+import { useTeachers } from '@/hooks/useTeachers';
 import TeacherModal from '@/components/teachers/TeacherModal';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import AcademicYearSelector from '@/components/AcademicYearSelector';
@@ -24,26 +26,42 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export default function TeachersPage({ params: { locale } }: { params: { locale: string } }) {
   const t = useTranslations('teachers');
   const tc = useTranslations('common');
   const router = useRouter();
 
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 300);
   const [showModal, setShowModal] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const { selectedYear } = useAcademicYear();
 
   const user = TokenManager.getUserData().user;
   const school = TokenManager.getUserData().school;
 
+  // Use SWR hook for data fetching with automatic caching
+  const {
+    teachers,
+    pagination,
+    isLoading,
+    isValidating,
+    mutate,
+    isEmpty,
+  } = useTeachers({
+    page,
+    limit: 20,
+    search: debouncedSearch,
+    academicYearId: selectedYear?.id,
+  });
+
+  const totalPages = pagination.totalPages;
+
   const handleLogout = () => {
-    TokenManager.clearAccessToken();
+    TokenManager.clearTokens();
     router.push(`/${locale}/login`);
   };
 
@@ -51,66 +69,41 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
     const token = TokenManager.getAccessToken();
     if (!token) {
       router.replace(`/${locale}/auth/login`);
-      return;
     }
-    if (selectedYear) {
-      fetchTeachers();
-    }
-  }, [page, selectedYear]);
+  }, [locale, router]);
 
-  const fetchTeachers = async () => {
-    if (!selectedYear) return;
-    
-    setLoading(true);
-    try {
-      const response = await getTeachers({ 
-        page, 
-        limit: 20, 
-        search: searchTerm,
-        academicYearId: selectedYear.id 
-      });
-      setTeachers(response.data.teachers);
-      setTotalPages(response.data.pagination.totalPages);
-    } catch (error: any) {
-      console.error('Failed to fetch teachers:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     setPage(1);
-    fetchTeachers();
-  };
+  }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     if (!confirm('Are you sure you want to delete this teacher?')) return;
 
     try {
       await deleteTeacher(id);
-      fetchTeachers();
+      mutate(); // Revalidate the cache
     } catch (error: any) {
       alert(error.message);
     }
-  };
+  }, [mutate]);
 
-  const handleEdit = (teacher: Teacher) => {
+  const handleEdit = useCallback((teacher: Teacher) => {
     setSelectedTeacher(teacher);
     setShowModal(true);
-  };
+  }, []);
 
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
     setSelectedTeacher(null);
     setShowModal(true);
-  };
+  }, []);
 
-  const handleModalClose = (refresh?: boolean) => {
+  const handleModalClose = useCallback((refresh?: boolean) => {
     setShowModal(false);
     setSelectedTeacher(null);
     if (refresh) {
-      fetchTeachers();
+      mutate(); // Revalidate the cache
     }
-  };
+  }, [mutate]);
 
   return (
     <>
@@ -163,7 +156,7 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
         {/* Teachers Table with Blur Loading */}
         <AnimatedContent animation="slide-up" delay={100}>
           <BlurLoader
-            isLoading={loading}
+            isLoading={isLoading}
             skeleton={
               <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
@@ -185,8 +178,14 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
               </div>
             }
           >
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              {teachers.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden relative">
+              {/* Show subtle loading indicator when revalidating */}
+              {isValidating && !isLoading && (
+                <div className="absolute top-2 right-2 z-10">
+                  <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+                </div>
+              )}
+              {isEmpty ? (
             <div className="p-12 text-center">
               <GraduationCap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-600 text-lg">No teachers found</p>

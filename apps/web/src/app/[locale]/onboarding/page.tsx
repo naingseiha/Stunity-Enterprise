@@ -275,7 +275,6 @@ export default function OnboardingPage() {
             <CompleteStep
               onComplete={handleComplete}
               schoolId={onboardingData?.school?.id || ''}
-              onboardingData={onboardingData}
             />
           )}
         </div>

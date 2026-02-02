@@ -175,9 +175,9 @@ export default function ClassRosterEnhancedPage({
   // Search filter for adding students
   const filteredAvailableStudents = availableStudents.filter(
     s =>
-      s.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (s.nameKh && s.nameKh.includes(searchQuery)) ||
+      (s.firstNameLatin || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (s.lastNameLatin || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (s.firstNameKhmer && s.firstNameKhmer.includes(searchQuery)) ||
       s.studentId.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -211,9 +211,6 @@ export default function ClassRosterEnhancedPage({
                 <h1 className="text-2xl font-bold text-gray-900">
                   {classData?.name}
                 </h1>
-                <p className="text-gray-600 mt-1">
-                  {classData?.nameKh}
-                </p>
                 <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                   <span>Grade {classData?.grade}</span>
                   {classData?.section && <span>Section {classData.section}</span>}
@@ -421,22 +418,22 @@ export default function ClassRosterEnhancedPage({
                             {student.photoUrl ? (
                               <img
                                 src={`http://localhost:3003${student.photoUrl}`}
-                                alt={`${student.firstName} ${student.lastName}`}
+                                alt={`${student.firstNameLatin} ${student.lastNameLatin}`}
                                 className="h-full w-full object-cover"
                               />
                             ) : (
                               <span className="text-gray-600 text-sm font-medium">
-                                {student.firstName[0]}{student.lastName[0]}
+                                {(student.firstNameLatin || '')[0]}{(student.lastNameLatin || '')[0]}
                               </span>
                             )}
                           </div>
 
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900">
-                              {student.firstName} {student.lastName}
+                              {student.firstNameLatin} {student.lastNameLatin}
                             </p>
-                            {student.nameKh && (
-                              <p className="text-sm text-gray-600 truncate">{student.nameKh}</p>
+                            {student.firstNameKhmer && (
+                              <p className="text-sm text-gray-600 truncate">{student.firstNameKhmer}</p>
                             )}
                             <p className="text-xs text-gray-500">ID: {student.studentId}</p>
                           </div>

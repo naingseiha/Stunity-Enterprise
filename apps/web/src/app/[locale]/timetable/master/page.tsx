@@ -170,12 +170,12 @@ export default function MasterTimetablePage() {
         const teacherAssigns = assignmentsData.filter((a) => a.teacherId === t.id);
         return {
           id: t.id,
-          firstName: t.firstName,
-          lastName: t.lastName,
+          firstName: t.firstNameLatin,
+          lastName: t.lastNameLatin,
           firstNameLatin: t.firstNameLatin,
           lastNameLatin: t.lastNameLatin,
-          khmerName: t.khmerName,
-          email: t.email,
+          khmerName: t.firstNameKhmer || undefined,
+          email: t.email || undefined,
           subjects: teacherAssigns.map((a) => ({
             id: a.id,
             subjectId: a.subjectId,
@@ -185,7 +185,7 @@ export default function MasterTimetablePage() {
             grades: a.preferredGrades?.map((g: string) => parseInt(g)) || [7, 8, 9, 10, 11, 12],
           })),
           totalHoursAssigned: 0, // Will be calculated
-          maxHoursPerWeek: a.maxPeriodsPerWeek || 25,
+          maxHoursPerWeek: 25,
         };
       });
 

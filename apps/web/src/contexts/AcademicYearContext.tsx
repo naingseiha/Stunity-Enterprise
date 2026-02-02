@@ -35,7 +35,7 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
 
       const userData = JSON.parse(userDataStr);
       // userData is the user object directly, not nested under user property
-      const schoolIdFromData = userData?.schoolId || userData?.school?.id;
+      const schoolIdFromData = userData?.school?.id || userData?.school?.id;
 
       if (!schoolIdFromData) {
         console.log('No schoolId found in user data', userData);

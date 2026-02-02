@@ -43,7 +43,7 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
   const school = TokenManager.getUserData().school;
 
   const handleLogout = () => {
-    TokenManager.clearAccessToken();
+    TokenManager.clearTokens();
     router.push(`/${locale}/login`);
   };
 
@@ -229,7 +229,7 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
                       )}
                       <div className="flex justify-between">
                         <span className="text-gray-600">Students:</span>
-                        <span className="font-medium">{classItem._count?.studentClasses || 0}</span>
+                        <span className="font-medium">{classItem._count?.students || 0}</span>
                       </div>
                       {classItem.homeroomTeacher && (
                         <div className="pt-2 mt-2 border-t">

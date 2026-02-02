@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useMemo, useCallback, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -25,6 +25,9 @@ import {
 } from 'lucide-react';
 import AcademicYearSelector from './AcademicYearSelector';
 import LanguageSwitcher from './LanguageSwitcher';
+import { prefetchStudents } from '@/hooks/useStudents';
+import { prefetchTeachers } from '@/hooks/useTeachers';
+import { prefetchClasses } from '@/hooks/useClasses';
 
 interface UnifiedNavProps {
   user?: any;
@@ -40,21 +43,33 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-
-  // Determine current context
-  const isSchoolContext = pathname.includes('/dashboard') || 
-                          pathname.includes('/students') || 
-                          pathname.includes('/teachers') || 
-                          pathname.includes('/classes') ||
-                          pathname.includes('/grades') ||
-                          pathname.includes('/attendance') ||
-                          pathname.includes('/timetable') ||
-                          pathname.includes('/settings');
+  const [activeHover, setActiveHover] = useState<string | null>(null);
   
-  const isFeedContext = pathname.includes('/feed');
-  const isLearnContext = pathname.includes('/learn');
+  // Optimistic navigation - track clicked path for instant feedback
+  const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
+  
+  // Clear optimistic path when pathname changes (navigation completed)
+  useEffect(() => {
+    setOptimisticPath(null);
+  }, [pathname]);
 
-  const navItems = [
+  // Memoize context calculations for better performance
+  const isSchoolContext = useMemo(() => 
+    pathname.includes('/dashboard') || 
+    pathname.includes('/students') || 
+    pathname.includes('/teachers') || 
+    pathname.includes('/classes') ||
+    pathname.includes('/grades') ||
+    pathname.includes('/attendance') ||
+    pathname.includes('/timetable') ||
+    pathname.includes('/settings')
+  , [pathname]);
+  
+  const isFeedContext = useMemo(() => pathname.includes('/feed'), [pathname]);
+  const isLearnContext = useMemo(() => pathname.includes('/learn'), [pathname]);
+
+  // Memoized nav items to prevent re-creation on every render
+  const navItems = useMemo(() => [
     { 
       name: 'Feed', 
       icon: Home, 
@@ -76,22 +91,40 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       active: isLearnContext,
       badge: 'Soon',
     },
-  ];
+  ], [locale, isFeedContext, isSchoolContext, isLearnContext]);
 
-  const schoolMenuItems = [
-    { name: 'Dashboard', icon: BarChart3, path: `/${locale}/dashboard` },
-    { name: 'Students', icon: Users, path: `/${locale}/students` },
-    { name: 'Teachers', icon: User, path: `/${locale}/teachers` },
-    { name: 'Classes', icon: BookOpen, path: `/${locale}/classes` },
-    { name: 'Subjects', icon: BookOpen, path: `/${locale}/settings/subjects` },
-    { name: 'Timetable', icon: Calendar, path: `/${locale}/timetable` },
-    { name: 'Master Timetable', icon: Calendar, path: `/${locale}/timetable/master` },
-    { name: 'Grade Entry', icon: ClipboardList, path: `/${locale}/grades/entry` },
-    { name: 'Report Cards', icon: FileText, path: `/${locale}/grades/reports` },
-    { name: 'Attendance', icon: ClipboardCheck, path: `/${locale}/attendance/mark` },
-    { name: 'Promotion', icon: TrendingUp, path: `/${locale}/settings/promotion` },
-    { name: 'Settings', icon: Settings, path: `/${locale}/settings/academic-years` },
-  ];
+  // Memoized school menu items
+  const schoolMenuItems = useMemo(() => [
+    { name: 'Dashboard', icon: BarChart3, path: `/${locale}/dashboard`, prefetch: null },
+    { name: 'Students', icon: Users, path: `/${locale}/students`, prefetch: 'students' },
+    { name: 'Teachers', icon: User, path: `/${locale}/teachers`, prefetch: 'teachers' },
+    { name: 'Classes', icon: BookOpen, path: `/${locale}/classes`, prefetch: 'classes' },
+    { name: 'Subjects', icon: BookOpen, path: `/${locale}/settings/subjects`, prefetch: null },
+    { name: 'Timetable', icon: Calendar, path: `/${locale}/timetable`, prefetch: null },
+    { name: 'Master Timetable', icon: Calendar, path: `/${locale}/timetable/master`, prefetch: null },
+    { name: 'Grade Entry', icon: ClipboardList, path: `/${locale}/grades/entry`, prefetch: null },
+    { name: 'Report Cards', icon: FileText, path: `/${locale}/grades/reports`, prefetch: null },
+    { name: 'Attendance', icon: ClipboardCheck, path: `/${locale}/attendance/mark`, prefetch: null },
+    { name: 'Promotion', icon: TrendingUp, path: `/${locale}/settings/promotion`, prefetch: null },
+    { name: 'Settings', icon: Settings, path: `/${locale}/settings/academic-years`, prefetch: null },
+  ], [locale]);
+
+  // Prefetch data on hover for instant navigation
+  const handleLinkHover = useCallback((prefetchType: string | null) => {
+    if (!prefetchType) return;
+    
+    switch (prefetchType) {
+      case 'students':
+        prefetchStudents({ limit: 20 });
+        break;
+      case 'teachers':
+        prefetchTeachers({ limit: 20 });
+        break;
+      case 'classes':
+        prefetchClasses({ limit: 50 });
+        break;
+    }
+  }, []);
 
   return (
     <>
@@ -285,22 +318,41 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
             </p>
             {schoolMenuItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.path;
+              // Use optimistic path for instant feedback, fallback to actual pathname
+              const isActive = optimisticPath ? optimisticPath === item.path : pathname === item.path;
+              const isHovered = activeHover === item.path;
+              const isNavigating = optimisticPath === item.path && pathname !== item.path;
+              
               return (
                 <Link
                   key={item.name}
                   href={item.path}
                   prefetch={true}
+                  onClick={(e) => {
+                    // Set optimistic path immediately on click for instant feedback
+                    setOptimisticPath(item.path);
+                    handleLinkHover(item.prefetch);
+                  }}
+                  onMouseEnter={() => {
+                    setActiveHover(item.path);
+                    handleLinkHover(item.prefetch);
+                  }}
+                  onMouseLeave={() => setActiveHover(null)}
                   className={`
-                    w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm transition-colors
+                    w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-100
                     ${isActive 
-                      ? 'text-blue-600 bg-blue-50' 
-                      : 'text-gray-700 hover:bg-gray-50'
+                      ? 'text-blue-600 bg-blue-50 shadow-sm' 
+                      : isHovered
+                        ? 'text-blue-600 bg-blue-50/50'
+                        : 'text-gray-700 hover:bg-gray-50'
                     }
                   `}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className={`w-5 h-5 transition-transform duration-100 ${isHovered && !isActive ? 'scale-110' : ''}`} />
                   <span>{item.name}</span>
+                  {isNavigating && (
+                    <Loader2 className="w-4 h-4 ml-auto animate-spin text-blue-500" />
+                  )}
                 </Link>
               );
             })}

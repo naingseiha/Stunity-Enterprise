@@ -51,7 +51,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
   const school = userData?.school;
 
   const handleLogout = () => {
-    TokenManager.clearAccessToken();
+    TokenManager.clearTokens();
     router.push(`/${locale}/login`);
   };
 
@@ -94,7 +94,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
     try {
       const token = TokenManager.getAccessToken();
       const userData = TokenManager.getUserData();
-      const schoolId = userData?.schoolId || userData?.school?.id;
+      const schoolId = userData?.school?.id;
 
       console.log('User data:', userData);
       console.log('School ID:', schoolId);
@@ -147,7 +147,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
     try {
       const token = TokenManager.getAccessToken();
       const userData = TokenManager.getUserData();
-      const schoolId = userData?.schoolId || userData?.school?.id;
+      const schoolId = userData?.school?.id || userData?.school?.id;
 
       if (!token || !schoolId) {
         router.push(`/${locale}/auth/login`);
@@ -192,7 +192,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
     try {
       const token = TokenManager.getAccessToken();
       const userData = TokenManager.getUserData();
-      const schoolId = userData?.schoolId || userData?.school?.id;
+      const schoolId = userData?.school?.id || userData?.school?.id;
 
       if (!token || !schoolId) return;
 
@@ -235,7 +235,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
     try {
       const token = TokenManager.getAccessToken();
       const userData = TokenManager.getUserData();
-      const schoolId = userData?.schoolId || userData?.school?.id;
+      const schoolId = userData?.school?.id || userData?.school?.id;
 
       if (!token || !schoolId) return;
 
@@ -283,7 +283,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
     try {
       const token = TokenManager.getAccessToken();
       const userData = TokenManager.getUserData();
-      const schoolId = userData?.schoolId || userData?.school?.id;
+      const schoolId = userData?.school?.id || userData?.school?.id;
 
       if (!token || !schoolId) return;
 
@@ -319,7 +319,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
     try {
       const token = TokenManager.getAccessToken();
       const userData = TokenManager.getUserData();
-      const schoolId = userData?.schoolId || userData?.school?.id;
+      const schoolId = userData?.school?.id || userData?.school?.id;
 
       if (!token || !schoolId) {
         router.push(`/${locale}/auth/login`);
@@ -365,7 +365,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
       setCopyLoading(true);
       const token = TokenManager.getAccessToken();
       const userData = TokenManager.getUserData();
-      const schoolId = userData?.schoolId || userData?.school?.id;
+      const schoolId = userData?.school?.id || userData?.school?.id;
 
       if (!token || !schoolId) return;
 
@@ -394,7 +394,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
       setCopyError('');
       const token = TokenManager.getAccessToken();
       const userData = TokenManager.getUserData();
-      const schoolId = userData?.schoolId || userData?.school?.id;
+      const schoolId = userData?.school?.id || userData?.school?.id;
 
       if (!token || !schoolId) return;
 

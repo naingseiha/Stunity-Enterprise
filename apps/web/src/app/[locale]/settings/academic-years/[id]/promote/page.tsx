@@ -40,8 +40,15 @@ export default function PromotionWizardPage() {
         
         console.log('🔍 Loading promotion data...', { schoolId, fromYearId });
         
+        // Get token for API calls
+        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        if (!token || !schoolId) {
+          console.error('Missing token or schoolId');
+          return;
+        }
+        
         // Get all academic years
-        const years = await getAcademicYears(schoolId!);
+        const years = await getAcademicYears(schoolId!, token);
         console.log('✅ Loaded years:', years.length);
         setAllYears(years);
         

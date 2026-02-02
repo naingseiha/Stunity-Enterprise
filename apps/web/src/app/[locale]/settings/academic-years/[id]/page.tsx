@@ -56,13 +56,13 @@ export default function AcademicYearDetailPage({ params }: { params: { locale: s
       const token = TokenManager.getAccessToken();
       const userData = TokenManager.getUserData();
 
-      if (!token || !userData?.schoolId) {
+      if (!token || !userData?.school?.id) {
         router.push(`/${params.locale}/login`);
         return;
       }
 
       const response = await fetch(
-        `http://localhost:3002/schools/${userData.schoolId}/academic-years/${id}`,
+        `http://localhost:3002/schools/${userData.school.id}/academic-years/${id}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
