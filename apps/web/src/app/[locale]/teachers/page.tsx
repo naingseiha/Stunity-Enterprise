@@ -15,8 +15,12 @@ import {
   BookOpen,
   RefreshCw,
   ChevronRight,
+  ChevronLeft,
   UserCog,
   Eye,
+  Mail,
+  Phone,
+  Briefcase,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import { deleteTeacher, type Teacher } from '@/lib/api/teachers';
@@ -30,6 +34,8 @@ import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
 import { useDebounce } from '@/hooks/useDebounce';
+
+const ITEMS_PER_PAGE = 20;
 
 export default function TeachersPage({ params: { locale } }: { params: { locale: string } }) {
   const t = useTranslations('teachers');
@@ -56,12 +62,13 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
     isEmpty,
   } = useTeachers({
     page,
-    limit: 20,
+    limit: ITEMS_PER_PAGE,
     search: debouncedSearch,
     academicYearId: selectedYear?.id,
   });
 
   const totalPages = pagination.totalPages;
+  const totalCount = pagination.total || 0;
 
   const handleLogout = () => {
     TokenManager.clearTokens();
@@ -108,47 +115,46 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
     }
   }, [mutate]);
 
+  // Stats
+  const maleCount = teachers.filter(t => t.gender === 'MALE').length;
+  const femaleCount = teachers.filter(t => t.gender === 'FEMALE').length;
+
   return (
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      {/* Main Content - Add left margin for sidebar */}
-      <div className="lg:ml-64 min-h-screen bg-gray-50">
-        <main className="p-4 lg:p-8">
-          {/* Header */}
+      {/* Main Content */}
+      <div className="lg:ml-64 min-h-screen bg-[#f8fafc]">
+        <main className="p-6 lg:p-8 max-w-[1600px] mx-auto">
+          
+          {/* Page Header - Clean & Minimal */}
           <AnimatedContent animation="fade" delay={0}>
-            <div className="mb-6">
-              {/* Breadcrumb */}
-              <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-                <Home className="h-4 w-4" />
-                <ChevronRight className="h-4 w-4" />
-                <span className="text-gray-900 font-medium">Teachers</span>
-              </nav>
-
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-purple-100 rounded-xl">
-                    <UserCog className="h-6 w-6 text-purple-600" />
+            <div className="mb-8">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+                    <span>Dashboard</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                    <span className="text-gray-900">Teachers</span>
                   </div>
-                  <div>
-                    <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Teacher Management</h1>
-                    <p className="text-gray-600 mt-1">
-                      {selectedYear ? `${selectedYear.name}` : 'All teachers'} • {pagination.total || 0} teachers
-                    </p>
-                  </div>
+                  <h1 className="text-2xl font-semibold text-gray-900">Teachers</h1>
+                  <p className="text-gray-500 mt-1">
+                    Manage your teaching staff and their assignments
+                  </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <button
                     onClick={() => mutate()}
-                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    disabled={isValidating}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all disabled:opacity-50"
                   >
                     <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
                     Refresh
                   </button>
                   <button
                     onClick={handleAdd}
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all"
                   >
                     <Plus className="h-4 w-4" />
                     Add Teacher
@@ -158,206 +164,340 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
             </div>
           </AnimatedContent>
 
-          {/* Filters */}
+          {/* Stats Cards */}
           <AnimatedContent animation="slide-up" delay={50}>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
-              <div className="flex flex-wrap items-center gap-4">
-                {/* Search */}
-                <div className="relative flex-1 min-w-[200px] max-w-md">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search by name or subject..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  />
-                </div>
-
-                {/* Academic Year Badge */}
-                {selectedYear && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">Year:</span>
-                    <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
-                      {selectedYear.name}
-                    </span>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Total Teachers</p>
+                    <p className="text-2xl font-semibold text-gray-900 mt-1">{totalCount}</p>
                   </div>
-                )}
+                  <div className="h-10 w-10 bg-purple-50 rounded-lg flex items-center justify-center">
+                    <UserCog className="h-5 w-5 text-purple-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Male</p>
+                    <p className="text-2xl font-semibold text-gray-900 mt-1">{maleCount}</p>
+                  </div>
+                  <div className="h-10 w-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                    <Users className="h-5 w-5 text-blue-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Female</p>
+                    <p className="text-2xl font-semibold text-gray-900 mt-1">{femaleCount}</p>
+                  </div>
+                  <div className="h-10 w-10 bg-pink-50 rounded-lg flex items-center justify-center">
+                    <Users className="h-5 w-5 text-pink-600" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Academic Year</p>
+                    <p className="text-2xl font-semibold text-gray-900 mt-1">{selectedYear?.name || '-'}</p>
+                  </div>
+                  <div className="h-10 w-10 bg-green-50 rounded-lg flex items-center justify-center">
+                    <BookOpen className="h-5 w-5 text-green-600" />
+                  </div>
+                </div>
               </div>
             </div>
           </AnimatedContent>
 
-        {/* Teachers Table with Blur Loading */}
-        <AnimatedContent animation="slide-up" delay={100}>
-          <BlurLoader
-            isLoading={isLoading}
-            skeleton={
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Photo</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Teacher ID</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subjects</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <TableSkeleton rows={8} />
-                    </tbody>
-                  </table>
+          {/* Main Content Card */}
+          <AnimatedContent animation="slide-up" delay={100}>
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              
+              {/* Toolbar */}
+              <div className="px-5 py-4 border-b border-gray-100">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                  {/* Search */}
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search teachers..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full h-10 pl-10 pr-4 text-sm bg-gray-50 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-gray-900 transition-all"
+                    />
+                  </div>
+
+                  {/* Year Badge */}
+                  {selectedYear && (
+                    <div className="hidden lg:flex items-center gap-2 px-3 h-10 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium">
+                      <span>{selectedYear.name}</span>
+                    </div>
+                  )}
                 </div>
               </div>
-            }
-          >
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden relative">
-              {/* Show subtle loading indicator when revalidating */}
-              {isValidating && !isLoading && (
-                <div className="absolute top-2 right-2 z-10">
-                  <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
-                </div>
-              )}
-              {isEmpty ? (
-            <div className="p-12 text-center">
-              <GraduationCap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">No teachers found</p>
-              <p className="text-gray-500 text-sm mt-2">Click "Add Teacher" to create your first teacher</p>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Photo
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Teacher ID
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Gender
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Position
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Contact
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {teachers.map((teacher) => (
-                      <tr key={teacher.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {teacher.photoUrl ? (
-                            <img
-                              src={`${process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004'}${teacher.photoUrl}`}
-                              alt={`${teacher.firstNameLatin} ${teacher.lastNameLatin}`}
-                              className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm font-medium">
-                              {teacher.firstNameLatin.charAt(0)}{teacher.lastNameLatin.charAt(0)}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {teacher.teacherId}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {teacher.firstNameLatin} {teacher.lastNameLatin}
-                          </div>
-                          {teacher.firstNameKhmer && (
-                            <div className="text-sm text-gray-500">
-                              {teacher.firstNameKhmer} {teacher.lastNameKhmer}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {teacher.gender}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {teacher.position || '-'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{teacher.phoneNumber || '-'}</div>
-                          <div className="text-sm text-gray-500">{teacher.email || '-'}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            onClick={() => router.push(`/${locale}/teachers/${teacher.id}`)}
-                            className="text-gray-600 hover:text-gray-900 mr-3"
-                            title="View Profile"
-                          >
-                            <Eye className="w-4 h-4 inline" />
-                          </button>
-                          <button
-                            onClick={() => handleEdit(teacher)}
-                            className="text-stunity-primary-600 hover:text-stunity-primary-900 mr-3"
-                          >
-                            <Edit className="w-4 h-4 inline" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(teacher.id)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <Trash2 className="w-4 h-4 inline" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="px-6 py-4 border-t flex items-center justify-between">
-                  <button
-                    onClick={() => setPage(Math.max(1, page - 1))}
-                    disabled={page === 1}
-                    className="px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </button>
-                  <span className="text-sm text-gray-600">
-                    Page {page} of {totalPages}
-                  </span>
-                  <button
-                    onClick={() => setPage(Math.min(totalPages, page + 1))}
-                    disabled={page === totalPages}
-                    className="px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-            </div>
-          </BlurLoader>
-        </AnimatedContent>
+              <BlurLoader
+                isLoading={isLoading}
+                skeleton={
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-100">
+                          <th className="px-4 py-3 text-left"><div className="w-16 h-3 bg-gray-100 rounded" /></th>
+                          <th className="px-4 py-3 text-left"><div className="w-14 h-3 bg-gray-100 rounded" /></th>
+                          <th className="px-4 py-3 text-left"><div className="w-14 h-3 bg-gray-100 rounded" /></th>
+                          <th className="px-4 py-3 text-left"><div className="w-16 h-3 bg-gray-100 rounded" /></th>
+                          <th className="px-4 py-3 text-left"><div className="w-20 h-3 bg-gray-100 rounded" /></th>
+                          <th className="px-4 py-3 text-right"><div className="w-16 h-3 bg-gray-100 rounded ml-auto" /></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Array.from({ length: 10 }).map((_, i) => (
+                          <tr key={i} className="border-b border-gray-50">
+                            <td className="px-4 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 bg-gray-100 rounded-full animate-pulse" />
+                                <div className="space-y-1.5">
+                                  <div className="w-28 h-4 bg-gray-100 rounded animate-pulse" />
+                                  <div className="w-20 h-3 bg-gray-50 rounded animate-pulse" />
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-4"><div className="w-16 h-4 bg-gray-100 rounded animate-pulse" /></td>
+                            <td className="px-4 py-4"><div className="w-12 h-5 bg-gray-100 rounded animate-pulse" /></td>
+                            <td className="px-4 py-4"><div className="w-20 h-4 bg-gray-100 rounded animate-pulse" /></td>
+                            <td className="px-4 py-4"><div className="w-28 h-4 bg-gray-100 rounded animate-pulse" /></td>
+                            <td className="px-4 py-4"><div className="w-20 h-8 bg-gray-100 rounded ml-auto animate-pulse" /></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              >
+                {/* Revalidating indicator */}
+                {isValidating && !isLoading && (
+                  <div className="absolute top-3 right-3 z-10">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-900 text-white rounded-md text-xs">
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      Syncing
+                    </div>
+                  </div>
+                )}
+                
+                {isEmpty ? (
+                  <div className="px-6 py-16 text-center">
+                    <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-100 rounded-full mb-4">
+                      <UserCog className="w-7 h-7 text-gray-400" />
+                    </div>
+                    <h3 className="text-sm font-medium text-gray-900 mb-1">No teachers found</h3>
+                    <p className="text-sm text-gray-500 mb-4">Get started by adding your first teacher</p>
+                    <button
+                      onClick={handleAdd}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Teacher
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {/* Professional Data Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-gray-100">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Teacher</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">ID</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Gender</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Position</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Contact</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {teachers.map((teacher) => (
+                            <tr 
+                              key={teacher.id}
+                              className="group transition-colors hover:bg-gray-50/50"
+                            >
+                              {/* Teacher Info */}
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-3">
+                                  {teacher.photoUrl ? (
+                                    <img
+                                      src={`${process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004'}${teacher.photoUrl}`}
+                                      alt=""
+                                      className="w-9 h-9 rounded-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium text-white ${
+                                      teacher.gender === 'MALE' ? 'bg-blue-500' : 'bg-pink-500'
+                                    }`}>
+                                      {teacher.firstNameLatin.charAt(0)}{teacher.lastNameLatin.charAt(0)}
+                                    </div>
+                                  )}
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium text-gray-900 truncate">
+                                      {teacher.firstNameLatin} {teacher.lastNameLatin}
+                                    </p>
+                                    {teacher.firstNameKhmer && (
+                                      <p className="text-xs text-gray-500 truncate">
+                                        {teacher.firstNameKhmer} {teacher.lastNameKhmer}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
 
-        {/* Teacher Modal */}
-        {showModal && (
-          <TeacherModal
-            teacher={selectedTeacher}
-            onClose={handleModalClose}
-          />
-        )}
+                              {/* Teacher ID */}
+                              <td className="px-4 py-3">
+                                <span className="text-sm text-gray-600 font-mono">{teacher.teacherId}</span>
+                              </td>
+
+                              {/* Gender */}
+                              <td className="px-4 py-3">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                  teacher.gender === 'MALE' 
+                                    ? 'bg-blue-50 text-blue-700' 
+                                    : 'bg-pink-50 text-pink-700'
+                                }`}>
+                                  {teacher.gender === 'MALE' ? 'Male' : 'Female'}
+                                </span>
+                              </td>
+
+                              {/* Position */}
+                              <td className="px-4 py-3">
+                                <span className="text-sm text-gray-600">
+                                  {teacher.position || '-'}
+                                </span>
+                              </td>
+
+                              {/* Contact */}
+                              <td className="px-4 py-3">
+                                <div className="space-y-0.5">
+                                  {teacher.phoneNumber && (
+                                    <p className="text-sm text-gray-600 flex items-center gap-1.5">
+                                      <Phone className="w-3 h-3 text-gray-400" />
+                                      {teacher.phoneNumber}
+                                    </p>
+                                  )}
+                                  {teacher.email && (
+                                    <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                                      <Mail className="w-3 h-3 text-gray-400" />
+                                      {teacher.email}
+                                    </p>
+                                  )}
+                                  {!teacher.phoneNumber && !teacher.email && (
+                                    <span className="text-sm text-gray-400">-</span>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* Actions */}
+                              <td className="px-4 py-3">
+                                <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={() => router.push(`/${locale}/teachers/${teacher.id}`)}
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                                    title="View"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleEdit(teacher)}
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                                    title="Edit"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(teacher.id)}
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination Footer */}
+                    {totalPages > 1 && (
+                      <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
+                        <p className="text-sm text-gray-500">
+                          Showing <span className="font-medium text-gray-900">{(page - 1) * ITEMS_PER_PAGE + 1}</span>–
+                          <span className="font-medium text-gray-900">{Math.min(page * ITEMS_PER_PAGE, totalCount)}</span> of{' '}
+                          <span className="font-medium text-gray-900">{totalCount}</span>
+                        </p>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setPage(Math.max(1, page - 1))}
+                            disabled={page === 1}
+                            className="inline-flex items-center justify-center h-8 w-8 text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) {
+                              pageNum = i + 1;
+                            } else if (page <= 3) {
+                              pageNum = i + 1;
+                            } else if (page >= totalPages - 2) {
+                              pageNum = totalPages - 4 + i;
+                            } else {
+                              pageNum = page - 2 + i;
+                            }
+                            return (
+                              <button
+                                key={pageNum}
+                                onClick={() => setPage(pageNum)}
+                                className={`inline-flex items-center justify-center h-8 min-w-[32px] px-2 text-sm font-medium rounded-md transition-colors ${
+                                  page === pageNum
+                                    ? 'bg-gray-900 text-white'
+                                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+                                }`}
+                              >
+                                {pageNum}
+                              </button>
+                            );
+                          })}
+                          <button
+                            onClick={() => setPage(Math.min(totalPages, page + 1))}
+                            disabled={page === totalPages}
+                            className="inline-flex items-center justify-center h-8 w-8 text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </BlurLoader>
+            </div>
+          </AnimatedContent>
         </main>
       </div>
+
+      {/* Teacher Modal */}
+      {showModal && (
+        <TeacherModal
+          teacher={selectedTeacher}
+          onClose={handleModalClose}
+        />
+      )}
     </>
   );
 }
