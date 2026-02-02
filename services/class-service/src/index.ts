@@ -251,10 +251,15 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.user!.schoolId;
     const academicYearId = req.query.academicYearId as string | undefined;
+    const grade = req.query.grade as string | undefined;
+    const search = req.query.search as string | undefined;
     const startTime = Date.now();
     console.log(`⚡ [School ${schoolId}] Fetching classes (lightweight)...`);
     if (academicYearId) {
       console.log(`📅 Filtering by Academic Year: ${academicYearId}`);
+    }
+    if (grade) {
+      console.log(`📊 Filtering by Grade: ${grade}`);
     }
 
     const where: any = {
@@ -264,6 +269,19 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
     // Add academic year filter if provided
     if (academicYearId) {
       where.academicYearId = academicYearId;
+    }
+    
+    // Add grade filter if provided
+    if (grade) {
+      where.grade = grade;
+    }
+    
+    // Add search filter if provided
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { section: { contains: search, mode: 'insensitive' } },
+      ];
     }
 
     const classes = await prisma.class.findMany({
@@ -1067,72 +1085,7 @@ app.post('/classes/:id/assign-students', async (req: AuthRequest, res: Response)
   }
 });
 
-// ===========================
-// DELETE /classes/:id/students/:studentId
-// Remove student from class
-// ===========================
-app.delete('/classes/:id/students/:studentId', async (req: AuthRequest, res: Response) => {
-  try {
-    const { id, studentId } = req.params;
-    const schoolId = req.user!.schoolId;
-    console.log(`➖ [School ${schoolId}] Removing student ${studentId} from class ${id}`);
-
-    // ✅ Verify class belongs to school
-    const classData = await prisma.class.findFirst({
-      where: {
-        id,
-        schoolId: schoolId,
-      },
-    });
-
-    if (!classData) {
-      return res.status(404).json({
-        success: false,
-        message: 'Class not found or does not belong to your school',
-      });
-    }
-
-    // ✅ Verify student belongs to school and is in this class
-    const student = await prisma.student.findFirst({
-      where: {
-        id: studentId,
-        schoolId: schoolId,
-        classId: id,
-      },
-    });
-
-    if (!student) {
-      return res.status(404).json({
-        success: false,
-        message: 'Student not found in this class or does not belong to your school',
-      });
-    }
-
-    // Remove student from class (set classId to null)
-    await prisma.student.update({
-      where: { id: studentId },
-      data: {
-        classId: null,
-      },
-    });
-
-    console.log(
-      `✅ [School ${schoolId}] Removed student ${student.firstName} ${student.lastName} from class ${classData.name}`
-    );
-
-    res.json({
-      success: true,
-      message: 'Student removed from class successfully',
-    });
-  } catch (error: any) {
-    console.error('❌ Error removing student:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error removing student from class',
-      error: error.message,
-    });
-  }
-});
+// NOTE: DELETE /classes/:id/students/:studentId is defined later using StudentClass junction table
 
 // ===========================
 // GET /classes/:id/students
@@ -1556,6 +1509,65 @@ app.delete('/classes/:id/students/:studentId', authMiddleware, async (req: AuthR
     res.status(500).json({
       success: false,
       message: 'Error removing student from class',
+      error: error.message,
+    });
+  }
+});
+
+// ===========================
+// POST /classes/:id/students/batch-remove
+// Remove multiple students from class (BATCH - much faster!)
+// ===========================
+app.post('/classes/:id/students/batch-remove', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { studentIds } = req.body;
+    const schoolId = req.user!.schoolId;
+    
+    if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'studentIds array is required',
+      });
+    }
+
+    console.log(`➖ [School ${schoolId}] Batch removing ${studentIds.length} students from class ${id}`);
+
+    // Verify class belongs to school
+    const classData = await prisma.class.findFirst({
+      where: { id, schoolId },
+    });
+
+    if (!classData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Class not found or does not belong to your school',
+      });
+    }
+
+    // Batch update all StudentClass records to DROPPED status
+    const result = await prisma.studentClass.updateMany({
+      where: {
+        classId: id,
+        studentId: { in: studentIds },
+        status: 'ACTIVE',
+        student: { schoolId }, // Ensure students belong to same school
+      },
+      data: { status: 'DROPPED' },
+    });
+
+    console.log(`✅ [School ${schoolId}] Batch removed ${result.count} students from class ${classData.name}`);
+
+    res.json({
+      success: true,
+      message: `${result.count} student(s) removed from class`,
+      count: result.count,
+    });
+  } catch (error: any) {
+    console.error('❌ Error in batch remove:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error removing students from class',
       error: error.message,
     });
   }
