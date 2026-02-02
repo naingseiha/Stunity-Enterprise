@@ -455,6 +455,96 @@ app.get('/classes/grade/:grade', async (req: AuthRequest, res: Response) => {
 });
 
 // ===========================
+// GET /classes/unassigned-students/:academicYearId
+// Get students not assigned to any class for a specific academic year
+// NOTE: This route MUST be before /classes/:id to prevent route conflict
+// ===========================
+app.get('/classes/unassigned-students/:academicYearId', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { academicYearId } = req.params;
+    const schoolId = req.user!.schoolId;
+    const { search, limit = '100', page = '1' } = req.query as any;
+
+    console.log(`🔍 [School ${schoolId}] Getting unassigned students for year: ${academicYearId}`);
+
+    // Get all student IDs assigned to classes in this academic year
+    const assignedStudentClasses = await prisma.studentClass.findMany({
+      where: {
+        academicYearId,
+        status: 'ACTIVE',
+      },
+      select: { studentId: true },
+    });
+
+    const assignedStudentIds = assignedStudentClasses.map(sc => sc.studentId);
+
+    // Build where clause for unassigned students
+    const where: any = {
+      schoolId,
+      isAccountActive: true,
+    };
+
+    if (assignedStudentIds.length > 0) {
+      where.id = { notIn: assignedStudentIds };
+    }
+
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { khmerName: { contains: search, mode: 'insensitive' } },
+        { studentId: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const limitNum = Math.min(parseInt(limit), 100);
+    const pageNum = Math.max(parseInt(page), 1);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Get unassigned students with pagination
+    const [students, total] = await Promise.all([
+      prisma.student.findMany({
+        where,
+        select: {
+          id: true,
+          studentId: true,
+          firstName: true,
+          lastName: true,
+          khmerName: true,
+          gender: true,
+          dateOfBirth: true,
+          photoUrl: true,
+        },
+        orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+        take: limitNum,
+        skip,
+      }),
+      prisma.student.count({ where }),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        students,
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ Error getting unassigned students:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching unassigned students',
+      error: error.message,
+    });
+  }
+});
+
+// ===========================
 // GET /classes/:id
 // Get single class by ID
 // ===========================
@@ -1466,206 +1556,6 @@ app.delete('/classes/:id/students/:studentId', authMiddleware, async (req: AuthR
     res.status(500).json({
       success: false,
       message: 'Error removing student from class',
-      error: error.message,
-    });
-  }
-});
-
-// ===========================
-// GET /classes/unassigned-students/:academicYearId
-// Get students not assigned to any class for a specific academic year
-// ===========================
-app.get('/classes/unassigned-students/:academicYearId', authMiddleware, async (req: AuthRequest, res: Response) => {
-  try {
-    const { academicYearId } = req.params;
-    const schoolId = req.user!.schoolId;
-    const { search, limit = '100', page = '1' } = req.query as any;
-
-    console.log(`🔍 [School ${schoolId}] Getting unassigned students for year: ${academicYearId}`);
-
-    // Get all student IDs assigned to classes in this academic year
-    const assignedStudentClasses = await prisma.studentClass.findMany({
-      where: {
-        academicYearId,
-        status: 'ACTIVE',
-      },
-      select: { studentId: true },
-    });
-
-    const assignedStudentIds = assignedStudentClasses.map(sc => sc.studentId);
-
-    // Build where clause for unassigned students
-    const where: any = {
-      schoolId,
-      isAccountActive: true,
-    };
-
-    if (assignedStudentIds.length > 0) {
-      where.id = { notIn: assignedStudentIds };
-    }
-
-    if (search) {
-      where.OR = [
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        { khmerName: { contains: search, mode: 'insensitive' } },
-        { studentId: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    const limitNum = Math.min(parseInt(limit), 100);
-    const pageNum = Math.max(parseInt(page), 1);
-    const skip = (pageNum - 1) * limitNum;
-
-    // Get unassigned students with pagination
-    const [students, total] = await Promise.all([
-      prisma.student.findMany({
-        where,
-        select: {
-          id: true,
-          studentId: true,
-          firstName: true,
-          lastName: true,
-          khmerName: true,
-          gender: true,
-          dateOfBirth: true,
-          photoUrl: true,
-        },
-        orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
-        take: limitNum,
-        skip,
-      }),
-      prisma.student.count({ where }),
-    ]);
-
-    res.json({
-      success: true,
-      data: {
-        students,
-        pagination: {
-          total,
-          page: pageNum,
-          limit: limitNum,
-          totalPages: Math.ceil(total / limitNum),
-        },
-      },
-    });
-  } catch (error: any) {
-    console.error('❌ Error getting unassigned students:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching unassigned students',
-      error: error.message,
-    });
-  }
-});
-
-// ===========================
-// POST /classes/:id/transfer-student
-// Transfer student from one class to another (within same academic year)
-// ===========================
-app.post('/classes/:id/transfer-student', authMiddleware, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id: toClassId } = req.params;
-    const { studentId, fromClassId, reason } = req.body;
-    const schoolId = req.user!.schoolId;
-
-    console.log(`🔄 [School ${schoolId}] Transferring student ${studentId} from ${fromClassId} to ${toClassId}`);
-
-    if (!studentId || !fromClassId) {
-      return res.status(400).json({
-        success: false,
-        message: 'studentId and fromClassId are required',
-      });
-    }
-
-    // Verify both classes exist and belong to school
-    const [fromClass, toClass] = await Promise.all([
-      prisma.class.findFirst({ where: { id: fromClassId, schoolId } }),
-      prisma.class.findFirst({ where: { id: toClassId, schoolId } }),
-    ]);
-
-    if (!fromClass || !toClass) {
-      return res.status(404).json({
-        success: false,
-        message: 'One or both classes not found',
-      });
-    }
-
-    // Verify classes are in same academic year
-    if (fromClass.academicYearId !== toClass.academicYearId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot transfer between classes of different academic years. Use promotion instead.',
-      });
-    }
-
-    // Verify student is in the source class
-    const existingAssignment = await prisma.studentClass.findFirst({
-      where: {
-        studentId,
-        classId: fromClassId,
-        status: 'ACTIVE',
-      },
-    });
-
-    if (!existingAssignment) {
-      return res.status(404).json({
-        success: false,
-        message: 'Student is not currently assigned to the source class',
-      });
-    }
-
-    // Check if student is already in destination class
-    const alreadyInTarget = await prisma.studentClass.findFirst({
-      where: {
-        studentId,
-        classId: toClassId,
-        status: 'ACTIVE',
-      },
-    });
-
-    if (alreadyInTarget) {
-      return res.status(400).json({
-        success: false,
-        message: 'Student is already in the destination class',
-      });
-    }
-
-    // Perform transfer in transaction
-    await prisma.$transaction([
-      // Mark old assignment as transferred
-      prisma.studentClass.update({
-        where: { id: existingAssignment.id },
-        data: { status: 'TRANSFERRED' },
-      }),
-      // Create new assignment
-      prisma.studentClass.create({
-        data: {
-          studentId,
-          classId: toClassId,
-          academicYearId: toClass.academicYearId,
-          status: 'ACTIVE',
-        },
-      }),
-    ]);
-
-    console.log(`✅ Transferred student from ${fromClass.name} to ${toClass.name}`);
-
-    res.json({
-      success: true,
-      message: `Student transferred from "${fromClass.name}" to "${toClass.name}"`,
-      data: {
-        fromClass: fromClass.name,
-        toClass: toClass.name,
-        reason,
-      },
-    });
-  } catch (error: any) {
-    console.error('❌ Error transferring student:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error transferring student',
       error: error.message,
     });
   }

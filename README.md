@@ -1,10 +1,10 @@
 # 🎓 Stunity Enterprise - School Management System
 
-**Version:** 2.0  
-**Status:** Phase 2 Complete ✅  
-**Last Updated:** January 31, 2026
+**Version:** 4.1  
+**Status:** Phase 6 Complete ✅  
+**Last Updated:** February 2, 2026
 
-A comprehensive, multi-tenant school management SaaS platform with full academic year support and historical data tracking.
+A comprehensive, multi-tenant school management SaaS platform with full academic year support, student progression tracking, and historical data management.
 
 ---
 
@@ -27,35 +27,61 @@ Password: SecurePass123!
 ## 📊 System Architecture
 
 ### Microservices (Ports)
-- **Web** (3000) - Next.js frontend
-- **Auth** (3001) - Authentication
-- **School** (3002) - School & Academic Years
-- **Student** (3003) - Student management
-- **Teacher** (3004) - Teacher management
-- **Class** (3005) - Class management
+| Port | Service | Description |
+|------|---------|-------------|
+| 3000 | Web | Next.js frontend application |
+| 3001 | Auth | Authentication & authorization |
+| 3002 | School | School & Academic Year management |
+| 3003 | Student | Student management & transcripts |
+| 3004 | Teacher | Teacher management & subject assignments |
+| 3005 | Class | Class management & student enrollment |
+| 3006 | Subject | Subject/curriculum management |
+| 3007 | Grade | Grade entry & calculations |
+| 3008 | Attendance | Attendance tracking |
+| 3009 | Timetable | Schedule management |
 
 ### Tech Stack
 - **Frontend:** Next.js 14, React, TypeScript, TailwindCSS
 - **Backend:** Node.js, Express, TypeScript
-- **Database:** PostgreSQL, Prisma ORM
+- **Database:** PostgreSQL (Neon), Prisma ORM
 - **Auth:** JWT tokens
+- **Architecture:** Microservices with multi-tenant design
 
 ---
 
 ## ✅ Features Implemented
 
-### Phase 1: Academic Year Management
+### Phase 1-2: Core & Academic Year Management
+- ✅ Multi-tenant school isolation
 - ✅ Create, edit, delete academic years
-- ✅ Set current year
-- ✅ Archive old years
-- ✅ Status management (PLANNING → ACTIVE → ENDED → ARCHIVED)
+- ✅ Status management (PLANNING → ACTIVE → COMPLETED → ARCHIVED)
+- ✅ Global year context with navigation selector
+- ✅ Year-based data filtering
 
-### Phase 2: Year-Based Data Scoping
-- ✅ Global year context
-- ✅ Year selector in navigation
-- ✅ All data filtered by selected year
-- ✅ Students, Teachers, Classes pages year-aware
-- ✅ Historical data preservation
+### Phase 3: Student Promotion System
+- ✅ Bulk promotion API
+- ✅ Promotion wizard UI
+- ✅ StudentProgression tracking
+- ✅ Grade advancement logic
+
+### Phase 4: Performance Optimization
+- ✅ Prisma singleton pattern
+- ✅ In-memory cache (stale-while-revalidate)
+- ✅ Database warmup & keep-alive
+
+### Phase 5: Multi-Academic Year Enhancement
+- ✅ Academic Year Detail Views (5 tabs)
+- ✅ New Year Setup Wizard (6 steps)
+- ✅ Teacher Assignment History
+- ✅ Year-Over-Year Comparison
+- ✅ Student Academic Transcript with PDF export
+
+### Phase 6: Enhanced Management System ✅ NEW
+- ✅ Class student management (`/classes/[id]/manage`)
+- ✅ Teacher subject assignment (`/teachers/[id]/subjects`)
+- ✅ Duplicate prevention (one student per class per year)
+- ✅ Student transfer between classes
+- ✅ Batch assign/remove operations
 
 ---
 
@@ -63,17 +89,21 @@ Password: SecurePass123!
 
 ```
 Stunity-Enterprise/
-├── apps/web/              # Frontend
+├── apps/web/              # Frontend (Next.js)
 ├── services/              # Backend microservices
-│   ├── auth-service/
-│   ├── school-service/
-│   ├── student-service/
-│   ├── teacher-service/
-│   └── class-service/
+│   ├── auth-service/      # Port 3001
+│   ├── school-service/    # Port 3002
+│   ├── student-service/   # Port 3003
+│   ├── teacher-service/   # Port 3004
+│   ├── class-service/     # Port 3005
+│   ├── subject-service/   # Port 3006
+│   ├── grade-service/     # Port 3007
+│   ├── attendance-service/# Port 3008
+│   └── timetable-service/ # Port 3009
 ├── packages/database/     # Prisma schema
 ├── docs/                  # Documentation
-├── quick-start.sh         # Start services
-└── stop-all-services.sh   # Stop services
+├── quick-start.sh         # Start all services
+└── stop-all-services.sh   # Stop all services
 ```
 
 ---
