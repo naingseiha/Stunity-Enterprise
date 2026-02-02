@@ -292,6 +292,13 @@ export default function TeacherDetailPage({
                     ID: {teacher.employeeId}
                   </span>
                 )}
+                <button
+                  onClick={() => router.push(`/${params?.locale || 'en'}/teachers/${teacherId}/subjects`)}
+                  className="px-4 py-1 bg-white/30 hover:bg-white/40 rounded-full text-sm font-medium flex items-center gap-2 transition-colors"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Manage Subjects
+                </button>
               </div>
             </div>
           </div>

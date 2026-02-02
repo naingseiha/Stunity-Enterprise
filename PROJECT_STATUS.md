@@ -1,8 +1,8 @@
 # 🎓 Stunity Enterprise - Project Status
 
 **Date:** January 31, 2026  
-**Version:** 4.0  
-**Status:** Phase 4 Performance Optimization Complete ✅
+**Version:** 4.1  
+**Status:** Phase 6 Enhanced Management Complete ✅
 
 ---
 
@@ -10,18 +10,18 @@
 
 ### All 10 Microservices Running ✅
 
-| Port | Service | Status |
-|------|---------|--------|
-| 3000 | Web App (Next.js) | 🟢 Running |
-| 3001 | Auth Service | 🟢 Running |
-| 3002 | School Service | 🟢 Running |
-| 3003 | Student Service | 🟢 Running |
-| 3004 | Teacher Service | 🟢 Running |
-| 3005 | Class Service | 🟢 Running |
-| 3006 | Subject Service | 🟢 Running |
-| 3007 | Grade Service | 🟢 Running |
-| 3008 | Attendance Service | 🟢 Running |
-| 3009 | Timetable Service | 🟢 Running |
+| Port | Service | Status | Version |
+|------|---------|--------|---------|
+| 3000 | Web App (Next.js) | 🟢 Running | 4.1 |
+| 3001 | Auth Service | 🟢 Running | 2.0 |
+| 3002 | School Service | 🟢 Running | 2.3 |
+| 3003 | Student Service | 🟢 Running | 2.1 |
+| 3004 | Teacher Service | 🟢 Running | 2.2 |
+| 3005 | Class Service | 🟢 Running | 2.3 |
+| 3006 | Subject Service | 🟢 Running | 2.0 |
+| 3007 | Grade Service | 🟢 Running | 2.0 |
+| 3008 | Attendance Service | 🟢 Running | 2.0 |
+| 3009 | Timetable Service | 🟢 Running | 2.0 |
 
 ### Test Data
 - **School:** Test High School
@@ -70,7 +70,7 @@
 - [x] Background cache refresh
 - [x] JWT secret unified across all services
 
-### Phase 5: Multi-Academic Year Enhancement ✅ NEW
+### Phase 5: Multi-Academic Year Enhancement ✅
 - [x] **Academic Year Detail Views**
   - Enhanced year detail page with 5 tabs (Overview, Classes, Teachers, Promotions, Calendar)
   - Comprehensive statistics API
@@ -92,6 +92,28 @@
   - All grades by year, term, subject
   - Attendance summaries per year
   - Print/Export PDF functionality
+
+### Phase 6: Enhanced Management System ✅ NEW
+- [x] **Class Management Enhancement**
+  - Enhanced class roster with student assignment (`/classes/[id]/manage`)
+  - Dual-column layout: unassigned students ↔ enrolled students
+  - Multi-select with checkboxes for batch operations
+  - Search filtering for both lists
+  - Duplicate prevention (one student per class per academic year)
+  - Bulk student transfer between classes
+  - "Manage Students" button on classes list page
+- [x] **Teacher Subject Assignment**
+  - Subject management page at `/teachers/[id]/subjects`
+  - Filter by grade level and category
+  - Batch assign/remove subjects
+  - "Manage Subjects" button on teacher profile
+- [x] **Validation APIs**
+  - Prevents same student in same class twice
+  - Prevents student in multiple classes same academic year
+  - Shows existing class name in error messages
+  - GET `/classes/unassigned-students/:academicYearId`
+  - POST `/classes/:id/transfer-student`
+  - Full CRUD for `/teachers/:id/subjects`
 
 ### Additional Features Completed
 - [x] Student CRUD with photo upload

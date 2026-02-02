@@ -239,21 +239,30 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
                       </div>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => router.push(`/${locale}/classes/${classItem.id}/roster`)}
-                          className="text-stunity-primary-600 hover:text-stunity-primary-900"
-                          title="View Roster"
+                          onClick={() => router.push(`/${locale}/classes/${classItem.id}/manage`)}
+                          className="text-green-600 hover:text-green-800"
+                          title="Manage Students"
                         >
                           <Users className="w-5 h-5" />
                         </button>
                         <button
+                          onClick={() => router.push(`/${locale}/classes/${classItem.id}/roster`)}
+                          className="text-blue-600 hover:text-blue-800"
+                          title="View Roster"
+                        >
+                          <Eye className="w-5 h-5" />
+                        </button>
+                        <button
                           onClick={() => handleEdit(classItem)}
                           className="text-stunity-primary-600 hover:text-stunity-primary-900"
+                          title="Edit Class"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(classItem.id)}
                           className="text-red-600 hover:text-red-900"
+                          title="Delete Class"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

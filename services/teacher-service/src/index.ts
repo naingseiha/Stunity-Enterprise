@@ -1463,11 +1463,303 @@ app.get('/teachers/:id/history', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// ===========================
+// GET /teachers/:id/subjects
+// Get all subjects assigned to a teacher
+// ===========================
+app.get('/teachers/:id/subjects', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = req.user!.schoolId;
+
+    if (!schoolId) {
+      return res.status(401).json({ success: false, error: 'School context required' });
+    }
+
+    // Verify teacher belongs to school
+    const teacher = await prisma.teacher.findFirst({
+      where: { id, schoolId },
+    });
+
+    if (!teacher) {
+      return res.status(404).json({ success: false, error: 'Teacher not found' });
+    }
+
+    // Get all subject assignments
+    const assignments = await prisma.subjectTeacher.findMany({
+      where: { teacherId: id },
+      include: {
+        subject: {
+          select: {
+            id: true,
+            name: true,
+            nameKh: true,
+            code: true,
+            category: true,
+            grade: true,
+            coefficient: true,
+            weeklyHours: true,
+            isActive: true,
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        teacher: {
+          id: teacher.id,
+          firstName: teacher.firstName,
+          lastName: teacher.lastName,
+        },
+        subjects: assignments.map(a => ({
+          assignmentId: a.id,
+          ...a.subject,
+          assignedAt: a.createdAt,
+        })),
+        totalSubjects: assignments.length,
+      }
+    });
+  } catch (error: any) {
+    console.error('Error fetching teacher subjects:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch subjects' });
+  }
+});
+
+// ===========================
+// POST /teachers/:id/subjects
+// Assign subjects to a teacher
+// ===========================
+app.post('/teachers/:id/subjects', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { subjectIds } = req.body;
+    const schoolId = req.user!.schoolId;
+
+    if (!schoolId) {
+      return res.status(401).json({ success: false, error: 'School context required' });
+    }
+
+    if (!subjectIds || !Array.isArray(subjectIds) || subjectIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'subjectIds array is required' });
+    }
+
+    // Verify teacher belongs to school
+    const teacher = await prisma.teacher.findFirst({
+      where: { id, schoolId },
+    });
+
+    if (!teacher) {
+      return res.status(404).json({ success: false, error: 'Teacher not found' });
+    }
+
+    // Verify all subjects exist (subjects are school-wide, no schoolId)
+    const subjects = await prisma.subject.findMany({
+      where: {
+        id: { in: subjectIds },
+        isActive: true,
+      },
+      select: { id: true, name: true }
+    });
+
+    if (subjects.length !== subjectIds.length) {
+      return res.status(404).json({
+        success: false,
+        error: 'One or more subjects not found',
+        found: subjects.length,
+        requested: subjectIds.length,
+      });
+    }
+
+    // Check for existing assignments
+    const existing = await prisma.subjectTeacher.findMany({
+      where: {
+        teacherId: id,
+        subjectId: { in: subjectIds },
+      },
+      select: { subjectId: true }
+    });
+
+    const existingIds = new Set(existing.map(e => e.subjectId));
+    const newSubjectIds = subjectIds.filter((sid: string) => !existingIds.has(sid));
+
+    if (newSubjectIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'All subjects are already assigned to this teacher',
+      });
+    }
+
+    // Create new assignments
+    const result = await prisma.subjectTeacher.createMany({
+      data: newSubjectIds.map((subjectId: string) => ({
+        teacherId: id,
+        subjectId,
+      })),
+      skipDuplicates: true,
+    });
+
+    console.log(`✅ Assigned ${result.count} subjects to teacher ${teacher.firstName} ${teacher.lastName}`);
+
+    res.json({
+      success: true,
+      message: `${result.count} subject(s) assigned successfully`,
+      data: {
+        assigned: result.count,
+        skipped: existing.length,
+      }
+    });
+  } catch (error: any) {
+    console.error('Error assigning subjects:', error);
+    res.status(500).json({ success: false, error: 'Failed to assign subjects' });
+  }
+});
+
+// ===========================
+// DELETE /teachers/:id/subjects/:subjectId
+// Remove a subject assignment from teacher
+// ===========================
+app.delete('/teachers/:id/subjects/:subjectId', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, subjectId } = req.params;
+    const schoolId = req.user!.schoolId;
+
+    if (!schoolId) {
+      return res.status(401).json({ success: false, error: 'School context required' });
+    }
+
+    // Verify teacher belongs to school
+    const teacher = await prisma.teacher.findFirst({
+      where: { id, schoolId },
+    });
+
+    if (!teacher) {
+      return res.status(404).json({ success: false, error: 'Teacher not found' });
+    }
+
+    // Find and delete the assignment
+    const assignment = await prisma.subjectTeacher.findFirst({
+      where: { teacherId: id, subjectId },
+      include: { subject: { select: { name: true } } }
+    });
+
+    if (!assignment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Subject assignment not found',
+      });
+    }
+
+    await prisma.subjectTeacher.delete({
+      where: { id: assignment.id }
+    });
+
+    console.log(`✅ Removed ${assignment.subject.name} from teacher ${teacher.firstName} ${teacher.lastName}`);
+
+    res.json({
+      success: true,
+      message: `Subject "${assignment.subject.name}" removed from teacher`,
+    });
+  } catch (error: any) {
+    console.error('Error removing subject assignment:', error);
+    res.status(500).json({ success: false, error: 'Failed to remove subject' });
+  }
+});
+
+// ===========================
+// PUT /teachers/:id/subjects
+// Replace all subject assignments (bulk update)
+// ===========================
+app.put('/teachers/:id/subjects', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { subjectIds } = req.body;
+    const schoolId = req.user!.schoolId;
+
+    if (!schoolId) {
+      return res.status(401).json({ success: false, error: 'School context required' });
+    }
+
+    if (!Array.isArray(subjectIds)) {
+      return res.status(400).json({ success: false, error: 'subjectIds array is required' });
+    }
+
+    // Verify teacher belongs to school
+    const teacher = await prisma.teacher.findFirst({
+      where: { id, schoolId },
+    });
+
+    if (!teacher) {
+      return res.status(404).json({ success: false, error: 'Teacher not found' });
+    }
+
+    // If subjectIds is empty, remove all assignments
+    if (subjectIds.length === 0) {
+      const deleted = await prisma.subjectTeacher.deleteMany({
+        where: { teacherId: id }
+      });
+
+      return res.json({
+        success: true,
+        message: 'All subject assignments removed',
+        data: { removed: deleted.count, assigned: 0 }
+      });
+    }
+
+    // Verify all subjects exist (subjects are school-wide, no schoolId)
+    const subjects = await prisma.subject.findMany({
+      where: {
+        id: { in: subjectIds },
+        isActive: true,
+      },
+      select: { id: true }
+    });
+
+    if (subjects.length !== subjectIds.length) {
+      return res.status(404).json({
+        success: false,
+        error: 'One or more subjects not found',
+      });
+    }
+
+    // Replace all assignments in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Delete all existing
+      const deleted = await tx.subjectTeacher.deleteMany({
+        where: { teacherId: id }
+      });
+
+      // Create new assignments
+      const created = await tx.subjectTeacher.createMany({
+        data: subjectIds.map((subjectId: string) => ({
+          teacherId: id,
+          subjectId,
+        })),
+      });
+
+      return { removed: deleted.count, assigned: created.count };
+    });
+
+    console.log(`✅ Updated subjects for teacher ${teacher.firstName}: removed ${result.removed}, assigned ${result.assigned}`);
+
+    res.json({
+      success: true,
+      message: 'Subject assignments updated',
+      data: result
+    });
+  } catch (error: any) {
+    console.error('Error updating subject assignments:', error);
+    res.status(500).json({ success: false, error: 'Failed to update subjects' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════════════════════╗
 ║                                                            ║
-║   🎓 TEACHER SERVICE RUNNING v2.1                         ║
+║   🎓 TEACHER SERVICE RUNNING v2.2                         ║
 ║                                                            ║
 ║   Port: ${PORT}                                           ║
 ║   Environment: ${process.env.NODE_ENV || 'development'}                                   ║
