@@ -16,6 +16,13 @@ import {
   Eye,
   RefreshCw,
   ChevronRight,
+  ArrowRightLeft,
+  X,
+  CheckSquare,
+  Square,
+  Filter,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import { deleteStudent, type Student } from '@/lib/api/students';
@@ -31,6 +38,14 @@ import AcademicYearSelector from '@/components/AcademicYearSelector';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 
+interface ClassOption {
+  id: string;
+  name: string;
+  grade: string;
+  section?: string;
+  studentCount?: number;
+}
+
 export default function StudentsPage({ params: { locale } }: { params: { locale: string } }) {
   const t = useTranslations('students');
   const tc = useTranslations('common');
@@ -43,6 +58,22 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
   const { selectedYear } = useAcademicYear();
+
+  // Class filter and reassignment state
+  const [classFilter, setClassFilter] = useState<string>('all');
+  const [availableClasses, setAvailableClasses] = useState<ClassOption[]>([]);
+  const [loadingClasses, setLoadingClasses] = useState(false);
+  
+  // Reassign modal state
+  const [showReassignModal, setShowReassignModal] = useState(false);
+  const [studentToReassign, setStudentToReassign] = useState<Student | null>(null);
+  const [targetClassId, setTargetClassId] = useState<string>('');
+  const [isReassigning, setIsReassigning] = useState(false);
+  const [reassignMessage, setReassignMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  
+  // Multi-select for bulk actions
+  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
+  const [showBulkReassignModal, setShowBulkReassignModal] = useState(false);
 
   const user = TokenManager.getUserData().user;
   const school = TokenManager.getUserData().school;
@@ -73,6 +104,34 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
       router.replace(`/${locale}/auth/login`);
     }
   }, [locale, router]);
+
+  // Fetch available classes when academic year changes
+  useEffect(() => {
+    const fetchClasses = async () => {
+      if (!selectedYear?.id) return;
+      
+      setLoadingClasses(true);
+      try {
+        const token = TokenManager.getAccessToken();
+        const response = await fetch(
+          `http://localhost:3005/classes/lightweight?academicYearId=${selectedYear.id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const data = await response.json();
+        if (data.success) {
+          setAvailableClasses(data.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch classes:', err);
+      } finally {
+        setLoadingClasses(false);
+      }
+    };
+
+    fetchClasses();
+  }, [selectedYear?.id]);
 
   const handleSearch = useCallback(() => {
     setPage(1);
@@ -107,6 +166,180 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
       mutate(); // Revalidate the cache
     }
   }, [mutate]);
+
+  // Open reassign modal for a single student
+  const handleOpenReassign = useCallback((student: Student) => {
+    setStudentToReassign(student);
+    setTargetClassId('');
+    setReassignMessage(null);
+    setShowReassignModal(true);
+  }, []);
+
+  // Reassign a single student to a new class
+  const handleReassignStudent = async () => {
+    if (!studentToReassign || !targetClassId) return;
+
+    setIsReassigning(true);
+    setReassignMessage(null);
+
+    try {
+      const token = TokenManager.getAccessToken();
+
+      // First, remove from current class if exists
+      if (studentToReassign.class?.id) {
+        await fetch(
+          `http://localhost:3005/classes/${studentToReassign.class.id}/students/${studentToReassign.id}`,
+          {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+      }
+
+      // Then assign to new class
+      const response = await fetch(
+        `http://localhost:3005/classes/${targetClassId}/students`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            studentId: studentToReassign.id,
+            academicYearId: selectedYear?.id,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        const targetClass = availableClasses.find(c => c.id === targetClassId);
+        setReassignMessage({
+          type: 'success',
+          text: `✓ ${studentToReassign.firstNameLatin} ${studentToReassign.lastNameLatin} assigned to ${targetClass?.name || 'class'}`,
+        });
+        mutate(); // Refresh student list
+        setTimeout(() => {
+          setShowReassignModal(false);
+          setStudentToReassign(null);
+        }, 1500);
+      } else {
+        setReassignMessage({
+          type: 'error',
+          text: data.message || 'Failed to reassign student',
+        });
+      }
+    } catch (err: any) {
+      setReassignMessage({
+        type: 'error',
+        text: err.message || 'Failed to reassign student',
+      });
+    } finally {
+      setIsReassigning(false);
+    }
+  };
+
+  // Toggle student selection for bulk actions
+  const toggleStudentSelection = (studentId: string) => {
+    setSelectedStudents(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(studentId)) {
+        newSet.delete(studentId);
+      } else {
+        newSet.add(studentId);
+      }
+      return newSet;
+    });
+  };
+
+  // Select all visible students
+  const toggleSelectAll = () => {
+    if (selectedStudents.size === students.length) {
+      setSelectedStudents(new Set());
+    } else {
+      setSelectedStudents(new Set(students.map(s => s.id)));
+    }
+  };
+
+  // Bulk reassign students
+  const handleBulkReassign = async () => {
+    if (selectedStudents.size === 0 || !targetClassId) return;
+
+    setIsReassigning(true);
+    setReassignMessage(null);
+
+    try {
+      const token = TokenManager.getAccessToken();
+      const studentIds = Array.from(selectedStudents);
+
+      // Remove from current classes first
+      for (const studentId of studentIds) {
+        const student = students.find(s => s.id === studentId);
+        if (student?.class?.id) {
+          await fetch(
+            `http://localhost:3005/classes/${student.class.id}/students/${studentId}`,
+            {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+        }
+      }
+
+      // Batch assign to new class
+      const response = await fetch(
+        `http://localhost:3005/classes/${targetClassId}/students/batch`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            studentIds,
+            academicYearId: selectedYear?.id,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        const targetClass = availableClasses.find(c => c.id === targetClassId);
+        setReassignMessage({
+          type: 'success',
+          text: `✓ ${data.data?.assigned || studentIds.length} student(s) assigned to ${targetClass?.name || 'class'}`,
+        });
+        setSelectedStudents(new Set());
+        mutate();
+        setTimeout(() => {
+          setShowBulkReassignModal(false);
+          setTargetClassId('');
+        }, 1500);
+      } else {
+        setReassignMessage({
+          type: 'error',
+          text: data.message || 'Failed to reassign students',
+        });
+      }
+    } catch (err: any) {
+      setReassignMessage({
+        type: 'error',
+        text: err.message || 'Failed to reassign students',
+      });
+    } finally {
+      setIsReassigning(false);
+    }
+  };
+
+  // Filter students by class
+  const filteredStudents = classFilter === 'all' 
+    ? students 
+    : classFilter === 'unassigned'
+    ? students.filter(s => !s.class)
+    : students.filter(s => s.class?.id === classFilter);
 
   const totalPages = pagination.totalPages;
   const totalCount = pagination.total;
@@ -187,6 +420,48 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
                     </span>
                   </div>
                 )}
+
+                {/* Class Filter */}
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-gray-400" />
+                  <select
+                    value={classFilter}
+                    onChange={(e) => setClassFilter(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="all">All Classes</option>
+                    <option value="unassigned">Unassigned</option>
+                    {availableClasses.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} (Grade {c.grade})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Bulk Actions */}
+                {selectedStudents.size > 0 && (
+                  <div className="flex items-center gap-2 ml-auto">
+                    <span className="text-sm text-gray-600">{selectedStudents.size} selected</span>
+                    <button
+                      onClick={() => {
+                        setTargetClassId('');
+                        setReassignMessage(null);
+                        setShowBulkReassignModal(true);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      <ArrowRightLeft className="h-4 w-4" />
+                      Assign to Class
+                    </button>
+                    <button
+                      onClick={() => setSelectedStudents(new Set())}
+                      className="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </AnimatedContent>
@@ -236,33 +511,57 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left">
+                        <button
+                          onClick={toggleSelectAll}
+                          className="p-1 hover:bg-gray-200 rounded"
+                        >
+                          {selectedStudents.size === filteredStudents.length && filteredStudents.length > 0 ? (
+                            <CheckSquare className="w-5 h-5 text-blue-600" />
+                          ) : (
+                            <Square className="w-5 h-5 text-gray-400" />
+                          )}
+                        </button>
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Photo
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Student ID
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Name
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Gender
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Date of Birth
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Class
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {students.map((student) => (
-                      <tr key={student.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
+                    {filteredStudents.map((student) => (
+                      <tr key={student.id} className={`hover:bg-gray-50 ${selectedStudents.has(student.id) ? 'bg-blue-50' : ''}`}>
+                        <td className="px-4 py-4">
+                          <button
+                            onClick={() => toggleStudentSelection(student.id)}
+                            className="p-1 hover:bg-gray-200 rounded"
+                          >
+                            {selectedStudents.has(student.id) ? (
+                              <CheckSquare className="w-5 h-5 text-blue-600" />
+                            ) : (
+                              <Square className="w-5 h-5 text-gray-400" />
+                            )}
+                          </button>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
                           {student.photoUrl ? (
                             <img
                               src={`${process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003'}${student.photoUrl}`}
@@ -275,10 +574,10 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
                             </div>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {student.studentId}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">
                             {student.firstNameLatin} {student.lastNameLatin}
                           </div>
@@ -288,32 +587,49 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
                             </div>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                           {student.gender}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                           {new Date(student.dateOfBirth).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {student.class?.name || '-'}
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          {student.class?.name ? (
+                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                              {student.class.name}
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded-full text-xs">
+                              Unassigned
+                            </span>
+                          )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button
+                            onClick={() => handleOpenReassign(student)}
+                            className="text-green-600 hover:text-green-900 mr-2"
+                            title="Assign to Class"
+                          >
+                            <ArrowRightLeft className="w-4 h-4 inline" />
+                          </button>
                           <button
                             onClick={() => router.push(`/${locale}/students/${student.id}`)}
-                            className="text-orange-600 hover:text-orange-900 mr-3"
+                            className="text-orange-600 hover:text-orange-900 mr-2"
                             title="View Details"
                           >
                             <Eye className="w-4 h-4 inline" />
                           </button>
                           <button
                             onClick={() => handleEdit(student)}
-                            className="text-stunity-primary-600 hover:text-stunity-primary-900 mr-3"
+                            className="text-blue-600 hover:text-blue-900 mr-2"
+                            title="Edit"
                           >
                             <Edit className="w-4 h-4 inline" />
                           </button>
                           <button
                             onClick={() => handleDelete(student.id)}
                             className="text-red-600 hover:text-red-900"
+                            title="Delete"
                           >
                             <Trash2 className="w-4 h-4 inline" />
                           </button>
@@ -358,6 +674,226 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
             student={selectedStudent}
             onClose={handleModalClose}
           />
+        )}
+
+        {/* Single Student Reassign Modal */}
+        {showReassignModal && studentToReassign && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+              <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-5 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                      <ArrowRightLeft className="w-5 h-5" />
+                      Assign to Class
+                    </h3>
+                    <p className="text-green-100 text-sm mt-1">
+                      {studentToReassign.firstNameLatin} {studentToReassign.lastNameLatin}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowReassignModal(false);
+                      setStudentToReassign(null);
+                    }}
+                    className="p-2 hover:bg-white/20 rounded-lg"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6">
+                {/* Current Class Info */}
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">Current Class</p>
+                  <p className="font-medium text-gray-900">
+                    {studentToReassign.class?.name || 'Unassigned'}
+                  </p>
+                </div>
+
+                {/* Target Class Selection */}
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select New Class
+                </label>
+                <select
+                  value={targetClassId}
+                  onChange={(e) => setTargetClassId(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="">Choose a class...</option>
+                  {availableClasses
+                    .filter(c => c.id !== studentToReassign.class?.id)
+                    .map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} (Grade {c.grade}) - {c.studentCount || 0} students
+                      </option>
+                    ))}
+                </select>
+
+                {/* Message */}
+                {reassignMessage && (
+                  <div className={`mt-4 p-3 rounded-lg flex items-center gap-2 ${
+                    reassignMessage.type === 'success' 
+                      ? 'bg-green-50 text-green-700 border border-green-200' 
+                      : 'bg-red-50 text-red-700 border border-red-200'
+                  }`}>
+                    {reassignMessage.type === 'success' ? (
+                      <CheckSquare className="w-4 h-4" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4" />
+                    )}
+                    <span className="text-sm">{reassignMessage.text}</span>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => {
+                      setShowReassignModal(false);
+                      setStudentToReassign(null);
+                    }}
+                    className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleReassignStudent}
+                    disabled={!targetClassId || isReassigning}
+                    className="flex-1 px-4 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center justify-center gap-2"
+                  >
+                    {isReassigning ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Assigning...
+                      </>
+                    ) : (
+                      <>
+                        <ArrowRightLeft className="w-4 h-4" />
+                        Assign
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Reassign Modal */}
+        {showBulkReassignModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-5 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                      <Users className="w-5 h-5" />
+                      Bulk Assign to Class
+                    </h3>
+                    <p className="text-blue-100 text-sm mt-1">
+                      {selectedStudents.size} student(s) selected
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowBulkReassignModal(false);
+                      setTargetClassId('');
+                    }}
+                    className="p-2 hover:bg-white/20 rounded-lg"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6">
+                {/* Selected Students Preview */}
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg max-h-32 overflow-y-auto">
+                  <p className="text-xs text-gray-500 mb-2">Selected Students:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {students
+                      .filter(s => selectedStudents.has(s.id))
+                      .slice(0, 10)
+                      .map(s => (
+                        <span key={s.id} className="px-2 py-0.5 bg-white border rounded text-xs text-gray-700">
+                          {s.firstNameLatin} {s.lastNameLatin}
+                        </span>
+                      ))}
+                    {selectedStudents.size > 10 && (
+                      <span className="px-2 py-0.5 bg-gray-200 rounded text-xs text-gray-600">
+                        +{selectedStudents.size - 10} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Target Class Selection */}
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Assign All to Class
+                </label>
+                <select
+                  value={targetClassId}
+                  onChange={(e) => setTargetClassId(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Choose a class...</option>
+                  {availableClasses.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} (Grade {c.grade}) - {c.studentCount || 0} students
+                    </option>
+                  ))}
+                </select>
+
+                {/* Message */}
+                {reassignMessage && (
+                  <div className={`mt-4 p-3 rounded-lg flex items-center gap-2 ${
+                    reassignMessage.type === 'success' 
+                      ? 'bg-green-50 text-green-700 border border-green-200' 
+                      : 'bg-red-50 text-red-700 border border-red-200'
+                  }`}>
+                    {reassignMessage.type === 'success' ? (
+                      <CheckSquare className="w-4 h-4" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4" />
+                    )}
+                    <span className="text-sm">{reassignMessage.text}</span>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => {
+                      setShowBulkReassignModal(false);
+                      setTargetClassId('');
+                    }}
+                    className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleBulkReassign}
+                    disabled={!targetClassId || isReassigning}
+                    className="flex-1 px-4 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center justify-center gap-2"
+                  >
+                    {isReassigning ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Assigning...
+                      </>
+                    ) : (
+                      <>
+                        <Users className="w-4 h-4" />
+                        Assign {selectedStudents.size} Students
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
         </main>
       </div>
