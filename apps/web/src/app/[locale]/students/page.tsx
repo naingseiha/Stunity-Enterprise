@@ -123,7 +123,12 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
         );
         const data = await response.json();
         if (data.success) {
-          setAvailableClasses(data.data || []);
+          // Map _count.studentClasses to studentCount for UI display
+          const mappedClasses = (data.data || []).map((cls: any) => ({
+            ...cls,
+            studentCount: cls._count?.studentClasses ?? cls.studentCount ?? 0,
+          }));
+          setAvailableClasses(mappedClasses);
         }
       } catch (err) {
         console.error('Failed to fetch classes:', err);

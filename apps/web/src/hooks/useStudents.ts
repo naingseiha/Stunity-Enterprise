@@ -60,6 +60,8 @@ function transformStudents(data: any[]): Student[] {
     lastNameLatin: student.lastName || '',
     firstNameKhmer: student.khmerName || null,
     lastNameKhmer: null,
+    // Ensure class is preserved for unassigned filtering
+    class: student.class || null,
   }));
 }
 
