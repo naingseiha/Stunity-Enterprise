@@ -25,6 +25,7 @@ import {
   ChevronDown,
   Home,
   ClipboardList,
+  Zap,
 } from 'lucide-react';
 
 interface GradeEntry {
@@ -69,6 +70,10 @@ export default function GradeEntryPage() {
   const [focusedCell, setFocusedCell] = useState<{ studentId: string; field: string } | null>(null);
   const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
   
+  // Quick fill state
+  const [showQuickFill, setShowQuickFill] = useState(false);
+  const [quickFillScore, setQuickFillScore] = useState<string>('');
+  
   // Statistics
   const [statistics, setStatistics] = useState<Statistics>({
     average: 0,
@@ -77,7 +82,7 @@ export default function GradeEntryPage() {
     passRate: 0,
   });
 
-  // Check authentication
+  // Check authentication - client side only to avoid hydration mismatch
   useEffect(() => {
     const token = TokenManager.getAccessToken();
     if (!token) {
@@ -85,10 +90,8 @@ export default function GradeEntryPage() {
       return;
     }
     
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      setUser(JSON.parse(userStr));
-    }
+    const userData = TokenManager.getUserData();
+    setUser(userData.user);
   }, [router]);
 
   // Load initial data
@@ -451,6 +454,48 @@ export default function GradeEntryPage() {
     debouncedSave();
   };
 
+  // Quick fill all empty scores
+  const quickFillEmptyScores = (score: number) => {
+    const newEntries = new Map(gradeEntries);
+    let filledCount = 0;
+    
+    newEntries.forEach((entry, studentId) => {
+      if (entry.score === null || entry.score === undefined) {
+        entry.score = score;
+        entry.isModified = true;
+        newEntries.set(studentId, entry);
+        filledCount++;
+      }
+    });
+    
+    if (filledCount > 0) {
+      setGradeEntries(newEntries);
+      setHasUnsavedChanges(true);
+      debouncedSave();
+    }
+    
+    setShowQuickFill(false);
+    setQuickFillScore('');
+    return filledCount;
+  };
+
+  // Quick fill all scores (overwrite)
+  const quickFillAllScores = (score: number) => {
+    const newEntries = new Map(gradeEntries);
+    
+    newEntries.forEach((entry, studentId) => {
+      entry.score = score;
+      entry.isModified = true;
+      newEntries.set(studentId, entry);
+    });
+    
+    setGradeEntries(newEntries);
+    setHasUnsavedChanges(true);
+    debouncedSave();
+    setShowQuickFill(false);
+    setQuickFillScore('');
+  };
+
   // Export to Excel
   const exportToExcel = () => {
     const subject = subjects.find(s => s.id === selectedSubject);
@@ -682,6 +727,15 @@ export default function GradeEntryPage() {
             </button>
             
             <button
+              onClick={() => setShowQuickFill(true)}
+              disabled={gridData.length === 0}
+              className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:opacity-50 flex items-center gap-2 text-sm"
+            >
+              <Zap className="w-4 h-4" />
+              Quick Fill
+            </button>
+            
+            <button
               onClick={clearAllGrades}
               disabled={gridData.length === 0}
               className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 flex items-center gap-2 text-sm"
@@ -692,6 +746,83 @@ export default function GradeEntryPage() {
           </div>
         </div>
           </AnimatedContent>
+
+        {/* Quick Fill Modal */}
+        {showQuickFill && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Zap className="w-5 h-5 text-indigo-500" />
+                Quick Fill Scores
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Score to Fill (max {maxScore})
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max={maxScore}
+                    step="0.5"
+                    value={quickFillScore}
+                    onChange={(e) => setQuickFillScore(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder={`Enter score (0-${maxScore})`}
+                    autoFocus
+                  />
+                </div>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const score = parseFloat(quickFillScore);
+                      if (!isNaN(score) && score >= 0 && score <= maxScore) {
+                        const count = quickFillEmptyScores(score);
+                        if (count === 0) {
+                          alert('No empty cells to fill!');
+                        }
+                      } else {
+                        alert(`Please enter a valid score between 0 and ${maxScore}`);
+                      }
+                    }}
+                    disabled={!quickFillScore}
+                    className="flex-1 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:opacity-50 font-medium"
+                  >
+                    Fill Empty Only
+                  </button>
+                  <button
+                    onClick={() => {
+                      const score = parseFloat(quickFillScore);
+                      if (!isNaN(score) && score >= 0 && score <= maxScore) {
+                        if (confirm('This will overwrite ALL existing scores. Continue?')) {
+                          quickFillAllScores(score);
+                        }
+                      } else {
+                        alert(`Please enter a valid score between 0 and ${maxScore}`);
+                      }
+                    }}
+                    disabled={!quickFillScore}
+                    className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 font-medium"
+                  >
+                    Fill All
+                  </button>
+                </div>
+                
+                <button
+                  onClick={() => {
+                    setShowQuickFill(false);
+                    setQuickFillScore('');
+                  }}
+                  className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
           {/* Save Indicator */}
         {saveStatus !== 'idle' && (
@@ -811,21 +942,39 @@ export default function GradeEntryPage() {
                             onChange={(e) => handleScoreChange(item.student.id, e.target.value)}
                             onKeyDown={(e) => handleKeyDown(e, item.student.id, 'score')}
                             placeholder="0"
-                            className={`w-full px-3 py-2 border rounded-lg text-center focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                              score !== null && score !== undefined && score > maxScore
-                                ? 'border-red-500 bg-red-50'
+                            className={`w-full px-3 py-2 border rounded-lg text-center focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
+                              score !== null && score !== undefined
+                                ? score > maxScore
+                                  ? 'border-red-500 bg-red-50 text-red-700'
+                                  : percentage >= 50
+                                    ? 'border-green-300 bg-green-50'
+                                    : 'border-red-300 bg-red-50'
                                 : 'border-gray-300'
                             }`}
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <div className={`text-center font-medium ${getScoreColor(percentage)}`}>
+                          <div className={`text-center font-medium ${
+                            score !== null 
+                              ? percentage >= 50 
+                                ? 'text-green-600' 
+                                : 'text-red-600'
+                              : 'text-gray-400'
+                          }`}>
                             {score !== null ? `${percentage.toFixed(1)}%` : '-'}
                           </div>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex justify-center">
-                            <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${getGradeLevelColor(gradeLevel)}`}>
+                            <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${
+                              gradeLevel === '-'
+                                ? 'bg-gray-100 text-gray-500 border-gray-200'
+                                : gradeLevel === 'F'
+                                  ? 'bg-red-100 text-red-700 border-red-200'
+                                  : gradeLevel === 'E' || gradeLevel === 'D'
+                                    ? 'bg-yellow-100 text-yellow-700 border-yellow-200'
+                                    : 'bg-green-100 text-green-700 border-green-200'
+                            }`}>
                               {gradeLevel}
                             </span>
                           </div>
@@ -853,27 +1002,41 @@ export default function GradeEntryPage() {
             {/* Statistics Footer */}
             <div className="bg-gradient-to-r from-orange-100 to-yellow-100 px-6 py-4 border-t border-gray-200">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className="text-sm text-gray-600 mb-1">Class Average</div>
-                  <div className="text-2xl font-bold text-orange-600">
-                    {statistics.average.toFixed(1)}
+                <div className="text-center bg-white/50 rounded-lg p-3">
+                  <div className="text-sm text-gray-600 mb-1 flex items-center justify-center gap-1">
+                    <Calculator className="w-4 h-4" />
+                    Class Average
+                  </div>
+                  <div className={`text-2xl font-bold ${
+                    statistics.average >= 50 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {statistics.average.toFixed(1)}%
                   </div>
                 </div>
-                <div className="text-center">
-                  <div className="text-sm text-gray-600 mb-1">Highest Score</div>
+                <div className="text-center bg-white/50 rounded-lg p-3">
+                  <div className="text-sm text-gray-600 mb-1 flex items-center justify-center gap-1">
+                    ⬆️ Highest Score
+                  </div>
                   <div className="text-2xl font-bold text-green-600">
-                    {statistics.highest.toFixed(1)}
+                    {statistics.highest.toFixed(1)}%
                   </div>
                 </div>
-                <div className="text-center">
-                  <div className="text-sm text-gray-600 mb-1">Lowest Score</div>
+                <div className="text-center bg-white/50 rounded-lg p-3">
+                  <div className="text-sm text-gray-600 mb-1 flex items-center justify-center gap-1">
+                    ⬇️ Lowest Score
+                  </div>
                   <div className="text-2xl font-bold text-red-600">
-                    {statistics.lowest.toFixed(1)}
+                    {statistics.lowest.toFixed(1)}%
                   </div>
                 </div>
-                <div className="text-center">
-                  <div className="text-sm text-gray-600 mb-1">Pass Rate</div>
-                  <div className="text-2xl font-bold text-blue-600">
+                <div className="text-center bg-white/50 rounded-lg p-3">
+                  <div className="text-sm text-gray-600 mb-1 flex items-center justify-center gap-1">
+                    ✓ Pass Rate (≥50%)
+                  </div>
+                  <div className={`text-2xl font-bold ${
+                    statistics.passRate >= 80 ? 'text-green-600' : 
+                    statistics.passRate >= 50 ? 'text-yellow-600' : 'text-red-600'
+                  }`}>
                     {statistics.passRate.toFixed(1)}%
                   </div>
                 </div>

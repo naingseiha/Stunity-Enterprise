@@ -323,80 +323,80 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
     // Get current year
     const currentYear = new Date().getFullYear();
 
-    // Process each grade in a transaction
-    await prisma.$transaction(
-      grades.map((gradeData) => {
-        const {
-          studentId,
-          subjectId,
-          classId,
-          score,
-          month,
-          monthNumber,
-          maxScore = 100,
-          remarks,
-        } = gradeData;
+    // Process each grade sequentially
+    for (const gradeData of grades) {
+      const {
+        studentId,
+        subjectId,
+        classId,
+        score,
+        month,
+        monthNumber,
+        maxScore = 100,
+        remarks,
+      } = gradeData;
 
+      try {
         const percentage = calculatePercentage(score, maxScore);
 
         // Get subject to calculate weighted score
-        return prisma.subject.findUnique({ where: { id: subjectId } }).then((subject) => {
-          if (!subject) {
-            results.errors.push({ studentId, error: 'Subject not found' });
-            return null;
-          }
+        const subject = await prisma.subject.findUnique({ where: { id: subjectId } });
+        
+        if (!subject) {
+          results.errors.push({ studentId, error: 'Subject not found' });
+          continue;
+        }
 
-          const weightedScore = calculateWeightedScore(score, subject.coefficient);
+        const weightedScore = calculateWeightedScore(score, subject.coefficient);
 
-          // Try to find existing grade
-          return prisma.grade
-            .findFirst({
-              where: {
-                studentId,
-                subjectId,
-                classId,
-                month,
-                year: currentYear,
-              },
-            })
-            .then((existing) => {
-              if (existing) {
-                // Update existing
-                results.updated++;
-                return prisma.grade.update({
-                  where: { id: existing.id },
-                  data: {
-                    score,
-                    maxScore,
-                    percentage,
-                    weightedScore,
-                    remarks,
-                    monthNumber: monthNumber || existing.monthNumber,
-                  },
-                });
-              } else {
-                // Create new
-                results.created++;
-                return prisma.grade.create({
-                  data: {
-                    studentId,
-                    subjectId,
-                    classId,
-                    score,
-                    maxScore,
-                    month: month || 'Month 1',
-                    monthNumber: monthNumber || 1,
-                    year: currentYear,
-                    percentage,
-                    weightedScore,
-                    remarks,
-                  },
-                });
-              }
-            });
+        // Try to find existing grade
+        const existing = await prisma.grade.findFirst({
+          where: {
+            studentId,
+            subjectId,
+            classId,
+            month,
+            year: currentYear,
+          },
         });
-      })
-    );
+
+        if (existing) {
+          // Update existing
+          await prisma.grade.update({
+            where: { id: existing.id },
+            data: {
+              score,
+              maxScore,
+              percentage,
+              weightedScore,
+              remarks,
+              monthNumber: monthNumber || existing.monthNumber,
+            },
+          });
+          results.updated++;
+        } else {
+          // Create new
+          await prisma.grade.create({
+            data: {
+              studentId,
+              subjectId,
+              classId,
+              score,
+              maxScore,
+              month: month || 'Month 1',
+              monthNumber: monthNumber || 1,
+              year: currentYear,
+              percentage,
+              weightedScore,
+              remarks,
+            },
+          });
+          results.created++;
+        }
+      } catch (gradeError: any) {
+        results.errors.push({ studentId, error: gradeError.message });
+      }
+    }
 
     console.log(`✅ Batch operation: Created ${results.created}, Updated ${results.updated}`);
 
@@ -551,6 +551,7 @@ app.post('/grades/calculate/average', authenticateToken, async (req: AuthRequest
         average,
         percentage,
         gradeLevel,
+        rank: 0,
       });
     }
 
@@ -1178,7 +1179,7 @@ app.get('/grades/semester-summary/:classId/:semester', authenticateToken, async 
           },
         });
 
-        const scores = grades.map((g) => g.percentage);
+        const scores = grades.map((g) => g.percentage ?? 0).filter((p) => p > 0);
         const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
 
         return {
