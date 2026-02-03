@@ -39,6 +39,10 @@ function createClassesCacheKey(params?: ClassesParams): string | null {
 function transformClasses(data: any[]): Class[] {
   return (data || []).map((cls: any) => ({
     ...cls,
+    // Map _count.studentClasses to _count.students for frontend consistency
+    _count: {
+      students: cls._count?.studentClasses || cls._count?.students || 0,
+    },
     homeroomTeacher: cls.homeroomTeacher ? {
       id: cls.homeroomTeacher.id,
       firstNameLatin: cls.homeroomTeacher.firstName || cls.homeroomTeacher.firstNameLatin || '',

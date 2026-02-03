@@ -303,7 +303,11 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
         },
         _count: {
           select: {
-            studentClasses: true, // Count from junction table instead of direct students
+            studentClasses: {
+              where: {
+                status: 'ACTIVE', // Only count active enrollments
+              },
+            },
           },
         },
         homeroomTeacher: {

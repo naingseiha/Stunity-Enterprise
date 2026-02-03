@@ -494,15 +494,104 @@ export default function ClassManagePage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-green-500 mx-auto" />
-          <p className="mt-4 text-gray-600">Loading class data...</p>
+  // Skeleton component for class management page
+  const ClassManageSkeleton = () => (
+    <div className="min-h-screen bg-gray-50">
+      <UnifiedNavigation />
+      <main className="lg:ml-64 p-4 lg:p-8">
+        {/* Breadcrumb skeleton */}
+        <div className="flex items-center gap-2 mb-6">
+          <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-4 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-4 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
         </div>
-      </div>
-    );
+
+        {/* Header skeleton */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl animate-pulse"></div>
+            <div>
+              <div className="h-7 bg-gray-200 rounded w-40 mb-2 animate-pulse"></div>
+              <div className="h-4 bg-gray-200 rounded w-56 animate-pulse"></div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="h-10 bg-gray-200 rounded-xl w-24 animate-pulse"></div>
+            <div className="h-10 bg-gray-200 rounded-xl w-20 animate-pulse"></div>
+          </div>
+        </div>
+
+        {/* Stats skeleton */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+                <div>
+                  <div className="h-7 bg-gray-200 rounded w-12 mb-1 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Two column skeleton */}
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Left panel - Enrolled Students */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+              <div className="flex items-center justify-between mb-3">
+                <div className="h-6 bg-gray-200 rounded w-40 animate-pulse"></div>
+                <div className="h-6 bg-gray-200 rounded w-24 animate-pulse"></div>
+              </div>
+              <div className="h-10 bg-gray-200 rounded-xl w-full animate-pulse"></div>
+            </div>
+            <div className="p-4 space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-32 mb-2 animate-pulse"></div>
+                    <div className="h-3 bg-gray-200 rounded w-24 animate-pulse"></div>
+                  </div>
+                  <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right panel - Unassigned Students */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+              <div className="flex items-center justify-between mb-3">
+                <div className="h-6 bg-gray-200 rounded w-48 animate-pulse"></div>
+                <div className="h-6 bg-gray-200 rounded w-20 animate-pulse"></div>
+              </div>
+              <div className="h-10 bg-gray-200 rounded-xl w-full animate-pulse"></div>
+            </div>
+            <div className="p-4 space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-32 mb-2 animate-pulse"></div>
+                    <div className="h-3 bg-gray-200 rounded w-24 animate-pulse"></div>
+                  </div>
+                  <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+
+  if (loading) {
+    return <ClassManageSkeleton />;
   }
 
   if (!classData) {
