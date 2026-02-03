@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
+import BlurLoader from '@/components/BlurLoader';
+import AnimatedContent from '@/components/AnimatedContent';
 import {
   ArrowLeft,
   Calendar,
@@ -132,14 +134,56 @@ export default function StudentDetailPage({
     fetchStudentData();
   }, [id, locale, router]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading student data...</p>
+  // Skeleton for loading state
+  const StudentDetailSkeleton = () => (
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header Skeleton */}
+        <div className="mb-6">
+          <div className="h-6 w-32 bg-gray-200 rounded animate-pulse mb-4"></div>
+        </div>
+
+        {/* Profile Card Skeleton */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-6">
+          <div className="flex items-start gap-6">
+            <div className="w-24 h-24 bg-gray-200 rounded-2xl animate-pulse"></div>
+            <div className="flex-1">
+              <div className="h-8 w-64 bg-gray-200 rounded animate-pulse mb-2"></div>
+              <div className="h-6 w-48 bg-gray-200 rounded animate-pulse mb-4"></div>
+              <div className="grid grid-cols-4 gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse"></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-20 bg-white rounded-xl border border-gray-200 animate-pulse"></div>
+          ))}
+        </div>
+
+        {/* History Skeleton */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div className="h-6 w-48 bg-gray-200 rounded animate-pulse mb-4"></div>
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-24 bg-gray-100 rounded-xl animate-pulse"></div>
+            ))}
+          </div>
         </div>
       </div>
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <BlurLoader isLoading={true} skeleton={<StudentDetailSkeleton />}>
+        <div />
+      </BlurLoader>
     );
   }
 
@@ -195,25 +239,28 @@ export default function StudentDetailPage({
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <button
-            onClick={() => router.push(`/${locale}/students`)}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back to Students</span>
-          </button>
-        </div>
+        <AnimatedContent animation="fade" delay={0}>
+          <div className="mb-6">
+            <button
+              onClick={() => router.push(`/${locale}/students`)}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Back to Students</span>
+            </button>
+          </div>
+        </AnimatedContent>
 
         {/* Student Profile Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-6">
-          <div className="flex items-start gap-6">
-            {/* Avatar */}
-            <div className="flex-shrink-0">
-              {student.photoUrl ? (
-                <img
-                  src={student.photoUrl}
-                  alt={`${student.firstName} ${student.lastName}`}
+        <AnimatedContent animation="slide-up" delay={50}>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-6">
+            <div className="flex items-start gap-6">
+              {/* Avatar */}
+              <div className="flex-shrink-0">
+                {student.photoUrl ? (
+                  <img
+                    src={student.photoUrl}
+                    alt={`${student.firstName} ${student.lastName}`}
                   className="w-24 h-24 rounded-2xl object-cover"
                 />
               ) : (
@@ -282,55 +329,57 @@ export default function StudentDetailPage({
             </div>
           </div>
         </div>
+        </AnimatedContent>
 
         {/* Academic Progression Timeline */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-yellow-100 rounded-xl flex items-center justify-center">
-                <Award className="w-6 h-6 text-orange-600" />
+        <AnimatedContent animation="slide-up" delay={100}>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-yellow-100 rounded-xl flex items-center justify-center">
+                  <Award className="w-6 h-6 text-orange-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Academic Progression</h2>
+                  <p className="text-gray-600">Complete history of academic years and promotions</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Academic Progression</h2>
-                <p className="text-gray-600">Complete history of academic years and promotions</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => router.push(`/${locale}/students/${student.id}/transcript`)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:shadow-lg transition-shadow text-sm font-medium"
+                >
+                  <Award className="w-4 h-4" />
+                  View Transcript
+                </button>
+                <button
+                  onClick={() => router.push(`/${locale}/students/${student.id}/history`)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-lg hover:shadow-lg transition-shadow text-sm font-medium"
+                >
+                  <History className="w-4 h-4" />
+                  View Full History
+                </button>
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => router.push(`/${locale}/students/${student.id}/transcript`)}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:shadow-lg transition-shadow text-sm font-medium"
-              >
-                <Award className="w-4 h-4" />
-                View Transcript
-              </button>
-              <button
-                onClick={() => router.push(`/${locale}/students/${student.id}/history`)}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-lg hover:shadow-lg transition-shadow text-sm font-medium"
-              >
-                <History className="w-4 h-4" />
-                View Full History
-              </button>
-            </div>
-          </div>
 
-          {progressions.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <GraduationCap className="w-8 h-8 text-gray-400" />
+            {progressions.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <GraduationCap className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-600">No progression history yet</p>
+                <p className="text-sm text-gray-500">
+                  Student hasn't been promoted to another academic year
+                </p>
               </div>
-              <p className="text-gray-600">No progression history yet</p>
-              <p className="text-sm text-gray-500">
-                Student hasn't been promoted to another academic year
-              </p>
-            </div>
-          ) : (
-            <div className="relative">
-              {/* Timeline Line */}
-              <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-gradient-to-b from-orange-200 to-yellow-200"></div>
+            ) : (
+              <div className="relative">
+                {/* Timeline Line */}
+                <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-gradient-to-b from-orange-200 to-yellow-200"></div>
 
-              {/* Timeline Items */}
-              <div className="space-y-6">
-                {progressions.map((prog, index) => (
+                {/* Timeline Items */}
+                <div className="space-y-6">
+                  {progressions.map((prog, index) => (
                   <div key={prog.id} className="relative pl-16">
                     {/* Timeline Dot */}
                     <div className="absolute left-0 w-12 h-12 bg-gradient-to-br from-orange-400 to-yellow-400 rounded-full flex items-center justify-center shadow-md">
@@ -405,7 +454,8 @@ export default function StudentDetailPage({
               </div>
             </div>
           )}
-        </div>
+          </div>
+        </AnimatedContent>
       </div>
     </div>
   );
