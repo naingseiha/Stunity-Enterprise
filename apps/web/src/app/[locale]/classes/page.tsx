@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -30,13 +30,15 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
-import { getClasses, deleteClass, type Class } from '@/lib/api/classes';
+import { deleteClass, type Class } from '@/lib/api/classes';
 import ClassModal from '@/components/classes/ClassModal';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
 import { CardSkeleton } from '@/components/LoadingSkeleton';
+import { useClasses } from '@/hooks/useClasses';
+import { useDebounce } from '@/hooks/useDebounce';
 
 // Grade colors for visual distinction
 const gradeColors: Record<number, { bg: string; text: string; border: string; light: string }> = {
@@ -55,10 +57,9 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
   const tc = useTranslations('common');
   const router = useRouter();
 
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedGrade, setSelectedGrade] = useState<number | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [showModal, setShowModal] = useState(false);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -66,56 +67,51 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const { selectedYear } = useAcademicYear();
 
-  const user = TokenManager.getUserData().user;
-  const school = TokenManager.getUserData().school;
+  // Client-side only user data to avoid hydration mismatch
+  const [userData, setUserData] = useState<{ user: any; school: any }>({ user: null, school: null });
 
-  const handleLogout = () => {
+  const user = userData.user;
+  const school = userData.school;
+
+  // Use SWR hook for data fetching with automatic caching
+  const {
+    classes,
+    isLoading: loading,
+    isValidating,
+    mutate,
+    isEmpty,
+  } = useClasses({
+    grade: selectedGrade,
+    academicYearId: selectedYear?.id,
+  });
+
+  const handleLogout = useCallback(() => {
     TokenManager.clearTokens();
     router.push(`/${locale}/login`);
-  };
+  }, [locale, router]);
 
+  // Auth check and user data initialization
   useEffect(() => {
     const token = TokenManager.getAccessToken();
     if (!token) {
       router.replace(`/${locale}/auth/login`);
       return;
     }
-    if (selectedYear) {
-      fetchClasses();
-    } else {
-      setLoading(false);
-    }
-  }, [selectedGrade, selectedYear]);
+    const data = TokenManager.getUserData();
+    setUserData({ user: data.user, school: data.school });
+  }, [locale, router]);
 
-  const fetchClasses = async () => {
-    if (!selectedYear) return;
-    
-    setLoading(true);
-    try {
-      const response = await getClasses({ 
-        limit: 100, 
-        grade: selectedGrade,
-        academicYearId: selectedYear.id 
-      });
-      setClasses(response.data.classes);
-    } catch (error: any) {
-      console.error('Failed to fetch classes:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Filter classes by search query
+  // Filter classes by search query (client-side for instant feedback)
   const filteredClasses = useMemo(() => {
-    if (!searchQuery.trim()) return classes;
-    const query = searchQuery.toLowerCase();
+    if (!debouncedSearch.trim()) return classes;
+    const query = debouncedSearch.toLowerCase();
     return classes.filter(c => 
       c.name.toLowerCase().includes(query) ||
       c.section?.toLowerCase().includes(query) ||
       c.homeroomTeacher?.firstNameLatin?.toLowerCase().includes(query) ||
       c.homeroomTeacher?.lastNameLatin?.toLowerCase().includes(query)
     );
-  }, [classes, searchQuery]);
+  }, [classes, debouncedSearch]);
 
   // Calculate statistics
   const statistics = useMemo(() => {
@@ -129,36 +125,36 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
     return { totalStudents, gradeDistribution, avgStudentsPerClass };
   }, [classes]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     if (!confirm('Are you sure you want to delete this class? All student assignments will be removed.')) return;
 
     try {
       await deleteClass(id);
       setActiveDropdown(null);
-      fetchClasses();
+      mutate(); // Revalidate the cache
     } catch (error: any) {
       alert(error.message);
     }
-  };
+  }, [mutate]);
 
-  const handleEdit = (classItem: Class) => {
+  const handleEdit = useCallback((classItem: Class) => {
     setSelectedClass(classItem);
     setShowModal(true);
     setActiveDropdown(null);
-  };
+  }, []);
 
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
     setSelectedClass(null);
     setShowModal(true);
-  };
+  }, []);
 
-  const handleModalClose = (refresh?: boolean) => {
+  const handleModalClose = useCallback((refresh?: boolean) => {
     setShowModal(false);
     setSelectedClass(null);
     if (refresh) {
-      fetchClasses();
+      mutate(); // Revalidate the cache
     }
-  };
+  }, [mutate]);
 
   return (
     <>
@@ -195,11 +191,11 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
 
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={fetchClasses}
-                    disabled={loading}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all shadow-sm"
+                    onClick={() => mutate()}
+                    disabled={isValidating}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50"
                   >
-                    <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
                     <span className="hidden sm:inline">Refresh</span>
                   </button>
                   <button

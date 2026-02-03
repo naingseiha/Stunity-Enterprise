@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { subjectAPI, Subject, SubjectStatistics } from '@/lib/api/subjects';
@@ -8,6 +8,8 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
 import PageSkeleton from '@/components/layout/PageSkeleton';
+import { useSubjects, useSubjectStatistics } from '@/hooks/useSubjects';
+import { useDebounce } from '@/hooks/useDebounce';
 import {
   BookOpen,
   Plus,
@@ -31,6 +33,7 @@ import {
   Home,
   ChevronRight,
   Settings,
+  RefreshCw,
 } from 'lucide-react';
 
 type ViewMode = 'grid' | 'list';
@@ -39,15 +42,10 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
   const router = useRouter();
   const { locale } = params;
 
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [filteredSubjects, setFilteredSubjects] = useState<Subject[]>([]);
-  const [statistics, setStatistics] = useState<SubjectStatistics | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  
   // View & Filters
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [filterGrade, setFilterGrade] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
@@ -78,6 +76,22 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
   // User data
   const [userData, setUserData] = useState<any>(null);
 
+  // Use SWR hooks for data fetching
+  const { 
+    subjects, 
+    isLoading: loading, 
+    isValidating,
+    mutate,
+    error
+  } = useSubjects({
+    grade: filterGrade || undefined,
+    category: filterCategory || undefined,
+    isActive: filterStatus === 'all' ? undefined : filterStatus === 'active',
+    includeTeachers: true,
+  });
+
+  const { statistics, mutate: mutateStats } = useSubjectStatistics();
+
   useEffect(() => {
     const token = TokenManager.getAccessToken();
     const user = TokenManager.getUserData();
@@ -88,41 +102,15 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
     }
     
     setUserData(user);
-    loadSubjects();
-    loadStatistics();
-  }, []);
+  }, [locale, router]);
 
-  useEffect(() => {
-    filterSubjects();
-  }, [subjects, searchQuery, filterGrade, filterCategory, filterStatus]);
-
-  const loadSubjects = async () => {
-    try {
-      setLoading(true);
-      const data = await subjectAPI.getSubjects({ includeTeachers: true });
-      setSubjects(data);
-    } catch (err: any) {
-      setError('Failed to load subjects: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadStatistics = async () => {
-    try {
-      const stats = await subjectAPI.getStatistics();
-      setStatistics(stats);
-    } catch (err: any) {
-      console.error('Failed to load statistics:', err);
-    }
-  };
-
-  const filterSubjects = () => {
+  // Filter subjects by search (client-side for instant feedback)
+  const filteredSubjects = useMemo(() => {
     let filtered = [...subjects];
 
     // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+    if (debouncedSearch) {
+      const query = debouncedSearch.toLowerCase();
       filtered = filtered.filter(
         (s) =>
           s.name.toLowerCase().includes(query) ||
@@ -132,27 +120,10 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
       );
     }
 
-    // Grade filter
-    if (filterGrade) {
-      filtered = filtered.filter((s) => s.grade === filterGrade);
-    }
+    return filtered;
+  }, [subjects, debouncedSearch]);
 
-    // Category filter
-    if (filterCategory) {
-      filtered = filtered.filter((s) => s.category === filterCategory);
-    }
-
-    // Status filter
-    if (filterStatus === 'active') {
-      filtered = filtered.filter((s) => s.isActive);
-    } else if (filterStatus === 'inactive') {
-      filtered = filtered.filter((s) => !s.isActive);
-    }
-
-    setFilteredSubjects(filtered);
-  };
-
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setFormData({
       name: '',
       nameKh: '',
@@ -168,14 +139,14 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
       coefficient: '',
       isActive: true,
     });
-  };
+  }, []);
 
-  const handleCreate = () => {
+  const handleCreate = useCallback(() => {
     resetForm();
     setShowCreateModal(true);
-  };
+  }, [resetForm]);
 
-  const handleEdit = (subject: Subject) => {
+  const handleEdit = useCallback((subject: Subject) => {
     setSelectedSubject(subject);
     setFormData({
       name: subject.name,
@@ -193,17 +164,16 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
       isActive: subject.isActive,
     });
     setShowEditModal(true);
-  };
+  }, []);
 
-  const handleDelete = (subject: Subject) => {
+  const handleDelete = useCallback((subject: Subject) => {
     setSelectedSubject(subject);
     setShowDeleteModal(true);
-  };
+  }, []);
 
   const handleSubmitCreate = async () => {
     try {
       if (!formData.name || !formData.code || !formData.grade || !formData.category) {
-        setError('Please fill all required fields');
         return;
       }
 
@@ -225,10 +195,10 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
 
       setShowCreateModal(false);
       resetForm();
-      loadSubjects();
-      loadStatistics();
+      mutate(); // Revalidate subjects
+      mutateStats(); // Revalidate statistics
     } catch (err: any) {
-      setError('Failed to create subject: ' + err.message);
+      console.error('Failed to create subject:', err.message);
     }
   };
 
@@ -255,10 +225,10 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
       setShowEditModal(false);
       setSelectedSubject(null);
       resetForm();
-      loadSubjects();
-      loadStatistics();
+      mutate(); // Revalidate subjects
+      mutateStats(); // Revalidate statistics
     } catch (err: any) {
-      setError('Failed to update subject: ' + err.message);
+      console.error('Failed to update subject:', err.message);
     }
   };
 
@@ -269,43 +239,43 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
       await subjectAPI.deleteSubject(selectedSubject.id);
       setShowDeleteModal(false);
       setSelectedSubject(null);
-      loadSubjects();
-      loadStatistics();
+      mutate(); // Revalidate subjects
+      mutateStats(); // Revalidate statistics
     } catch (err: any) {
-      setError('Failed to delete subject: ' + err.message);
+      console.error('Failed to delete subject:', err.message);
     }
   };
 
   const handleToggleStatus = async (subject: Subject) => {
     try {
       await subjectAPI.toggleStatus(subject.id);
-      loadSubjects();
-      loadStatistics();
+      mutate(); // Revalidate subjects
+      mutateStats(); // Revalidate statistics
     } catch (err: any) {
-      setError('Failed to toggle status: ' + err.message);
+      console.error('Failed to toggle status:', err.message);
     }
   };
 
-  const getUniqueGrades = () => {
+  const getUniqueGrades = useCallback(() => {
     const grades = [...new Set(subjects.map((s) => s.grade))];
     return grades.sort();
-  };
+  }, [subjects]);
 
-  const getUniqueCategories = () => {
+  const getUniqueCategories = useCallback(() => {
     const categories = [...new Set(subjects.map((s) => s.category))];
     return categories.sort();
-  };
+  }, [subjects]);
 
-  const getCategoryCount = (category: string) => {
+  const getCategoryCount = useCallback((category: string) => {
     return statistics?.byCategory.find((c) => c.category === category)?._count || 0;
-  };
+  }, [statistics]);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     TokenManager.clearTokens();
     router.push(`/${locale}/auth/login`);
-  };
+  }, [locale, router]);
 
-  if (loading) {
+  if (loading && subjects.length === 0) {
     return <PageSkeleton user={userData?.user} school={userData?.school} type="cards" />;
   }
 
@@ -341,13 +311,23 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
                   </div>
                 </div>
 
-                <button
-                  onClick={handleCreate}
-                  className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-                >
-                  <Plus className="h-4 w-4" />
-                  Create Subject
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => { mutate(); mutateStats(); }}
+                    disabled={isValidating}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
+                    <span className="hidden sm:inline">Refresh</span>
+                  </button>
+                  <button
+                    onClick={handleCreate}
+                    className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create Subject
+                  </button>
+                </div>
               </div>
             </div>
           </AnimatedContent>
@@ -488,9 +468,9 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
         {/* Error Display */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center justify-between">
-            <p className="text-red-700">{error}</p>
-            <button onClick={() => setError('')} className="text-red-500 hover:text-red-700">
-              <X className="w-5 h-5" />
+            <p className="text-red-700">{typeof error === 'string' ? error : error.message}</p>
+            <button onClick={() => mutate()} className="text-red-500 hover:text-red-700">
+              <RefreshCw className="w-5 h-5" />
             </button>
           </div>
         )}
