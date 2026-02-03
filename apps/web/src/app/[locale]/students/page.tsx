@@ -1012,11 +1012,23 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
                   className="w-full h-11 px-4 text-sm bg-gray-50 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-gray-900 transition-all cursor-pointer"
                 >
                   <option value="">Select a class...</option>
-                  {availableClasses.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} • Grade {c.grade} • {c.studentCount || 0} students
-                    </option>
-                  ))}
+                  {(() => {
+                    // Get current class IDs of selected students to exclude them
+                    const selectedStudentsList = students.filter(s => selectedStudents.has(s.id));
+                    const currentClassIds = new Set(
+                      selectedStudentsList
+                        .filter(s => s.class?.id)
+                        .map(s => s.class!.id)
+                    );
+                    
+                    return availableClasses
+                      .filter(c => !currentClassIds.has(c.id))
+                      .map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} • Grade {c.grade} • {c.studentCount || 0} students
+                        </option>
+                      ));
+                  })()}
                 </select>
               </div>
 
