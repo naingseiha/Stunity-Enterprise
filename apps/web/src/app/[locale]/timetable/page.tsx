@@ -77,6 +77,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   GripVertical,
+  Ban,
+  ArrowRightLeft,
 } from 'lucide-react';
 
 type ViewMode = 'class' | 'teacher' | 'overview';
@@ -251,6 +253,9 @@ function DroppableCell({
   hasEntry,
   children,
   onClick,
+  isTeacherBusy = false,
+  isPending = false,
+  entryId,
 }: {
   id: string;
   day: DayOfWeek;
@@ -259,6 +264,9 @@ function DroppableCell({
   hasEntry: boolean;
   children: React.ReactNode;
   onClick: () => void;
+  isTeacherBusy?: boolean;
+  isPending?: boolean;
+  entryId?: string;
 }) {
   const { setNodeRef, isOver, active } = useDroppable({
     id,
@@ -269,25 +277,58 @@ function DroppableCell({
       periodId,
       classId: id.split('-')[0],
       isEmpty: !hasEntry,
+      hasEntry,
+      entryId,
     },
+    disabled: isTeacherBusy,
   });
 
   const isDraggingTeacher = active?.data?.current?.type === 'TEACHER';
   const isDraggingEntry = active?.data?.current?.type === 'ENTRY';
-  const canDrop = !hasEntry && (isDraggingTeacher || isDraggingEntry);
-  const isHighlighted = isOver && canDrop;
-  const showDropZone = canDrop;
+  const draggedEntryId = active?.data?.current?.entryId;
+  const canDrop = !isTeacherBusy && (isDraggingTeacher || isDraggingEntry);
+  const isHighlighted = isOver && canDrop && !isTeacherBusy;
+  const showDropZone = canDrop && !hasEntry;
+  const showSwapZone = isDraggingEntry && hasEntry && isOver && entryId !== draggedEntryId;
+  const showUnavailable = isDraggingTeacher && isTeacherBusy;
 
   return (
-    <td ref={setNodeRef} className="px-1 py-1">
+    <td ref={setNodeRef} className={`px-1 py-1 transition-all duration-100 ${isPending ? 'opacity-70' : ''}`}>
       {hasEntry ? (
-        children
+        <div className="relative">
+          {children}
+          {/* Swap indicator overlay */}
+          {showSwapZone && (
+            <div className="absolute inset-0 bg-amber-500/20 rounded-lg flex items-center justify-center z-20 pointer-events-none">
+              <div className="bg-white px-2 py-1 rounded-lg text-xs font-medium text-amber-700 shadow-lg flex items-center gap-1">
+                <ArrowRightLeft className="w-3 h-3" />
+                Swap
+              </div>
+            </div>
+          )}
+          {/* Replace teacher indicator */}
+          {isDraggingTeacher && isOver && !isTeacherBusy && (
+            <div className="absolute inset-0 bg-indigo-500/20 rounded-lg flex items-center justify-center z-20 pointer-events-none">
+              <div className="bg-white px-2 py-1 rounded-lg text-xs font-medium text-indigo-600 shadow-lg">
+                Replace Teacher
+              </div>
+            </div>
+          )}
+        </div>
+      ) : showUnavailable ? (
+        <div
+          className="h-[56px] w-full rounded-lg flex flex-col items-center justify-center 
+            bg-red-50 border-2 border-red-200 text-red-400"
+        >
+          <Ban className="h-4 w-4" />
+          <span className="text-[9px] font-medium mt-0.5">Busy</span>
+        </div>
       ) : (
         <div
           onClick={onClick}
           className={`
             h-[56px] w-full rounded-lg flex flex-col items-center justify-center 
-            transition-all duration-200 cursor-pointer group
+            transition-all duration-100 cursor-pointer group
             ${isHighlighted
               ? 'bg-indigo-100 border-2 border-indigo-400 shadow-md scale-[1.02]'
               : showDropZone
@@ -301,7 +342,7 @@ function DroppableCell({
               <div className="w-6 h-6 rounded-full bg-indigo-200 flex items-center justify-center">
                 {isDraggingEntry ? <Move className="h-3 w-3" /> : <User className="h-3 w-3" />}
               </div>
-              <span className="text-[9px] font-medium mt-0.5">Drop</span>
+              <span className="text-[9px] font-medium mt-0.5">Drop here</span>
             </div>
           ) : (
             <Plus className={`h-3.5 w-3.5 ${showDropZone ? 'text-indigo-400' : 'text-gray-300 group-hover:text-indigo-400'} transition-colors`} />
@@ -374,6 +415,9 @@ export default function TimetablePage() {
   const [activeTeacher, setActiveTeacher] = useState<AvailableTeacher | null>(null);
   const [activeDragTeacher, setActiveDragTeacher] = useState<SidebarTeacher | null>(null);
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
+  const [draggedTeacherId, setDraggedTeacherId] = useState<string | null>(null);
+  const [draggedTeacherBusySlots, setDraggedTeacherBusySlots] = useState<Set<string>>(new Set());
+  const [pendingOperations, setPendingOperations] = useState<Set<string>>(new Set());
   
   // Teacher sidebar state
   const [showTeacherSidebar, setShowTeacherSidebar] = useState(true);
@@ -819,8 +863,31 @@ export default function TimetablePage() {
     }));
   }, [subjects]);
 
+  // Calculate teacher busy slots from all timetable entries
+  const calculateTeacherBusySlots = useCallback(async (teacherId: string): Promise<Set<string>> => {
+    const busySlots = new Set<string>();
+    
+    try {
+      // Get teacher's schedule to find their busy slots
+      const response = await timetableAPI.getTeacherSchedule(teacherId, selectedYearId);
+      const entries = response.data.entries || [];
+      
+      entries.forEach((entry: TimetableEntry) => {
+        // Create slot key from day and period
+        const periodOrder = periods.find(p => p.id === entry.periodId)?.order;
+        if (periodOrder) {
+          busySlots.add(`${entry.dayOfWeek}-${periodOrder}`);
+        }
+      });
+    } catch (err) {
+      console.error('Error fetching teacher schedule:', err);
+    }
+    
+    return busySlots;
+  }, [selectedYearId, periods]);
+
   // Drag and drop handlers
-  const handleDragStart = (event: DragStartEvent) => {
+  const handleDragStart = async (event: DragStartEvent) => {
     const activeId = event.active.id as string;
     const activeData = event.active.data.current;
     
@@ -830,12 +897,28 @@ export default function TimetablePage() {
       const teacher = sidebarTeachers.find((t) => t.id === teacherId);
       if (teacher) {
         setActiveDragTeacher(teacher);
+        setDraggedTeacherId(teacherId);
+        
+        // Fetch teacher's busy slots immediately
+        const busySlots = await calculateTeacherBusySlots(teacherId);
+        setDraggedTeacherBusySlots(busySlots);
+      }
+    } else if (activeData?.type === 'ENTRY') {
+      // Dragging an existing entry - track the teacher
+      const entry = activeData.entry as TimetableEntry;
+      if (entry?.teacherId) {
+        setDraggedTeacherId(entry.teacherId);
+        const busySlots = await calculateTeacherBusySlots(entry.teacherId);
+        setDraggedTeacherBusySlots(busySlots);
       }
     } else {
       // Legacy: dragging from modal
       const teacher = availableTeachers.find((t) => t.id === activeId);
       if (teacher) {
         setActiveTeacher(teacher);
+        setDraggedTeacherId(teacher.id);
+        const busySlots = await calculateTeacherBusySlots(teacher.id);
+        setDraggedTeacherBusySlots(busySlots);
       }
     }
   };
@@ -850,6 +933,8 @@ export default function TimetablePage() {
     setActiveTeacher(null);
     setActiveDragTeacher(null);
     setDragOverCell(null);
+    setDraggedTeacherId(null);
+    setDraggedTeacherBusySlots(new Set());
 
     if (!over) return;
     
@@ -865,6 +950,8 @@ export default function TimetablePage() {
       periodId?: string;
       classId: string;
       isEmpty?: boolean;
+      hasEntry?: boolean;
+      entryId?: string;
     } | undefined;
     
     if (!dropData || dropData.type !== 'SLOT' || !dropData.day || dropData.period === undefined) {
@@ -887,41 +974,144 @@ export default function TimetablePage() {
     // Handle dragging an existing entry to a new slot
     if (activeId.startsWith('entry-') && activeData?.type === 'ENTRY') {
       const entryId = activeId.replace('entry-', '');
-      const fromSlot = activeData.fromSlot as { day: DayOfWeek; periodId: string; classId: string };
+      const fromSlot = activeData.fromSlot as { day: DayOfWeek; periodId?: string; period?: number; classId: string };
       const entry = activeData.entry as TimetableEntry;
-      
-      // Don't drop on occupied cells
-      if (!dropData.isEmpty) {
-        setError('This slot is already occupied. Delete the existing entry first.');
-        return;
-      }
+      const fromPeriodId = fromSlot.periodId || periods.find(p => p.order === fromSlot.period)?.id;
 
       // Check if dropping on the same slot
-      if (fromSlot.day === dropData.day && fromSlot.periodId === periodId) {
+      const isSameSlot = fromSlot.day === dropData.day && (
+        (fromSlot.periodId && fromSlot.periodId === periodId) ||
+        (fromSlot.period !== undefined && fromSlot.period === dropData.period)
+      );
+      if (isSameSlot) {
         return; // Same slot, do nothing
       }
 
-      // Move the entry to new slot by deleting and recreating
-      try {
-        setSaving(true);
-        // Delete the old entry
-        await timetableAPI.deleteEntry(entryId);
-        // Create new entry at the new slot
-        await timetableAPI.createEntry({
-          classId: selectedClassId,
-          teacherId: entry.teacherId || undefined,
-          subjectId: entry.subjectId || undefined,
-          periodId,
-          dayOfWeek: dropData.day,
-          academicYearId: selectedYearId,
-          room: entry.room || undefined,
-        });
-        setSuccessMessage('Entry moved successfully!');
-        loadClassTimetable(selectedClassId);
-      } catch (err: any) {
-        setError(err.message || 'Failed to move entry');
-      } finally {
-        setSaving(false);
+      // Check if teacher is busy at target slot (if entry has a teacher)
+      if (entry.teacherId) {
+        const targetSlotKey = `${dropData.day}-${dropData.period}`;
+        const sourceSlotKey = `${fromSlot.day}-${fromSlot.period || periods.find(p => p.id === fromSlot.periodId)?.order}`;
+        // Check if busy at target (excluding the source slot since we're moving from there)
+        if (draggedTeacherBusySlots.has(targetSlotKey) && targetSlotKey !== sourceSlotKey) {
+          setError('Teacher is already busy at this time slot in another class');
+          return;
+        }
+      }
+
+      // Check if target slot has an entry - if so, swap them
+      if (dropData.hasEntry && dropData.entryId && dropData.entryId !== entryId) {
+        // Get target entry for optimistic update
+        const targetEntry = grid[dropData.day]?.[periodId];
+        
+        // Optimistic update - swap entries immediately in UI
+        if (fromPeriodId && targetEntry) {
+          setTimetableData(prev => {
+            if (!prev) return prev;
+            const newGrid = { ...prev.grid };
+            
+            // Swap the entries
+            newGrid[fromSlot.day] = {
+              ...newGrid[fromSlot.day],
+              [fromPeriodId]: {
+                ...targetEntry,
+                dayOfWeek: fromSlot.day,
+                periodId: fromPeriodId,
+              },
+            };
+            newGrid[dropData.day] = {
+              ...newGrid[dropData.day],
+              [periodId]: {
+                ...entry,
+                dayOfWeek: dropData.day,
+                periodId,
+              },
+            };
+            return { ...prev, grid: newGrid };
+          });
+        }
+
+        // API call in background
+        setPendingOperations(prev => new Set([...prev, entryId, dropData.entryId!]));
+        timetableAPI.swapEntries(entryId, dropData.entryId)
+          .then(() => {
+            setSuccessMessage('Entries swapped!');
+          })
+          .catch((err: any) => {
+            setError(err.message || 'Failed to swap entries');
+            loadClassTimetable(selectedClassId);
+          })
+          .finally(() => {
+            setPendingOperations(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(entryId);
+              newSet.delete(dropData.entryId!);
+              return newSet;
+            });
+          });
+        return;
+      }
+      
+      // Move to empty slot (optimistic)
+      if (dropData.isEmpty || !dropData.hasEntry) {
+        // Optimistic update - move entry immediately in UI
+        if (fromPeriodId) {
+          setTimetableData(prev => {
+            if (!prev) return prev;
+            const newGrid = { ...prev.grid };
+            
+            // Remove from old slot
+            if (newGrid[fromSlot.day]) {
+              newGrid[fromSlot.day] = { ...newGrid[fromSlot.day] };
+              delete newGrid[fromSlot.day][fromPeriodId];
+            }
+            
+            // Add to new slot
+            if (!newGrid[dropData.day]) {
+              newGrid[dropData.day] = {};
+            }
+            newGrid[dropData.day] = {
+              ...newGrid[dropData.day],
+              [periodId]: {
+                ...entry,
+                dayOfWeek: dropData.day,
+                periodId,
+              },
+            };
+            return { ...prev, grid: newGrid };
+          });
+        }
+
+        // API call in background
+        setPendingOperations(prev => new Set([...prev, entryId]));
+        
+        // Use Promise chain for delete + create
+        timetableAPI.deleteEntry(entryId)
+          .then(() => timetableAPI.createEntry({
+            classId: selectedClassId,
+            teacherId: entry.teacherId || undefined,
+            subjectId: entry.subjectId || undefined,
+            periodId,
+            dayOfWeek: dropData.day,
+            academicYearId: selectedYearId,
+            room: entry.room || undefined,
+          }))
+          .then(() => {
+            setSuccessMessage('Entry moved!');
+            // Reload to get the new entry ID
+            loadClassTimetable(selectedClassId);
+          })
+          .catch((err: any) => {
+            setError(err.message || 'Failed to move entry');
+            loadClassTimetable(selectedClassId);
+          })
+          .finally(() => {
+            setPendingOperations(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(entryId);
+              return newSet;
+            });
+          });
+        return;
       }
       return;
     }
@@ -937,29 +1127,113 @@ export default function TimetablePage() {
       teacherId = activeId.replace('teacher-', '');
     }
 
-    // Don't drop on occupied cells
-    if (!dropData.isEmpty) {
-      setError('This slot is already occupied');
+    // Check if teacher is busy at this slot (cross-class conflict)
+    const slotKey = `${dropData.day}-${dropData.period}`;
+    if (draggedTeacherBusySlots.has(slotKey)) {
+      // Find teacher name for better error message
+      const teacher = sidebarTeachers.find(t => t.id === teacherId) || activeDragTeacher;
+      const teacherName = teacher ? getTeacherDisplayName(teacher) : 'This teacher';
+      setError(`${teacherName} is already teaching another class at this time slot`);
       return;
     }
 
-    // Create entry with the dropped teacher
-    try {
-      setSaving(true);
-      await timetableAPI.createEntry({
-        classId: selectedClassId,
-        teacherId,
-        periodId,
-        dayOfWeek: dropData.day,
-        academicYearId: selectedYearId,
+    // Get teacher info for optimistic update
+    const teacher = sidebarTeachers.find(t => t.id === teacherId) || activeDragTeacher;
+
+    // If there's an existing entry, update its teacher (optimistic)
+    if (dropData.hasEntry && dropData.entryId) {
+      // Optimistic update - update UI immediately
+      setTimetableData(prev => {
+        if (!prev) return prev;
+        const newGrid = { ...prev.grid };
+        if (newGrid[dropData.day]?.[periodId]) {
+          newGrid[dropData.day] = {
+            ...newGrid[dropData.day],
+            [periodId]: {
+              ...newGrid[dropData.day][periodId]!,
+              teacherId,
+              teacher: teacher ? { id: teacherId, firstName: teacher.firstName || '', lastName: teacher.lastName || '', khmerName: teacher.khmerName } : undefined,
+            },
+          };
+        }
+        return { ...prev, grid: newGrid };
       });
-      setSuccessMessage('Teacher assigned successfully!');
-      loadClassTimetable(selectedClassId);
-    } catch (err: any) {
-      setError(err.message || 'Failed to assign teacher');
-    } finally {
-      setSaving(false);
+
+      // API call in background
+      setPendingOperations(prev => new Set([...prev, dropData.entryId!]));
+      timetableAPI.updateEntry(dropData.entryId, { teacherId })
+        .then(() => {
+          setSuccessMessage('Teacher assigned!');
+        })
+        .catch((err: any) => {
+          setError(err.message || 'Failed to assign teacher');
+          // Rollback on error
+          loadClassTimetable(selectedClassId);
+        })
+        .finally(() => {
+          setPendingOperations(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(dropData.entryId!);
+            return newSet;
+          });
+        });
+      return;
     }
+
+    // Create entry with the dropped teacher on empty slot (optimistic)
+    const tempId = `temp-${Date.now()}`;
+    
+    // Optimistic update - show entry immediately
+    setTimetableData(prev => {
+      if (!prev) return prev;
+      const newGrid = { ...prev.grid };
+      if (!newGrid[dropData.day]) {
+        newGrid[dropData.day] = {};
+      }
+      newGrid[dropData.day] = {
+        ...newGrid[dropData.day],
+        [periodId]: {
+          id: tempId,
+          schoolId: '',
+          classId: selectedClassId,
+          teacherId,
+          subjectId: null,
+          periodId,
+          dayOfWeek: dropData.day,
+          room: null,
+          academicYearId: selectedYearId,
+          teacher: teacher ? { id: teacherId, firstName: teacher.firstName || '', lastName: teacher.lastName || '', khmerName: teacher.khmerName } : undefined,
+        },
+      };
+      return { ...prev, grid: newGrid };
+    });
+
+    // API call in background
+    setPendingOperations(prev => new Set([...prev, tempId]));
+    timetableAPI.createEntry({
+      classId: selectedClassId,
+      teacherId,
+      periodId,
+      dayOfWeek: dropData.day,
+      academicYearId: selectedYearId,
+    })
+      .then(() => {
+        setSuccessMessage('Teacher assigned!');
+        // Reload to get the real entry ID
+        loadClassTimetable(selectedClassId);
+      })
+      .catch((err: any) => {
+        setError(err.message || 'Failed to assign teacher');
+        // Rollback on error
+        loadClassTimetable(selectedClassId);
+      })
+      .finally(() => {
+        setPendingOperations(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(tempId);
+          return newSet;
+        });
+      });
   };
 
   // Filter classes by selected year and grade level
@@ -1057,6 +1331,14 @@ export default function TimetablePage() {
       return () => clearTimeout(timer);
     }
   }, [successMessage]);
+
+  // Auto-dismiss error messages after 5 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   if (loading) {
     return <PageSkeleton type="table" />;
@@ -1574,6 +1856,9 @@ export default function TimetablePage() {
                                 {days.map((day) => {
                                   const entry = grid[day]?.[period.id];
                                   const cellId = `${selectedClassId}-${day}-${period.order}`;
+                                  const slotKey = `${day}-${period.order}`;
+                                  const isTeacherBusyHere = draggedTeacherId ? draggedTeacherBusySlots.has(slotKey) : false;
+                                  const isEntryPending = entry?.id ? pendingOperations.has(entry.id) : false;
 
                                   if (period.isBreak) {
                                     return (
@@ -1593,6 +1878,9 @@ export default function TimetablePage() {
                                       period={period.order}
                                       periodId={period.id}
                                       hasEntry={!!entry}
+                                      entryId={entry?.id}
+                                      isTeacherBusy={isTeacherBusyHere}
+                                      isPending={isEntryPending}
                                       onClick={() => openEntryModal(period.id, day, entry || undefined)}
                                     >
                                       {entry && (

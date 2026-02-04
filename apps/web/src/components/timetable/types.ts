@@ -139,6 +139,7 @@ export interface TimetableEntry {
   teacherId: string | null;
   teacherName?: string;
   periodNumber: number;
+  periodId?: string; // Added for API compatibility
   dayOfWeek: DayOfWeek;
   room?: string;
   academicYearId: string;
