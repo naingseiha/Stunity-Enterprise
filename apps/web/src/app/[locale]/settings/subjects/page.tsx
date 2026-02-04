@@ -477,7 +477,7 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
 
         {/* Subjects Grid/List */}
         <AnimatedContent animation="slide-up" delay={100}>
-          <BlurLoader isLoading={loading}>
+          <BlurLoader isLoading={loading} showSpinner={false}>
             {filteredSubjects.length === 0 ? (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
                 <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />

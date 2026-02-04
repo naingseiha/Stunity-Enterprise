@@ -71,6 +71,15 @@ export interface Teacher {
   subjects: TeacherSubject[];
   totalHoursAssigned: number;
   maxHoursPerWeek: number;
+  // Extended info for timetable display
+  assignedClasses?: AssignedClass[];
+}
+
+export interface AssignedClass {
+  classId: string;
+  className: string;
+  hoursPerWeek: number;
+  subjectName?: string;
 }
 
 export interface TeacherSubject {

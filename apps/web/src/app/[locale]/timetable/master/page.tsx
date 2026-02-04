@@ -553,7 +553,7 @@ export default function MasterTimetablePage() {
 
           {/* Classes Grid */}
           <AnimatedContent animation="slide-up" delay={150}>
-            <BlurLoader isLoading={loadingData}>
+            <BlurLoader isLoading={loadingData} showSpinner={false}>
               {Object.entries(classesByGrade)
                 .sort(([a], [b]) => parseInt(a) - parseInt(b))
                 .map(([grade, classList]) => (

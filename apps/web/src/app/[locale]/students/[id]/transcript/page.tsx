@@ -219,7 +219,7 @@ export default function StudentTranscriptPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <BlurLoader isLoading={true}>
+        <BlurLoader isLoading={true} showSpinner={false}>
           <div className="p-8">Loading transcript...</div>
         </BlurLoader>
       </div>

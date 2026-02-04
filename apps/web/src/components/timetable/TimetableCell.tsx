@@ -4,7 +4,7 @@ import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, GripVertical, X, AlertTriangle } from 'lucide-react';
+import { Plus, GripVertical, X, AlertTriangle, User } from 'lucide-react';
 import { TimetableEntry, DayOfWeek, ShiftType, getSubjectColors, getTeacherDisplayName } from './types';
 
 interface TimetableCellProps {
@@ -18,8 +18,10 @@ interface TimetableCellProps {
   conflictMessage?: string;
   onCellClick: (day: DayOfWeek, period: number) => void;
   onEntryDelete?: (entryId: string) => void;
+  onTeacherDrop?: (teacherId: string, day: DayOfWeek, period: number) => void;
   isDropTarget?: boolean;
   isDraggedOver?: boolean;
+  acceptTeacherDrop?: boolean; // New prop to enable teacher drag-drop
 }
 
 // Draggable Entry Component
@@ -111,23 +113,29 @@ export default function TimetableCell({
   conflictMessage,
   onCellClick,
   onEntryDelete,
+  onTeacherDrop,
   isDropTarget = true,
   isDraggedOver = false,
+  acceptTeacherDrop = true,
 }: TimetableCellProps) {
   const dropId = `${classId}-${day}-${period}`;
   
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef, isOver, active } = useDroppable({
     id: dropId,
     data: {
+      type: 'SLOT',
       day,
       period,
       classId,
       shiftType,
+      isEmpty: !entry,
     },
-    disabled: isBreak || !!entry,
+    disabled: isBreak || (!!entry && !acceptTeacherDrop),
   });
 
-  const isHighlighted = isDropTarget && (isOver || isDraggedOver);
+  // Check if dragging a teacher
+  const isDraggingTeacher = active?.data?.current?.type === 'TEACHER';
+  const isHighlighted = isDropTarget && (isOver || isDraggedOver) && (!entry || isDraggingTeacher);
 
   // Break cell
   if (isBreak) {
@@ -160,21 +168,38 @@ export default function TimetableCell({
       )}
 
       {entry ? (
-        <div className="h-16">
+        <div className="h-16 relative">
           <DraggableEntry entry={entry} onDelete={onEntryDelete} />
+          {/* Overlay when teacher is being dragged over occupied cell */}
+          {isHighlighted && isDraggingTeacher && (
+            <div className="absolute inset-0 bg-indigo-500/20 rounded-lg flex items-center justify-center z-20">
+              <div className="bg-white px-2 py-1 rounded text-xs font-medium text-indigo-600 shadow">
+                Replace Teacher
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div
           onClick={() => onCellClick(day, period)}
           className={`
-            h-16 border-2 border-dashed rounded-lg flex items-center justify-center
+            h-16 border-2 border-dashed rounded-lg flex flex-col items-center justify-center
             cursor-pointer transition-all duration-200
             ${isHighlighted 
-              ? 'border-indigo-400 bg-indigo-100 text-indigo-500' 
+              ? isDraggingTeacher
+                ? 'border-indigo-500 bg-indigo-100 text-indigo-600 scale-105 shadow-lg'
+                : 'border-indigo-400 bg-indigo-100 text-indigo-500' 
               : 'border-gray-200 text-gray-300 hover:border-indigo-300 hover:text-indigo-400 hover:bg-indigo-50'}
           `}
         >
-          <Plus className="w-5 h-5" />
+          {isHighlighted && isDraggingTeacher ? (
+            <>
+              <User className="w-5 h-5" />
+              <span className="text-xs mt-0.5">Drop here</span>
+            </>
+          ) : (
+            <Plus className="w-5 h-5" />
+          )}
         </div>
       )}
     </td>

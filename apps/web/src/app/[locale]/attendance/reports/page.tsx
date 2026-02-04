@@ -366,7 +366,7 @@ export default function AttendanceReportsPage() {
             </div>
           </AnimatedContent>
 
-          <BlurLoader isLoading={loading}>
+          <BlurLoader isLoading={loading} showSpinner={false}>
             {error ? (
               <div className="text-center py-20">
                 <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />

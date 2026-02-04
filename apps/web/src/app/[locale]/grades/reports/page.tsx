@@ -297,7 +297,7 @@ export default function ReportCardsPage({ params }: { params: { locale: string }
         {/* Class Report View */}
         {viewMode === 'class' && classReport && (
           <AnimatedContent animation="slide-up" delay={100}>
-            <BlurLoader isLoading={loadingData}>
+            <BlurLoader isLoading={loadingData} showSpinner={false}>
               <div>
                 {/* Info Banner */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex items-center justify-between print:hidden">
@@ -338,7 +338,7 @@ export default function ReportCardsPage({ params }: { params: { locale: string }
         {/* Student Report Card View */}
         {viewMode === 'student' && studentReportCard && (
           <AnimatedContent animation="slide-up" delay={100}>
-            <BlurLoader isLoading={loadingData}>
+            <BlurLoader isLoading={loadingData} showSpinner={false}>
               <div>
                 {/* Info Banner */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex items-center justify-between print:hidden">

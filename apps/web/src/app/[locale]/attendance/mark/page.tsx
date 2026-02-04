@@ -582,7 +582,7 @@ export default function MarkAttendancePage() {
 
         {/* Main Content */}
         <AnimatedContent animation="slide-up" delay={100}>
-          <BlurLoader isLoading={loading}>
+          <BlurLoader isLoading={loading} showSpinner={false}>
             {students.length > 0 ? (
               <>
                 {/* Quick Actions & Search */}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, Users, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Users, ChevronDown, ChevronUp, GripVertical, X } from 'lucide-react';
 import { Teacher, Subject, GradeLevel } from './types';
 import TeacherCard from './TeacherCard';
 
@@ -28,7 +28,7 @@ export default function TeacherSidebar({
 }: TeacherSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['available', 'all']));
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['available']));
 
   // Filter teachers based on search and filters
   const filteredTeachers = useMemo(() => {
@@ -106,206 +106,243 @@ export default function TeacherSidebar({
 
   if (isCollapsed) {
     return (
-      <div className="w-12 bg-white border-r border-gray-200 flex flex-col items-center py-4">
+      <div className="w-14 bg-white/80 backdrop-blur-sm border-l border-gray-100 flex flex-col items-center py-6 shadow-sm">
         <button
           onClick={onToggleCollapse}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2.5 hover:bg-indigo-50 rounded-xl transition-all duration-200 group"
           title="Expand teacher panel"
         >
-          <Users className="w-5 h-5 text-gray-600" />
+          <Users className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 transition-colors" />
         </button>
-        <div className="mt-4 text-xs font-medium text-gray-500 writing-vertical">
-          {filteredTeachers.length} Teachers
+        <div className="mt-6 flex flex-col items-center gap-1">
+          <span className="text-lg font-semibold text-gray-700">{filteredTeachers.length}</span>
+          <span className="text-[10px] text-gray-400 uppercase tracking-wider">Teachers</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-full">
+    <div 
+      className="w-80 bg-white/95 backdrop-blur-sm border-l border-gray-100 flex flex-col shadow-lg"
+      style={{ height: 'calc(100vh - 64px)', position: 'sticky', top: '64px' }}
+    >
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-            <Users className="w-5 h-5 text-indigo-600" />
-            Teachers
-            <span className="text-sm font-normal text-gray-500">({filteredTeachers.length})</span>
-          </h3>
+      <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50/50 to-purple-50/50">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-indigo-100 rounded-lg">
+              <GripVertical className="w-4 h-4 text-indigo-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 text-sm">Drag Teachers</h3>
+              <p className="text-xs text-gray-500">{filteredTeachers.length} available</p>
+            </div>
+          </div>
           {onToggleCollapse && (
             <button
               onClick={onToggleCollapse}
-              className="p-1 hover:bg-gray-100 rounded transition-colors"
+              className="p-1.5 hover:bg-white rounded-lg transition-colors"
+              title="Collapse panel"
             >
-              <ChevronDown className="w-4 h-4 text-gray-500" />
+              <X className="w-4 h-4 text-gray-400" />
             </button>
           )}
         </div>
 
         {/* Search */}
-        <div className="relative mb-3">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
             placeholder="Search teachers..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full pl-9 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
           />
         </div>
 
-        {/* Subject Filter */}
-        <div className="mb-3">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Filter by Subject</label>
-          <select
-            value={selectedSubjectId || ''}
-            onChange={(e) => onSubjectFilter(e.target.value || undefined)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+        {/* Subject Filter Chips */}
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          <button
+            onClick={() => onSubjectFilter(undefined)}
+            className={`px-2.5 py-1 text-xs rounded-full transition-all ${
+              !selectedSubjectId 
+                ? 'bg-indigo-600 text-white shadow-sm' 
+                : 'bg-white text-gray-600 border border-gray-200 hover:border-indigo-300'
+            }`}
           >
-            <option value="">All Subjects</option>
-            {relevantSubjects.map((subject) => (
-              <option key={subject.id} value={subject.id}>
-                {subject.name} ({subject.code})
-              </option>
-            ))}
-          </select>
+            All
+          </button>
+          {relevantSubjects.slice(0, 4).map((subject) => (
+            <button
+              key={subject.id}
+              onClick={() => onSubjectFilter(selectedSubjectId === subject.id ? undefined : subject.id)}
+              className={`px-2.5 py-1 text-xs rounded-full transition-all ${
+                selectedSubjectId === subject.id
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:border-indigo-300'
+              }`}
+            >
+              {subject.code}
+            </button>
+          ))}
+          {relevantSubjects.length > 4 && (
+            <span className="px-2 py-1 text-xs text-gray-400">+{relevantSubjects.length - 4}</span>
+          )}
         </div>
-
-        {/* Quick Filters */}
-        <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showAvailableOnly}
-            onChange={(e) => setShowAvailableOnly(e.target.checked)}
-            className="w-4 h-4 text-indigo-600 rounded"
-          />
-          <span className="text-gray-700">Show available only</span>
-        </label>
       </div>
 
       {/* Teacher List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto">
         {/* Available Teachers */}
         {groupedTeachers.available.length > 0 && (
-          <div>
-            <button
-              onClick={() => toggleCategory('available')}
-              className="flex items-center justify-between w-full text-left mb-2"
-            >
-              <span className="text-xs font-semibold text-green-600 uppercase tracking-wide flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-green-500" />
-                Available ({groupedTeachers.available.length})
-              </span>
-              {expandedCategories.has('available') ? (
-                <ChevronUp className="w-4 h-4 text-gray-400" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              )}
-            </button>
-            {expandedCategories.has('available') && (
-              <div className="space-y-2">
-                {groupedTeachers.available.map((teacher) => (
-                  <TeacherCard
-                    key={teacher.id}
-                    teacher={teacher}
-                    selectedSubjectId={selectedSubjectId}
-                    isCompact={true}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+          <TeacherGroup
+            title="Available"
+            count={groupedTeachers.available.length}
+            color="emerald"
+            isExpanded={expandedCategories.has('available')}
+            onToggle={() => toggleCategory('available')}
+            teachers={groupedTeachers.available}
+            selectedSubjectId={selectedSubjectId}
+          />
         )}
 
         {/* Near Max Teachers */}
         {groupedTeachers.nearMax.length > 0 && (
-          <div>
-            <button
-              onClick={() => toggleCategory('nearMax')}
-              className="flex items-center justify-between w-full text-left mb-2"
-            >
-              <span className="text-xs font-semibold text-yellow-600 uppercase tracking-wide flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-yellow-500" />
-                Near Capacity ({groupedTeachers.nearMax.length})
-              </span>
-              {expandedCategories.has('nearMax') ? (
-                <ChevronUp className="w-4 h-4 text-gray-400" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              )}
-            </button>
-            {expandedCategories.has('nearMax') && (
-              <div className="space-y-2">
-                {groupedTeachers.nearMax.map((teacher) => (
-                  <TeacherCard
-                    key={teacher.id}
-                    teacher={teacher}
-                    selectedSubjectId={selectedSubjectId}
-                    isCompact={true}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+          <TeacherGroup
+            title="Near Limit"
+            count={groupedTeachers.nearMax.length}
+            color="amber"
+            isExpanded={expandedCategories.has('nearMax')}
+            onToggle={() => toggleCategory('nearMax')}
+            teachers={groupedTeachers.nearMax}
+            selectedSubjectId={selectedSubjectId}
+          />
         )}
 
         {/* Overloaded Teachers */}
         {groupedTeachers.overloaded.length > 0 && (
-          <div>
-            <button
-              onClick={() => toggleCategory('overloaded')}
-              className="flex items-center justify-between w-full text-left mb-2"
-            >
-              <span className="text-xs font-semibold text-red-600 uppercase tracking-wide flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-red-500" />
-                Overloaded ({groupedTeachers.overloaded.length})
-              </span>
-              {expandedCategories.has('overloaded') ? (
-                <ChevronUp className="w-4 h-4 text-gray-400" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              )}
-            </button>
-            {expandedCategories.has('overloaded') && (
-              <div className="space-y-2">
-                {groupedTeachers.overloaded.map((teacher) => (
-                  <TeacherCard
-                    key={teacher.id}
-                    teacher={teacher}
-                    selectedSubjectId={selectedSubjectId}
-                    isCompact={true}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+          <TeacherGroup
+            title="At Capacity"
+            count={groupedTeachers.overloaded.length}
+            color="red"
+            isExpanded={expandedCategories.has('overloaded')}
+            onToggle={() => toggleCategory('overloaded')}
+            teachers={groupedTeachers.overloaded}
+            selectedSubjectId={selectedSubjectId}
+          />
         )}
 
         {filteredTeachers.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <Users className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-            <p className="text-sm">No teachers found</p>
-            <p className="text-xs text-gray-400 mt-1">Try adjusting your filters</p>
+          <div className="flex flex-col items-center justify-center py-12 px-6">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <Users className="w-8 h-8 text-gray-300" />
+            </div>
+            <p className="text-sm font-medium text-gray-600">No teachers found</p>
+            <p className="text-xs text-gray-400 mt-1 text-center">Try adjusting your search or filters</p>
           </div>
         )}
       </div>
 
       {/* Footer Stats */}
-      <div className="p-4 border-t border-gray-200 bg-gray-50">
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div>
-            <p className="text-lg font-bold text-green-600">{groupedTeachers.available.length}</p>
-            <p className="text-xs text-gray-500">Available</p>
+      <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <StatusBadge color="emerald" count={groupedTeachers.available.length} label="Free" />
+            <StatusBadge color="amber" count={groupedTeachers.nearMax.length} label="Busy" />
+            <StatusBadge color="red" count={groupedTeachers.overloaded.length} label="Full" />
           </div>
-          <div>
-            <p className="text-lg font-bold text-yellow-600">{groupedTeachers.nearMax.length}</p>
-            <p className="text-xs text-gray-500">Near Max</p>
-          </div>
-          <div>
-            <p className="text-lg font-bold text-red-600">{groupedTeachers.overloaded.length}</p>
-            <p className="text-xs text-gray-500">Over</p>
-          </div>
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showAvailableOnly}
+              onChange={(e) => setShowAvailableOnly(e.target.checked)}
+              className="w-3.5 h-3.5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+            />
+            <span className="text-xs text-gray-500">Available only</span>
+          </label>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Helper Components
+function TeacherGroup({ 
+  title, 
+  count, 
+  color, 
+  isExpanded, 
+  onToggle, 
+  teachers, 
+  selectedSubjectId 
+}: {
+  title: string;
+  count: number;
+  color: 'emerald' | 'amber' | 'red';
+  isExpanded: boolean;
+  onToggle: () => void;
+  teachers: Teacher[];
+  selectedSubjectId?: string;
+}) {
+  const colorClasses = {
+    emerald: 'bg-emerald-500',
+    amber: 'bg-amber-500',
+    red: 'bg-red-500',
+  };
+
+  return (
+    <div className="border-b border-gray-50 last:border-0">
+      <button
+        onClick={onToggle}
+        className="flex items-center justify-between w-full px-5 py-3 hover:bg-gray-50/50 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <span className={`w-2 h-2 rounded-full ${colorClasses[color]}`} />
+          <span className="text-xs font-medium text-gray-700">{title}</span>
+          <span className="text-xs text-gray-400">({count})</span>
+        </div>
+        {isExpanded ? (
+          <ChevronUp className="w-4 h-4 text-gray-400" />
+        ) : (
+          <ChevronDown className="w-4 h-4 text-gray-400" />
+        )}
+      </button>
+      {isExpanded && (
+        <div className="px-4 pb-3 space-y-2">
+          {teachers.map((teacher) => (
+            <TeacherCard
+              key={teacher.id}
+              teacher={teacher}
+              selectedSubjectId={selectedSubjectId}
+              isCompact={true}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatusBadge({ color, count, label }: { color: 'emerald' | 'amber' | 'red'; count: number; label: string }) {
+  const colorClasses = {
+    emerald: 'text-emerald-600',
+    amber: 'text-amber-600',
+    red: 'text-red-600',
+  };
+  const bgClasses = {
+    emerald: 'bg-emerald-100',
+    amber: 'bg-amber-100',
+    red: 'bg-red-100',
+  };
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className={`w-5 h-5 rounded-full ${bgClasses[color]} flex items-center justify-center text-xs font-semibold ${colorClasses[color]}`}>
+        {count}
+      </span>
+      <span className="text-xs text-gray-500">{label}</span>
     </div>
   );
 }

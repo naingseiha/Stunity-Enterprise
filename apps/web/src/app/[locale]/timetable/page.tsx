@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   DndContext,
@@ -36,6 +36,13 @@ import {
   SchoolShift,
   TeacherSubjectAssignment,
 } from '@/lib/api/timetable';
+import HorizontalTeacherPanel from '@/components/timetable/HorizontalTeacherPanel';
+import TeacherCard from '@/components/timetable/TeacherCard';
+import {
+  Teacher as SidebarTeacher,
+  Subject as SidebarSubject,
+  getTeacherDisplayName,
+} from '@/components/timetable/types';
 import {
   Calendar,
   Home,
@@ -60,12 +67,16 @@ import {
   Wand2,
   Building2,
   ChevronDown,
+  ChevronLeft,
   Move,
   AlertTriangle,
   Check,
   School,
   Copy,
   Eraser,
+  PanelLeftClose,
+  PanelLeftOpen,
+  GripVertical,
 } from 'lucide-react';
 
 type ViewMode = 'class' | 'teacher' | 'overview';
@@ -90,6 +101,215 @@ interface AvailableTeacher {
   subjects: Array<{ id: string; name: string; isPrimary: boolean }>;
   canTeachSubject: boolean;
   available: boolean;
+}
+
+// Droppable Cell Component for the timetable grid
+import { useDroppable, useDraggable } from '@dnd-kit/core';
+
+// Material Design inspired color palette for subjects
+const MATERIAL_COLORS: Record<string, { bg: string; border: string; text: string; light: string }> = {
+  // Primary subject categories
+  'Languages': { bg: 'bg-blue-500', border: 'border-blue-400', text: 'text-white', light: 'bg-blue-50' },
+  'Language': { bg: 'bg-blue-500', border: 'border-blue-400', text: 'text-white', light: 'bg-blue-50' },
+  'Mathematics': { bg: 'bg-emerald-500', border: 'border-emerald-400', text: 'text-white', light: 'bg-emerald-50' },
+  'Math': { bg: 'bg-emerald-500', border: 'border-emerald-400', text: 'text-white', light: 'bg-emerald-50' },
+  'Sciences': { bg: 'bg-purple-500', border: 'border-purple-400', text: 'text-white', light: 'bg-purple-50' },
+  'Science': { bg: 'bg-purple-500', border: 'border-purple-400', text: 'text-white', light: 'bg-purple-50' },
+  'Social Sciences': { bg: 'bg-amber-500', border: 'border-amber-400', text: 'text-white', light: 'bg-amber-50' },
+  'Social': { bg: 'bg-amber-500', border: 'border-amber-400', text: 'text-white', light: 'bg-amber-50' },
+  'Arts & Culture': { bg: 'bg-pink-500', border: 'border-pink-400', text: 'text-white', light: 'bg-pink-50' },
+  'Arts': { bg: 'bg-pink-500', border: 'border-pink-400', text: 'text-white', light: 'bg-pink-50' },
+  'Art': { bg: 'bg-pink-500', border: 'border-pink-400', text: 'text-white', light: 'bg-pink-50' },
+  'Physical Education': { bg: 'bg-orange-500', border: 'border-orange-400', text: 'text-white', light: 'bg-orange-50' },
+  'PE': { bg: 'bg-orange-500', border: 'border-orange-400', text: 'text-white', light: 'bg-orange-50' },
+  'Technology': { bg: 'bg-cyan-500', border: 'border-cyan-400', text: 'text-white', light: 'bg-cyan-50' },
+  'Tech': { bg: 'bg-cyan-500', border: 'border-cyan-400', text: 'text-white', light: 'bg-cyan-50' },
+  // Additional colors for variety
+  'Other': { bg: 'bg-indigo-500', border: 'border-indigo-400', text: 'text-white', light: 'bg-indigo-50' },
+  'default': { bg: 'bg-slate-500', border: 'border-slate-400', text: 'text-white', light: 'bg-slate-50' },
+};
+
+// Extended color palette for generating unique colors per subject/teacher
+const COLOR_PALETTE = [
+  { bg: 'bg-blue-500', border: 'border-blue-400', text: 'text-white', light: 'bg-blue-50' },
+  { bg: 'bg-emerald-500', border: 'border-emerald-400', text: 'text-white', light: 'bg-emerald-50' },
+  { bg: 'bg-purple-500', border: 'border-purple-400', text: 'text-white', light: 'bg-purple-50' },
+  { bg: 'bg-amber-500', border: 'border-amber-400', text: 'text-white', light: 'bg-amber-50' },
+  { bg: 'bg-pink-500', border: 'border-pink-400', text: 'text-white', light: 'bg-pink-50' },
+  { bg: 'bg-orange-500', border: 'border-orange-400', text: 'text-white', light: 'bg-orange-50' },
+  { bg: 'bg-cyan-500', border: 'border-cyan-400', text: 'text-white', light: 'bg-cyan-50' },
+  { bg: 'bg-indigo-500', border: 'border-indigo-400', text: 'text-white', light: 'bg-indigo-50' },
+  { bg: 'bg-teal-500', border: 'border-teal-400', text: 'text-white', light: 'bg-teal-50' },
+  { bg: 'bg-rose-500', border: 'border-rose-400', text: 'text-white', light: 'bg-rose-50' },
+  { bg: 'bg-violet-500', border: 'border-violet-400', text: 'text-white', light: 'bg-violet-50' },
+  { bg: 'bg-lime-500', border: 'border-lime-400', text: 'text-white', light: 'bg-lime-50' },
+  { bg: 'bg-sky-500', border: 'border-sky-400', text: 'text-white', light: 'bg-sky-50' },
+  { bg: 'bg-fuchsia-500', border: 'border-fuchsia-400', text: 'text-white', light: 'bg-fuchsia-50' },
+];
+
+// Hash function to generate consistent color index from string
+function hashStringToIndex(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash);
+}
+
+function getMaterialColor(category?: string, subjectId?: string) {
+  // First try to match by category
+  if (category && MATERIAL_COLORS[category]) {
+    return MATERIAL_COLORS[category];
+  }
+  
+  // If no category match, generate color from subject ID for consistency
+  if (subjectId) {
+    const index = hashStringToIndex(subjectId) % COLOR_PALETTE.length;
+    return COLOR_PALETTE[index];
+  }
+  
+  return MATERIAL_COLORS.default;
+}
+
+// Draggable timetable entry component
+function DraggableEntry({
+  entry,
+  cellId,
+  day,
+  periodId,
+  onClick,
+}: {
+  entry: TimetableEntry;
+  cellId: string;
+  day: DayOfWeek;
+  periodId: string;
+  onClick: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `entry-${entry.id}`,
+    data: {
+      type: 'ENTRY',
+      entryId: entry.id,
+      entry,
+      fromSlot: { day, periodId, classId: entry.classId },
+    },
+  });
+
+  const style = {
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const colors = getMaterialColor(entry.subject?.category, entry.subjectId || entry.id);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      className={`
+        h-[56px] p-2 rounded-lg cursor-grab active:cursor-grabbing
+        transition-all duration-200 select-none
+        ${colors.bg} ${colors.text}
+        ${isDragging ? 'shadow-xl ring-2 ring-white scale-105 z-50' : 'hover:shadow-lg hover:scale-[1.02]'}
+      `}
+    >
+      <div className="font-semibold text-[11px] truncate leading-tight drop-shadow-sm">
+        {entry.subject?.name || 'No Subject'}
+      </div>
+      <div className="flex items-center gap-1 mt-1 opacity-90">
+        <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+          <User className="w-2.5 h-2.5" />
+        </div>
+        <span className="text-[9px] truncate">
+          {entry.teacher
+            ? `${entry.teacher.firstName} ${entry.teacher.lastName}`
+            : 'No Teacher'}
+        </span>
+      </div>
+      {entry.room && (
+        <div className="text-[8px] opacity-75 truncate mt-0.5">
+          📍 {entry.room}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DroppableCell({
+  id,
+  day,
+  period,
+  periodId,
+  hasEntry,
+  children,
+  onClick,
+}: {
+  id: string;
+  day: DayOfWeek;
+  period: number;
+  periodId: string;
+  hasEntry: boolean;
+  children: React.ReactNode;
+  onClick: () => void;
+}) {
+  const { setNodeRef, isOver, active } = useDroppable({
+    id,
+    data: {
+      type: 'SLOT',
+      day,
+      period,
+      periodId,
+      classId: id.split('-')[0],
+      isEmpty: !hasEntry,
+    },
+  });
+
+  const isDraggingTeacher = active?.data?.current?.type === 'TEACHER';
+  const isDraggingEntry = active?.data?.current?.type === 'ENTRY';
+  const canDrop = !hasEntry && (isDraggingTeacher || isDraggingEntry);
+  const isHighlighted = isOver && canDrop;
+  const showDropZone = canDrop;
+
+  return (
+    <td ref={setNodeRef} className="px-1 py-1">
+      {hasEntry ? (
+        children
+      ) : (
+        <div
+          onClick={onClick}
+          className={`
+            h-[56px] w-full rounded-lg flex flex-col items-center justify-center 
+            transition-all duration-200 cursor-pointer group
+            ${isHighlighted
+              ? 'bg-indigo-100 border-2 border-indigo-400 shadow-md scale-[1.02]'
+              : showDropZone
+                ? 'bg-indigo-50/50 border-2 border-dashed border-indigo-300'
+                : 'bg-gray-50/30 border border-dashed border-gray-200 hover:bg-indigo-50/30 hover:border-indigo-300'
+            }
+          `}
+        >
+          {isHighlighted ? (
+            <div className="flex flex-col items-center text-indigo-600">
+              <div className="w-6 h-6 rounded-full bg-indigo-200 flex items-center justify-center">
+                {isDraggingEntry ? <Move className="h-3 w-3" /> : <User className="h-3 w-3" />}
+              </div>
+              <span className="text-[9px] font-medium mt-0.5">Drop</span>
+            </div>
+          ) : (
+            <Plus className={`h-3.5 w-3.5 ${showDropZone ? 'text-indigo-400' : 'text-gray-300 group-hover:text-indigo-400'} transition-colors`} />
+          )}
+        </div>
+      )}
+    </td>
+  );
 }
 
 export default function TimetablePage() {
@@ -119,6 +339,7 @@ export default function TimetablePage() {
   const [timetableData, setTimetableData] = useState<ClassTimetable | TeacherSchedule | null>(null);
   const [loadingTimetable, setLoadingTimetable] = useState(false);
   const [availableTeachers, setAvailableTeachers] = useState<AvailableTeacher[]>([]);
+  const [allTeacherAssignments, setAllTeacherAssignments] = useState<Map<string, Array<{ classId: string; className: string; subjectName: string; hoursPerWeek: number }>>>(new Map());
 
   // Modal state
   const [showEntryModal, setShowEntryModal] = useState(false);
@@ -151,7 +372,12 @@ export default function TimetablePage() {
 
   // Drag and drop state
   const [activeTeacher, setActiveTeacher] = useState<AvailableTeacher | null>(null);
+  const [activeDragTeacher, setActiveDragTeacher] = useState<SidebarTeacher | null>(null);
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
+  
+  // Teacher sidebar state
+  const [showTeacherSidebar, setShowTeacherSidebar] = useState(true);
+  const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string | undefined>();
 
   // Days to display (Monday-Saturday for Cambodian schools)
   const days: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
@@ -260,6 +486,13 @@ export default function TimetablePage() {
     }
   }, [viewMode, selectedClassId, selectedTeacherId, selectedYearId, gradeLevel]);
 
+  // Load teacher assignments when classes are available
+  useEffect(() => {
+    if (classes.length > 0 && selectedYearId && allTeacherAssignments.size === 0) {
+      loadAllTeacherAssignments();
+    }
+  }, [classes, selectedYearId]);
+
   const loadClassTimetable = async (classId: string) => {
     try {
       setLoadingTimetable(true);
@@ -277,10 +510,63 @@ export default function TimetablePage() {
       setLoadingTimetable(true);
       const response = await timetableAPI.getAllClasses(selectedYearId, gradeLevel);
       setClasses(response.data.classes as unknown as ClassWithStats[]);
+      
+      // Also load all timetable entries to calculate teacher assignments
+      await loadAllTeacherAssignments();
     } catch (err) {
       console.error('Error loading classes:', err);
     } finally {
       setLoadingTimetable(false);
+    }
+  };
+
+  // Load all teacher assignments from all class timetables
+  const loadAllTeacherAssignments = async () => {
+    try {
+      const assignmentsMap = new Map<string, Array<{ classId: string; className: string; subjectName: string; hoursPerWeek: number }>>();
+      
+      // Load timetables for all classes to get teacher assignments
+      const classesToLoad = classes.length > 0 ? classes : filteredClasses;
+      
+      for (const cls of classesToLoad.slice(0, 20)) { // Limit to first 20 classes for performance
+        try {
+          const response = await timetableAPI.getClassTimetable(cls.id, selectedYearId);
+          const entries = response.data.entries || [];
+          
+          // Group entries by teacher
+          entries.forEach((entry: TimetableEntry) => {
+            if (entry.teacherId) {
+              const existing = assignmentsMap.get(entry.teacherId) || [];
+              
+              // Check if this class+subject combination already exists
+              const subjectName = entry.subject?.name || 'Unknown';
+              const existingAssignment = existing.find(
+                a => a.classId === entry.classId && a.subjectName === subjectName
+              );
+              
+              if (existingAssignment) {
+                existingAssignment.hoursPerWeek += 1;
+              } else {
+                existing.push({
+                  classId: entry.classId,
+                  className: entry.class?.name || cls.name,
+                  subjectName: subjectName,
+                  hoursPerWeek: 1,
+                });
+              }
+              
+              assignmentsMap.set(entry.teacherId, existing);
+            }
+          });
+        } catch (err) {
+          // Skip classes that fail to load
+          console.warn(`Failed to load timetable for class ${cls.id}`);
+        }
+      }
+      
+      setAllTeacherAssignments(assignmentsMap);
+    } catch (err) {
+      console.error('Error loading teacher assignments:', err);
     }
   };
 
@@ -487,11 +773,70 @@ export default function TimetablePage() {
     }
   };
 
+  // Transform teachers for sidebar
+  const sidebarTeachers: SidebarTeacher[] = useMemo(() => {
+    return teachers.map((t) => {
+      const teacherAssigns = teacherAssignments.filter((a) => a.teacherId === t.id);
+      const assignments = allTeacherAssignments.get(t.id) || [];
+      const totalHours = assignments.reduce((sum, a) => sum + a.hoursPerWeek, 0);
+      
+      return {
+        id: t.id,
+        firstName: t.firstNameLatin,
+        lastName: t.lastNameLatin,
+        firstNameLatin: t.firstNameLatin,
+        lastNameLatin: t.lastNameLatin,
+        khmerName: t.firstNameKhmer || undefined,
+        email: t.email || undefined,
+        subjects: teacherAssigns.map((a) => ({
+          id: a.id,
+          subjectId: a.subjectId,
+          subjectName: a.subject?.name || '',
+          subjectCode: a.subject?.code || '',
+          isPrimary: a.isPrimary,
+          grades: a.preferredGrades?.map((g: string) => parseInt(g)) || [7, 8, 9, 10, 11, 12],
+        })),
+        totalHoursAssigned: totalHours,
+        maxHoursPerWeek: 25,
+        assignedClasses: assignments.map(a => ({
+          classId: a.classId,
+          className: a.className,
+          hoursPerWeek: a.hoursPerWeek,
+          subjectName: a.subjectName,
+        })),
+      };
+    });
+  }, [teachers, teacherAssignments, allTeacherAssignments]);
+
+  // Transform subjects for sidebar
+  const sidebarSubjects: SidebarSubject[] = useMemo(() => {
+    return subjects.map((s) => ({
+      id: s.id,
+      name: s.name,
+      nameKh: s.nameKh,
+      code: s.code,
+      category: s.category || 'Other',
+    }));
+  }, [subjects]);
+
   // Drag and drop handlers
   const handleDragStart = (event: DragStartEvent) => {
-    const teacher = availableTeachers.find((t) => t.id === event.active.id);
-    if (teacher) {
-      setActiveTeacher(teacher);
+    const activeId = event.active.id as string;
+    const activeData = event.active.data.current;
+    
+    // Check if dragging from sidebar (teacher card)
+    if (activeId.startsWith('teacher-')) {
+      const teacherId = activeId.replace('teacher-', '');
+      const teacher = sidebarTeachers.find((t) => t.id === teacherId);
+      if (teacher) {
+        setActiveDragTeacher(teacher);
+      }
+    } else {
+      // Legacy: dragging from modal
+      const teacher = availableTeachers.find((t) => t.id === activeId);
+      if (teacher) {
+        setActiveTeacher(teacher);
+      }
     }
   };
 
@@ -503,12 +848,100 @@ export default function TimetablePage() {
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveTeacher(null);
+    setActiveDragTeacher(null);
     setDragOverCell(null);
 
     if (!over) return;
+    
+    const activeId = active.id as string;
+    const activeData = active.data.current;
+    const overData = over.data.current;
 
-    const teacherId = active.id as string;
-    const [dayOfWeek, periodId] = (over.id as string).split('-') as [DayOfWeek, string];
+    // Get the drop target data
+    const dropData = overData as { 
+      type: string;
+      day: DayOfWeek; 
+      period: number; 
+      periodId?: string;
+      classId: string;
+      isEmpty?: boolean;
+    } | undefined;
+    
+    if (!dropData || dropData.type !== 'SLOT' || !dropData.day || dropData.period === undefined) {
+      console.error('Invalid drop target data:', overData);
+      return;
+    }
+
+    // Find the period - use periodId if available, otherwise find by number
+    let periodId = dropData.periodId;
+    if (!periodId) {
+      const period = periods.find((p) => p.order === dropData.period);
+      periodId = period?.id;
+    }
+    
+    if (!periodId) {
+      setError('Could not find period');
+      return;
+    }
+
+    // Handle dragging an existing entry to a new slot
+    if (activeId.startsWith('entry-') && activeData?.type === 'ENTRY') {
+      const entryId = activeId.replace('entry-', '');
+      const fromSlot = activeData.fromSlot as { day: DayOfWeek; periodId: string; classId: string };
+      const entry = activeData.entry as TimetableEntry;
+      
+      // Don't drop on occupied cells
+      if (!dropData.isEmpty) {
+        setError('This slot is already occupied. Delete the existing entry first.');
+        return;
+      }
+
+      // Check if dropping on the same slot
+      if (fromSlot.day === dropData.day && fromSlot.periodId === periodId) {
+        return; // Same slot, do nothing
+      }
+
+      // Move the entry to new slot by deleting and recreating
+      try {
+        setSaving(true);
+        // Delete the old entry
+        await timetableAPI.deleteEntry(entryId);
+        // Create new entry at the new slot
+        await timetableAPI.createEntry({
+          classId: selectedClassId,
+          teacherId: entry.teacherId || undefined,
+          subjectId: entry.subjectId || undefined,
+          periodId,
+          dayOfWeek: dropData.day,
+          academicYearId: selectedYearId,
+          room: entry.room || undefined,
+        });
+        setSuccessMessage('Entry moved successfully!');
+        loadClassTimetable(selectedClassId);
+      } catch (err: any) {
+        setError(err.message || 'Failed to move entry');
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
+    // Handle dragging a teacher from sidebar
+    if (!activeId.startsWith('teacher-') && !availableTeachers.some(t => t.id === activeId)) {
+      return;
+    }
+
+    // Parse teacher ID - handle both formats
+    let teacherId = activeId;
+    if (activeId.startsWith('teacher-')) {
+      teacherId = activeId.replace('teacher-', '');
+    }
+
+    // Don't drop on occupied cells
+    if (!dropData.isEmpty) {
+      setError('This slot is already occupied');
+      return;
+    }
 
     // Create entry with the dropped teacher
     try {
@@ -517,13 +950,13 @@ export default function TimetablePage() {
         classId: selectedClassId,
         teacherId,
         periodId,
-        dayOfWeek,
+        dayOfWeek: dropData.day,
         academicYearId: selectedYearId,
       });
-      setSuccessMessage('Teacher assigned!');
+      setSuccessMessage('Teacher assigned successfully!');
       loadClassTimetable(selectedClassId);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Failed to assign teacher');
     } finally {
       setSaving(false);
     }
@@ -635,6 +1068,7 @@ export default function TimetablePage() {
         <UnifiedNavigation user={user} school={school} />
 
         <div className="lg:ml-64">
+          {/* Main Content */}
           <main className="p-4 lg:p-8">
             {/* Header */}
             <AnimatedContent animation="fade" delay={0}>
@@ -643,7 +1077,7 @@ export default function TimetablePage() {
                 <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
                   <Home className="h-4 w-4" />
                   <ChevronRight className="h-4 w-4" />
-                  <span className="text-gray-900 font-medium">Timetable Management</span>
+                  <span className="text-gray-900 font-medium">Timetable</span>
                 </nav>
 
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -652,77 +1086,83 @@ export default function TimetablePage() {
                       <Calendar className="h-6 w-6 text-indigo-600" />
                     </div>
                     <div>
-                      <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Timetable Management</h1>
-                      <p className="text-gray-600 mt-1">
-                        {gradeLevel === 'SECONDARY' ? 'Secondary School (Grades 7-9)' : 'High School (Grades 10-12)'}
+                      <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Timetable</h1>
+                      <p className="text-sm text-gray-500 mt-0.5">
+                        {gradeLevel === 'SECONDARY' ? 'Secondary (Grades 7-9)' : 'High School (Grades 10-12)'}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-wrap">
+                  {/* Action Buttons - Cleaner layout */}
+                  <div className="flex items-center gap-2">
                     {periods.length === 0 && (
                       <button
                         onClick={handleCreateDefaultPeriods}
                         disabled={saving}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
                       >
                         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings className="h-4 w-4" />}
                         Setup Periods
                       </button>
                     )}
+                    
                     {shifts.length === 0 && (
                       <button
                         onClick={handleCreateDefaultShifts}
                         disabled={saving}
-                        className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-50"
                       >
                         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock className="h-4 w-4" />}
                         Setup Shifts
                       </button>
                     )}
+                    
                     {viewMode === 'class' && selectedClassId && (
                       <button
                         onClick={() => setShowAutoAssignModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all shadow-sm"
                       >
                         <Wand2 className="h-4 w-4" />
-                        Auto-Assign
+                        <span className="hidden sm:inline">Auto-Assign</span>
                       </button>
                     )}
+                    
                     {viewMode === 'class' && selectedClassId && timetableData && (timetableData as ClassTimetable).entries?.length > 0 && (
                       <>
                         <button
                           onClick={() => setShowCopyModal(true)}
-                          className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all"
                         >
                           <Copy className="h-4 w-4" />
-                          Copy To...
+                          <span className="hidden sm:inline">Copy</span>
                         </button>
                         <button
                           onClick={handleClearTimetable}
                           disabled={saving}
-                          className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 bg-red-50 border border-red-200 text-sm font-medium rounded-lg hover:bg-red-100 transition-all disabled:opacity-50"
                         >
                           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eraser className="h-4 w-4" />}
-                          Clear
+                          <span className="hidden sm:inline">Clear</span>
                         </button>
                       </>
                     )}
+                    
+                    {/* Utility buttons */}
                     {(viewMode === 'class' && selectedClassId || viewMode === 'teacher' && selectedTeacherId) && timetableData && (
                       <button
                         onClick={handleExportCSV}
-                        className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Export CSV"
                       >
                         <Download className="h-4 w-4" />
-                        Export
                       </button>
                     )}
                     <button
                       onClick={() => window.print()}
-                      className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Print"
                     >
                       <Printer className="h-4 w-4" />
-                      Print
                     </button>
                   </div>
                 </div>
@@ -731,83 +1171,97 @@ export default function TimetablePage() {
 
             {/* Messages */}
             {successMessage && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-700">
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-700 text-sm">
                 <CheckCircle className="h-4 w-4" />
                 {successMessage}
               </div>
             )}
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
                 <AlertCircle className="h-4 w-4" />
                 {error}
-                <button onClick={() => setError(null)} className="ml-auto">
+                <button onClick={() => setError(null)} className="ml-auto p-1 hover:bg-red-100 rounded">
                   <X className="h-4 w-4" />
                 </button>
               </div>
             )}
 
-            {/* Filters */}
+            {/* Filters - Cleaner card */}
             <AnimatedContent animation="slide-up" delay={50}>
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
-                <div className="flex flex-wrap items-center gap-4">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+                <div className="flex flex-wrap items-center gap-3">
                   {/* Grade Level Toggle */}
-                  <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                  <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                     <button
                       onClick={() => setGradeLevel('HIGH_SCHOOL')}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                        gradeLevel === 'HIGH_SCHOOL' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600 hover:text-gray-900'
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                        gradeLevel === 'HIGH_SCHOOL' 
+                          ? 'bg-white shadow-sm text-indigo-600' 
+                          : 'text-gray-500 hover:text-gray-700'
                       }`}
                     >
-                      <Building2 className="h-4 w-4" />
+                      <Building2 className="h-3.5 w-3.5" />
                       High School
                     </button>
                     <button
                       onClick={() => setGradeLevel('SECONDARY')}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                        gradeLevel === 'SECONDARY' ? 'bg-white shadow-sm text-amber-600' : 'text-gray-600 hover:text-gray-900'
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                        gradeLevel === 'SECONDARY' 
+                          ? 'bg-white shadow-sm text-amber-600' 
+                          : 'text-gray-500 hover:text-gray-700'
                       }`}
                     >
-                      <School className="h-4 w-4" />
+                      <School className="h-3.5 w-3.5" />
                       Secondary
                     </button>
                   </div>
 
+                  <div className="h-6 w-px bg-gray-200" />
+
                   {/* View Mode Toggle */}
-                  <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                  <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
                     <button
                       onClick={() => setViewMode('class')}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                        viewMode === 'class' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-600 hover:text-gray-900'
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                        viewMode === 'class' 
+                          ? 'bg-white shadow-sm text-indigo-600' 
+                          : 'text-gray-500 hover:text-gray-700'
                       }`}
                     >
-                      <GraduationCap className="h-4 w-4" />
-                      By Class
+                      <GraduationCap className="h-3.5 w-3.5" />
+                      Class
                     </button>
                     <button
                       onClick={() => setViewMode('teacher')}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                        viewMode === 'teacher' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-600 hover:text-gray-900'
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                        viewMode === 'teacher' 
+                          ? 'bg-white shadow-sm text-indigo-600' 
+                          : 'text-gray-500 hover:text-gray-700'
                       }`}
                     >
-                      <User className="h-4 w-4" />
-                      By Teacher
+                      <User className="h-3.5 w-3.5" />
+                      Teacher
                     </button>
                     <button
                       onClick={() => setViewMode('overview')}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                        viewMode === 'overview' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-600 hover:text-gray-900'
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                        viewMode === 'overview' 
+                          ? 'bg-white shadow-sm text-indigo-600' 
+                          : 'text-gray-500 hover:text-gray-700'
                       }`}
                     >
-                      <Users className="h-4 w-4" />
-                      Overview
+                      <Users className="h-3.5 w-3.5" />
+                      All
                     </button>
                   </div>
+
+                  <div className="h-6 w-px bg-gray-200" />
 
                   {/* Academic Year */}
                   <select
                     value={selectedYearId}
                     onChange={(e) => setSelectedYearId(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white"
                   >
                     <option value="">Select Year</option>
                     {academicYears.map((year) => (
@@ -822,7 +1276,7 @@ export default function TimetablePage() {
                     <select
                       value={selectedClassId}
                       onChange={(e) => setSelectedClassId(e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white min-w-[140px]"
                     >
                       <option value="">Select Class</option>
                       {Object.entries(classesByGrade).map(([grade, classList]) => (
@@ -844,7 +1298,7 @@ export default function TimetablePage() {
                     <select
                       value={selectedTeacherId}
                       onChange={(e) => setSelectedTeacherId(e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white min-w-[160px]"
                     >
                       <option value="">Select Teacher</option>
                       {teachers.map((teacher) => (
@@ -866,35 +1320,12 @@ export default function TimetablePage() {
                         loadAllClassesStats();
                       }
                     }}
-                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors ml-auto"
+                    title="Refresh"
                   >
-                    <RefreshCw className={`h-5 w-5 ${loadingTimetable ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`h-4 w-4 ${loadingTimetable ? 'animate-spin' : ''}`} />
                   </button>
                 </div>
-
-                {/* Shift Info */}
-                {shifts.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-200 flex items-center gap-4 text-sm">
-                    <span className="text-gray-500">Shifts:</span>
-                    {shifts.map((shift) => (
-                      <span key={shift.id} className="flex items-center gap-1.5">
-                        <span
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: shift.color || '#3B82F6' }}
-                        />
-                        <span className="font-medium">{shift.name}</span>
-                        <span className="text-gray-400">
-                          ({shift.startTime} - {shift.endTime})
-                        </span>
-                        {shift.gradeLevel && (
-                          <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
-                            {shift.gradeLevel === 'SECONDARY' ? 'Secondary' : 'High School'}
-                          </span>
-                        )}
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
             </AnimatedContent>
 
@@ -970,7 +1401,7 @@ export default function TimetablePage() {
                       <p className="text-gray-500">Choose a teacher from the dropdown to view their schedule.</p>
                     </div>
                   ) : (
-                    <BlurLoader isLoading={loadingTimetable}>
+                    <BlurLoader isLoading={loadingTimetable} showSpinner={false}>
                       {/* Teacher Info Header */}
                       {timetableData && 'teacher' in timetableData && (
                         <div className="p-4 bg-gray-50 border-b border-gray-200">
@@ -1024,30 +1455,34 @@ export default function TimetablePage() {
                                 </td>
                                 {days.map((day) => {
                                   const entry = grid[day]?.[period.id];
+                                  const colors = getMaterialColor(entry?.subject?.category, entry?.subjectId || entry?.id);
                                   return (
-                                    <td key={`${day}-${period.id}`} className="px-2 py-2">
+                                    <td key={`${day}-${period.id}`} className="px-1 py-1">
                                       {period.isBreak ? (
-                                        <div className="h-16 flex items-center justify-center text-gray-400 text-sm italic">
+                                        <div className="h-[56px] flex items-center justify-center text-gray-400 text-[10px] italic bg-gray-100/30 rounded-lg">
                                           {period.name}
                                         </div>
                                       ) : entry ? (
                                         <div
-                                          className={`h-16 p-2 rounded-lg border transition-all ${getCategoryColor(
-                                            entry.subject?.category
-                                          )}`}
+                                          className={`h-[56px] p-2 rounded-lg ${colors.bg} ${colors.text} transition-all hover:shadow-md hover:scale-[1.02]`}
                                         >
-                                          <div className="font-medium text-xs truncate">
+                                          <div className="font-semibold text-[11px] truncate leading-tight drop-shadow-sm">
                                             {entry.subject?.name || 'No Subject'}
                                           </div>
-                                          <div className="text-xs opacity-75 truncate">
-                                            {entry.class?.name || 'Unknown Class'}
+                                          <div className="flex items-center gap-1 mt-1 opacity-90">
+                                            <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                                              <School className="w-2.5 h-2.5" />
+                                            </div>
+                                            <span className="text-[9px] truncate">
+                                              {entry.class?.name || 'Unknown Class'}
+                                            </span>
                                           </div>
                                           {entry.room && (
-                                            <div className="text-xs opacity-50 truncate">Room: {entry.room}</div>
+                                            <div className="text-[8px] opacity-75 truncate mt-0.5">📍 {entry.room}</div>
                                           )}
                                         </div>
                                       ) : (
-                                        <div className="h-16 flex items-center justify-center text-gray-300">
+                                        <div className="h-[56px] flex items-center justify-center text-gray-300 bg-gray-50/30 rounded-lg border border-dashed border-gray-200">
                                           —
                                         </div>
                                       )}
@@ -1065,104 +1500,111 @@ export default function TimetablePage() {
               </AnimatedContent>
             ) : (
               // Class Timetable View
-              <AnimatedContent animation="slide-up" delay={100}>
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  {periods.length === 0 ? (
-                    <div className="p-12 text-center">
-                      <Clock className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No Periods Configured</h3>
-                      <p className="text-gray-500 mb-4">
-                        Set up your school's period schedule to start creating timetables.
-                      </p>
-                      <button
-                        onClick={handleCreateDefaultPeriods}
-                        disabled={saving}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
-                      >
-                        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                        Setup Default Periods
-                      </button>
-                    </div>
-                  ) : !selectedClassId ? (
-                    <div className="p-12 text-center">
-                      <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Select a Class</h3>
-                      <p className="text-gray-500">Choose a class from the dropdown to view its timetable.</p>
-                    </div>
-                  ) : (
-                    <BlurLoader isLoading={loadingTimetable}>
-                      <div className="overflow-x-auto">
-                        <table className="w-full min-w-[900px]">
-                          <thead>
-                            <tr className="bg-gray-50 border-b border-gray-200">
-                              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 w-36 sticky left-0 bg-gray-50">
-                                Time
+              <>
+                {/* Horizontal Teacher Panel - Show when class is selected */}
+                {selectedClassId && periods.length > 0 && (
+                  <HorizontalTeacherPanel
+                    teachers={sidebarTeachers}
+                    subjects={sidebarSubjects}
+                    selectedGradeLevel={gradeLevel}
+                    isVisible={showTeacherSidebar}
+                    onToggle={() => setShowTeacherSidebar(!showTeacherSidebar)}
+                  />
+                )}
+
+                <AnimatedContent animation="slide-up" delay={100}>
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    {periods.length === 0 ? (
+                      <div className="p-16 text-center">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Clock className="h-8 w-8 text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Periods Configured</h3>
+                        <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
+                          Set up your school's period schedule to start creating timetables.
+                        </p>
+                        <button
+                          onClick={handleCreateDefaultPeriods}
+                          disabled={saving}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                        >
+                          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                          Setup Default Periods
+                        </button>
+                      </div>
+                    ) : !selectedClassId ? (
+                      <div className="p-16 text-center">
+                        <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Users className="h-8 w-8 text-indigo-400" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Select a Class</h3>
+                        <p className="text-sm text-gray-500">Choose a class from the dropdown above to view its timetable.</p>
+                      </div>
+                    ) : (
+                      <BlurLoader isLoading={loadingTimetable} showSpinner={false}>
+                        <div className="overflow-x-auto">
+                          <table className="w-full min-w-[900px] border-collapse">
+                            <thead>
+                            <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50">
+                              <th className="px-4 py-4 text-left w-32 sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100/50 z-10">
+                                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Period</span>
                               </th>
                               {days.map((day) => (
-                                <th key={day} className="px-4 py-3 text-center text-sm font-semibold text-gray-900">
-                                  {DAY_LABELS[day].en}
-                                  <span className="block text-xs font-normal text-gray-500">{DAY_LABELS[day].kh}</span>
+                                <th key={day} className="px-2 py-4 text-center">
+                                  <span className="text-sm font-semibold text-gray-800">{DAY_LABELS[day].en}</span>
+                                  <span className="block text-[10px] text-gray-400 mt-0.5">{DAY_LABELS[day].kh}</span>
                                 </th>
                               ))}
                             </tr>
                           </thead>
-                          <tbody>
+                          <tbody className="divide-y divide-gray-100">
                             {periods.map((period) => (
                               <tr
                                 key={period.id}
-                                className={`border-b border-gray-200 ${period.isBreak ? 'bg-gray-50' : ''}`}
+                                className={`${period.isBreak ? 'bg-gray-50/50' : 'hover:bg-gray-50/30'} transition-colors`}
                               >
-                                <td className="px-4 py-3 sticky left-0 bg-white border-r border-gray-100">
-                                  <div className="font-medium text-gray-900 text-sm">{period.name}</div>
-                                  <div className="text-xs text-gray-500">
-                                    {period.startTime} - {period.endTime}
+                                <td className="px-4 py-2 sticky left-0 bg-white z-10 border-r border-gray-100">
+                                  <div className="flex flex-col">
+                                    <span className="font-semibold text-gray-800 text-sm">{period.name}</span>
+                                    <span className="text-[10px] text-gray-400 mt-0.5">
+                                      {period.startTime} - {period.endTime}
+                                    </span>
                                   </div>
                                 </td>
                                 {days.map((day) => {
                                   const entry = grid[day]?.[period.id];
-                                  const cellId = `${day}-${period.id}`;
-                                  const isDropTarget = dragOverCell === cellId && !entry;
+                                  const cellId = `${selectedClassId}-${day}-${period.order}`;
+
+                                  if (period.isBreak) {
+                                    return (
+                                      <td key={cellId} className="px-1 py-1">
+                                        <div className="h-[56px] flex items-center justify-center bg-gray-100/30 rounded-lg">
+                                          <span className="text-[10px] text-gray-400 font-medium">{period.name}</span>
+                                        </div>
+                                      </td>
+                                    );
+                                  }
 
                                   return (
-                                    <td key={cellId} className="px-2 py-2">
-                                      {period.isBreak ? (
-                                        <div className="h-16 flex items-center justify-center text-gray-400 text-sm italic">
-                                          {period.name}
-                                        </div>
-                                      ) : entry ? (
-                                        <div
-                                          className={`h-16 p-2 rounded-lg border cursor-pointer transition-all hover:shadow-md ${getCategoryColor(
-                                            entry.subject?.category
-                                          )}`}
+                                    <DroppableCell
+                                      key={cellId}
+                                      id={cellId}
+                                      day={day}
+                                      period={period.order}
+                                      periodId={period.id}
+                                      hasEntry={!!entry}
+                                      onClick={() => openEntryModal(period.id, day, entry || undefined)}
+                                    >
+                                      {entry && (
+                                        <DraggableEntry
+                                          entry={entry}
+                                          cellId={cellId}
+                                          day={day}
+                                          periodId={period.id}
                                           onClick={() => openEntryModal(period.id, day, entry)}
-                                        >
-                                          <div className="font-medium text-xs truncate">
-                                            {entry.subject?.name || 'No Subject'}
-                                          </div>
-                                          <div className="text-xs opacity-75 truncate">
-                                            {entry.teacher
-                                              ? `${entry.teacher.firstName} ${entry.teacher.lastName}`
-                                              : 'No Teacher'}
-                                          </div>
-                                          {entry.room && (
-                                            <div className="text-xs opacity-50 truncate">Room: {entry.room}</div>
-                                          )}
-                                        </div>
-                                      ) : (
-                                        <div
-                                          id={cellId}
-                                          data-droppable="true"
-                                          onClick={() => openEntryModal(period.id, day)}
-                                          className={`h-16 w-full border-2 border-dashed rounded-lg flex items-center justify-center transition-colors ${
-                                            isDropTarget
-                                              ? 'border-indigo-500 bg-indigo-50 text-indigo-500'
-                                              : 'border-gray-200 text-gray-400 hover:border-indigo-300 hover:text-indigo-500'
-                                          }`}
-                                        >
-                                          <Plus className="h-5 w-5" />
-                                        </div>
+                                        />
                                       )}
-                                    </td>
+                                    </DroppableCell>
                                   );
                                 })}
                               </tr>
@@ -1174,28 +1616,27 @@ export default function TimetablePage() {
                   )}
                 </div>
               </AnimatedContent>
+            </>
             )}
 
-            {/* Legend */}
+            {/* Legend - More compact */}
             {periods.length > 0 && (viewMode === 'class' || viewMode === 'teacher') && (
               <AnimatedContent animation="slide-up" delay={150}>
-                <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Subject Categories</h3>
-                  <div className="flex flex-wrap gap-3">
-                    {Object.entries({
-                      Languages: 'bg-blue-100 border-blue-300',
-                      Mathematics: 'bg-green-100 border-green-300',
-                      Sciences: 'bg-purple-100 border-purple-300',
-                      'Social Sciences': 'bg-yellow-100 border-yellow-300',
-                      'Arts & Culture': 'bg-pink-100 border-pink-300',
-                      'Physical Education': 'bg-orange-100 border-orange-300',
-                      Technology: 'bg-cyan-100 border-cyan-300',
-                    }).map(([category, colors]) => (
-                      <div key={category} className={`px-3 py-1 rounded-lg border text-xs font-medium ${colors}`}>
-                        {category}
-                      </div>
-                    ))}
-                  </div>
+                <div className="mt-4 flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-gray-400 font-medium">Subjects:</span>
+                  {Object.entries({
+                    Languages: 'bg-blue-500 text-white',
+                    Mathematics: 'bg-emerald-500 text-white',
+                    Sciences: 'bg-purple-500 text-white',
+                    'Social Sciences': 'bg-amber-500 text-white',
+                    'Arts & Culture': 'bg-pink-500 text-white',
+                    'Physical Education': 'bg-orange-500 text-white',
+                    Technology: 'bg-cyan-500 text-white',
+                  }).map(([category, colors]) => (
+                    <span key={category} className={`px-2 py-0.5 rounded-md text-[10px] font-medium ${colors}`}>
+                      {category}
+                    </span>
+                  ))}
                 </div>
               </AnimatedContent>
             )}
@@ -1450,12 +1891,22 @@ export default function TimetablePage() {
         )}
 
         {/* Drag Overlay */}
-        <DragOverlay>
-          {activeTeacher && (
-            <div className="p-3 bg-white rounded-lg shadow-lg border-2 border-indigo-500">
-              <span className="font-medium">
-                {activeTeacher.firstName || activeTeacher.firstNameLatin} {activeTeacher.lastName || activeTeacher.lastNameLatin}
-              </span>
+        <DragOverlay dropAnimation={null}>
+          {(activeTeacher || activeDragTeacher) && (
+            <div className="p-3 bg-white rounded-xl shadow-2xl border-2 border-indigo-500 flex items-center gap-3 cursor-grabbing">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center flex-shrink-0">
+                <User className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900">
+                  {activeTeacher 
+                    ? `${activeTeacher.firstName || activeTeacher.firstNameLatin} ${activeTeacher.lastName || activeTeacher.lastNameLatin}`
+                    : activeDragTeacher 
+                      ? getTeacherDisplayName(activeDragTeacher)
+                      : ''}
+                </p>
+                <p className="text-xs text-gray-500">Drag to assign</p>
+              </div>
             </div>
           )}
         </DragOverlay>

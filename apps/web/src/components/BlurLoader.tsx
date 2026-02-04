@@ -8,6 +8,7 @@ interface BlurLoaderProps {
   className?: string;
   skeleton?: ReactNode;
   blur?: boolean;
+  showSpinner?: boolean; // Whether to show spinner fallback when no skeleton is provided
 }
 
 /**
@@ -24,6 +25,7 @@ export default function BlurLoader({
   className = '',
   skeleton,
   blur = true,
+  showSpinner = true,
 }: BlurLoaderProps) {
   return (
     <div className={`relative ${className}`}>
@@ -44,8 +46,8 @@ export default function BlurLoader({
         </div>
       )}
 
-      {/* Loading spinner overlay (fallback if no skeleton) */}
-      {isLoading && !skeleton && (
+      {/* Loading spinner overlay (fallback if no skeleton and showSpinner is true) */}
+      {isLoading && !skeleton && showSpinner && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="flex flex-col items-center gap-3">
             <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
