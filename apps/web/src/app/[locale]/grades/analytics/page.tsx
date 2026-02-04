@@ -31,7 +31,6 @@ import {
   ArrowUp,
 } from 'lucide-react';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
-import { PageLoader } from '@/components/BlurLoader';
 import { gradeAPI, Grade, ClassReportSummary } from '@/lib/api/grades';
 import { getClasses, Class } from '@/lib/api/classes';
 import { getAcademicYearsAuto, AcademicYear } from '@/lib/api/academic-years';
@@ -292,7 +291,6 @@ export default function GradeAnalyticsPage() {
   return (
     <>
       <UnifiedNavigation user={user} school={school} />
-      <PageLoader isLoading={loading} message="Loading analytics data..." />
       
       <div className="lg:ml-64 min-h-screen bg-gray-50">
         {/* Header */}
