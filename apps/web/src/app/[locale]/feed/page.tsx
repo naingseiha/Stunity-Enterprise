@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
-import PageSkeleton from '@/components/layout/PageSkeleton';
+import FeedZoomLoader from '@/components/feed/FeedZoomLoader';
 import {
   Users,
   BookOpen,
@@ -25,6 +25,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
   const [school, setSchool] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('feed');
   const [loading, setLoading] = useState(true);
+  const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
     const token = TokenManager.getAccessToken();
@@ -44,8 +45,23 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
     router.replace(`/${locale}/auth/login`);
   };
 
-  if (loading || !user || !school) {
-    return <PageSkeleton user={user} school={school} type="cards" showFilters={false} />;
+  // Show zoom loader while loading, then fade in content
+  if (loading || !user || !school || !showContent) {
+    return (
+      <>
+        <FeedZoomLoader 
+          isLoading={loading || !user || !school} 
+          onAnimationComplete={() => setShowContent(true)}
+          minimumDuration={600}
+        />
+        {/* Pre-render content (hidden) for instant show after animation */}
+        {!loading && user && school && (
+          <div className="opacity-0 pointer-events-none absolute">
+            <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
+          </div>
+        )}
+      </>
+    );
   }
 
   const tabs = [
@@ -82,12 +98,12 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 animate-fade-in">
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Tab Navigation - Pill Style */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 animate-slide-down" style={{ animationDelay: '0.1s' }}>
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -111,7 +127,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
         </div>
 
         {/* Post Creation Box */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 mb-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 mb-4 animate-slide-up" style={{ animationDelay: '0.15s' }}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-yellow-400 flex items-center justify-center text-white font-semibold flex-shrink-0">
               {user.firstName[0]}{user.lastName[0]}
