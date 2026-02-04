@@ -328,6 +328,7 @@ export default function ReportCardsPage({ params }: { params: { locale: string }
                 <ClassReportCard 
                   report={classReport} 
                   onSelectStudent={handleSelectStudent}
+                  schoolName={school?.name}
                 />
               </div>
             </BlurLoader>
@@ -367,7 +368,7 @@ export default function ReportCardsPage({ params }: { params: { locale: string }
                   </div>
                 </div>
 
-                <StudentReportCard reportCard={studentReportCard} />
+                <StudentReportCard reportCard={studentReportCard} schoolName={school?.name} />
               </div>
             </BlurLoader>
           </AnimatedContent>

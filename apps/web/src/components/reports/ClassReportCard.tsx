@@ -1,17 +1,23 @@
 'use client';
 
 import { ClassReportSummary, getGradeLevelColor, getScoreColor } from '@/lib/api/grades';
-import { Users, Trophy, TrendingUp, TrendingDown, BarChart3, CheckCircle, XCircle, Medal } from 'lucide-react';
+import { downloadClassSummaryPDF } from '@/lib/pdf/reportCardPdf';
+import { Users, Trophy, TrendingUp, TrendingDown, BarChart3, CheckCircle, XCircle, Medal, Download } from 'lucide-react';
 
 interface ClassReportCardProps {
   report: ClassReportSummary;
   onSelectStudent?: (studentId: string) => void;
+  schoolName?: string;
 }
 
-export default function ClassReportCard({ report, onSelectStudent }: ClassReportCardProps) {
+export default function ClassReportCard({ report, onSelectStudent, schoolName }: ClassReportCardProps) {
   const { class: classInfo, semester, year, students, statistics } = report;
 
   const semesterLabel = semester === 1 ? 'First Semester' : 'Second Semester';
+
+  const handleDownloadPDF = () => {
+    downloadClassSummaryPDF(report, schoolName);
+  };
 
   // Get top 3 students
   const topStudents = students.slice(0, 3);
@@ -36,6 +42,13 @@ export default function ClassReportCard({ report, onSelectStudent }: ClassReport
           <div className="text-right">
             <div className="text-4xl font-bold">{statistics.classAverage.toFixed(1)}</div>
             <div className="text-sm text-indigo-100">Class Average</div>
+            <button
+              onClick={handleDownloadPDF}
+              className="mt-3 flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm transition-colors print:hidden"
+            >
+              <Download className="w-4 h-4" />
+              Download PDF
+            </button>
           </div>
         </div>
       </div>

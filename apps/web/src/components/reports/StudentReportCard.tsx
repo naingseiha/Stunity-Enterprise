@@ -1,16 +1,22 @@
 'use client';
 
 import { StudentReportCard as ReportCardType, getGradeLevelColor, getScoreColor } from '@/lib/api/grades';
-import { User, Calendar, Trophy, TrendingUp, CheckCircle, XCircle, Clock, FileText } from 'lucide-react';
+import { downloadStudentReportCardPDF } from '@/lib/pdf/reportCardPdf';
+import { User, Calendar, Trophy, TrendingUp, CheckCircle, XCircle, Clock, FileText, Download } from 'lucide-react';
 
 interface StudentReportCardProps {
   reportCard: ReportCardType;
   showPhoto?: boolean;
   compact?: boolean;
+  schoolName?: string;
 }
 
-export default function StudentReportCard({ reportCard, showPhoto = true, compact = false }: StudentReportCardProps) {
+export default function StudentReportCard({ reportCard, showPhoto = true, compact = false, schoolName }: StudentReportCardProps) {
   const { student, class: classInfo, semester, year, subjects, summary, attendance } = reportCard;
+
+  const handleDownloadPDF = () => {
+    downloadStudentReportCardPDF(reportCard, schoolName);
+  };
 
   // Group subjects by category
   const subjectsByCategory = subjects.reduce((acc, subject) => {
@@ -93,6 +99,13 @@ export default function StudentReportCard({ reportCard, showPhoto = true, compac
             <div className="mt-2 inline-block px-3 py-1 bg-white/20 rounded-full text-sm">
               Grade {summary.overallGradeLevel}
             </div>
+            <button
+              onClick={handleDownloadPDF}
+              className="mt-3 flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm transition-colors print:hidden"
+            >
+              <Download className="w-4 h-4" />
+              Download PDF
+            </button>
           </div>
         </div>
       </div>

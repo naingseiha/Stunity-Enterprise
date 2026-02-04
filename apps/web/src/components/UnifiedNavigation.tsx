@@ -62,7 +62,8 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
     pathname.includes('/grades') ||
     pathname.includes('/attendance') ||
     pathname.includes('/timetable') ||
-    pathname.includes('/settings')
+    pathname.includes('/settings') ||
+    pathname.includes('/reports')
   , [pathname]);
   
   const isFeedContext = useMemo(() => pathname.includes('/feed'), [pathname]);

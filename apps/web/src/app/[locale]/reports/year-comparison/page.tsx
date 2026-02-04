@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import BlurLoader from '@/components/BlurLoader';
+import AnimatedContent from '@/components/AnimatedContent';
 import {
   TrendingUp,
   TrendingDown,
@@ -66,23 +68,39 @@ export default function YearComparisonPage({ params }: { params: { locale: strin
   const router = useRouter();
   const { locale } = params;
 
-  const userData = TokenManager.getUserData();
-  const user = userData?.user;
-  const school = userData?.school;
-
-  const handleLogout = () => {
-    TokenManager.clearTokens();
-    router.push(`/${locale}/login`);
-  };
+  // Client-side only state for user data
+  const [user, setUser] = useState<any>(null);
+  const [school, setSchool] = useState<any>(null);
+  const [isClient, setIsClient] = useState(false);
 
   const [data, setData] = useState<ComparisonData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedMetric, setSelectedMetric] = useState<'students' | 'teachers' | 'classes'>('students');
 
+  // Initialize client-side data
   useEffect(() => {
-    loadComparison();
-  }, []);
+    setIsClient(true);
+    const userData = TokenManager.getUserData();
+    if (userData) {
+      setUser(userData.user);
+      setSchool(userData.school);
+    } else {
+      router.push(`/${locale}/auth/login`);
+    }
+  }, [locale, router]);
+
+  // Load comparison data when school is available
+  useEffect(() => {
+    if (school?.id) {
+      loadComparison();
+    }
+  }, [school?.id]);
+
+  const handleLogout = () => {
+    TokenManager.clearTokens();
+    router.push(`/${locale}/auth/login`);
+  };
 
   const loadComparison = async () => {
     setLoading(true);
@@ -127,10 +145,34 @@ export default function YearComparisonPage({ params }: { params: { locale: strin
     return Math.max(...data.years.map((y) => y.stats[metric])) || 100;
   };
 
-  if (!user || !school) {
+  // Show loading skeleton while waiting for client-side hydration
+  if (!isClient || !user || !school) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+      <div className="min-h-screen bg-gray-50">
+        {/* Skeleton Navigation */}
+        <div className="hidden lg:block fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200">
+          <div className="p-6">
+            <div className="h-8 bg-gray-200 rounded-lg animate-pulse w-32" />
+          </div>
+        </div>
+        <div className="lg:ml-64 min-h-screen">
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-8 h-40" />
+          <div className="p-8">
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white rounded-2xl shadow-sm border p-6 h-24 animate-pulse">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gray-200 rounded-xl" />
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded w-20 mb-2" />
+                      <div className="h-6 bg-gray-200 rounded w-16" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -174,11 +216,8 @@ export default function YearComparisonPage({ params }: { params: { locale: strin
 
         {/* Content */}
         <div className="p-8">
-          {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-            </div>
-          ) : error ? (
+          <BlurLoader isLoading={loading}>
+          {error ? (
             <div className="text-center py-20">
               <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
               <p className="text-red-600">{error}</p>
@@ -537,6 +576,7 @@ export default function YearComparisonPage({ params }: { params: { locale: strin
               )}
             </div>
           )}
+          </BlurLoader>
         </div>
       </div>
     </div>
