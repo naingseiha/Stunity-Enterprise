@@ -12,7 +12,7 @@
 
 | Port | Service | Status | Version |
 |------|---------|--------|---------|
-| 3000 | Web App (Next.js) | 🟢 Running | 4.5 |
+| 3000 | Web App (Next.js) | 🟢 Running | 4.7 |
 | 3001 | Auth Service | 🟢 Running | 2.0 |
 | 3002 | School Service | 🟢 Running | 2.3 |
 | 3003 | Student Service | 🟢 Running | 2.1 |
@@ -22,6 +22,11 @@
 | 3007 | Grade Service | 🟢 Running | 2.1 |
 | 3008 | Attendance Service | 🟢 Running | 2.0 |
 | 3009 | Timetable Service | 🟢 Running | 2.0 |
+
+### Test Credentials
+- **URL:** http://localhost:3000
+- **Email:** john.doe@testhighschool.edu
+- **Password:** SecurePass123!
 
 ### Test Data
 - **School:** Test High School

@@ -1,6 +1,6 @@
 # Next Implementation Roadmap
 
-**Last Updated:** February 3, 2026  
+**Last Updated:** February 4, 2026  
 **Status:** Ready for Implementation
 
 This document outlines the planned next steps for Stunity Enterprise development.
@@ -9,7 +9,30 @@ This document outlines the planned next steps for Stunity Enterprise development
 
 ## ✅ Recently Completed (February 2026)
 
-### Phase 8: Performance Optimization & Grade Entry Enhancement ✅ NEW
+### Phase 11: Grade Analytics Dashboard ✅ NEW
+- [x] Line chart for monthly grade trends
+- [x] Horizontal bar chart for subject performance
+- [x] Pie chart for grade distribution (A-F)
+- [x] Radar chart for category performance
+- [x] Statistics cards (class average, pass rate, highest/lowest)
+- [x] Top performers table with rankings
+- [x] Recharts library integration
+
+### Phase 10: Attendance Monthly Reports ✅ NEW
+- [x] Monthly attendance grid view
+- [x] Two-row per day format (Morning/Afternoon)
+- [x] Color-coded status cells (P/A/L/E/S)
+- [x] Statistics dashboard
+- [x] Month navigation controls
+
+### Phase 9: PDF Report Card Export ✅ NEW
+- [x] Student report card PDF generation
+- [x] Class summary PDF generation
+- [x] Professional A4 format design
+- [x] jsPDF with autotable integration
+- [x] Download buttons on report components
+
+### Phase 8: Performance Optimization & Grade Entry Enhancement ✅
 - [x] SWR caching for faster data loading
 - [x] React hydration error fixes  
 - [x] Skeleton loading animations
@@ -17,228 +40,220 @@ This document outlines the planned next steps for Stunity Enterprise development
 - [x] Grade entry visual improvements (pass/fail indicators)
 - [x] Quick Fill feature for grade entry
 - [x] Enhanced statistics display with color coding
-- [x] TypeScript error fixes in grade-service
 
-### Phase 6: Enhanced Management System ✅
-- [x] Class student management page (`/classes/[id]/manage`)
-- [x] Teacher subject assignment page (`/teachers/[id]/subjects`)
-- [x] Duplicate prevention validation APIs
-- [x] Student transfer between classes
-- [x] "Manage Students" & "Manage Subjects" buttons
-
-### Multi-Academic Year System - All Phases Complete
-- [x] Academic Year Detail Views (5 tabs)
-- [x] New Year Setup Wizard (6 steps)
-- [x] Teacher Assignment History
-- [x] Year-Over-Year Comparison Dashboard
-- [x] Student Academic Transcript with PDF Export
-
-See `docs/MULTI_ACADEMIC_YEAR_SYSTEM.md` for complete documentation.
-See `docs/ENHANCED_MANAGEMENT_SYSTEM.md` for management system docs.
-See `docs/COMPLETE_SYSTEM_DOCUMENTATION.md` for full system documentation.
+See `docs/PHASE9-11_REPORTS_ANALYTICS.md` for Phases 9-11 documentation.
 See `docs/PHASE8_PERFORMANCE_OPTIMIZATION.md` for performance optimization docs.
+See `docs/COMPLETE_SYSTEM_DOCUMENTATION.md` for full system documentation.
 
 ---
 
 ## 🎯 Priority 1: High Priority Features
 
-### 1.1 Grade Entry Enhancement
-**Status:** Partially Complete ✅  
-**Estimated Effort:** 2-3 days remaining
-
-Completed:
-- [x] Visual pass/fail indicators (green/red styling)
-- [x] Quick Fill feature (fill empty/all scores)
-- [x] Enhanced statistics display with color-coded feedback
-- [x] Auto-save with debounce
-- [x] Excel-like grid navigation
-
-Features to add:
-- [ ] Report card PDF generation
-- [ ] Semester/term grade summaries
-- [ ] Grade trends visualization
-- [ ] Subject-wise performance charts
-- [ ] Class ranking system
-
-**API Endpoints Needed:**
-- `GET /grades/report-card/:studentId/:academicYearId` - Generate report card
-- `GET /grades/semester-summary/:classId/:termId` - Semester summary
-- `POST /grades/finalize/:classId/:month` - Finalize grades for a period
-
-### 1.2 Attendance System Enhancement
+### 1.1 Parent Portal ⭐ NEXT PRIORITY
 **Status:** Ready to implement  
-**Estimated Effort:** 3-4 days
-
-Features to add:
-- [ ] Attendance history by academic year
-- [ ] Monthly attendance reports
-- [ ] Attendance trends dashboard
-- [ ] Absence notification system
-- [ ] PDF attendance reports
-
-**API Endpoints Needed:**
-- `GET /attendance/history/:studentId` - Student attendance history
-- `GET /attendance/report/:classId/:month/:year` - Monthly report
-- `GET /attendance/trends/:classId` - Attendance trends
-
-### 1.3 Parent Portal
-**Status:** Planning  
 **Estimated Effort:** 1-2 weeks
 
 Features to implement:
-- [ ] Parent account creation & linking
-- [ ] View child's academic transcript
+- [ ] Parent account creation & registration
+- [ ] Link parent to student(s)
+- [ ] View child's grades and report cards
 - [ ] View attendance records
-- [ ] View grades and report cards
-- [ ] Communication with teachers
-- [ ] Notification preferences
+- [ ] Download report card PDFs
+- [ ] Communication with teachers (future)
+- [ ] Notification preferences (future)
 
-**New Database Models:**
+**New Database Models Needed:**
 ```prisma
 model Parent {
   id          String   @id @default(cuid())
-  userId      String   @unique
+  schoolId    String
   firstName   String
   lastName    String
+  khmerName   String?
   phone       String
-  email       String
+  email       String   @unique
+  password    String
+  isActive    Boolean  @default(true)
   children    StudentParent[]
-  user        User     @relation(fields: [userId], references: [id])
+  school      School   @relation(fields: [schoolId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model StudentParent {
-  id         String  @id @default(cuid())
+  id         String   @id @default(cuid())
   studentId  String
   parentId   String
-  relation   String  // FATHER, MOTHER, GUARDIAN
-  isPrimary  Boolean @default(false)
-  student    Student @relation(...)
-  parent     Parent  @relation(...)
+  relation   String   // FATHER, MOTHER, GUARDIAN
+  isPrimary  Boolean  @default(false)
+  student    Student  @relation(fields: [studentId], references: [id])
+  parent     Parent   @relation(fields: [parentId], references: [id])
+  
+  @@unique([studentId, parentId])
 }
 ```
+
+**New API Endpoints:**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/parents/register` | Register new parent |
+| POST | `/parents/login` | Parent authentication |
+| GET | `/parents/:id/children` | Get linked students |
+| POST | `/parents/:id/link-child` | Link to student |
+| GET | `/parents/:id/child/:studentId/grades` | View child's grades |
+| GET | `/parents/:id/child/:studentId/attendance` | View child's attendance |
+
+**UI Pages Needed:**
+- `/parent/register` - Parent registration form
+- `/parent/login` - Parent login page
+- `/parent/dashboard` - Parent home with children list
+- `/parent/child/[id]` - Child detail view
+- `/parent/child/[id]/grades` - Child's grades
+- `/parent/child/[id]/attendance` - Child's attendance
+
+### 1.2 School-Wide Analytics Dashboard
+**Status:** Planning  
+**Estimated Effort:** 1 week
+
+Features:
+- [ ] Enrollment trends over time
+- [ ] Grade distribution across all classes
+- [ ] Attendance rates by class/grade level
+- [ ] Teacher workload visualization
+- [ ] Performance comparison across academic years
+- [ ] Export analytics to PDF/Excel
+
+### 1.3 Notification System
+**Status:** Planning  
+**Estimated Effort:** 1 week
+
+Features:
+- [ ] In-app notifications
+- [ ] Grade published notifications
+- [ ] Attendance alerts (absences)
+- [ ] Announcement broadcasts
+- [ ] Email notification integration (future)
 
 ---
 
 ## 🔧 Priority 2: System Improvements
 
-### 2.1 TypeScript Error Resolution
-**Status:** In progress  
-**Estimated Effort:** 2-3 hours
+### 2.1 PDF Export Enhancements
+- [ ] Attendance report PDF export
+- [ ] Analytics charts PDF export
+- [ ] Bulk PDF generation (all students)
+- [ ] Custom report templates
 
-Files to fix:
-| File | Issue | Priority |
-|------|-------|----------|
-| `classes/page.tsx` | `clearAccessToken` → `clearTokens` | High |
-| `classes/[id]/roster/page.tsx` | Student type missing fields | High |
-| `settings/academic-years/*.tsx` | `schoolId` property access | Medium |
-| `settings/promotion/page.tsx` | Missing context properties | Medium |
+### 2.2 Data Import/Export
+- [ ] Excel import for student data
+- [ ] Excel import for grades
+- [ ] CSV export for all data types
+- [ ] Backup/restore functionality
 
-### 2.2 API Type Definitions
-Create proper TypeScript interfaces for all API responses.
-
-### 2.3 Error Boundaries
-- [ ] Global error boundary component
-- [ ] Per-page error.tsx files
-- [ ] User-friendly error messages
+### 2.3 Mobile Responsiveness
+- [ ] Optimize charts for mobile
+- [ ] Touch-friendly attendance marking
+- [ ] Mobile-optimized navigation
 
 ---
 
-## 📊 Priority 3: Analytics & Reports
+## 📊 Priority 3: Advanced Features
 
-### 3.1 Analytics Dashboard
-**Estimated Effort:** 1 week
+### 3.1 Timetable Enhancements
+- [ ] Drag-and-drop schedule editing
+- [ ] Conflict detection and resolution
+- [ ] Substitute teacher assignment
+- [ ] Room availability management
 
-Features:
-- [ ] School-wide performance dashboard
-- [ ] Enrollment trends visualization
-- [ ] Grade distribution charts
-- [ ] Attendance heatmaps
-- [ ] Teacher workload analysis
+### 3.2 Communication Module
+- [ ] Teacher-parent messaging
+- [ ] Announcement system
+- [ ] Event calendar
+- [ ] SMS integration (future)
 
-### 3.2 Advanced Reports
-- [ ] Custom report builder
-- [ ] Scheduled report generation
-- [ ] Export to PDF/Excel/CSV
-- [ ] Email report delivery
-
----
-
-## 🚀 Priority 4: Infrastructure
-
-### 4.1 Testing
-- [ ] Unit tests for API functions
-- [ ] Integration tests for critical flows
-- [ ] E2E tests with Playwright
-- [ ] Test coverage reporting
-
-### 4.2 Documentation
-- [ ] API documentation (OpenAPI/Swagger)
-- [ ] Component storybook
-- [ ] Developer onboarding guide
-- [ ] Deployment documentation
-
-### 4.3 Performance
-- [ ] Database query optimization
-- [ ] API response time monitoring
-- [ ] Frontend bundle analysis
-- [ ] Image optimization
+### 3.3 Financial Module (Future)
+- [ ] Fee management
+- [ ] Payment tracking
+- [ ] Invoice generation
+- [ ] Financial reports
 
 ---
 
-## 📅 Implementation Schedule
+## 📅 Recommended Implementation Order
 
-### Sprint 1 (Week 1-2): Grade & Attendance
-1. Report card PDF generation
-2. Semester grade summaries
-3. Attendance history views
-4. Monthly attendance reports
+### Sprint 1 (Week 1-2): Parent Portal - Core
+1. Database schema for Parent model
+2. Parent registration and authentication
+3. Parent-student linking
+4. Parent dashboard with children list
 
-### Sprint 2 (Week 3-4): Parent Portal
-1. Parent data model
-2. Parent registration flow
-3. Child linking
-4. View transcript & grades
+### Sprint 2 (Week 3): Parent Portal - Views
+1. View child's grades (read-only)
+2. View child's attendance history
+3. Download report card PDFs
+4. Mobile-responsive parent UI
 
-### Sprint 3 (Week 5-6): Analytics
-1. School dashboard
-2. Performance charts
-3. Enrollment trends
-4. Custom reports
+### Sprint 3 (Week 4): Analytics Dashboard
+1. School-wide statistics API
+2. Enrollment trends chart
+3. Performance comparison views
+4. Export to PDF functionality
 
-### Sprint 4 (Week 7-8): Polish
-1. TypeScript fixes
-2. Error handling
-3. Testing
-4. Documentation
-
----
-
-## 🎨 Quick Wins (Anytime)
-
-- [ ] Add favicon and meta tags
-- [ ] Implement dark mode toggle
-- [ ] Add loading spinners to buttons
-- [ ] Improve toast notifications
-- [ ] Add keyboard shortcuts
+### Sprint 4 (Week 5-6): Polish & Testing
+1. Error handling improvements
+2. Loading state optimizations
+3. Unit and integration tests
+4. Documentation updates
 
 ---
 
-## 📝 Notes
+## 🛠️ Technical Debt to Address
 
-### Database Migrations Needed
-For Parent Portal:
+| Issue | Priority | Estimated Time |
+|-------|----------|----------------|
+| Add comprehensive TypeScript types for all APIs | Medium | 4 hours |
+| Implement proper error boundaries | Medium | 2 hours |
+| Add API rate limiting | Low | 2 hours |
+| Database query optimization | Low | 4 hours |
+| Add request logging/monitoring | Low | 2 hours |
+
+---
+
+## 📝 Environment Setup for New Features
+
+### For Parent Portal
 ```bash
+# Add new environment variables
+PARENT_JWT_SECRET=your-parent-jwt-secret
+PARENT_SESSION_EXPIRY=7d
+
+# Run database migration
+cd packages/database
 npx prisma migrate dev --name add_parent_portal
+npx prisma generate
 ```
 
-### Environment Variables Needed
-For email notifications:
+### For Email Notifications (Future)
 ```env
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
-SMTP_USER=
-SMTP_PASS=
+SMTP_USER=notifications@school.edu
+SMTP_PASS=your-smtp-password
+EMAIL_FROM="Stunity <notifications@school.edu>"
 ```
+
+---
+
+## 📚 Related Documentation
+
+| Document | Description |
+|----------|-------------|
+| `docs/PHASE9-11_REPORTS_ANALYTICS.md` | Reports & Analytics implementation |
+| `docs/PHASE8_PERFORMANCE_OPTIMIZATION.md` | Performance optimizations |
+| `docs/COMPLETE_SYSTEM_DOCUMENTATION.md` | Full system overview |
+| `docs/MULTI_ACADEMIC_YEAR_SYSTEM.md` | Academic year management |
+| `docs/ENHANCED_MANAGEMENT_SYSTEM.md` | Class & teacher management |
+| `PROJECT_STATUS.md` | Current project status |
 
 ---
 
