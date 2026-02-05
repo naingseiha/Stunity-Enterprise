@@ -1,36 +1,40 @@
-# 🎓 Stunity Enterprise - School Management System
+# 🎓 Stunity Enterprise - School Management + Social E-Learning Platform
 
-**Version:** 4.1  
-**Status:** Phase 6 Complete ✅  
-**Last Updated:** February 2, 2026
+**Version:** 5.0  
+**Status:** Phase 14 Complete ✅  
+**Last Updated:** February 5, 2026
 
-A comprehensive, multi-tenant school management SaaS platform with full academic year support, student progression tracking, and historical data management.
+A comprehensive, multi-tenant school management SaaS platform with social feed features, parent portal, full academic year support, student progression tracking, and historical data management.
 
 ---
 
 ## 🚀 Quick Start
 
 ```bash
-# Start all services
+# Start all 11 services
 ./quick-start.sh
 
 # Open browser
 open http://localhost:3000
 
-# Login
+# Admin Login
 Email: john.doe@testhighschool.edu
 Password: SecurePass123!
+
+# Parent Login
+Phone: 012345678
+Password: TestParent123!
 ```
 
 ---
 
 ## 📊 System Architecture
 
-### Microservices (Ports)
+### Microservices (11 Services)
 | Port | Service | Description |
 |------|---------|-------------|
 | 3000 | Web | Next.js frontend application |
-| 3001 | Auth | Authentication & authorization |
+| 3001 | Auth | Authentication, authorization & notifications |
 | 3002 | School | School & Academic Year management |
 | 3003 | Student | Student management & transcripts |
 | 3004 | Teacher | Teacher management & subject assignments |
@@ -39,49 +43,47 @@ Password: SecurePass123!
 | 3007 | Grade | Grade entry & calculations |
 | 3008 | Attendance | Attendance tracking |
 | 3009 | Timetable | Schedule management |
+| 3010 | Feed | Social feed posts, likes, comments |
 
 ### Tech Stack
 - **Frontend:** Next.js 14, React, TypeScript, TailwindCSS
 - **Backend:** Node.js, Express, TypeScript
 - **Database:** PostgreSQL (Neon), Prisma ORM
 - **Auth:** JWT tokens
+- **Charts:** Recharts
+- **PDF:** jsPDF
 - **Architecture:** Microservices with multi-tenant design
 
 ---
 
 ## ✅ Features Implemented
 
-### Phase 1-2: Core & Academic Year Management
+### Core Platform (Phases 1-4)
 - ✅ Multi-tenant school isolation
-- ✅ Create, edit, delete academic years
-- ✅ Status management (PLANNING → ACTIVE → COMPLETED → ARCHIVED)
-- ✅ Global year context with navigation selector
-- ✅ Year-based data filtering
+- ✅ JWT-based authentication
+- ✅ Academic year management with status transitions
+- ✅ Student promotion system with bulk operations
+- ✅ Performance optimization (caching, connection pooling)
 
-### Phase 3: Student Promotion System
-- ✅ Bulk promotion API
-- ✅ Promotion wizard UI
-- ✅ StudentProgression tracking
-- ✅ Grade advancement logic
+### School Management (Phases 5-9)
+- ✅ Class management with drag-drop enrollment
+- ✅ Teacher subject assignments
+- ✅ Grade entry and analytics (charts, rankings)
+- ✅ Attendance tracking with calendar view
+- ✅ Timetable management with auto-scheduling
+- ✅ PDF report card generation
 
-### Phase 4: Performance Optimization
-- ✅ Prisma singleton pattern
-- ✅ In-memory cache (stale-while-revalidate)
-- ✅ Database warmup & keep-alive
+### Attendance & Analytics (Phases 10-11)
+- ✅ Monthly attendance reports with grids
+- ✅ Grade analytics dashboard with charts
+- ✅ Subject performance visualization
+- ✅ Top performers table
 
-### Phase 5: Multi-Academic Year Enhancement
-- ✅ Academic Year Detail Views (5 tabs)
-- ✅ New Year Setup Wizard (6 steps)
-- ✅ Teacher Assignment History
-- ✅ Year-Over-Year Comparison
-- ✅ Student Academic Transcript with PDF export
-
-### Phase 6: Enhanced Management System ✅ NEW
-- ✅ Class student management (`/classes/[id]/manage`)
-- ✅ Teacher subject assignment (`/teachers/[id]/subjects`)
-- ✅ Duplicate prevention (one student per class per year)
-- ✅ Student transfer between classes
-- ✅ Batch assign/remove operations
+### Parent & Social Features (Phases 12-14) 🆕
+- ✅ **Parent Portal** - View children's grades, attendance, report cards
+- ✅ **Parent Notifications** - Auto-notify on new grades/absences
+- ✅ **Unified Login** - Single login page for all user types
+- ✅ **Social Feed** - Posts, likes, comments (Facebook-style)
 
 ---
 
@@ -89,21 +91,28 @@ Password: SecurePass123!
 
 ```
 Stunity-Enterprise/
-├── apps/web/              # Frontend (Next.js)
-├── services/              # Backend microservices
-│   ├── auth-service/      # Port 3001
-│   ├── school-service/    # Port 3002
-│   ├── student-service/   # Port 3003
-│   ├── teacher-service/   # Port 3004
-│   ├── class-service/     # Port 3005
-│   ├── subject-service/   # Port 3006
-│   ├── grade-service/     # Port 3007
-│   ├── attendance-service/# Port 3008
-│   └── timetable-service/ # Port 3009
-├── packages/database/     # Prisma schema
-├── docs/                  # Documentation
-├── quick-start.sh         # Start all services
-└── stop-all-services.sh   # Stop all services
+├── apps/web/                  # Frontend (Next.js)
+│   └── src/app/[locale]/
+│       ├── dashboard/         # Admin dashboard
+│       ├── feed/              # Social feed
+│       ├── parent/            # Parent portal
+│       ├── student/           # Student portal
+│       └── auth/              # Login pages
+├── services/
+│   ├── auth-service/          # Port 3001 (+ notifications)
+│   ├── school-service/        # Port 3002
+│   ├── student-service/       # Port 3003
+│   ├── teacher-service/       # Port 3004
+│   ├── class-service/         # Port 3005
+│   ├── subject-service/       # Port 3006
+│   ├── grade-service/         # Port 3007
+│   ├── attendance-service/    # Port 3008
+│   ├── timetable-service/     # Port 3009
+│   └── feed-service/          # Port 3010 🆕
+├── packages/database/         # Prisma schema
+├── docs/                      # Documentation
+├── quick-start.sh             # Start all services
+└── PROJECT_STATUS.md          # Detailed status
 ```
 
 ---
@@ -112,9 +121,9 @@ Stunity-Enterprise/
 
 ```bash
 # Service Management
-./quick-start.sh           # Start all
-./stop-all-services.sh     # Stop all
-./restart-all-services.sh  # Restart all
+./quick-start.sh           # Start all 11 services
+./stop-all-services.sh     # Stop all services
+./restart-all-services.sh  # Restart all services
 ./check-services.sh        # Check status
 
 # Database
@@ -128,36 +137,55 @@ npx prisma migrate dev    # Run migrations
 
 ## 🧪 Test Data
 
-**School:** Test High School  
-**Academic Year:** 2025-2026 (Nov 2025 - Sep 2026)  
-**Students:** 12  
-**Teachers:** 4  
-**Classes:** 3  
+| Entity | Count |
+|--------|-------|
+| School | 1 (Test High School) |
+| Academic Years | 3 (2024-2027) |
+| Students | 105 |
+| Teachers | 4 |
+| Classes | 5 per year |
+| Subjects | 30 (Cambodian curriculum) |
 
-**Admin Login:**
+### Test Accounts
+
+**Admin/Teacher Login:**
 ```
+URL: http://localhost:3000/en/auth/login
 Email: john.doe@testhighschool.edu
 Password: SecurePass123!
 ```
 
+**Parent Login:**
+```
+URL: http://localhost:3000/en/auth/login (use Phone tab)
+Phone: 012345678
+Password: TestParent123!
+Child: Chanthy Kong (S9A-025)
+```
+
 ---
 
-## 🎯 Next: Phase 3
+## 🔮 Next Implementation (Phases 15+)
 
-**Student Promotion System**
-- Promotion wizard
-- Bulk student transitions
-- Year-to-year tracking
-- Failed student management
+| Phase | Feature | Priority |
+|-------|---------|----------|
+| 15 | Teacher-Parent Messaging | High |
+| 16 | Media Attachments (images in posts) | Medium |
+| 17 | Student Login & Portal | Medium |
+| 18 | Real-time Features (WebSocket) | Medium |
+| 19 | Mobile Optimization (PWA) | Low |
 
 ---
 
 ## 📚 Documentation
 
-- **QUICK_START.md** - Quick reference
-- **docs/ACADEMIC_YEAR_ARCHITECTURE.md** - System design
-- **docs/PHASE2_COMPLETE.md** - Implementation details
-- **docs/archive/** - Historical docs
+| Document | Description |
+|----------|-------------|
+| `README.md` | Project overview (this file) |
+| `PROJECT_STATUS.md` | Detailed feature status |
+| `docs/ACADEMIC_YEAR_ARCHITECTURE.md` | Year system design |
+| `docs/TIMETABLE_SYSTEM.md` | Timetable documentation |
+| `docs/archive/` | Historical docs (55+ files) |
 
 ---
 
@@ -166,21 +194,53 @@ Password: SecurePass123!
 **Services won't start?**
 ```bash
 ./stop-all-services.sh
+sleep 3
 ./quick-start.sh
 ```
 
 **Login fails?**
 ```bash
-cd packages/database
-npm run seed
+cd packages/database && npm run seed
 ```
 
 **Data not showing?**
-- Check year selector (should show 2025-2026)
+- Check year selector in navigation
 - Hard reload browser (Cmd+Shift+R)
+
+**Feed not loading?**
+- Check if feed-service is running: `curl http://localhost:3010/health`
+- Restart: `cd services/feed-service && npm run dev`
+
+---
+
+## 🏗️ Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Next.js Web App                      │
+│        Dashboard │ Feed │ Parent │ Student Portal       │
+└───────────────────────────┬─────────────────────────────┘
+                            │
+        ┌───────────────────┼───────────────────┐
+        │                   │                   │
+        ▼                   ▼                   ▼
+┌───────────────┐  ┌───────────────┐  ┌───────────────┐
+│  Auth (3001)  │  │  Feed (3010)  │  │ School (3002) │
+└───────────────┘  └───────────────┘  └───────────────┘
+        │
+        ├── Student (3003)   ├── Grade (3007)
+        ├── Teacher (3004)   ├── Attendance (3008)
+        ├── Class (3005)     └── Timetable (3009)
+        └── Subject (3006)
+                            │
+                            ▼
+              ┌──────────────────────────┐
+              │   PostgreSQL (Neon DB)   │
+              └──────────────────────────┘
+```
 
 ---
 
 **System Status:** ✅ Production Ready  
-**Current Phase:** Phase 2 Complete  
-**Next Phase:** Student Promotion
+**Current Version:** 5.0  
+**Phases Complete:** 1-14
