@@ -10,6 +10,8 @@ import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from './utils/r2';
+import { initRedis, EventPublisher } from './redis';
+import sseRouter from './sse';
 
 const app = express();
 const PORT = 3010; // Feed service always uses port 3010
@@ -49,6 +51,9 @@ const warmUpDb = async () => {
 };
 warmUpDb();
 setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000);
+
+// Initialize Redis for PubSub (optional, falls back to in-memory)
+initRedis();
 
 // Middleware
 app.use(cors({
@@ -425,15 +430,30 @@ app.post('/posts/:id/like', authenticateToken, async (req: AuthRequest, res: Res
       res.json({ success: true, liked: false, message: 'Post unliked' });
     } else {
       // Like
-      await prisma.$transaction([
+      const [_, post, liker] = await prisma.$transaction([
         prisma.like.create({
           data: { postId, userId },
         }),
         prisma.post.update({
           where: { id: postId },
           data: { likesCount: { increment: 1 } },
+          select: { authorId: true },
+        }),
+        prisma.user.findUnique({
+          where: { id: userId },
+          select: { firstName: true, lastName: true },
         }),
       ]);
+
+      // 🔔 Publish real-time event to post author
+      if (post && liker) {
+        EventPublisher.newLike(
+          post.authorId,
+          userId,
+          `${liker.firstName} ${liker.lastName}`,
+          postId
+        );
+      }
 
       res.json({ success: true, liked: true, message: 'Post liked' });
     }
@@ -528,11 +548,24 @@ app.post('/posts/:id/comments', authenticateToken, async (req: AuthRequest, res:
       },
     });
 
-    // Update post comment count (fire and forget)
-    prisma.post.update({
+    // Update post comment count and get author
+    const post = await prisma.post.update({
       where: { id: req.params.id },
       data: { commentsCount: { increment: 1 } },
-    }).catch(console.error);
+      select: { authorId: true },
+    });
+
+    // 🔔 Publish real-time event to post author
+    if (post && newComment.author) {
+      EventPublisher.newComment(
+        post.authorId,
+        req.user!.id,
+        `${newComment.author.firstName} ${newComment.author.lastName}`,
+        req.params.id,
+        newComment.id,
+        content.trim()
+      );
+    }
 
     res.status(201).json({ success: true, data: newComment });
   } catch (error: any) {
@@ -2319,6 +2352,21 @@ app.post('/users/:userId/follow', authenticateToken, async (req: AuthRequest, re
       await prisma.follow.create({
         data: { followerId, followingId },
       });
+
+      // 🔔 Publish real-time event to the followed user
+      const follower = await prisma.user.findUnique({
+        where: { id: followerId },
+        select: { firstName: true, lastName: true, profilePictureUrl: true },
+      });
+      if (follower) {
+        EventPublisher.newFollower(
+          followingId,
+          followerId,
+          `${follower.firstName} ${follower.lastName}`,
+          follower.profilePictureUrl || undefined
+        );
+      }
+
       res.json({ success: true, action: 'followed' });
     }
   } catch (error: any) {
@@ -2431,17 +2479,27 @@ app.get('/users/:id/activity', authenticateToken, async (req: AuthRequest, res: 
 });
 
 // ========================================
+// SSE Real-Time Events Router
+// ========================================
+
+app.use('/api/events', sseRouter);
+
+// ========================================
 // Start Server
 // ========================================
 
 app.listen(PORT, () => {
   console.log('');
   console.log('╔════════════════════════════════════════════════╗');
-  console.log('║   📱 Feed Service - Stunity Enterprise v4.0   ║');
+  console.log('║   📱 Feed Service - Stunity Enterprise v5.0   ║');
   console.log('╚════════════════════════════════════════════════╝');
   console.log('');
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`🌐 Health check: http://localhost:${PORT}/health`);
+  console.log('');
+  console.log('📡 Real-Time (SSE):');
+  console.log('   GET    /api/events/stream   - SSE event stream');
+  console.log('   GET    /api/events/stats    - Connection stats');
   console.log('');
   console.log('📋 Feed Endpoints:');
   console.log('   GET    /posts              - Get feed posts');
