@@ -1962,6 +1962,124 @@ app.delete('/users/me/experiences/:expId', authenticateToken, async (req: AuthRe
 });
 
 // ========================================
+// EDUCATION ENDPOINTS
+// ========================================
+
+// GET /users/:id/education - Get user education
+app.get('/users/:id/education', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const currentUserId = req.user?.id;
+    const userId = id === 'me' ? currentUserId : id;
+
+    const education = await prisma.education.findMany({
+      where: { userId },
+      orderBy: { startDate: 'desc' },
+    });
+
+    res.json({ success: true, education });
+  } catch (error: any) {
+    console.error('Get education error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get education' });
+  }
+});
+
+// POST /users/me/education - Add education
+app.post('/users/me/education', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const { school, degree, fieldOfStudy, grade, startDate, endDate, isCurrent, description, activities, skills } = req.body;
+
+    if (!school || !startDate) {
+      return res.status(400).json({ success: false, error: 'School and start date are required' });
+    }
+
+    const education = await prisma.education.create({
+      data: {
+        userId,
+        school,
+        degree: degree || null,
+        fieldOfStudy: fieldOfStudy || null,
+        grade: grade || null,
+        startDate: new Date(startDate),
+        endDate: endDate ? new Date(endDate) : null,
+        isCurrent: isCurrent || false,
+        description: description || null,
+        activities: activities || [],
+        skills: skills || [],
+        mediaUrls: [],
+        mediaKeys: [],
+      },
+    });
+
+    res.json({ success: true, education });
+  } catch (error: any) {
+    console.error('Add education error:', error);
+    res.status(500).json({ success: false, error: 'Failed to add education' });
+  }
+});
+
+// PUT /users/me/education/:eduId - Update education
+app.put('/users/me/education/:eduId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { eduId } = req.params;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const edu = await prisma.education.findUnique({ where: { id: eduId } });
+    if (!edu || edu.userId !== userId) {
+      return res.status(404).json({ success: false, error: 'Education not found' });
+    }
+
+    const { school, degree, fieldOfStudy, grade, startDate, endDate, isCurrent, description, activities, skills } = req.body;
+
+    const updated = await prisma.education.update({
+      where: { id: eduId },
+      data: {
+        ...(school && { school }),
+        ...(degree !== undefined && { degree }),
+        ...(fieldOfStudy !== undefined && { fieldOfStudy }),
+        ...(grade !== undefined && { grade }),
+        ...(startDate && { startDate: new Date(startDate) }),
+        ...(endDate !== undefined && { endDate: endDate ? new Date(endDate) : null }),
+        ...(isCurrent !== undefined && { isCurrent }),
+        ...(description !== undefined && { description }),
+        ...(activities && { activities }),
+        ...(skills && { skills }),
+      },
+    });
+
+    res.json({ success: true, education: updated });
+  } catch (error: any) {
+    console.error('Update education error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update education' });
+  }
+});
+
+// DELETE /users/me/education/:eduId - Delete education
+app.delete('/users/me/education/:eduId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { eduId } = req.params;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const edu = await prisma.education.findUnique({ where: { id: eduId } });
+    if (!edu || edu.userId !== userId) {
+      return res.status(404).json({ success: false, error: 'Education not found' });
+    }
+
+    await prisma.education.delete({ where: { id: eduId } });
+
+    res.json({ success: true, message: 'Education deleted' });
+  } catch (error: any) {
+    console.error('Delete education error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete education' });
+  }
+});
+
+// ========================================
 // CERTIFICATION ENDPOINTS
 // ========================================
 

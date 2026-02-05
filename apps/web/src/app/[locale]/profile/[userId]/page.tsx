@@ -122,6 +122,20 @@ interface Certification {
   skills: string[];
 }
 
+interface Education {
+  id: string;
+  school: string;
+  degree?: string;
+  fieldOfStudy?: string;
+  grade?: string;
+  startDate: string;
+  endDate?: string;
+  isCurrent: boolean;
+  description?: string;
+  activities: string[];
+  skills: string[];
+}
+
 interface Achievement {
   id: string;
   type: string;
@@ -234,10 +248,11 @@ export default function ProfilePage() {
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [certifications, setCertifications] = useState<Certification[]>([]);
+  const [education, setEducation] = useState<Education[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'about' | 'activity' | 'skills' | 'experience' | 'certifications' | 'projects'>('about');
+  const [activeTab, setActiveTab] = useState<'about' | 'activity' | 'skills' | 'experience' | 'education' | 'certifications' | 'projects'>('about');
   const [following, setFollowing] = useState(false);
   const [pageReady, setPageReady] = useState(false);
   
@@ -273,22 +288,24 @@ export default function ProfilePage() {
       const feedUrl = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';
 
       // Fetch all profile data in parallel
-      const [profileRes, skillsRes, expRes, projectsRes, certsRes, achievementsRes, recsRes] = await Promise.all([
+      const [profileRes, skillsRes, expRes, projectsRes, certsRes, eduRes, achievementsRes, recsRes] = await Promise.all([
         fetch(`${feedUrl}/users/${userId}/profile`, { headers }),
         fetch(`${feedUrl}/users/${userId}/skills`, { headers }),
         fetch(`${feedUrl}/users/${userId}/experiences`, { headers }),
         fetch(`${feedUrl}/users/${userId}/projects`, { headers }),
         fetch(`${feedUrl}/users/${userId}/certifications`, { headers }),
+        fetch(`${feedUrl}/users/${userId}/education`, { headers }),
         fetch(`${feedUrl}/users/${userId}/achievements`, { headers }),
         fetch(`${feedUrl}/users/${userId}/recommendations`, { headers }),
       ]);
 
-      const [profileData, skillsData, expData, projectsData, certsData, achievementsData, recsData] = await Promise.all([
+      const [profileData, skillsData, expData, projectsData, certsData, eduData, achievementsData, recsData] = await Promise.all([
         profileRes.json(),
         skillsRes.json(),
         expRes.json(),
         projectsRes.json(),
         certsRes.json(),
+        eduRes.json(),
         achievementsRes.json(),
         recsRes.json(),
       ]);
@@ -301,6 +318,7 @@ export default function ProfilePage() {
       if (expData.success) setExperiences(expData.experiences);
       if (projectsData.success) setProjects(projectsData.projects);
       if (certsData.success) setCertifications(certsData.certifications);
+      if (eduData.success) setEducation(eduData.education);
       if (achievementsData.success) setAchievements(achievementsData.achievements);
       if (recsData.success) setRecommendations(recsData.recommendations);
 
@@ -559,6 +577,7 @@ export default function ProfilePage() {
                 { key: 'activity', label: 'Activity', icon: TrendingUp },
                 { key: 'skills', label: 'Skills', icon: Star },
                 { key: 'experience', label: 'Experience', icon: Briefcase },
+                { key: 'education', label: 'Education', icon: GraduationCap },
                 { key: 'certifications', label: 'Certifications', icon: Award },
                 { key: 'projects', label: 'Projects', icon: Code },
               ] as const).map(tab => (
@@ -782,6 +801,115 @@ export default function ProfilePage() {
                                 ))}
                               </div>
                             )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Education Section */}
+              {activeTab === 'education' && (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <GraduationCap className="w-5 h-5 text-blue-500" />
+                      Education
+                    </h3>
+                    {profile.isOwnProfile && (
+                      <Link
+                        href={`/${locale}/profile/${userId}/edit?section=education`}
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Education
+                      </Link>
+                    )}
+                  </div>
+
+                  {education.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
+                      <GraduationCap className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                      <p className="text-gray-500 dark:text-gray-400 font-medium">No education added yet</p>
+                      {profile.isOwnProfile && (
+                        <Link
+                          href={`/${locale}/profile/${userId}/edit?section=education`}
+                          className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 text-sm mt-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add your education
+                        </Link>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {education.map((edu, index) => (
+                        <div 
+                          key={edu.id} 
+                          className="relative pl-6 pb-6 last:pb-0 animate-in slide-in-from-left duration-300"
+                          style={{ animationDelay: `${index * 50}ms` }}
+                        >
+                          {/* Timeline line */}
+                          {index < education.length - 1 && (
+                            <div className="absolute left-[7px] top-6 bottom-0 w-0.5 bg-blue-200 dark:bg-blue-800" />
+                          )}
+                          {/* Timeline dot */}
+                          <div className={`absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 ${
+                            edu.isCurrent 
+                              ? 'bg-blue-500 border-blue-500' 
+                              : 'bg-white dark:bg-gray-800 border-blue-300 dark:border-blue-600'
+                          }`} />
+                          
+                          <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
+                            <div className="flex items-start gap-3">
+                              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+                                <GraduationCap className="w-6 h-6 text-white" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-gray-900 dark:text-white">{edu.school}</h4>
+                                {(edu.degree || edu.fieldOfStudy) && (
+                                  <p className="text-gray-600 dark:text-gray-300">
+                                    {edu.degree}
+                                    {edu.degree && edu.fieldOfStudy && ', '}
+                                    {edu.fieldOfStudy}
+                                  </p>
+                                )}
+                                <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    {formatDate(edu.startDate)} - {edu.isCurrent ? 'Present' : edu.endDate ? formatDate(edu.endDate) : 'N/A'}
+                                  </span>
+                                  {edu.grade && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="text-blue-600 dark:text-blue-400 font-medium">Grade: {edu.grade}</span>
+                                    </>
+                                  )}
+                                </div>
+                                {edu.description && (
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{edu.description}</p>
+                                )}
+                                {edu.activities.length > 0 && (
+                                  <div className="mt-2">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Activities & Societies:</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-300">{edu.activities.join(', ')}</p>
+                                  </div>
+                                )}
+                                {edu.skills.length > 0 && (
+                                  <div className="flex flex-wrap gap-1.5 mt-3">
+                                    {edu.skills.slice(0, 5).map((skill, i) => (
+                                      <span key={i} className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-xs font-medium">
+                                        {skill}
+                                      </span>
+                                    ))}
+                                    {edu.skills.length > 5 && (
+                                      <span className="text-xs text-gray-500">+{edu.skills.length - 5} more</span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       ))}

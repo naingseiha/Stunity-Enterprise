@@ -525,6 +525,7 @@ model User {
   certifications        Certification[]
   commentReactions      CommentReaction[]
   comments              Comment[]
+  education             Education[]
   experiences           Experience[]
   following             Follow[]            @relation("Following")
   followers             Follow[]            @relation("Followers")
@@ -850,6 +851,29 @@ model Certification {
 
   @@index([userId, issueDate(sort: Desc)])
   @@map("certifications")
+}
+
+model Education {
+  id           String        @id @default(cuid())
+  userId       String
+  school       String
+  degree       String?
+  fieldOfStudy String?
+  grade        String?
+  startDate    DateTime
+  endDate      DateTime?
+  isCurrent    Boolean       @default(false)
+  description  String?
+  activities   String[]
+  skills       String[]
+  mediaUrls    String[]
+  mediaKeys    String[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startDate(sort: Desc)])
+  @@map("education")
 }
 
 model Project {
