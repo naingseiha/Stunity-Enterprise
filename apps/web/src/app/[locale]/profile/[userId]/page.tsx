@@ -598,61 +598,272 @@ export default function ProfilePage() {
           </div>
 
           {/* Content Grid */}
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-4">
             {/* Main Content - Left/Center */}
-            <div className="md:col-span-2 space-y-6">
+            <div className="md:col-span-2 space-y-4">
               {/* About Section */}
               {activeTab === 'about' && (
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  {/* Bio */}
-                  {profile.bio && (
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                        <BookOpen className="w-5 h-5 text-emerald-500" />
-                        About
-                      </h3>
-                      <p className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{profile.bio}</p>
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  {/* About Card - Always show */}
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">About</h3>
+                      {profile.isOwnProfile && (
+                        <Link
+                          href={`/${locale}/profile/${userId}/edit?section=about`}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                        >
+                          <Edit3 className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                        </Link>
+                      )}
                     </div>
-                  )}
-
-                  {/* Career Goals */}
-                  {profile.careerGoals && (
-                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl border border-blue-200 dark:border-blue-800 p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                        <Target className="w-5 h-5 text-blue-500" />
-                        Career Goals
-                      </h3>
-                      <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{profile.careerGoals}</p>
+                    <div className="p-6">
+                      {profile.bio ? (
+                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{profile.bio}</p>
+                      ) : (
+                        <div className="text-center py-4">
+                          <p className="text-gray-500 dark:text-gray-400 text-sm">
+                            {profile.isOwnProfile ? 'Tell visitors about yourself, your background, and what you do.' : 'No bio added yet.'}
+                          </p>
+                          {profile.isOwnProfile && (
+                            <Link
+                              href={`/${locale}/profile/${userId}/edit?section=about`}
+                              className="inline-block mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                            >
+                              + Add a summary
+                            </Link>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
 
-                  {/* Interests */}
-                  {profile.interests.length > 0 && (
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Interests</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.interests.map((interest, i) => (
-                          <span key={i} className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm">
-                            {interest}
-                          </span>
-                        ))}
+                  {/* Activity Snapshot Card */}
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Activity</h3>
+                      <button 
+                        onClick={() => setActiveTab('activity')}
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      >
+                        See all activity →
+                      </button>
+                    </div>
+                    <div className="p-6">
+                      <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                        <span className="font-medium text-gray-900 dark:text-white">{profile.stats.posts} posts</span>
+                        <span>·</span>
+                        <span>{profile.stats.followers} followers</span>
+                      </div>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">
+                        {profile.firstName} hasn&apos;t posted lately
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Experience Snapshot */}
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Experience</h3>
+                      <div className="flex items-center gap-2">
+                        {profile.isOwnProfile && (
+                          <Link
+                            href={`/${locale}/profile/${userId}/edit?section=experience`}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                          >
+                            <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                          </Link>
+                        )}
+                        <button 
+                          onClick={() => setActiveTab('experience')}
+                          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        >
+                          Show all →
+                        </button>
                       </div>
                     </div>
-                  )}
+                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                      {experiences.length === 0 ? (
+                        <div className="p-6 text-center">
+                          <Briefcase className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                          <p className="text-gray-500 dark:text-gray-400 text-sm">No experience added yet</p>
+                          {profile.isOwnProfile && (
+                            <Link
+                              href={`/${locale}/profile/${userId}/edit?section=experience`}
+                              className="inline-block mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                            >
+                              + Add experience
+                            </Link>
+                          )}
+                        </div>
+                      ) : (
+                        experiences.slice(0, 2).map((exp) => (
+                          <div key={exp.id} className="p-4 flex gap-4">
+                            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <Briefcase className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-gray-900 dark:text-white">{exp.title}</h4>
+                              <p className="text-gray-600 dark:text-gray-400 text-sm">{exp.organization}</p>
+                              <p className="text-gray-500 dark:text-gray-500 text-xs mt-1">
+                                {formatDate(exp.startDate)} - {exp.isCurrent ? 'Present' : exp.endDate ? formatDate(exp.endDate) : 'N/A'}
+                                {exp.location && ` · ${exp.location}`}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
 
-                  {/* Languages */}
-                  {profile.languages.length > 0 && (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                        <Globe className="w-5 h-5 text-green-500" />
-                        Languages
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.languages.map((lang, i) => (
-                          <span key={i} className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-sm">
-                            {lang}
-                          </span>
-                        ))}
+                  {/* Education Snapshot */}
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Education</h3>
+                      <div className="flex items-center gap-2">
+                        {profile.isOwnProfile && (
+                          <Link
+                            href={`/${locale}/profile/${userId}/edit?section=education`}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                          >
+                            <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                          </Link>
+                        )}
+                        <button 
+                          onClick={() => setActiveTab('education')}
+                          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        >
+                          Show all →
+                        </button>
+                      </div>
+                    </div>
+                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                      {education.length === 0 ? (
+                        <div className="p-6 text-center">
+                          <GraduationCap className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                          <p className="text-gray-500 dark:text-gray-400 text-sm">No education added yet</p>
+                          {profile.isOwnProfile && (
+                            <Link
+                              href={`/${locale}/profile/${userId}/edit?section=education`}
+                              className="inline-block mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                            >
+                              + Add education
+                            </Link>
+                          )}
+                        </div>
+                      ) : (
+                        education.slice(0, 2).map((edu) => (
+                          <div key={edu.id} className="p-4 flex gap-4">
+                            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <GraduationCap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-gray-900 dark:text-white">{edu.school}</h4>
+                              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                {edu.degree}{edu.fieldOfStudy && `, ${edu.fieldOfStudy}`}
+                              </p>
+                              <p className="text-gray-500 dark:text-gray-500 text-xs mt-1">
+                                {formatDate(edu.startDate)} - {edu.isCurrent ? 'Present' : edu.endDate ? formatDate(edu.endDate) : 'N/A'}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Skills Snapshot */}
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Skills</h3>
+                      <div className="flex items-center gap-2">
+                        {profile.isOwnProfile && (
+                          <Link
+                            href={`/${locale}/profile/${userId}/edit?section=skills`}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                          >
+                            <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                          </Link>
+                        )}
+                        <button 
+                          onClick={() => setActiveTab('skills')}
+                          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        >
+                          Show all →
+                        </button>
+                      </div>
+                    </div>
+                    <div className="p-6">
+                      {skills.length === 0 ? (
+                        <div className="text-center">
+                          <Star className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                          <p className="text-gray-500 dark:text-gray-400 text-sm">No skills added yet</p>
+                          {profile.isOwnProfile && (
+                            <Link
+                              href={`/${locale}/profile/${userId}/edit?section=skills`}
+                              className="inline-block mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                            >
+                              + Add skills
+                            </Link>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {skills.slice(0, 6).map((skill) => (
+                            <span 
+                              key={skill.id} 
+                              className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium"
+                            >
+                              {skill.skillName}
+                              {skill.endorsementCount > 0 && (
+                                <span className="ml-1 text-blue-500 dark:text-blue-400">· {skill.endorsementCount}</span>
+                              )}
+                            </span>
+                          ))}
+                          {skills.length > 6 && (
+                            <button 
+                              onClick={() => setActiveTab('skills')}
+                              className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-sm"
+                            >
+                              +{skills.length - 6} more
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Interests & Languages */}
+                  {(profile.interests.length > 0 || profile.languages.length > 0) && (
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                      <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Interests & Languages</h3>
+                      </div>
+                      <div className="p-6 space-y-4">
+                        {profile.interests.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Interests</p>
+                            <div className="flex flex-wrap gap-2">
+                              {profile.interests.map((interest, i) => (
+                                <span key={i} className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm">
+                                  {interest}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {profile.languages.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Languages</p>
+                            <div className="flex flex-wrap gap-2">
+                              {profile.languages.map((lang, i) => (
+                                <span key={i} className="px-3 py-1 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-sm">
+                                  {lang}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -661,80 +872,95 @@ export default function ProfilePage() {
 
               {/* Skills Section */}
               {activeTab === 'skills' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Skills & Expertise</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Skills</h3>
                     {profile.isOwnProfile && (
-                      <button className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1">
-                        <Plus className="w-4 h-4" />
-                        Add Skill
-                      </button>
+                      <Link
+                        href={`/${locale}/profile/${userId}/edit?section=skills`}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                      >
+                        <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                      </Link>
                     )}
                   </div>
                   
                   {skills.length === 0 ? (
-                    <p className="text-gray-500 dark:text-gray-400 text-center py-8">No skills added yet</p>
+                    <div className="p-12 text-center">
+                      <Star className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                      <p className="text-gray-500 dark:text-gray-400">No skills added yet</p>
+                      {profile.isOwnProfile && (
+                        <Link
+                          href={`/${locale}/profile/${userId}/edit?section=skills`}
+                          className="inline-block mt-3 text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                          + Add your skills
+                        </Link>
+                      )}
+                    </div>
                   ) : (
-                    <div className="grid gap-4">
+                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
                       {skills.map(skill => {
                         const CategoryIcon = categoryIcons[skill.category] || Star;
                         return (
-                          <div key={skill.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                          <div key={skill.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                             <div className="flex items-start justify-between">
                               <div className="flex items-start gap-3">
-                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
                                   <CategoryIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                 </div>
                                 <div>
-                                  <h4 className="font-medium text-gray-900 dark:text-white">{skill.skillName}</h4>
+                                  <h4 className="font-semibold text-gray-900 dark:text-white">{skill.skillName}</h4>
                                   <div className="flex items-center gap-2 mt-1">
-                                    <span className={`text-xs px-2 py-0.5 rounded-full ${skillLevelColors[skill.level]}`}>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${skillLevelColors[skill.level]}`}>
                                       {skill.level}
                                     </span>
                                     {skill.yearsOfExp && (
                                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                                        {skill.yearsOfExp} yrs
+                                        · {skill.yearsOfExp} years experience
                                       </span>
                                     )}
                                   </div>
-                                  {skill.description && (
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{skill.description}</p>
-                                  )}
                                 </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                                  <Users className="w-4 h-4" />
-                                  {skill.endorsementCount}
-                                </span>
+                              <div className="flex items-center gap-3">
+                                {skill.endorsementCount > 0 && (
+                                  <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                    <Users className="w-4 h-4" />
+                                    {skill.endorsementCount} endorsement{skill.endorsementCount !== 1 ? 's' : ''}
+                                  </span>
+                                )}
                                 {!profile.isOwnProfile && (
-                                  <button className="text-blue-600 hover:text-blue-700 text-sm">Endorse</button>
+                                  <button className="px-3 py-1 border border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full text-sm font-medium transition-colors">
+                                    Endorse
+                                  </button>
                                 )}
                               </div>
                             </div>
                             {/* Endorsers avatars */}
                             {skill.endorsements.length > 0 && (
-                              <div className="flex -space-x-2 mt-3">
-                                {skill.endorsements.slice(0, 5).map(e => (
-                                  <div
-                                    key={e.id}
-                                    className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-gray-200 dark:bg-gray-700 overflow-hidden"
-                                    title={`${e.endorser.firstName} ${e.endorser.lastName}`}
-                                  >
-                                    {e.endorser.profilePictureUrl ? (
-                                      <Image src={e.endorser.profilePictureUrl} alt="" width={32} height={32} className="object-cover" />
-                                    ) : (
-                                      <div className="w-full h-full flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        {e.endorser.firstName[0]}
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
-                                {skill.endorsementCount > 5 && (
-                                  <div className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300">
-                                    +{skill.endorsementCount - 5}
-                                  </div>
-                                )}
+                              <div className="flex items-center gap-2 mt-3 ml-13">
+                                <div className="flex -space-x-2">
+                                  {skill.endorsements.slice(0, 3).map(e => (
+                                    <div
+                                      key={e.id}
+                                      className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800 bg-gray-200 dark:bg-gray-700 overflow-hidden"
+                                      title={`${e.endorser.firstName} ${e.endorser.lastName}`}
+                                    >
+                                      {e.endorser.profilePictureUrl ? (
+                                        <Image src={e.endorser.profilePictureUrl} alt="" width={24} height={24} className="object-cover" />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300">
+                                          {e.endorser.firstName[0]}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  Endorsed by {skill.endorsements[0]?.endorser.firstName}
+                                  {skill.endorsementCount > 1 && ` and ${skill.endorsementCount - 1} other${skill.endorsementCount > 2 ? 's' : ''}`}
+                                </span>
                               </div>
                             )}
                           </div>
@@ -747,58 +973,68 @@ export default function ProfilePage() {
 
               {/* Experience Section */}
               {activeTab === 'experience' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex justify-between items-center mb-4">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Experience</h3>
                     {profile.isOwnProfile && (
-                      <button className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1">
-                        <Plus className="w-4 h-4" />
-                        Add Experience
-                      </button>
+                      <Link
+                        href={`/${locale}/profile/${userId}/edit?section=experience`}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                      >
+                        <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                      </Link>
                     )}
                   </div>
 
                   {experiences.length === 0 ? (
-                    <p className="text-gray-500 dark:text-gray-400 text-center py-8">No experience added yet</p>
+                    <div className="p-12 text-center">
+                      <Briefcase className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                      <p className="text-gray-500 dark:text-gray-400">No experience added yet</p>
+                      {profile.isOwnProfile && (
+                        <Link
+                          href={`/${locale}/profile/${userId}/edit?section=experience`}
+                          className="inline-block mt-3 text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                          + Add your experience
+                        </Link>
+                      )}
+                    </div>
                   ) : (
-                    <div className="space-y-6">
-                      {experiences.map((exp, index) => (
-                        <div key={exp.id} className="relative pl-6 pb-6 last:pb-0">
-                          {/* Timeline line */}
-                          {index < experiences.length - 1 && (
-                            <div className="absolute left-[7px] top-6 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700" />
-                          )}
-                          {/* Timeline dot */}
-                          <div className={`absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 ${
-                            exp.isCurrent 
-                              ? 'bg-green-500 border-green-500' 
-                              : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
-                          }`} />
-                          
-                          <div>
-                            <h4 className="font-medium text-gray-900 dark:text-white">{exp.title}</h4>
-                            <p className="text-gray-600 dark:text-gray-300">{exp.organization}</p>
-                            <div className="flex items-center gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
-                              <Calendar className="w-4 h-4" />
-                              {formatDate(exp.startDate)} - {exp.isCurrent ? 'Present' : exp.endDate ? formatDate(exp.endDate) : 'N/A'}
-                              {exp.location && (
-                                <>
-                                  <span>•</span>
-                                  <MapPin className="w-4 h-4" />
-                                  {exp.location}
-                                </>
+                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                      {experiences.map((exp) => (
+                        <div key={exp.id} className="p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                          <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <Briefcase className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h4 className="font-semibold text-gray-900 dark:text-white">{exp.title}</h4>
+                                <p className="text-gray-600 dark:text-gray-400">{exp.organization}</p>
+                                <p className="text-gray-500 dark:text-gray-500 text-sm mt-0.5">
+                                  {formatDate(exp.startDate)} - {exp.isCurrent ? 'Present' : exp.endDate ? formatDate(exp.endDate) : 'N/A'}
+                                  {exp.location && ` · ${exp.location}`}
+                                </p>
+                              </div>
+                              {exp.isCurrent && (
+                                <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">
+                                  Current
+                                </span>
                               )}
                             </div>
                             {exp.description && (
-                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{exp.description}</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-3">{exp.description}</p>
                             )}
                             {exp.skills.length > 0 && (
-                              <div className="flex flex-wrap gap-2 mt-3">
-                                {exp.skills.map((skill, i) => (
-                                  <span key={i} className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded text-xs">
+                              <div className="flex flex-wrap gap-1.5 mt-3">
+                                {exp.skills.slice(0, 4).map((skill, i) => (
+                                  <span key={i} className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-xs font-medium">
                                     {skill}
                                   </span>
                                 ))}
+                                {exp.skills.length > 4 && (
+                                  <span className="text-xs text-gray-500">+{exp.skills.length - 4} more</span>
+                                )}
                               </div>
                             )}
                           </div>
@@ -811,105 +1047,79 @@ export default function ProfilePage() {
 
               {/* Education Section */}
               {activeTab === 'education' && (
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                      <GraduationCap className="w-5 h-5 text-blue-500" />
-                      Education
-                    </h3>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Education</h3>
                     {profile.isOwnProfile && (
                       <Link
                         href={`/${locale}/profile/${userId}/edit?section=education`}
-                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-3 py-1.5 rounded-lg transition-colors"
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                       >
-                        <Plus className="w-4 h-4" />
-                        Add Education
+                        <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                       </Link>
                     )}
                   </div>
 
                   {education.length === 0 ? (
-                    <div className="text-center py-12 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
+                    <div className="p-12 text-center">
                       <GraduationCap className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400 font-medium">No education added yet</p>
+                      <p className="text-gray-500 dark:text-gray-400">No education added yet</p>
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=education`}
-                          className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 text-sm mt-2"
+                          className="inline-block mt-3 text-blue-600 hover:text-blue-700 font-medium"
                         >
-                          <Plus className="w-4 h-4" />
-                          Add your education
+                          + Add your education
                         </Link>
                       )}
                     </div>
                   ) : (
-                    <div className="space-y-6">
-                      {education.map((edu, index) => (
-                        <div 
-                          key={edu.id} 
-                          className="relative pl-6 pb-6 last:pb-0 animate-in slide-in-from-left duration-300"
-                          style={{ animationDelay: `${index * 50}ms` }}
-                        >
-                          {/* Timeline line */}
-                          {index < education.length - 1 && (
-                            <div className="absolute left-[7px] top-6 bottom-0 w-0.5 bg-blue-200 dark:bg-blue-800" />
-                          )}
-                          {/* Timeline dot */}
-                          <div className={`absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 ${
-                            edu.isCurrent 
-                              ? 'bg-blue-500 border-blue-500' 
-                              : 'bg-white dark:bg-gray-800 border-blue-300 dark:border-blue-600'
-                          }`} />
-                          
-                          <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
-                            <div className="flex items-start gap-3">
-                              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-lg">
-                                <GraduationCap className="w-6 h-6 text-white" />
-                              </div>
-                              <div className="flex-1 min-w-0">
+                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                      {education.map((edu) => (
+                        <div key={edu.id} className="p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                          <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <GraduationCap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between">
+                              <div>
                                 <h4 className="font-semibold text-gray-900 dark:text-white">{edu.school}</h4>
                                 {(edu.degree || edu.fieldOfStudy) && (
-                                  <p className="text-gray-600 dark:text-gray-300">
-                                    {edu.degree}
-                                    {edu.degree && edu.fieldOfStudy && ', '}
-                                    {edu.fieldOfStudy}
+                                  <p className="text-gray-600 dark:text-gray-400">
+                                    {edu.degree}{edu.fieldOfStudy && `, ${edu.fieldOfStudy}`}
                                   </p>
                                 )}
-                                <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                  <span className="flex items-center gap-1">
-                                    <Calendar className="w-3.5 h-3.5" />
-                                    {formatDate(edu.startDate)} - {edu.isCurrent ? 'Present' : edu.endDate ? formatDate(edu.endDate) : 'N/A'}
+                                <p className="text-gray-500 dark:text-gray-500 text-sm mt-0.5">
+                                  {formatDate(edu.startDate)} - {edu.isCurrent ? 'Present' : edu.endDate ? formatDate(edu.endDate) : 'N/A'}
+                                  {edu.grade && ` · Grade: ${edu.grade}`}
+                                </p>
+                              </div>
+                              {edu.isCurrent && (
+                                <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-medium rounded-full">
+                                  Current
+                                </span>
+                              )}
+                            </div>
+                            {edu.description && (
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{edu.description}</p>
+                            )}
+                            {edu.activities.length > 0 && (
+                              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                <span className="font-medium">Activities:</span> {edu.activities.join(', ')}
+                              </p>
+                            )}
+                            {edu.skills.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mt-3">
+                                {edu.skills.slice(0, 4).map((skill, i) => (
+                                  <span key={i} className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-xs font-medium">
+                                    {skill}
                                   </span>
-                                  {edu.grade && (
-                                    <>
-                                      <span>•</span>
-                                      <span className="text-blue-600 dark:text-blue-400 font-medium">Grade: {edu.grade}</span>
-                                    </>
-                                  )}
-                                </div>
-                                {edu.description && (
-                                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{edu.description}</p>
-                                )}
-                                {edu.activities.length > 0 && (
-                                  <div className="mt-2">
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Activities & Societies:</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">{edu.activities.join(', ')}</p>
-                                  </div>
-                                )}
-                                {edu.skills.length > 0 && (
-                                  <div className="flex flex-wrap gap-1.5 mt-3">
-                                    {edu.skills.slice(0, 5).map((skill, i) => (
-                                      <span key={i} className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-xs font-medium">
-                                        {skill}
-                                      </span>
-                                    ))}
-                                    {edu.skills.length > 5 && (
-                                      <span className="text-xs text-gray-500">+{edu.skills.length - 5} more</span>
-                                    )}
-                                  </div>
+                                ))}
+                                {edu.skills.length > 4 && (
+                                  <span className="text-xs text-gray-500">+{edu.skills.length - 4} more</span>
                                 )}
                               </div>
-                            </div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -920,152 +1130,84 @@ export default function ProfilePage() {
 
               {/* Certifications Section */}
               {activeTab === 'certifications' && (
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                      <Award className="w-5 h-5 text-amber-500" />
-                      Licenses & Certifications
-                    </h3>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Licenses & Certifications</h3>
                     {profile.isOwnProfile && (
                       <Link
                         href={`/${locale}/profile/${userId}/edit?section=certifications`}
-                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-3 py-1.5 rounded-lg transition-colors"
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                       >
-                        <Plus className="w-4 h-4" />
-                        Add Certification
+                        <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                       </Link>
                     )}
                   </div>
 
                   {certifications.length === 0 ? (
-                    <div className="text-center py-12 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
+                    <div className="p-12 text-center">
                       <Award className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400 font-medium">No certifications added yet</p>
+                      <p className="text-gray-500 dark:text-gray-400">No certifications added yet</p>
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=certifications`}
-                          className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 text-sm mt-2"
+                          className="inline-block mt-3 text-blue-600 hover:text-blue-700 font-medium"
                         >
-                          <Plus className="w-4 h-4" />
-                          Add your first certification
+                          + Add your first certification
                         </Link>
                       )}
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      {certifications.map((cert, index) => {
+                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                      {certifications.map((cert) => {
                         const isExpired = cert.expiryDate && new Date(cert.expiryDate) < new Date();
-                        const expiresSOon = cert.expiryDate && !isExpired && 
+                        const expiresSoon = cert.expiryDate && !isExpired && 
                           new Date(cert.expiryDate) < new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
                         
                         return (
-                          <div 
-                            key={cert.id} 
-                            className={`relative p-4 rounded-xl border-2 transition-all hover:shadow-md animate-in slide-in-from-left duration-300 ${
+                          <div key={cert.id} className="p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
                               isExpired 
-                                ? 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10'
-                                : 'border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-700'
-                            }`}
-                            style={{ animationDelay: `${index * 50}ms` }}
-                          >
-                            <div className="flex items-start gap-4">
-                              {/* Cert Icon */}
-                              <div className="flex-shrink-0">
-                                <div className={`w-14 h-14 rounded-xl flex items-center justify-center shadow-sm ${
-                                  isExpired 
-                                    ? 'bg-red-100 dark:bg-red-900/30' 
-                                    : 'bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30'
-                                }`}>
-                                  <Award className={`w-7 h-7 ${isExpired ? 'text-red-500' : 'text-amber-600 dark:text-amber-400'}`} />
-                                </div>
-                              </div>
-
-                              {/* Cert Details */}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div>
-                                    <h4 className="font-semibold text-gray-900 dark:text-white text-base">
-                                      {cert.name}
-                                    </h4>
-                                    <p className="text-gray-600 dark:text-gray-300 text-sm mt-0.5">
-                                      {cert.issuingOrg}
-                                    </p>
-                                  </div>
-                                  
-                                  {/* Status Badge */}
-                                  {isExpired ? (
-                                    <span className="flex-shrink-0 px-2.5 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-medium rounded-full">
-                                      Expired
-                                    </span>
-                                  ) : expiresSOon ? (
-                                    <span className="flex-shrink-0 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
-                                      Expires Soon
-                                    </span>
-                                  ) : cert.expiryDate === null ? (
-                                    <span className="flex-shrink-0 px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">
-                                      No Expiration
-                                    </span>
-                                  ) : null}
-                                </div>
-
-                                {/* Dates */}
-                                <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                  <span className="flex items-center gap-1">
-                                    <Calendar className="w-3.5 h-3.5" />
+                                ? 'bg-red-50 dark:bg-red-900/30' 
+                                : 'bg-amber-50 dark:bg-amber-900/30'
+                            }`}>
+                              <Award className={`w-6 h-6 ${isExpired ? 'text-red-500' : 'text-amber-600 dark:text-amber-400'}`} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <h4 className="font-semibold text-gray-900 dark:text-white">{cert.name}</h4>
+                                  <p className="text-gray-600 dark:text-gray-400 text-sm">{cert.issuingOrg}</p>
+                                  <p className="text-gray-500 dark:text-gray-500 text-sm mt-0.5">
                                     Issued {formatDate(cert.issueDate)}
-                                  </span>
-                                  {cert.expiryDate && (
-                                    <span className={`flex items-center gap-1 ${isExpired ? 'text-red-500 dark:text-red-400' : ''}`}>
-                                      •
-                                      <Clock className="w-3.5 h-3.5" />
-                                      {isExpired ? 'Expired' : 'Expires'} {formatDate(cert.expiryDate)}
-                                    </span>
-                                  )}
+                                    {cert.expiryDate && ` · ${isExpired ? 'Expired' : 'Expires'} ${formatDate(cert.expiryDate)}`}
+                                  </p>
                                 </div>
-
-                                {/* Credential ID */}
-                                {cert.credentialId && (
-                                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                    Credential ID: {cert.credentialId}
-                                  </p>
-                                )}
-
-                                {/* Description */}
-                                {cert.description && (
-                                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">
-                                    {cert.description}
-                                  </p>
-                                )}
-
-                                {/* Skills */}
-                                {cert.skills.length > 0 && (
-                                  <div className="flex flex-wrap gap-1.5 mt-3">
-                                    {cert.skills.slice(0, 5).map((skill, i) => (
-                                      <span key={i} className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-xs font-medium">
-                                        {skill}
-                                      </span>
-                                    ))}
-                                    {cert.skills.length > 5 && (
-                                      <span className="px-2 py-0.5 text-gray-500 dark:text-gray-400 text-xs">
-                                        +{cert.skills.length - 5} more
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-
-                                {/* Credential URL */}
-                                {cert.credentialUrl && (
-                                  <a
-                                    href={cert.credentialUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 text-sm font-medium mt-3 hover:underline"
-                                  >
-                                    <ExternalLink className="w-3.5 h-3.5" />
-                                    Show credential
-                                  </a>
-                                )}
+                                {isExpired ? (
+                                  <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-medium rounded-full">
+                                    Expired
+                                  </span>
+                                ) : expiresSoon ? (
+                                  <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-xs font-medium rounded-full">
+                                    Expires Soon
+                                  </span>
+                                ) : null}
                               </div>
+                              {cert.credentialId && (
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                  Credential ID: {cert.credentialId}
+                                </p>
+                              )}
+                              {cert.credentialUrl && (
+                                <a
+                                  href={cert.credentialUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 text-sm font-medium mt-2"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  Show credential
+                                </a>
+                              )}
                             </div>
                           </div>
                         );
@@ -1077,64 +1219,81 @@ export default function ProfilePage() {
 
               {/* Projects Section */}
               {activeTab === 'projects' && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex justify-between items-center">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Projects</h3>
                     {profile.isOwnProfile && (
-                      <button className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1">
-                        <Plus className="w-4 h-4" />
-                        Add Project
-                      </button>
+                      <Link
+                        href={`/${locale}/profile/${userId}/edit?section=projects`}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                      >
+                        <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                      </Link>
                     )}
                   </div>
 
                   {projects.length === 0 ? (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-8 text-center">
+                    <div className="p-12 text-center">
+                      <Code className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
                       <p className="text-gray-500 dark:text-gray-400">No projects added yet</p>
+                      {profile.isOwnProfile && (
+                        <Link
+                          href={`/${locale}/profile/${userId}/edit?section=projects`}
+                          className="inline-block mt-3 text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                          + Add your first project
+                        </Link>
+                      )}
                     </div>
                   ) : (
-                    <div className="grid gap-4">
+                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
                       {projects.map(project => (
-                        <div key={project.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                          {project.mediaUrls.length > 0 && (
-                            <div className="h-48 relative bg-gray-100 dark:bg-gray-700">
+                        <div key={project.id} className="p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                          {project.mediaUrls.length > 0 ? (
+                            <div className="w-24 h-24 relative bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
                               <Image src={project.mediaUrls[0]} alt={project.title} fill className="object-cover" />
                             </div>
+                          ) : (
+                            <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <Code className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                            </div>
                           )}
-                          <div className="p-4">
+                          <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between">
                               <div>
-                                <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                                   {project.title}
                                   {project.isFeatured && (
                                     <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
                                   )}
                                 </h4>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">{project.category} • {project.status}</span>
+                                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                  {project.category} · {project.status}
+                                </p>
                               </div>
-                              <div className="flex gap-2">
+                              <div className="flex gap-1">
                                 {project.projectUrl && (
-                                  <a href={project.projectUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                                  <a href={project.projectUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors">
                                     <ExternalLink className="w-4 h-4 text-gray-500" />
                                   </a>
                                 )}
                                 {project.githubUrl && (
-                                  <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                                  <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors">
                                     <Code className="w-4 h-4 text-gray-500" />
                                   </a>
                                 )}
                               </div>
                             </div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">{project.description}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{project.description}</p>
                             {project.technologies.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-3">
-                                {project.technologies.slice(0, 5).map((tech, i) => (
-                                  <span key={i} className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded text-xs">
+                              <div className="flex flex-wrap gap-1.5 mt-2">
+                                {project.technologies.slice(0, 4).map((tech, i) => (
+                                  <span key={i} className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs">
                                     {tech}
                                   </span>
                                 ))}
-                                {project.technologies.length > 5 && (
-                                  <span className="text-xs text-gray-500">+{project.technologies.length - 5}</span>
+                                {project.technologies.length > 4 && (
+                                  <span className="text-xs text-gray-500">+{project.technologies.length - 4}</span>
                                 )}
                               </div>
                             )}
@@ -1148,147 +1307,161 @@ export default function ProfilePage() {
 
               {/* Activity Section */}
               {activeTab === 'activity' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h3>
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">{profile.stats.postsThisMonth}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Posts this month</div>
-                    </div>
-                    <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                      <div className="text-2xl font-bold text-red-500">{profile.stats.totalLikes}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Total likes</div>
-                    </div>
-                    <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-500">{profile.stats.totalViews}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Total views</div>
-                    </div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Activity</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{profile.stats.followers} followers</p>
                   </div>
-                  <Link
-                    href={`/${locale}/feed?author=${profile.id}`}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
-                  >
-                    View all posts
-                    <ChevronRight className="w-4 h-4" />
-                  </Link>
+                  <div className="p-6">
+                    <div className="grid grid-cols-3 gap-4 mb-6">
+                      <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <div className="text-2xl font-bold text-gray-900 dark:text-white">{profile.stats.postsThisMonth}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">Posts this month</div>
+                      </div>
+                      <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <div className="text-2xl font-bold text-gray-900 dark:text-white">{profile.stats.totalLikes}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">Total likes</div>
+                      </div>
+                      <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <div className="text-2xl font-bold text-gray-900 dark:text-white">{profile.stats.totalViews}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">Total views</div>
+                      </div>
+                    </div>
+                    <Link
+                      href={`/${locale}/feed?author=${profile.id}`}
+                      className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      See all activity
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Sidebar - Right */}
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Achievements Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-amber-500" />
-                  Achievements
-                </h3>
-                {achievements.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No achievements yet</p>
-                ) : (
-                  <div className="space-y-3">
-                    {achievements.slice(0, 5).map(achievement => (
-                      <div key={achievement.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${rarityColors[achievement.rarity]} flex items-center justify-center`}>
-                          {achievement.badgeUrl ? (
-                            <Image src={achievement.badgeUrl} alt="" width={24} height={24} />
-                          ) : (
-                            <Award className="w-5 h-5 text-white" />
-                          )}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+                <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                  <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Trophy className="w-4 h-4 text-amber-500" />
+                    Achievements
+                  </h3>
+                </div>
+                <div className="p-4">
+                  {achievements.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No achievements yet</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {achievements.slice(0, 3).map(achievement => (
+                        <div key={achievement.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                          <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${rarityColors[achievement.rarity]} flex items-center justify-center flex-shrink-0`}>
+                            {achievement.badgeUrl ? (
+                              <Image src={achievement.badgeUrl} alt="" width={20} height={20} />
+                            ) : (
+                              <Award className="w-4 h-4 text-white" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">{achievement.title}</h4>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{achievement.points} pts</p>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">{achievement.title}</h4>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{achievement.points} pts</p>
-                        </div>
-                      </div>
-                    ))}
-                    {achievements.length > 5 && (
-                      <button className="text-blue-600 hover:text-blue-700 text-sm w-full text-center">
-                        View all {achievements.length} achievements
-                      </button>
-                    )}
-                  </div>
-                )}
+                      ))}
+                      {achievements.length > 3 && (
+                        <button className="text-blue-600 hover:text-blue-700 text-sm w-full text-center pt-2">
+                          Show all {achievements.length}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Recommendations Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <Star className="w-5 h-5 text-purple-500" />
-                  Recommendations
-                </h3>
-                {recommendations.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No recommendations yet</p>
-                ) : (
-                  <div className="space-y-4">
-                    {recommendations.slice(0, 3).map(rec => (
-                      <div key={rec.id} className="border-b border-gray-100 dark:border-gray-700 pb-4 last:border-0 last:pb-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
-                            {rec.author.profilePictureUrl ? (
-                              <Image src={rec.author.profilePictureUrl} alt="" width={32} height={32} className="object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-sm font-medium text-gray-600 dark:text-gray-300">
-                                {rec.author.firstName[0]}
-                              </div>
-                            )}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
+                <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                  <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Star className="w-4 h-4 text-purple-500" />
+                    Recommendations
+                  </h3>
+                </div>
+                <div className="p-4">
+                  {recommendations.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No recommendations yet</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {recommendations.slice(0, 2).map(rec => (
+                        <div key={rec.id} className="pb-4 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden flex-shrink-0">
+                              {rec.author.profilePictureUrl ? (
+                                <Image src={rec.author.profilePictureUrl} alt="" width={32} height={32} className="object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-sm font-medium text-gray-600 dark:text-gray-300">
+                                  {rec.author.firstName[0]}
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                {rec.author.firstName} {rec.author.lastName}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">{rec.relationship}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              {rec.author.firstName} {rec.author.lastName}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{rec.relationship}</p>
-                          </div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">&ldquo;{rec.content}&rdquo;</p>
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">{rec.content}</p>
-                      </div>
-                    ))}
-                    {recommendations.length > 3 && (
-                      <button className="text-blue-600 hover:text-blue-700 text-sm w-full text-center">
-                        View all {recommendations.length} recommendations
-                      </button>
-                    )}
-                  </div>
-                )}
-                {!profile.isOwnProfile && (
-                  <button className="mt-4 w-full py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center gap-2">
-                    <Plus className="w-4 h-4" />
-                    Write a recommendation
-                  </button>
-                )}
+                      ))}
+                      {recommendations.length > 2 && (
+                        <button className="text-blue-600 hover:text-blue-700 text-sm w-full text-center">
+                          Show all {recommendations.length}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {!profile.isOwnProfile && (
+                    <button className="mt-4 w-full py-2 border border-blue-600 text-blue-600 rounded-full text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                      Recommend {profile.firstName}
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Profile Stats Card */}
-              <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-sm p-6 text-white animate-in fade-in slide-in-from-bottom-4 duration-500 delay-400">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  Profile Stats
-                </h3>
-                <div className="space-y-3">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-400">
+                <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                  <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-green-500" />
+                    Profile Stats
+                  </h3>
+                </div>
+                <div className="p-4 space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-white/80">Level</span>
-                    <span className="font-bold">{profile.level}</span>
+                    <span className="text-gray-600 dark:text-gray-400 text-sm">Level</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">{profile.level}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-white/80">Total Points</span>
-                    <span className="font-bold">{profile.totalPoints.toLocaleString()}</span>
+                    <span className="text-gray-600 dark:text-gray-400 text-sm">Total Points</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">{profile.totalPoints.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-white/80">Learning Hours</span>
-                    <span className="font-bold">{profile.totalLearningHours}h</span>
+                    <span className="text-gray-600 dark:text-gray-400 text-sm">Learning Hours</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">{profile.totalLearningHours}h</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-white/80">Longest Streak</span>
-                    <span className="font-bold">{profile.longestStreak} days</span>
+                    <span className="text-gray-600 dark:text-gray-400 text-sm">Longest Streak</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">{profile.longestStreak} days</span>
                   </div>
-                  <div className="mt-4 pt-4 border-t border-white/20">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm text-white/80">Profile Completeness</span>
-                      <span className="text-sm font-bold">{profile.profileCompleteness}%</span>
+                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Profile Completeness</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white">{profile.profileCompleteness}%</span>
                     </div>
-                    <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-white rounded-full transition-all duration-500"
+                        className="h-full bg-blue-600 rounded-full transition-all duration-500"
                         style={{ width: `${profile.profileCompleteness}%` }}
                       />
                     </div>
