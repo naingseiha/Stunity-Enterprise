@@ -26,6 +26,8 @@ import {
   X,
   Loader2,
   Send,
+  Eye,
+  TrendingUp,
 } from 'lucide-react';
 
 interface PollOption {
@@ -62,6 +64,7 @@ export interface PostData {
   likesCount: number;
   commentsCount: number;
   sharesCount: number;
+  viewsCount?: number;
   isLiked?: boolean;
   isBookmarked?: boolean;
   mediaUrls?: string[];
@@ -79,6 +82,7 @@ interface PostCardProps {
   onShare?: (postId: string) => void;
   onEdit?: (postId: string, content: string) => void;
   onDelete?: (postId: string) => void;
+  onViewAnalytics?: (postId: string) => void;
   currentUserId?: string;
 }
 
@@ -91,6 +95,7 @@ export default function PostCard({
   onShare,
   onEdit,
   onDelete,
+  onViewAnalytics,
   currentUserId 
 }: PostCardProps) {
   const [showComments, setShowComments] = useState(false);
@@ -287,6 +292,13 @@ export default function PostCard({
                       <span className="text-sm">Edit Post</span>
                     </button>
                     <button
+                      onClick={() => { onViewAnalytics?.(post.id); setShowMenu(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <TrendingUp className="w-4 h-4" />
+                      <span className="text-sm">View Analytics</span>
+                    </button>
+                    <button
                       onClick={() => { setShowDeleteConfirm(true); setShowMenu(false); }}
                       className="w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
                     >
@@ -406,6 +418,12 @@ export default function PostCard({
         {/* Stats */}
         <div className="flex items-center justify-between text-sm text-gray-500 mb-3 pb-3 border-b border-gray-200">
           <div className="flex items-center gap-4">
+            {post.viewsCount !== undefined && post.viewsCount > 0 && (
+              <span className="flex items-center gap-1">
+                <Eye className="w-3.5 h-3.5" />
+                {post.viewsCount}
+              </span>
+            )}
             <span>{post.likesCount} like{post.likesCount !== 1 ? 's' : ''}</span>
             <span>{post.commentsCount} comment{post.commentsCount !== 1 ? 's' : ''}</span>
           </div>
@@ -518,7 +536,7 @@ export default function PostCard({
                   <p className="text-sm text-gray-500">Copy post link to clipboard</p>
                 </div>
               </button>
-              {typeof navigator !== 'undefined' && navigator.share && (
+              {typeof navigator !== 'undefined' && typeof navigator.share === 'function' && (
                 <button
                   onClick={() => handleShare('native')}
                   className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors"

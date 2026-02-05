@@ -7,6 +7,10 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 import FeedZoomLoader from '@/components/feed/FeedZoomLoader';
 import CreatePostModal, { CreatePostData } from '@/components/feed/CreatePostModal';
 import PostCard from '@/components/feed/PostCard';
+import PostAnalyticsModal from '@/components/feed/PostAnalyticsModal';
+import InsightsDashboard from '@/components/feed/InsightsDashboard';
+import TrendingSection from '@/components/feed/TrendingSection';
+import ActivityDashboard from '@/components/feed/ActivityDashboard';
 import {
   Users,
   BookOpen,
@@ -22,6 +26,8 @@ import {
   HelpCircle,
   Filter,
   Bookmark,
+  Activity,
+  Flame,
 } from 'lucide-react';
 
 const FEED_API = 'http://localhost:3010';
@@ -92,6 +98,28 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
   const [loadingComments, setLoadingComments] = useState<Set<string>>(new Set());
   const [newComment, setNewComment] = useState<Record<string, string>>({});
   const [submittingComment, setSubmittingComment] = useState<Set<string>>(new Set());
+  
+  // Analytics state
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [selectedPostForAnalytics, setSelectedPostForAnalytics] = useState<string | null>(null);
+
+  // Track post view
+  const trackPostView = useCallback(async (postId: string) => {
+    try {
+      const token = TokenManager.getAccessToken();
+      if (!token) return;
+      await fetch(`${FEED_API}/posts/${postId}/view`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ source: 'feed' }),
+      });
+    } catch (error) {
+      // Silent fail - view tracking shouldn't break UX
+    }
+  }, []);
 
   const fetchPosts = useCallback(async () => {
     const token = TokenManager.getAccessToken();
@@ -105,6 +133,10 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
       const data = await res.json();
       if (data.success) {
         setPosts(data.data || []);
+        // Track views for visible posts
+        (data.data || []).slice(0, 5).forEach((post: Post) => {
+          trackPostView(post.id);
+        });
       }
     } catch (error) {
       console.error('Failed to fetch posts:', error);
@@ -320,7 +352,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
               userVotedOptionId: optionId,
               pollOptions: post.pollOptions?.map(opt => ({
                 ...opt,
-                votes: opt.id === optionId ? (opt.votes || 0) + 1 : opt.votes
+                _count: { votes: opt.id === optionId ? ((opt._count?.votes || 0) + 1) : (opt._count?.votes || 0) }
               }))
             };
           }
@@ -482,35 +514,44 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
     );
   }
 
+  const handleViewAnalytics = (postId: string) => {
+    setSelectedPostForAnalytics(postId);
+    setShowAnalyticsModal(true);
+  };
+
   const tabs = [
     { id: 'feed', label: 'Feed', icon: TrendingUp },
     { id: 'posts', label: 'My Posts', icon: BookOpen },
+    { id: 'insights', label: 'Insights', icon: BarChart3 },
+    { id: 'activity', label: 'Activity', icon: Activity },
     { id: 'bookmarks', label: 'Saved', icon: Bookmark },
-    { id: 'groups', label: 'Groups', icon: Users },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50 animate-fade-in">
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        {/* Tab Navigation */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-medium text-sm transition-all whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'bg-gradient-to-r from-purple-500 to-purple-400 text-white shadow-md'
-                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{tab.label}</span>
-              </button>
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="flex gap-6">
+          {/* Main Content */}
+          <div className="flex-1 max-w-2xl">
+            {/* Tab Navigation */}
+            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-medium text-sm transition-all whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? 'bg-gradient-to-r from-purple-500 to-purple-400 text-white shadow-md'
+                        : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{tab.label}</span>
+                  </button>
             );
           })}
         </div>
@@ -666,6 +707,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                   onShare={handleShare}
                   onEdit={handleEditPost}
                   onDelete={handleDeletePost}
+                  onViewAnalytics={handleViewAnalytics}
                   currentUserId={user?.id}
                 />
               ))}
@@ -746,11 +788,22 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                   onShare={handleShare}
                   onEdit={handleEditPost}
                   onDelete={handleDeletePost}
+                  onViewAnalytics={handleViewAnalytics}
                   currentUserId={user?.id}
                 />
               ))
             )}
           </div>
+        )}
+
+        {/* Insights Tab */}
+        {activeTab === 'insights' && (
+          <InsightsDashboard apiUrl={FEED_API} />
+        )}
+
+        {/* Activity Tab */}
+        {activeTab === 'activity' && (
+          <ActivityDashboard apiUrl={FEED_API} />
         )}
 
         {/* Bookmarks Tab */}
@@ -803,32 +856,43 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                   onShare={handleShare}
                   onEdit={handleEditPost}
                   onDelete={handleDeletePost}
+                  onViewAnalytics={handleViewAnalytics}
                   currentUserId={user?.id}
                 />
               ))
             )}
           </div>
         )}
-
-        {/* Groups Tab - Coming Soon */}
-        {activeTab === 'groups' && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-              <Users className="w-8 h-8 text-gray-500" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Groups - Coming Soon</h3>
-            <p className="text-gray-600">This feature is currently under development.</p>
           </div>
-        )}
+
+          {/* Trending Sidebar - Only show on feed tab */}
+          {activeTab === 'feed' && (
+            <div className="hidden lg:block w-80 flex-shrink-0">
+              <div className="sticky top-20">
+                <TrendingSection apiUrl={FEED_API} />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Create Post Modal - Using new component */}
+      {/* Create Post Modal */}
       <CreatePostModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleCreatePost}
         user={user}
       />
+
+      {/* Post Analytics Modal */}
+      {selectedPostForAnalytics && (
+        <PostAnalyticsModal
+          isOpen={showAnalyticsModal}
+          onClose={() => { setShowAnalyticsModal(false); setSelectedPostForAnalytics(null); }}
+          postId={selectedPostForAnalytics}
+          apiUrl={FEED_API}
+        />
+      )}
     </div>
   );
 }
