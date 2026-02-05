@@ -320,7 +320,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
               userVotedOptionId: optionId,
               pollOptions: post.pollOptions?.map(opt => ({
                 ...opt,
-                _count: { votes: opt.id === optionId ? ((opt._count?.votes || 0) + 1) : (opt._count?.votes || 0) }
+                votes: opt.id === optionId ? (opt.votes || 0) + 1 : opt.votes
               }))
             };
           }
@@ -490,29 +490,22 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 animate-fade-in">
-      {/* Decorative Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-indigo-300/20 to-purple-300/20 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-pink-300/20 to-orange-300/20 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/3 right-1/4 w-64 h-64 bg-gradient-to-br from-purple-300/10 to-indigo-300/10 rounded-full blur-2xl"></div>
-      </div>
-      
+    <div className="min-h-screen bg-gray-50 animate-fade-in">
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="relative max-w-2xl mx-auto px-4 py-6">
+      <div className="max-w-2xl mx-auto px-4 py-6">
         {/* Tab Navigation */}
-        <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all whitespace-nowrap active:scale-95 ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-medium text-sm transition-all whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg'
-                    : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-white hover:shadow-md border border-white/40'
+                    ? 'bg-gradient-to-r from-purple-500 to-purple-400 text-white shadow-md'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -523,20 +516,20 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
         </div>
 
         {/* Create Post Box */}
-        <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-white/40 p-5 mb-5">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold shadow-md ring-2 ring-white/50 flex-shrink-0">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-yellow-400 flex items-center justify-center text-white font-semibold flex-shrink-0">
               {getInitials(user.firstName, user.lastName)}
             </div>
             <button 
               onClick={() => setShowCreateModal(true)}
-              className="flex-1 text-left px-5 py-3.5 bg-white/70 backdrop-blur-sm rounded-xl text-gray-500 hover:bg-white/90 hover:shadow-md transition-all border border-gray-200/60"
+              className="flex-1 text-left px-4 py-3 bg-gray-50 rounded-full text-gray-500 hover:bg-gray-100 transition-colors"
             >
               What&apos;s on your mind, {user.firstName}?
             </button>
             <button 
               onClick={() => setShowCreateModal(true)}
-              className="p-3 bg-gradient-to-br from-green-400 to-emerald-500 text-white rounded-xl shadow-md hover:shadow-lg transition-all active:scale-95"
+              className="p-3 text-green-600 hover:bg-green-50 rounded-full transition-colors"
             >
               <ImageIcon className="w-5 h-5" />
             </button>
@@ -551,20 +544,20 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
               <div className="relative">
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all active:scale-95 ${
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
                     postTypeFilter !== 'all' 
-                      ? 'bg-purple-50/80 backdrop-blur-sm border-purple-200/60 text-purple-700 shadow-sm' 
-                      : 'bg-white/80 backdrop-blur-sm border-white/40 text-gray-700 hover:bg-white hover:shadow-sm'
+                      ? 'bg-purple-50 border-purple-200 text-purple-700' 
+                      : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                   }`}
                 >
                   <Filter className="w-4 h-4" />
-                  <span className="text-sm font-bold">
+                  <span className="text-sm font-medium">
                     {POST_TYPE_FILTERS.find(f => f.id === postTypeFilter)?.label}
                   </span>
                 </button>
                 
                 {showFilters && (
-                  <div className="absolute left-0 top-full mt-2 w-52 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/40 py-3 z-10">
+                  <div className="absolute left-0 top-full mt-1 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-10">
                     {POST_TYPE_FILTERS.map((filter) => {
                       const Icon = filter.icon;
                       return (
@@ -574,12 +567,12 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                             setPostTypeFilter(filter.id);
                             setShowFilters(false);
                           }}
-                          className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50/80 transition-all ${
-                            postTypeFilter === filter.id ? 'bg-purple-50/80' : ''
+                          className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors ${
+                            postTypeFilter === filter.id ? 'bg-purple-50' : ''
                           }`}
                         >
                           <Icon className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm font-bold text-gray-900">{filter.label}</span>
+                          <span className="text-sm text-gray-900">{filter.label}</span>
                         </button>
                       );
                     })}
@@ -590,7 +583,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
               <button
                 onClick={fetchPosts}
                 disabled={loadingPosts}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 hover:text-purple-600 bg-white/60 backdrop-blur-sm rounded-xl hover:bg-white/80 hover:shadow-sm transition-all active:scale-95"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-purple-600 transition-colors"
               >
                 <RefreshCw className={`w-4 h-4 ${loadingPosts ? 'animate-spin' : ''}`} />
                 Refresh
@@ -599,25 +592,23 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
 
             {/* Loading State */}
             {loadingPosts && posts.length === 0 && (
-              <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-white/40 p-8 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-100/80 to-pink-100/80 flex items-center justify-center">
-                  <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
-                </div>
-                <p className="text-gray-600 font-semibold">Loading posts...</p>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
+                <Loader2 className="w-8 h-8 mx-auto text-purple-500 animate-spin mb-3" />
+                <p className="text-gray-600">Loading posts...</p>
               </div>
             )}
 
             {/* Empty State */}
             {!loadingPosts && posts.length === 0 && (
-              <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-white/40 p-8 text-center">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-100/80 to-pink-100/80 flex items-center justify-center shadow-md">
-                  <BookOpen className="w-10 h-10 text-purple-500" />
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                  <BookOpen className="w-8 h-8 text-purple-500" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">No posts yet</h3>
                 <p className="text-gray-600 mb-4">Be the first to share something!</p>
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-xl font-bold hover:shadow-lg transition-all active:scale-95"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-semibold hover:from-purple-600 hover:to-pink-600 transition-all shadow-md"
                 >
                   <Send className="w-5 h-5" />
                   Create Post
@@ -702,15 +693,15 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
         {activeTab === 'posts' && (
           <div className="space-y-4">
             {myPosts.length === 0 ? (
-              <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-white/40 p-8 text-center">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-100/80 to-pink-100/80 flex items-center justify-center shadow-md">
-                  <BookOpen className="w-10 h-10 text-purple-500" />
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                  <BookOpen className="w-8 h-8 text-purple-500" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">No posts yet</h3>
                 <p className="text-gray-600 mb-4">Share your first post!</p>
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-xl font-bold hover:shadow-lg transition-all active:scale-95"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-semibold hover:from-purple-600 hover:to-pink-600 transition-all shadow-md"
                 >
                   <Send className="w-5 h-5" />
                   Create Post
@@ -766,9 +757,9 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
         {activeTab === 'bookmarks' && (
           <div className="space-y-4">
             {bookmarkedPosts.length === 0 ? (
-              <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-white/40 p-8 text-center">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-100/80 to-orange-100/80 flex items-center justify-center shadow-md">
-                  <Bookmark className="w-10 h-10 text-amber-500" />
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-yellow-100 to-orange-100 flex items-center justify-center">
+                  <Bookmark className="w-8 h-8 text-yellow-500" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">No saved posts</h3>
                 <p className="text-gray-600">Posts you bookmark will appear here.</p>
@@ -821,9 +812,9 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
 
         {/* Groups Tab - Coming Soon */}
         {activeTab === 'groups' && (
-          <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-white/40 p-12 text-center">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gray-100/80 to-gray-200/80 flex items-center justify-center shadow-md">
-              <Users className="w-10 h-10 text-gray-500" />
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+              <Users className="w-8 h-8 text-gray-500" />
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">Groups - Coming Soon</h3>
             <p className="text-gray-600">This feature is currently under development.</p>
