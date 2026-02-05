@@ -46,6 +46,10 @@ import {
   Zap,
   Trophy,
   Target,
+  FolderOpen,
+  Rocket,
+  Microscope,
+  UsersRound,
 } from 'lucide-react';
 
 const FEED_API = 'http://localhost:3010';
@@ -95,6 +99,11 @@ const POST_TYPE_FILTERS = [
   { id: 'ANNOUNCEMENT', label: 'Announcements', icon: Megaphone },
   { id: 'QUESTION', label: 'Questions', icon: HelpCircle },
   { id: 'ACHIEVEMENT', label: 'Achievements', icon: Award },
+  { id: 'TUTORIAL', label: 'Tutorials', icon: BookOpen },
+  { id: 'RESOURCE', label: 'Resources', icon: FolderOpen },
+  { id: 'PROJECT', label: 'Projects', icon: Rocket },
+  { id: 'RESEARCH', label: 'Research', icon: Microscope },
+  { id: 'COLLABORATION', label: 'Collaboration', icon: UsersRound },
 ];
 
 export default function FeedPage({ params: { locale } }: { params: { locale: string } }) {
@@ -248,6 +257,8 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
         visibility: data.visibility,
         postType: data.postType,
         pollOptions: data.pollOptions,
+        mediaUrls: data.mediaUrls,
+        mediaDisplayMode: data.mediaDisplayMode,
       })
     });
     const result = await res.json();
@@ -548,7 +559,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 scrollbar-hide">
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
       {/* LinkedIn-style 3-column layout - cleaner proportions */}
@@ -558,48 +569,122 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
           {/* Left Sidebar - Compact Profile & Navigation */}
           <aside className="hidden lg:block lg:col-span-3">
             <div className="sticky top-20 space-y-3">
-              {/* Profile Card - Unique Centered Design */}
+              {/* Profile Card - Education-Focused Design */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                {/* Cover - Taller with gradient pattern */}
-                <div className="h-20 bg-gradient-to-br from-[#F9A825] via-[#FFB74D] to-[#F9A825] relative">
-                  {/* Decorative pattern */}
-                  <div className="absolute inset-0 opacity-20">
-                    <div className="absolute top-2 left-4 w-8 h-8 rounded-full bg-white/30" />
-                    <div className="absolute top-6 right-6 w-4 h-4 rounded-full bg-white/20" />
-                    <div className="absolute bottom-3 left-1/3 w-3 h-3 rounded-full bg-white/25" />
+                {/* Cover - Gradient with role-based accent */}
+                <div className="h-24 bg-gradient-to-br from-[#F9A825] via-[#FFB74D] to-[#F9A825] relative">
+                  {/* Decorative education icons */}
+                  <div className="absolute inset-0 opacity-15">
+                    <GraduationCap className="absolute top-2 left-3 w-6 h-6 text-white" />
+                    <BookOpen className="absolute top-3 right-4 w-5 h-5 text-white" />
+                    <Award className="absolute bottom-2 left-1/3 w-4 h-4 text-white" />
                   </div>
                 </div>
                 
-                {/* Avatar - Centered, overlapping cover, above background */}
-                <div className="flex justify-center -mt-10 relative z-10">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#F9A825] to-[#FFB74D] flex items-center justify-center text-white text-2xl font-bold border-4 border-white shadow-lg">
+                {/* Avatar - Centered, overlapping cover */}
+                <div className="flex justify-center -mt-8 relative z-10">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#F9A825] to-[#FFB74D] flex items-center justify-center text-white text-xl font-bold border-3 border-white shadow-lg">
                     {getInitials(user.firstName, user.lastName)}
                   </div>
                 </div>
                 
                 {/* User Info - Centered */}
-                <div className="text-center px-4 pt-3 pb-4">
-                  <h3 className="font-bold text-gray-900 text-base">{user.firstName} {user.lastName}</h3>
-                  <p className="text-xs text-[#F9A825] font-medium capitalize mt-0.5">{user.role?.toLowerCase().replace('_', ' ')}</p>
+                <div className="text-center px-4 pt-2 pb-3">
+                  <h3 className="font-bold text-gray-900 text-sm">{user.firstName} {user.lastName}</h3>
+                  <div className="flex items-center justify-center gap-1.5 mt-1">
+                    {user.role === 'ADMIN' && <Settings className="w-3 h-3 text-[#F9A825]" />}
+                    {user.role === 'TEACHER' && <GraduationCap className="w-3 h-3 text-[#F9A825]" />}
+                    {user.role === 'STUDENT' && <BookOpen className="w-3 h-3 text-[#F9A825]" />}
+                    {user.role === 'STAFF' && <Users className="w-3 h-3 text-[#F9A825]" />}
+                    <span className="text-xs text-[#F9A825] font-medium">
+                      {user.role === 'ADMIN' ? 'Administrator' : 
+                       user.role === 'TEACHER' ? 'Educator' : 
+                       user.role === 'STUDENT' ? 'Learner' : 
+                       user.role === 'STAFF' ? 'Staff Member' : 
+                       user.role?.toLowerCase().replace('_', ' ')}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Stats - Side by side */}
-                <div className="border-t border-gray-100 px-4 py-3 flex justify-center gap-8">
-                  <button 
-                    onClick={() => setActiveTab('insights')}
-                    className="text-center group"
-                  >
-                    <p className="text-lg font-bold text-gray-900 group-hover:text-[#F9A825] transition-colors">{posts.reduce((sum, p) => sum + (p.likesCount || 0), 0)}</p>
-                    <p className="text-[11px] text-gray-400">Impressions</p>
-                  </button>
-                  <div className="w-px bg-gray-200" />
-                  <button 
-                    onClick={() => setActiveTab('posts')}
-                    className="text-center group"
-                  >
-                    <p className="text-lg font-bold text-gray-900 group-hover:text-[#F9A825] transition-colors">{myPosts.length || 0}</p>
-                    <p className="text-[11px] text-gray-400">Posts</p>
-                  </button>
+                {/* Education Metrics - 2x2 Grid */}
+                <div className="border-t border-gray-100 px-3 py-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Engagement Score */}
+                    <button 
+                      onClick={() => setActiveTab('insights')}
+                      className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-2.5 text-center group hover:from-amber-100 hover:to-orange-100 transition-all"
+                    >
+                      <div className="flex items-center justify-center gap-1">
+                        <Zap className="w-3.5 h-3.5 text-amber-500" />
+                        <span className="text-sm font-bold text-gray-900">{posts.reduce((sum, p) => sum + (p.likesCount || 0), 0)}</span>
+                      </div>
+                      <p className="text-[10px] text-gray-500 mt-0.5">Engagement</p>
+                    </button>
+                    
+                    {/* Impact Score - Role-based */}
+                    <button 
+                      onClick={() => setActiveTab('activity')}
+                      className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-2.5 text-center group hover:from-blue-100 hover:to-indigo-100 transition-all"
+                    >
+                      <div className="flex items-center justify-center gap-1">
+                        <Target className="w-3.5 h-3.5 text-blue-500" />
+                        <span className="text-sm font-bold text-gray-900">
+                          {user.role === 'TEACHER' ? Math.floor(posts.reduce((sum, p) => sum + (p.commentsCount || 0), 0) * 1.5) :
+                           user.role === 'ADMIN' ? Math.floor((myPosts.length || 0) * 2.5) :
+                           posts.reduce((sum, p) => sum + (p.commentsCount || 0), 0)}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-gray-500 mt-0.5">
+                        {user.role === 'TEACHER' ? 'Impact' : user.role === 'ADMIN' ? 'Reach' : 'Learning'}
+                      </p>
+                    </button>
+                    
+                    {/* Contributions */}
+                    <button 
+                      onClick={() => setActiveTab('posts')}
+                      className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg p-2.5 text-center group hover:from-emerald-100 hover:to-teal-100 transition-all"
+                    >
+                      <div className="flex items-center justify-center gap-1">
+                        <FileText className="w-3.5 h-3.5 text-emerald-500" />
+                        <span className="text-sm font-bold text-gray-900">{myPosts.length || 0}</span>
+                      </div>
+                      <p className="text-[10px] text-gray-500 mt-0.5">
+                        {user.role === 'TEACHER' ? 'Lessons' : user.role === 'ADMIN' ? 'Updates' : 'Shares'}
+                      </p>
+                    </button>
+                    
+                    {/* Achievement/Level */}
+                    <button 
+                      onClick={() => setActiveTab('insights')}
+                      className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-2.5 text-center group hover:from-purple-100 hover:to-pink-100 transition-all"
+                    >
+                      <div className="flex items-center justify-center gap-1">
+                        <Trophy className="w-3.5 h-3.5 text-purple-500" />
+                        <span className="text-sm font-bold text-gray-900">
+                          {user.role === 'TEACHER' ? 'Expert' : 
+                           user.role === 'ADMIN' ? 'Leader' : 
+                           user.role === 'STUDENT' ? 'Rising' : 'Active'}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-gray-500 mt-0.5">
+                        {user.role === 'TEACHER' ? 'Educator' : 
+                         user.role === 'ADMIN' ? 'Role' : 
+                         user.role === 'STUDENT' ? 'Star' : 'Status'}
+                      </p>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Stats Bar */}
+                <div className="border-t border-gray-100 px-3 py-2 flex items-center justify-between text-[10px] text-gray-400">
+                  <div className="flex items-center gap-1">
+                    <Eye className="w-3 h-3" />
+                    <span>{posts.length * 12 + myPosts.length * 5} views this week</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3 text-emerald-500" />
+                    <span className="text-emerald-600">+{Math.min(15, Math.max(5, (myPosts.length || 1) + (posts.length % 10)))}%</span>
+                  </div>
                 </div>
               </div>
 

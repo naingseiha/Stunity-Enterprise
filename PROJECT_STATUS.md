@@ -1,8 +1,8 @@
 # 🎓 Stunity Enterprise - Project Status
 
 **Date:** February 5, 2026  
-**Version:** 6.0  
-**Status:** Phase 14.10 Complete - LinkedIn-Style Feed Layout ✅
+**Version:** 6.1  
+**Status:** Phase 15.5 Complete - Feed Media Upload & R2 Integration ✅
 
 ---
 
@@ -442,6 +442,37 @@
   - 12-column grid layout
   - Sidebars hidden on mobile
   - Sticky positioning for sidebars
+
+### Phase 15.5: Feed Media Upload & Post Types ✅ NEW
+- [x] **Cloudflare R2 Media Storage**
+  - R2 upload utility (services/feed-service/src/utils/r2.ts)
+  - Upload endpoint: POST /upload (max 10 files, 10MB each)
+  - Delete endpoint: DELETE /upload/:key
+  - Supported types: JPEG, PNG, GIF, WebP, PDF, DOC, DOCX
+- [x] **Expanded Post Types (10 in UI, 15 in Schema)**
+  - Article, Course, Quiz, Question, Announcement
+  - Tutorial, Resource, Project, Research, Collaboration
+  - Additional: Exam, Assignment, Poll, Achievement, Reflection
+- [x] **Post Detail Page** (`/feed/post/[id]`)
+  - Full post content display
+  - Media gallery with lightbox navigation
+  - Like/Bookmark/Share actions
+  - Comments with replies
+  - Edit/Delete for post authors
+- [x] **Edit Post Page** (`/feed/post/[id]/edit`)
+  - Edit content and visibility
+  - Remove existing media
+  - Add new media files
+  - R2 upload on save
+- [x] **Create Post Enhancements**
+  - Multi-file upload with previews
+  - R2 integration for media storage
+  - Upload progress indicator
+  - Media display mode selector
+- [x] **PostCard Improvements**
+  - Click content navigates to detail
+  - All 15 post types with unique styling
+  - Media gallery integration
 
 ### Additional Features Completed
 - [x] Student CRUD with photo upload

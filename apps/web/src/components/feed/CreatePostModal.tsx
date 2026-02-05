@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import Image from 'next/image';
+import { TokenManager } from '@/lib/api/auth';
 import {
   X,
   Loader2,
@@ -21,6 +22,11 @@ import {
   RectangleHorizontal,
   RectangleVertical,
   Sparkles,
+  BookOpen,
+  FolderOpen,
+  Rocket,
+  Microscope,
+  UsersRound,
 } from 'lucide-react';
 
 interface CreatePostModalProps {
@@ -48,6 +54,11 @@ const POST_TYPES = [
   { id: 'ANNOUNCEMENT', label: 'Announcement', icon: Megaphone, description: 'Official announcements', color: 'rose' },
   { id: 'QUESTION', label: 'Question', icon: HelpCircle, description: 'Ask the community', color: 'teal' },
   { id: 'ACHIEVEMENT', label: 'Achievement', icon: Award, description: 'Celebrate success', color: 'amber' },
+  { id: 'TUTORIAL', label: 'Tutorial', icon: BookOpen, description: 'Share how-to guides', color: 'blue' },
+  { id: 'RESOURCE', label: 'Resource', icon: FolderOpen, description: 'Share learning materials', color: 'indigo' },
+  { id: 'PROJECT', label: 'Project', icon: Rocket, description: 'Showcase your work', color: 'orange' },
+  { id: 'RESEARCH', label: 'Research', icon: Microscope, description: 'Share findings', color: 'cyan' },
+  { id: 'COLLABORATION', label: 'Collaboration', icon: UsersRound, description: 'Find study partners', color: 'pink' },
 ];
 
 const VISIBILITY_OPTIONS = [
@@ -69,10 +80,13 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
   const [visibility, setVisibility] = useState('SCHOOL');
   const [pollOptions, setPollOptions] = useState(['', '']);
   const [creating, setCreating] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [showVisibilitySelector, setShowVisibilitySelector] = useState(false);
   
-  // Media state
+  // Media state - store both files and preview URLs
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [mediaDisplayMode, setMediaDisplayMode] = useState<'AUTO' | 'FIXED_HEIGHT' | 'FULL_HEIGHT'>('AUTO');
   const [showDisplayModeSelector, setShowDisplayModeSelector] = useState(false);
@@ -116,24 +130,55 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
 
     setCreating(true);
     try {
+      let uploadedMediaUrls: string[] = [];
+
+      // Upload files to R2 if there are any
+      if (mediaFiles.length > 0) {
+        setUploading(true);
+        const formData = new FormData();
+        mediaFiles.forEach(file => {
+          formData.append('files', file);
+        });
+
+        const token = TokenManager.getAccessToken();
+        const uploadRes = await fetch('http://localhost:3010/upload', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        const uploadData = await uploadRes.json();
+        if (uploadData.success) {
+          uploadedMediaUrls = uploadData.data.map((f: any) => f.url);
+        } else {
+          throw new Error(uploadData.error || 'Failed to upload media');
+        }
+        setUploading(false);
+      }
+
       await onSubmit({
         content,
         postType,
         visibility,
         pollOptions: postType === 'POLL' ? pollOptions.filter(o => o.trim()) : undefined,
-        mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
-        mediaDisplayMode: mediaUrls.length > 0 ? mediaDisplayMode : undefined,
+        mediaUrls: uploadedMediaUrls.length > 0 ? uploadedMediaUrls : undefined,
+        mediaDisplayMode: uploadedMediaUrls.length > 0 ? mediaDisplayMode : undefined,
       });
       // Reset form
       setContent('');
       setPostType('ARTICLE');
       setVisibility('SCHOOL');
       setPollOptions(['', '']);
+      setMediaFiles([]);
+      setMediaPreviews([]);
       setMediaUrls([]);
       setMediaDisplayMode('AUTO');
       onClose();
     } catch (error) {
       console.error('Failed to create post:', error);
+      setUploading(false);
     } finally {
       setCreating(false);
     }
@@ -144,22 +189,31 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
     const files = e.target.files;
     if (!files) return;
 
-    const newUrls: string[] = [];
     Array.from(files).forEach(file => {
       if (file.type.startsWith('image/')) {
+        // Store the file for upload
+        setMediaFiles(prev => [...prev, file]);
+        
+        // Create preview URL
         const reader = new FileReader();
         reader.onload = (event) => {
           if (event.target?.result) {
-            setMediaUrls(prev => [...prev, event.target!.result as string]);
+            setMediaPreviews(prev => [...prev, event.target!.result as string]);
           }
         };
         reader.readAsDataURL(file);
       }
     });
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleRemoveMedia = (index: number) => {
-    setMediaUrls(prev => prev.filter((_, i) => i !== index));
+    setMediaFiles(prev => prev.filter((_, i) => i !== index));
+    setMediaPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const selectedDisplayMode = MEDIA_DISPLAY_MODES.find(m => m.id === mediaDisplayMode)!;
@@ -174,6 +228,16 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
         return 'What would you like to ask?';
       case 'ACHIEVEMENT':
         return 'Share your achievement...';
+      case 'TUTORIAL':
+        return 'Share your tutorial or guide...';
+      case 'RESOURCE':
+        return 'Describe the resource you\'re sharing...';
+      case 'PROJECT':
+        return 'Tell us about your project...';
+      case 'RESEARCH':
+        return 'Share your research findings...';
+      case 'COLLABORATION':
+        return 'What do you want to collaborate on?';
       default:
         return `What's on your mind, ${user.firstName}?`;
     }
@@ -186,6 +250,11 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
       rose: 'from-rose-500 to-pink-600',
       teal: 'from-teal-500 to-cyan-600',
       amber: 'from-amber-500 to-yellow-500',
+      blue: 'from-blue-500 to-indigo-500',
+      indigo: 'from-indigo-500 to-violet-500',
+      orange: 'from-orange-500 to-red-500',
+      cyan: 'from-cyan-500 to-teal-500',
+      pink: 'from-pink-500 to-rose-500',
     };
     return colors[type] || colors.green;
   };
@@ -377,6 +446,56 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             </div>
           )}
 
+          {/* Tutorial Badge */}
+          {postType === 'TUTORIAL' && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+              <div className="flex items-center gap-2 text-blue-700">
+                <BookOpen className="w-4 h-4" />
+                <span className="text-sm font-medium">Share step-by-step instructions to help others learn</span>
+              </div>
+            </div>
+          )}
+
+          {/* Resource Badge */}
+          {postType === 'RESOURCE' && (
+            <div className="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+              <div className="flex items-center gap-2 text-indigo-700">
+                <FolderOpen className="w-4 h-4" />
+                <span className="text-sm font-medium">Share documents, links, or learning materials</span>
+              </div>
+            </div>
+          )}
+
+          {/* Project Badge */}
+          {postType === 'PROJECT' && (
+            <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-xl">
+              <div className="flex items-center gap-2 text-orange-700">
+                <Rocket className="w-4 h-4" />
+                <span className="text-sm font-medium">Showcase your project with images and details</span>
+              </div>
+            </div>
+          )}
+
+          {/* Research Badge */}
+          {postType === 'RESEARCH' && (
+            <div className="mt-4 p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
+              <div className="flex items-center gap-2 text-cyan-700">
+                <Microscope className="w-4 h-4" />
+                <span className="text-sm font-medium">Share research findings, data, or academic work</span>
+              </div>
+            </div>
+          )}
+
+          {/* Collaboration Badge */}
+          {postType === 'COLLABORATION' && (
+            <div className="mt-4 p-3 bg-pink-50 border border-pink-200 rounded-xl">
+              <div className="flex items-center gap-2 text-pink-700">
+                <UsersRound className="w-4 h-4" />
+                <span className="text-sm font-medium">Find study partners or collaborators</span>
+              </div>
+            </div>
+          )}
+
           {/* Media Upload Section */}
           <div className="mt-4 space-y-3">
             {/* Hidden file input */}
@@ -390,11 +509,11 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             />
 
             {/* Media Preview Grid */}
-            {mediaUrls.length > 0 && (
+            {mediaPreviews.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium text-gray-700">
-                    {mediaUrls.length} {mediaUrls.length === 1 ? 'image' : 'images'} added
+                    {mediaPreviews.length} {mediaPreviews.length === 1 ? 'image' : 'images'} added
                   </p>
                   
                   {/* Display Mode Selector */}
@@ -444,11 +563,11 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
 
                 {/* Image Grid Preview */}
                 <div className={`grid gap-2 ${
-                  mediaUrls.length === 1 ? 'grid-cols-1' : 
-                  mediaUrls.length === 2 ? 'grid-cols-2' : 
+                  mediaPreviews.length === 1 ? 'grid-cols-1' : 
+                  mediaPreviews.length === 2 ? 'grid-cols-2' : 
                   'grid-cols-3'
                 }`}>
-                  {mediaUrls.map((url, index) => (
+                  {mediaPreviews.map((url, index) => (
                     <div 
                       key={index} 
                       className={`relative rounded-lg overflow-hidden bg-gray-100 ${
@@ -491,7 +610,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
               className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-amber-50 rounded-full transition-colors text-sm"
             >
               <ImageIcon className="w-4 h-4" />
-              {mediaUrls.length > 0 ? 'Add More Photos' : 'Add Photo'}
+              {mediaPreviews.length > 0 ? 'Add More Photos' : 'Add Photo'}
             </button>
           </div>
         </div>
@@ -506,11 +625,11 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!content.trim() || creating}
+            disabled={!content.trim() || creating || uploading}
             className={`px-5 py-2 bg-gradient-to-r ${getTypeColor(selectedType.color)} text-white rounded-full font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
           >
-            {creating && <Loader2 className="w-4 h-4 animate-spin" />}
-            {postType === 'POLL' ? 'Create Poll' : postType === 'ANNOUNCEMENT' ? 'Announce' : 'Post'}
+            {(creating || uploading) && <Loader2 className="w-4 h-4 animate-spin" />}
+            {uploading ? 'Uploading...' : postType === 'POLL' ? 'Create Poll' : postType === 'ANNOUNCEMENT' ? 'Announce' : 'Post'}
           </button>
         </div>
       </div>

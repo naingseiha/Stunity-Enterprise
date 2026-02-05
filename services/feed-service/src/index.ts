@@ -1,12 +1,15 @@
-import express, { Request, Response, NextFunction } from 'express';
-import cors from 'cors';
 import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
-import jwt from 'jsonwebtoken';
 import path from 'path';
 
-// Load environment variables from root .env
+// Load environment variables from root .env FIRST before other imports
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import { PrismaClient } from '@prisma/client';
+import jwt from 'jsonwebtoken';
+import multer from 'multer';
+import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from './utils/r2';
 
 const app = express();
 const PORT = 3010; // Feed service always uses port 3010
@@ -55,6 +58,34 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Configure multer for file uploads (memory storage for R2)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit per file
+    files: 10, // Max 10 files
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept images and documents
+    const allowedMimes = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only images and documents are allowed.'));
+    }
+  },
+});
 
 // Types
 interface AuthRequest extends Request {
@@ -99,7 +130,81 @@ app.get('/health', (req: Request, res: Response) => {
     status: 'healthy',
     port: PORT,
     timestamp: new Date().toISOString(),
+    r2Configured: isR2Configured(),
   });
+});
+
+// ========================================
+// MEDIA UPLOAD ENDPOINTS
+// ========================================
+
+// POST /upload - Upload media files to R2
+app.post('/upload', authenticateToken, upload.array('files', 10), async (req: AuthRequest, res: Response) => {
+  try {
+    const files = req.files as Express.Multer.File[];
+    
+    if (!files || files.length === 0) {
+      return res.status(400).json({ success: false, error: 'No files provided' });
+    }
+
+    // Check if R2 is configured
+    if (!isR2Configured()) {
+      // Fallback: Return data URLs for development without R2
+      const results = files.map(file => ({
+        url: `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
+        key: file.originalname,
+        size: file.size,
+        type: file.mimetype,
+      }));
+      
+      return res.json({
+        success: true,
+        data: results,
+        message: 'Files processed (R2 not configured - using data URLs)',
+      });
+    }
+
+    // Upload to R2
+    const uploadPromises = files.map(file => ({
+      buffer: file.buffer,
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+    }));
+
+    const results = await uploadMultipleToR2(uploadPromises, 'posts');
+
+    res.json({
+      success: true,
+      data: results.map((r, i) => ({
+        url: r.url,
+        key: r.key,
+        size: files[i].size,
+        type: files[i].mimetype,
+        originalName: files[i].originalname,
+      })),
+    });
+  } catch (error: any) {
+    console.error('Upload error:', error);
+    res.status(500).json({ success: false, error: 'Failed to upload files', details: error.message });
+  }
+});
+
+// DELETE /upload/:key - Delete a file from R2
+app.delete('/upload/:key(*)', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { key } = req.params;
+    
+    if (!isR2Configured()) {
+      return res.json({ success: true, message: 'R2 not configured' });
+    }
+
+    await deleteFromR2(key);
+    
+    res.json({ success: true, message: 'File deleted successfully' });
+  } catch (error: any) {
+    console.error('Delete error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete file', details: error.message });
+  }
 });
 
 // ========================================

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import MediaGallery, { MediaLightbox } from './MediaGallery';
 import {
   Heart,
@@ -30,6 +31,11 @@ import {
   Send,
   Eye,
   TrendingUp,
+  BookOpen,
+  FolderOpen,
+  Rocket,
+  Microscope,
+  UsersRound,
 } from 'lucide-react';
 
 interface PollOption {
@@ -177,6 +183,26 @@ export default function PostCard({
         return { icon: HelpCircle, color: 'teal', label: 'Question', bgColor: 'bg-teal-50', borderColor: 'border-teal-200', textColor: 'text-teal-700' };
       case 'ACHIEVEMENT':
         return { icon: Award, color: 'amber', label: 'Achievement', bgColor: 'bg-amber-50', borderColor: 'border-amber-200', textColor: 'text-amber-700' };
+      case 'TUTORIAL':
+        return { icon: BookOpen, color: 'blue', label: 'Tutorial', bgColor: 'bg-blue-50', borderColor: 'border-blue-200', textColor: 'text-blue-700' };
+      case 'RESOURCE':
+        return { icon: FolderOpen, color: 'indigo', label: 'Resource', bgColor: 'bg-indigo-50', borderColor: 'border-indigo-200', textColor: 'text-indigo-700' };
+      case 'PROJECT':
+        return { icon: Rocket, color: 'orange', label: 'Project', bgColor: 'bg-orange-50', borderColor: 'border-orange-200', textColor: 'text-orange-700' };
+      case 'RESEARCH':
+        return { icon: Microscope, color: 'cyan', label: 'Research', bgColor: 'bg-cyan-50', borderColor: 'border-cyan-200', textColor: 'text-cyan-700' };
+      case 'COLLABORATION':
+        return { icon: UsersRound, color: 'pink', label: 'Collaboration', bgColor: 'bg-pink-50', borderColor: 'border-pink-200', textColor: 'text-pink-700' };
+      case 'COURSE':
+        return { icon: BookOpen, color: 'emerald', label: 'Course', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200', textColor: 'text-emerald-700' };
+      case 'QUIZ':
+        return { icon: HelpCircle, color: 'purple', label: 'Quiz', bgColor: 'bg-purple-50', borderColor: 'border-purple-200', textColor: 'text-purple-700' };
+      case 'EXAM':
+        return { icon: FileText, color: 'red', label: 'Exam', bgColor: 'bg-red-50', borderColor: 'border-red-200', textColor: 'text-red-700' };
+      case 'ASSIGNMENT':
+        return { icon: FileText, color: 'sky', label: 'Assignment', bgColor: 'bg-sky-50', borderColor: 'border-sky-200', textColor: 'text-sky-700' };
+      case 'REFLECTION':
+        return { icon: FileText, color: 'slate', label: 'Reflection', bgColor: 'bg-slate-50', borderColor: 'border-slate-200', textColor: 'text-slate-700' };
       default:
         return { icon: FileText, color: 'emerald', label: 'Article', bgColor: 'bg-white', borderColor: 'border-gray-100', textColor: 'text-amber-700' };
     }
@@ -188,6 +214,16 @@ export default function PostCard({
       case 'ANNOUNCEMENT': return 'from-rose-500 to-pink-600';
       case 'QUESTION': return 'from-teal-500 to-cyan-600';
       case 'ACHIEVEMENT': return 'from-amber-500 to-yellow-500';
+      case 'TUTORIAL': return 'from-blue-500 to-indigo-500';
+      case 'RESOURCE': return 'from-indigo-500 to-violet-500';
+      case 'PROJECT': return 'from-orange-500 to-red-500';
+      case 'RESEARCH': return 'from-cyan-500 to-teal-500';
+      case 'COLLABORATION': return 'from-pink-500 to-rose-500';
+      case 'COURSE': return 'from-emerald-500 to-green-500';
+      case 'QUIZ': return 'from-purple-500 to-fuchsia-500';
+      case 'EXAM': return 'from-red-500 to-rose-500';
+      case 'ASSIGNMENT': return 'from-sky-500 to-blue-500';
+      case 'REFLECTION': return 'from-slate-500 to-gray-500';
       default: return 'from-[#F9A825] to-[#FFB74D]';
     }
   };
@@ -351,9 +387,9 @@ export default function PostCard({
         </div>
 
         {/* Content */}
-        <div className="mb-3">
-          <p className="text-gray-800 text-sm whitespace-pre-wrap leading-relaxed">{post.content}</p>
-        </div>
+        <Link href={`/feed/post/${post.id}`} className="block mb-3 group">
+          <p className="text-gray-800 text-sm whitespace-pre-wrap leading-relaxed group-hover:text-gray-900">{post.content}</p>
+        </Link>
 
         {/* Poll Options */}
         {post.postType === 'POLL' && post.pollOptions && (
