@@ -378,143 +378,176 @@ export default function ProfilePage() {
         {/* Navigation Bar */}
         <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
         
-        {/* Cover Photo - LinkedIn Style */}
-        <div className="relative h-36 md:h-48 bg-gradient-to-r from-sky-700 to-blue-600">
-          {profile.coverPhotoUrl ? (
-            <Image
-              src={profile.coverPhotoUrl}
-              alt="Cover"
-              fill
-              className="object-cover"
-            />
-          ) : null}
-          {/* Edit cover button (own profile) */}
-          {profile.isOwnProfile && (
-            <button className="absolute top-3 right-3 p-2 bg-white hover:bg-gray-100 rounded-full shadow-sm transition-colors">
-              <Edit3 className="w-4 h-4 text-gray-600" />
-            </button>
-          )}
-        </div>
+        <div className="max-w-5xl mx-auto px-4 py-6">
+          {/* Profile Card - Contains Cover Photo */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            {/* Cover Photo - Inside the card */}
+            <div className="relative h-32 md:h-48 bg-gradient-to-r from-sky-600 to-blue-500">
+              {profile.coverPhotoUrl ? (
+                <Image
+                  src={profile.coverPhotoUrl}
+                  alt="Cover"
+                  fill
+                  className="object-cover"
+                />
+              ) : null}
+              {/* Edit cover button */}
+              {profile.isOwnProfile && (
+                <button className="absolute top-3 right-3 p-2 bg-white/90 hover:bg-white rounded-full shadow-sm transition-colors">
+                  <Edit3 className="w-4 h-4 text-gray-700" />
+                </button>
+              )}
+            </div>
 
-        <div className="max-w-5xl mx-auto px-4 pb-8">
-          {/* Profile Header Card - LinkedIn Style */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 -mt-12 relative">
-            {/* Avatar - Round, overlapping cover */}
-            <div className="px-6 pb-4">
-              <div className="relative inline-block -mt-16">
-                <div className="w-32 h-32 md:w-36 md:h-36 rounded-full border-4 border-white dark:border-gray-800 shadow-lg overflow-hidden bg-gradient-to-br from-sky-500 to-blue-600">
-                  {profile.profilePictureUrl ? (
-                    <Image
-                      src={profile.profilePictureUrl}
-                      alt={`${profile.firstName} ${profile.lastName}`}
-                      width={144}
-                      height={144}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white text-4xl font-semibold">
-                      {profile.firstName[0]}{profile.lastName[0]}
+            {/* Profile Content */}
+            <div className="px-6 pb-6">
+              {/* Avatar - Overlapping cover */}
+              <div className="relative -mt-16 md:-mt-20 mb-3">
+                <div className="relative inline-block">
+                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white dark:border-gray-800 overflow-hidden bg-gradient-to-br from-sky-500 to-blue-600">
+                    {profile.profilePictureUrl ? (
+                      <Image
+                        src={profile.profilePictureUrl}
+                        alt={`${profile.firstName} ${profile.lastName}`}
+                        width={160}
+                        height={160}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-white text-4xl font-semibold">
+                        {profile.firstName[0]}{profile.lastName[0]}
+                      </div>
+                    )}
+                  </div>
+                  {/* Open to Work badge ring */}
+                  {profile.isOpenToOpportunities && (
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-green-600 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">
+                      #OPENTOWORK
                     </div>
                   )}
                 </div>
-                {profile.isVerified && (
-                  <div className="absolute bottom-1 right-1 bg-blue-500 rounded-full p-1 border-2 border-white">
-                    <CheckCircle className="w-4 h-4 text-white" />
+              </div>
+
+              {/* Name and Info Row */}
+              <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+                <div className="flex-1">
+                  {/* Name */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {profile.firstName} {profile.lastName}
+                    </h1>
+                    {profile.isVerified && (
+                      <span className="text-blue-600 dark:text-blue-400 text-sm border border-blue-600 rounded-full px-2 py-0.5 flex items-center gap-1">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        Verified
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Headline */}
+                  <p className="text-gray-700 dark:text-gray-300 mt-1">
+                    {profile.headline || profile.professionalTitle || `${profile.role} at ${profile.school?.name || 'Organization'}`}
+                  </p>
+                  
+                  {/* Location and Contact */}
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                    {profile.location && <span>{profile.location}</span>}
+                    {profile.location && <span> · </span>}
+                    <span className="text-blue-600 hover:underline cursor-pointer">Contact info</span>
+                  </p>
+
+                  {/* Connections */}
+                  <Link 
+                    href={`/${locale}/profile/${userId}/connections`}
+                    className="text-blue-600 hover:underline text-sm font-medium mt-1 inline-block"
+                  >
+                    {profile.stats.followers + profile.stats.following} connections
+                  </Link>
+                </div>
+
+                {/* School/Organization Logo */}
+                {profile.school && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
+                      <GraduationCap className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                    </div>
+                    <span className="text-gray-700 dark:text-gray-300 font-medium">{profile.school.name}</span>
                   </div>
                 )}
               </div>
 
-              {/* Action Buttons - Top Right */}
-              <div className="absolute top-4 right-6 flex gap-2">
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-2 mt-4">
                 {profile.isOwnProfile ? (
-                  <Link
-                    href={`/${locale}/profile/${profile.id}/edit`}
-                    className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-sm font-medium transition-colors"
-                  >
-                    Edit profile
-                  </Link>
+                  <>
+                    <Link
+                      href={`/${locale}/profile/${profile.id}/edit`}
+                      className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-sm font-medium transition-colors"
+                    >
+                      Open to
+                    </Link>
+                    <Link
+                      href={`/${locale}/profile/${profile.id}/edit`}
+                      className="px-4 py-1.5 border border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full text-sm font-medium transition-colors"
+                    >
+                      Add profile section
+                    </Link>
+                    <Link
+                      href={`/${locale}/profile/${profile.id}/edit`}
+                      className="px-4 py-1.5 border border-gray-400 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-sm font-medium transition-colors"
+                    >
+                      Enhance profile
+                    </Link>
+                    <button className="px-4 py-1.5 border border-gray-400 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-sm font-medium transition-colors">
+                      Resources
+                    </button>
+                  </>
                 ) : (
                   <>
                     <button
                       onClick={handleFollow}
                       className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
                         following
-                          ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300'
+                          ? 'border border-gray-400 text-gray-600 hover:bg-gray-100'
                           : 'bg-blue-600 hover:bg-blue-700 text-white'
                       }`}
                     >
-                      {following ? 'Following' : '+ Follow'}
+                      {following ? 'Following' : 'Connect'}
                     </button>
                     <Link
                       href={`/${locale}/messages?startWith=${profile.id}`}
-                      className="px-4 py-1.5 border border-blue-600 text-blue-600 rounded-full text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                      className="px-4 py-1.5 border border-blue-600 text-blue-600 hover:bg-blue-50 rounded-full text-sm font-medium transition-colors"
                     >
                       Message
                     </Link>
-                  </>
-                )}
-                <button className="p-1.5 border border-gray-300 dark:border-gray-600 rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                  <MoreHorizontal className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Profile Info */}
-            <div className="px-6 pb-4">
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                {profile.firstName} {profile.lastName}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-300 mt-1">
-                {profile.headline || profile.professionalTitle || `${profile.role} at ${profile.school?.name || 'Organization'}`}
-              </p>
-              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 flex items-center gap-2">
-                {profile.location && (
-                  <span>{profile.location}</span>
-                )}
-                {profile.location && profile.school && <span>·</span>}
-                {profile.school && (
-                  <Link href="#" className="text-blue-600 hover:underline">{profile.school.name}</Link>
-                )}
-              </p>
-
-              {/* Connections & Contact */}
-              <div className="flex items-center gap-2 mt-2 text-sm">
-                <Link 
-                  href={`/${locale}/profile/${userId}/connections?tab=followers`}
-                  className="text-blue-600 hover:underline"
-                >
-                  {profile.stats.followers} followers
-                </Link>
-                <span className="text-gray-400">·</span>
-                <Link 
-                  href={`/${locale}/profile/${userId}/connections?tab=following`}
-                  className="text-blue-600 hover:underline"
-                >
-                  {profile.stats.following} following
-                </Link>
-                {profile.isOwnProfile && profile.email && (
-                  <>
-                    <span className="text-gray-400">·</span>
-                    <span className="text-blue-600 hover:underline cursor-pointer">Contact info</span>
+                    <button className="px-4 py-1.5 border border-gray-400 text-gray-600 hover:bg-gray-100 rounded-full text-sm font-medium transition-colors">
+                      More
+                    </button>
                   </>
                 )}
               </div>
 
-              {/* Open to opportunities banner */}
-              {profile.isOpenToOpportunities && (
-                <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                  <p className="text-sm text-green-800 dark:text-green-300 font-medium flex items-center gap-2">
-                    <Zap className="w-4 h-4" />
-                    Open to work
-                  </p>
+              {/* Open to Work Card - For own profile */}
+              {profile.isOwnProfile && profile.isOpenToOpportunities && (
+                <div className="mt-4 p-4 border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">Open to work</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Teacher and Educator roles</p>
+                      <button className="text-blue-600 hover:underline text-sm font-medium mt-1">Show details</button>
+                    </div>
+                    <button className="p-1 hover:bg-green-100 dark:hover:bg-green-800 rounded">
+                      <Edit3 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Navigation Tabs - LinkedIn Style */}
+          {/* Navigation Tabs */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mt-2 overflow-x-auto">
-            <div className="flex border-b border-gray-200 dark:border-gray-700">
+            <div className="flex">
               {([
                 { key: 'about', label: 'About', icon: BookOpen },
                 { key: 'activity', label: 'Activity', icon: TrendingUp },
@@ -527,13 +560,12 @@ export default function ProfilePage() {
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center gap-2 px-6 py-4 font-medium text-sm whitespace-nowrap transition-all border-b-2 ${
+                  className={`flex items-center gap-2 px-5 py-3 font-medium text-sm whitespace-nowrap transition-all border-b-2 -mb-px ${
                     activeTab === tab.key
-                      ? 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                      ? 'text-green-700 dark:text-green-400 border-green-600 dark:border-green-400'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-transparent'
                   }`}
                 >
-                  <tab.icon className="w-4 h-4" />
                   {tab.label}
                 </button>
               ))}
