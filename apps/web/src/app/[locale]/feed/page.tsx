@@ -558,45 +558,53 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
           {/* Left Sidebar - Compact Profile & Navigation */}
           <aside className="hidden lg:block lg:col-span-3">
             <div className="sticky top-20 space-y-3">
-              {/* Profile Card - LinkedIn Style */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                {/* Cover */}
-                <div className="h-14 bg-gradient-to-r from-[#F9A825]/20 via-[#FFB74D]/15 to-[#F9A825]/10" />
+              {/* Profile Card - Unique Centered Design */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                {/* Cover - Taller with gradient pattern */}
+                <div className="h-20 bg-gradient-to-br from-[#F9A825] via-[#FFB74D] to-[#F9A825] relative">
+                  {/* Decorative pattern */}
+                  <div className="absolute inset-0 opacity-20">
+                    <div className="absolute top-2 left-4 w-8 h-8 rounded-full bg-white/30" />
+                    <div className="absolute top-6 right-6 w-4 h-4 rounded-full bg-white/20" />
+                    <div className="absolute bottom-3 left-1/3 w-3 h-3 rounded-full bg-white/25" />
+                  </div>
+                </div>
                 
-                {/* Avatar */}
-                <div className="px-3 -mt-6">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#F9A825] to-[#FFB74D] flex items-center justify-center text-white text-lg font-semibold border-2 border-white shadow-sm">
+                {/* Avatar - Centered, overlapping cover, above background */}
+                <div className="flex justify-center -mt-10 relative z-10">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#F9A825] to-[#FFB74D] flex items-center justify-center text-white text-2xl font-bold border-4 border-white shadow-lg">
                     {getInitials(user.firstName, user.lastName)}
                   </div>
                 </div>
                 
-                {/* User Info */}
-                <div className="px-3 pt-2 pb-3">
-                  <h3 className="font-semibold text-gray-900 text-sm">{user.firstName} {user.lastName}</h3>
-                  <p className="text-xs text-gray-500 capitalize">{user.role?.toLowerCase().replace('_', ' ')}</p>
+                {/* User Info - Centered */}
+                <div className="text-center px-4 pt-3 pb-4">
+                  <h3 className="font-bold text-gray-900 text-base">{user.firstName} {user.lastName}</h3>
+                  <p className="text-xs text-[#F9A825] font-medium capitalize mt-0.5">{user.role?.toLowerCase().replace('_', ' ')}</p>
                 </div>
 
-                {/* Stats - LinkedIn style */}
-                <div className="border-t border-gray-100 px-3 py-2">
+                {/* Stats - Side by side */}
+                <div className="border-t border-gray-100 px-4 py-3 flex justify-center gap-8">
                   <button 
                     onClick={() => setActiveTab('insights')}
-                    className="w-full flex justify-between items-center text-xs py-1 hover:bg-gray-50 rounded px-1 -mx-1"
+                    className="text-center group"
                   >
-                    <span className="text-gray-500">Impressions</span>
-                    <span className="font-semibold text-[#F9A825]">{posts.reduce((sum, p) => sum + (p.likesCount || 0), 0)}</span>
+                    <p className="text-lg font-bold text-gray-900 group-hover:text-[#F9A825] transition-colors">{posts.reduce((sum, p) => sum + (p.likesCount || 0), 0)}</p>
+                    <p className="text-[11px] text-gray-400">Impressions</p>
                   </button>
+                  <div className="w-px bg-gray-200" />
                   <button 
                     onClick={() => setActiveTab('posts')}
-                    className="w-full flex justify-between items-center text-xs py-1 hover:bg-gray-50 rounded px-1 -mx-1"
+                    className="text-center group"
                   >
-                    <span className="text-gray-500">Posts</span>
-                    <span className="font-semibold text-[#F9A825]">{myPosts.length || 0}</span>
+                    <p className="text-lg font-bold text-gray-900 group-hover:text-[#F9A825] transition-colors">{myPosts.length || 0}</p>
+                    <p className="text-[11px] text-gray-400">Posts</p>
                   </button>
                 </div>
               </div>
 
               {/* Quick Links - Minimal */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <nav className="py-1">
                   {[
                     { id: 'bookmarks', label: 'Saved', icon: Bookmark },
@@ -609,7 +617,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                       <button
                         key={item.id}
                         onClick={() => setActiveTab(item.id)}
-                        className={`w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors ${
+                        className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
                           activeTab === item.id
                             ? 'bg-amber-50 text-[#F9A825] font-medium'
                             : 'text-gray-600 hover:bg-gray-50'

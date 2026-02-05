@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import MediaGallery, { MediaLightbox } from './MediaGallery';
 import {
   Heart,
+  Star,
   MessageCircle,
   Share2,
   MoreHorizontal,
@@ -63,10 +64,12 @@ export interface PostData {
   author: Author;
   createdAt: string;
   likesCount: number;
+  valuesCount?: number;
   commentsCount: number;
   sharesCount: number;
   viewsCount?: number;
   isLiked?: boolean;
+  isValued?: boolean;
   isBookmarked?: boolean;
   mediaUrls?: string[];
   mediaDisplayMode?: 'AUTO' | 'FIXED_HEIGHT' | 'FULL_HEIGHT';
@@ -78,6 +81,7 @@ export interface PostData {
 interface PostCardProps {
   post: PostData;
   onLike: (postId: string) => void;
+  onValue?: (postId: string) => void;
   onComment: (postId: string, content: string) => void;
   onVote?: (postId: string, optionId: string) => void;
   onBookmark?: (postId: string) => void;
@@ -90,7 +94,8 @@ interface PostCardProps {
 
 export default function PostCard({ 
   post, 
-  onLike, 
+  onLike,
+  onValue, 
   onComment, 
   onVote, 
   onBookmark,
@@ -405,43 +410,62 @@ export default function PostCard({
           />
         )}
 
-        {/* Actions - with counts integrated */}
+        {/* Actions - with Like, Value, Comment, Share */}
         <div className="flex items-center justify-between pt-2 border-t border-gray-100 -mx-1">
+          {/* Like - General appreciation */}
           <button
             onClick={() => onLike(post.id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-1 py-2 rounded transition-colors ${
               post.isLiked
-                ? 'text-blue-600'
+                ? 'text-rose-500'
                 : 'text-gray-500 hover:bg-gray-100'
             }`}
           >
             <Heart className={`w-4 h-4 ${post.isLiked ? 'fill-current' : ''}`} />
-            <span className="text-xs font-medium">{post.likesCount > 0 ? `${post.likesCount} Likes` : 'Like'}</span>
+            <span className="text-xs font-medium">{post.likesCount > 0 ? post.likesCount : ''} Like{post.likesCount !== 1 ? 's' : ''}</span>
           </button>
+          
+          {/* Value - Educational value (star) */}
+          <button
+            onClick={() => onValue?.(post.id)}
+            className={`flex-1 flex items-center justify-center gap-1 py-2 rounded transition-colors ${
+              post.isValued
+                ? 'text-amber-500'
+                : 'text-gray-500 hover:bg-gray-100'
+            }`}
+          >
+            <Star className={`w-4 h-4 ${post.isValued ? 'fill-current' : ''}`} />
+            <span className="text-xs font-medium">{(post.valuesCount || 0) > 0 ? post.valuesCount : ''} Value{(post.valuesCount || 0) !== 1 ? 's' : ''}</span>
+          </button>
+          
+          {/* Comment */}
           <button
             onClick={() => setShowComments(!showComments)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-1 py-2 rounded transition-colors ${
               showComments ? 'text-[#F9A825]' : 'text-gray-500 hover:bg-gray-100'
             }`}
           >
             <MessageCircle className="w-4 h-4" />
-            <span className="text-xs font-medium">{post.commentsCount > 0 ? `${post.commentsCount} Comments` : 'Comment'}</span>
+            <span className="text-xs font-medium">{post.commentsCount > 0 ? post.commentsCount : ''}</span>
           </button>
+          
+          {/* Share */}
           <button 
             onClick={() => setShowShareModal(true)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-gray-500 hover:bg-gray-100 rounded transition-colors"
+            className="flex-1 flex items-center justify-center gap-1 py-2 text-gray-500 hover:bg-gray-100 rounded transition-colors"
           >
             <Share2 className="w-4 h-4" />
-            <span className="text-xs font-medium">{localSharesCount > 0 ? `${localSharesCount} Shares` : 'Share'}</span>
+            <span className="text-xs font-medium">{localSharesCount > 0 ? localSharesCount : ''}</span>
           </button>
+          
+          {/* Save */}
           <button
             onClick={handleBookmark}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-1 py-2 rounded transition-colors ${
               localBookmarked ? 'text-[#F9A825]' : 'text-gray-500 hover:bg-gray-100'
             }`}
           >
             <Bookmark className={`w-4 h-4 ${localBookmarked ? 'fill-current' : ''}`} />
-            <span className="text-xs font-medium">{localBookmarked ? 'Saved' : 'Save'}</span>
           </button>
         </div>
 

@@ -216,7 +216,7 @@ app.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) =>
         pollOptions: postType === 'POLL' && pollOptions?.length > 0 ? {
           create: pollOptions.map((text: string, index: number) => ({
             text,
-            order: index,
+            position: index,
           })),
         } : undefined,
       },
