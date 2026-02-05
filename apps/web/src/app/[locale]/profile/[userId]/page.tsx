@@ -12,6 +12,7 @@ import {
   Code, Palette, BookOpen, Target, Clock, Globe, Shield
 } from 'lucide-react';
 import BlurLoader from '@/components/BlurLoader';
+import { TokenManager } from '@/lib/api/auth';
 
 // Types
 interface UserProfile {
@@ -232,7 +233,7 @@ export default function ProfilePage() {
 
   const fetchProfileData = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = TokenManager.getAccessToken();
       if (!token) {
         router.push(`/${locale}/auth/login`);
         return;
@@ -281,7 +282,7 @@ export default function ProfilePage() {
   const handleFollow = async () => {
     if (!profile) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = TokenManager.getAccessToken();
       const feedUrl = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';
       const res = await fetch(`${feedUrl}/users/${profile.id}/follow`, {
         method: 'POST',

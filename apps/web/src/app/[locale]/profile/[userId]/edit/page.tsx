@@ -11,6 +11,7 @@ import {
   ChevronDown, Loader2, Upload, Image as ImageIcon
 } from 'lucide-react';
 import BlurLoader from '@/components/BlurLoader';
+import { TokenManager } from '@/lib/api/auth';
 
 // Types
 interface UserProfile {
@@ -170,7 +171,7 @@ export default function EditProfilePage() {
 
   const fetchProfileData = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = TokenManager.getAccessToken();
       if (!token) {
         router.push(`/${locale}/auth/login`);
         return;
@@ -225,7 +226,7 @@ export default function EditProfilePage() {
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = TokenManager.getAccessToken();
       const res = await fetch(`${feedUrl}/users/me/profile`, {
         method: 'PUT',
         headers: {
@@ -251,7 +252,7 @@ export default function EditProfilePage() {
   const handlePhotoUpload = async (type: 'profile' | 'cover', file: File) => {
     setUploadingPhoto(type);
     try {
-      const token = localStorage.getItem('token');
+      const token = TokenManager.getAccessToken();
       const formData = new FormData();
       formData.append('file', file);
 
@@ -281,7 +282,7 @@ export default function EditProfilePage() {
   // Skill handlers
   const handleSaveSkill = async (skillData: Partial<Skill>) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = TokenManager.getAccessToken();
       const isEdit = !!editingSkill;
       const url = isEdit
         ? `${feedUrl}/users/me/skills/${editingSkill!.id}`
@@ -316,7 +317,7 @@ export default function EditProfilePage() {
   const handleDeleteSkill = async (skillId: string) => {
     if (!confirm('Delete this skill?')) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = TokenManager.getAccessToken();
       await fetch(`${feedUrl}/users/me/skills/${skillId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
@@ -332,7 +333,7 @@ export default function EditProfilePage() {
   // Experience handlers
   const handleSaveExperience = async (expData: Partial<Experience>) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = TokenManager.getAccessToken();
       const isEdit = !!editingExp;
       const url = isEdit
         ? `${feedUrl}/users/me/experiences/${editingExp!.id}`
@@ -367,7 +368,7 @@ export default function EditProfilePage() {
   const handleDeleteExperience = async (expId: string) => {
     if (!confirm('Delete this experience?')) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = TokenManager.getAccessToken();
       await fetch(`${feedUrl}/users/me/experiences/${expId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
@@ -383,7 +384,7 @@ export default function EditProfilePage() {
   // Certification handlers
   const handleSaveCertification = async (certData: Partial<Certification>) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = TokenManager.getAccessToken();
       const isEdit = !!editingCert;
       const url = isEdit
         ? `${feedUrl}/users/me/certifications/${editingCert!.id}`
@@ -418,7 +419,7 @@ export default function EditProfilePage() {
   const handleDeleteCertification = async (certId: string) => {
     if (!confirm('Delete this certification?')) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = TokenManager.getAccessToken();
       await fetch(`${feedUrl}/users/me/certifications/${certId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },

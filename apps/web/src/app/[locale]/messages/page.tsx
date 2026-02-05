@@ -27,6 +27,7 @@ import {
   Edit3,
 } from 'lucide-react';
 import { useMessageUpdates, SSEEvent } from '@/hooks/useEventStream';
+import { TokenManager } from '@/lib/api/auth';
 
 interface Conversation {
   id: string;
@@ -106,7 +107,7 @@ export default function MessagesPage() {
   // Get token from localStorage
   const getToken = () => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('auth_token');
+      return TokenManager.getAccessToken();
     }
     return null;
   };
