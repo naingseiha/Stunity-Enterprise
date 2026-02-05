@@ -131,6 +131,29 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
   }
 };
 
+// ========================================
+// Notification Helper
+// ========================================
+
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3001';
+
+// Send notification to parent(s) of a student
+const notifyParents = async (studentId: string, type: string, title: string, message: string, link?: string) => {
+  try {
+    const response = await fetch(`${AUTH_SERVICE_URL}/notifications/parent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, type, title, message, link }),
+    });
+    if (response.ok) {
+      const result = await response.json();
+      console.log(`📧 Parent notification sent to ${result.parentsNotified} parent(s): ${title}`);
+    }
+  } catch (error) {
+    // Silent fail - parent may not be registered
+  }
+};
+
 // Types
 interface AttendanceRecord {
   studentId: string;
@@ -376,6 +399,21 @@ app.post('/attendance/bulk', authenticateToken, async (req: AuthRequest, res: Re
         savedCount++;
       }
     });
+
+    // Send notifications to parents for absent/late students
+    const alertStatuses = ['ABSENT', 'LATE'];
+    const alertRecords = attendance.filter(a => alertStatuses.includes(a.status));
+    
+    for (const record of alertRecords) {
+      const statusText = record.status === 'ABSENT' ? 'absent' : 'late';
+      notifyParents(
+        record.studentId,
+        'ATTENDANCE_MARKED',
+        `Attendance Alert: ${statusText.charAt(0).toUpperCase() + statusText.slice(1)}`,
+        `Your child was marked as ${statusText} on ${format(targetDate, 'MMM dd, yyyy')} (${session})`,
+        `/parent/child/${record.studentId}/attendance`
+      );
+    }
 
     res.status(201).json({
       success: true,

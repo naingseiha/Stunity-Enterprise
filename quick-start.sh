@@ -6,7 +6,7 @@ echo "=================================="
 # Kill all existing processes
 echo ""
 echo "🛑 Stopping any running services..."
-for port in 3000 3001 3002 3003 3004 3005 3006 3007 3008; do
+for port in 3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010; do
   pid=$(lsof -ti:$port 2>/dev/null)
   if [ ! -z "$pid" ]; then
     kill -9 $pid 2>/dev/null && echo "  Killed process on port $port"
@@ -65,6 +65,11 @@ echo "  ⚙️  Starting Timetable Service (3009)..."
 cd /Users/naingseiha/Documents/Stunity-Enterprise/services/timetable-service && npm run dev > /tmp/timetable.log 2>&1 &
 sleep 2
 
+# Start feed service
+echo "  ⚙️  Starting Feed Service (3010)..."
+cd /Users/naingseiha/Documents/Stunity-Enterprise/services/feed-service && npm run dev > /tmp/feed.log 2>&1 &
+sleep 2
+
 # Start web app
 echo "  ⚙️  Starting Web App (3000)..."
 cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/web && npm run dev > /tmp/web.log 2>&1 &
@@ -77,7 +82,7 @@ echo "Checking status..."
 sleep 3
 
 # Check which services are running
-for port in 3001 3002 3003 3004 3005 3006 3007 3008 3009 3000; do
+for port in 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3000; do
   if lsof -ti:$port > /dev/null 2>&1; then
     echo "  ✅ Port $port: Running"
   else
@@ -87,6 +92,7 @@ done
 
 echo ""
 echo "🌐 Web App: http://localhost:3000"
+echo "📱 Feed Service: http://localhost:3010"
 echo "📝 Logs in: /tmp/*.log"
 echo ""
 echo "🔑 Login: john.doe@testhighschool.edu / SecurePass123!"

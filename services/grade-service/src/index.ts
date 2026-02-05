@@ -86,6 +86,31 @@ const getSchoolId = (req: AuthRequest): string | null => {
 };
 
 // ========================================
+// Notification Helper
+// ========================================
+
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3001';
+
+// Send notification to parent(s) of a student
+const notifyParents = async (studentId: string, type: string, title: string, message: string, link?: string) => {
+  try {
+    const response = await fetch(`${AUTH_SERVICE_URL}/notifications/parent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, type, title, message, link }),
+    });
+    if (!response.ok) {
+      console.log(`⚠️ Parent notification sent (parents may not be registered): ${title}`);
+    } else {
+      const result = await response.json();
+      console.log(`📧 Parent notification sent to ${result.parentsNotified} parent(s): ${title}`);
+    }
+  } catch (error) {
+    console.log(`⚠️ Could not send parent notification: ${error}`);
+  }
+};
+
+// ========================================
 // Helper Functions
 // ========================================
 
@@ -392,6 +417,15 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
             },
           });
           results.created++;
+
+          // Send notification to parent for new grade (only for new grades, not updates)
+          notifyParents(
+            studentId,
+            'GRADE_POSTED',
+            'New Grade Posted',
+            `A new grade has been posted for ${subject.name} (${month})`,
+            `/parent/child/${studentId}/grades`
+          );
         }
       } catch (gradeError: any) {
         results.errors.push({ studentId, error: gradeError.message });
