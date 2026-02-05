@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
 import MediaGallery, { MediaLightbox } from './MediaGallery';
 import {
   Heart,
@@ -111,15 +112,16 @@ export default function PostCard({
   onViewAnalytics,
   currentUserId 
 }: PostCardProps) {
+  const params = useParams();
+  const router = useRouter();
+  const locale = (params?.locale as string) || 'en';
+  
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [localVoted, setLocalVoted] = useState(post.userVotedOptionId);
   const [showMenu, setShowMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [editContent, setEditContent] = useState(post.content);
-  const [isEditing, setIsEditing] = useState(false);
   const [localBookmarked, setLocalBookmarked] = useState(post.isBookmarked);
   const [localSharesCount, setLocalSharesCount] = useState(post.sharesCount);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -247,14 +249,14 @@ export default function PostCard({
 
   const handleShare = (type: 'copy' | 'native') => {
     if (type === 'copy') {
-      navigator.clipboard.writeText(`${window.location.origin}/feed/post/${post.id}`);
+      navigator.clipboard.writeText(`${window.location.origin}/${locale}/feed/post/${post.id}`);
       setLocalSharesCount(prev => prev + 1);
       onShare?.(post.id);
     } else if (navigator.share) {
       navigator.share({
         title: `Post by ${post.author.firstName} ${post.author.lastName}`,
         text: post.content.substring(0, 100),
-        url: `${window.location.origin}/feed/post/${post.id}`,
+        url: `${window.location.origin}/${locale}/feed/post/${post.id}`,
       }).then(() => {
         setLocalSharesCount(prev => prev + 1);
         onShare?.(post.id);
@@ -263,15 +265,9 @@ export default function PostCard({
     setShowShareModal(false);
   };
 
-  const handleEdit = async () => {
-    if (!editContent.trim() || isEditing) return;
-    setIsEditing(true);
-    try {
-      await onEdit?.(post.id, editContent);
-      setShowEditModal(false);
-    } finally {
-      setIsEditing(false);
-    }
+  const handleEditClick = () => {
+    setShowMenu(false);
+    router.push(`/${locale}/feed/post/${post.id}/edit`);
   };
 
   const handleDelete = async () => {
@@ -336,7 +332,7 @@ export default function PostCard({
                 {isAuthor && (
                   <>
                     <button
-                      onClick={() => { setShowEditModal(true); setShowMenu(false); }}
+                      onClick={handleEditClick}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                       <Edit2 className="w-4 h-4" />
@@ -387,7 +383,7 @@ export default function PostCard({
         </div>
 
         {/* Content */}
-        <Link href={`/feed/post/${post.id}`} className="block mb-3 group">
+        <Link href={`/${locale}/feed/post/${post.id}`} className="block mb-3 group">
           <p className="text-gray-800 text-sm whitespace-pre-wrap leading-relaxed group-hover:text-gray-900">{post.content}</p>
         </Link>
 
@@ -586,44 +582,6 @@ export default function PostCard({
                   </div>
                 </button>
               )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Modal */}
-      {showEditModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn" onClick={() => setShowEditModal(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl transform animate-slideUp" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b border-gray-100">
-              <h3 className="text-lg font-bold text-gray-900">Edit Post</h3>
-              <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-amber-50 rounded-full transition-colors">
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-            <div className="p-4">
-              <textarea
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                rows={5}
-                className="w-full p-4 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#F9A825] focus:border-[#F9A825] text-gray-900 transition-all"
-              />
-            </div>
-            <div className="flex justify-end gap-3 p-4 border-t border-gray-100">
-              <button
-                onClick={() => setShowEditModal(false)}
-                className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleEdit}
-                disabled={isEditing || !editContent.trim()}
-                className="px-6 py-2.5 bg-gradient-to-r from-[#F9A825] to-[#FFB74D] text-white rounded-full font-semibold hover:from-[#E89A1E] hover:to-[#FF9800] disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-emerald-200 transition-all transform active:scale-95"
-              >
-                {isEditing && <Loader2 className="w-4 h-4 animate-spin" />}
-                Save Changes
-              </button>
             </div>
           </div>
         </div>

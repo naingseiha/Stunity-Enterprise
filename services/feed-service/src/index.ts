@@ -603,11 +603,12 @@ app.post('/posts/:id/vote', authenticateToken, async (req: AuthRequest, res: Res
 // PUT /posts/:id - Update post (only author)
 app.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { content, visibility, mediaUrls, mediaDisplayMode } = req.body;
+    const { content, visibility, mediaUrls, mediaDisplayMode, pollOptions } = req.body;
     const postId = req.params.id;
 
     const post = await prisma.post.findUnique({
       where: { id: postId },
+      include: { pollOptions: true },
     });
 
     if (!post) {
@@ -616,6 +617,35 @@ app.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Response)
 
     if (post.authorId !== req.user!.id && req.user!.role !== 'ADMIN') {
       return res.status(403).json({ success: false, error: 'Not authorized to edit this post' });
+    }
+
+    // Update poll options if it's a POLL post and pollOptions are provided
+    if (post.postType === 'POLL' && pollOptions && Array.isArray(pollOptions)) {
+      // Check if any votes exist - if so, don't allow editing poll options
+      const existingVotes = await prisma.pollVote.count({
+        where: { postId },
+      });
+
+      if (existingVotes === 0) {
+        // No votes yet, we can update poll options
+        // Delete existing options and create new ones
+        await prisma.pollOption.deleteMany({
+          where: { postId },
+        });
+
+        // Create new poll options
+        const validOptions = pollOptions.filter((opt: string) => opt && opt.trim());
+        if (validOptions.length >= 2) {
+          await prisma.pollOption.createMany({
+            data: validOptions.map((text: string, index: number) => ({
+              postId,
+              text: text.trim(),
+              position: index,
+            })),
+          });
+        }
+      }
+      // If votes exist, silently ignore poll option changes
     }
 
     const updated = await prisma.post.update({
@@ -635,6 +665,12 @@ app.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Response)
             lastName: true,
             profilePictureUrl: true,
             role: true,
+          },
+        },
+        pollOptions: {
+          orderBy: { position: 'asc' },
+          include: {
+            _count: { select: { votes: true } },
           },
         },
       },
