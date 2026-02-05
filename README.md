@@ -1,17 +1,17 @@
 # 🎓 Stunity Enterprise - School Management + Social E-Learning Platform
 
-**Version:** 5.0  
-**Status:** Phase 14 Complete ✅  
+**Version:** 5.1  
+**Status:** Phase 15 Complete ✅  
 **Last Updated:** February 5, 2026
 
-A comprehensive, multi-tenant school management SaaS platform with social feed features, parent portal, full academic year support, student progression tracking, and historical data management.
+A comprehensive, multi-tenant school management SaaS platform with social feed features, parent portal, teacher-parent messaging, full academic year support, student progression tracking, and historical data management.
 
 ---
 
 ## 🚀 Quick Start
 
 ```bash
-# Start all 11 services
+# Start all 12 services
 ./quick-start.sh
 
 # Open browser
@@ -30,7 +30,7 @@ Password: TestParent123!
 
 ## 📊 System Architecture
 
-### Microservices (11 Services)
+### Microservices (12 Services)
 | Port | Service | Description |
 |------|---------|-------------|
 | 3000 | Web | Next.js frontend application |
@@ -44,6 +44,7 @@ Password: TestParent123!
 | 3008 | Attendance | Attendance tracking |
 | 3009 | Timetable | Schedule management |
 | 3010 | Feed | Social feed posts, likes, comments |
+| 3011 | Messaging | Teacher-parent messaging 🆕 |
 
 ### Tech Stack
 - **Frontend:** Next.js 14, React, TypeScript, TailwindCSS
@@ -79,11 +80,17 @@ Password: TestParent123!
 - ✅ Subject performance visualization
 - ✅ Top performers table
 
-### Parent & Social Features (Phases 12-14) 🆕
+### Parent & Social Features (Phases 12-14)
 - ✅ **Parent Portal** - View children's grades, attendance, report cards
 - ✅ **Parent Notifications** - Auto-notify on new grades/absences
 - ✅ **Unified Login** - Single login page for all user types
 - ✅ **Social Feed** - Posts, likes, comments (Facebook-style)
+
+### Communication Features (Phase 15) 🆕
+- ✅ **Teacher-Parent Messaging** - Direct messaging between teachers and parents
+- ✅ **Conversation Management** - View, archive, search conversations
+- ✅ **Real-time Updates** - Polling for new messages
+- ✅ **Unread Count** - Badge indicators for unread messages
 
 ---
 
@@ -108,7 +115,8 @@ Stunity-Enterprise/
 │   ├── grade-service/         # Port 3007
 │   ├── attendance-service/    # Port 3008
 │   ├── timetable-service/     # Port 3009
-│   └── feed-service/          # Port 3010 🆕
+│   ├── feed-service/          # Port 3010
+│   └── messaging-service/     # Port 3011 🆕
 ├── packages/database/         # Prisma schema
 ├── docs/                      # Documentation
 ├── quick-start.sh             # Start all services
@@ -165,15 +173,15 @@ Child: Chanthy Kong (S9A-025)
 
 ---
 
-## 🔮 Next Implementation (Phases 15+)
+## 🔮 Next Implementation (Phases 16+)
 
 | Phase | Feature | Priority |
 |-------|---------|----------|
-| 15 | Teacher-Parent Messaging | High |
 | 16 | Media Attachments (images in posts) | Medium |
 | 17 | Student Login & Portal | Medium |
 | 18 | Real-time Features (WebSocket) | Medium |
 | 19 | Mobile Optimization (PWA) | Low |
+| 20 | Advanced Analytics Dashboard | Low |
 
 ---
 

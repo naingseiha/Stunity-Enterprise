@@ -22,6 +22,7 @@ import {
   ClipboardList,
   ClipboardCheck,
   Loader2,
+  MessageCircle,
 } from 'lucide-react';
 import AcademicYearSelector from './AcademicYearSelector';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -97,6 +98,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   // Memoized school menu items
   const schoolMenuItems = useMemo(() => [
     { name: 'Dashboard', icon: BarChart3, path: `/${locale}/dashboard`, prefetch: null },
+    { name: 'Messages', icon: MessageCircle, path: `/${locale}/dashboard/messages`, prefetch: null },
     { name: 'Students', icon: Users, path: `/${locale}/students`, prefetch: 'students' },
     { name: 'Teachers', icon: User, path: `/${locale}/teachers`, prefetch: 'teachers' },
     { name: 'Classes', icon: BookOpen, path: `/${locale}/classes`, prefetch: 'classes' },

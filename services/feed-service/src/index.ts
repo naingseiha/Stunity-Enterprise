@@ -494,6 +494,240 @@ app.post('/posts/:id/vote', authenticateToken, async (req: AuthRequest, res: Res
   }
 });
 
+// PUT /posts/:id - Update post (only author)
+app.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { content, visibility } = req.body;
+    const postId = req.params.id;
+
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+    });
+
+    if (!post) {
+      return res.status(404).json({ success: false, error: 'Post not found' });
+    }
+
+    if (post.authorId !== req.user!.id && req.user!.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, error: 'Not authorized to edit this post' });
+    }
+
+    const updated = await prisma.post.update({
+      where: { id: postId },
+      data: {
+        content: content?.trim() || post.content,
+        visibility: visibility || post.visibility,
+        updatedAt: new Date(),
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    res.json({ success: true, data: updated });
+  } catch (error: any) {
+    console.error('Update post error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update post' });
+  }
+});
+
+// POST /posts/:id/bookmark - Bookmark/unbookmark a post
+app.post('/posts/:id/bookmark', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const postId = req.params.id;
+    const userId = req.user!.id;
+
+    // Check if already bookmarked
+    const existingBookmark = await prisma.bookmark.findFirst({
+      where: { postId, userId },
+    });
+
+    if (existingBookmark) {
+      // Remove bookmark
+      await prisma.bookmark.delete({ where: { id: existingBookmark.id } });
+      res.json({ success: true, bookmarked: false, message: 'Bookmark removed' });
+    } else {
+      // Add bookmark
+      await prisma.bookmark.create({
+        data: { postId, userId },
+      });
+      res.json({ success: true, bookmarked: true, message: 'Post bookmarked' });
+    }
+  } catch (error: any) {
+    console.error('Bookmark error:', error);
+    res.status(500).json({ success: false, error: 'Failed to bookmark post' });
+  }
+});
+
+// GET /bookmarks - Get user's bookmarked posts
+app.get('/bookmarks', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const [bookmarks, total] = await Promise.all([
+      prisma.bookmark.findMany({
+        where: { userId: req.user!.id },
+        include: {
+          post: {
+            include: {
+              author: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  profilePictureUrl: true,
+                  role: true,
+                },
+              },
+              pollOptions: {
+                include: {
+                  _count: { select: { votes: true } },
+                },
+              },
+              _count: { select: { comments: true, likes: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: Number(limit),
+      }),
+      prisma.bookmark.count({ where: { userId: req.user!.id } }),
+    ]);
+
+    const posts = bookmarks.map(b => ({
+      ...b.post,
+      isBookmarked: true,
+      likesCount: b.post._count.likes,
+      commentsCount: b.post._count.comments,
+    }));
+
+    res.json({
+      success: true,
+      data: posts,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        totalPages: Math.ceil(total / Number(limit)),
+      },
+    });
+  } catch (error: any) {
+    console.error('Get bookmarks error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get bookmarks' });
+  }
+});
+
+// GET /my-posts - Get current user's posts
+app.get('/my-posts', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const [posts, total] = await Promise.all([
+      prisma.post.findMany({
+        where: { authorId: req.user!.id },
+        include: {
+          author: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              profilePictureUrl: true,
+              role: true,
+            },
+          },
+          pollOptions: {
+            include: {
+              _count: { select: { votes: true } },
+            },
+          },
+          _count: { select: { comments: true, likes: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: Number(limit),
+      }),
+      prisma.post.count({ where: { authorId: req.user!.id } }),
+    ]);
+
+    const formattedPosts = posts.map(post => ({
+      ...post,
+      likesCount: post._count.likes,
+      commentsCount: post._count.comments,
+    }));
+
+    res.json({
+      success: true,
+      data: formattedPosts,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        totalPages: Math.ceil(total / Number(limit)),
+      },
+    });
+  } catch (error: any) {
+    console.error('Get my posts error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get posts' });
+  }
+});
+
+// POST /posts/:id/share - Record share action
+app.post('/posts/:id/share', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const postId = req.params.id;
+
+    await prisma.post.update({
+      where: { id: postId },
+      data: { sharesCount: { increment: 1 } },
+    });
+
+    res.json({ success: true, message: 'Share recorded' });
+  } catch (error: any) {
+    console.error('Share error:', error);
+    res.status(500).json({ success: false, error: 'Failed to record share' });
+  }
+});
+
+// DELETE /comments/:id - Delete comment (only author)
+app.delete('/comments/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const comment = await prisma.comment.findUnique({
+      where: { id: req.params.id },
+    });
+
+    if (!comment) {
+      return res.status(404).json({ success: false, error: 'Comment not found' });
+    }
+
+    if (comment.authorId !== req.user!.id && req.user!.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, error: 'Not authorized' });
+    }
+
+    await prisma.comment.delete({ where: { id: req.params.id } });
+
+    // Update post comment count
+    await prisma.post.update({
+      where: { id: comment.postId },
+      data: { commentsCount: { decrement: 1 } },
+    });
+
+    res.json({ success: true, message: 'Comment deleted' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: 'Failed to delete comment' });
+  }
+});
+
 // ========================================
 // Start Server
 // ========================================
@@ -501,20 +735,26 @@ app.post('/posts/:id/vote', authenticateToken, async (req: AuthRequest, res: Res
 app.listen(PORT, () => {
   console.log('');
   console.log('╔════════════════════════════════════════════════╗');
-  console.log('║   📱 Feed Service - Stunity Enterprise v1.0   ║');
+  console.log('║   📱 Feed Service - Stunity Enterprise v2.0   ║');
   console.log('╚════════════════════════════════════════════════╝');
   console.log('');
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`🌐 Health check: http://localhost:${PORT}/health`);
   console.log('');
   console.log('📋 Feed Endpoints:');
-  console.log('   GET  /posts              - Get feed posts');
-  console.log('   POST /posts              - Create post');
-  console.log('   GET  /posts/:id          - Get single post');
-  console.log('   POST /posts/:id/like     - Like/unlike');
-  console.log('   GET  /posts/:id/comments - Get comments');
-  console.log('   POST /posts/:id/comments - Add comment');
-  console.log('   POST /posts/:id/vote     - Vote on poll');
-  console.log('   DELETE /posts/:id        - Delete post');
+  console.log('   GET    /posts              - Get feed posts');
+  console.log('   POST   /posts              - Create post');
+  console.log('   GET    /posts/:id          - Get single post');
+  console.log('   PUT    /posts/:id          - Update post');
+  console.log('   DELETE /posts/:id          - Delete post');
+  console.log('   POST   /posts/:id/like     - Like/unlike');
+  console.log('   POST   /posts/:id/bookmark - Bookmark/unbookmark');
+  console.log('   POST   /posts/:id/share    - Record share');
+  console.log('   POST   /posts/:id/vote     - Vote on poll');
+  console.log('   GET    /posts/:id/comments - Get comments');
+  console.log('   POST   /posts/:id/comments - Add comment');
+  console.log('   DELETE /comments/:id       - Delete comment');
+  console.log('   GET    /my-posts           - Get my posts');
+  console.log('   GET    /bookmarks          - Get bookmarked posts');
   console.log('');
 });

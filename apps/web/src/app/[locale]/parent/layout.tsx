@@ -17,6 +17,7 @@ import {
   AlertCircle,
   BookOpen,
   Clock,
+  MessageCircle,
 } from 'lucide-react';
 
 interface Child {
@@ -104,6 +105,14 @@ export default function ParentLayout({
 
             {/* User Menu */}
             <div className="flex items-center gap-4">
+              <Link
+                href={`/${locale}/parent/messages`}
+                className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-full transition-colors"
+                title="Messages"
+              >
+                <MessageCircle className="w-5 h-5" />
+              </Link>
+              
               <NotificationDropdown locale={locale} />
               
               <div className="flex items-center gap-3">

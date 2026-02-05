@@ -286,6 +286,7 @@ model Student {
   class                Class?                  @relation(fields: [classId], references: [id])
   school               School                  @relation(fields: [schoolId], references: [id])
   user                 User?
+  conversations        Conversation[]
 
   @@index([schoolId])
   @@index([classId])
@@ -319,6 +320,7 @@ model Parent {
   updatedAt       DateTime           @updatedAt
   studentParents  StudentParent[]
   user            User?
+  conversations   Conversation[]
 
   @@index([phone, isAccountActive])
   @@index([email, isAccountActive])
@@ -453,6 +455,7 @@ model Teacher {
   school                    School                     @relation(fields: [schoolId], references: [id])
   timetableEntries          TimetableEntry[]
   user                      User?
+  conversations             Conversation[]
 
   @@index([schoolId])
   @@index([schoolId, position])
@@ -527,6 +530,7 @@ model User {
   followers             Follow[]            @relation("Followers")
   gradeConfirmations    GradeConfirmation[]
   likes                 Like[]
+  bookmarks             Bookmark[]          @relation("UserBookmarks")
   sentNotifications     Notification[]      @relation("NotificationActor")
   notifications         Notification[]      @relation("NotificationRecipient")
   pollVotes             PollVote[]          @relation("PollVotes")
@@ -619,6 +623,7 @@ model Post {
   projectTeamSize          Int?
   comments                 Comment[]
   likes                    Like[]
+  bookmarks                Bookmark[]
   pollOptions              PollOption[]
   views                    PostView[]
   author                   User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -662,6 +667,19 @@ model Like {
   @@unique([postId, userId])
   @@index([userId])
   @@map("likes")
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation("UserBookmarks", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([userId])
+  @@map("bookmarks")
 }
 
 model PollOption {
@@ -1561,4 +1579,55 @@ enum TimetablePublishStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
+}
+
+// ============================================
+// PHASE 15: Teacher-Parent Messaging System
+// ============================================
+
+model Conversation {
+  id            String    @id @default(cuid())
+  schoolId      String
+  teacherId     String
+  parentId      String
+  studentId     String?
+  lastMessageAt DateTime  @default(now())
+  isArchived    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  messages Message[]
+  teacher  Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  parent   Parent    @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  student  Student?  @relation(fields: [studentId], references: [id], onDelete: SetNull)
+
+  @@unique([teacherId, parentId])
+  @@index([teacherId])
+  @@index([parentId])
+  @@index([studentId])
+  @@index([lastMessageAt(sort: Desc)])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  senderId       String
+  senderType     SenderType
+  content        String
+  isRead         Boolean      @default(false)
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@index([isRead])
+  @@map("messages")
+}
+
+enum SenderType {
+  TEACHER
+  PARENT
 }
