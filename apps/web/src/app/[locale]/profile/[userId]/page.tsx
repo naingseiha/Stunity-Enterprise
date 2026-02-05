@@ -110,6 +110,18 @@ interface Project {
   isFeatured: boolean;
 }
 
+interface Certification {
+  id: string;
+  name: string;
+  issuingOrg: string;
+  issueDate: string;
+  expiryDate?: string;
+  credentialId?: string;
+  credentialUrl?: string;
+  description?: string;
+  skills: string[];
+}
+
 interface Achievement {
   id: string;
   type: string;
@@ -221,10 +233,11 @@ export default function ProfilePage() {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [certifications, setCertifications] = useState<Certification[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'about' | 'activity' | 'skills' | 'experience' | 'projects'>('about');
+  const [activeTab, setActiveTab] = useState<'about' | 'activity' | 'skills' | 'experience' | 'certifications' | 'projects'>('about');
   const [following, setFollowing] = useState(false);
   const [pageReady, setPageReady] = useState(false);
   
@@ -260,20 +273,22 @@ export default function ProfilePage() {
       const feedUrl = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';
 
       // Fetch all profile data in parallel
-      const [profileRes, skillsRes, expRes, projectsRes, achievementsRes, recsRes] = await Promise.all([
+      const [profileRes, skillsRes, expRes, projectsRes, certsRes, achievementsRes, recsRes] = await Promise.all([
         fetch(`${feedUrl}/users/${userId}/profile`, { headers }),
         fetch(`${feedUrl}/users/${userId}/skills`, { headers }),
         fetch(`${feedUrl}/users/${userId}/experiences`, { headers }),
         fetch(`${feedUrl}/users/${userId}/projects`, { headers }),
+        fetch(`${feedUrl}/users/${userId}/certifications`, { headers }),
         fetch(`${feedUrl}/users/${userId}/achievements`, { headers }),
         fetch(`${feedUrl}/users/${userId}/recommendations`, { headers }),
       ]);
 
-      const [profileData, skillsData, expData, projectsData, achievementsData, recsData] = await Promise.all([
+      const [profileData, skillsData, expData, projectsData, certsData, achievementsData, recsData] = await Promise.all([
         profileRes.json(),
         skillsRes.json(),
         expRes.json(),
         projectsRes.json(),
+        certsRes.json(),
         achievementsRes.json(),
         recsRes.json(),
       ]);
@@ -285,6 +300,7 @@ export default function ProfilePage() {
       if (skillsData.success) setSkills(skillsData.skills);
       if (expData.success) setExperiences(expData.experiences);
       if (projectsData.success) setProjects(projectsData.projects);
+      if (certsData.success) setCertifications(certsData.certifications);
       if (achievementsData.success) setAchievements(achievementsData.achievements);
       if (recsData.success) setRecommendations(recsData.recommendations);
 
@@ -537,6 +553,7 @@ export default function ProfilePage() {
                 { key: 'activity', label: 'Activity', icon: TrendingUp },
                 { key: 'skills', label: 'Skills', icon: Star },
                 { key: 'experience', label: 'Experience', icon: Briefcase },
+                { key: 'certifications', label: 'Certifications', icon: Award },
                 { key: 'projects', label: 'Projects', icon: Code },
               ] as const).map(tab => (
                 <button
@@ -762,6 +779,163 @@ export default function ProfilePage() {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Certifications Section */}
+              {activeTab === 'certifications' && (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <Award className="w-5 h-5 text-amber-500" />
+                      Licenses & Certifications
+                    </h3>
+                    {profile.isOwnProfile && (
+                      <Link
+                        href={`/${locale}/profile/${userId}/edit?section=certifications`}
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Certification
+                      </Link>
+                    )}
+                  </div>
+
+                  {certifications.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
+                      <Award className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                      <p className="text-gray-500 dark:text-gray-400 font-medium">No certifications added yet</p>
+                      {profile.isOwnProfile && (
+                        <Link
+                          href={`/${locale}/profile/${userId}/edit?section=certifications`}
+                          className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 text-sm mt-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add your first certification
+                        </Link>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {certifications.map((cert, index) => {
+                        const isExpired = cert.expiryDate && new Date(cert.expiryDate) < new Date();
+                        const expiresSOon = cert.expiryDate && !isExpired && 
+                          new Date(cert.expiryDate) < new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+                        
+                        return (
+                          <div 
+                            key={cert.id} 
+                            className={`relative p-4 rounded-xl border-2 transition-all hover:shadow-md animate-in slide-in-from-left duration-300 ${
+                              isExpired 
+                                ? 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10'
+                                : 'border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-700'
+                            }`}
+                            style={{ animationDelay: `${index * 50}ms` }}
+                          >
+                            <div className="flex items-start gap-4">
+                              {/* Cert Icon */}
+                              <div className="flex-shrink-0">
+                                <div className={`w-14 h-14 rounded-xl flex items-center justify-center shadow-sm ${
+                                  isExpired 
+                                    ? 'bg-red-100 dark:bg-red-900/30' 
+                                    : 'bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30'
+                                }`}>
+                                  <Award className={`w-7 h-7 ${isExpired ? 'text-red-500' : 'text-amber-600 dark:text-amber-400'}`} />
+                                </div>
+                              </div>
+
+                              {/* Cert Details */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div>
+                                    <h4 className="font-semibold text-gray-900 dark:text-white text-base">
+                                      {cert.name}
+                                    </h4>
+                                    <p className="text-gray-600 dark:text-gray-300 text-sm mt-0.5">
+                                      {cert.issuingOrg}
+                                    </p>
+                                  </div>
+                                  
+                                  {/* Status Badge */}
+                                  {isExpired ? (
+                                    <span className="flex-shrink-0 px-2.5 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-medium rounded-full">
+                                      Expired
+                                    </span>
+                                  ) : expiresSOon ? (
+                                    <span className="flex-shrink-0 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
+                                      Expires Soon
+                                    </span>
+                                  ) : cert.expiryDate === null ? (
+                                    <span className="flex-shrink-0 px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">
+                                      No Expiration
+                                    </span>
+                                  ) : null}
+                                </div>
+
+                                {/* Dates */}
+                                <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    Issued {formatDate(cert.issueDate)}
+                                  </span>
+                                  {cert.expiryDate && (
+                                    <span className={`flex items-center gap-1 ${isExpired ? 'text-red-500 dark:text-red-400' : ''}`}>
+                                      •
+                                      <Clock className="w-3.5 h-3.5" />
+                                      {isExpired ? 'Expired' : 'Expires'} {formatDate(cert.expiryDate)}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Credential ID */}
+                                {cert.credentialId && (
+                                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                    Credential ID: {cert.credentialId}
+                                  </p>
+                                )}
+
+                                {/* Description */}
+                                {cert.description && (
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">
+                                    {cert.description}
+                                  </p>
+                                )}
+
+                                {/* Skills */}
+                                {cert.skills.length > 0 && (
+                                  <div className="flex flex-wrap gap-1.5 mt-3">
+                                    {cert.skills.slice(0, 5).map((skill, i) => (
+                                      <span key={i} className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-xs font-medium">
+                                        {skill}
+                                      </span>
+                                    ))}
+                                    {cert.skills.length > 5 && (
+                                      <span className="px-2 py-0.5 text-gray-500 dark:text-gray-400 text-xs">
+                                        +{cert.skills.length - 5} more
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Credential URL */}
+                                {cert.credentialUrl && (
+                                  <a
+                                    href={cert.credentialUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 text-sm font-medium mt-3 hover:underline"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    Show credential
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
