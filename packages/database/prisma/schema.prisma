@@ -621,6 +621,7 @@ model Post {
   projectStatus            String?
   projectDeadline          DateTime?
   projectTeamSize          Int?
+  mediaDisplayMode         String?           @default("AUTO") // AUTO, FIXED_HEIGHT, FULL_HEIGHT
   comments                 Comment[]
   likes                    Like[]
   bookmarks                Bookmark[]

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import MediaGallery, { MediaLightbox } from './MediaGallery';
 import {
   Heart,
   MessageCircle,
@@ -68,6 +69,7 @@ export interface PostData {
   isLiked?: boolean;
   isBookmarked?: boolean;
   mediaUrls?: string[];
+  mediaDisplayMode?: 'AUTO' | 'FIXED_HEIGHT' | 'FULL_HEIGHT';
   pollOptions?: PollOption[];
   userVotedOptionId?: string;
   comments?: Comment[];
@@ -109,9 +111,16 @@ export default function PostCard({
   const [isEditing, setIsEditing] = useState(false);
   const [localBookmarked, setLocalBookmarked] = useState(post.isBookmarked);
   const [localSharesCount, setLocalSharesCount] = useState(post.sharesCount);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isAuthor = currentUserId === post.author.id;
+
+  const handleImageClick = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -385,34 +394,14 @@ export default function PostCard({
           </div>
         )}
 
-        {/* Media */}
+        {/* Media Gallery */}
         {post.mediaUrls && post.mediaUrls.length > 0 && (
-          <div className="mb-4 rounded-lg overflow-hidden">
-            {post.mediaUrls.length === 1 ? (
-              <img
-                src={post.mediaUrls[0]}
-                alt="Post media"
-                className="w-full h-auto max-h-96 object-cover"
-              />
-            ) : (
-              <div className="grid grid-cols-2 gap-1">
-                {post.mediaUrls.slice(0, 4).map((url, idx) => (
-                  <div key={idx} className="relative aspect-square">
-                    <img
-                      src={url}
-                      alt={`Post media ${idx + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                    {idx === 3 && post.mediaUrls!.length > 4 && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <span className="text-white text-xl font-bold">+{post.mediaUrls!.length - 4}</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <MediaGallery
+            mediaUrls={post.mediaUrls}
+            displayMode={post.mediaDisplayMode || 'AUTO'}
+            onImageClick={handleImageClick}
+            className="mb-4"
+          />
         )}
 
         {/* Stats */}
@@ -620,6 +609,16 @@ export default function PostCard({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Media Lightbox */}
+      {post.mediaUrls && post.mediaUrls.length > 0 && (
+        <MediaLightbox
+          mediaUrls={post.mediaUrls}
+          initialIndex={lightboxIndex}
+          isOpen={lightboxOpen}
+          onClose={() => setLightboxOpen(false)}
+        />
       )}
     </div>
   );

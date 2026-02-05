@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import Image from 'next/image';
 import {
   X,
   Loader2,
@@ -17,6 +18,9 @@ import {
   Users,
   Lock,
   ChevronDown,
+  RectangleHorizontal,
+  RectangleVertical,
+  Sparkles,
 } from 'lucide-react';
 
 interface CreatePostModalProps {
@@ -34,6 +38,8 @@ export interface CreatePostData {
   postType: string;
   visibility: string;
   pollOptions?: string[];
+  mediaUrls?: string[];
+  mediaDisplayMode?: 'AUTO' | 'FIXED_HEIGHT' | 'FULL_HEIGHT';
 }
 
 const POST_TYPES = [
@@ -51,6 +57,12 @@ const VISIBILITY_OPTIONS = [
   { id: 'PRIVATE', label: 'Private', icon: Lock, description: 'Only you' },
 ];
 
+const MEDIA_DISPLAY_MODES = [
+  { id: 'AUTO', label: 'Auto', icon: Sparkles, description: 'Automatically detect best layout' },
+  { id: 'FIXED_HEIGHT', label: 'Fixed Height', icon: RectangleHorizontal, description: 'Landscape mode, cropped' },
+  { id: 'FULL_HEIGHT', label: 'Full Height', icon: RectangleVertical, description: 'Show full image, ideal for posters' },
+];
+
 export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: CreatePostModalProps) {
   const [content, setContent] = useState('');
   const [postType, setPostType] = useState('ARTICLE');
@@ -59,6 +71,12 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
   const [creating, setCreating] = useState(false);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [showVisibilitySelector, setShowVisibilitySelector] = useState(false);
+  
+  // Media state
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+  const [mediaDisplayMode, setMediaDisplayMode] = useState<'AUTO' | 'FIXED_HEIGHT' | 'FULL_HEIGHT'>('AUTO');
+  const [showDisplayModeSelector, setShowDisplayModeSelector] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedType = POST_TYPES.find(t => t.id === postType)!;
   const selectedVisibility = VISIBILITY_OPTIONS.find(v => v.id === visibility)!;
@@ -103,12 +121,16 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
         postType,
         visibility,
         pollOptions: postType === 'POLL' ? pollOptions.filter(o => o.trim()) : undefined,
+        mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
+        mediaDisplayMode: mediaUrls.length > 0 ? mediaDisplayMode : undefined,
       });
       // Reset form
       setContent('');
       setPostType('ARTICLE');
       setVisibility('SCHOOL');
       setPollOptions(['', '']);
+      setMediaUrls([]);
+      setMediaDisplayMode('AUTO');
       onClose();
     } catch (error) {
       console.error('Failed to create post:', error);
@@ -116,6 +138,31 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
       setCreating(false);
     }
   };
+
+  // Handle file selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newUrls: string[] = [];
+    Array.from(files).forEach(file => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            setMediaUrls(prev => [...prev, event.target!.result as string]);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  };
+
+  const handleRemoveMedia = (index: number) => {
+    setMediaUrls(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const selectedDisplayMode = MEDIA_DISPLAY_MODES.find(m => m.id === mediaDisplayMode)!;
 
   const getPlaceholder = () => {
     switch (postType) {
@@ -330,11 +377,121 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             </div>
           )}
 
-          {/* Media Upload (placeholder) */}
-          <div className="mt-4 flex items-center gap-2">
-            <button className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm">
+          {/* Media Upload Section */}
+          <div className="mt-4 space-y-3">
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
+            {/* Media Preview Grid */}
+            {mediaUrls.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-gray-700">
+                    {mediaUrls.length} {mediaUrls.length === 1 ? 'image' : 'images'} added
+                  </p>
+                  
+                  {/* Display Mode Selector */}
+                  <div className="relative">
+                    <button
+                      onClick={() => {
+                        setShowDisplayModeSelector(!showDisplayModeSelector);
+                        setShowTypeSelector(false);
+                        setShowVisibilitySelector(false);
+                      }}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                        showDisplayModeSelector ? 'bg-purple-200 text-purple-700' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                      }`}
+                    >
+                      <selectedDisplayMode.icon className="w-3.5 h-3.5" />
+                      {selectedDisplayMode.label}
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+                    
+                    {showDisplayModeSelector && (
+                      <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-10">
+                        {MEDIA_DISPLAY_MODES.map((mode) => {
+                          const Icon = mode.icon;
+                          return (
+                            <button
+                              key={mode.id}
+                              onClick={() => {
+                                setMediaDisplayMode(mode.id as 'AUTO' | 'FIXED_HEIGHT' | 'FULL_HEIGHT');
+                                setShowDisplayModeSelector(false);
+                              }}
+                              className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors ${
+                                mediaDisplayMode === mode.id ? 'bg-purple-50' : ''
+                              }`}
+                            >
+                              <Icon className="w-4 h-4 text-purple-600" />
+                              <div className="text-left">
+                                <p className="text-sm font-medium text-gray-900">{mode.label}</p>
+                                <p className="text-xs text-gray-500">{mode.description}</p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Image Grid Preview */}
+                <div className={`grid gap-2 ${
+                  mediaUrls.length === 1 ? 'grid-cols-1' : 
+                  mediaUrls.length === 2 ? 'grid-cols-2' : 
+                  'grid-cols-3'
+                }`}>
+                  {mediaUrls.map((url, index) => (
+                    <div 
+                      key={index} 
+                      className={`relative rounded-lg overflow-hidden bg-gray-100 ${
+                        mediaDisplayMode === 'FULL_HEIGHT' ? 'aspect-[3/4]' : 'aspect-video'
+                      }`}
+                    >
+                      <Image
+                        src={url}
+                        alt={`Preview ${index + 1}`}
+                        fill
+                        className={mediaDisplayMode === 'FULL_HEIGHT' ? 'object-contain' : 'object-cover'}
+                      />
+                      <button
+                        onClick={() => handleRemoveMedia(index)}
+                        className="absolute top-1 right-1 p-1.5 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Display Mode Info */}
+                <div className={`p-2 rounded-lg text-xs ${
+                  mediaDisplayMode === 'AUTO' ? 'bg-purple-50 text-purple-700' :
+                  mediaDisplayMode === 'FIXED_HEIGHT' ? 'bg-blue-50 text-blue-700' :
+                  'bg-green-50 text-green-700'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <selectedDisplayMode.icon className="w-3.5 h-3.5" />
+                    <span>{selectedDisplayMode.description}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Add Photo Button */}
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm"
+            >
               <ImageIcon className="w-4 h-4" />
-              Add Photo
+              {mediaUrls.length > 0 ? 'Add More Photos' : 'Add Photo'}
             </button>
           </div>
         </div>

@@ -41,6 +41,8 @@ interface Post {
   commentsCount: number;
   sharesCount: number;
   createdAt: string;
+  mediaUrls?: string[];
+  mediaDisplayMode?: 'AUTO' | 'FIXED_HEIGHT' | 'FULL_HEIGHT';
   author: {
     id: string;
     firstName: string;
@@ -681,6 +683,8 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                     sharesCount: post.sharesCount,
                     isLiked: isPostLiked(post),
                     isBookmarked: post.isBookmarked,
+                    mediaUrls: post.mediaUrls,
+                    mediaDisplayMode: post.mediaDisplayMode,
                     pollOptions: post.pollOptions?.map(opt => ({
                       id: opt.id,
                       text: opt.text,
@@ -771,6 +775,8 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                     sharesCount: post.sharesCount,
                     isLiked: isPostLiked(post),
                     isBookmarked: post.isBookmarked,
+                    mediaUrls: post.mediaUrls,
+                    mediaDisplayMode: post.mediaDisplayMode,
                     pollOptions: post.pollOptions?.map(opt => ({
                       id: opt.id,
                       text: opt.text,
@@ -839,6 +845,8 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                     sharesCount: post.sharesCount,
                     isLiked: isPostLiked(post),
                     isBookmarked: true,
+                    mediaUrls: post.mediaUrls,
+                    mediaDisplayMode: post.mediaDisplayMode,
                     pollOptions: post.pollOptions?.map(opt => ({
                       id: opt.id,
                       text: opt.text,

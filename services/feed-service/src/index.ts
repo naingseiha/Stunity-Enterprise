@@ -194,7 +194,7 @@ app.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => 
 // POST /posts - Create new post
 app.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { content, postType = 'ARTICLE', visibility = 'SCHOOL', mediaUrls = [], pollOptions } = req.body;
+    const { content, postType = 'ARTICLE', visibility = 'SCHOOL', mediaUrls = [], mediaDisplayMode = 'AUTO', pollOptions } = req.body;
 
     if (!content || content.trim().length === 0) {
       return res.status(400).json({ success: false, error: 'Content is required' });
@@ -206,6 +206,7 @@ app.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) =>
       postType,
       visibility,
       mediaUrls,
+      mediaDisplayMode,
     };
 
     // Create post with poll options if it's a poll
@@ -497,7 +498,7 @@ app.post('/posts/:id/vote', authenticateToken, async (req: AuthRequest, res: Res
 // PUT /posts/:id - Update post (only author)
 app.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { content, visibility } = req.body;
+    const { content, visibility, mediaUrls, mediaDisplayMode } = req.body;
     const postId = req.params.id;
 
     const post = await prisma.post.findUnique({
@@ -517,6 +518,8 @@ app.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Response)
       data: {
         content: content?.trim() || post.content,
         visibility: visibility || post.visibility,
+        mediaUrls: mediaUrls !== undefined ? mediaUrls : post.mediaUrls,
+        mediaDisplayMode: mediaDisplayMode || post.mediaDisplayMode,
         updatedAt: new Date(),
       },
       include: {
