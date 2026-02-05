@@ -295,21 +295,23 @@ export default function PostCard({
         {/* Author Header */}
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2.5">
-            {post.author.profileImage ? (
-              <img
-                src={post.author.profileImage}
-                alt={`${post.author.firstName} ${post.author.lastName}`}
-                className="w-10 h-10 rounded-full object-cover"
-              />
-            ) : (
-              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarGradient()} flex items-center justify-center text-white font-semibold text-sm`}>
-                {getInitials(post.author.firstName, post.author.lastName)}
-              </div>
-            )}
+            <Link href={`/${locale}/profile/${post.author.id}`} className="flex-shrink-0">
+              {post.author.profileImage ? (
+                <img
+                  src={post.author.profileImage}
+                  alt={`${post.author.firstName} ${post.author.lastName}`}
+                  className="w-10 h-10 rounded-full object-cover hover:ring-2 hover:ring-[#F9A825] transition-all"
+                />
+              ) : (
+                <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarGradient()} flex items-center justify-center text-white font-semibold text-sm hover:ring-2 hover:ring-[#F9A825] transition-all`}>
+                  {getInitials(post.author.firstName, post.author.lastName)}
+                </div>
+              )}
+            </Link>
             <div>
-              <p className="font-semibold text-gray-900 text-sm hover:text-[#F9A825] hover:underline cursor-pointer">
+              <Link href={`/${locale}/profile/${post.author.id}`} className="font-semibold text-gray-900 text-sm hover:text-[#F9A825] hover:underline">
                 {post.author.firstName} {post.author.lastName}
-              </p>
+              </Link>
               <div className="flex items-center gap-1.5 text-xs text-gray-500">
                 <span className="capitalize">{post.author.role?.toLowerCase()}</span>
                 <span>•</span>

@@ -1220,13 +1220,1224 @@ app.get('/analytics/activity', authenticateToken, async (req: AuthRequest, res: 
 });
 
 // ========================================
+// PROFILE ENDPOINTS
+// ========================================
+
+// GET /users/:id/profile - Get user profile
+app.get('/users/:id/profile', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const currentUserId = req.user?.id;
+    
+    // Handle 'me' alias
+    const userId = id === 'me' ? currentUserId : id;
+    const isOwnProfile = userId === currentUserId;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        role: true,
+        profilePictureUrl: true,
+        coverPhotoUrl: true,
+        bio: true,
+        headline: true,
+        professionalTitle: true,
+        location: true,
+        languages: true,
+        interests: true,
+        skills: true,
+        careerGoals: true,
+        socialLinks: true,
+        profileCompleteness: true,
+        profileVisibility: true,
+        isVerified: true,
+        verifiedAt: true,
+        totalLearningHours: true,
+        currentStreak: true,
+        longestStreak: true,
+        totalPoints: true,
+        level: true,
+        isOpenToOpportunities: true,
+        resumeUrl: true,
+        createdAt: true,
+        school: {
+          select: { id: true, name: true, logo: true },
+        },
+        teacher: {
+          select: { 
+            id: true, 
+            position: true, 
+            degree: true,
+            hireDate: true,
+            major1: true,
+            major2: true,
+          },
+        },
+        student: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            class: { select: { id: true, name: true, grade: true } },
+          },
+        },
+        _count: {
+          select: {
+            posts: true,
+            followers: true,
+            following: true,
+            userSkills: true,
+            experiences: true,
+            certifications: true,
+            projects: true,
+            achievements: true,
+            recommendations: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    // Check visibility
+    if (!isOwnProfile && user.profileVisibility === 'PRIVATE') {
+      return res.status(403).json({ success: false, error: 'This profile is private' });
+    }
+
+    // Get follower status
+    let isFollowing = false;
+    if (!isOwnProfile && currentUserId) {
+      const follow = await prisma.follow.findUnique({
+        where: {
+          followerId_followingId: {
+            followerId: currentUserId,
+            followingId: userId!,
+          },
+        },
+      });
+      isFollowing = !!follow;
+    }
+
+    // Get recent activity stats
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const [postsThisMonth, totalLikes, totalViews] = await Promise.all([
+      prisma.post.count({
+        where: { authorId: userId, createdAt: { gte: thirtyDaysAgo } },
+      }),
+      prisma.like.count({
+        where: { post: { authorId: userId } },
+      }),
+      prisma.postView.count({
+        where: { post: { authorId: userId } },
+      }),
+    ]);
+
+    res.json({
+      success: true,
+      profile: {
+        ...user,
+        isOwnProfile,
+        isFollowing,
+        stats: {
+          posts: user._count.posts,
+          followers: user._count.followers,
+          following: user._count.following,
+          skills: user._count.userSkills,
+          experiences: user._count.experiences,
+          certifications: user._count.certifications,
+          projects: user._count.projects,
+          achievements: user._count.achievements,
+          recommendations: user._count.recommendations,
+          postsThisMonth,
+          totalLikes,
+          totalViews,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get profile' });
+  }
+});
+
+// PUT /users/me/profile - Update own profile
+app.put('/users/me/profile', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const {
+      firstName,
+      lastName,
+      bio,
+      headline,
+      professionalTitle,
+      location,
+      languages,
+      interests,
+      careerGoals,
+      socialLinks,
+      profileVisibility,
+      isOpenToOpportunities,
+    } = req.body;
+
+    // Build update data
+    const updateData: any = { profileUpdatedAt: new Date() };
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (lastName !== undefined) updateData.lastName = lastName;
+    if (bio !== undefined) updateData.bio = bio;
+    if (headline !== undefined) updateData.headline = headline;
+    if (professionalTitle !== undefined) updateData.professionalTitle = professionalTitle;
+    if (location !== undefined) updateData.location = location;
+    if (languages !== undefined) updateData.languages = languages;
+    if (interests !== undefined) updateData.interests = interests;
+    if (careerGoals !== undefined) updateData.careerGoals = careerGoals;
+    if (socialLinks !== undefined) updateData.socialLinks = socialLinks;
+    if (profileVisibility !== undefined) updateData.profileVisibility = profileVisibility;
+    if (isOpenToOpportunities !== undefined) updateData.isOpenToOpportunities = isOpenToOpportunities;
+
+    // Calculate profile completeness
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const fields = [
+      user?.firstName, user?.lastName, bio || user?.bio, headline || user?.headline,
+      professionalTitle || user?.professionalTitle, location || user?.location,
+      user?.profilePictureUrl, careerGoals || user?.careerGoals,
+    ];
+    const filledFields = fields.filter(f => f && String(f).trim().length > 0).length;
+    updateData.profileCompleteness = Math.round((filledFields / fields.length) * 100);
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        bio: true,
+        headline: true,
+        professionalTitle: true,
+        location: true,
+        languages: true,
+        interests: true,
+        careerGoals: true,
+        socialLinks: true,
+        profileVisibility: true,
+        profileCompleteness: true,
+        isOpenToOpportunities: true,
+      },
+    });
+
+    res.json({ success: true, profile: updatedUser });
+  } catch (error: any) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update profile' });
+  }
+});
+
+// POST /users/me/profile-photo - Upload profile photo
+app.post('/users/me/profile-photo', authenticateToken, upload.single('file'), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const file = req.file;
+    if (!file) return res.status(400).json({ success: false, error: 'No file provided' });
+
+    // Get old key to delete
+    const oldUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { profilePictureKey: true },
+    });
+
+    let photoUrl = '';
+    let photoKey = '';
+
+    if (isR2Configured()) {
+      const result = await uploadMultipleToR2([{
+        buffer: file.buffer,
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+      }], 'profiles');
+      photoUrl = result[0].url;
+      photoKey = result[0].key;
+
+      // Delete old photo from R2
+      if (oldUser?.profilePictureKey) {
+        await deleteFromR2(oldUser.profilePictureKey).catch(() => {});
+      }
+    } else {
+      photoUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+      photoKey = file.originalname;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { 
+        profilePictureUrl: photoUrl, 
+        profilePictureKey: photoKey,
+        profileUpdatedAt: new Date(),
+      },
+      select: { id: true, profilePictureUrl: true },
+    });
+
+    res.json({ success: true, profilePictureUrl: updated.profilePictureUrl });
+  } catch (error: any) {
+    console.error('Upload profile photo error:', error);
+    res.status(500).json({ success: false, error: 'Failed to upload photo' });
+  }
+});
+
+// POST /users/me/cover-photo - Upload cover photo
+app.post('/users/me/cover-photo', authenticateToken, upload.single('file'), async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const file = req.file;
+    if (!file) return res.status(400).json({ success: false, error: 'No file provided' });
+
+    // Get old key to delete
+    const oldUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { coverPhotoKey: true },
+    });
+
+    let coverUrl = '';
+    let coverKey = '';
+
+    if (isR2Configured()) {
+      const result = await uploadMultipleToR2([{
+        buffer: file.buffer,
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+      }], 'covers');
+      coverUrl = result[0].url;
+      coverKey = result[0].key;
+
+      // Delete old cover from R2
+      if (oldUser?.coverPhotoKey) {
+        await deleteFromR2(oldUser.coverPhotoKey).catch(() => {});
+      }
+    } else {
+      coverUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+      coverKey = file.originalname;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { 
+        coverPhotoUrl: coverUrl, 
+        coverPhotoKey: coverKey,
+        profileUpdatedAt: new Date(),
+      },
+      select: { id: true, coverPhotoUrl: true },
+    });
+
+    res.json({ success: true, coverPhotoUrl: updated.coverPhotoUrl });
+  } catch (error: any) {
+    console.error('Upload cover photo error:', error);
+    res.status(500).json({ success: false, error: 'Failed to upload cover' });
+  }
+});
+
+// DELETE /users/me/cover-photo - Remove cover photo
+app.delete('/users/me/cover-photo', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { coverPhotoKey: true },
+    });
+
+    if (user?.coverPhotoKey && isR2Configured()) {
+      await deleteFromR2(user.coverPhotoKey).catch(() => {});
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { coverPhotoUrl: null, coverPhotoKey: null },
+    });
+
+    res.json({ success: true, message: 'Cover photo removed' });
+  } catch (error: any) {
+    console.error('Delete cover photo error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete cover' });
+  }
+});
+
+// ========================================
+// SKILLS ENDPOINTS
+// ========================================
+
+// GET /users/:id/skills - Get user skills
+app.get('/users/:id/skills', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const currentUserId = req.user?.id;
+    const userId = id === 'me' ? currentUserId : id;
+
+    const skills = await prisma.userSkill.findMany({
+      where: { userId },
+      include: {
+        endorsements: {
+          include: {
+            endorser: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                profilePictureUrl: true,
+                headline: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+        },
+        _count: { select: { endorsements: true } },
+      },
+      orderBy: [
+        { level: 'desc' },
+        { createdAt: 'desc' },
+      ],
+    });
+
+    res.json({
+      success: true,
+      skills: skills.map(skill => ({
+        ...skill,
+        endorsementCount: skill._count.endorsements,
+      })),
+    });
+  } catch (error: any) {
+    console.error('Get skills error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get skills' });
+  }
+});
+
+// POST /users/me/skills - Add skill
+app.post('/users/me/skills', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const { skillName, category, level, yearsOfExp, description } = req.body;
+
+    if (!skillName || !category) {
+      return res.status(400).json({ success: false, error: 'Skill name and category required' });
+    }
+
+    const skill = await prisma.userSkill.create({
+      data: {
+        userId,
+        skillName,
+        category,
+        level: level || 'BEGINNER',
+        yearsOfExp: yearsOfExp || null,
+        description: description || null,
+      },
+    });
+
+    res.json({ success: true, skill });
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      return res.status(400).json({ success: false, error: 'You already have this skill' });
+    }
+    console.error('Add skill error:', error);
+    res.status(500).json({ success: false, error: 'Failed to add skill' });
+  }
+});
+
+// PUT /users/me/skills/:skillId - Update skill
+app.put('/users/me/skills/:skillId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { skillId } = req.params;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const skill = await prisma.userSkill.findUnique({ where: { id: skillId } });
+    if (!skill || skill.userId !== userId) {
+      return res.status(404).json({ success: false, error: 'Skill not found' });
+    }
+
+    const { skillName, category, level, yearsOfExp, description } = req.body;
+
+    const updated = await prisma.userSkill.update({
+      where: { id: skillId },
+      data: {
+        ...(skillName && { skillName }),
+        ...(category && { category }),
+        ...(level && { level }),
+        ...(yearsOfExp !== undefined && { yearsOfExp }),
+        ...(description !== undefined && { description }),
+      },
+    });
+
+    res.json({ success: true, skill: updated });
+  } catch (error: any) {
+    console.error('Update skill error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update skill' });
+  }
+});
+
+// DELETE /users/me/skills/:skillId - Delete skill
+app.delete('/users/me/skills/:skillId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { skillId } = req.params;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const skill = await prisma.userSkill.findUnique({ where: { id: skillId } });
+    if (!skill || skill.userId !== userId) {
+      return res.status(404).json({ success: false, error: 'Skill not found' });
+    }
+
+    await prisma.userSkill.delete({ where: { id: skillId } });
+
+    res.json({ success: true, message: 'Skill deleted' });
+  } catch (error: any) {
+    console.error('Delete skill error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete skill' });
+  }
+});
+
+// POST /skills/:skillId/endorse - Endorse a skill
+app.post('/skills/:skillId/endorse', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const endorserId = req.user?.id;
+    const { skillId } = req.params;
+    const { comment } = req.body;
+    if (!endorserId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const skill = await prisma.userSkill.findUnique({ where: { id: skillId } });
+    if (!skill) return res.status(404).json({ success: false, error: 'Skill not found' });
+    if (skill.userId === endorserId) {
+      return res.status(400).json({ success: false, error: 'Cannot endorse your own skill' });
+    }
+
+    const endorsement = await prisma.skillEndorsement.create({
+      data: {
+        skillId,
+        endorserId,
+        recipientId: skill.userId,
+        comment: comment || null,
+      },
+      include: {
+        endorser: {
+          select: { id: true, firstName: true, lastName: true, profilePictureUrl: true },
+        },
+      },
+    });
+
+    res.json({ success: true, endorsement });
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      return res.status(400).json({ success: false, error: 'Already endorsed' });
+    }
+    console.error('Endorse skill error:', error);
+    res.status(500).json({ success: false, error: 'Failed to endorse skill' });
+  }
+});
+
+// DELETE /skills/:skillId/endorse - Remove endorsement
+app.delete('/skills/:skillId/endorse', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const endorserId = req.user?.id;
+    const { skillId } = req.params;
+    if (!endorserId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    await prisma.skillEndorsement.deleteMany({
+      where: { skillId, endorserId },
+    });
+
+    res.json({ success: true, message: 'Endorsement removed' });
+  } catch (error: any) {
+    console.error('Remove endorsement error:', error);
+    res.status(500).json({ success: false, error: 'Failed to remove endorsement' });
+  }
+});
+
+// ========================================
+// EXPERIENCE ENDPOINTS
+// ========================================
+
+// GET /users/:id/experiences - Get user experiences
+app.get('/users/:id/experiences', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const currentUserId = req.user?.id;
+    const userId = id === 'me' ? currentUserId : id;
+
+    const experiences = await prisma.experience.findMany({
+      where: { userId },
+      orderBy: [
+        { isCurrent: 'desc' },
+        { startDate: 'desc' },
+      ],
+    });
+
+    res.json({ success: true, experiences });
+  } catch (error: any) {
+    console.error('Get experiences error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get experiences' });
+  }
+});
+
+// POST /users/me/experiences - Add experience
+app.post('/users/me/experiences', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const { type, title, organization, location, startDate, endDate, isCurrent, description, achievements, skills } = req.body;
+
+    if (!type || !title || !organization || !startDate) {
+      return res.status(400).json({ success: false, error: 'Type, title, organization, and start date required' });
+    }
+
+    const experience = await prisma.experience.create({
+      data: {
+        userId,
+        type,
+        title,
+        organization,
+        location: location || null,
+        startDate: new Date(startDate),
+        endDate: endDate ? new Date(endDate) : null,
+        isCurrent: isCurrent || false,
+        description: description || null,
+        achievements: achievements || [],
+        skills: skills || [],
+      },
+    });
+
+    res.json({ success: true, experience });
+  } catch (error: any) {
+    console.error('Add experience error:', error);
+    res.status(500).json({ success: false, error: 'Failed to add experience' });
+  }
+});
+
+// PUT /users/me/experiences/:expId - Update experience
+app.put('/users/me/experiences/:expId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { expId } = req.params;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const exp = await prisma.experience.findUnique({ where: { id: expId } });
+    if (!exp || exp.userId !== userId) {
+      return res.status(404).json({ success: false, error: 'Experience not found' });
+    }
+
+    const { type, title, organization, location, startDate, endDate, isCurrent, description, achievements, skills } = req.body;
+
+    const updated = await prisma.experience.update({
+      where: { id: expId },
+      data: {
+        ...(type && { type }),
+        ...(title && { title }),
+        ...(organization && { organization }),
+        ...(location !== undefined && { location }),
+        ...(startDate && { startDate: new Date(startDate) }),
+        ...(endDate !== undefined && { endDate: endDate ? new Date(endDate) : null }),
+        ...(isCurrent !== undefined && { isCurrent }),
+        ...(description !== undefined && { description }),
+        ...(achievements && { achievements }),
+        ...(skills && { skills }),
+      },
+    });
+
+    res.json({ success: true, experience: updated });
+  } catch (error: any) {
+    console.error('Update experience error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update experience' });
+  }
+});
+
+// DELETE /users/me/experiences/:expId - Delete experience
+app.delete('/users/me/experiences/:expId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { expId } = req.params;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const exp = await prisma.experience.findUnique({ where: { id: expId } });
+    if (!exp || exp.userId !== userId) {
+      return res.status(404).json({ success: false, error: 'Experience not found' });
+    }
+
+    await prisma.experience.delete({ where: { id: expId } });
+
+    res.json({ success: true, message: 'Experience deleted' });
+  } catch (error: any) {
+    console.error('Delete experience error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete experience' });
+  }
+});
+
+// ========================================
+// CERTIFICATION ENDPOINTS
+// ========================================
+
+// GET /users/:id/certifications - Get user certifications
+app.get('/users/:id/certifications', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const currentUserId = req.user?.id;
+    const userId = id === 'me' ? currentUserId : id;
+
+    const certifications = await prisma.certification.findMany({
+      where: { userId },
+      orderBy: { issueDate: 'desc' },
+    });
+
+    res.json({ success: true, certifications });
+  } catch (error: any) {
+    console.error('Get certifications error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get certifications' });
+  }
+});
+
+// POST /users/me/certifications - Add certification
+app.post('/users/me/certifications', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const { name, issuingOrg, issueDate, expiryDate, credentialId, credentialUrl, description, skills } = req.body;
+
+    if (!name || !issuingOrg || !issueDate) {
+      return res.status(400).json({ success: false, error: 'Name, issuing organization, and issue date required' });
+    }
+
+    const certification = await prisma.certification.create({
+      data: {
+        userId,
+        name,
+        issuingOrg,
+        issueDate: new Date(issueDate),
+        expiryDate: expiryDate ? new Date(expiryDate) : null,
+        credentialId: credentialId || null,
+        credentialUrl: credentialUrl || null,
+        description: description || null,
+        skills: skills || [],
+      },
+    });
+
+    res.json({ success: true, certification });
+  } catch (error: any) {
+    console.error('Add certification error:', error);
+    res.status(500).json({ success: false, error: 'Failed to add certification' });
+  }
+});
+
+// PUT /users/me/certifications/:certId - Update certification
+app.put('/users/me/certifications/:certId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { certId } = req.params;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const cert = await prisma.certification.findUnique({ where: { id: certId } });
+    if (!cert || cert.userId !== userId) {
+      return res.status(404).json({ success: false, error: 'Certification not found' });
+    }
+
+    const { name, issuingOrg, issueDate, expiryDate, credentialId, credentialUrl, description, skills } = req.body;
+
+    const updated = await prisma.certification.update({
+      where: { id: certId },
+      data: {
+        ...(name && { name }),
+        ...(issuingOrg && { issuingOrg }),
+        ...(issueDate && { issueDate: new Date(issueDate) }),
+        ...(expiryDate !== undefined && { expiryDate: expiryDate ? new Date(expiryDate) : null }),
+        ...(credentialId !== undefined && { credentialId }),
+        ...(credentialUrl !== undefined && { credentialUrl }),
+        ...(description !== undefined && { description }),
+        ...(skills && { skills }),
+      },
+    });
+
+    res.json({ success: true, certification: updated });
+  } catch (error: any) {
+    console.error('Update certification error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update certification' });
+  }
+});
+
+// DELETE /users/me/certifications/:certId - Delete certification
+app.delete('/users/me/certifications/:certId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { certId } = req.params;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const cert = await prisma.certification.findUnique({ where: { id: certId } });
+    if (!cert || cert.userId !== userId) {
+      return res.status(404).json({ success: false, error: 'Certification not found' });
+    }
+
+    await prisma.certification.delete({ where: { id: certId } });
+
+    res.json({ success: true, message: 'Certification deleted' });
+  } catch (error: any) {
+    console.error('Delete certification error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete certification' });
+  }
+});
+
+// ========================================
+// PROJECT ENDPOINTS
+// ========================================
+
+// GET /users/:id/projects - Get user projects
+app.get('/users/:id/projects', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const currentUserId = req.user?.id;
+    const userId = id === 'me' ? currentUserId : id;
+    const isOwnProfile = userId === currentUserId;
+
+    const projects = await prisma.project.findMany({
+      where: {
+        userId,
+        ...(isOwnProfile ? {} : { visibility: 'PUBLIC' }),
+      },
+      orderBy: [
+        { isFeatured: 'desc' },
+        { createdAt: 'desc' },
+      ],
+    });
+
+    res.json({ success: true, projects });
+  } catch (error: any) {
+    console.error('Get projects error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get projects' });
+  }
+});
+
+// POST /users/me/projects - Add project
+app.post('/users/me/projects', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const {
+      title, description, category, status, startDate, endDate, role, teamSize,
+      technologies, skills, projectUrl, githubUrl, demoUrl, achievements, visibility, isFeatured,
+    } = req.body;
+
+    if (!title || !description || !category) {
+      return res.status(400).json({ success: false, error: 'Title, description, and category required' });
+    }
+
+    const project = await prisma.project.create({
+      data: {
+        userId,
+        title,
+        description,
+        category,
+        status: status || 'COMPLETED',
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
+        role: role || null,
+        teamSize: teamSize || null,
+        technologies: technologies || [],
+        skills: skills || [],
+        projectUrl: projectUrl || null,
+        githubUrl: githubUrl || null,
+        demoUrl: demoUrl || null,
+        achievements: achievements || [],
+        visibility: visibility || 'PUBLIC',
+        isFeatured: isFeatured || false,
+      },
+    });
+
+    res.json({ success: true, project });
+  } catch (error: any) {
+    console.error('Add project error:', error);
+    res.status(500).json({ success: false, error: 'Failed to add project' });
+  }
+});
+
+// PUT /users/me/projects/:projectId - Update project
+app.put('/users/me/projects/:projectId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { projectId } = req.params;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!project || project.userId !== userId) {
+      return res.status(404).json({ success: false, error: 'Project not found' });
+    }
+
+    const {
+      title, description, category, status, startDate, endDate, role, teamSize,
+      technologies, skills, projectUrl, githubUrl, demoUrl, achievements, visibility, isFeatured,
+    } = req.body;
+
+    const updated = await prisma.project.update({
+      where: { id: projectId },
+      data: {
+        ...(title && { title }),
+        ...(description && { description }),
+        ...(category && { category }),
+        ...(status && { status }),
+        ...(startDate !== undefined && { startDate: startDate ? new Date(startDate) : null }),
+        ...(endDate !== undefined && { endDate: endDate ? new Date(endDate) : null }),
+        ...(role !== undefined && { role }),
+        ...(teamSize !== undefined && { teamSize }),
+        ...(technologies && { technologies }),
+        ...(skills && { skills }),
+        ...(projectUrl !== undefined && { projectUrl }),
+        ...(githubUrl !== undefined && { githubUrl }),
+        ...(demoUrl !== undefined && { demoUrl }),
+        ...(achievements && { achievements }),
+        ...(visibility && { visibility }),
+        ...(isFeatured !== undefined && { isFeatured }),
+      },
+    });
+
+    res.json({ success: true, project: updated });
+  } catch (error: any) {
+    console.error('Update project error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update project' });
+  }
+});
+
+// DELETE /users/me/projects/:projectId - Delete project
+app.delete('/users/me/projects/:projectId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { projectId } = req.params;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!project || project.userId !== userId) {
+      return res.status(404).json({ success: false, error: 'Project not found' });
+    }
+
+    // Delete media from R2 if exists
+    if (project.mediaKeys && project.mediaKeys.length > 0 && isR2Configured()) {
+      await Promise.all(project.mediaKeys.map(key => deleteFromR2(key).catch(() => {})));
+    }
+
+    await prisma.project.delete({ where: { id: projectId } });
+
+    res.json({ success: true, message: 'Project deleted' });
+  } catch (error: any) {
+    console.error('Delete project error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete project' });
+  }
+});
+
+// ========================================
+// ACHIEVEMENT ENDPOINTS
+// ========================================
+
+// GET /users/:id/achievements - Get user achievements
+app.get('/users/:id/achievements', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const currentUserId = req.user?.id;
+    const userId = id === 'me' ? currentUserId : id;
+    const isOwnProfile = userId === currentUserId;
+
+    const achievements = await prisma.achievement.findMany({
+      where: {
+        userId,
+        ...(isOwnProfile ? {} : { isPublic: true }),
+      },
+      orderBy: [
+        { rarity: 'desc' },
+        { issuedDate: 'desc' },
+      ],
+    });
+
+    res.json({ success: true, achievements });
+  } catch (error: any) {
+    console.error('Get achievements error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get achievements' });
+  }
+});
+
+// ========================================
+// RECOMMENDATION ENDPOINTS
+// ========================================
+
+// GET /users/:id/recommendations - Get user recommendations
+app.get('/users/:id/recommendations', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const currentUserId = req.user?.id;
+    const userId = id === 'me' ? currentUserId : id;
+    const isOwnProfile = userId === currentUserId;
+
+    const recommendations = await prisma.recommendation.findMany({
+      where: {
+        recipientId: userId,
+        ...(isOwnProfile ? {} : { isPublic: true, isAccepted: true }),
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true,
+            headline: true,
+            professionalTitle: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ success: true, recommendations });
+  } catch (error: any) {
+    console.error('Get recommendations error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get recommendations' });
+  }
+});
+
+// POST /users/:userId/recommend - Write recommendation
+app.post('/users/:userId/recommend', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const authorId = req.user?.id;
+    const { userId: recipientId } = req.params;
+    const { relationship, content, skills, rating } = req.body;
+
+    if (!authorId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+    if (authorId === recipientId) {
+      return res.status(400).json({ success: false, error: 'Cannot recommend yourself' });
+    }
+    if (!relationship || !content) {
+      return res.status(400).json({ success: false, error: 'Relationship and content required' });
+    }
+
+    const recommendation = await prisma.recommendation.create({
+      data: {
+        recipientId,
+        authorId,
+        relationship,
+        content,
+        skills: skills || [],
+        rating: rating || null,
+      },
+      include: {
+        author: {
+          select: { id: true, firstName: true, lastName: true, profilePictureUrl: true },
+        },
+      },
+    });
+
+    res.json({ success: true, recommendation });
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      return res.status(400).json({ success: false, error: 'Already recommended this user' });
+    }
+    console.error('Create recommendation error:', error);
+    res.status(500).json({ success: false, error: 'Failed to create recommendation' });
+  }
+});
+
+// PUT /recommendations/:recId/accept - Accept/Reject recommendation
+app.put('/recommendations/:recId/accept', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { recId } = req.params;
+    const { accept } = req.body;
+
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const rec = await prisma.recommendation.findUnique({ where: { id: recId } });
+    if (!rec || rec.recipientId !== userId) {
+      return res.status(404).json({ success: false, error: 'Recommendation not found' });
+    }
+
+    const updated = await prisma.recommendation.update({
+      where: { id: recId },
+      data: {
+        isAccepted: accept,
+        acceptedAt: accept ? new Date() : null,
+      },
+    });
+
+    res.json({ success: true, recommendation: updated });
+  } catch (error: any) {
+    console.error('Accept recommendation error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update recommendation' });
+  }
+});
+
+// ========================================
+// FOLLOW ENDPOINTS
+// ========================================
+
+// POST /users/:userId/follow - Follow/Unfollow user
+app.post('/users/:userId/follow', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const followerId = req.user?.id;
+    const { userId: followingId } = req.params;
+
+    if (!followerId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+    if (followerId === followingId) {
+      return res.status(400).json({ success: false, error: 'Cannot follow yourself' });
+    }
+
+    // Check if already following
+    const existing = await prisma.follow.findUnique({
+      where: {
+        followerId_followingId: { followerId, followingId },
+      },
+    });
+
+    if (existing) {
+      // Unfollow
+      await prisma.follow.delete({
+        where: { followerId_followingId: { followerId, followingId } },
+      });
+      res.json({ success: true, action: 'unfollowed' });
+    } else {
+      // Follow
+      await prisma.follow.create({
+        data: { followerId, followingId },
+      });
+      res.json({ success: true, action: 'followed' });
+    }
+  } catch (error: any) {
+    console.error('Follow error:', error);
+    res.status(500).json({ success: false, error: 'Failed to follow/unfollow' });
+  }
+});
+
+// GET /users/:id/followers - Get followers
+app.get('/users/:id/followers', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const currentUserId = req.user?.id;
+    const userId = id === 'me' ? currentUserId : id;
+
+    const followers = await prisma.follow.findMany({
+      where: { followingId: userId },
+      include: {
+        follower: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true,
+            headline: true,
+            professionalTitle: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({
+      success: true,
+      followers: followers.map(f => f.follower),
+      count: followers.length,
+    });
+  } catch (error: any) {
+    console.error('Get followers error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get followers' });
+  }
+});
+
+// GET /users/:id/following - Get following
+app.get('/users/:id/following', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const currentUserId = req.user?.id;
+    const userId = id === 'me' ? currentUserId : id;
+
+    const following = await prisma.follow.findMany({
+      where: { followerId: userId },
+      include: {
+        following: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true,
+            headline: true,
+            professionalTitle: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({
+      success: true,
+      following: following.map(f => f.following),
+      count: following.length,
+    });
+  } catch (error: any) {
+    console.error('Get following error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get following' });
+  }
+});
+
+// GET /users/:id/activity - Get user's recent activity (posts)
+app.get('/users/:id/activity', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const currentUserId = req.user?.id;
+    const userId = id === 'me' ? currentUserId : id;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const posts = await prisma.post.findMany({
+      where: { authorId: userId },
+      include: {
+        author: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true,
+            headline: true,
+          },
+        },
+        _count: { select: { likes: true, comments: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+
+    res.json({ success: true, posts });
+  } catch (error: any) {
+    console.error('Get activity error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get activity' });
+  }
+});
+
+// ========================================
 // Start Server
 // ========================================
 
 app.listen(PORT, () => {
   console.log('');
   console.log('╔════════════════════════════════════════════════╗');
-  console.log('║   📱 Feed Service - Stunity Enterprise v3.0   ║');
+  console.log('║   📱 Feed Service - Stunity Enterprise v4.0   ║');
   console.log('╚════════════════════════════════════════════════╝');
   console.log('');
   console.log(`✅ Server running on port ${PORT}`);
@@ -1248,6 +2459,33 @@ app.listen(PORT, () => {
   console.log('   DELETE /comments/:id       - Delete comment');
   console.log('   GET    /my-posts           - Get my posts');
   console.log('   GET    /bookmarks          - Get bookmarked posts');
+  console.log('');
+  console.log('👤 Profile Endpoints:');
+  console.log('   GET    /users/:id/profile       - Get user profile');
+  console.log('   PUT    /users/me/profile        - Update profile');
+  console.log('   POST   /users/me/profile-photo  - Upload profile photo');
+  console.log('   POST   /users/me/cover-photo    - Upload cover photo');
+  console.log('   DELETE /users/me/cover-photo    - Remove cover photo');
+  console.log('   POST   /users/:id/follow        - Follow/unfollow user');
+  console.log('   GET    /users/:id/followers     - Get followers');
+  console.log('   GET    /users/:id/following     - Get following');
+  console.log('   GET    /users/:id/activity      - Get user activity');
+  console.log('');
+  console.log('🎯 Skills Endpoints:');
+  console.log('   GET    /users/:id/skills        - Get user skills');
+  console.log('   POST   /users/me/skills         - Add skill');
+  console.log('   PUT    /users/me/skills/:id     - Update skill');
+  console.log('   DELETE /users/me/skills/:id     - Delete skill');
+  console.log('   POST   /skills/:id/endorse      - Endorse skill');
+  console.log('   DELETE /skills/:id/endorse      - Remove endorsement');
+  console.log('');
+  console.log('💼 Experience/Certification/Project Endpoints:');
+  console.log('   CRUD   /users/me/experiences    - Manage experiences');
+  console.log('   CRUD   /users/me/certifications - Manage certifications');
+  console.log('   CRUD   /users/me/projects       - Manage projects');
+  console.log('   GET    /users/:id/achievements  - Get achievements');
+  console.log('   GET    /users/:id/recommendations - Get recommendations');
+  console.log('   POST   /users/:id/recommend     - Write recommendation');
   console.log('');
   console.log('📊 Analytics Endpoints:');
   console.log('   GET    /posts/:id/analytics  - Post analytics (author)');

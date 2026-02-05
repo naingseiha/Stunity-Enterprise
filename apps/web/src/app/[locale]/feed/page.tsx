@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import FeedZoomLoader from '@/components/feed/FeedZoomLoader';
@@ -50,6 +51,7 @@ import {
   Rocket,
   Microscope,
   UsersRound,
+  User,
 } from 'lucide-react';
 
 const FEED_API = 'http://localhost:3010';
@@ -590,7 +592,9 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                 
                 {/* User Info - Centered */}
                 <div className="text-center px-4 pt-2 pb-3">
-                  <h3 className="font-bold text-gray-900 text-sm">{user.firstName} {user.lastName}</h3>
+                  <Link href={`/${locale}/profile/me`} className="hover:underline">
+                    <h3 className="font-bold text-gray-900 text-sm">{user.firstName} {user.lastName}</h3>
+                  </Link>
                   <div className="flex items-center justify-center gap-1.5 mt-1">
                     {user.role === 'ADMIN' && <Settings className="w-3 h-3 text-[#F9A825]" />}
                     {user.role === 'TEACHER' && <GraduationCap className="w-3 h-3 text-[#F9A825]" />}
@@ -604,6 +608,13 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                        user.role?.toLowerCase().replace('_', ' ')}
                     </span>
                   </div>
+                  <Link 
+                    href={`/${locale}/profile/me`}
+                    className="inline-flex items-center gap-1 mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    <User className="w-3 h-3" />
+                    View Profile
+                  </Link>
                 </div>
 
                 {/* Education Metrics - 2x2 Grid */}
