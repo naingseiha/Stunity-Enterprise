@@ -79,20 +79,15 @@ export default function TrendingSection({ apiUrl, onPostClick }: TrendingSection
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b">
+      <div className="px-4 py-3 border-b border-gray-100">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
-              <Flame className="w-4 h-4 text-white" />
-            </div>
-            <h2 className="font-semibold text-gray-900">Trending</h2>
-          </div>
+          <h2 className="font-semibold text-gray-900 text-sm">Trending in your network</h2>
           <div className="relative">
             <button
               onClick={() => setShowPeriodDropdown(!showPeriodDropdown)}
-              className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-lg"
+              className="flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
             >
               {PERIOD_OPTIONS.find(p => p.id === period)?.label}
               <ChevronDown className="w-3 h-3" />
@@ -103,7 +98,7 @@ export default function TrendingSection({ apiUrl, onPostClick }: TrendingSection
                   <button
                     key={opt.id}
                     onClick={() => { setPeriod(opt.id); setShowPeriodDropdown(false); }}
-                    className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-50 ${period === opt.id ? 'bg-orange-50 text-orange-700' : 'text-gray-700'}`}
+                    className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-50 ${period === opt.id ? 'bg-purple-50 text-purple-700' : 'text-gray-700'}`}
                   >
                     {opt.label}
                   </button>
@@ -115,69 +110,42 @@ export default function TrendingSection({ apiUrl, onPostClick }: TrendingSection
       </div>
 
       {/* Content */}
-      <div className="p-3">
+      <div className="divide-y divide-gray-50">
         {loading ? (
-          <div className="flex items-center justify-center py-6">
-            <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-5 h-5 text-purple-500 animate-spin" />
           </div>
         ) : trending.length === 0 ? (
-          <p className="text-center text-gray-500 text-sm py-6">No trending posts yet</p>
+          <p className="text-center text-gray-500 text-sm py-8">No trending posts yet</p>
         ) : (
-          <div className="space-y-3">
-            {trending.map((post, idx) => (
-              <button
-                key={post.id}
-                onClick={() => onPostClick?.(post.id)}
-                className="w-full flex items-start gap-3 p-2 hover:bg-gray-50 rounded-xl transition-colors text-left"
-              >
-                <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                  idx === 0 ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white' :
-                  idx === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-400 text-white' :
-                  idx === 2 ? 'bg-gradient-to-br from-orange-300 to-orange-400 text-white' :
-                  'bg-gray-100 text-gray-600'
-                }`}>
-                  {idx + 1}
+          trending.map((post, idx) => (
+            <button
+              key={post.id}
+              onClick={() => onPostClick?.(post.id)}
+              className="w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-400 mb-1">#{idx + 1} trending</p>
+                <p className="text-sm text-gray-900 line-clamp-2 leading-snug">{post.content}</p>
+                <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-500">
+                  <span>{post.author.firstName} {post.author.lastName}</span>
+                  <span>•</span>
+                  <span>{formatNumber(post.views)} views</span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-900 line-clamp-2 font-medium">{post.content}</p>
-                  <div className="flex items-center gap-3 mt-1">
-                    <div className="flex items-center gap-1.5">
-                      {post.author.profilePictureUrl ? (
-                        <img 
-                          src={post.author.profilePictureUrl} 
-                          alt="" 
-                          className="w-4 h-4 rounded-full"
-                        />
-                      ) : (
-                        <div className="w-4 h-4 rounded-full bg-gray-200 flex items-center justify-center text-[8px] text-gray-600 font-bold">
-                          {getInitials(post.author.firstName, post.author.lastName)}
-                        </div>
-                      )}
-                      <span className="text-xs text-gray-500">
-                        {post.author.firstName} {post.author.lastName}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <Eye className="w-3 h-3" />
-                      {formatNumber(post.views)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Heart className="w-3 h-3" />
-                      {formatNumber(post.likes)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MessageCircle className="w-3 h-3" />
-                      {formatNumber(post.comments)}
-                    </span>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
+              </div>
+            </button>
+          ))
         )}
       </div>
+      
+      {/* Footer */}
+      {trending.length > 0 && (
+        <div className="px-4 py-3 border-t border-gray-100">
+          <button className="text-sm text-gray-600 hover:text-purple-600 font-medium">
+            Show more →
+          </button>
+        </div>
+      )}
     </div>
   );
 }

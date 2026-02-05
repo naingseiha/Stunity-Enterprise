@@ -28,6 +28,14 @@ import {
   Bookmark,
   Activity,
   Flame,
+  Eye,
+  Settings,
+  Calendar,
+  Bell,
+  MessageCircle,
+  ChevronRight,
+  Sparkles,
+  GraduationCap,
 } from 'lucide-react';
 
 const FEED_API = 'http://localhost:3010';
@@ -530,22 +538,122 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 animate-fade-in">
+    <div className="min-h-screen bg-gray-100">
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        <div className="flex gap-6">
-          {/* Main Content */}
-          <div className="flex-1 max-w-2xl">
-            {/* Tab Navigation */}
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+      {/* LinkedIn-style 3-column layout */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* Left Sidebar - Profile Card */}
+          <aside className="hidden lg:block lg:col-span-3">
+            <div className="sticky top-20 space-y-4">
+              {/* Profile Card */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                {/* Cover Image */}
+                <div className="h-16 bg-gradient-to-r from-purple-500 via-purple-400 to-orange-400" />
+                
+                {/* Avatar */}
+                <div className="px-4 -mt-8">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-400 to-yellow-400 flex items-center justify-center text-white text-xl font-bold border-4 border-white shadow-md">
+                    {getInitials(user.firstName, user.lastName)}
+                  </div>
+                </div>
+                
+                {/* User Info */}
+                <div className="px-4 pt-2 pb-4">
+                  <h3 className="font-semibold text-gray-900">{user.firstName} {user.lastName}</h3>
+                  <p className="text-sm text-gray-500 capitalize">{user.role?.toLowerCase().replace('_', ' ')}</p>
+                  <p className="text-xs text-gray-400 mt-1">{school?.name}</p>
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-gray-100" />
+
+                {/* Stats */}
+                <div className="px-4 py-3">
+                  <button className="w-full flex items-center justify-between text-sm hover:bg-gray-50 rounded-lg p-2 -mx-2 transition-colors">
+                    <span className="text-gray-600">Profile viewers</span>
+                    <span className="text-purple-600 font-semibold">{Math.floor(Math.random() * 50) + 10}</span>
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('insights')}
+                    className="w-full flex items-center justify-between text-sm hover:bg-gray-50 rounded-lg p-2 -mx-2 transition-colors"
+                  >
+                    <span className="text-gray-600">Post impressions</span>
+                    <span className="text-purple-600 font-semibold">{posts.reduce((sum, p) => sum + (p.likesCount || 0), 0)}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Links Card */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <nav className="py-2">
+                  <button 
+                    onClick={() => setActiveTab('bookmarks')}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
+                      activeTab === 'bookmarks' ? 'bg-purple-50 text-purple-700' : 'text-gray-700'
+                    }`}
+                  >
+                    <Bookmark className="w-4 h-4" />
+                    <span>Saved items</span>
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('posts')}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
+                      activeTab === 'posts' ? 'bg-purple-50 text-purple-700' : 'text-gray-700'
+                    }`}
+                  >
+                    <BookOpen className="w-4 h-4" />
+                    <span>My Posts</span>
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('insights')}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
+                      activeTab === 'insights' ? 'bg-purple-50 text-purple-700' : 'text-gray-700'
+                    }`}
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    <span>Analytics</span>
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('activity')}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
+                      activeTab === 'activity' ? 'bg-purple-50 text-purple-700' : 'text-gray-700'
+                    }`}
+                  >
+                    <Activity className="w-4 h-4" />
+                    <span>Activity</span>
+                  </button>
+                </nav>
+              </div>
+
+              {/* School Info Card */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center">
+                    <GraduationCap className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Connected to</p>
+                    <p className="text-sm font-medium text-gray-900">{school?.name || 'Your School'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* Center - Main Feed */}
+          <main className="lg:col-span-6">
+            {/* Tab Navigation - Mobile visible, Desktop subtle */}
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-2 lg:hidden">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-medium text-sm transition-all whitespace-nowrap ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all whitespace-nowrap ${
                       activeTab === tab.id
                         ? 'bg-gradient-to-r from-purple-500 to-purple-400 text-white shadow-md'
                         : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
@@ -554,32 +662,49 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                     <Icon className="w-4 h-4" />
                     <span>{tab.label}</span>
                   </button>
-            );
-          })}
-        </div>
-
-        {/* Create Post Box */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-yellow-400 flex items-center justify-center text-white font-semibold flex-shrink-0">
-              {getInitials(user.firstName, user.lastName)}
+                );
+              })}
             </div>
-            <button 
-              onClick={() => setShowCreateModal(true)}
-              className="flex-1 text-left px-4 py-3 bg-gray-50 rounded-full text-gray-500 hover:bg-gray-100 transition-colors"
-            >
-              What&apos;s on your mind, {user.firstName}?
-            </button>
-            <button 
-              onClick={() => setShowCreateModal(true)}
-              className="p-3 text-green-600 hover:bg-green-50 rounded-full transition-colors"
-            >
-              <ImageIcon className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
 
-        {/* Feed Content */}
+            {/* Create Post Box */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-yellow-400 flex items-center justify-center text-white font-semibold flex-shrink-0">
+                  {getInitials(user.firstName, user.lastName)}
+                </div>
+                <button 
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex-1 text-left px-4 py-3 bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200 transition-colors border border-gray-200"
+                >
+                  Start a post...
+                </button>
+              </div>
+              <div className="flex items-center justify-around mt-3 pt-3 border-t border-gray-100">
+                <button 
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <ImageIcon className="w-5 h-5 text-green-600" />
+                  <span className="text-sm font-medium">Photo</span>
+                </button>
+                <button 
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <BarChart3 className="w-5 h-5 text-orange-500" />
+                  <span className="text-sm font-medium">Poll</span>
+                </button>
+                <button 
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <Megaphone className="w-5 h-5 text-red-500" />
+                  <span className="text-sm font-medium">Announce</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Feed Content */}
         {activeTab === 'feed' && (
           <div className="space-y-4">
             {/* Post Type Filters & Refresh */}
@@ -871,16 +996,61 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
             )}
           </div>
         )}
-          </div>
+          </main>
 
-          {/* Trending Sidebar - Only show on feed tab */}
-          {activeTab === 'feed' && (
-            <div className="hidden lg:block w-80 flex-shrink-0">
-              <div className="sticky top-20">
-                <TrendingSection apiUrl={FEED_API} />
+          {/* Right Sidebar */}
+          <aside className="hidden lg:block lg:col-span-3">
+            <div className="sticky top-20 space-y-4">
+              {/* Trending Section */}
+              <TrendingSection apiUrl={FEED_API} />
+
+              {/* Quick Actions Card */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
+                <div className="space-y-2">
+                  <button 
+                    onClick={() => setShowCreateModal(true)}
+                    className="w-full flex items-center gap-3 p-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <span>Write an article</span>
+                  </button>
+                  <button 
+                    onClick={() => setShowCreateModal(true)}
+                    className="w-full flex items-center gap-3 p-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
+                      <BarChart3 className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <span>Create a poll</span>
+                  </button>
+                  <button 
+                    onClick={() => setShowCreateModal(true)}
+                    className="w-full flex items-center gap-3 p-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
+                      <Award className="w-4 h-4 text-green-600" />
+                    </div>
+                    <span>Share achievement</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Footer Links */}
+              <div className="text-xs text-gray-500 px-2">
+                <div className="flex flex-wrap gap-x-2 gap-y-1">
+                  <a href="#" className="hover:text-purple-600 hover:underline">About</a>
+                  <a href="#" className="hover:text-purple-600 hover:underline">Help</a>
+                  <a href="#" className="hover:text-purple-600 hover:underline">Privacy</a>
+                  <a href="#" className="hover:text-purple-600 hover:underline">Terms</a>
+                </div>
+                <p className="mt-2">Stunity © 2026</p>
               </div>
             </div>
-          )}
+          </aside>
+
         </div>
       </div>
 
