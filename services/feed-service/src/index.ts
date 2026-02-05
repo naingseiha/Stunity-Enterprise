@@ -12,6 +12,7 @@ import multer from 'multer';
 import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from './utils/r2';
 import { initRedis, EventPublisher } from './redis';
 import sseRouter from './sse';
+import dmRouter, { initDMRoutes } from './dm';
 
 const app = express();
 const PORT = 3010; // Feed service always uses port 3010
@@ -1256,6 +1257,44 @@ app.get('/analytics/activity', authenticateToken, async (req: AuthRequest, res: 
 // PROFILE ENDPOINTS
 // ========================================
 
+// GET /users/search - Search users for DM
+app.get('/users/search', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { q, limit = 20 } = req.query;
+    const currentUserId = req.user?.id;
+    
+    if (!q || typeof q !== 'string') {
+      return res.json({ success: true, users: [] });
+    }
+
+    const users = await prisma.user.findMany({
+      where: {
+        id: { not: currentUserId },
+        isActive: true,
+        OR: [
+          { firstName: { contains: q, mode: 'insensitive' } },
+          { lastName: { contains: q, mode: 'insensitive' } },
+          { email: { contains: q, mode: 'insensitive' } },
+        ],
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        profilePictureUrl: true,
+        headline: true,
+        professionalTitle: true,
+      },
+      take: Number(limit),
+    });
+
+    res.json({ success: true, users });
+  } catch (error: any) {
+    console.error('User search error:', error);
+    res.status(500).json({ success: false, error: 'Failed to search users' });
+  }
+});
+
 // GET /users/:id/profile - Get user profile
 app.get('/users/:id/profile', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -2485,6 +2524,12 @@ app.get('/users/:id/activity', authenticateToken, async (req: AuthRequest, res: 
 app.use('/api/events', sseRouter);
 
 // ========================================
+// Direct Messages (DM) Router
+// ========================================
+
+app.use('/dm', authenticateToken as any, initDMRoutes(prisma));
+
+// ========================================
 // Start Server
 // ========================================
 
@@ -2500,6 +2545,17 @@ app.listen(PORT, () => {
   console.log('📡 Real-Time (SSE):');
   console.log('   GET    /api/events/stream   - SSE event stream');
   console.log('   GET    /api/events/stats    - Connection stats');
+  console.log('');
+  console.log('💬 Direct Messages:');
+  console.log('   GET    /dm/conversations         - List conversations');
+  console.log('   POST   /dm/conversations         - Start conversation');
+  console.log('   GET    /dm/conversations/:id     - Get conversation');
+  console.log('   DELETE /dm/conversations/:id     - Leave conversation');
+  console.log('   POST   /dm/conversations/:id/messages - Send message');
+  console.log('   PUT    /dm/messages/:id          - Edit message');
+  console.log('   DELETE /dm/messages/:id          - Delete message');
+  console.log('   POST   /dm/conversations/:id/typing  - Typing indicator');
+  console.log('   GET    /dm/unread-count          - Get unread count');
   console.log('');
   console.log('📋 Feed Endpoints:');
   console.log('   GET    /posts              - Get feed posts');

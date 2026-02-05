@@ -211,6 +211,14 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                 </div>
               )}
 
+              {/* Messages */}
+              <Link 
+                href={`/${locale}/messages`}
+                className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <MessageCircle className="w-5 h-5" />
+              </Link>
+
               {/* Notifications */}
               <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
                 <Bell className="w-5 h-5" />

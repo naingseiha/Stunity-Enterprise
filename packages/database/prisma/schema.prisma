@@ -546,6 +546,9 @@ model User {
   blockedBy             UserBlock[]         @relation("Blocked")
   blocking              UserBlock[]         @relation("Blocker")
   userSkills            UserSkill[]
+  dmParticipations      DMParticipant[]
+  sentDirectMessages    DirectMessage[]   @relation("DMSender")
+  dmReadReceipts        DMReadReceipt[]
   parent                Parent?             @relation(fields: [parentId], references: [id], onDelete: Cascade)
   school                School?             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   student               Student?            @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -1631,4 +1634,99 @@ model Message {
 enum SenderType {
   TEACHER
   PARENT
+}
+
+// ============================================
+// PHASE 16: Social Direct Messages (DMs)
+// User-to-user messaging for the social feed
+// ============================================
+
+model DMConversation {
+  id            String          @id @default(cuid())
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  lastMessageAt DateTime        @default(now())
+  lastMessage   String?         // Preview of last message
+  isGroup       Boolean         @default(false)
+  groupName     String?         // Only for group chats
+  groupAvatar   String?         // Only for group chats
+
+  participants  DMParticipant[]
+  messages      DirectMessage[]
+
+  @@index([lastMessageAt(sort: Desc)])
+  @@map("dm_conversations")
+}
+
+model DMParticipant {
+  id             String         @id @default(cuid())
+  conversationId String
+  userId         String
+  joinedAt       DateTime       @default(now())
+  leftAt         DateTime?      // Null if still in conversation
+  isAdmin        Boolean        @default(false) // For group chats
+  isMuted        Boolean        @default(false)
+  mutedUntil     DateTime?
+  lastReadAt     DateTime?      // For tracking unread messages
+  unreadCount    Int            @default(0)
+
+  conversation   DMConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId, leftAt])
+  @@index([conversationId])
+  @@map("dm_participants")
+}
+
+model DirectMessage {
+  id             String          @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  messageType    DMMessageType   @default(TEXT)
+  mediaUrl       String?         // For image/file messages
+  mediaType      String?         // MIME type
+  replyToId      String?         // For replying to messages
+  isEdited       Boolean         @default(false)
+  editedAt       DateTime?
+  isDeleted      Boolean         @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime        @default(now())
+
+  conversation   DMConversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User            @relation("DMSender", fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo        DirectMessage?  @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies        DirectMessage[] @relation("MessageReplies")
+  readReceipts   DMReadReceipt[]
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@index([replyToId])
+  @@map("direct_messages")
+}
+
+model DMReadReceipt {
+  id        String        @id @default(cuid())
+  messageId String
+  userId    String
+  readAt    DateTime      @default(now())
+
+  message   DirectMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@index([userId])
+  @@map("dm_read_receipts")
+}
+
+enum DMMessageType {
+  TEXT
+  IMAGE
+  FILE
+  VOICE
+  VIDEO
+  STICKER
+  SYSTEM   // e.g., "User joined the group"
 }
