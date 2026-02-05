@@ -98,7 +98,7 @@ export default function TrendingSection({ apiUrl, onPostClick }: TrendingSection
                   <button
                     key={opt.id}
                     onClick={() => { setPeriod(opt.id); setShowPeriodDropdown(false); }}
-                    className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-50 ${period === opt.id ? 'bg-purple-50 text-purple-700' : 'text-gray-700'}`}
+                    className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-50 ${period === opt.id ? 'bg-amber-50 text-[#F9A825]' : 'text-gray-700'}`}
                   >
                     {opt.label}
                   </button>
@@ -113,7 +113,7 @@ export default function TrendingSection({ apiUrl, onPostClick }: TrendingSection
       <div className="divide-y divide-gray-50">
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-5 h-5 text-purple-500 animate-spin" />
+            <Loader2 className="w-5 h-5 text-[#F9A825] animate-spin" />
           </div>
         ) : trending.length === 0 ? (
           <p className="text-center text-gray-500 text-sm py-8">No trending posts yet</p>
@@ -122,7 +122,7 @@ export default function TrendingSection({ apiUrl, onPostClick }: TrendingSection
             <button
               key={post.id}
               onClick={() => onPostClick?.(post.id)}
-              className="w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+              className="w-full flex items-start gap-3 px-4 py-3 hover:bg-amber-50 transition-colors text-left"
             >
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-400 mb-1">#{idx + 1} trending</p>
@@ -141,7 +141,7 @@ export default function TrendingSection({ apiUrl, onPostClick }: TrendingSection
       {/* Footer */}
       {trending.length > 0 && (
         <div className="px-4 py-3 border-t border-gray-100">
-          <button className="text-sm text-gray-600 hover:text-purple-600 font-medium">
+          <button className="text-sm text-gray-600 hover:text-[#F9A825] font-medium">
             Show more →
           </button>
         </div>

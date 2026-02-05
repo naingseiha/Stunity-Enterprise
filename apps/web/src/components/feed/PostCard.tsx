@@ -165,25 +165,25 @@ export default function PostCard({
   const getTypeConfig = () => {
     switch (post.postType) {
       case 'POLL':
-        return { icon: BarChart3, color: 'purple', label: 'Poll', bgColor: 'bg-purple-50', borderColor: 'border-purple-200', textColor: 'text-purple-700' };
+        return { icon: BarChart3, color: 'violet', label: 'Poll', bgColor: 'bg-violet-50', borderColor: 'border-violet-200', textColor: 'text-violet-700' };
       case 'ANNOUNCEMENT':
-        return { icon: Megaphone, color: 'red', label: 'Announcement', bgColor: 'bg-red-50', borderColor: 'border-red-200', textColor: 'text-red-700' };
+        return { icon: Megaphone, color: 'rose', label: 'Announcement', bgColor: 'bg-rose-50', borderColor: 'border-rose-200', textColor: 'text-rose-700' };
       case 'QUESTION':
-        return { icon: HelpCircle, color: 'green', label: 'Question', bgColor: 'bg-green-50', borderColor: 'border-green-200', textColor: 'text-green-700' };
+        return { icon: HelpCircle, color: 'teal', label: 'Question', bgColor: 'bg-teal-50', borderColor: 'border-teal-200', textColor: 'text-teal-700' };
       case 'ACHIEVEMENT':
-        return { icon: Award, color: 'yellow', label: 'Achievement', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200', textColor: 'text-yellow-700' };
+        return { icon: Award, color: 'amber', label: 'Achievement', bgColor: 'bg-amber-50', borderColor: 'border-amber-200', textColor: 'text-amber-700' };
       default:
-        return { icon: FileText, color: 'blue', label: 'Article', bgColor: 'bg-white', borderColor: 'border-gray-200', textColor: 'text-gray-700' };
+        return { icon: FileText, color: 'emerald', label: 'Article', bgColor: 'bg-white', borderColor: 'border-gray-100', textColor: 'text-amber-700' };
     }
   };
 
   const getAvatarGradient = () => {
     switch (post.postType) {
-      case 'POLL': return 'from-purple-500 to-purple-600';
-      case 'ANNOUNCEMENT': return 'from-red-500 to-red-600';
-      case 'QUESTION': return 'from-green-500 to-green-600';
-      case 'ACHIEVEMENT': return 'from-yellow-500 to-orange-500';
-      default: return 'from-blue-500 to-blue-600';
+      case 'POLL': return 'from-violet-500 to-purple-600';
+      case 'ANNOUNCEMENT': return 'from-rose-500 to-pink-600';
+      case 'QUESTION': return 'from-teal-500 to-cyan-600';
+      case 'ACHIEVEMENT': return 'from-amber-500 to-yellow-500';
+      default: return 'from-[#F9A825] to-[#FFB74D]';
     }
   };
 
@@ -245,19 +245,19 @@ export default function PostCard({
   const totalVotes = post.pollOptions?.reduce((sum, opt) => sum + (opt.votes || 0), 0) || 0;
 
   return (
-    <div className={`${typeConfig.bgColor} border ${typeConfig.borderColor} rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow`}>
+    <div className={`bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow`}>
       {/* Type Badge for special posts */}
       {post.postType !== 'ARTICLE' && (
-        <div className={`px-4 py-2 flex items-center gap-2 border-b ${typeConfig.borderColor}`}>
+        <div className={`px-3 py-1.5 flex items-center gap-2 border-b border-gray-100 bg-gray-50`}>
           <TypeIcon className={`w-4 h-4 ${typeConfig.textColor}`} />
-          <span className={`text-sm font-medium ${typeConfig.textColor}`}>{typeConfig.label}</span>
+          <span className={`text-xs font-medium ${typeConfig.textColor}`}>{typeConfig.label}</span>
         </div>
       )}
 
-      <div className="p-4">
+      <div className="p-3">
         {/* Author Header */}
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-3">
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex items-center gap-2.5">
             {post.author.profileImage ? (
               <img
                 src={post.author.profileImage}
@@ -270,13 +270,14 @@ export default function PostCard({
               </div>
             )}
             <div>
-              <p className="font-semibold text-gray-900">
+              <p className="font-semibold text-gray-900 text-sm hover:text-[#F9A825] hover:underline cursor-pointer">
                 {post.author.firstName} {post.author.lastName}
               </p>
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <span>{formatDate(post.createdAt)}</span>
+              <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                <span className="capitalize">{post.author.role?.toLowerCase()}</span>
                 <span>•</span>
-                <VisibilityIcon className="w-3 h-3" />
+                <span>{formatDate(post.createdAt)}</span>
+                <VisibilityIcon className="w-3 h-3 ml-0.5" />
               </div>
             </div>
           </div>
@@ -284,59 +285,59 @@ export default function PostCard({
           <div className="relative" ref={menuRef}>
             <button 
               onClick={() => setShowMenu(!showMenu)}
-              className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
             >
               <MoreHorizontal className="w-5 h-5" />
             </button>
             
             {showMenu && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-20">
+              <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
                 {isAuthor && (
                   <>
                     <button
                       onClick={() => { setShowEditModal(true); setShowMenu(false); }}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                       <Edit2 className="w-4 h-4" />
-                      <span className="text-sm">Edit Post</span>
+                      <span>Edit Post</span>
                     </button>
                     <button
                       onClick={() => { onViewAnalytics?.(post.id); setShowMenu(false); }}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                       <TrendingUp className="w-4 h-4" />
                       <span className="text-sm">View Analytics</span>
                     </button>
                     <button
                       onClick={() => { setShowDeleteConfirm(true); setShowMenu(false); }}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
-                      <span className="text-sm">Delete Post</span>
+                      <span>Delete</span>
                     </button>
                     <div className="border-t border-gray-100 my-1" />
                   </>
                 )}
                 <button
                   onClick={() => { handleBookmark(); setShowMenu(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >
-                  <Bookmark className={`w-4 h-4 ${localBookmarked ? 'fill-current text-yellow-500' : ''}`} />
-                  <span className="text-sm">{localBookmarked ? 'Remove Bookmark' : 'Bookmark'}</span>
+                  <Bookmark className={`w-4 h-4 ${localBookmarked ? 'fill-current text-[#F9A825]' : ''}`} />
+                  <span>{localBookmarked ? 'Unsave' : 'Save'}</span>
                 </button>
                 <button
                   onClick={() => { handleShare('copy'); setShowMenu(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   <Copy className="w-4 h-4" />
-                  <span className="text-sm">Copy Link</span>
+                  <span>Copy link</span>
                 </button>
                 {!isAuthor && (
                   <button
-                    className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     <Flag className="w-4 h-4" />
-                    <span className="text-sm">Report</span>
+                    <span>Report</span>
                   </button>
                 )}
               </div>
@@ -345,13 +346,13 @@ export default function PostCard({
         </div>
 
         {/* Content */}
-        <div className="mb-4">
-          <p className="text-gray-800 whitespace-pre-wrap">{post.content}</p>
+        <div className="mb-3">
+          <p className="text-gray-800 text-sm whitespace-pre-wrap leading-relaxed">{post.content}</p>
         </div>
 
         {/* Poll Options */}
         {post.postType === 'POLL' && post.pollOptions && (
-          <div className="space-y-2 mb-4">
+          <div className="space-y-2 mb-3">
             {post.pollOptions.map((option) => {
               const percentage = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
               const isVoted = localVoted === option.id;
@@ -361,27 +362,27 @@ export default function PostCard({
                   key={option.id}
                   onClick={() => handleVote(option.id)}
                   disabled={!!localVoted}
-                  className={`w-full relative overflow-hidden rounded-lg p-3 text-left transition-all ${
+                  className={`w-full relative overflow-hidden rounded-md p-2.5 text-left transition-all text-sm ${
                     localVoted
                       ? 'cursor-default'
-                      : 'cursor-pointer hover:bg-purple-100'
-                  } ${isVoted ? 'ring-2 ring-purple-500' : 'border border-purple-200'}`}
+                      : 'cursor-pointer hover:bg-gray-100'
+                  } ${isVoted ? 'ring-1 ring-[#F9A825]' : 'border border-gray-200'}`}
                 >
                   {/* Progress bar background */}
                   {localVoted && (
                     <div
-                      className="absolute inset-0 bg-purple-100 transition-all duration-500"
+                      className="absolute inset-0 bg-amber-50 transition-all duration-500"
                       style={{ width: `${percentage}%` }}
                     />
                   )}
                   
                   <div className="relative flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      {isVoted && <CheckCircle className="w-4 h-4 text-purple-600" />}
+                      {isVoted && <CheckCircle className="w-4 h-4 text-[#F9A825]" />}
                       <span className="text-sm font-medium text-gray-800">{option.text}</span>
                     </div>
                     {localVoted && (
-                      <span className="text-sm font-medium text-purple-700">{percentage}%</span>
+                      <span className="text-sm font-medium text-violet-700">{percentage}%</span>
                     )}
                   </div>
                 </button>
@@ -400,81 +401,67 @@ export default function PostCard({
             mediaUrls={post.mediaUrls}
             displayMode={post.mediaDisplayMode || 'AUTO'}
             onImageClick={handleImageClick}
-            className="mb-4"
+            className="mb-3 -mx-3"
           />
         )}
 
-        {/* Stats */}
-        <div className="flex items-center justify-between text-sm text-gray-500 mb-3 pb-3 border-b border-gray-200">
-          <div className="flex items-center gap-4">
-            {post.viewsCount !== undefined && post.viewsCount > 0 && (
-              <span className="flex items-center gap-1">
-                <Eye className="w-3.5 h-3.5" />
-                {post.viewsCount}
-              </span>
-            )}
-            <span>{post.likesCount} like{post.likesCount !== 1 ? 's' : ''}</span>
-            <span>{post.commentsCount} comment{post.commentsCount !== 1 ? 's' : ''}</span>
-          </div>
-          <span>{localSharesCount} share{localSharesCount !== 1 ? 's' : ''}</span>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-1">
+        {/* Actions - with counts integrated */}
+        <div className="flex items-center justify-between pt-2 border-t border-gray-100 -mx-1">
           <button
             onClick={() => onLike(post.id)}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded transition-colors ${
               post.isLiked
-                ? 'text-red-500 bg-red-50 hover:bg-red-100'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'text-blue-600'
+                : 'text-gray-500 hover:bg-gray-100'
             }`}
           >
-            <Heart className={`w-5 h-5 ${post.isLiked ? 'fill-current' : ''}`} />
-            <span className="text-sm font-medium">Like</span>
+            <Heart className={`w-4 h-4 ${post.isLiked ? 'fill-current' : ''}`} />
+            <span className="text-xs font-medium">{post.likesCount > 0 ? `${post.likesCount} Likes` : 'Like'}</span>
           </button>
           <button
             onClick={() => setShowComments(!showComments)}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg transition-colors ${
-              showComments ? 'text-blue-500 bg-blue-50' : 'text-gray-600 hover:bg-gray-100'
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded transition-colors ${
+              showComments ? 'text-[#F9A825]' : 'text-gray-500 hover:bg-gray-100'
             }`}
           >
-            <MessageCircle className="w-5 h-5" />
-            <span className="text-sm font-medium">Comment</span>
+            <MessageCircle className="w-4 h-4" />
+            <span className="text-xs font-medium">{post.commentsCount > 0 ? `${post.commentsCount} Comments` : 'Comment'}</span>
           </button>
           <button 
             onClick={() => setShowShareModal(true)}
-            className="flex-1 flex items-center justify-center gap-2 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-gray-500 hover:bg-gray-100 rounded transition-colors"
           >
-            <Share2 className="w-5 h-5" />
-            <span className="text-sm font-medium">Share</span>
+            <Share2 className="w-4 h-4" />
+            <span className="text-xs font-medium">{localSharesCount > 0 ? `${localSharesCount} Shares` : 'Share'}</span>
           </button>
           <button
             onClick={handleBookmark}
-            className={`p-2 rounded-lg transition-colors ${
-              localBookmarked ? 'text-yellow-500 bg-yellow-50' : 'text-gray-600 hover:bg-gray-100'
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded transition-colors ${
+              localBookmarked ? 'text-[#F9A825]' : 'text-gray-500 hover:bg-gray-100'
             }`}
           >
-            <Bookmark className={`w-5 h-5 ${localBookmarked ? 'fill-current' : ''}`} />
+            <Bookmark className={`w-4 h-4 ${localBookmarked ? 'fill-current' : ''}`} />
+            <span className="text-xs font-medium">{localBookmarked ? 'Saved' : 'Save'}</span>
           </button>
         </div>
 
         {/* Comments Section */}
         {showComments && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="mt-3 pt-3 border-t border-gray-100">
             {/* Comment Input */}
-            <div className="flex gap-2 mb-4">
+            <div className="flex gap-2 mb-3">
               <input
                 type="text"
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Write a comment..."
-                className="flex-1 px-4 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Add a comment..."
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-[#F9A825] focus:border-[#F9A825] transition-colors"
                 onKeyPress={(e) => e.key === 'Enter' && handleSubmitComment()}
               />
               <button
                 onClick={handleSubmitComment}
                 disabled={!commentText.trim()}
-                className="px-4 py-2 bg-purple-600 text-white rounded-full text-sm font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 bg-[#F9A825] text-white rounded-full text-sm font-medium hover:bg-[#E89A1E] disabled:opacity-50 transition-colors"
               >
                 Post
               </button>
@@ -484,11 +471,11 @@ export default function PostCard({
             {post.comments && post.comments.length > 0 && (
               <div className="space-y-3">
                 {post.comments.map((comment) => (
-                  <div key={comment.id} className="flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                  <div key={comment.id} className="flex gap-2 animate-fadeIn">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#F9A825] to-[#FFB74D] flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-sm">
                       {getInitials(comment.author.firstName, comment.author.lastName)}
                     </div>
-                    <div className="flex-1 bg-gray-100 rounded-2xl px-3 py-2">
+                    <div className="flex-1 bg-gradient-to-r from-gray-50 to-amber-50/30 rounded-2xl px-3 py-2 border border-gray-100">
                       <p className="text-sm font-semibold text-gray-900">
                         {comment.author.firstName} {comment.author.lastName}
                       </p>
@@ -504,21 +491,21 @@ export default function PostCard({
 
       {/* Share Modal */}
       {showShareModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowShareModal(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold text-gray-900">Share Post</h3>
-              <button onClick={() => setShowShareModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn" onClick={() => setShowShareModal(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl transform animate-slideUp" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900">Share Post</h3>
+              <button onClick={() => setShowShareModal(false)} className="p-2 hover:bg-amber-50 rounded-full transition-colors">
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
             <div className="p-4 space-y-2">
               <button
                 onClick={() => handleShare('copy')}
-                className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors"
+                className="w-full flex items-center gap-3 p-3 hover:bg-amber-50 rounded-xl transition-colors group"
               >
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Copy className="w-5 h-5 text-blue-600" />
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#F9A825]/20 to-[#FFB74D]/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Copy className="w-5 h-5 text-[#F9A825]" />
                 </div>
                 <div className="text-left">
                   <p className="font-medium text-gray-900">Copy Link</p>
@@ -528,10 +515,10 @@ export default function PostCard({
               {typeof navigator !== 'undefined' && typeof navigator.share === 'function' && (
                 <button
                   onClick={() => handleShare('native')}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors"
+                  className="w-full flex items-center gap-3 p-3 hover:bg-blue-50 rounded-xl transition-colors group"
                 >
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <ExternalLink className="w-5 h-5 text-green-600" />
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <ExternalLink className="w-5 h-5 text-blue-600" />
                   </div>
                   <div className="text-left">
                     <p className="font-medium text-gray-900">Share via...</p>
@@ -546,11 +533,11 @@ export default function PostCard({
 
       {/* Edit Modal */}
       {showEditModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowEditModal(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold text-gray-900">Edit Post</h3>
-              <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn" onClick={() => setShowEditModal(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl transform animate-slideUp" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900">Edit Post</h3>
+              <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-amber-50 rounded-full transition-colors">
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
@@ -559,20 +546,20 @@ export default function PostCard({
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
                 rows={5}
-                className="w-full p-3 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900"
+                className="w-full p-4 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#F9A825] focus:border-[#F9A825] text-gray-900 transition-all"
               />
             </div>
-            <div className="flex justify-end gap-3 p-4 border-t">
+            <div className="flex justify-end gap-3 p-4 border-t border-gray-100">
               <button
                 onClick={() => setShowEditModal(false)}
-                className="px-5 py-2 text-gray-600 hover:bg-gray-100 rounded-full"
+                className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleEdit}
                 disabled={isEditing || !editContent.trim()}
-                className="px-5 py-2 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
+                className="px-6 py-2.5 bg-gradient-to-r from-[#F9A825] to-[#FFB74D] text-white rounded-full font-semibold hover:from-[#E89A1E] hover:to-[#FF9800] disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-emerald-200 transition-all transform active:scale-95"
               >
                 {isEditing && <Loader2 className="w-4 h-4 animate-spin" />}
                 Save Changes
@@ -584,8 +571,8 @@ export default function PostCard({
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowDeleteConfirm(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl transform animate-slideUp" onClick={e => e.stopPropagation()}>
             <div className="p-6 text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
                 <Trash2 className="w-8 h-8 text-red-600" />
@@ -595,13 +582,13 @@ export default function PostCard({
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full font-medium"
+                  className="flex-1 px-5 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="flex-1 px-5 py-2.5 bg-red-600 text-white rounded-full font-medium hover:bg-red-700"
+                  className="flex-1 px-5 py-3 bg-red-600 text-white rounded-full font-semibold hover:bg-red-700 transition-all transform active:scale-95"
                 >
                   Delete
                 </button>
@@ -620,6 +607,33 @@ export default function PostCard({
           onClose={() => setLightboxOpen(false)}
         />
       )}
+
+      {/* Animation Styles */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+          from { 
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+          }
+          to { 
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out forwards;
+        }
+        
+        .animate-slideUp {
+          animation: slideUp 0.3s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 }

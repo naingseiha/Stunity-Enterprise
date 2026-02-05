@@ -11,6 +11,13 @@ import PostAnalyticsModal from '@/components/feed/PostAnalyticsModal';
 import InsightsDashboard from '@/components/feed/InsightsDashboard';
 import TrendingSection from '@/components/feed/TrendingSection';
 import ActivityDashboard from '@/components/feed/ActivityDashboard';
+import { FeedSkeletonList } from '@/components/feed/FeedPostSkeleton';
+import LearningSpotlight from '@/components/feed/LearningSpotlight';
+import StudyGroupsWidget from '@/components/feed/StudyGroupsWidget';
+import UpcomingEventsWidget from '@/components/feed/UpcomingEventsWidget';
+import TopContributorsWidget from '@/components/feed/TopContributorsWidget';
+import LearningStreakWidget from '@/components/feed/LearningStreakWidget';
+import QuickResourcesWidget from '@/components/feed/QuickResourcesWidget';
 import {
   Users,
   BookOpen,
@@ -36,6 +43,9 @@ import {
   ChevronRight,
   Sparkles,
   GraduationCap,
+  Zap,
+  Trophy,
+  Target,
 } from 'lucide-react';
 
 const FEED_API = 'http://localhost:3010';
@@ -538,521 +548,494 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      {/* LinkedIn-style 3-column layout */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* LinkedIn-style 3-column layout - cleaner proportions */}
+      <div className="max-w-6xl mx-auto px-4 py-5">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           
-          {/* Left Sidebar - Profile Card */}
+          {/* Left Sidebar - Compact Profile & Navigation */}
           <aside className="hidden lg:block lg:col-span-3">
-            <div className="sticky top-20 space-y-4">
-              {/* Profile Card */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                {/* Cover Image */}
-                <div className="h-16 bg-gradient-to-r from-purple-500 via-purple-400 to-orange-400" />
+            <div className="sticky top-20 space-y-3">
+              {/* Profile Card - LinkedIn Style */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                {/* Cover */}
+                <div className="h-14 bg-gradient-to-r from-[#F9A825]/20 via-[#FFB74D]/15 to-[#F9A825]/10" />
                 
                 {/* Avatar */}
-                <div className="px-4 -mt-8">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-400 to-yellow-400 flex items-center justify-center text-white text-xl font-bold border-4 border-white shadow-md">
+                <div className="px-3 -mt-6">
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#F9A825] to-[#FFB74D] flex items-center justify-center text-white text-lg font-semibold border-2 border-white shadow-sm">
                     {getInitials(user.firstName, user.lastName)}
                   </div>
                 </div>
                 
                 {/* User Info */}
-                <div className="px-4 pt-2 pb-4">
-                  <h3 className="font-semibold text-gray-900">{user.firstName} {user.lastName}</h3>
-                  <p className="text-sm text-gray-500 capitalize">{user.role?.toLowerCase().replace('_', ' ')}</p>
-                  <p className="text-xs text-gray-400 mt-1">{school?.name}</p>
+                <div className="px-3 pt-2 pb-3">
+                  <h3 className="font-semibold text-gray-900 text-sm">{user.firstName} {user.lastName}</h3>
+                  <p className="text-xs text-gray-500 capitalize">{user.role?.toLowerCase().replace('_', ' ')}</p>
                 </div>
 
-                {/* Divider */}
-                <div className="border-t border-gray-100" />
-
-                {/* Stats */}
-                <div className="px-4 py-3">
-                  <button className="w-full flex items-center justify-between text-sm hover:bg-gray-50 rounded-lg p-2 -mx-2 transition-colors">
-                    <span className="text-gray-600">Profile viewers</span>
-                    <span className="text-purple-600 font-semibold">{Math.floor(Math.random() * 50) + 10}</span>
-                  </button>
+                {/* Stats - LinkedIn style */}
+                <div className="border-t border-gray-100 px-3 py-2">
                   <button 
                     onClick={() => setActiveTab('insights')}
-                    className="w-full flex items-center justify-between text-sm hover:bg-gray-50 rounded-lg p-2 -mx-2 transition-colors"
+                    className="w-full flex justify-between items-center text-xs py-1 hover:bg-gray-50 rounded px-1 -mx-1"
                   >
-                    <span className="text-gray-600">Post impressions</span>
-                    <span className="text-purple-600 font-semibold">{posts.reduce((sum, p) => sum + (p.likesCount || 0), 0)}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Quick Links Card */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <nav className="py-2">
-                  <button 
-                    onClick={() => setActiveTab('bookmarks')}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
-                      activeTab === 'bookmarks' ? 'bg-purple-50 text-purple-700' : 'text-gray-700'
-                    }`}
-                  >
-                    <Bookmark className="w-4 h-4" />
-                    <span>Saved items</span>
+                    <span className="text-gray-500">Impressions</span>
+                    <span className="font-semibold text-[#F9A825]">{posts.reduce((sum, p) => sum + (p.likesCount || 0), 0)}</span>
                   </button>
                   <button 
                     onClick={() => setActiveTab('posts')}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
-                      activeTab === 'posts' ? 'bg-purple-50 text-purple-700' : 'text-gray-700'
-                    }`}
+                    className="w-full flex justify-between items-center text-xs py-1 hover:bg-gray-50 rounded px-1 -mx-1"
                   >
-                    <BookOpen className="w-4 h-4" />
-                    <span>My Posts</span>
+                    <span className="text-gray-500">Posts</span>
+                    <span className="font-semibold text-[#F9A825]">{myPosts.length || 0}</span>
                   </button>
-                  <button 
-                    onClick={() => setActiveTab('insights')}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
-                      activeTab === 'insights' ? 'bg-purple-50 text-purple-700' : 'text-gray-700'
-                    }`}
-                  >
-                    <BarChart3 className="w-4 h-4" />
-                    <span>Analytics</span>
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('activity')}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
-                      activeTab === 'activity' ? 'bg-purple-50 text-purple-700' : 'text-gray-700'
-                    }`}
-                  >
-                    <Activity className="w-4 h-4" />
-                    <span>Activity</span>
-                  </button>
-                </nav>
+                </div>
               </div>
 
-              {/* School Info Card */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center">
-                    <GraduationCap className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Connected to</p>
-                    <p className="text-sm font-medium text-gray-900">{school?.name || 'Your School'}</p>
-                  </div>
-                </div>
+              {/* Quick Links - Minimal */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <nav className="py-1">
+                  {[
+                    { id: 'bookmarks', label: 'Saved', icon: Bookmark },
+                    { id: 'posts', label: 'My Posts', icon: BookOpen },
+                    { id: 'insights', label: 'Analytics', icon: BarChart3 },
+                    { id: 'activity', label: 'Activity', icon: Activity },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setActiveTab(item.id)}
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors ${
+                          activeTab === item.id
+                            ? 'bg-amber-50 text-[#F9A825] font-medium'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
               </div>
             </div>
           </aside>
 
           {/* Center - Main Feed */}
           <main className="lg:col-span-6">
-            {/* Tab Navigation - Mobile visible, Desktop subtle */}
-            <div className="flex gap-2 mb-4 overflow-x-auto pb-2 lg:hidden">
+            {/* Tab Navigation - Mobile only */}
+            <div className="flex gap-2 mb-3 overflow-x-auto pb-2 lg:hidden scrollbar-hide">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all whitespace-nowrap ${
+                    className={`flex items-center gap-2 px-3 py-2 rounded-full font-medium text-xs transition-all whitespace-nowrap ${
                       activeTab === tab.id
-                        ? 'bg-gradient-to-r from-purple-500 to-purple-400 text-white shadow-md'
-                        : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+                        ? 'bg-[#F9A825] text-white'
+                        : 'bg-white text-gray-600 border border-gray-200'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-3.5 h-3.5" />
                     <span>{tab.label}</span>
                   </button>
                 );
               })}
             </div>
 
-            {/* Create Post Box */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
+            {/* Create Post Box - LinkedIn Style */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-yellow-400 flex items-center justify-center text-white font-semibold flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#F9A825] to-[#FFB74D] flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
                   {getInitials(user.firstName, user.lastName)}
                 </div>
                 <button 
                   onClick={() => setShowCreateModal(true)}
-                  className="flex-1 text-left px-4 py-3 bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200 transition-colors border border-gray-200"
+                  className="flex-1 text-left px-4 py-2.5 bg-white rounded-full text-gray-500 hover:bg-gray-100 transition-colors text-sm border border-gray-300"
                 >
-                  Start a post...
+                  What's on your mind?
                 </button>
               </div>
-              <div className="flex items-center justify-around mt-3 pt-3 border-t border-gray-100">
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
                 <button 
                   onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
                 >
-                  <ImageIcon className="w-5 h-5 text-green-600" />
-                  <span className="text-sm font-medium">Photo</span>
+                  <ImageIcon className="w-5 h-5 text-blue-500" />
+                  <span className="text-xs font-medium hidden sm:inline">Photo</span>
                 </button>
                 <button 
                   onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
                 >
-                  <BarChart3 className="w-5 h-5 text-orange-500" />
-                  <span className="text-sm font-medium">Poll</span>
+                  <BarChart3 className="w-5 h-5 text-amber-500" />
+                  <span className="text-xs font-medium hidden sm:inline">Poll</span>
                 </button>
                 <button 
                   onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
                 >
-                  <Megaphone className="w-5 h-5 text-red-500" />
-                  <span className="text-sm font-medium">Announce</span>
+                  <Megaphone className="w-5 h-5 text-rose-500" />
+                  <span className="text-xs font-medium hidden sm:inline">Announce</span>
+                </button>
+                <button 
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
+                >
+                  <HelpCircle className="w-5 h-5 text-teal-500" />
+                  <span className="text-xs font-medium hidden sm:inline">Ask</span>
                 </button>
               </div>
             </div>
 
             {/* Feed Content */}
-        {activeTab === 'feed' && (
-          <div className="space-y-4">
-            {/* Post Type Filters & Refresh */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="relative">
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
-                    postTypeFilter !== 'all' 
-                      ? 'bg-purple-50 border-purple-200 text-purple-700' 
-                      : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <Filter className="w-4 h-4" />
-                  <span className="text-sm font-medium">
-                    {POST_TYPE_FILTERS.find(f => f.id === postTypeFilter)?.label}
-                  </span>
-                </button>
-                
-                {showFilters && (
-                  <div className="absolute left-0 top-full mt-1 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-10">
-                    {POST_TYPE_FILTERS.map((filter) => {
-                      const Icon = filter.icon;
-                      return (
-                        <button
-                          key={filter.id}
-                          onClick={() => {
-                            setPostTypeFilter(filter.id);
-                            setShowFilters(false);
-                          }}
-                          className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors ${
-                            postTypeFilter === filter.id ? 'bg-purple-50' : ''
-                          }`}
-                        >
-                          <Icon className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-900">{filter.label}</span>
-                        </button>
-                      );
-                    })}
+            {activeTab === 'feed' && (
+              <div className="space-y-3">
+                {/* Post Type Filters & Refresh - Minimal */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowFilters(!showFilters)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs border transition-colors ${
+                        postTypeFilter !== 'all' 
+                          ? 'bg-amber-50 border-[#F9A825] text-[#F9A825]' 
+                          : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      <Filter className="w-3.5 h-3.5" />
+                      <span className="font-medium">
+                        {POST_TYPE_FILTERS.find(f => f.id === postTypeFilter)?.label}
+                      </span>
+                    </button>
+                    
+                    {showFilters && (
+                      <div className="absolute left-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                        {POST_TYPE_FILTERS.map((filter) => {
+                          const Icon = filter.icon;
+                          return (
+                            <button
+                              key={filter.id}
+                              onClick={() => {
+                                setPostTypeFilter(filter.id);
+                                setShowFilters(false);
+                              }}
+                              className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-amber-50 transition-colors ${
+                                postTypeFilter === filter.id ? 'bg-gradient-to-r from-amber-50 to-[#F9A825]/10 border-l-2 border-[#F9A825]' : ''
+                              }`}
+                            >
+                              <Icon className={`w-4 h-4 ${postTypeFilter === filter.id ? 'text-[#F9A825]' : 'text-gray-500'}`} />
+                              <span className={`text-sm ${postTypeFilter === filter.id ? 'text-[#F9A825] font-medium' : 'text-gray-700'}`}>{filter.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <button
+                    onClick={fetchPosts}
+                    disabled={loadingPosts}
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-[#F9A825] hover:bg-amber-50 rounded-full transition-all duration-200"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${loadingPosts ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </button>
+                </div>
+
+                {/* Loading State - Use Skeleton */}
+                {loadingPosts && posts.length === 0 && (
+                  <FeedSkeletonList count={3} />
+                )}
+
+                {/* Empty State - Stunity Design */}
+                {!loadingPosts && posts.length === 0 && (
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 text-center">
+                    <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-[#F9A825]/20 to-[#FFB74D]/20 flex items-center justify-center animate-pulse">
+                      <Sparkles className="w-10 h-10 text-[#F9A825]" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Stunity!</h3>
+                    <p className="text-gray-600 mb-6 max-w-sm mx-auto">Be the first to share knowledge, ask questions, or celebrate achievements with your school community.</p>
+                    <button
+                      onClick={() => setShowCreateModal(true)}
+                      className="inline-flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-[#F9A825] to-[#FFB74D] text-white rounded-full font-semibold hover:from-[#E89A1E] hover:to-[#FF9800] transition-all shadow-lg shadow-emerald-200 transform hover:scale-105"
+                    >
+                      <Send className="w-5 h-5" />
+                      Create Your First Post
+                    </button>
+                  </div>
+                )}
+
+                {/* Posts List with stagger animation */}
+                {posts
+                  .filter(post => postTypeFilter === 'all' || post.postType === postTypeFilter)
+                  .map((post, index) => (
+                    <div 
+                      key={post.id}
+                      className="animate-fadeInUp"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <PostCard
+                        post={{
+                          id: post.id,
+                          content: post.content,
+                          postType: post.postType || 'ARTICLE',
+                          visibility: post.visibility,
+                          author: {
+                            id: post.author.id,
+                            firstName: post.author.firstName,
+                            lastName: post.author.lastName,
+                            profileImage: post.author.profilePictureUrl,
+                            role: post.author.role,
+                          },
+                          createdAt: post.createdAt,
+                          likesCount: post.likesCount,
+                          commentsCount: post.commentsCount,
+                          sharesCount: post.sharesCount,
+                          isLiked: isPostLiked(post),
+                          isBookmarked: post.isBookmarked,
+                          mediaUrls: post.mediaUrls,
+                          mediaDisplayMode: post.mediaDisplayMode,
+                          pollOptions: post.pollOptions?.map(opt => ({
+                            id: opt.id,
+                            text: opt.text,
+                            votes: opt._count?.votes || 0,
+                          })),
+                          userVotedOptionId: post.userVotedOptionId,
+                          comments: comments[post.id]?.map(c => ({
+                            id: c.id,
+                            content: c.content,
+                            author: {
+                              firstName: c.author.firstName,
+                              lastName: c.author.lastName,
+                            },
+                            createdAt: c.createdAt,
+                          })),
+                        }}
+                        onLike={handleLike}
+                        onComment={(postId, content) => {
+                          setNewComment(prev => ({ ...prev, [postId]: content }));
+                          handleAddComment(postId);
+                        }}
+                        onVote={handleVote}
+                        onBookmark={handleBookmark}
+                        onShare={handleShare}
+                        onEdit={handleEditPost}
+                        onDelete={handleDeletePost}
+                        onViewAnalytics={handleViewAnalytics}
+                        currentUserId={user?.id}
+                      />
+                    </div>
+                  ))}
+                  
+                {/* Empty Filter State */}
+                {!loadingPosts && posts.length > 0 && posts.filter(post => postTypeFilter === 'all' || post.postType === postTypeFilter).length === 0 && (
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#F9A825]/20 to-[#FFB74D]/20 flex items-center justify-center">
+                      <Filter className="w-8 h-8 text-[#F9A825]" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">No {POST_TYPE_FILTERS.find(f => f.id === postTypeFilter)?.label.toLowerCase()}</h3>
+                    <p className="text-gray-600 mb-4">Try selecting a different filter or create a new post!</p>
+                    <button
+                      onClick={() => setPostTypeFilter('all')}
+                      className="text-[#F9A825] hover:text-[#E89A1E] font-medium"
+                    >
+                      Show all posts
+                    </button>
                   </div>
                 )}
               </div>
-              
-              <button
-                onClick={fetchPosts}
-                disabled={loadingPosts}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-purple-600 transition-colors"
-              >
-                <RefreshCw className={`w-4 h-4 ${loadingPosts ? 'animate-spin' : ''}`} />
-                Refresh
-              </button>
-            </div>
-
-            {/* Loading State */}
-            {loadingPosts && posts.length === 0 && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
-                <Loader2 className="w-8 h-8 mx-auto text-purple-500 animate-spin mb-3" />
-                <p className="text-gray-600">Loading posts...</p>
-              </div>
             )}
 
-            {/* Empty State */}
-            {!loadingPosts && posts.length === 0 && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                  <BookOpen className="w-8 h-8 text-purple-500" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">No posts yet</h3>
-                <p className="text-gray-600 mb-4">Be the first to share something!</p>
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-semibold hover:from-purple-600 hover:to-pink-600 transition-all shadow-md"
-                >
-                  <Send className="w-5 h-5" />
-                  Create Post
-                </button>
-              </div>
-            )}
-
-            {/* Posts List - Using PostCard component */}
-            {posts
-              .filter(post => postTypeFilter === 'all' || post.postType === postTypeFilter)
-              .map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={{
-                    id: post.id,
-                    content: post.content,
-                    postType: post.postType || 'ARTICLE',
-                    visibility: post.visibility,
-                    author: {
-                      id: post.author.id,
-                      firstName: post.author.firstName,
-                      lastName: post.author.lastName,
-                      profileImage: post.author.profilePictureUrl,
-                      role: post.author.role,
-                    },
-                    createdAt: post.createdAt,
-                    likesCount: post.likesCount,
-                    commentsCount: post.commentsCount,
-                    sharesCount: post.sharesCount,
-                    isLiked: isPostLiked(post),
-                    isBookmarked: post.isBookmarked,
-                    mediaUrls: post.mediaUrls,
-                    mediaDisplayMode: post.mediaDisplayMode,
-                    pollOptions: post.pollOptions?.map(opt => ({
-                      id: opt.id,
-                      text: opt.text,
-                      votes: opt._count?.votes || 0,
-                    })),
-                    userVotedOptionId: post.userVotedOptionId,
-                    comments: comments[post.id]?.map(c => ({
-                      id: c.id,
-                      content: c.content,
-                      author: {
-                        firstName: c.author.firstName,
-                        lastName: c.author.lastName,
-                      },
-                      createdAt: c.createdAt,
-                    })),
-                  }}
-                  onLike={handleLike}
-                  onComment={(postId, content) => {
-                    setNewComment(prev => ({ ...prev, [postId]: content }));
+            {/* My Posts Tab */}
+            {activeTab === 'posts' && (
+              <div className="space-y-4">
+                {myPosts.length === 0 ? (
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 text-center">
+                    <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-[#F9A825]/20 to-[#FFB74D]/20 flex items-center justify-center">
+                      <BookOpen className="w-10 h-10 text-[#F9A825]" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">No posts yet</h3>
+                    <p className="text-gray-600 mb-6">Share your first post with your school community!</p>
+                    <button
+                      onClick={() => setShowCreateModal(true)}
+                      className="inline-flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-[#F9A825] to-[#FFB74D] text-white rounded-full font-semibold hover:from-[#E89A1E] hover:to-[#FF9800] transition-all shadow-lg shadow-emerald-200 transform hover:scale-105"
+                    >
+                      <Send className="w-5 h-5" />
+                      Create Post
+                    </button>
+                  </div>
+                ) : (
+                  myPosts.map((post, index) => (
+                    <div 
+                      key={post.id}
+                      className="animate-fadeInUp"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <PostCard
+                        post={{
+                          id: post.id,
+                          content: post.content,
+                          postType: post.postType || 'ARTICLE',
+                          visibility: post.visibility,
+                          author: {
+                            id: post.author.id,
+                            firstName: post.author.firstName,
+                            lastName: post.author.lastName,
+                            profileImage: post.author.profilePictureUrl,
+                            role: post.author.role,
+                          },
+                          createdAt: post.createdAt,
+                          likesCount: post.likesCount,
+                          commentsCount: post.commentsCount,
+                          sharesCount: post.sharesCount,
+                          isLiked: isPostLiked(post),
+                          isBookmarked: post.isBookmarked,
+                          mediaUrls: post.mediaUrls,
+                          mediaDisplayMode: post.mediaDisplayMode,
+                          pollOptions: post.pollOptions?.map(opt => ({
+                            id: opt.id,
+                            text: opt.text,
+                            votes: opt._count?.votes || 0,
+                          })),
+                          userVotedOptionId: post.userVotedOptionId,
+                        }}
+                        onLike={handleLike}
+                        onComment={(postId, content) => {
+                          setNewComment(prev => ({ ...prev, [postId]: content }));
                     handleAddComment(postId);
                   }}
                   onVote={handleVote}
                   onBookmark={handleBookmark}
-                  onShare={handleShare}
-                  onEdit={handleEditPost}
-                  onDelete={handleDeletePost}
-                  onViewAnalytics={handleViewAnalytics}
-                  currentUserId={user?.id}
-                />
-              ))}
-              
-            {/* Empty Filter State */}
-            {!loadingPosts && posts.length > 0 && posts.filter(post => postTypeFilter === 'all' || post.postType === postTypeFilter).length === 0 && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                  <Filter className="w-8 h-8 text-gray-500" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">No {POST_TYPE_FILTERS.find(f => f.id === postTypeFilter)?.label.toLowerCase()}</h3>
-                <p className="text-gray-600 mb-4">Try selecting a different filter or create a new post!</p>
-                <button
-                  onClick={() => setPostTypeFilter('all')}
-                  className="text-purple-600 hover:text-purple-700 font-medium"
-                >
-                  Show all posts
-                </button>
+                        onShare={handleShare}
+                        onEdit={handleEditPost}
+                        onDelete={handleDeletePost}
+                        onViewAnalytics={handleViewAnalytics}
+                        currentUserId={user?.id}
+                      />
+                    </div>
+                  ))
+                )}
               </div>
             )}
-          </div>
-        )}
 
-        {/* My Posts Tab */}
-        {activeTab === 'posts' && (
-          <div className="space-y-4">
-            {myPosts.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                  <BookOpen className="w-8 h-8 text-purple-500" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">No posts yet</h3>
-                <p className="text-gray-600 mb-4">Share your first post!</p>
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-semibold hover:from-purple-600 hover:to-pink-600 transition-all shadow-md"
-                >
-                  <Send className="w-5 h-5" />
-                  Create Post
-                </button>
-              </div>
-            ) : (
-              myPosts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={{
-                    id: post.id,
-                    content: post.content,
-                    postType: post.postType || 'ARTICLE',
-                    visibility: post.visibility,
-                    author: {
-                      id: post.author.id,
-                      firstName: post.author.firstName,
-                      lastName: post.author.lastName,
-                      profileImage: post.author.profilePictureUrl,
-                      role: post.author.role,
-                    },
-                    createdAt: post.createdAt,
-                    likesCount: post.likesCount,
-                    commentsCount: post.commentsCount,
-                    sharesCount: post.sharesCount,
-                    isLiked: isPostLiked(post),
-                    isBookmarked: post.isBookmarked,
-                    mediaUrls: post.mediaUrls,
-                    mediaDisplayMode: post.mediaDisplayMode,
-                    pollOptions: post.pollOptions?.map(opt => ({
-                      id: opt.id,
-                      text: opt.text,
-                      votes: opt._count?.votes || 0,
-                    })),
-                    userVotedOptionId: post.userVotedOptionId,
-                  }}
-                  onLike={handleLike}
-                  onComment={(postId, content) => {
-                    setNewComment(prev => ({ ...prev, [postId]: content }));
-                    handleAddComment(postId);
-                  }}
-                  onVote={handleVote}
-                  onBookmark={handleBookmark}
-                  onShare={handleShare}
-                  onEdit={handleEditPost}
-                  onDelete={handleDeletePost}
-                  onViewAnalytics={handleViewAnalytics}
-                  currentUserId={user?.id}
-                />
-              ))
+            {/* Insights Tab */}
+            {activeTab === 'insights' && (
+              <InsightsDashboard apiUrl={FEED_API} />
             )}
-          </div>
-        )}
 
-        {/* Insights Tab */}
-        {activeTab === 'insights' && (
-          <InsightsDashboard apiUrl={FEED_API} />
-        )}
-
-        {/* Activity Tab */}
-        {activeTab === 'activity' && (
-          <ActivityDashboard apiUrl={FEED_API} />
-        )}
-
-        {/* Bookmarks Tab */}
-        {activeTab === 'bookmarks' && (
-          <div className="space-y-4">
-            {bookmarkedPosts.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-yellow-100 to-orange-100 flex items-center justify-center">
-                  <Bookmark className="w-8 h-8 text-yellow-500" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">No saved posts</h3>
-                <p className="text-gray-600">Posts you bookmark will appear here.</p>
-              </div>
-            ) : (
-              bookmarkedPosts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={{
-                    id: post.id,
-                    content: post.content,
-                    postType: post.postType || 'ARTICLE',
-                    visibility: post.visibility,
-                    author: {
-                      id: post.author.id,
-                      firstName: post.author.firstName,
-                      lastName: post.author.lastName,
-                      profileImage: post.author.profilePictureUrl,
-                      role: post.author.role,
-                    },
-                    createdAt: post.createdAt,
-                    likesCount: post.likesCount,
-                    commentsCount: post.commentsCount,
-                    sharesCount: post.sharesCount,
-                    isLiked: isPostLiked(post),
-                    isBookmarked: true,
-                    mediaUrls: post.mediaUrls,
-                    mediaDisplayMode: post.mediaDisplayMode,
-                    pollOptions: post.pollOptions?.map(opt => ({
-                      id: opt.id,
-                      text: opt.text,
-                      votes: opt._count?.votes || 0,
-                    })),
-                    userVotedOptionId: post.userVotedOptionId,
-                  }}
-                  onLike={handleLike}
-                  onComment={(postId, content) => {
-                    setNewComment(prev => ({ ...prev, [postId]: content }));
-                    handleAddComment(postId);
-                  }}
-                  onVote={handleVote}
-                  onBookmark={handleBookmark}
-                  onShare={handleShare}
-                  onEdit={handleEditPost}
-                  onDelete={handleDeletePost}
-                  onViewAnalytics={handleViewAnalytics}
-                  currentUserId={user?.id}
-                />
-              ))
+            {/* Activity Tab */}
+            {activeTab === 'activity' && (
+              <ActivityDashboard apiUrl={FEED_API} />
             )}
-          </div>
-        )}
+
+            {/* Bookmarks Tab */}
+            {activeTab === 'bookmarks' && (
+              <div className="space-y-4">
+                {bookmarkedPosts.length === 0 ? (
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 text-center">
+                    <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-100 to-yellow-100 flex items-center justify-center">
+                      <Bookmark className="w-10 h-10 text-amber-500" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">No saved posts</h3>
+                    <p className="text-gray-600">Posts you bookmark will appear here for easy access.</p>
+                  </div>
+                ) : (
+                  bookmarkedPosts.map((post, index) => (
+                    <div 
+                      key={post.id}
+                      className="animate-fadeInUp"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <PostCard
+                        post={{
+                          id: post.id,
+                          content: post.content,
+                          postType: post.postType || 'ARTICLE',
+                          visibility: post.visibility,
+                          author: {
+                            id: post.author.id,
+                            firstName: post.author.firstName,
+                            lastName: post.author.lastName,
+                            profileImage: post.author.profilePictureUrl,
+                            role: post.author.role,
+                          },
+                          createdAt: post.createdAt,
+                          likesCount: post.likesCount,
+                          commentsCount: post.commentsCount,
+                          sharesCount: post.sharesCount,
+                          isLiked: isPostLiked(post),
+                          isBookmarked: true,
+                          mediaUrls: post.mediaUrls,
+                          mediaDisplayMode: post.mediaDisplayMode,
+                          pollOptions: post.pollOptions?.map(opt => ({
+                            id: opt.id,
+                            text: opt.text,
+                            votes: opt._count?.votes || 0,
+                          })),
+                          userVotedOptionId: post.userVotedOptionId,
+                        }}
+                        onLike={handleLike}
+                        onComment={(postId, content) => {
+                          setNewComment(prev => ({ ...prev, [postId]: content }));
+                          handleAddComment(postId);
+                        }}
+                        onVote={handleVote}
+                        onBookmark={handleBookmark}
+                        onShare={handleShare}
+                        onEdit={handleEditPost}
+                        onDelete={handleDeletePost}
+                        onViewAnalytics={handleViewAnalytics}
+                        currentUserId={user?.id}
+                      />
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </main>
 
-          {/* Right Sidebar */}
+          {/* Right Sidebar - Compact Widgets */}
           <aside className="hidden lg:block lg:col-span-3">
             <div className="sticky top-20 space-y-4">
-              {/* Trending Section */}
-              <TrendingSection apiUrl={FEED_API} />
+              {/* Learning Spotlight */}
+              <LearningSpotlight />
 
-              {/* Quick Actions Card */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
-                <div className="space-y-2">
-                  <button 
-                    onClick={() => setShowCreateModal(true)}
-                    className="w-full flex items-center gap-3 p-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center">
-                      <FileText className="w-4 h-4 text-purple-600" />
-                    </div>
-                    <span>Write an article</span>
-                  </button>
-                  <button 
-                    onClick={() => setShowCreateModal(true)}
-                    className="w-full flex items-center gap-3 p-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
-                      <BarChart3 className="w-4 h-4 text-orange-600" />
-                    </div>
-                    <span>Create a poll</span>
-                  </button>
-                  <button 
-                    onClick={() => setShowCreateModal(true)}
-                    className="w-full flex items-center gap-3 p-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
-                      <Award className="w-4 h-4 text-green-600" />
-                    </div>
-                    <span>Share achievement</span>
-                  </button>
-                </div>
-              </div>
+              {/* Study Groups */}
+              <StudyGroupsWidget />
+
+              {/* Upcoming Events */}
+              <UpcomingEventsWidget />
+
+              {/* Top Contributors */}
+              <TopContributorsWidget />
+
+              {/* Quick Resources */}
+              <QuickResourcesWidget />
 
               {/* Footer Links */}
-              <div className="text-xs text-gray-500 px-2">
-                <div className="flex flex-wrap gap-x-2 gap-y-1">
-                  <a href="#" className="hover:text-purple-600 hover:underline">About</a>
-                  <a href="#" className="hover:text-purple-600 hover:underline">Help</a>
-                  <a href="#" className="hover:text-purple-600 hover:underline">Privacy</a>
-                  <a href="#" className="hover:text-purple-600 hover:underline">Terms</a>
+              <div className="text-xs text-gray-400 px-2 pt-2">
+                <div className="flex flex-wrap gap-x-3 gap-y-1">
+                  <a href="#" className="hover:text-[#F9A825] transition-colors">About</a>
+                  <a href="#" className="hover:text-[#F9A825] transition-colors">Help</a>
+                  <a href="#" className="hover:text-[#F9A825] transition-colors">Privacy</a>
+                  <a href="#" className="hover:text-[#F9A825] transition-colors">Terms</a>
                 </div>
-                <p className="mt-2">Stunity © 2026</p>
+                <p className="mt-3 flex items-center gap-1">
+                  <span className="font-semibold text-[#F9A825]">Stunity</span> © 2026
+                </p>
               </div>
             </div>
           </aside>
 
         </div>
       </div>
+
+
 
       {/* Create Post Modal */}
       <CreatePostModal

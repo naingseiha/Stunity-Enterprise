@@ -43,11 +43,11 @@ export interface CreatePostData {
 }
 
 const POST_TYPES = [
-  { id: 'ARTICLE', label: 'Article', icon: FileText, description: 'Share thoughts or updates', color: 'blue' },
-  { id: 'POLL', label: 'Poll', icon: BarChart3, description: 'Ask for opinions', color: 'purple' },
-  { id: 'ANNOUNCEMENT', label: 'Announcement', icon: Megaphone, description: 'Official announcements', color: 'red' },
-  { id: 'QUESTION', label: 'Question', icon: HelpCircle, description: 'Ask the community', color: 'green' },
-  { id: 'ACHIEVEMENT', label: 'Achievement', icon: Award, description: 'Celebrate success', color: 'yellow' },
+  { id: 'ARTICLE', label: 'Article', icon: FileText, description: 'Share thoughts or updates', color: 'green' },
+  { id: 'POLL', label: 'Poll', icon: BarChart3, description: 'Ask for opinions', color: 'violet' },
+  { id: 'ANNOUNCEMENT', label: 'Announcement', icon: Megaphone, description: 'Official announcements', color: 'rose' },
+  { id: 'QUESTION', label: 'Question', icon: HelpCircle, description: 'Ask the community', color: 'teal' },
+  { id: 'ACHIEVEMENT', label: 'Achievement', icon: Award, description: 'Celebrate success', color: 'amber' },
 ];
 
 const VISIBILITY_OPTIONS = [
@@ -181,13 +181,13 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
 
   const getTypeColor = (type: string) => {
     const colors: Record<string, string> = {
-      blue: 'from-blue-500 to-blue-600',
-      purple: 'from-purple-500 to-purple-600',
-      red: 'from-red-500 to-red-600',
-      green: 'from-green-500 to-green-600',
-      yellow: 'from-yellow-500 to-orange-500',
+      green: 'from-[#F9A825] to-[#FFB74D]',
+      violet: 'from-violet-500 to-purple-600',
+      rose: 'from-rose-500 to-pink-600',
+      teal: 'from-teal-500 to-cyan-600',
+      amber: 'from-amber-500 to-yellow-500',
     };
-    return colors[type] || colors.blue;
+    return colors[type] || colors.green;
   };
 
   if (!isOpen) return null;
@@ -290,8 +290,8 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                               setVisibility(option.id);
                               setShowVisibilitySelector(false);
                             }}
-                            className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors ${
-                              visibility === option.id ? 'bg-blue-50' : ''
+                            className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-amber-50 transition-colors ${
+                              visibility === option.id ? 'bg-amber-50' : ''
                             }`}
                           >
                             <Icon className="w-4 h-4 text-gray-600" />
@@ -315,7 +315,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             onChange={(e) => setContent(e.target.value)}
             placeholder={getPlaceholder()}
             rows={4}
-            className="w-full p-3 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900"
+            className="w-full p-3 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#F9A825] text-gray-900"
             autoFocus
           />
 
@@ -325,7 +325,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
               <p className="text-sm font-medium text-gray-700">Poll Options</p>
               {pollOptions.map((option, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-xs font-medium">
+                  <div className="w-6 h-6 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 text-xs font-medium">
                     {index + 1}
                   </div>
                   <input
@@ -333,12 +333,12 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                     value={option}
                     onChange={(e) => handlePollOptionChange(index, e.target.value)}
                     placeholder={`Option ${index + 1}`}
-                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                   />
                   {pollOptions.length > 2 && (
                     <button
                       onClick={() => handleRemovePollOption(index)}
-                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -348,7 +348,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
               {pollOptions.length < 6 && (
                 <button
                   onClick={handleAddPollOption}
-                  className="flex items-center gap-2 px-3 py-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors text-sm font-medium"
+                  className="flex items-center gap-2 px-3 py-2 text-violet-600 hover:bg-violet-50 rounded-full transition-colors text-sm font-medium"
                 >
                   <Plus className="w-4 h-4" />
                   Add Option
@@ -359,8 +359,8 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
 
           {/* Announcement Badge (only for ANNOUNCEMENT type) */}
           {postType === 'ANNOUNCEMENT' && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-              <div className="flex items-center gap-2 text-red-700">
+            <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl">
+              <div className="flex items-center gap-2 text-rose-700">
                 <Megaphone className="w-4 h-4" />
                 <span className="text-sm font-medium">This will be marked as an official announcement</span>
               </div>
@@ -369,8 +369,8 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
 
           {/* Achievement Badge (only for ACHIEVEMENT type) */}
           {postType === 'ACHIEVEMENT' && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
-              <div className="flex items-center gap-2 text-yellow-700">
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+              <div className="flex items-center gap-2 text-amber-700">
                 <Award className="w-4 h-4" />
                 <span className="text-sm font-medium">Celebrate and share your achievement!</span>
               </div>
@@ -406,7 +406,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                         setShowVisibilitySelector(false);
                       }}
                       className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                        showDisplayModeSelector ? 'bg-purple-200 text-purple-700' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                        showDisplayModeSelector ? 'bg-[#F9A825]/20 text-[#F9A825]' : 'bg-[#F9A825]/10 text-[#F9A825] hover:bg-[#F9A825]/20'
                       }`}
                     >
                       <selectedDisplayMode.icon className="w-3.5 h-3.5" />
@@ -425,11 +425,11 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                                 setMediaDisplayMode(mode.id as 'AUTO' | 'FIXED_HEIGHT' | 'FULL_HEIGHT');
                                 setShowDisplayModeSelector(false);
                               }}
-                              className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors ${
-                                mediaDisplayMode === mode.id ? 'bg-purple-50' : ''
+                              className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-amber-50 transition-colors ${
+                                mediaDisplayMode === mode.id ? 'bg-amber-50' : ''
                               }`}
                             >
-                              <Icon className="w-4 h-4 text-purple-600" />
+                              <Icon className="w-4 h-4 text-[#F9A825]" />
                               <div className="text-left">
                                 <p className="text-sm font-medium text-gray-900">{mode.label}</p>
                                 <p className="text-xs text-gray-500">{mode.description}</p>
@@ -473,9 +473,9 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
 
                 {/* Display Mode Info */}
                 <div className={`p-2 rounded-lg text-xs ${
-                  mediaDisplayMode === 'AUTO' ? 'bg-purple-50 text-purple-700' :
+                  mediaDisplayMode === 'AUTO' ? 'bg-amber-50 text-[#F9A825]' :
                   mediaDisplayMode === 'FIXED_HEIGHT' ? 'bg-blue-50 text-blue-700' :
-                  'bg-green-50 text-green-700'
+                  'bg-teal-50 text-teal-700'
                 }`}>
                   <div className="flex items-center gap-2">
                     <selectedDisplayMode.icon className="w-3.5 h-3.5" />
@@ -488,7 +488,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             {/* Add Photo Button */}
             <button 
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm"
+              className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-amber-50 rounded-full transition-colors text-sm"
             >
               <ImageIcon className="w-4 h-4" />
               {mediaUrls.length > 0 ? 'Add More Photos' : 'Add Photo'}
