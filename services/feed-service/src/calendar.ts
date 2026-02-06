@@ -1,6 +1,6 @@
 import express from 'express';
 import { PrismaClient, CalendarEventType, EventPrivacy, RSVPStatus } from '@prisma/client';
-import { publishEvent, createEvent } from './sse';
+import { EventPublisher } from './redis';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -294,14 +294,15 @@ router.post('/', async (req, res) => {
           select: { followerId: true },
         });
         
-        followers.forEach(f => {
-          publishEvent(f.followerId, createEvent('NEW_POST', {
-            postId: feedPost.id,
-            authorId: userId,
-            authorName: `${event.creator.firstName} ${event.creator.lastName}`,
-            postPreview: `Created a new event: ${title}`,
-          }));
-        });
+        const followerIds = followers.map(f => f.followerId);
+        if (followerIds.length > 0) {
+          await EventPublisher.newPost(
+            userId,
+            followerIds,
+            feedPost.id,
+            `Created a new event: ${title}`
+          );
+        }
       } catch (postError) {
         // Don't fail event creation if post creation fails
         console.error('Failed to create event announcement post:', postError);

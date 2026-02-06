@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { PrismaClient, StudyClubType, ClubPrivacy, ClubMemberRole } from '@prisma/client';
-import { publishEvent, createEvent } from './sse';
+import { EventPublisher } from './redis';
 
 const router = express.Router();
 let prisma: PrismaClient;
@@ -103,14 +103,15 @@ router.post('/', async (req: AuthRequest, res: Response) => {
           select: { followerId: true },
         });
         
-        followers.forEach(f => {
-          publishEvent(f.followerId, createEvent('NEW_POST', {
-            postId: feedPost.id,
-            authorId: userId,
-            authorName: `${club.creator.firstName} ${club.creator.lastName}`,
-            postPreview: `Created a new study club: ${name}`,
-          }));
-        });
+        const followerIds = followers.map(f => f.followerId);
+        if (followerIds.length > 0) {
+          await EventPublisher.newPost(
+            userId,
+            followerIds,
+            feedPost.id,
+            `Created a new study club: ${name}`
+          );
+        }
       } catch (postError) {
         // Don't fail club creation if post creation fails
         console.error('Failed to create club announcement post:', postError);
