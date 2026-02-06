@@ -1,7 +1,7 @@
 # Next Implementation Roadmap
 
 **Last Updated:** February 6, 2026  
-**Status:** Phase 24 Complete - Stories Feature & Navigation Optimization
+**Status:** Phase 26 Complete - User Profiles Enhancement
 
 This document outlines the planned next steps for Stunity Enterprise development.
 
@@ -9,7 +9,15 @@ This document outlines the planned next steps for Stunity Enterprise development
 
 ## ✅ Recently Completed (February 6, 2026)
 
-### Navigation Performance Optimization ✅ NEW
+### Phase 26: User Profiles Enhancement ✅ NEW
+- [x] Education CRUD on profile edit page
+- [x] EducationModal with degree, field of study, dates, grade, activities
+- [x] Education section UI with add, edit, delete functionality
+- [x] Follow/Unfollow button on profile view (already working)
+- [x] Followers/Following page with tabs
+- [x] Full API integration with backend endpoints
+
+### Navigation Performance Optimization ✅
 - [x] Optimistic UI pattern for instant menu feedback
 - [x] Menu items highlight immediately on click
 - [x] Loading spinner on navigating item
@@ -17,7 +25,7 @@ This document outlines the planned next steps for Stunity Enterprise development
 - [x] Reduced transitions to 150ms for snappier feel
 - [x] React useTransition for smooth concurrent rendering
 
-### Phase 24: Stories Feature ✅ NEW
+### Phase 24: Stories Feature ✅
 - [x] Story, StoryView, StoryReaction database models
 - [x] Complete stories API (create, view, react, delete)
 - [x] Story circles at top of feed
@@ -34,19 +42,6 @@ This document outlines the planned next steps for Stunity Enterprise development
 - [x] "My Created" tab for course management
 - [x] Draft/Published status badges
 
-### Phase 22: Course Detail & Lesson Viewer ✅
-- [x] Course detail page at `/learn/course/[id]`
-- [x] Hero header with course info, rating, stats
-- [x] Overview, Curriculum, Reviews tabs
-- [x] Instructor profile section
-- [x] Enroll/Continue learning functionality
-- [x] Lesson viewer at `/learn/course/[id]/lesson/[lessonId]`
-- [x] Dark theme video player layout
-- [x] Mark lesson as complete
-- [x] Previous/Next lesson navigation
-- [x] Course content sidebar with progress
-- [x] Course cards now link to detail page
-
 See `PROJECT_STATUS.md` for complete feature history.
 
 ---
@@ -62,22 +57,22 @@ Enhanced notification system with user preferences.
 **Features:**
 - Enhanced notification triggers (follower, DM, mention, etc.)
 - Notification preferences page
-- Email notification templates
+- Email notification templates  
 - Filter notifications by type
 - Real-time notification updates
-- Draft/Publish toggle
 
-**Files to create:**
-```
-apps/web/src/app/[locale]/learn/create/page.tsx
-apps/web/src/app/[locale]/learn/course/[id]/edit/page.tsx
-```
-
-### 1.2 Stories/Status Updates
-**Status:** Not started  
+### 1.2 Messaging Improvements
+**Status:** Ready to implement  
 **Estimated Effort:** 2 sessions
 
-24-hour ephemeral content like Instagram/WhatsApp stories.
+Group messaging and enhanced DM features.
+
+**Features:**
+- Group messaging (multi-person chats)
+- File attachments in DMs
+- Read receipts
+- Typing indicators
+- Message search
 
 **Backend:**
 - Story model (mediaUrl, text, backgroundColor, expiresAt)
