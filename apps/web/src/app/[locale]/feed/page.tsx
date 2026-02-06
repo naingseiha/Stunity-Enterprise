@@ -1049,10 +1049,40 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                           })),
                         }}
                         onLike={handleLike}
-                        onComment={(postId, content) => {
-                          setNewComment(prev => ({ ...prev, [postId]: content }));
-                          handleAddComment(postId);
+                        onComment={async (postId, content) => {
+                          // Directly submit the comment with the content passed from PostCard
+                          const token = TokenManager.getAccessToken();
+                          if (!token || !content.trim()) return;
+                          
+                          try {
+                            const res = await fetch(`${FEED_API}/posts/${postId}/comments`, {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${token}`
+                              },
+                              body: JSON.stringify({ content: content.trim() })
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                              setComments(prev => ({
+                                ...prev,
+                                [postId]: [data.data, ...(prev[postId] || [])]
+                              }));
+                              setPosts(prev => prev.map(p => 
+                                p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p
+                              ));
+                            }
+                          } catch (error) {
+                            console.error('Failed to add comment:', error);
+                          }
                         }}
+                        onToggleComments={(postId) => {
+                          if (!comments[postId]) {
+                            fetchComments(postId);
+                          }
+                        }}
+                        loadingComments={loadingComments.has(post.id)}
                         onVote={handleVote}
                         onBookmark={handleBookmark}
                         onShare={handleShare}
@@ -1135,14 +1165,51 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                             votes: opt._count?.votes || 0,
                           })),
                           userVotedOptionId: post.userVotedOptionId,
+                          comments: comments[post.id]?.map(c => ({
+                            id: c.id,
+                            content: c.content,
+                            author: {
+                              firstName: c.author.firstName,
+                              lastName: c.author.lastName,
+                            },
+                            createdAt: c.createdAt,
+                          })),
                         }}
                         onLike={handleLike}
-                        onComment={(postId, content) => {
-                          setNewComment(prev => ({ ...prev, [postId]: content }));
-                    handleAddComment(postId);
-                  }}
-                  onVote={handleVote}
-                  onBookmark={handleBookmark}
+                        onComment={async (postId, content) => {
+                          const token = TokenManager.getAccessToken();
+                          if (!token || !content.trim()) return;
+                          try {
+                            const res = await fetch(`${FEED_API}/posts/${postId}/comments`, {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${token}`
+                              },
+                              body: JSON.stringify({ content: content.trim() })
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                              setComments(prev => ({
+                                ...prev,
+                                [postId]: [data.data, ...(prev[postId] || [])]
+                              }));
+                              setMyPosts(prev => prev.map(p => 
+                                p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p
+                              ));
+                            }
+                          } catch (error) {
+                            console.error('Failed to add comment:', error);
+                          }
+                        }}
+                        onToggleComments={(postId) => {
+                          if (!comments[postId]) {
+                            fetchComments(postId);
+                          }
+                        }}
+                        loadingComments={loadingComments.has(post.id)}
+                        onVote={handleVote}
+                        onBookmark={handleBookmark}
                         onShare={handleShare}
                         onEdit={handleEditPost}
                         onDelete={handleDeletePost}
@@ -1210,12 +1277,49 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                             votes: opt._count?.votes || 0,
                           })),
                           userVotedOptionId: post.userVotedOptionId,
+                          comments: comments[post.id]?.map(c => ({
+                            id: c.id,
+                            content: c.content,
+                            author: {
+                              firstName: c.author.firstName,
+                              lastName: c.author.lastName,
+                            },
+                            createdAt: c.createdAt,
+                          })),
                         }}
                         onLike={handleLike}
-                        onComment={(postId, content) => {
-                          setNewComment(prev => ({ ...prev, [postId]: content }));
-                          handleAddComment(postId);
+                        onComment={async (postId, content) => {
+                          const token = TokenManager.getAccessToken();
+                          if (!token || !content.trim()) return;
+                          try {
+                            const res = await fetch(`${FEED_API}/posts/${postId}/comments`, {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${token}`
+                              },
+                              body: JSON.stringify({ content: content.trim() })
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                              setComments(prev => ({
+                                ...prev,
+                                [postId]: [data.data, ...(prev[postId] || [])]
+                              }));
+                              setBookmarkedPosts(prev => prev.map(p => 
+                                p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p
+                              ));
+                            }
+                          } catch (error) {
+                            console.error('Failed to add comment:', error);
+                          }
                         }}
+                        onToggleComments={(postId) => {
+                          if (!comments[postId]) {
+                            fetchComments(postId);
+                          }
+                        }}
+                        loadingComments={loadingComments.has(post.id)}
                         onVote={handleVote}
                         onBookmark={handleBookmark}
                         onShare={handleShare}

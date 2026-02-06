@@ -90,6 +90,7 @@ interface PostCardProps {
   onLike: (postId: string) => void;
   onValue?: (postId: string) => void;
   onComment: (postId: string, content: string) => void;
+  onToggleComments?: (postId: string) => void;
   onVote?: (postId: string, optionId: string) => void;
   onBookmark?: (postId: string) => void;
   onShare?: (postId: string) => void;
@@ -97,20 +98,23 @@ interface PostCardProps {
   onDelete?: (postId: string) => void;
   onViewAnalytics?: (postId: string) => void;
   currentUserId?: string;
+  loadingComments?: boolean;
 }
 
 export default function PostCard({ 
   post, 
   onLike,
   onValue, 
-  onComment, 
+  onComment,
+  onToggleComments,
   onVote, 
   onBookmark,
   onShare,
   onEdit,
   onDelete,
   onViewAnalytics,
-  currentUserId 
+  currentUserId,
+  loadingComments = false,
 }: PostCardProps) {
   const params = useParams();
   const router = useRouter();
@@ -474,7 +478,13 @@ export default function PostCard({
           
           {/* Comment */}
           <button
-            onClick={() => setShowComments(!showComments)}
+            onClick={() => {
+              const newState = !showComments;
+              setShowComments(newState);
+              if (newState && onToggleComments) {
+                onToggleComments(post.id);
+              }
+            }}
             className={`flex-1 flex items-center justify-center gap-1 py-2 rounded transition-colors ${
               showComments ? 'text-[#F9A825]' : 'text-gray-500 hover:bg-gray-100'
             }`}
@@ -519,14 +529,23 @@ export default function PostCard({
               <button
                 onClick={handleSubmitComment}
                 disabled={!commentText.trim()}
-                className="px-4 py-2 bg-[#F9A825] text-white rounded-full text-sm font-medium hover:bg-[#E89A1E] disabled:opacity-50 transition-colors"
+                className="px-4 py-2 bg-[#F9A825] text-white rounded-full text-sm font-medium hover:bg-[#E89A1E] disabled:opacity-50 transition-colors flex items-center gap-1"
               >
+                <Send className="w-3.5 h-3.5" />
                 Post
               </button>
             </div>
 
+            {/* Loading State */}
+            {loadingComments && (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-5 h-5 text-[#F9A825] animate-spin" />
+                <span className="ml-2 text-sm text-gray-500">Loading comments...</span>
+              </div>
+            )}
+
             {/* Comments List */}
-            {post.comments && post.comments.length > 0 && (
+            {!loadingComments && post.comments && post.comments.length > 0 && (
               <div className="space-y-3">
                 {post.comments.map((comment) => (
                   <div key={comment.id} className="flex gap-2 animate-fadeIn">
@@ -542,6 +561,11 @@ export default function PostCard({
                   </div>
                 ))}
               </div>
+            )}
+
+            {/* No Comments */}
+            {!loadingComments && (!post.comments || post.comments.length === 0) && (
+              <p className="text-sm text-gray-500 text-center py-2">No comments yet. Be the first to comment!</p>
             )}
           </div>
         )}
