@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useMemo, useCallback, useEffect } from 'react';
+import { useState, useTransition, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -23,6 +23,7 @@ import {
   ClipboardCheck,
   Loader2,
   MessageCircle,
+  ChevronRight,
 } from 'lucide-react';
 import AcademicYearSelector from './AcademicYearSelector';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -45,6 +46,9 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [activeHover, setActiveHover] = useState<string | null>(null);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   
   // Optimistic navigation - track clicked path for instant feedback
   const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
@@ -53,6 +57,24 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   useEffect(() => {
     setOptimisticPath(null);
   }, [pathname]);
+
+  // Handle scroll for navbar background
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Close profile menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Memoize context calculations for better performance
   const isSchoolContext = useMemo(() => 
@@ -133,27 +155,34 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
 
   return (
     <>
-      {/* Main Navigation Bar */}
-      <nav className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+      {/* Apple-inspired Navigation Bar */}
+      <nav className={`
+        sticky top-0 z-50 transition-all duration-300 ease-out
+        ${scrolled 
+          ? 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl shadow-sm border-b border-gray-200/50 dark:border-gray-800/50' 
+          : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-100 dark:border-gray-800'
+        }
+      `}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-14">
             
-            {/* Logo & Brand */}
-            <div className="flex items-center gap-8">
+            {/* Logo & Main Nav */}
+            <div className="flex items-center gap-10">
+              {/* Logo */}
               <button 
                 onClick={() => router.push(isSchoolContext ? `/${locale}/dashboard` : `/${locale}/feed`)}
-                className="flex items-center gap-2 group"
+                className="flex items-center gap-2 group relative"
                 title={isSchoolContext ? "Go to Dashboard" : "Go to Feed"}
               >
                 <img 
                   src="/stunity-logo.png" 
-                  alt="Stunity Logo" 
-                  className="h-10 w-auto object-contain group-hover:scale-105 transition-transform"
+                  alt="Stunity" 
+                  className="h-8 w-auto object-contain transition-all duration-200 group-hover:opacity-80"
                 />
               </button>
 
-              {/* Main Navigation Items */}
-              <div className="hidden md:flex items-center gap-1">
+              {/* Main Navigation - Apple Style */}
+              <div className="hidden md:flex items-center">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -161,23 +190,31 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                       key={item.name}
                       href={item.path}
                       prefetch={true}
-                      className={`
-                        relative flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all
-                        ${item.active 
-                          ? 'text-blue-600 bg-blue-50' 
-                          : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
-                        }
-                      `}
+                      className="relative group px-4 py-2"
                     >
-                      <Icon className="w-5 h-5" />
-                      <span>{item.name}</span>
+                      <span className={`
+                        relative z-10 flex items-center gap-1.5 text-[13px] font-medium tracking-tight transition-colors duration-200
+                        ${item.active 
+                          ? 'text-gray-900 dark:text-white' 
+                          : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white'
+                        }
+                      `}>
+                        {item.name}
+                      </span>
+                      {/* Active indicator - subtle underline */}
+                      {item.active && (
+                        <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-gradient-to-r from-orange-500 to-amber-500 rounded-full" />
+                      )}
+                      {/* Hover indicator */}
+                      <span className={`
+                        absolute inset-0 rounded-lg bg-gray-100 dark:bg-gray-800 opacity-0 group-hover:opacity-100 transition-opacity duration-200
+                        ${item.active ? 'opacity-0 group-hover:opacity-0' : ''}
+                      `} />
+                      {/* Badge */}
                       {item.badge && (
-                        <span className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-purple-500 text-white text-xs rounded-full">
+                        <span className="absolute -top-0.5 -right-1 px-1.5 py-0.5 bg-gradient-to-r from-purple-500 to-violet-500 text-white text-[9px] font-semibold rounded-full uppercase tracking-wider">
                           {item.badge}
                         </span>
-                      )}
-                      {item.active && (
-                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
                       )}
                     </Link>
                   );
@@ -185,20 +222,39 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
               </div>
             </div>
 
-            {/* Search Bar */}
-            <div className="hidden lg:flex flex-1 max-w-md mx-8">
-              <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            {/* Center Search - Expandable */}
+            <div className={`
+              hidden lg:flex items-center transition-all duration-300 ease-out
+              ${searchFocused ? 'flex-1 max-w-xl mx-4' : 'w-64'}
+            `}>
+              <div className="relative w-full group">
+                <Search className={`
+                  absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors duration-200
+                  ${searchFocused ? 'text-orange-500' : 'text-gray-400 group-hover:text-gray-500'}
+                `} />
                 <input
                   type="text"
-                  placeholder="Search..."
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+                  placeholder="Search"
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
+                  className={`
+                    w-full pl-9 pr-4 py-2 text-[13px] rounded-lg transition-all duration-200
+                    bg-gray-100/80 dark:bg-gray-800/80 border border-transparent
+                    placeholder:text-gray-400 dark:placeholder:text-gray-500
+                    focus:bg-white dark:focus:bg-gray-800 focus:border-gray-200 dark:focus:border-gray-700
+                    focus:ring-2 focus:ring-orange-500/20 focus:outline-none
+                  `}
                 />
+                {searchFocused && (
+                  <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-medium text-gray-400 bg-gray-200/80 dark:bg-gray-700 rounded">
+                    ESC
+                  </kbd>
+                )}
               </div>
             </div>
 
             {/* Right Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               {/* Language Switcher */}
               <div className="hidden sm:block">
                 <LanguageSwitcher />
@@ -214,64 +270,89 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
               {/* Messages */}
               <Link 
                 href={`/${locale}/messages`}
-                className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                className="relative p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-lg hover:bg-gray-100/80 dark:hover:bg-gray-800 transition-all duration-200"
               >
-                <MessageCircle className="w-5 h-5" />
+                <MessageCircle className="w-[18px] h-[18px]" />
               </Link>
 
               {/* Notifications */}
-              <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+              <button className="relative p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-lg hover:bg-gray-100/80 dark:hover:bg-gray-800 transition-all duration-200">
+                <Bell className="w-[18px] h-[18px]" />
+                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
               </button>
 
               {/* Profile Menu */}
-              <div className="relative">
+              <div className="relative ml-1" ref={profileMenuRef}>
                 <button
                   onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                  className="flex items-center gap-2 p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                  className={`
+                    flex items-center gap-2 p-1 rounded-full transition-all duration-200
+                    ${profileMenuOpen 
+                      ? 'ring-2 ring-orange-500/30 bg-gray-100 dark:bg-gray-800' 
+                      : 'hover:bg-gray-100/80 dark:hover:bg-gray-800'
+                    }
+                  `}
                 >
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white text-xs font-semibold shadow-sm">
                     {user?.firstName?.[0]}{user?.lastName?.[0]}
                   </div>
                 </button>
 
-                {/* Profile Dropdown */}
+                {/* Profile Dropdown - Refined */}
                 {profileMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50">
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="font-semibold text-gray-900">{user?.firstName} {user?.lastName}</p>
-                      <p className="text-sm text-gray-500">{school?.name}</p>
+                  <div className="absolute right-0 mt-2 w-72 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 py-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    {/* User Info */}
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white font-semibold shadow-md">
+                          {user?.firstName?.[0]}{user?.lastName?.[0]}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                            {user?.firstName} {user?.lastName}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{school?.name}</p>
+                        </div>
+                      </div>
                     </div>
-                    <Link
-                      href={`/${locale}/profile`}
-                      prefetch={true}
-                      onClick={() => setProfileMenuOpen(false)}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      <User className="w-4 h-4" />
-                      <span>My Profile</span>
-                    </Link>
-                    <Link
-                      href={`/${locale}/settings`}
-                      prefetch={true}
-                      onClick={() => setProfileMenuOpen(false)}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      <Settings className="w-4 h-4" />
-                      <span>Settings</span>
-                    </Link>
-                    <div className="border-t border-gray-100 my-2"></div>
-                    <button
-                      onClick={() => {
-                        setProfileMenuOpen(false);
-                        onLogout?.();
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Sign Out</span>
-                    </button>
+                    
+                    {/* Menu Items */}
+                    <div className="py-1">
+                      <Link
+                        href={`/${locale}/profile/me`}
+                        prefetch={true}
+                        onClick={() => setProfileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-[13px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors group"
+                      >
+                        <User className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors" />
+                        <span className="flex-1">My Profile</span>
+                        <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600" />
+                      </Link>
+                      <Link
+                        href={`/${locale}/settings`}
+                        prefetch={true}
+                        onClick={() => setProfileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-[13px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors group"
+                      >
+                        <Settings className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors" />
+                        <span className="flex-1">Settings</span>
+                        <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600" />
+                      </Link>
+                    </div>
+                    
+                    {/* Sign Out */}
+                    <div className="border-t border-gray-100 dark:border-gray-800 pt-1 pb-0.5">
+                      <button
+                        onClick={() => {
+                          setProfileMenuOpen(false);
+                          onLogout?.();
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -279,7 +360,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                className="md:hidden ml-1 p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-lg hover:bg-gray-100/80 dark:hover:bg-gray-800 transition-all duration-200"
               >
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
@@ -287,10 +368,10 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu - Refined */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 bg-white">
-            <div className="px-4 py-3 space-y-1">
+          <div className="md:hidden border-t border-gray-100 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl">
+            <div className="px-3 py-3 space-y-0.5">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -300,20 +381,21 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                     prefetch={true}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`
-                      w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors
+                      flex items-center gap-3 px-4 py-3 rounded-xl text-[15px] font-medium transition-all duration-200
                       ${item.active 
-                        ? 'text-blue-600 bg-blue-50' 
-                        : 'text-gray-700 hover:bg-gray-50'
+                        ? 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/80'
                       }
                     `}
                   >
-                    <Icon className="w-5 h-5" />
-                    <span>{item.name}</span>
+                    <Icon className={`w-5 h-5 ${item.active ? 'text-orange-500' : 'text-gray-400'}`} />
+                    <span className="flex-1">{item.name}</span>
                     {item.badge && (
-                      <span className="ml-auto px-2 py-0.5 bg-purple-500 text-white text-xs rounded-full">
+                      <span className="px-2 py-0.5 bg-gradient-to-r from-purple-500 to-violet-500 text-white text-[10px] font-semibold rounded-full uppercase">
                         {item.badge}
                       </span>
                     )}
+                    <ChevronRight className={`w-4 h-4 ${item.active ? 'text-orange-400' : 'text-gray-300'}`} />
                   </Link>
                 );
               })}
@@ -322,11 +404,11 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
         )}
       </nav>
 
-      {/* School Context Sidebar - Fixed Position */}
+      {/* School Context Sidebar - Refined */}
       {isSchoolContext && (
-        <aside className="hidden lg:block fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 overflow-y-auto">
-          <div className="p-4 space-y-1">
-            <p className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+        <aside className="hidden lg:block fixed left-0 top-14 w-60 h-[calc(100vh-3.5rem)] bg-gray-50/50 dark:bg-gray-900/50 border-r border-gray-200/80 dark:border-gray-800 overflow-y-auto">
+          <div className="p-3 space-y-0.5">
+            <p className="px-3 py-2 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
               School Management
             </p>
             {schoolMenuItems.map((item) => {
@@ -352,19 +434,19 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                   }}
                   onMouseLeave={() => setActiveHover(null)}
                   className={`
-                    w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-100
+                    flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150
                     ${isActive 
-                      ? 'text-blue-600 bg-blue-50 shadow-sm' 
+                      ? 'text-orange-600 dark:text-orange-400 bg-white dark:bg-gray-800 shadow-sm border border-gray-200/80 dark:border-gray-700' 
                       : isHovered
-                        ? 'text-blue-600 bg-blue-50/50'
-                        : 'text-gray-700 hover:bg-gray-50'
+                        ? 'text-gray-900 dark:text-white bg-white/60 dark:bg-gray-800/60'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                     }
                   `}
                 >
-                  <Icon className={`w-5 h-5 transition-transform duration-100 ${isHovered && !isActive ? 'scale-110' : ''}`} />
-                  <span>{item.name}</span>
+                  <Icon className={`w-4 h-4 transition-all duration-150 ${isActive ? 'text-orange-500' : ''}`} />
+                  <span className="flex-1">{item.name}</span>
                   {isNavigating && (
-                    <Loader2 className="w-4 h-4 ml-auto animate-spin text-blue-500" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-500" />
                   )}
                 </Link>
               );

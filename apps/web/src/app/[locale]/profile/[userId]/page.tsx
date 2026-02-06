@@ -9,11 +9,12 @@ import {
   Award, Briefcase, GraduationCap, Star, Users, Eye, Heart,
   MessageCircle, BookmarkPlus, Share2, MoreHorizontal, Edit3,
   CheckCircle, Plus, ChevronRight, Zap, TrendingUp, Trophy,
-  Code, Palette, BookOpen, Target, Clock, Globe, Shield
+  Code, Palette, BookOpen, Target, Clock, Globe, Shield, Camera
 } from 'lucide-react';
-import BlurLoader from '@/components/BlurLoader';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import ProfileZoomLoader from '@/components/profile/ProfileZoomLoader';
+import ProfileSkeleton from '@/components/profile/ProfileSkeleton';
 
 // Types
 interface UserProfile {
@@ -157,56 +158,8 @@ interface Recommendation {
   author: { id: string; firstName: string; lastName: string; profilePictureUrl?: string; headline?: string; professionalTitle?: string };
 }
 
-// Skeleton Component
-function ProfileSkeleton() {
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Cover skeleton */}
-      <div className="h-48 md:h-64 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 animate-pulse" />
-      
-      <div className="max-w-5xl mx-auto px-4 -mt-16 relative z-10">
-        {/* Profile header skeleton */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-6">
-            <div className="w-32 h-32 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse border-4 border-white dark:border-gray-800" />
-            <div className="flex-1 space-y-3">
-              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-48 animate-pulse" />
-              <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-64 animate-pulse" />
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 animate-pulse" />
-              <div className="flex gap-4 mt-4">
-                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse" />
-                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Content skeleton */}
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 space-y-6">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-6 animate-pulse">
-                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-4" />
-                <div className="space-y-2">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="space-y-6">
-            {[1, 2].map(i => (
-              <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-6 animate-pulse">
-                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-24 mb-4" />
-                <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+// Skeleton Component - Use imported ProfileSkeleton instead
+// The ProfileSkeleton component provides a more polished loading experience
 
 // Skill Level Badge
 const skillLevelColors: Record<string, string> = {
@@ -359,30 +312,56 @@ export default function ProfilePage() {
     return new Date(date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   };
 
-  if (loading) return <ProfileSkeleton />;
+  // Show zoom loader during initial load
+  if (loading) {
+    return (
+      <>
+        <ProfileZoomLoader isLoading={loading} minimumDuration={600} />
+        <ProfileSkeleton />
+      </>
+    );
+  }
+  
   if (!profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Profile Not Found</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">This profile doesn't exist or is private.</p>
-          <Link href={`/${locale}/feed`} className="text-blue-600 hover:underline">← Back to Feed</Link>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50/50 via-white to-amber-50/30">
+        <div className="text-center bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-orange-100 to-amber-100 rounded-full flex items-center justify-center">
+            <Users className="w-8 h-8 text-orange-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Profile Not Found</h2>
+          <p className="text-gray-600 mb-6">This profile doesn&apos;t exist or is private.</p>
+          <Link 
+            href={`/${locale}/feed`} 
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-full font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-md hover:shadow-lg"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Feed
+          </Link>
         </div>
       </div>
     );
   }
 
   return (
-    <BlurLoader isLoading={loading} skeleton={<ProfileSkeleton />}>
-      <div className={`min-h-screen bg-gray-100 dark:bg-gray-900 transition-opacity duration-500 ${pageReady ? 'opacity-100' : 'opacity-0'}`}>
+    <>
+      {/* Zoom loader for page transitions */}
+      <ProfileZoomLoader isLoading={loading} minimumDuration={400} />
+      
+      <div className={`min-h-screen bg-gradient-to-br from-orange-50/30 via-white to-amber-50/20 transition-all duration-700 ease-out ${pageReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         {/* Navigation Bar */}
         <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
         
         <div className="max-w-5xl mx-auto px-4 py-6">
           {/* Profile Card - Contains Cover Photo */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            {/* Cover Photo - Inside the card */}
-            <div className="relative h-32 md:h-48 bg-gradient-to-r from-sky-600 to-blue-500">
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden"
+            style={{
+              animation: pageReady ? 'slideInUp 0.6s ease-out forwards' : 'none',
+            }}
+          >
+            {/* Cover Photo - Larger height for better visual impact */}
+            <div className="relative h-56 md:h-72 bg-gradient-to-br from-orange-400 via-amber-500 to-orange-600">
               {profile.coverPhotoUrl ? (
                 <Image
                   src={profile.coverPhotoUrl}
@@ -390,38 +369,62 @@ export default function ProfilePage() {
                   fill
                   className="object-cover"
                 />
-              ) : null}
+              ) : (
+                /* Decorative pattern overlay for default cover */
+                <div className="absolute inset-0 opacity-20">
+                  <div className="absolute top-1/4 left-1/4 w-32 h-32 rounded-full border-2 border-white/30" />
+                  <div className="absolute top-1/3 right-1/4 w-24 h-24 rounded-full border-2 border-white/20" />
+                  <div className="absolute bottom-1/4 left-1/3 w-16 h-16 rounded-full border-2 border-white/25" />
+                </div>
+              )}
               {/* Edit cover button */}
               {profile.isOwnProfile && (
-                <button className="absolute top-3 right-3 p-2 bg-white/90 hover:bg-white rounded-full shadow-sm transition-colors">
-                  <Edit3 className="w-4 h-4 text-gray-700" />
-                </button>
+                <Link 
+                  href={`/${locale}/profile/me/edit`}
+                  className="absolute top-4 right-4 p-2.5 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all hover:scale-105 group"
+                >
+                  <Edit3 className="w-4 h-4 text-gray-700 group-hover:text-orange-600" />
+                </Link>
               )}
+              {/* Cover gradient overlay */}
+              <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/20 to-transparent" />
             </div>
 
             {/* Profile Content */}
             <div className="px-6 pb-6">
-              {/* Avatar - Overlapping cover */}
-              <div className="relative -mt-16 md:-mt-20 mb-3">
-                <div className="relative inline-block">
-                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white dark:border-gray-800 overflow-hidden bg-gradient-to-br from-sky-500 to-blue-600">
+              {/* Avatar - Overlapping cover with larger size */}
+              <div className="relative -mt-20 md:-mt-24 mb-4">
+                <div className="relative inline-block group">
+                  <div className="w-36 h-36 md:w-44 md:h-44 rounded-full border-4 border-white dark:border-gray-800 overflow-hidden bg-gradient-to-br from-orange-400 to-amber-500 shadow-xl ring-4 ring-orange-100/50">
                     {profile.profilePictureUrl ? (
                       <Image
                         src={profile.profilePictureUrl}
                         alt={`${profile.firstName} ${profile.lastName}`}
-                        width={160}
-                        height={160}
+                        width={176}
+                        height={176}
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-white text-4xl font-semibold">
+                      <div className="w-full h-full flex items-center justify-center text-white text-5xl font-bold">
                         {profile.firstName[0]}{profile.lastName[0]}
                       </div>
                     )}
                   </div>
+                  {/* Edit avatar overlay for own profile */}
+                  {profile.isOwnProfile && (
+                    <Link
+                      href={`/${locale}/profile/me/edit`}
+                      className="absolute inset-0 w-36 h-36 md:w-44 md:h-44 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer"
+                    >
+                      <div className="flex flex-col items-center text-white">
+                        <Camera className="w-6 h-6 mb-1" />
+                        <span className="text-xs font-medium">Edit</span>
+                      </div>
+                    </Link>
+                  )}
                   {/* Open to Work badge ring */}
                   {profile.isOpenToOpportunities && (
-                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-green-600 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-[10px] font-semibold px-3 py-1 rounded-full whitespace-nowrap shadow-md">
                       #OPENTOWORK
                     </div>
                   )}
@@ -432,12 +435,12 @@ export default function ProfilePage() {
               <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                 <div className="flex-1">
                   {/* Name */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
                       {profile.firstName} {profile.lastName}
                     </h1>
                     {profile.isVerified && (
-                      <span className="text-blue-600 dark:text-blue-400 text-sm border border-blue-600 rounded-full px-2 py-0.5 flex items-center gap-1">
+                      <span className="bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm">
                         <CheckCircle className="w-3.5 h-3.5" />
                         Verified
                       </span>
@@ -445,21 +448,21 @@ export default function ProfilePage() {
                   </div>
                   
                   {/* Headline */}
-                  <p className="text-gray-700 dark:text-gray-300 mt-1">
+                  <p className="text-gray-700 dark:text-gray-300 mt-1.5 text-lg">
                     {profile.headline || profile.professionalTitle || `${profile.role} at ${profile.school?.name || 'Organization'}`}
                   </p>
                   
                   {/* Location and Contact */}
-                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-1.5">
                     {profile.location && <span>{profile.location}</span>}
                     {profile.location && <span> · </span>}
-                    <span className="text-blue-600 hover:underline cursor-pointer">Contact info</span>
+                    <span className="text-orange-600 hover:text-orange-700 hover:underline cursor-pointer transition-colors">Contact info</span>
                   </p>
 
                   {/* Connections */}
                   <Link 
                     href={`/${locale}/profile/${userId}/connections`}
-                    className="text-blue-600 hover:underline text-sm font-medium mt-1 inline-block"
+                    className="text-orange-600 hover:text-orange-700 hover:underline text-sm font-semibold mt-2 inline-block transition-colors"
                   >
                     {profile.stats.followers + profile.stats.following} connections
                   </Link>
@@ -467,38 +470,38 @@ export default function ProfilePage() {
 
                 {/* School/Organization Logo */}
                 {profile.school && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
-                      <GraduationCap className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  <div className="flex items-center gap-3 text-sm bg-gradient-to-r from-orange-50 to-amber-50 px-4 py-2.5 rounded-xl border border-orange-100">
+                    <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-amber-500 rounded-lg flex items-center justify-center shadow-sm">
+                      <GraduationCap className="w-5 h-5 text-white" />
                     </div>
-                    <span className="text-gray-700 dark:text-gray-300 font-medium">{profile.school.name}</span>
+                    <span className="text-gray-800 dark:text-gray-200 font-semibold">{profile.school.name}</span>
                   </div>
                 )}
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap gap-2 mt-4">
+              <div className="flex flex-wrap gap-3 mt-5">
                 {profile.isOwnProfile ? (
                   <>
                     <Link
                       href={`/${locale}/profile/${profile.id}/edit`}
-                      className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-sm font-medium transition-colors"
+                      className="px-5 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-full text-sm font-semibold transition-all shadow-md hover:shadow-lg"
                     >
                       Open to
                     </Link>
                     <Link
                       href={`/${locale}/profile/${profile.id}/edit`}
-                      className="px-4 py-1.5 border border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full text-sm font-medium transition-colors"
+                      className="px-5 py-2 border-2 border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-full text-sm font-semibold transition-all"
                     >
                       Add profile section
                     </Link>
                     <Link
                       href={`/${locale}/profile/${profile.id}/edit`}
-                      className="px-4 py-1.5 border border-gray-400 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-sm font-medium transition-colors"
+                      className="px-5 py-2 border border-gray-300 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 rounded-full text-sm font-medium transition-all"
                     >
                       Enhance profile
                     </Link>
-                    <button className="px-4 py-1.5 border border-gray-400 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-sm font-medium transition-colors">
+                    <button className="px-5 py-2 border border-gray-300 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 rounded-full text-sm font-medium transition-all">
                       Resources
                     </button>
                   </>
@@ -506,21 +509,21 @@ export default function ProfilePage() {
                   <>
                     <button
                       onClick={handleFollow}
-                      className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
                         following
-                          ? 'border border-gray-400 text-gray-600 hover:bg-gray-100'
-                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          ? 'border-2 border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400'
+                          : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-md hover:shadow-lg'
                       }`}
                     >
                       {following ? 'Following' : 'Connect'}
                     </button>
                     <Link
                       href={`/${locale}/messages?startWith=${profile.id}`}
-                      className="px-4 py-1.5 border border-blue-600 text-blue-600 hover:bg-blue-50 rounded-full text-sm font-medium transition-colors"
+                      className="px-5 py-2 border-2 border-orange-500 text-orange-600 hover:bg-orange-50 rounded-full text-sm font-semibold transition-all"
                     >
                       Message
                     </Link>
-                    <button className="px-4 py-1.5 border border-gray-400 text-gray-600 hover:bg-gray-100 rounded-full text-sm font-medium transition-colors">
+                    <button className="px-5 py-2 border border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 rounded-full text-sm font-medium transition-all">
                       More
                     </button>
                   </>
@@ -529,14 +532,14 @@ export default function ProfilePage() {
 
               {/* Open to Work Card - For own profile */}
               {profile.isOwnProfile && profile.isOpenToOpportunities && (
-                <div className="mt-4 p-4 border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <div className="mt-5 p-4 border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-white">Open to work</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Teacher and Educator roles</p>
-                      <button className="text-blue-600 hover:underline text-sm font-medium mt-1">Show details</button>
+                      <p className="font-semibold text-gray-900 dark:text-white">Open to work</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">Teacher and Educator roles</p>
+                      <button className="text-orange-600 hover:text-orange-700 hover:underline text-sm font-medium mt-1.5 transition-colors">Show details</button>
                     </div>
-                    <button className="p-1 hover:bg-green-100 dark:hover:bg-green-800 rounded">
+                    <button className="p-2 hover:bg-green-100 dark:hover:bg-green-800 rounded-lg transition-colors">
                       <Edit3 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                     </button>
                   </div>
@@ -546,8 +549,14 @@ export default function ProfilePage() {
           </div>
 
           {/* Navigation Tabs */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mt-2 overflow-x-auto">
-            <div className="flex">
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mt-3 overflow-x-auto"
+            style={{
+              animation: pageReady ? 'slideInUp 0.6s ease-out 0.1s forwards' : 'none',
+              opacity: pageReady ? 1 : 0,
+            }}
+          >
+            <div className="flex p-1">
               {([
                 { key: 'about', label: 'About', icon: BookOpen },
                 { key: 'activity', label: 'Activity', icon: TrendingUp },
@@ -560,10 +569,10 @@ export default function ProfilePage() {
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center gap-2 px-5 py-3 font-medium text-sm whitespace-nowrap transition-all border-b-2 -mb-px ${
+                  className={`flex items-center gap-2 px-4 py-2.5 font-medium text-sm whitespace-nowrap transition-all rounded-lg ${
                     activeTab === tab.key
-                      ? 'text-green-700 dark:text-green-400 border-green-600 dark:border-green-400'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-transparent'
+                      ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
                   {tab.label}
@@ -572,23 +581,28 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Content Grid - LinkedIn Style */}
-          <div className="grid md:grid-cols-3 gap-2 mt-2">
+          {/* Content Grid - Education Style */}
+          <div className="grid md:grid-cols-3 gap-3 mt-3">
             {/* Main Content - Left/Center */}
-            <div className="md:col-span-2 space-y-2">
+            <div className="md:col-span-2 space-y-3">
               {/* About Section */}
               {activeTab === 'about' && (
-                <div className="space-y-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div 
+                  className="space-y-3"
+                  style={{
+                    animation: 'fadeInUpContent 0.5s ease-out forwards',
+                  }}
+                >
                   {/* About Card - Always show */}
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
                     <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">About</h3>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">About</h3>
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=about`}
-                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                          className="p-2 hover:bg-orange-50 dark:hover:bg-gray-700 rounded-lg transition-colors group"
                         >
-                          <Edit3 className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                          <Edit3 className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
                         </Link>
                       )}
                     </div>
@@ -603,9 +617,10 @@ export default function ProfilePage() {
                           {profile.isOwnProfile && (
                             <Link
                               href={`/${locale}/profile/${userId}/edit?section=about`}
-                              className="inline-block mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                              className="inline-flex items-center gap-1 mt-3 text-orange-600 hover:text-orange-700 text-sm font-semibold transition-colors"
                             >
-                              + Add a summary
+                              <Plus className="w-4 h-4" />
+                              Add a summary
                             </Link>
                           )}
                         </div>
@@ -614,19 +629,19 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Activity Snapshot Card */}
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
                     <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Activity</h3>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">Activity</h3>
                       <button 
                         onClick={() => setActiveTab('activity')}
-                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        className="text-orange-600 hover:text-orange-700 text-sm font-semibold transition-colors"
                       >
                         See all activity →
                       </button>
                     </div>
                     <div className="p-6">
                       <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <span className="font-medium text-gray-900 dark:text-white">{profile.stats.posts} posts</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{profile.stats.posts} posts</span>
                         <span>·</span>
                         <span>{profile.stats.followers} followers</span>
                       </div>
@@ -637,21 +652,21 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Experience Snapshot */}
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
                     <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Experience</h3>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">Experience</h3>
                       <div className="flex items-center gap-2">
                         {profile.isOwnProfile && (
                           <Link
                             href={`/${locale}/profile/${userId}/edit?section=experience`}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                            className="p-2 hover:bg-orange-50 dark:hover:bg-gray-700 rounded-lg transition-colors group"
                           >
-                            <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                            <Plus className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
                           </Link>
                         )}
                         <button 
                           onClick={() => setActiveTab('experience')}
-                          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                          className="text-orange-600 hover:text-orange-700 text-sm font-semibold transition-colors"
                         >
                           Show all →
                         </button>
@@ -665,7 +680,7 @@ export default function ProfilePage() {
                           {profile.isOwnProfile && (
                             <Link
                               href={`/${locale}/profile/${userId}/edit?section=experience`}
-                              className="inline-block mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                              className="inline-block mt-2 text-orange-600 hover:text-orange-700 text-sm font-medium"
                             >
                               + Add experience
                             </Link>
@@ -692,7 +707,7 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Education Snapshot */}
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Education</h3>
                       <div className="flex items-center gap-2">
@@ -706,7 +721,7 @@ export default function ProfilePage() {
                         )}
                         <button 
                           onClick={() => setActiveTab('education')}
-                          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                          className="text-orange-600 hover:text-orange-700 text-sm font-medium"
                         >
                           Show all →
                         </button>
@@ -720,7 +735,7 @@ export default function ProfilePage() {
                           {profile.isOwnProfile && (
                             <Link
                               href={`/${locale}/profile/${userId}/edit?section=education`}
-                              className="inline-block mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                              className="inline-block mt-2 text-orange-600 hover:text-orange-700 text-sm font-medium"
                             >
                               + Add education
                             </Link>
@@ -729,8 +744,8 @@ export default function ProfilePage() {
                       ) : (
                         education.slice(0, 2).map((edu) => (
                           <div key={edu.id} className="p-4 flex gap-4">
-                            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <GraduationCap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                            <div className="w-12 h-12 bg-orange-50 dark:bg-orange-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <GraduationCap className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <h4 className="font-semibold text-gray-900 dark:text-white">{edu.school}</h4>
@@ -748,7 +763,7 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Skills Snapshot */}
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Skills</h3>
                       <div className="flex items-center gap-2">
@@ -762,7 +777,7 @@ export default function ProfilePage() {
                         )}
                         <button 
                           onClick={() => setActiveTab('skills')}
-                          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                          className="text-orange-600 hover:text-orange-700 text-sm font-medium"
                         >
                           Show all →
                         </button>
@@ -776,7 +791,7 @@ export default function ProfilePage() {
                           {profile.isOwnProfile && (
                             <Link
                               href={`/${locale}/profile/${userId}/edit?section=skills`}
-                              className="inline-block mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                              className="inline-block mt-2 text-orange-600 hover:text-orange-700 text-sm font-medium"
                             >
                               + Add skills
                             </Link>
@@ -787,7 +802,7 @@ export default function ProfilePage() {
                           {skills.slice(0, 6).map((skill) => (
                             <span 
                               key={skill.id} 
-                              className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium"
+                              className="px-3 py-1.5 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full text-sm font-medium"
                             >
                               {skill.skillName}
                               {skill.endorsementCount > 0 && (
@@ -810,7 +825,7 @@ export default function ProfilePage() {
 
                   {/* Interests & Languages */}
                   {(profile.interests.length > 0 || profile.languages.length > 0) && (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden">
                       <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Interests & Languages</h3>
                       </div>
@@ -847,7 +862,7 @@ export default function ProfilePage() {
 
               {/* Skills Section */}
               {activeTab === 'skills' && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Skills</h3>
                     {profile.isOwnProfile && (
@@ -867,7 +882,7 @@ export default function ProfilePage() {
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=skills`}
-                          className="inline-block mt-3 text-blue-600 hover:text-blue-700 font-medium"
+                          className="inline-block mt-3 text-orange-600 hover:text-orange-700 font-medium"
                         >
                           + Add your skills
                         </Link>
@@ -881,8 +896,8 @@ export default function ProfilePage() {
                           <div key={skill.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                             <div className="flex items-start justify-between">
                               <div className="flex items-start gap-3">
-                                <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                                  <CategoryIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                <div className="w-10 h-10 bg-orange-50 dark:bg-orange-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <CategoryIcon className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                                 </div>
                                 <div>
                                   <h4 className="font-semibold text-gray-900 dark:text-white">{skill.skillName}</h4>
@@ -906,7 +921,7 @@ export default function ProfilePage() {
                                   </span>
                                 )}
                                 {!profile.isOwnProfile && (
-                                  <button className="px-3 py-1 border border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full text-sm font-medium transition-colors">
+                                  <button className="px-3 py-1 border border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-full text-sm font-medium transition-colors">
                                     Endorse
                                   </button>
                                 )}
@@ -948,7 +963,7 @@ export default function ProfilePage() {
 
               {/* Experience Section */}
               {activeTab === 'experience' && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Experience</h3>
                     {profile.isOwnProfile && (
@@ -968,7 +983,7 @@ export default function ProfilePage() {
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=experience`}
-                          className="inline-block mt-3 text-blue-600 hover:text-blue-700 font-medium"
+                          className="inline-block mt-3 text-orange-600 hover:text-orange-700 font-medium"
                         >
                           + Add your experience
                         </Link>
@@ -1003,7 +1018,7 @@ export default function ProfilePage() {
                             {exp.skills.length > 0 && (
                               <div className="flex flex-wrap gap-1.5 mt-3">
                                 {exp.skills.slice(0, 4).map((skill, i) => (
-                                  <span key={i} className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-xs font-medium">
+                                  <span key={i} className="px-2 py-0.5 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-xs font-medium">
                                     {skill}
                                   </span>
                                 ))}
@@ -1022,7 +1037,7 @@ export default function ProfilePage() {
 
               {/* Education Section */}
               {activeTab === 'education' && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Education</h3>
                     {profile.isOwnProfile && (
@@ -1042,7 +1057,7 @@ export default function ProfilePage() {
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=education`}
-                          className="inline-block mt-3 text-blue-600 hover:text-blue-700 font-medium"
+                          className="inline-block mt-3 text-orange-600 hover:text-orange-700 font-medium"
                         >
                           + Add your education
                         </Link>
@@ -1052,8 +1067,8 @@ export default function ProfilePage() {
                     <div className="divide-y divide-gray-100 dark:divide-gray-700">
                       {education.map((edu) => (
                         <div key={edu.id} className="p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                          <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <GraduationCap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                          <div className="w-12 h-12 bg-orange-50 dark:bg-orange-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <GraduationCap className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between">
@@ -1070,7 +1085,7 @@ export default function ProfilePage() {
                                 </p>
                               </div>
                               {edu.isCurrent && (
-                                <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-medium rounded-full">
+                                <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-orange-700 dark:text-orange-400 text-xs font-medium rounded-full">
                                   Current
                                 </span>
                               )}
@@ -1086,7 +1101,7 @@ export default function ProfilePage() {
                             {edu.skills.length > 0 && (
                               <div className="flex flex-wrap gap-1.5 mt-3">
                                 {edu.skills.slice(0, 4).map((skill, i) => (
-                                  <span key={i} className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-xs font-medium">
+                                  <span key={i} className="px-2 py-0.5 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-xs font-medium">
                                     {skill}
                                   </span>
                                 ))}
@@ -1105,7 +1120,7 @@ export default function ProfilePage() {
 
               {/* Certifications Section */}
               {activeTab === 'certifications' && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Licenses & Certifications</h3>
                     {profile.isOwnProfile && (
@@ -1125,7 +1140,7 @@ export default function ProfilePage() {
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=certifications`}
-                          className="inline-block mt-3 text-blue-600 hover:text-blue-700 font-medium"
+                          className="inline-block mt-3 text-orange-600 hover:text-orange-700 font-medium"
                         >
                           + Add your first certification
                         </Link>
@@ -1177,7 +1192,7 @@ export default function ProfilePage() {
                                   href={cert.credentialUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 text-sm font-medium mt-2"
+                                  className="inline-flex items-center gap-1 text-orange-600 hover:text-orange-700 text-sm font-medium mt-2"
                                 >
                                   <ExternalLink className="w-3.5 h-3.5" />
                                   Show credential
@@ -1194,7 +1209,7 @@ export default function ProfilePage() {
 
               {/* Projects Section */}
               {activeTab === 'projects' && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Projects</h3>
                     {profile.isOwnProfile && (
@@ -1214,7 +1229,7 @@ export default function ProfilePage() {
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=projects`}
-                          className="inline-block mt-3 text-blue-600 hover:text-blue-700 font-medium"
+                          className="inline-block mt-3 text-orange-600 hover:text-orange-700 font-medium"
                         >
                           + Add your first project
                         </Link>
@@ -1282,7 +1297,7 @@ export default function ProfilePage() {
 
               {/* Activity Section */}
               {activeTab === 'activity' && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Activity</h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">{profile.stats.followers} followers</p>
@@ -1304,7 +1319,7 @@ export default function ProfilePage() {
                     </div>
                     <Link
                       href={`/${locale}/feed?author=${profile.id}`}
-                      className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
+                      className="inline-flex items-center gap-1 text-orange-600 hover:text-orange-700 font-medium"
                     >
                       See all activity
                       <ChevronRight className="w-4 h-4" />
@@ -1317,7 +1332,7 @@ export default function ProfilePage() {
             {/* Sidebar - Right */}
             <div className="space-y-4">
               {/* Achievements Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
                 <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
                   <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <Trophy className="w-4 h-4 text-amber-500" />
@@ -1345,7 +1360,7 @@ export default function ProfilePage() {
                         </div>
                       ))}
                       {achievements.length > 3 && (
-                        <button className="text-blue-600 hover:text-blue-700 text-sm w-full text-center pt-2">
+                        <button className="text-orange-600 hover:text-orange-700 text-sm w-full text-center pt-2">
                           Show all {achievements.length}
                         </button>
                       )}
@@ -1355,7 +1370,7 @@ export default function ProfilePage() {
               </div>
 
               {/* Recommendations Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
                 <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
                   <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <Star className="w-4 h-4 text-purple-500" />
@@ -1390,14 +1405,14 @@ export default function ProfilePage() {
                         </div>
                       ))}
                       {recommendations.length > 2 && (
-                        <button className="text-blue-600 hover:text-blue-700 text-sm w-full text-center">
+                        <button className="text-orange-600 hover:text-orange-700 text-sm w-full text-center font-medium">
                           Show all {recommendations.length}
                         </button>
                       )}
                     </div>
                   )}
                   {!profile.isOwnProfile && (
-                    <button className="mt-4 w-full py-2 border border-blue-600 text-blue-600 rounded-full text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                    <button className="mt-4 w-full py-2.5 border-2 border-orange-500 text-orange-600 rounded-full text-sm font-semibold hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all">
                       Recommend {profile.firstName}
                     </button>
                   )}
@@ -1405,38 +1420,44 @@ export default function ProfilePage() {
               </div>
 
               {/* Profile Stats Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-400">
+              <div 
+                className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow"
+                style={{
+                  animation: pageReady ? 'fadeInUpContent 0.5s ease-out 0.4s forwards' : 'none',
+                  opacity: 0,
+                }}
+              >
                 <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-                  <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-green-500" />
+                  <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-orange-500" />
                     Profile Stats
                   </h3>
                 </div>
                 <div className="p-4 space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400 text-sm">Level</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">{profile.level}</span>
+                    <span className="font-bold text-gray-900 dark:text-white">{profile.level}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400 text-sm">Total Points</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">{profile.totalPoints.toLocaleString()}</span>
+                    <span className="font-bold text-gray-900 dark:text-white">{profile.totalPoints.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400 text-sm">Learning Hours</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">{profile.totalLearningHours}h</span>
+                    <span className="font-bold text-gray-900 dark:text-white">{profile.totalLearningHours}h</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400 text-sm">Longest Streak</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">{profile.longestStreak} days</span>
+                    <span className="font-bold text-gray-900 dark:text-white">{profile.longestStreak} days</span>
                   </div>
                   <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm text-gray-600 dark:text-gray-400">Profile Completeness</span>
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white">{profile.profileCompleteness}%</span>
+                      <span className="text-sm font-bold text-gray-900 dark:text-white">{profile.profileCompleteness}%</span>
                     </div>
-                    <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="w-full h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                        className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-500"
                         style={{ width: `${profile.profileCompleteness}%` }}
                       />
                     </div>
@@ -1447,6 +1468,51 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-    </BlurLoader>
+
+      {/* Global CSS Animations */}
+      <style jsx global>{`
+        @keyframes slideInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes fadeInUpContent {
+          from {
+            opacity: 0;
+            transform: translateY(15px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes shimmer {
+          0% {
+            background-position: 200% 0;
+          }
+          100% {
+            background-position: -200% 0;
+          }
+        }
+
+        @keyframes pulseGlow {
+          0%, 100% {
+            opacity: 0.5;
+            box-shadow: 0 0 20px rgba(251, 146, 60, 0.3);
+          }
+          50% {
+            opacity: 0.8;
+            box-shadow: 0 0 40px rgba(251, 146, 60, 0.5);
+          }
+        }
+      `}</style>
+    </>
   );
 }
