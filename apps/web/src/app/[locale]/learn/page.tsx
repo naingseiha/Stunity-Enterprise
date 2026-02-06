@@ -148,11 +148,16 @@ const LEVEL_COLORS: Record<string, string> = {
 
 const CATEGORY_ICONS: Record<string, any> = {
   'Programming': Code,
+  'Data Science': BarChart3,
+  'Machine Learning': Brain,
+  'Mobile Development': Zap,
   'Mathematics': Calculator,
   'Science': Beaker,
   'Languages': Languages,
   'Business': Briefcase,
   'Design': PenTool,
+  'Database': BookOpen,
+  'Cloud Computing': Globe,
   'Music': Music,
   'Art': Palette,
   'Technology': Zap,
@@ -160,8 +165,9 @@ const CATEGORY_ICONS: Record<string, any> = {
 };
 
 const CATEGORIES = [
-  'All', 'Programming', 'Mathematics', 'Science', 'Languages', 
-  'Business', 'Design', 'Technology', 'Personal Development'
+  'All', 'Programming', 'Data Science', 'Machine Learning', 'Mobile Development',
+  'Design', 'Database', 'Cloud Computing', 'Mathematics', 'Science', 
+  'Languages', 'Business', 'Technology', 'Personal Development'
 ];
 
 // Sample courses data (will be replaced with API)
@@ -352,6 +358,7 @@ const SAMPLE_PATHS: LearningPath[] = [
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const SUBJECT_SERVICE = process.env.NEXT_PUBLIC_SUBJECT_SERVICE_URL || 'http://localhost:3006';
 const GRADE_SERVICE = process.env.NEXT_PUBLIC_GRADE_SERVICE_URL || 'http://localhost:3007';
+const FEED_SERVICE = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';
 
 // ============================================
 // MAIN COMPONENT
@@ -375,9 +382,9 @@ export default function LearnHubPage() {
   const [isStudent, setIsStudent] = useState(false);
   
   // Data State
-  const [courses, setCourses] = useState<Course[]>(SAMPLE_COURSES);
-  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>(SAMPLE_ENROLLED);
-  const [learningPaths, setLearningPaths] = useState<LearningPath[]>(SAMPLE_PATHS);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
+  const [learningPaths, setLearningPaths] = useState<LearningPath[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [myGrades, setMyGrades] = useState<Grade[]>([]);
   
@@ -391,6 +398,69 @@ export default function LearnHubPage() {
   });
 
   const getAuthToken = useCallback(() => TokenManager.getAccessToken(), []);
+
+  // Fetch courses from API
+  const fetchCourses = useCallback(async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+      
+      const response = await fetch(`${FEED_SERVICE}/courses`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCourses(data.courses || []);
+      }
+    } catch (err) {
+      console.error('Error fetching courses:', err);
+    }
+  }, [getAuthToken]);
+
+  // Fetch enrolled courses
+  const fetchEnrolledCourses = useCallback(async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+      
+      const response = await fetch(`${FEED_SERVICE}/courses/my-courses`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setEnrolledCourses(data.courses || []);
+        // Update stats
+        setStats(prev => ({
+          ...prev,
+          enrolledCourses: data.courses?.length || 0,
+          completedCourses: data.courses?.filter((c: any) => c.progress === 100).length || 0,
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching enrolled courses:', err);
+    }
+  }, [getAuthToken]);
+
+  // Fetch learning paths
+  const fetchLearningPaths = useCallback(async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+      
+      const response = await fetch(`${FEED_SERVICE}/learning-paths/paths`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setLearningPaths(data.paths || []);
+      }
+    } catch (err) {
+      console.error('Error fetching learning paths:', err);
+    }
+  }, [getAuthToken]);
 
   // Fetch subjects (for curriculum tab)
   const fetchSubjects = useCallback(async () => {
@@ -447,14 +517,57 @@ export default function LearnHubPage() {
 
   useEffect(() => {
     if (currentUser) {
+      fetchCourses();
+      fetchEnrolledCourses();
+      fetchLearningPaths();
       fetchSubjects();
       fetchGrades();
     }
-  }, [currentUser, fetchSubjects, fetchGrades]);
+  }, [currentUser, fetchCourses, fetchEnrolledCourses, fetchLearningPaths, fetchSubjects, fetchGrades]);
 
   const handleLogout = () => {
     TokenManager.clearTokens();
     router.push(`/${locale}/login`);
+  };
+
+  // Enroll in course
+  const handleEnroll = async (courseId: string) => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+      
+      const response = await fetch(`${FEED_SERVICE}/courses/${courseId}/enroll`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        // Refresh enrolled courses
+        fetchEnrolledCourses();
+        fetchCourses();
+      }
+    } catch (err) {
+      console.error('Error enrolling in course:', err);
+    }
+  };
+
+  // Enroll in learning path
+  const handleEnrollPath = async (pathId: string) => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+      
+      const response = await fetch(`${FEED_SERVICE}/learning-paths/paths/${pathId}/enroll`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        fetchLearningPaths();
+      }
+    } catch (err) {
+      console.error('Error enrolling in path:', err);
+    }
   };
 
   // Filter courses
@@ -576,7 +689,10 @@ export default function LearnHubPage() {
           
           {/* Enroll button for non-enrolled */}
           {!enrolled && (
-            <button className="w-full mt-3 px-4 py-2 border-2 border-amber-500 text-amber-600 text-sm font-medium rounded-lg hover:bg-amber-50 transition-colors">
+            <button 
+              onClick={() => handleEnroll(course.id)}
+              className="w-full mt-3 px-4 py-2 border-2 border-amber-500 text-amber-600 text-sm font-medium rounded-lg hover:bg-amber-50 transition-colors"
+            >
               Enroll Now - Free
             </button>
           )}
@@ -661,12 +777,12 @@ export default function LearnHubPage() {
   };
 
   if (loading) {
-    return <FeedZoomLoader />;
+    return <FeedZoomLoader isLoading={true} />;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <UnifiedNavigation currentUser={currentUser} school={school} onLogout={handleLogout} />
+      <UnifiedNavigation />
 
       <div className="max-w-6xl mx-auto px-4 py-5">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">

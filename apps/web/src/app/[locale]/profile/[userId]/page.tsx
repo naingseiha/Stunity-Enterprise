@@ -408,7 +408,7 @@ export default function ProfilePage() {
                       <div className="w-full h-full flex items-center justify-center text-amber-700 text-5xl font-bold">
                         {profile.firstName[0]}{profile.lastName[0]}
                       </div>
-                    )}}
+                    )}
                   </div>
                   {/* Edit avatar overlay for own profile */}
                   {profile.isOwnProfile && (

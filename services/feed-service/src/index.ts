@@ -15,6 +15,7 @@ import sseRouter from './sse';
 import dmRouter, { initDMRoutes } from './dm';
 import clubsRouter, { initClubsRoutes } from './clubs';
 import calendarRouter from './calendar';
+import coursesRouter from './courses';
 
 const app = express();
 const PORT = 3010; // Feed service always uses port 3010
@@ -2718,6 +2719,13 @@ app.use('/clubs', authenticateToken as any, clubsRouter);
 app.use('/calendar', authenticateToken as any, calendarRouter);
 
 // ========================================
+// PHASE 21: Course & Learning Routes
+// ========================================
+
+app.use('/courses', authenticateToken as any, coursesRouter);
+app.use('/learning-paths', authenticateToken as any, coursesRouter);
+
+// ========================================
 // Start Server
 // ========================================
 
@@ -2794,5 +2802,19 @@ app.listen(PORT, () => {
   console.log('   GET    /analytics/my-insights - User insights');
   console.log('   GET    /analytics/trending    - Trending posts');
   console.log('   GET    /analytics/activity    - Activity dashboard');
+  console.log('');
+  console.log('📚 Course & Learning Endpoints:');
+  console.log('   GET    /courses               - List courses');
+  console.log('   GET    /courses/my-courses    - My enrolled courses');
+  console.log('   GET    /courses/featured      - Featured courses');
+  console.log('   GET    /courses/categories    - Course categories');
+  console.log('   GET    /courses/:id           - Course details');
+  console.log('   POST   /courses/:id/enroll    - Enroll in course');
+  console.log('   POST   /courses               - Create course (instructor)');
+  console.log('   GET    /courses/:id/lessons   - Course lessons');
+  console.log('   POST   /courses/:id/lessons/:id/progress - Update progress');
+  console.log('   GET    /learning-paths/paths  - Learning paths');
+  console.log('   POST   /learning-paths/paths/:id/enroll - Enroll in path');
+  console.log('   GET    /courses/stats/my-learning - Learning stats');
   console.log('');
 });

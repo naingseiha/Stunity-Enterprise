@@ -554,6 +554,11 @@ model User {
   studyClubMemberships  StudyClubMember[]
   createdEvents         Event[]             @relation("EventCreator")
   eventAttendances      EventAttendee[]
+  // Course relations
+  createdCourses        Course[]            @relation("CourseInstructor")
+  enrollments           Enrollment[]
+  courseReviews         CourseReview[]
+  createdPaths          LearningPath[]      @relation("PathCreator")
   parent                Parent?             @relation(fields: [parentId], references: [id], onDelete: Cascade)
   school                School?             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   student               Student?            @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -1917,4 +1922,193 @@ enum RSVPStatus {
   GOING // Confirmed attendance
   MAYBE // Tentative
   NOT_GOING // Declined
+}
+
+// ============================================
+// COURSE & LEARNING MODELS
+// ============================================
+
+model Course {
+  id            String          @id @default(cuid())
+  title         String
+  description   String
+  thumbnail     String?
+  category      String
+  level         CourseLevel     @default(BEGINNER)
+  duration      Int             @default(0) // Total hours
+  lessonsCount  Int             @default(0)
+  price         Float           @default(0)
+  isFree        Boolean         @default(true)
+  isFeatured    Boolean         @default(false)
+  isPublished   Boolean         @default(false)
+  instructorId  String
+  instructor    User            @relation("CourseInstructor", fields: [instructorId], references: [id])
+  lessons       Lesson[]
+  enrollments   Enrollment[]
+  reviews       CourseReview[]
+  tags          String[]
+  rating        Float           @default(0)
+  reviewsCount  Int             @default(0)
+  enrolledCount Int             @default(0)
+  pathCourses   LearningPathCourse[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([category])
+  @@index([level])
+  @@index([isFeatured])
+  @@index([isPublished])
+  @@index([instructorId])
+  @@map("courses")
+}
+
+model Lesson {
+  id          String           @id @default(cuid())
+  courseId    String
+  course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  content     String?          // Rich text or markdown
+  videoUrl    String?
+  duration    Int              @default(0) // Minutes
+  order       Int
+  isFree      Boolean          @default(false) // Preview lesson
+  isPublished Boolean          @default(true)
+  progress    LessonProgress[]
+  resources   LessonResource[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([courseId])
+  @@index([order])
+  @@map("lessons")
+}
+
+model LessonResource {
+  id        String   @id @default(cuid())
+  lessonId  String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title     String
+  type      ResourceType @default(FILE)
+  url       String
+  size      Int?     // File size in bytes
+  createdAt DateTime @default(now())
+
+  @@index([lessonId])
+  @@map("lesson_resources")
+}
+
+model Enrollment {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId     String
+  course       Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress     Float     @default(0) // Percentage 0-100
+  completedAt  DateTime?
+  certificateUrl String?
+  enrolledAt   DateTime  @default(now())
+  lastAccessedAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+  @@map("enrollments")
+}
+
+model LessonProgress {
+  id          String    @id @default(cuid())
+  userId      String
+  lessonId    String
+  lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completed   Boolean   @default(false)
+  watchTime   Int       @default(0) // Seconds watched
+  completedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@index([lessonId])
+  @@map("lesson_progress")
+}
+
+model CourseReview {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  rating    Int      // 1-5
+  comment   String?
+  isHelpful Int      @default(0) // Helpful votes
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, courseId])
+  @@index([courseId])
+  @@map("course_reviews")
+}
+
+model LearningPath {
+  id            String               @id @default(cuid())
+  title         String
+  description   String
+  thumbnail     String?
+  level         String               @default("BEGINNER")
+  isFeatured    Boolean              @default(false)
+  isPublished   Boolean              @default(false)
+  creatorId     String
+  creator       User                 @relation("PathCreator", fields: [creatorId], references: [id])
+  courses       LearningPathCourse[]
+  enrollments   PathEnrollment[]
+  totalDuration Int                  @default(0) // Total hours
+  coursesCount  Int                  @default(0)
+  enrolledCount Int                  @default(0)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([isFeatured])
+  @@index([isPublished])
+  @@map("learning_paths")
+}
+
+model LearningPathCourse {
+  id       String       @id @default(cuid())
+  pathId   String
+  path     LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  courseId String
+  course   Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  order    Int
+
+  @@unique([pathId, courseId])
+  @@index([pathId])
+  @@map("learning_path_courses")
+}
+
+model PathEnrollment {
+  id         String       @id @default(cuid())
+  userId     String
+  pathId     String
+  path       LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  progress   Float        @default(0)
+  enrolledAt DateTime     @default(now())
+
+  @@unique([userId, pathId])
+  @@index([userId])
+  @@map("path_enrollments")
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  ALL_LEVELS
+}
+
+enum ResourceType {
+  FILE
+  LINK
+  PDF
+  VIDEO
+  AUDIO
 }
