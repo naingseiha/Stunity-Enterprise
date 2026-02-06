@@ -131,6 +131,29 @@ export default function PostCard({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
+  
+  // Optimistic UI for like button - instant feedback
+  const [localIsLiked, setLocalIsLiked] = useState(post.isLiked);
+  const [localLikesCount, setLocalLikesCount] = useState(post.likesCount);
+  const [isLiking, setIsLiking] = useState(false);
+  
+  // Optimistic UI for value button
+  const [localIsValued, setLocalIsValued] = useState(post.isValued);
+  const [localValuesCount, setLocalValuesCount] = useState(post.valuesCount || 0);
+  const [isValuing, setIsValuing] = useState(false);
+  
+  // Collapsible comments - show only first 3 by default
+  const [showAllComments, setShowAllComments] = useState(false);
+  const INITIAL_COMMENTS_SHOWN = 3;
+  
+  // Sync local state with props when post updates from server
+  useEffect(() => {
+    setLocalIsLiked(post.isLiked);
+    setLocalLikesCount(post.likesCount);
+    setLocalIsValued(post.isValued);
+    setLocalValuesCount(post.valuesCount || 0);
+    setLocalBookmarked(post.isBookmarked);
+  }, [post.isLiked, post.likesCount, post.isValued, post.valuesCount, post.isBookmarked]);
 
   const isAuthor = currentUserId === post.author.id;
 
@@ -249,6 +272,48 @@ export default function PostCard({
   const handleBookmark = () => {
     setLocalBookmarked(!localBookmarked);
     onBookmark?.(post.id);
+  };
+
+  // Optimistic like - instant UI feedback
+  const handleLike = async () => {
+    if (isLiking) return;
+    
+    // Optimistic update
+    const wasLiked = localIsLiked;
+    setLocalIsLiked(!wasLiked);
+    setLocalLikesCount(prev => wasLiked ? prev - 1 : prev + 1);
+    setIsLiking(true);
+    
+    try {
+      await onLike(post.id);
+    } catch {
+      // Revert on error
+      setLocalIsLiked(wasLiked);
+      setLocalLikesCount(prev => wasLiked ? prev + 1 : prev - 1);
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  // Optimistic value - instant UI feedback
+  const handleValue = async () => {
+    if (isValuing || !onValue) return;
+    
+    // Optimistic update
+    const wasValued = localIsValued;
+    setLocalIsValued(!wasValued);
+    setLocalValuesCount(prev => wasValued ? prev - 1 : prev + 1);
+    setIsValuing(true);
+    
+    try {
+      await onValue(post.id);
+    } catch {
+      // Revert on error
+      setLocalIsValued(wasValued);
+      setLocalValuesCount(prev => wasValued ? prev + 1 : prev - 1);
+    } finally {
+      setIsValuing(false);
+    }
   };
 
   const handleShare = (type: 'copy' | 'native') => {
@@ -452,28 +517,30 @@ export default function PostCard({
         <div className="flex items-center justify-between pt-2 border-t border-gray-100 -mx-1">
           {/* Like - General appreciation */}
           <button
-            onClick={() => onLike(post.id)}
-            className={`flex-1 flex items-center justify-center gap-1 py-2 rounded transition-colors ${
-              post.isLiked
-                ? 'text-rose-500'
+            onClick={handleLike}
+            disabled={isLiking}
+            className={`flex-1 flex items-center justify-center gap-1 py-2 rounded transition-all duration-200 ${
+              localIsLiked
+                ? 'text-rose-500 scale-105'
                 : 'text-gray-500 hover:bg-gray-100'
             }`}
           >
-            <Heart className={`w-4 h-4 ${post.isLiked ? 'fill-current' : ''}`} />
-            <span className="text-xs font-medium">{post.likesCount > 0 ? post.likesCount : ''} Like{post.likesCount !== 1 ? 's' : ''}</span>
+            <Heart className={`w-4 h-4 transition-transform duration-200 ${localIsLiked ? 'fill-current animate-pulse' : ''} ${isLiking ? 'scale-110' : ''}`} />
+            <span className="text-xs font-medium">{localLikesCount > 0 ? localLikesCount : ''} Like{localLikesCount !== 1 ? 's' : ''}</span>
           </button>
           
           {/* Value - Educational value (star) */}
           <button
-            onClick={() => onValue?.(post.id)}
-            className={`flex-1 flex items-center justify-center gap-1 py-2 rounded transition-colors ${
-              post.isValued
-                ? 'text-amber-500'
+            onClick={handleValue}
+            disabled={isValuing}
+            className={`flex-1 flex items-center justify-center gap-1 py-2 rounded transition-all duration-200 ${
+              localIsValued
+                ? 'text-amber-500 scale-105'
                 : 'text-gray-500 hover:bg-gray-100'
             }`}
           >
-            <Star className={`w-4 h-4 ${post.isValued ? 'fill-current' : ''}`} />
-            <span className="text-xs font-medium">{(post.valuesCount || 0) > 0 ? post.valuesCount : ''} Value{(post.valuesCount || 0) !== 1 ? 's' : ''}</span>
+            <Star className={`w-4 h-4 transition-transform duration-200 ${localIsValued ? 'fill-current animate-pulse' : ''} ${isValuing ? 'scale-110' : ''}`} />
+            <span className="text-xs font-medium">{localValuesCount > 0 ? localValuesCount : ''} Value{localValuesCount !== 1 ? 's' : ''}</span>
           </button>
           
           {/* Comment */}
@@ -515,7 +582,7 @@ export default function PostCard({
 
         {/* Comments Section */}
         {showComments && (
-          <div className="mt-3 pt-3 border-t border-gray-100">
+          <div className="mt-3 pt-3 border-t border-gray-100 animate-fadeIn">
             {/* Comment Input */}
             <div className="flex gap-2 mb-3">
               <input
@@ -536,36 +603,73 @@ export default function PostCard({
               </button>
             </div>
 
-            {/* Loading State */}
+            {/* Loading State - Smooth blur skeleton */}
             {loadingComments && (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="w-5 h-5 text-[#F9A825] animate-spin" />
-                <span className="ml-2 text-sm text-gray-500">Loading comments...</span>
-              </div>
-            )}
-
-            {/* Comments List */}
-            {!loadingComments && post.comments && post.comments.length > 0 && (
-              <div className="space-y-3">
-                {post.comments.map((comment) => (
-                  <div key={comment.id} className="flex gap-2 animate-fadeIn">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#F9A825] to-[#FFB74D] flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-sm">
-                      {getInitials(comment.author.firstName, comment.author.lastName)}
-                    </div>
+              <div className="space-y-3 animate-pulse">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex gap-2">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex-shrink-0" />
                     <div className="flex-1 bg-gradient-to-r from-gray-50 to-amber-50/30 rounded-2xl px-3 py-2 border border-gray-100">
-                      <p className="text-sm font-semibold text-gray-900">
-                        {comment.author.firstName} {comment.author.lastName}
-                      </p>
-                      <p className="text-sm text-gray-700">{comment.content}</p>
+                      <div className="h-3 w-24 bg-amber-100/60 rounded mb-2" />
+                      <div className="h-3 w-full bg-gray-100 rounded" />
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
+            {/* Comments List with collapsible feature */}
+            {!loadingComments && post.comments && post.comments.length > 0 && (
+              <div className="space-y-3">
+                {/* Show limited comments or all */}
+                {(showAllComments ? post.comments : post.comments.slice(0, INITIAL_COMMENTS_SHOWN)).map((comment, index) => (
+                  <div 
+                    key={comment.id} 
+                    className="flex gap-2 animate-fadeIn"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#F9A825] to-[#FFB74D] flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-sm">
+                      {getInitials(comment.author.firstName, comment.author.lastName)}
+                    </div>
+                    <div className="flex-1 bg-gradient-to-r from-gray-50 to-amber-50/30 rounded-2xl px-3 py-2 border border-gray-100 transition-all duration-200 hover:shadow-sm">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {comment.author.firstName} {comment.author.lastName}
+                      </p>
+                      <p className="text-sm text-gray-700">{comment.content}</p>
+                      <p className="text-xs text-gray-400 mt-1">{formatDate(comment.createdAt)}</p>
+                    </div>
+                  </div>
+                ))}
+                
+                {/* View more / View less button */}
+                {post.comments.length > INITIAL_COMMENTS_SHOWN && (
+                  <button
+                    onClick={() => setShowAllComments(!showAllComments)}
+                    className="flex items-center gap-1 text-sm text-[#F9A825] hover:text-[#E89A1E] font-medium transition-colors ml-10"
+                  >
+                    {showAllComments ? (
+                      <>
+                        <span>View less</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                      </>
+                    ) : (
+                      <>
+                        <span>View {post.comments.length - INITIAL_COMMENTS_SHOWN} more comment{post.comments.length - INITIAL_COMMENTS_SHOWN !== 1 ? 's' : ''}</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* No Comments */}
             {!loadingComments && (!post.comments || post.comments.length === 0) && (
-              <p className="text-sm text-gray-500 text-center py-2">No comments yet. Be the first to comment!</p>
+              <p className="text-sm text-gray-500 text-center py-2 animate-fadeIn">No comments yet. Be the first to comment!</p>
             )}
           </div>
         )}
