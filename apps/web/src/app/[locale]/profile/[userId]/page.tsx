@@ -422,10 +422,10 @@ export default function ProfilePage() {
                       </div>
                     </Link>
                   )}
-                  {/* Open to Work badge ring */}
+                  {/* Open to Learn badge ring */}
                   {profile.isOpenToOpportunities && (
-                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-[10px] font-semibold px-3 py-1 rounded-full whitespace-nowrap shadow-md">
-                      #OPENTOWORK
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-gradient-to-r from-sky-400 to-blue-500 text-white text-[10px] font-semibold px-3 py-1 rounded-full whitespace-nowrap shadow-md">
+                      #OPENTOLEARN
                     </div>
                   )}
                 </div>
@@ -535,7 +535,7 @@ export default function ProfilePage() {
                       href={`/${locale}/profile/${profile.id}/edit`}
                       className="px-5 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-full text-sm font-semibold transition-all shadow-md hover:shadow-lg"
                     >
-                      Open to
+                      Learning Goals
                     </Link>
                     <Link
                       href={`/${locale}/profile/${profile.id}/edit`}
@@ -578,16 +578,16 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              {/* Open to Work Card - For own profile */}
+              {/* Open to Learn Card - For own profile */}
               {profile.isOwnProfile && profile.isOpenToOpportunities && (
-                <div className="mt-5 p-4 border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
+                <div className="mt-5 p-4 border border-sky-200 bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 rounded-xl">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="font-semibold text-gray-900 dark:text-white">Open to work</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">Teacher and Educator roles</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">Open to learn</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">Study groups, Mentorship, Tutoring</p>
                       <button className="text-amber-600 hover:text-amber-700 hover:underline text-sm font-medium mt-1.5 transition-colors">Show details</button>
                     </div>
-                    <button className="p-2 hover:bg-green-100 dark:hover:bg-green-800 rounded-lg transition-colors">
+                    <button className="p-2 hover:bg-sky-100 dark:hover:bg-sky-800 rounded-lg transition-colors">
                       <Edit3 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                     </button>
                   </div>
