@@ -61,9 +61,9 @@ export const Card: React.FC<CardProps> = ({
   const cardStyles: ViewStyle[] = [
     styles.base,
     styles[variant],
-    padding !== 'none' && { padding: Spacing[padding] },
-    style,
-  ];
+    padding !== 'none' ? { padding: Spacing[padding] } : {},
+    style || {},
+  ].filter(Boolean) as ViewStyle[];
 
   if (pressable) {
     return (

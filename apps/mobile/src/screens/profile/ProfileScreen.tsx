@@ -65,6 +65,9 @@ export default function ProfileScreen() {
         email: 'jane@example.com',
         role: 'STUDENT',
         isVerified: true,
+        isOnline: false,
+        languages: [],
+        interests: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
@@ -189,28 +192,26 @@ export default function ProfileScreen() {
           <View style={styles.actionButtons}>
             {isOwnProfile ? (
               <Button
+                title="Edit Profile"
                 onPress={handleEditProfile}
                 variant="outline"
                 style={styles.actionButton}
-              >
-                Edit Profile
-              </Button>
+              />
             ) : (
               <>
                 <Button
+                  title={isFollowing ? 'Following' : 'Follow'}
                   onPress={handleFollow}
                   variant={isFollowing ? 'outline' : 'primary'}
                   style={styles.actionButton}
-                >
-                  {isFollowing ? 'Following' : 'Follow'}
-                </Button>
+                />
                 <Button
+                  title=""
+                  icon={<Ionicons name="chatbubble-outline" size={20} color={Colors.primary[500]} />}
                   onPress={() => navigation.navigate('Chat' as any, { userId: profile.id })}
                   variant="outline"
                   style={styles.messageButton}
-                >
-                  <Ionicons name="chatbubble-outline" size={20} color={Colors.primary[500]} />
-                </Button>
+                />
               </>
             )}
           </View>

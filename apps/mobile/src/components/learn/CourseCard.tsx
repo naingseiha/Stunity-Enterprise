@@ -75,11 +75,11 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           </View>
 
           {/* Duration */}
-          {course.totalDuration && (
+          {course.duration && (
             <View style={styles.durationBadge}>
               <Ionicons name="time-outline" size={12} color={Colors.white} />
               <Text style={styles.durationText}>
-                {Math.floor(course.totalDuration / 60)}h {course.totalDuration % 60}m
+                {Math.floor(course.duration / 60)}h {course.duration % 60}m
               </Text>
             </View>
           )}
@@ -135,7 +135,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             <View style={styles.stat}>
               <Ionicons name="documents-outline" size={14} color={Colors.gray[400]} />
               <Text style={styles.statText}>
-                {course.lessonCount || 0} lessons
+                {course.totalLessons || 0} lessons
               </Text>
             </View>
           </View>

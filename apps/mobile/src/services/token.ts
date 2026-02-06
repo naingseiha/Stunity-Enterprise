@@ -27,25 +27,35 @@ class TokenService {
 
   /**
    * Initialize tokens from secure storage
+   * Has a timeout to prevent hanging on Expo Go
    */
   async initialize(): Promise<boolean> {
     try {
-      const [accessToken, refreshToken, expiry] = await Promise.all([
-        SecureStore.getItemAsync(KEYS.ACCESS_TOKEN),
-        SecureStore.getItemAsync(KEYS.REFRESH_TOKEN),
-        SecureStore.getItemAsync(KEYS.TOKEN_EXPIRY),
-      ]);
+      // Add timeout to prevent hanging
+      const timeout = new Promise<boolean>((_, reject) => 
+        setTimeout(() => reject(new Error('SecureStore timeout')), 3000)
+      );
 
-      if (accessToken && refreshToken) {
-        this.accessToken = accessToken;
-        this.refreshToken = refreshToken;
-        this.tokenExpiry = expiry ? parseInt(expiry, 10) : null;
-        return true;
-      }
+      const loadTokens = async (): Promise<boolean> => {
+        const [accessToken, refreshToken, expiry] = await Promise.all([
+          SecureStore.getItemAsync(KEYS.ACCESS_TOKEN),
+          SecureStore.getItemAsync(KEYS.REFRESH_TOKEN),
+          SecureStore.getItemAsync(KEYS.TOKEN_EXPIRY),
+        ]);
 
-      return false;
+        if (accessToken && refreshToken) {
+          this.accessToken = accessToken;
+          this.refreshToken = refreshToken;
+          this.tokenExpiry = expiry ? parseInt(expiry, 10) : null;
+          return true;
+        }
+
+        return false;
+      };
+
+      return await Promise.race([loadTokens(), timeout]);
     } catch (error) {
-      console.error('Failed to initialize tokens:', error);
+      console.warn('Token initialization failed/timed out:', error);
       return false;
     }
   }

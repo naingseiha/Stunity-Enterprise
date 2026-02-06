@@ -4,12 +4,11 @@
  * Enterprise e-learning social platform
  */
 
-import React, { useEffect, useCallback } from 'react';
-import { StyleSheet, View, LogBox } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, View, LogBox, Text, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
-import * as Font from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 
 import { RootNavigator } from '@/navigation';
@@ -23,58 +22,48 @@ if (__DEV__) {
   ]);
 }
 
-// Keep splash screen visible while loading
-SplashScreen.preventAutoHideAsync();
+// Prevent auto-hide splash screen
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function App() {
   const [appIsReady, setAppIsReady] = React.useState(false);
-  const initialize = useAuthStore(state => state.initialize);
 
   useEffect(() => {
     async function prepare() {
       try {
-        // Load fonts
-        await Font.loadAsync({
-          // Add custom fonts here if needed
-          // 'Inter-Regular': require('./assets/fonts/Inter-Regular.ttf'),
+        // Skip async token initialization for now
+        // Just set the store to initialized state
+        useAuthStore.setState({ 
+          isInitialized: true, 
+          isLoading: false,
+          isAuthenticated: false,
+          user: null 
         });
-
-        // Initialize authentication
-        await initialize();
-
-        // Add any other initialization logic here
-        // - Analytics setup
-        // - Push notification registration
-        // - Deep link handling setup
-        
-      } catch (error) {
-        console.warn('App initialization error:', error);
+      } catch (e) {
+        console.warn('App init error:', e);
       } finally {
         setAppIsReady(true);
+        SplashScreen.hideAsync().catch(() => {});
       }
     }
 
     prepare();
-  }, [initialize]);
-
-  const onLayoutRootView = useCallback(async () => {
-    if (appIsReady) {
-      // Hide splash screen once app is ready
-      await SplashScreen.hideAsync();
-    }
-  }, [appIsReady]);
+  }, []);
 
   if (!appIsReady) {
-    return null;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#F59E0B" />
+        <Text style={styles.loadingText}>Loading Stunity...</Text>
+      </View>
+    );
   }
 
   return (
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
-        <View style={styles.container} onLayout={onLayoutRootView}>
-          <StatusBar style="auto" />
-          <RootNavigator />
-        </View>
+        <StatusBar style="auto" />
+        <RootNavigator />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
@@ -83,5 +72,16 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6B7280',
   },
 });

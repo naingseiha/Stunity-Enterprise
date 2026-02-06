@@ -4,11 +4,9 @@
     "slug": "stunity-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./src/assets/images/icon.png",
     "scheme": "stunity",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./src/assets/images/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#F59E0B"
     },
@@ -27,10 +25,6 @@
       }
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./src/assets/images/adaptive-icon.png",
-        "backgroundColor": "#F59E0B"
-      },
       "package": "com.stunity.mobile",
       "versionCode": 1,
       "permissions": [
@@ -40,25 +34,13 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT"
-      ],
-      "googleServicesFile": "./google-services.json"
+      ]
     },
     "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./src/assets/images/favicon.png"
+      "bundler": "metro"
     },
     "plugins": [
-      "expo-router",
       "expo-secure-store",
-      "expo-local-authentication",
-      [
-        "expo-notifications",
-        {
-          "icon": "./src/assets/images/notification-icon.png",
-          "color": "#F59E0B"
-        }
-      ],
       [
         "expo-camera",
         {
@@ -70,24 +52,13 @@
         {
           "photosPermission": "Allow Stunity to access your photos."
         }
-      ]
+      ],
+      "expo-font"
     ],
-    "experiments": {
-      "typedRoutes": true
-    },
     "extra": {
-      "router": {
-        "origin": false
-      },
       "eas": {
         "projectId": "your-project-id"
       }
-    },
-    "updates": {
-      "url": "https://u.expo.dev/your-project-id"
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
     }
   }
 }

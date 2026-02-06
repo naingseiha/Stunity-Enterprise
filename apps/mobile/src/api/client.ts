@@ -207,8 +207,8 @@ export const eventEmitter = new EventEmitter();
 // Request with retry logic
 export const requestWithRetry = async <T>(
   requestFn: () => Promise<T>,
-  retries = APP_CONFIG.RETRY_ATTEMPTS,
-  delay = APP_CONFIG.RETRY_DELAY
+  retries: number = APP_CONFIG.RETRY_ATTEMPTS,
+  delay: number = APP_CONFIG.RETRY_DELAY
 ): Promise<T> => {
   try {
     return await requestFn();

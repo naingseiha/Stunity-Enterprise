@@ -172,6 +172,19 @@ export interface CourseModule {
   lessons: Lesson[];
 }
 
+export interface LearningPath {
+  id: string;
+  title: string;
+  description: string;
+  thumbnailUrl?: string;
+  level: CourseLevel;
+  courseIds: string[];
+  courses?: Course[];
+  estimatedDuration: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Enrollment {
   id: string;
   userId: string;

@@ -6,7 +6,6 @@
 
 import React from 'react';
 import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
-import LottieView from 'lottie-react-native';
 import { Colors, Typography, Spacing } from '@/config';
 
 interface LoadingProps {

@@ -46,12 +46,22 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true });
           
+          // Initialize token service (has its own timeout)
           const hasTokens = await tokenService.initialize();
           
           if (hasTokens) {
-            // Validate token and get user profile
+            // Validate token and get user profile - skip if backend not reachable
             try {
-              const response = await authApi.get('/users/me');
+              // Timeout for API call
+              const timeoutController = new AbortController();
+              const timeoutId = setTimeout(() => timeoutController.abort(), 3000);
+              
+              const response = await authApi.get('/users/me', {
+                signal: timeoutController.signal,
+              });
+              
+              clearTimeout(timeoutId);
+              
               if (response.data.success) {
                 set({
                   user: response.data.user,
@@ -62,8 +72,9 @@ export const useAuthStore = create<AuthState>()(
                 return;
               }
             } catch (error) {
-              // Token invalid, clear it
-              await tokenService.clearTokens();
+              console.warn('Auth validation failed, clearing tokens');
+              // Token invalid or network error, clear it
+              await tokenService.clearTokens().catch(() => {});
             }
           }
 
