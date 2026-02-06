@@ -317,3 +317,52 @@ apps/web/src/lib/api/students.ts            (modified - added caching)
 **Optimized by:** Claude Code
 **Date:** January 31, 2026
 **Status:** ✅ Complete and Verified
+
+---
+
+## 🎯 Navigation Performance Update - February 6, 2026
+
+### Issue: Slow Menu Selection Feedback
+**Problem:** When clicking navigation menu items, the selection highlight didn't update until the page fully loaded, making the app feel slow.
+
+### Solution: Optimistic UI Pattern
+
+**Changes Made:**
+1. **Optimistic State Tracking**
+   - Track clicked path in `optimisticPath` state
+   - Update menu highlight immediately on click (before navigation completes)
+   - Clear optimistic path when pathname updates
+
+2. **Visual Feedback**
+   - Small loading spinner appears next to menu item being navigated to
+   - Thin animated progress bar at top of screen during navigation
+   - Reduced transition durations (200ms → 150ms) for snappier feel
+
+3. **React Concurrent Features**
+   - Using `useTransition` hook for smooth rendering
+   - Navigation happens in low-priority concurrent mode
+   - UI stays responsive during navigation
+
+**Code Pattern:**
+```typescript
+// Optimistic navigation with instant feedback
+const handleNavClick = useCallback((e, path) => {
+  setOptimisticPath(path);  // Instant visual update
+  startTransition(() => {
+    router.push(path);       // Background navigation
+  });
+}, [router]);
+
+// Active state uses optimistic path OR actual path
+const isActive = getOptimisticActive(item.path, item.active);
+```
+
+### Result
+- **Instant feedback** - Menu highlights immediately on click
+- **Perceived performance** - App feels much faster
+- **Loading indicator** - Users know navigation is in progress
+- **Smooth transitions** - No jank or layout shifts
+
+---
+
+**Updated:** February 6, 2026
