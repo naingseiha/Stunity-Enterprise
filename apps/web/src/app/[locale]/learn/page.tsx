@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   BookOpen,
   Clock,
@@ -28,17 +29,35 @@ import {
   Dumbbell,
   RefreshCw,
   AlertCircle,
-  ChevronDown,
   Book,
   ClipboardList,
   LineChart,
   Percent,
+  Play,
+  Users,
+  Heart,
+  Bookmark,
+  Filter,
+  Sparkles,
+  Compass,
+  Route,
+  Video,
+  Code,
+  Briefcase,
+  PenTool,
+  Brain,
+  Zap,
+  Lock,
+  PlayCircle,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import FeedZoomLoader from '@/components/feed/FeedZoomLoader';
 
-// Interfaces
+// ============================================
+// INTERFACES
+// ============================================
+
 interface Subject {
   id: string;
   name: string;
@@ -50,14 +69,56 @@ interface Subject {
   track?: string;
   category: string;
   weeklyHours: number;
-  annualHours: number;
   maxScore: number;
   coefficient: number;
   isActive: boolean;
-  _count?: {
-    grades: number;
-    subjectTeachers: number;
+}
+
+interface Course {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail?: string;
+  category: string;
+  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'ALL_LEVELS';
+  duration: number; // in hours
+  lessonsCount: number;
+  enrolledCount: number;
+  rating: number;
+  reviewsCount: number;
+  price: number; // 0 = free
+  instructor: {
+    id: string;
+    name: string;
+    avatar?: string;
+    title?: string;
   };
+  tags: string[];
+  isFree: boolean;
+  isFeatured: boolean;
+  isNew: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface EnrolledCourse extends Course {
+  progress: number;
+  completedLessons: number;
+  lastAccessedAt: string;
+  enrolledAt: string;
+}
+
+interface LearningPath {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail?: string;
+  coursesCount: number;
+  totalDuration: number;
+  enrolledCount: number;
+  level: string;
+  courses: { id: string; title: string; order: number }[];
+  isFeatured: boolean;
 }
 
 interface Grade {
@@ -70,177 +131,299 @@ interface Grade {
   gradeLevel: string;
   month: string;
   semester: string;
-  academicYear: string;
   subject?: Subject;
   createdAt: string;
 }
 
-interface GradeSummary {
-  subjectId: string;
-  subjectName: string;
-  averageScore: number;
-  averagePercentage: number;
-  gradeCount: number;
-  trend: 'up' | 'down' | 'stable';
-  lastGrade?: Grade;
-}
+// ============================================
+// CONSTANTS & SAMPLE DATA
+// ============================================
 
-interface LearningStats {
-  totalSubjects: number;
-  completedAssessments: number;
-  averageScore: number;
-  currentStreak: number;
-  weeklyStudyHours: number;
-  rank?: number;
-  totalStudents?: number;
-}
+const LEVEL_COLORS: Record<string, string> = {
+  'BEGINNER': 'bg-green-100 text-green-700',
+  'INTERMEDIATE': 'bg-blue-100 text-blue-700',
+  'ADVANCED': 'bg-purple-100 text-purple-700',
+  'ALL_LEVELS': 'bg-gray-100 text-gray-700',
+};
 
-// Subject category icons
-const SUBJECT_ICONS: Record<string, any> = {
-  'Core': BookOpen,
-  'Optional': Book,
-  'Elective': Palette,
+const CATEGORY_ICONS: Record<string, any> = {
+  'Programming': Code,
   'Mathematics': Calculator,
   'Science': Beaker,
-  'Language': Languages,
-  'Social': Globe,
-  'Arts': Music,
-  'Physical': Dumbbell,
+  'Languages': Languages,
+  'Business': Briefcase,
+  'Design': PenTool,
+  'Music': Music,
+  'Art': Palette,
+  'Technology': Zap,
+  'Personal Development': Brain,
 };
 
-const GRADE_COLORS: Record<string, string> = {
-  'A': 'text-green-600 bg-green-100',
-  'B': 'text-blue-600 bg-blue-100',
-  'C': 'text-amber-600 bg-amber-100',
-  'D': 'text-orange-600 bg-orange-100',
-  'E': 'text-red-500 bg-red-100',
-  'F': 'text-red-700 bg-red-200',
-};
+const CATEGORIES = [
+  'All', 'Programming', 'Mathematics', 'Science', 'Languages', 
+  'Business', 'Design', 'Technology', 'Personal Development'
+];
+
+// Sample courses data (will be replaced with API)
+const SAMPLE_COURSES: Course[] = [
+  {
+    id: '1',
+    title: 'Complete Python Programming Masterclass',
+    description: 'Learn Python from scratch to advanced. Build real projects including web apps, data analysis, and automation scripts.',
+    category: 'Programming',
+    level: 'BEGINNER',
+    duration: 42,
+    lessonsCount: 156,
+    enrolledCount: 15420,
+    rating: 4.8,
+    reviewsCount: 2340,
+    price: 0,
+    instructor: { id: '1', name: 'Dr. Sarah Chen', title: 'Senior Software Engineer' },
+    tags: ['Python', 'Programming', 'Web Development'],
+    isFree: true,
+    isFeatured: true,
+    isNew: false,
+    createdAt: '2025-06-15',
+    updatedAt: '2026-01-20',
+  },
+  {
+    id: '2',
+    title: 'Advanced Mathematics for Data Science',
+    description: 'Master linear algebra, calculus, statistics, and probability - the mathematical foundations for machine learning and AI.',
+    category: 'Mathematics',
+    level: 'INTERMEDIATE',
+    duration: 38,
+    lessonsCount: 98,
+    enrolledCount: 8750,
+    rating: 4.9,
+    reviewsCount: 1520,
+    price: 0,
+    instructor: { id: '2', name: 'Prof. Michael Ross', title: 'Mathematics Professor' },
+    tags: ['Math', 'Data Science', 'Statistics'],
+    isFree: true,
+    isFeatured: true,
+    isNew: false,
+    createdAt: '2025-08-10',
+    updatedAt: '2026-01-15',
+  },
+  {
+    id: '3',
+    title: 'English Communication & Public Speaking',
+    description: 'Improve your English speaking skills, presentation abilities, and become a confident communicator.',
+    category: 'Languages',
+    level: 'ALL_LEVELS',
+    duration: 24,
+    lessonsCount: 64,
+    enrolledCount: 12300,
+    rating: 4.7,
+    reviewsCount: 1890,
+    price: 0,
+    instructor: { id: '3', name: 'Ms. Emily Parker', title: 'Communication Coach' },
+    tags: ['English', 'Speaking', 'Communication'],
+    isFree: true,
+    isFeatured: false,
+    isNew: true,
+    createdAt: '2026-01-05',
+    updatedAt: '2026-02-01',
+  },
+  {
+    id: '4',
+    title: 'UI/UX Design Fundamentals',
+    description: 'Learn user interface and experience design from scratch. Create beautiful, user-friendly digital products.',
+    category: 'Design',
+    level: 'BEGINNER',
+    duration: 30,
+    lessonsCount: 85,
+    enrolledCount: 9200,
+    rating: 4.6,
+    reviewsCount: 1240,
+    price: 0,
+    instructor: { id: '4', name: 'Alex Rivera', title: 'Lead Product Designer' },
+    tags: ['UI', 'UX', 'Figma', 'Design'],
+    isFree: true,
+    isFeatured: true,
+    isNew: false,
+    createdAt: '2025-09-20',
+    updatedAt: '2026-01-25',
+  },
+  {
+    id: '5',
+    title: 'Web Development Bootcamp 2026',
+    description: 'Full-stack web development with HTML, CSS, JavaScript, React, Node.js, and databases. Build 20+ projects.',
+    category: 'Programming',
+    level: 'BEGINNER',
+    duration: 65,
+    lessonsCount: 320,
+    enrolledCount: 28500,
+    rating: 4.9,
+    reviewsCount: 5200,
+    price: 0,
+    instructor: { id: '5', name: 'James Wilson', title: 'Full-Stack Developer' },
+    tags: ['Web', 'JavaScript', 'React', 'Node.js'],
+    isFree: true,
+    isFeatured: true,
+    isNew: false,
+    createdAt: '2025-03-01',
+    updatedAt: '2026-02-05',
+  },
+  {
+    id: '6',
+    title: 'Physics: From Basics to Quantum Mechanics',
+    description: 'Comprehensive physics course covering mechanics, thermodynamics, electromagnetism, and quantum physics.',
+    category: 'Science',
+    level: 'INTERMEDIATE',
+    duration: 48,
+    lessonsCount: 142,
+    enrolledCount: 6800,
+    rating: 4.8,
+    reviewsCount: 920,
+    price: 0,
+    instructor: { id: '6', name: 'Dr. Robert Kim', title: 'Physics Professor' },
+    tags: ['Physics', 'Science', 'Quantum'],
+    isFree: true,
+    isFeatured: false,
+    isNew: false,
+    createdAt: '2025-07-15',
+    updatedAt: '2026-01-10',
+  },
+];
+
+const SAMPLE_ENROLLED: EnrolledCourse[] = [
+  {
+    ...SAMPLE_COURSES[0],
+    progress: 45,
+    completedLessons: 70,
+    lastAccessedAt: '2026-02-06T10:30:00Z',
+    enrolledAt: '2026-01-15',
+  },
+  {
+    ...SAMPLE_COURSES[4],
+    progress: 22,
+    completedLessons: 70,
+    lastAccessedAt: '2026-02-05T14:20:00Z',
+    enrolledAt: '2026-01-20',
+  },
+];
+
+const SAMPLE_PATHS: LearningPath[] = [
+  {
+    id: '1',
+    title: 'Full-Stack Developer Path',
+    description: 'Complete journey from beginner to professional full-stack developer. Covers frontend, backend, databases, and deployment.',
+    coursesCount: 8,
+    totalDuration: 180,
+    enrolledCount: 5420,
+    level: 'BEGINNER to ADVANCED',
+    courses: [
+      { id: '5', title: 'Web Development Bootcamp', order: 1 },
+      { id: '1', title: 'Python Programming', order: 2 },
+    ],
+    isFeatured: true,
+  },
+  {
+    id: '2',
+    title: 'Data Science & AI Mastery',
+    description: 'Learn data science, machine learning, and AI from mathematical foundations to real-world applications.',
+    coursesCount: 6,
+    totalDuration: 150,
+    enrolledCount: 3890,
+    level: 'INTERMEDIATE',
+    courses: [
+      { id: '2', title: 'Advanced Mathematics', order: 1 },
+      { id: '1', title: 'Python Programming', order: 2 },
+    ],
+    isFeatured: true,
+  },
+  {
+    id: '3',
+    title: 'Product Design Career Path',
+    description: 'Become a professional product designer. Learn UI/UX, user research, prototyping, and design systems.',
+    coursesCount: 5,
+    totalDuration: 95,
+    enrolledCount: 2150,
+    level: 'BEGINNER',
+    courses: [
+      { id: '4', title: 'UI/UX Design Fundamentals', order: 1 },
+    ],
+    isFeatured: false,
+  },
+];
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const SUBJECT_SERVICE = process.env.NEXT_PUBLIC_SUBJECT_SERVICE_URL || 'http://localhost:3006';
 const GRADE_SERVICE = process.env.NEXT_PUBLIC_GRADE_SERVICE_URL || 'http://localhost:3007';
 
-export default function LearnPage() {
+// ============================================
+// MAIN COMPONENT
+// ============================================
+
+export default function LearnHubPage() {
   const params = useParams();
   const router = useRouter();
   const locale = (params?.locale as string) || 'en';
   
+  // UI State
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'subjects' | 'grades' | 'progress'>('subjects');
+  const [activeTab, setActiveTab] = useState<'explore' | 'my-courses' | 'curriculum' | 'paths'>('explore');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedGrade, setSelectedGrade] = useState<string>('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedLevel, setSelectedLevel] = useState('');
+  
+  // User State
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
+  const [isStudent, setIsStudent] = useState(false);
   
-  // Data states
+  // Data State
+  const [courses, setCourses] = useState<Course[]>(SAMPLE_COURSES);
+  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>(SAMPLE_ENROLLED);
+  const [learningPaths, setLearningPaths] = useState<LearningPath[]>(SAMPLE_PATHS);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [myGrades, setMyGrades] = useState<Grade[]>([]);
-  const [gradeSummaries, setGradeSummaries] = useState<GradeSummary[]>([]);
-  const [stats, setStats] = useState<LearningStats>({
-    totalSubjects: 0,
-    completedAssessments: 0,
-    averageScore: 0,
+  
+  // Stats
+  const [stats, setStats] = useState({
+    enrolledCourses: 2,
+    completedCourses: 1,
+    hoursLearned: 28,
     currentStreak: 7,
-    weeklyStudyHours: 12,
-    rank: 15,
-    totalStudents: 120,
+    certificates: 1,
   });
-  const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
 
-  // Get auth token
-  const getAuthToken = useCallback(() => {
-    return TokenManager.getAccessToken();
-  }, []);
+  const getAuthToken = useCallback(() => TokenManager.getAccessToken(), []);
 
-  // Fetch subjects from API
+  // Fetch subjects (for curriculum tab)
   const fetchSubjects = useCallback(async () => {
     try {
       const token = getAuthToken();
       if (!token) return;
-
-      const queryParams = new URLSearchParams();
-      if (selectedGrade) queryParams.append('grade', selectedGrade);
-      if (selectedCategory) queryParams.append('category', selectedCategory);
-      if (searchQuery) queryParams.append('search', searchQuery);
-      queryParams.append('isActive', 'true');
-
-      const response = await fetch(`${SUBJECT_SERVICE}/subjects?${queryParams}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+      
+      const response = await fetch(`${SUBJECT_SERVICE}/subjects?isActive=true`, {
+        headers: { 'Authorization': `Bearer ${token}` },
       });
-
+      
       if (response.ok) {
         const data = await response.json();
         setSubjects(data);
-        setStats(prev => ({ ...prev, totalSubjects: data.length }));
       }
     } catch (err) {
       console.error('Error fetching subjects:', err);
     }
-  }, [getAuthToken, selectedGrade, selectedCategory, searchQuery]);
+  }, [getAuthToken]);
 
-  // Fetch grades for current user
-  const fetchMyGrades = useCallback(async () => {
+  // Fetch grades
+  const fetchGrades = useCallback(async () => {
     try {
       const token = getAuthToken();
       if (!token || !currentUser?.id) return;
-
+      
       const response = await fetch(`${GRADE_SERVICE}/grades/student/${currentUser.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
       });
-
+      
       if (response.ok) {
         const data = await response.json();
         setMyGrades(data.grades || data || []);
-        
-        // Calculate stats from grades
-        if (Array.isArray(data.grades || data)) {
-          const grades = data.grades || data;
-          const totalScore = grades.reduce((sum: number, g: Grade) => sum + (g.percentage || 0), 0);
-          const avgScore = grades.length > 0 ? totalScore / grades.length : 0;
-          setStats(prev => ({
-            ...prev,
-            completedAssessments: grades.length,
-            averageScore: Math.round(avgScore),
-          }));
-          
-          // Group by subject for summaries
-          const subjectGroups: Record<string, Grade[]> = {};
-          grades.forEach((g: Grade) => {
-            if (!subjectGroups[g.subjectId]) subjectGroups[g.subjectId] = [];
-            subjectGroups[g.subjectId].push(g);
-          });
-          
-          const summaries: GradeSummary[] = Object.entries(subjectGroups).map(([subjectId, gradeList]) => {
-            const avgPct = gradeList.reduce((s, g) => s + (g.percentage || 0), 0) / gradeList.length;
-            const sorted = [...gradeList].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-            const latest = sorted[0];
-            const previous = sorted[1];
-            let trend: 'up' | 'down' | 'stable' = 'stable';
-            if (latest && previous) {
-              if (latest.percentage > previous.percentage) trend = 'up';
-              else if (latest.percentage < previous.percentage) trend = 'down';
-            }
-            return {
-              subjectId,
-              subjectName: latest?.subject?.name || 'Unknown',
-              averageScore: gradeList.reduce((s, g) => s + g.score, 0) / gradeList.length,
-              averagePercentage: avgPct,
-              gradeCount: gradeList.length,
-              trend,
-              lastGrade: latest,
-            };
-          });
-          setGradeSummaries(summaries);
-        }
       }
     } catch (err) {
       console.error('Error fetching grades:', err);
@@ -252,124 +435,226 @@ export default function LearnPage() {
     if (typeof window !== 'undefined') {
       const userStr = localStorage.getItem('user');
       const schoolStr = localStorage.getItem('school');
-      if (userStr) setCurrentUser(JSON.parse(userStr));
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        setCurrentUser(user);
+        setIsStudent(user.role === 'STUDENT');
+      }
       if (schoolStr) setSchool(JSON.parse(schoolStr));
     }
+    setTimeout(() => setLoading(false), 500);
   }, []);
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await Promise.all([fetchSubjects(), fetchMyGrades()]);
-      setLoading(false);
-    };
-    
     if (currentUser) {
-      loadData();
-    } else {
-      // Still load subjects even without user
-      fetchSubjects().then(() => setLoading(false));
+      fetchSubjects();
+      fetchGrades();
     }
-  }, [currentUser, fetchSubjects, fetchMyGrades]);
-
-  // Refresh data
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await Promise.all([fetchSubjects(), fetchMyGrades()]);
-    setRefreshing(false);
-  };
+  }, [currentUser, fetchSubjects, fetchGrades]);
 
   const handleLogout = () => {
     TokenManager.clearTokens();
     router.push(`/${locale}/login`);
   };
 
-  // Get unique grades from subjects
-  const gradeOptions = [...new Set(subjects.map(s => s.grade))].sort();
-  const categoryOptions = [...new Set(subjects.map(s => s.category))].filter(Boolean);
+  // Filter courses
+  const filteredCourses = courses.filter(course => {
+    const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         course.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === 'All' || course.category === selectedCategory;
+    const matchesLevel = !selectedLevel || course.level === selectedLevel;
+    return matchesSearch && matchesCategory && matchesLevel;
+  });
 
-  // Subject Card Component
-  const SubjectCard = ({ subject }: { subject: Subject }) => {
-    const Icon = SUBJECT_ICONS[subject.category] || BookOpen;
-    const mySummary = gradeSummaries.find(s => s.subjectId === subject.id);
+  const featuredCourses = courses.filter(c => c.isFeatured);
+  const continueLearning = enrolledCourses.find(c => c.progress > 0 && c.progress < 100);
+
+  // ============================================
+  // COMPONENTS
+  // ============================================
+
+  // Course Card
+  const CourseCard = ({ course, enrolled }: { course: Course | EnrolledCourse; enrolled?: boolean }) => {
+    const Icon = CATEGORY_ICONS[course.category] || BookOpen;
+    const enrolledCourse = enrolled ? course as EnrolledCourse : null;
     
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-amber-200 transition-all">
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center flex-shrink-0">
-            <Icon className="w-6 h-6 text-amber-600" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h3 className="font-semibold text-gray-900 line-clamp-1">{subject.name}</h3>
-                <p className="text-sm text-gray-500">{subject.nameKh}</p>
-              </div>
-              {mySummary && (
-                <div className={`px-2 py-1 rounded-lg text-sm font-bold ${GRADE_COLORS[mySummary.lastGrade?.gradeLevel || 'C']}`}>
-                  {mySummary.lastGrade?.gradeLevel || '-'}
-                </div>
-              )}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:border-amber-200 transition-all group">
+        {/* Thumbnail */}
+        <div className="h-36 bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-50 relative">
+          {course.thumbnail ? (
+            <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Icon className="w-14 h-14 text-amber-300" />
             </div>
-            
-            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-500">
-              <span className="flex items-center gap-1">
-                <GraduationCap className="w-3.5 h-3.5" />
-                Grade {subject.grade}
-              </span>
-              <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded">
-                {subject.category}
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" />
-                {subject.weeklyHours}h/week
-              </span>
+          )}
+          
+          {/* Progress bar for enrolled */}
+          {enrolledCourse && (
+            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gray-200">
+              <div 
+                className="h-full bg-gradient-to-r from-amber-500 to-orange-500"
+                style={{ width: `${enrolledCourse.progress}%` }}
+              />
             </div>
-            
-            {mySummary && (
-              <div className="mt-3 pt-3 border-t border-gray-100">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Average: {Math.round(mySummary.averagePercentage)}%</span>
-                  <span className="flex items-center gap-1">
-                    {mySummary.trend === 'up' && <TrendingUp className="w-4 h-4 text-green-500" />}
-                    {mySummary.trend === 'down' && <TrendingUp className="w-4 h-4 text-red-500 rotate-180" />}
-                    <span className={mySummary.trend === 'up' ? 'text-green-600' : mySummary.trend === 'down' ? 'text-red-600' : 'text-gray-500'}>
-                      {mySummary.gradeCount} assessments
-                    </span>
-                  </span>
-                </div>
-                <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full"
-                    style={{ width: `${mySummary.averagePercentage}%` }}
-                  />
-                </div>
-              </div>
+          )}
+          
+          {/* Badges */}
+          <div className="absolute top-2 left-2 flex gap-1.5">
+            {course.isFree && (
+              <span className="px-2 py-0.5 bg-green-500 text-white text-xs font-medium rounded-full">Free</span>
+            )}
+            {course.isNew && (
+              <span className="px-2 py-0.5 bg-blue-500 text-white text-xs font-medium rounded-full">New</span>
             )}
           </div>
+          
+          {/* Play button overlay */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+              <Play className="w-5 h-5 text-amber-600 ml-0.5" />
+            </div>
+          </div>
+        </div>
+        
+        {/* Content */}
+        <div className="p-4">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <span className={`text-xs px-2 py-0.5 rounded-full ${LEVEL_COLORS[course.level]}`}>
+              {course.level.replace('_', ' ')}
+            </span>
+            <div className="flex items-center gap-1 text-amber-500">
+              <Star className="w-3.5 h-3.5 fill-current" />
+              <span className="text-xs font-medium text-gray-700">{course.rating}</span>
+            </div>
+          </div>
+          
+          <h3 className="font-semibold text-gray-900 line-clamp-2 mb-2 group-hover:text-amber-600 transition-colors">
+            {course.title}
+          </h3>
+          
+          <p className="text-sm text-gray-500 line-clamp-2 mb-3">{course.description}</p>
+          
+          {/* Instructor */}
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-200 to-orange-200 flex items-center justify-center text-xs font-medium text-amber-700">
+              {course.instructor.name.charAt(0)}
+            </div>
+            <span className="text-xs text-gray-600">{course.instructor.name}</span>
+          </div>
+          
+          {/* Stats */}
+          <div className="flex items-center gap-3 text-xs text-gray-500 pt-3 border-t border-gray-100">
+            <span className="flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5" />
+              {course.duration}h
+            </span>
+            <span className="flex items-center gap-1">
+              <PlayCircle className="w-3.5 h-3.5" />
+              {course.lessonsCount} lessons
+            </span>
+            <span className="flex items-center gap-1">
+              <Users className="w-3.5 h-3.5" />
+              {(course.enrolledCount / 1000).toFixed(1)}k
+            </span>
+          </div>
+          
+          {/* Progress for enrolled */}
+          {enrolledCourse && (
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-gray-600">{enrolledCourse.progress}% complete</span>
+                <span className="text-gray-500">{enrolledCourse.completedLessons}/{course.lessonsCount}</span>
+              </div>
+              <button className="w-full mt-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-colors flex items-center justify-center gap-2">
+                <Play className="w-4 h-4" />
+                Continue Learning
+              </button>
+            </div>
+          )}
+          
+          {/* Enroll button for non-enrolled */}
+          {!enrolled && (
+            <button className="w-full mt-3 px-4 py-2 border-2 border-amber-500 text-amber-600 text-sm font-medium rounded-lg hover:bg-amber-50 transition-colors">
+              Enroll Now - Free
+            </button>
+          )}
         </div>
       </div>
     );
   };
 
-  // Grade Entry Card
-  const GradeCard = ({ grade }: { grade: Grade }) => {
+  // Learning Path Card
+  const PathCard = ({ path }: { path: LearningPath }) => (
+    <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-amber-200 transition-all">
+      <div className="flex items-start gap-4">
+        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center flex-shrink-0">
+          <Route className="w-7 h-7 text-purple-600" />
+        </div>
+        <div className="flex-1">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-semibold text-gray-900">{path.title}</h3>
+              <p className="text-sm text-gray-500 mt-1 line-clamp-2">{path.description}</p>
+            </div>
+            {path.isFeatured && (
+              <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full flex-shrink-0">
+                Featured
+              </span>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
+            <span className="flex items-center gap-1">
+              <BookOpen className="w-4 h-4" />
+              {path.coursesCount} courses
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              {path.totalDuration}h total
+            </span>
+            <span className="flex items-center gap-1">
+              <Users className="w-4 h-4" />
+              {(path.enrolledCount / 1000).toFixed(1)}k enrolled
+            </span>
+          </div>
+          
+          <button className="mt-4 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium rounded-lg hover:from-purple-600 hover:to-pink-600 transition-colors">
+            Start Learning Path
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Subject Card (for curriculum)
+  const SubjectCard = ({ subject }: { subject: Subject }) => {
+    const Icon = CATEGORY_ICONS[subject.category] || BookOpen;
+    const subjectGrades = myGrades.filter(g => g.subjectId === subject.id);
+    const avgGrade = subjectGrades.length > 0 
+      ? subjectGrades.reduce((sum, g) => sum + g.percentage, 0) / subjectGrades.length 
+      : null;
+    
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-all">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold ${GRADE_COLORS[grade.gradeLevel]}`}>
-              {grade.gradeLevel}
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-900">{grade.subject?.name || 'Subject'}</h4>
-              <p className="text-xs text-gray-500">{grade.month} • {grade.semester}</p>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+            <Icon className="w-5 h-5 text-amber-600" />
           </div>
-          <div className="text-right">
-            <div className="font-bold text-gray-900">{grade.score}/{grade.maxScore}</div>
-            <div className="text-sm text-gray-500">{Math.round(grade.percentage)}%</div>
+          <div className="flex-1">
+            <h4 className="font-medium text-gray-900">{subject.name}</h4>
+            <p className="text-xs text-gray-500">Grade {subject.grade} • {subject.weeklyHours}h/week</p>
           </div>
+          {avgGrade !== null && (
+            <div className={`px-2 py-1 rounded-lg text-sm font-bold ${
+              avgGrade >= 80 ? 'bg-green-100 text-green-700' :
+              avgGrade >= 60 ? 'bg-blue-100 text-blue-700' :
+              avgGrade >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+            }`}>
+              {Math.round(avgGrade)}%
+            </div>
+          )}
         </div>
       </div>
     );
@@ -381,171 +666,151 @@ export default function LearnPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <UnifiedNavigation
-        currentUser={currentUser}
-        school={school}
-        onLogout={handleLogout}
-      />
+      <UnifiedNavigation currentUser={currentUser} school={school} onLogout={handleLogout} />
 
       <div className="max-w-6xl mx-auto px-4 py-5">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           
-          {/* Left Sidebar - Stats & Quick Actions */}
-          <aside className="lg:col-span-3 space-y-4">
-            {/* Learning Stats Card */}
+          {/* ============================================ */}
+          {/* LEFT SIDEBAR */}
+          {/* ============================================ */}
+          <aside className="hidden lg:block lg:col-span-3 space-y-4">
+            {/* User Learning Stats */}
             <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-gray-900">My Progress</h2>
-                <button 
-                  onClick={handleRefresh}
-                  className={`p-1.5 text-gray-400 hover:text-amber-600 rounded-lg hover:bg-amber-50 transition-colors ${refreshing ? 'animate-spin' : ''}`}
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl">
-                  <div className="flex items-center gap-2 mb-1">
-                    <BookOpen className="w-4 h-4 text-amber-600" />
-                    <span className="text-xs text-gray-600">Subjects</span>
-                  </div>
-                  <p className="text-xl font-bold text-gray-900">{stats.totalSubjects}</p>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-200 to-orange-200 flex items-center justify-center text-lg font-bold text-amber-700">
+                  {currentUser?.firstName?.charAt(0) || 'L'}
                 </div>
-                
-                <div className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
-                  <div className="flex items-center gap-2 mb-1">
-                    <ClipboardList className="w-4 h-4 text-blue-600" />
-                    <span className="text-xs text-gray-600">Assessments</span>
-                  </div>
-                  <p className="text-xl font-bold text-gray-900">{stats.completedAssessments}</p>
-                </div>
-                
-                <div className="p-3 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Percent className="w-4 h-4 text-green-600" />
-                    <span className="text-xs text-gray-600">Average</span>
-                  </div>
-                  <p className="text-xl font-bold text-gray-900">{stats.averageScore}%</p>
-                </div>
-                
-                <div className="p-3 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Trophy className="w-4 h-4 text-purple-600" />
-                    <span className="text-xs text-gray-600">Rank</span>
-                  </div>
-                  <p className="text-xl font-bold text-gray-900">#{stats.rank}</p>
-                  <p className="text-xs text-gray-500">of {stats.totalStudents}</p>
+                <div>
+                  <p className="font-medium text-gray-900">
+                    {currentUser?.firstName || 'Learner'}
+                  </p>
+                  <p className="text-xs text-gray-500">Keep learning! 🔥</p>
                 </div>
               </div>
               
-              {/* Streak */}
-              <div className="mt-4 p-3 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl text-white">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Flame className="w-5 h-5" />
-                    <span className="font-medium">{stats.currentStreak} Day Streak!</span>
-                  </div>
-                  <span className="text-2xl">🔥</span>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-2.5 bg-amber-50 rounded-lg text-center">
+                  <p className="text-lg font-bold text-amber-600">{stats.enrolledCourses}</p>
+                  <p className="text-xs text-gray-600">Enrolled</p>
                 </div>
-                <p className="text-xs text-white/80 mt-1">Keep learning daily to maintain your streak</p>
+                <div className="p-2.5 bg-green-50 rounded-lg text-center">
+                  <p className="text-lg font-bold text-green-600">{stats.completedCourses}</p>
+                  <p className="text-xs text-gray-600">Completed</p>
+                </div>
+                <div className="p-2.5 bg-blue-50 rounded-lg text-center">
+                  <p className="text-lg font-bold text-blue-600">{stats.hoursLearned}h</p>
+                  <p className="text-xs text-gray-600">Learned</p>
+                </div>
+                <div className="p-2.5 bg-orange-50 rounded-lg text-center">
+                  <p className="text-lg font-bold text-orange-600">{stats.currentStreak}🔥</p>
+                  <p className="text-xs text-gray-600">Day Streak</p>
+                </div>
               </div>
             </div>
 
-            {/* Quick Filters */}
+            {/* Navigation Tabs (Vertical) */}
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-100">
-                <h3 className="font-medium text-gray-900 flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4 text-amber-600" />
-                  Filter by Grade
-                </h3>
+              <div className="p-3 border-b border-gray-100">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Learning</h3>
               </div>
-              <div className="p-2">
-                <button
-                  onClick={() => setSelectedGrade('')}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                    !selectedGrade ? 'bg-amber-50 text-amber-700 font-medium' : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  All Grades
-                </button>
-                {gradeOptions.map(grade => (
+              <nav className="p-2">
+                {[
+                  { id: 'explore', label: 'Explore Courses', icon: Compass, desc: 'Discover new skills' },
+                  { id: 'my-courses', label: 'My Courses', icon: BookOpen, desc: 'Continue learning' },
+                  { id: 'paths', label: 'Learning Paths', icon: Route, desc: 'Guided journeys' },
+                  ...(isStudent ? [{ id: 'curriculum', label: 'My Curriculum', icon: GraduationCap, desc: 'School subjects' }] : []),
+                ].map(tab => (
                   <button
-                    key={grade}
-                    onClick={() => setSelectedGrade(grade)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                      selectedGrade === grade ? 'bg-amber-50 text-amber-700 font-medium' : 'text-gray-600 hover:bg-gray-50'
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+                      activeTab === tab.id
+                        ? 'bg-amber-50 text-amber-700'
+                        : 'text-gray-600 hover:bg-gray-50'
                     }`}
                   >
-                    Grade {grade}
+                    <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-amber-600' : 'text-gray-400'}`} />
+                    <div>
+                      <p className={`text-sm font-medium ${activeTab === tab.id ? 'text-amber-700' : 'text-gray-700'}`}>
+                        {tab.label}
+                      </p>
+                      <p className="text-xs text-gray-500">{tab.desc}</p>
+                    </div>
                   </button>
                 ))}
-              </div>
+              </nav>
             </div>
 
-            {/* Category Filter */}
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-100">
-                <h3 className="font-medium text-gray-900 flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-amber-600" />
-                  Categories
-                </h3>
+            {/* Categories Filter */}
+            {activeTab === 'explore' && (
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="p-3 border-b border-gray-100">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Categories</h3>
+                </div>
+                <nav className="p-2 max-h-64 overflow-y-auto">
+                  {CATEGORIES.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
+                        selectedCategory === cat
+                          ? 'bg-amber-50 text-amber-700 font-medium'
+                          : 'text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      {cat === 'All' ? <Sparkles className="w-4 h-4" /> : 
+                       CATEGORY_ICONS[cat] ? <span className="w-4 h-4">{(() => { const I = CATEGORY_ICONS[cat]; return <I className="w-4 h-4" />; })()}</span> :
+                       <BookOpen className="w-4 h-4" />}
+                      {cat}
+                    </button>
+                  ))}
+                </nav>
               </div>
-              <div className="p-2">
-                <button
-                  onClick={() => setSelectedCategory('')}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                    !selectedCategory ? 'bg-amber-50 text-amber-700 font-medium' : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  All Categories
-                </button>
-                {categoryOptions.map(cat => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                      selectedCategory === cat ? 'bg-amber-50 text-amber-700 font-medium' : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            </div>
+            )}
           </aside>
 
-          {/* Main Content */}
+          {/* ============================================ */}
+          {/* MAIN CONTENT */}
+          {/* ============================================ */}
           <main className="lg:col-span-6">
-            {/* Header with Search */}
+            {/* Search & Filters */}
             <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search subjects..."
+                    placeholder="Search courses, topics, skills..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                   />
                 </div>
+                <select
+                  value={selectedLevel}
+                  onChange={(e) => setSelectedLevel(e.target.value)}
+                  className="px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                >
+                  <option value="">All Levels</option>
+                  <option value="BEGINNER">Beginner</option>
+                  <option value="INTERMEDIATE">Intermediate</option>
+                  <option value="ADVANCED">Advanced</option>
+                </select>
               </div>
 
-              {/* Tabs */}
-              <div className="flex gap-1 mt-4 p-1 bg-gray-100 rounded-xl">
+              {/* Mobile Tab Switcher */}
+              <div className="flex gap-1 mt-4 p-1 bg-gray-100 rounded-xl lg:hidden">
                 {[
-                  { id: 'subjects', label: 'Subjects', icon: BookOpen },
-                  { id: 'grades', label: 'My Grades', icon: BarChart3 },
-                  { id: 'progress', label: 'Progress', icon: LineChart },
+                  { id: 'explore', label: 'Explore', icon: Compass },
+                  { id: 'my-courses', label: 'My Courses', icon: BookOpen },
+                  { id: 'paths', label: 'Paths', icon: Route },
                 ].map(tab => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      activeTab === tab.id
-                        ? 'bg-white text-amber-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                      activeTab === tab.id ? 'bg-white text-amber-600 shadow-sm' : 'text-gray-600'
                     }`}
                   >
                     <tab.icon className="w-4 h-4" />
@@ -555,259 +820,225 @@ export default function LearnPage() {
               </div>
             </div>
 
-            {/* Error State */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4 flex items-center gap-3">
-                <AlertCircle className="w-5 h-5 text-red-500" />
-                <p className="text-red-700">{error}</p>
+            {/* Continue Learning Banner */}
+            {continueLearning && activeTab !== 'curriculum' && (
+              <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl p-5 mb-4 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-white/80 mb-1">Continue where you left off</p>
+                    <h3 className="font-semibold text-lg">{continueLearning.title}</h3>
+                    <div className="flex items-center gap-4 mt-2 text-sm text-white/90">
+                      <span>{continueLearning.progress}% complete</span>
+                      <span>•</span>
+                      <span>{continueLearning.completedLessons} of {continueLearning.lessonsCount} lessons</span>
+                    </div>
+                  </div>
+                  <button className="px-5 py-2.5 bg-white text-amber-600 font-medium rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2">
+                    <Play className="w-4 h-4" />
+                    Resume
+                  </button>
+                </div>
+                <div className="mt-3 h-2 bg-white/30 rounded-full">
+                  <div 
+                    className="h-full bg-white rounded-full"
+                    style={{ width: `${continueLearning.progress}%` }}
+                  />
+                </div>
               </div>
             )}
 
-            {/* Content based on active tab */}
-            {activeTab === 'subjects' && (
+            {/* EXPLORE TAB */}
+            {activeTab === 'explore' && (
               <div className="space-y-4">
-                {subjects.length === 0 ? (
+                {/* Featured Banner */}
+                {selectedCategory === 'All' && !searchQuery && (
+                  <div className="bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl p-6 text-white mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="w-5 h-5" />
+                      <span className="text-sm font-medium text-white/80">Featured</span>
+                    </div>
+                    <h2 className="text-2xl font-bold mb-2">Start Your Learning Journey</h2>
+                    <p className="text-white/80 mb-4">Explore {courses.length}+ free courses from expert instructors</p>
+                    <div className="flex gap-2">
+                      <button className="px-4 py-2 bg-white text-purple-600 font-medium rounded-lg hover:bg-gray-100 transition-colors">
+                        Browse All Courses
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Course Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {filteredCourses.map(course => (
+                    <CourseCard key={course.id} course={course} />
+                  ))}
+                </div>
+
+                {filteredCourses.length === 0 && (
+                  <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                    <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No courses found</h3>
+                    <p className="text-gray-500">Try adjusting your search or filters</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* MY COURSES TAB */}
+            {activeTab === 'my-courses' && (
+              <div className="space-y-4">
+                {enrolledCourses.length === 0 ? (
+                  <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                    <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No enrolled courses yet</h3>
+                    <p className="text-gray-500 mb-4">Start learning by exploring our course catalog</p>
+                    <button 
+                      onClick={() => setActiveTab('explore')}
+                      className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-colors"
+                    >
+                      Explore Courses
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {enrolledCourses.map(course => (
+                      <CourseCard key={course.id} course={course} enrolled />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* LEARNING PATHS TAB */}
+            {activeTab === 'paths' && (
+              <div className="space-y-4">
+                {learningPaths.map(path => (
+                  <PathCard key={path.id} path={path} />
+                ))}
+              </div>
+            )}
+
+            {/* CURRICULUM TAB (Students only) */}
+            {activeTab === 'curriculum' && (
+              <div className="space-y-4">
+                {!isStudent ? (
+                  <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                    <GraduationCap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">School Curriculum</h3>
+                    <p className="text-gray-500">This section is for enrolled students. Explore our courses instead!</p>
+                  </div>
+                ) : subjects.length === 0 ? (
                   <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
                     <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No subjects found</h3>
-                    <p className="text-gray-500">
-                      {searchQuery || selectedGrade || selectedCategory
-                        ? 'Try adjusting your filters'
-                        : 'Subjects will appear here once they are added to your curriculum'}
-                    </p>
+                    <p className="text-gray-500">Your curriculum will appear here</p>
                   </div>
                 ) : (
-                  subjects.map(subject => (
-                    <SubjectCard key={subject.id} subject={subject} />
-                  ))
+                  <>
+                    <div className="bg-white rounded-xl border border-gray-200 p-4">
+                      <h3 className="font-semibold text-gray-900 mb-3">Your School Subjects</h3>
+                      <div className="space-y-2">
+                        {subjects.slice(0, 10).map(subject => (
+                          <SubjectCard key={subject.id} subject={subject} />
+                        ))}
+                      </div>
+                    </div>
+                  </>
                 )}
-              </div>
-            )}
-
-            {activeTab === 'grades' && (
-              <div className="space-y-3">
-                {myGrades.length === 0 ? (
-                  <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                    <BarChart3 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No grades yet</h3>
-                    <p className="text-gray-500">Your assessment grades will appear here</p>
-                  </div>
-                ) : (
-                  myGrades.slice(0, 20).map(grade => (
-                    <GradeCard key={grade.id} grade={grade} />
-                  ))
-                )}
-              </div>
-            )}
-
-            {activeTab === 'progress' && (
-              <div className="space-y-4">
-                {/* Overall Progress Card */}
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4">Overall Academic Progress</h3>
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="text-center p-4 bg-green-50 rounded-xl">
-                      <p className="text-3xl font-bold text-green-600">{stats.averageScore}%</p>
-                      <p className="text-sm text-gray-600">Overall Average</p>
-                    </div>
-                    <div className="text-center p-4 bg-blue-50 rounded-xl">
-                      <p className="text-3xl font-bold text-blue-600">{stats.completedAssessments}</p>
-                      <p className="text-sm text-gray-600">Total Assessments</p>
-                    </div>
-                    <div className="text-center p-4 bg-amber-50 rounded-xl">
-                      <p className="text-3xl font-bold text-amber-600">{gradeSummaries.length}</p>
-                      <p className="text-sm text-gray-600">Subjects Graded</p>
-                    </div>
-                  </div>
-
-                  {/* Subject Performance Bars */}
-                  <h4 className="font-medium text-gray-700 mb-3">Performance by Subject</h4>
-                  {gradeSummaries.length === 0 ? (
-                    <p className="text-gray-500 text-sm py-4">No grade data available yet</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {gradeSummaries.map(summary => (
-                        <div key={summary.subjectId} className="flex items-center gap-3">
-                          <div className="w-32 text-sm text-gray-700 truncate">{summary.subjectName}</div>
-                          <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${
-                                summary.averagePercentage >= 80 ? 'bg-green-500' :
-                                summary.averagePercentage >= 60 ? 'bg-blue-500' :
-                                summary.averagePercentage >= 50 ? 'bg-amber-500' : 'bg-red-500'
-                              }`}
-                              style={{ width: `${summary.averagePercentage}%` }}
-                            />
-                          </div>
-                          <div className="w-12 text-sm font-medium text-right">
-                            {Math.round(summary.averagePercentage)}%
-                          </div>
-                          {summary.trend === 'up' && <TrendingUp className="w-4 h-4 text-green-500" />}
-                          {summary.trend === 'down' && <TrendingUp className="w-4 h-4 text-red-500 rotate-180" />}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Recent Activity */}
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4">Recent Assessments</h3>
-                  {myGrades.length === 0 ? (
-                    <p className="text-gray-500 text-sm">No recent assessments</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {myGrades.slice(0, 5).map(grade => (
-                        <div key={grade.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${GRADE_COLORS[grade.gradeLevel]}`}>
-                              {grade.gradeLevel}
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-900">{grade.subject?.name}</p>
-                              <p className="text-xs text-gray-500">{grade.month}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-medium">{grade.score}/{grade.maxScore}</p>
-                            <p className="text-xs text-gray-500">{Math.round(grade.percentage)}%</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
               </div>
             )}
           </main>
 
-          {/* Right Sidebar - Achievements & Tips */}
-          <aside className="lg:col-span-3 space-y-4">
-            {/* Study Tips */}
-            <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl p-5 text-white">
-              <div className="flex items-center gap-2 mb-3">
-                <Target className="w-5 h-5" />
-                <h3 className="font-semibold">Today's Goal</h3>
-              </div>
-              <p className="text-sm text-white/90 mb-3">Complete at least 2 study sessions today</p>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-2 bg-white/30 rounded-full">
-                  <div className="w-1/2 h-full bg-white rounded-full" />
-                </div>
-                <span className="text-sm font-medium">1/2</span>
-              </div>
-            </div>
-
-            {/* Achievements Preview */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                  <Award className="w-4 h-4 text-amber-600" />
-                  Achievements
-                </h3>
-                <span className="text-xs text-amber-600 font-medium">3/12</span>
-              </div>
-              
-              <div className="space-y-3">
-                {[
-                  { icon: '🎯', title: 'First Assessment', desc: 'Complete your first test', done: true },
-                  { icon: '📚', title: 'Bookworm', desc: 'Study 10 subjects', done: true },
-                  { icon: '🏆', title: 'Top Scorer', desc: 'Get 90%+ in any subject', done: true },
-                  { icon: '🔥', title: 'Week Warrior', desc: '7-day streak', progress: 5, target: 7 },
-                ].map((achievement, i) => (
-                  <div key={i} className={`flex items-center gap-3 p-2 rounded-lg ${achievement.done ? 'bg-green-50' : 'bg-gray-50'}`}>
-                    <span className="text-xl">{achievement.icon}</span>
-                    <div className="flex-1">
-                      <p className={`text-sm font-medium ${achievement.done ? 'text-green-700' : 'text-gray-700'}`}>
-                        {achievement.title}
-                      </p>
-                      <p className="text-xs text-gray-500">{achievement.desc}</p>
-                      {achievement.progress !== undefined && (
-                        <div className="mt-1 flex items-center gap-2">
-                          <div className="flex-1 h-1.5 bg-gray-200 rounded-full">
-                            <div 
-                              className="h-full bg-amber-500 rounded-full"
-                              style={{ width: `${(achievement.progress / (achievement.target || 1)) * 100}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-gray-500">{achievement.progress}/{achievement.target}</span>
-                        </div>
-                      )}
-                    </div>
-                    {achievement.done && <CheckCircle className="w-4 h-4 text-green-500" />}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Leaderboard */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-amber-600" />
-                  Class Leaderboard
-                </h3>
-              </div>
-              
-              <div className="space-y-2">
-                {[
-                  { rank: 1, name: 'Sovann K.', score: 96, avatar: '👤' },
-                  { rank: 2, name: 'Srey Mom', score: 94, avatar: '👤' },
-                  { rank: 3, name: 'Visal P.', score: 92, avatar: '👤' },
-                ].map((student) => (
-                  <div key={student.rank} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      student.rank === 1 ? 'bg-amber-100 text-amber-700' :
-                      student.rank === 2 ? 'bg-gray-200 text-gray-700' :
-                      'bg-orange-100 text-orange-700'
-                    }`}>
-                      {student.rank}
-                    </div>
-                    <span className="text-lg">{student.avatar}</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{student.name}</p>
-                    </div>
-                    <span className="text-sm font-bold text-gray-700">{student.score}%</span>
-                  </div>
-                ))}
-                
-                {/* Current user */}
-                <div className="border-t border-gray-100 pt-2 mt-2">
-                  <div className="flex items-center gap-3 p-2 bg-amber-50 rounded-lg">
-                    <div className="w-6 h-6 rounded-full bg-amber-200 flex items-center justify-center text-xs font-bold text-amber-700">
-                      {stats.rank}
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-200 to-orange-200 flex items-center justify-center text-sm">
-                      {currentUser?.firstName?.charAt(0) || 'Y'}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">You</p>
-                    </div>
-                    <span className="text-sm font-bold text-amber-700">{stats.averageScore}%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Study Resources */}
+          {/* ============================================ */}
+          {/* RIGHT SIDEBAR */}
+          {/* ============================================ */}
+          <aside className="hidden lg:block lg:col-span-3 space-y-4">
+            {/* Popular This Week */}
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-amber-600" />
-                Study Resources
+                <TrendingUp className="w-4 h-4 text-amber-600" />
+                Trending Courses
               </h3>
-              <div className="space-y-2">
-                {[
-                  { icon: '📖', title: 'Textbooks', count: 12 },
-                  { icon: '📝', title: 'Practice Tests', count: 24 },
-                  { icon: '🎬', title: 'Video Lessons', count: 48 },
-                  { icon: '📊', title: 'Study Guides', count: 8 },
-                ].map((resource, i) => (
-                  <button key={i} className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors text-left">
-                    <span className="text-lg">{resource.icon}</span>
-                    <span className="flex-1 text-sm text-gray-700">{resource.title}</span>
-                    <span className="text-xs text-gray-400">{resource.count}</span>
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
-                  </button>
+              <div className="space-y-3">
+                {featuredCourses.slice(0, 3).map((course, i) => (
+                  <div key={course.id} className="flex items-start gap-3 group cursor-pointer">
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                      i === 0 ? 'bg-amber-100 text-amber-700' :
+                      i === 1 ? 'bg-gray-100 text-gray-700' :
+                      'bg-orange-100 text-orange-700'
+                    }`}>
+                      {i + 1}
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900 group-hover:text-amber-600 transition-colors line-clamp-2">
+                        {course.title}
+                      </p>
+                      <p className="text-xs text-gray-500">{(course.enrolledCount / 1000).toFixed(1)}k learners</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Achievements */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Award className="w-4 h-4 text-amber-600" />
+                Your Achievements
+              </h3>
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                {['🎯', '📚', '🏆'].map((emoji, i) => (
+                  <div key={i} className="aspect-square rounded-xl bg-amber-50 flex items-center justify-center text-2xl">
+                    {emoji}
+                  </div>
+                ))}
+              </div>
+              <p className="text-sm text-gray-600 text-center">
+                <span className="font-medium">3</span> of <span className="font-medium">15</span> unlocked
+              </p>
+            </div>
+
+            {/* Weekly Goal */}
+            <div className="bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl p-5 text-white">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Target className="w-4 h-4" />
+                  Weekly Goal
+                </h3>
+                <span className="text-2xl">🎯</span>
+              </div>
+              <p className="text-sm text-white/80 mb-2">Learn 5 hours this week</p>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-2 bg-white/30 rounded-full">
+                  <div className="w-3/5 h-full bg-white rounded-full" />
+                </div>
+                <span className="text-sm font-medium">3/5h</span>
+              </div>
+            </div>
+
+            {/* Study Streak */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-orange-500" />
+                  Study Streak
+                </h3>
+                <span className="text-lg font-bold text-orange-500">{stats.currentStreak} days</span>
+              </div>
+              <div className="flex justify-between">
+                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      i < stats.currentStreak ? 'bg-orange-100' : 'bg-gray-100'
+                    }`}>
+                      {i < stats.currentStreak ? (
+                        <CheckCircle className="w-4 h-4 text-orange-500" />
+                      ) : (
+                        <span className="w-2 h-2 rounded-full bg-gray-300" />
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-500">{day}</span>
+                  </div>
                 ))}
               </div>
             </div>
