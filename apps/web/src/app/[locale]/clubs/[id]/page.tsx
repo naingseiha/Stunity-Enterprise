@@ -400,184 +400,266 @@ export default function ClubDetailPage() {
       {/* Navigation Bar */}
       <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
       
-      {/* Cover */}
-      <div className={`h-48 md:h-64 bg-gradient-to-br ${CLUB_TYPE_COLORS[club.clubType] || 'from-amber-400 to-orange-500'} relative`}>
-        {club.coverImage && (
-          <img src={club.coverImage} alt="" className="w-full h-full object-cover" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        
-        {/* Back Button */}
-        <Link
-          href={`/${locale}/clubs`}
-          className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700 hover:bg-white transition-all"
+      <div className="max-w-5xl mx-auto px-4 py-6">
+        {/* Page Header Card - Matching Clubs List Page Style */}
+        <div 
+          className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6 animate-fadeInUp"
         >
-          <ArrowLeft className="w-4 h-4" />
-          All Clubs
-        </Link>
+          {/* Gradient Header Banner - Taller like profile/clubs page */}
+          <div className={`h-48 md:h-56 bg-gradient-to-br ${CLUB_TYPE_COLORS[club.clubType] || 'from-amber-400 to-orange-500'} relative overflow-hidden`}>
+            {club.coverImage ? (
+              <img src={club.coverImage} alt="" className="w-full h-full object-cover" />
+            ) : (
+              /* Decorative pattern */
+              <div className="absolute inset-0 opacity-20">
+                <div className="absolute top-1/4 left-1/4 w-32 h-32 rounded-full border-2 border-white/30" />
+                <div className="absolute top-1/3 right-1/4 w-24 h-24 rounded-full border-2 border-white/20" />
+                <div className="absolute bottom-1/4 left-1/3 w-16 h-16 rounded-full border-2 border-white/25" />
+              </div>
+            )}
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/20 to-transparent" />
+            
+            {/* Back Button */}
+            <Link
+              href={`/${locale}/clubs`}
+              className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700 hover:bg-white transition-all shadow-sm"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              All Clubs
+            </Link>
 
-        {/* Settings Button (Admin) */}
-        {isAdmin && (
-          <Link
-            href={`/${locale}/clubs/${club.id}/settings`}
-            className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-all"
-          >
-            <Settings className="w-5 h-5 text-gray-700" />
-          </Link>
-        )}
-
-        {/* Club Info */}
-        <div className="absolute bottom-0 left-0 right-0 p-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm text-white rounded-full px-3 py-1 text-sm">
-                {CLUB_TYPE_ICONS[club.clubType]}
-                {CLUB_TYPE_LABELS[club.clubType]}
-              </span>
-              {club.category && (
-                <span className="bg-white/20 backdrop-blur-sm text-white rounded-full px-3 py-1 text-sm">
-                  {club.category}
-                </span>
-              )}
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{club.name}</h1>
-            {club.description && (
-              <p className="text-white/80 text-lg max-w-2xl">{club.description}</p>
+            {/* Settings Button (Admin) */}
+            {isAdmin && (
+              <Link
+                href={`/${locale}/clubs/${club.id}/settings`}
+                className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-all shadow-sm"
+              >
+                <Settings className="w-5 h-5 text-gray-700" />
+              </Link>
             )}
           </div>
-        </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        {/* Stats & Actions */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-6">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">{club._count.members}</p>
-              <p className="text-sm text-gray-500">Members</p>
+          
+          {/* Header Content */}
+          <div className="px-6 pb-6">
+            {/* Avatar - Circular like profile/clubs page */}
+            <div className="relative -mt-16 md:-mt-20 mb-4">
+              <div className={`w-32 h-32 md:w-36 md:h-36 rounded-full bg-gradient-to-br ${CLUB_TYPE_COLORS[club.clubType] || 'from-amber-400 to-orange-500'} flex items-center justify-center border-4 border-white shadow-xl ring-4 ring-amber-100/50`}>
+                <span className="text-white scale-150">
+                  {CLUB_TYPE_ICONS[club.clubType]}
+                </span>
+              </div>
+              
+              {/* Privacy Badge */}
+              <div className="absolute bottom-2 right-0 flex items-center gap-1.5 bg-white rounded-full px-2.5 py-1 shadow-md border border-gray-100">
+                <span className="text-gray-600">
+                  {club.privacy === 'PUBLIC' && <Globe className="w-4 h-4 text-green-500" />}
+                  {club.privacy === 'SCHOOL' && <School className="w-4 h-4 text-blue-500" />}
+                  {club.privacy === 'PRIVATE' && <Lock className="w-4 h-4 text-amber-500" />}
+                  {club.privacy === 'SECRET' && <EyeOff className="w-4 h-4 text-red-500" />}
+                </span>
+                <span className="text-xs font-medium text-gray-700">{club.privacy}</span>
+              </div>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">{club._count.posts}</p>
-              <p className="text-sm text-gray-500">Posts</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {club.isMember ? (
-              <>
-                {/* Invite Button (Admin only) */}
-                {(club.myRole === 'OWNER' || club.myRole === 'ADMIN') && (
-                  <button
-                    onClick={() => setShowInviteModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    Invite
-                  </button>
+            
+            {/* Title and Actions */}
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div>
+                {/* Type & Category Badges */}
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-gradient-to-r ${CLUB_TYPE_COLORS[club.clubType]} text-white shadow-sm`}>
+                    {CLUB_TYPE_ICONS[club.clubType]}
+                    {CLUB_TYPE_LABELS[club.clubType]}
+                  </span>
+                  {club.category && (
+                    <span className="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full border border-amber-100">
+                      {club.category}
+                    </span>
+                  )}
+                </div>
+                
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{club.name}</h1>
+                {club.description && (
+                  <p className="text-gray-500 mt-1 max-w-xl">{club.description}</p>
                 )}
                 
-                {club.myRole && (
-                  <span className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-full text-sm font-medium">
-                    {ROLE_ICONS[club.myRole]}
-                    {club.myRole}
+                {/* Creator Info */}
+                <div className="flex items-center gap-2 mt-3">
+                  {club.creator.profilePictureUrl ? (
+                    <img src={club.creator.profilePictureUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-medium">
+                      {club.creator.firstName?.[0]}{club.creator.lastName?.[0]}
+                    </div>
+                  )}
+                  <span className="text-sm text-gray-500">
+                    Created by <span className="font-medium text-gray-700">{club.creator.firstName} {club.creator.lastName}</span>
                   </span>
-                )}
-                {club.myRole !== 'OWNER' && (
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3 flex-shrink-0">
+                {club.isMember ? (
+                  <>
+                    {(club.myRole === 'OWNER' || club.myRole === 'ADMIN') && (
+                      <button
+                        onClick={() => setShowInviteModal(true)}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        Invite
+                      </button>
+                    )}
+                    
+                    {club.myRole && (
+                      <span className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium ${
+                        club.myRole === 'OWNER' 
+                          ? 'bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 border border-amber-200' 
+                          : club.myRole === 'ADMIN'
+                          ? 'bg-blue-50 text-blue-700 border border-blue-100'
+                          : 'bg-gray-100 text-gray-600 border border-gray-200'
+                      }`}>
+                        {ROLE_ICONS[club.myRole]}
+                        {club.myRole}
+                      </span>
+                    )}
+                    {club.myRole !== 'OWNER' && (
+                      <button
+                        onClick={handleLeave}
+                        disabled={leaving}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all disabled:opacity-50"
+                      >
+                        {leaving ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <LogOut className="w-4 h-4" />
+                        )}
+                        Leave
+                      </button>
+                    )}
+                  </>
+                ) : club.privacy !== 'PRIVATE' && club.privacy !== 'SECRET' ? (
                   <button
-                    onClick={handleLeave}
-                    disabled={leaving}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all disabled:opacity-50"
+                    onClick={handleJoin}
+                    disabled={joining}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-600 transition-all disabled:opacity-50 shadow-lg shadow-amber-500/25 hover:shadow-xl hover:scale-105"
                   >
-                    {leaving ? (
+                    {joining ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      <LogOut className="w-4 h-4" />
+                      <Plus className="w-5 h-5" />
                     )}
-                    Leave
+                    Join Club
                   </button>
-                )}
-              </>
-            ) : club.privacy !== 'PRIVATE' && club.privacy !== 'SECRET' ? (
-              <button
-                onClick={handleJoin}
-                disabled={joining}
-                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-600 hover:to-orange-600 transition-all disabled:opacity-50 shadow-lg shadow-amber-500/20"
-              >
-                {joining ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Plus className="w-4 h-4" />
+                  <span className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl">
+                    <Lock className="w-4 h-4" />
+                    Invite Only
+                  </span>
                 )}
-                Join Club
-              </button>
-            ) : (
-              <span className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-xl">
-                <Lock className="w-4 h-4" />
-                Invite Only
-              </span>
-            )}
+              </div>
+            </div>
+            
+            {/* Quick Stats */}
+            <div className="flex items-center gap-6 mt-6 pt-4 border-t border-gray-100">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-gray-900">{club._count.members}</p>
+                  <p className="text-xs text-gray-500">Members</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-gray-900">{club._count.posts}</p>
+                  <p className="text-xs text-gray-500">Posts</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-gray-900">{new Date(club.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
+                  <p className="text-xs text-gray-500">Created</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        {club.isMember && (
-          <>
-            <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit">
-              <button
-                onClick={() => setActiveTab('posts')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                  activeTab === 'posts'
-                    ? 'bg-white text-amber-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <FileText className="w-4 h-4" />
-                Posts
-              </button>
-              <button
-                onClick={() => setActiveTab('members')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                  activeTab === 'members'
-                    ? 'bg-white text-amber-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Users className="w-4 h-4" />
-                Members
-              </button>
-              <button
-                onClick={() => setActiveTab('about')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                  activeTab === 'about'
-                    ? 'bg-white text-amber-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Info className="w-4 h-4" />
-                About
-              </button>
-            </div>
+        {/* Main Content Card */}
+        <div 
+          className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-fadeInUp"
+          style={{ animationDelay: '0.1s' }}
+        >
+          {/* Tabs */}
+          {club.isMember && (
+            <>
+              <div className="p-4 border-b border-gray-100">
+                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 w-fit">
+                  <button
+                    onClick={() => setActiveTab('posts')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
+                      activeTab === 'posts'
+                        ? 'bg-white text-amber-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <FileText className="w-4 h-4" />
+                    Posts
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('members')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
+                      activeTab === 'members'
+                        ? 'bg-white text-amber-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <Users className="w-4 h-4" />
+                    Members
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('about')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
+                      activeTab === 'about'
+                        ? 'bg-white text-amber-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <Info className="w-4 h-4" />
+                    About
+                  </button>
+                </div>
+              </div>
 
-            {/* Posts Tab */}
-            {activeTab === 'posts' && (
-              <div className="space-y-4">
-                {/* Create Post Box */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-4">
-                  {showCreatePost ? (
-                    <div className="space-y-3">
-                      <textarea
-                        value={newPostContent}
-                        onChange={(e) => setNewPostContent(e.target.value)}
-                        placeholder={`Share something with ${club.name}...`}
-                        rows={3}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 resize-none"
-                        autoFocus
-                      />
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => {
-                            setShowCreatePost(false);
-                            setNewPostContent('');
+              <div className="p-4">
+                {/* Posts Tab */}
+                {activeTab === 'posts' && (
+                  <div className="space-y-4">
+                    {/* Create Post Box */}
+                    <div className="bg-gradient-to-r from-amber-50/50 to-orange-50/50 rounded-xl border border-amber-100/50 p-4">
+                      {showCreatePost ? (
+                        <div className="space-y-3">
+                          <textarea
+                            value={newPostContent}
+                            onChange={(e) => setNewPostContent(e.target.value)}
+                            placeholder={`Share something with ${club.name}...`}
+                            rows={3}
+                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 resize-none"
+                            autoFocus
+                          />
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => {
+                                setShowCreatePost(false);
+                                setNewPostContent('');
                           }}
                           className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
                         >
@@ -633,111 +715,138 @@ export default function ClubDetailPage() {
               </div>
             )}
 
-            {/* Members Tab */}
-            {activeTab === 'members' && (
-              <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-100">
-                {allMembers.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500">No members yet</p>
+                {/* Members Tab */}
+                {activeTab === 'members' && (
+                  <div className="divide-y divide-gray-100">
+                    {allMembers.length === 0 ? (
+                      <div className="text-center py-16 bg-gradient-to-r from-amber-50/50 to-orange-50/50 rounded-xl border border-amber-100/50">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center">
+                          <Users className="w-8 h-8 text-amber-500" />
+                        </div>
+                        <p className="text-gray-500">No members yet</p>
+                      </div>
+                    ) : (
+                      allMembers.map((member) => (
+                        <MemberRow
+                          key={member.id}
+                          member={member}
+                          locale={locale}
+                          isAdmin={isAdmin}
+                          isOwner={club.myRole === 'OWNER'}
+                          currentUserId={currentUserId}
+                          getInitials={getInitials}
+                          onUpdateRole={handleUpdateMemberRole}
+                          onRemove={handleRemoveMember}
+                        />
+                      ))
+                    )}
                   </div>
-                ) : (
-                  allMembers.map((member) => (
-                    <MemberRow
-                      key={member.id}
-                      member={member}
-                      locale={locale}
-                      isAdmin={isAdmin}
-                      isOwner={club.myRole === 'OWNER'}
-                      currentUserId={currentUserId}
-                      getInitials={getInitials}
-                      onUpdateRole={handleUpdateMemberRole}
-                      onRemove={handleRemoveMember}
-                    />
-                  ))
+                )}
+
+                {/* About Tab */}
+                {activeTab === 'about' && (
+                  <div className="space-y-4">
+                    {/* Club Info Card */}
+                    <div className="bg-gradient-to-r from-amber-50/50 to-orange-50/50 rounded-xl border border-amber-100/50 p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <Info className="w-5 h-5 text-amber-500" />
+                        About This Club
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white rounded-lg p-4 border border-gray-100">
+                          <label className="text-sm text-gray-500">Club Type</label>
+                          <p className="text-gray-900 font-medium flex items-center gap-2 mt-1">
+                            {CLUB_TYPE_ICONS[club.clubType]}
+                            {CLUB_TYPE_LABELS[club.clubType]}
+                          </p>
+                        </div>
+                        
+                        {club.category && (
+                          <div className="bg-white rounded-lg p-4 border border-gray-100">
+                            <label className="text-sm text-gray-500">Category</label>
+                            <p className="text-gray-900 font-medium mt-1">{club.category}</p>
+                          </div>
+                        )}
+                        
+                        <div className="bg-white rounded-lg p-4 border border-gray-100">
+                          <label className="text-sm text-gray-500">Privacy</label>
+                          <p className="text-gray-900 font-medium flex items-center gap-2 mt-1">
+                            {club.privacy === 'PUBLIC' && <Globe className="w-4 h-4 text-green-500" />}
+                            {club.privacy === 'SCHOOL' && <School className="w-4 h-4 text-blue-500" />}
+                            {club.privacy === 'PRIVATE' && <Lock className="w-4 h-4 text-amber-500" />}
+                            {club.privacy === 'SECRET' && <EyeOff className="w-4 h-4 text-red-500" />}
+                            {club.privacy}
+                          </p>
+                        </div>
+                        
+                        <div className="bg-white rounded-lg p-4 border border-gray-100">
+                          <label className="text-sm text-gray-500">Created</label>
+                          <p className="text-gray-900 font-medium flex items-center gap-2 mt-1">
+                            <Calendar className="w-4 h-4 text-gray-400" />
+                            {new Date(club.createdAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Stats Card */}
+                    <div className="bg-white rounded-xl border border-gray-100 p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistics</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-100">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center mx-auto mb-2">
+                            <Users className="w-6 h-6 text-amber-600" />
+                          </div>
+                          <p className="text-2xl font-bold text-gray-900">{club._count.members}</p>
+                          <p className="text-sm text-gray-500">Members</p>
+                        </div>
+                        <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center mx-auto mb-2">
+                            <FileText className="w-6 h-6 text-blue-600" />
+                          </div>
+                          <p className="text-2xl font-bold text-gray-900">{club._count.posts}</p>
+                          <p className="text-sm text-gray-500">Posts</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
-            )}
+            </>
+          )}
 
-            {/* About Tab */}
-            {activeTab === 'about' && (
-              <div className="space-y-4">
-                {/* Club Info Card */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Info className="w-5 h-5 text-amber-500" />
-                    About This Club
-                  </h3>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm text-gray-500">Club Type</label>
-                      <p className="text-gray-900 font-medium flex items-center gap-2 mt-1">
-                        {CLUB_TYPE_ICONS[club.clubType]}
-                        {CLUB_TYPE_LABELS[club.clubType]}
-                      </p>
-                    </div>
-                    
-                    {club.category && (
-                      <div>
-                        <label className="text-sm text-gray-500">Category</label>
-                        <p className="text-gray-900 font-medium mt-1">{club.category}</p>
-                      </div>
+          {/* Non-member view */}
+          {!club.isMember && (
+            <div className="p-4">
+              <div className="text-center py-16 bg-gradient-to-r from-amber-50/50 to-orange-50/50 rounded-xl border border-amber-100/50">
+                <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center">
+                  <Lock className="w-10 h-10 text-amber-500" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Members Only</h3>
+                <p className="text-gray-500 mb-4">Join this club to view posts and members</p>
+                {club.privacy !== 'PRIVATE' && club.privacy !== 'SECRET' && (
+                  <button
+                    onClick={handleJoin}
+                    disabled={joining}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-600 transition-all disabled:opacity-50 shadow-lg shadow-amber-500/25"
+                  >
+                    {joining ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Plus className="w-5 h-5" />
                     )}
-                    
-                    <div>
-                      <label className="text-sm text-gray-500">Privacy</label>
-                      <p className="text-gray-900 font-medium flex items-center gap-2 mt-1">
-                        {club.privacy === 'PUBLIC' && <Globe className="w-4 h-4 text-green-500" />}
-                        {club.privacy === 'SCHOOL' && <School className="w-4 h-4 text-blue-500" />}
-                        {club.privacy === 'PRIVATE' && <Lock className="w-4 h-4 text-amber-500" />}
-                        {club.privacy === 'SECRET' && <EyeOff className="w-4 h-4 text-red-500" />}
-                        {club.privacy}
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm text-gray-500">Created</label>
-                      <p className="text-gray-900 font-medium flex items-center gap-2 mt-1">
-                        <Calendar className="w-4 h-4 text-gray-400" />
-                        {new Date(club.createdAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Stats Card */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistics</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl">
-                      <Users className="w-6 h-6 text-amber-500 mx-auto mb-2" />
-                      <p className="text-2xl font-bold text-gray-900">{club._count.members}</p>
-                      <p className="text-sm text-gray-500">Members</p>
-                    </div>
-                    <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
-                      <FileText className="w-6 h-6 text-blue-500 mx-auto mb-2" />
-                      <p className="text-2xl font-bold text-gray-900">{club._count.posts}</p>
-                      <p className="text-sm text-gray-500">Posts</p>
-                    </div>
-                  </div>
-                </div>
+                    Join Club
+                  </button>
+                )}
               </div>
-            )}
-          </>
-        )}
-
-        {/* Non-member view */}
-        {!club.isMember && (
-          <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
-            <Lock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">Join this club to view posts and members</p>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Invite Modal */}
