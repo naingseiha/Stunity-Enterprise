@@ -1,138 +1,162 @@
 # Next Implementation Roadmap
 
-**Last Updated:** February 4, 2026  
-**Status:** Ready for Implementation
+**Last Updated:** February 6, 2026  
+**Status:** Ready for Next Phase
 
 This document outlines the planned next steps for Stunity Enterprise development.
 
 ---
 
-## ✅ Recently Completed (February 2026)
+## ✅ Recently Completed (February 6, 2026)
 
-### Phase 11: Grade Analytics Dashboard ✅ NEW
-- [x] Line chart for monthly grade trends
-- [x] Horizontal bar chart for subject performance
-- [x] Pie chart for grade distribution (A-F)
-- [x] Radar chart for category performance
-- [x] Statistics cards (class average, pass rate, highest/lowest)
-- [x] Top performers table with rankings
-- [x] Recharts library integration
+### Phase 20.5: UI Redesign & Learn Hub ✅ NEW
+- [x] Clubs & Events pages redesigned with clean 3-column layout
+- [x] Profile page updated with "Open to Learn" terminology
+- [x] Lighter color scheme (amber-100/orange-100 gradients)
+- [x] **Learn Hub** - Comprehensive learning platform with 4 modes:
+  - Explore Courses (Udemy/Coursera style)
+  - My Courses (progress tracking)
+  - Learning Paths (curated journeys)
+  - My Curriculum (school subjects - students only)
+- [x] Course cards, Learning Path cards, Subject cards
+- [x] Weekly goals, achievements, study streak widgets
+- [x] Grade service health endpoint fix
 
-### Phase 10: Attendance Monthly Reports ✅ NEW
-- [x] Monthly attendance grid view
-- [x] Two-row per day format (Morning/Afternoon)
-- [x] Color-coded status cells (P/A/L/E/S)
-- [x] Statistics dashboard
-- [x] Month navigation controls
+### Phase 20: Study Clubs Full Features ✅
+- [x] Club list and detail page redesign
+- [x] Event pages with FeedZoomLoader
+- [x] Feed sidebar widgets with real API data
+- [x] Fixed slideInUp animation issue
 
-### Phase 9: PDF Report Card Export ✅ NEW
-- [x] Student report card PDF generation
-- [x] Class summary PDF generation
-- [x] Professional A4 format design
-- [x] jsPDF with autotable integration
-- [x] Download buttons on report components
+### Phase 19.6: Achievement Badges ✅
+- [x] Verified badges, level badges
+- [x] Achievement icons on profile and feed
 
-### Phase 8: Performance Optimization & Grade Entry Enhancement ✅
-- [x] SWR caching for faster data loading
-- [x] React hydration error fixes  
-- [x] Skeleton loading animations
-- [x] Bulk assign modal improvements
-- [x] Grade entry visual improvements (pass/fail indicators)
-- [x] Quick Fill feature for grade entry
-- [x] Enhanced statistics display with color coding
-
-See `docs/PHASE9-11_REPORTS_ANALYTICS.md` for Phases 9-11 documentation.
-See `docs/PHASE8_PERFORMANCE_OPTIMIZATION.md` for performance optimization docs.
-See `docs/COMPLETE_SYSTEM_DOCUMENTATION.md` for full system documentation.
+See `PROJECT_STATUS.md` for complete feature history.
 
 ---
 
 ## 🎯 Priority 1: High Priority Features
 
-### 1.1 Parent Portal ⭐ NEXT PRIORITY
+### 1.1 Course Service (Backend for Learn Hub) ⭐ RECOMMENDED NEXT
 **Status:** Ready to implement  
-**Estimated Effort:** 1-2 weeks
+**Estimated Effort:** 1-2 sessions
 
-Features to implement:
-- [ ] Parent account creation & registration
-- [ ] Link parent to student(s)
-- [ ] View child's grades and report cards
-- [ ] View attendance records
-- [ ] Download report card PDFs
-- [ ] Communication with teachers (future)
-- [ ] Notification preferences (future)
+The Learn Hub UI is complete with sample data. Next step is building the backend.
 
 **New Database Models Needed:**
 ```prisma
-model Parent {
-  id          String   @id @default(cuid())
-  schoolId    String
-  firstName   String
-  lastName    String
-  khmerName   String?
-  phone       String
-  email       String   @unique
-  password    String
-  isActive    Boolean  @default(true)
-  children    StudentParent[]
-  school      School   @relation(fields: [schoolId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model Course {
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  thumbnail     String?
+  category      String
+  level         CourseLevel
+  duration      Int      // hours
+  price         Float    @default(0)
+  isFree        Boolean  @default(true)
+  isFeatured    Boolean  @default(false)
+  isPublished   Boolean  @default(false)
+  instructorId  String
+  instructor    User     @relation(fields: [instructorId], references: [id])
+  lessons       Lesson[]
+  enrollments   Enrollment[]
+  reviews       CourseReview[]
+  tags          String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
-model StudentParent {
-  id         String   @id @default(cuid())
-  studentId  String
-  parentId   String
-  relation   String   // FATHER, MOTHER, GUARDIAN
-  isPrimary  Boolean  @default(false)
-  student    Student  @relation(fields: [studentId], references: [id])
-  parent     Parent   @relation(fields: [parentId], references: [id])
+model Lesson {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id])
+  title       String
+  description String?
+  content     String?  // Rich text or markdown
+  videoUrl    String?
+  duration    Int      // minutes
+  order       Int
+  isFree      Boolean  @default(false)  // Preview lesson
+  progress    LessonProgress[]
+  createdAt   DateTime @default(now())
+}
+
+model Enrollment {
+  id           String   @id @default(cuid())
+  userId       String
+  courseId     String
+  course       Course   @relation(fields: [courseId], references: [id])
+  progress     Float    @default(0)
+  completedAt  DateTime?
+  enrolledAt   DateTime @default(now())
   
-  @@unique([studentId, parentId])
+  @@unique([userId, courseId])
+}
+
+model LessonProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id])
+  completed   Boolean  @default(false)
+  watchTime   Int      @default(0)  // seconds
+  completedAt DateTime?
+  
+  @@unique([userId, lessonId])
+}
+
+model LearningPath {
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  thumbnail     String?
+  level         String
+  isFeatured    Boolean  @default(false)
+  courses       LearningPathCourse[]
+  enrollments   PathEnrollment[]
+  createdAt     DateTime @default(now())
 }
 ```
 
 **New API Endpoints:**
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/parents/register` | Register new parent |
-| POST | `/parents/login` | Parent authentication |
-| GET | `/parents/:id/children` | Get linked students |
-| POST | `/parents/:id/link-child` | Link to student |
-| GET | `/parents/:id/child/:studentId/grades` | View child's grades |
-| GET | `/parents/:id/child/:studentId/attendance` | View child's attendance |
+| GET | `/courses` | List courses (with filters) |
+| GET | `/courses/:id` | Course details with lessons |
+| POST | `/courses` | Create course (instructors) |
+| PUT | `/courses/:id` | Update course |
+| POST | `/courses/:id/enroll` | Enroll in course |
+| GET | `/courses/:id/lessons` | Get course lessons |
+| POST | `/lessons/:id/progress` | Update lesson progress |
+| GET | `/my-courses` | User's enrolled courses |
+| GET | `/learning-paths` | List learning paths |
+| POST | `/learning-paths/:id/enroll` | Enroll in path |
 
-**UI Pages Needed:**
-- `/parent/register` - Parent registration form
-- `/parent/login` - Parent login page
-- `/parent/dashboard` - Parent home with children list
-- `/parent/child/[id]` - Child detail view
-- `/parent/child/[id]/grades` - Child's grades
-- `/parent/child/[id]/attendance` - Child's attendance
-
-### 1.2 School-Wide Analytics Dashboard
+### 1.2 Stories/Status Updates
 **Status:** Planning  
-**Estimated Effort:** 1 week
+**Estimated Effort:** 2 sessions
+
+24-hour ephemeral content like Instagram/WhatsApp stories.
 
 Features:
-- [ ] Enrollment trends over time
-- [ ] Grade distribution across all classes
-- [ ] Attendance rates by class/grade level
-- [ ] Teacher workload visualization
-- [ ] Performance comparison across academic years
-- [ ] Export analytics to PDF/Excel
+- [ ] Story model (mediaUrl, text, backgroundColor, expiresAt)
+- [ ] StoryView model for tracking
+- [ ] Create/view stories
+- [ ] Story circles at top of feed
+- [ ] Auto-delete after 24 hours
 
-### 1.3 Notification System
+### 1.3 Advanced Notifications
 **Status:** Planning  
-**Estimated Effort:** 1 week
+**Estimated Effort:** 2 sessions
 
 Features:
-- [ ] In-app notifications
-- [ ] Grade published notifications
-- [ ] Attendance alerts (absences)
-- [ ] Announcement broadcasts
-- [ ] Email notification integration (future)
+- [ ] New follower notifications
+- [ ] Event reminders
+- [ ] Course updates
+- [ ] Mention in post/comment
+- [ ] Notification preferences page
 
 ---
 

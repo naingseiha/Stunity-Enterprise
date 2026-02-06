@@ -1,8 +1,8 @@
 # 🎓 Stunity Enterprise - Project Status
 
 **Date:** February 6, 2026  
-**Version:** 8.5  
-**Status:** Phase 20.5 Complete - Study Clubs & Events UI Polish ✅
+**Version:** 9.0  
+**Status:** Phase 20.5 Complete - UI Redesign & Learn Hub ✅
 
 ---
 
@@ -921,6 +921,76 @@ Enhanced study club experience with full functionality and polished UI.
 - [ ] Club activity feed
 - [ ] Member contributions/leaderboard
 - [ ] Club notifications
+
+### Phase 20.5: UI Redesign & Learn Hub ✅ COMPLETE
+**Priority: HIGH | Completed: February 6, 2026**
+
+Comprehensive UI redesign for consistency and new Learn Hub for all learners.
+
+#### Clubs & Events Page Redesign ✅
+- [x] Removed profile-style headers (cover+avatar) from list pages
+- [x] Clean 3-column LinkedIn-style layout (3-6-3 grid)
+- [x] Left sidebar: User stats, quick filters, categories
+- [x] Center: Search, tabs, content cards
+- [x] Right sidebar: Trending, quick actions, footer
+- [x] Club cards with: creator info, description, stats, join button
+- [x] Event cards with: date, location, RSVP count, attend button
+- [x] Consistent max-w-6xl container across all pages
+
+#### Profile Page Enhancements ✅
+- [x] Changed "Open to Work" → "Open to Learn" (e-learning context)
+- [x] Sky blue color scheme for learning goals
+- [x] Lighter cover/avatar gradients (amber-100/orange-100)
+- [x] Cards match feed style (rounded-xl, border-gray-200)
+- [x] Terms updated: "Study groups, Mentorship, Tutoring"
+
+#### Learn Hub - Comprehensive Learning Platform ✅
+- [x] **4 Learning Modes in single page:**
+  1. **Explore Courses** - Browse/enroll in free courses (Udemy/Coursera style)
+  2. **My Courses** - Track enrolled courses with progress
+  3. **Learning Paths** - Curated multi-course journeys
+  4. **My Curriculum** - School subjects & grades (students only)
+
+- [x] **Explore Tab Features:**
+  - Course cards: thumbnail, rating, instructor, duration, enrolled count
+  - Featured courses banner with gradient
+  - Category and level filters
+  - "Enroll Now - Free" buttons
+  - 6 sample courses (Python, Math, English, Design, Web Dev, Physics)
+
+- [x] **My Courses Tab:**
+  - Progress tracking with percentage bars
+  - "Continue Learning" button
+  - Completed lessons count
+  - Last accessed timestamp
+
+- [x] **Learning Paths Tab:**
+  - Full-Stack Developer Path
+  - Data Science & AI Mastery
+  - Product Design Career Path
+  - Course count, total duration, enrolled learners
+
+- [x] **My Curriculum Tab (Students only):**
+  - Connects to Subject Service API
+  - Connects to Grade Service API
+  - Subject cards with grade averages
+
+- [x] **UI Widgets:**
+  - Continue Learning banner with progress
+  - User stats (Enrolled, Completed, Hours, Streak)
+  - Trending courses sidebar
+  - Achievements preview (3/15 unlocked)
+  - Weekly goal tracker
+  - Study streak calendar
+
+#### Grade Service Fix ✅
+- [x] Moved /health endpoint before auth middleware
+- [x] Health check no longer requires authentication
+
+#### Navigation Updates ✅
+- [x] Learn menu positioned after Events
+- [x] Removed "Soon" badge from Learn
+- [x] Vertical tab navigation in Learn page sidebar
 
 ### Phase 21: Stories/Status Updates 🔜
 **Priority: LOW | Estimated: 2 sessions**
