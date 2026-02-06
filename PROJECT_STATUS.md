@@ -1,8 +1,8 @@
 # 🎓 Stunity Enterprise - Project Status
 
 **Date:** February 6, 2026  
-**Version:** 11.0  
-**Status:** Phase 22 Complete - Course Detail & Lesson Viewer ✅
+**Version:** 12.0  
+**Status:** Phase 23 Complete - Course Creation UI ✅
 
 ---
 
@@ -12,7 +12,7 @@
 
 | Port | Service | Status | Version |
 |------|---------|--------|---------|
-| 3000 | Web App (Next.js) | 🟢 Running | 6.0 |
+| 3000 | Web App (Next.js) | 🟢 Running | 7.0 |
 | 3001 | Auth Service | 🟢 Running | 2.2 |
 | 3002 | School Service | 🟢 Running | 2.3 |
 | 3003 | Student Service | 🟢 Running | 2.1 |
@@ -22,7 +22,7 @@
 | 3007 | Grade Service | 🟢 Running | 2.2 |
 | 3008 | Attendance Service | 🟢 Running | 2.1 |
 | 3009 | Timetable Service | 🟢 Running | 2.0 |
-| 3010 | Feed Service | 🟢 Running | 5.0 |
+| 3010 | Feed Service | 🟢 Running | 6.0 |
 | 3011 | Messaging Service | 🟢 Running | 1.0 |
 
 ### Test Credentials
@@ -1077,7 +1077,34 @@ Full course viewing experience with lesson player.
 - [x] Lesson list navigates to lesson viewer
 - [x] Back navigation to course/learn hub
 
-### Phase 23: Stories/Status Updates 🔜
+### Phase 23: Course Creation UI ✅ COMPLETE
+**Completed:** February 6, 2026  
+**Status:** DONE
+
+Open Platform model - Anyone can create courses (like Udemy/Skillshare).
+
+#### Course Creation Wizard ✅
+- [x] `/learn/create` - Multi-step wizard
+- [x] Step 1: Basic Info (title, description, category, level)
+- [x] Step 2: Media & Tags (thumbnail URL, tags)
+- [x] Step 3: Lessons (add, edit, reorder, remove)
+- [x] Step 4: Review & Publish
+- [x] Lesson builder with drag-to-reorder
+- [x] Preview before publish
+- [x] Draft/Published status toggle
+
+#### Backend Updates ✅
+- [x] Removed role restriction for course creation
+- [x] Added `/courses/my-created` endpoint
+- [x] Any authenticated user can now create courses
+
+#### Learn Hub Updates ✅
+- [x] "Create Course" button in sidebar
+- [x] "My Created" tab for instructor view
+- [x] Course management cards with edit/view actions
+- [x] Draft vs Published status badges
+
+### Phase 24: Stories/Status Updates 🔜
 **Priority: LOW | Estimated: 2 sessions**
 
 24-hour ephemeral content like Instagram/WhatsApp stories.
@@ -1094,7 +1121,7 @@ Full course viewing experience with lesson player.
 - [ ] Story viewer with swipe navigation
 - [ ] Story view count
 
-### Phase 24: Advanced Notifications 🔜
+### Phase 25: Advanced Notifications 🔜
 **Priority: MEDIUM | Estimated: 2 sessions**
 
 #### Backend
