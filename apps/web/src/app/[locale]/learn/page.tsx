@@ -592,7 +592,10 @@ export default function LearnHubPage() {
     const enrolledCourse = enrolled ? course as EnrolledCourse : null;
     
     return (
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:border-amber-200 transition-all group">
+      <Link 
+        href={`/${locale}/learn/course/${course.id}`}
+        className="block bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:border-amber-200 transition-all group"
+      >
         {/* Thumbnail */}
         <div className="h-36 bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-50 relative">
           {course.thumbnail ? (
@@ -690,14 +693,17 @@ export default function LearnHubPage() {
           {/* Enroll button for non-enrolled */}
           {!enrolled && (
             <button 
-              onClick={() => handleEnroll(course.id)}
+              onClick={(e) => {
+                e.preventDefault();
+                handleEnroll(course.id);
+              }}
               className="w-full mt-3 px-4 py-2 border-2 border-amber-500 text-amber-600 text-sm font-medium rounded-lg hover:bg-amber-50 transition-colors"
             >
               Enroll Now - Free
             </button>
           )}
         </div>
-      </div>
+      </Link>
     );
   };
 
