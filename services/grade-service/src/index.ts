@@ -79,11 +79,25 @@ const authenticateToken = (req: AuthRequest, res: Response, next: Function) => {
   }
 };
 
-app.use(authenticateToken);
-
 const getSchoolId = (req: AuthRequest): string | null => {
   return req.user?.schoolId || req.user?.school?.id || null;
 };
+
+// ========================================
+// Health Check (No Auth Required)
+// ========================================
+
+app.get('/health', (req: Request, res: Response) => {
+  res.json({
+    service: 'grade-service',
+    status: 'healthy',
+    port: PORT,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Apply authentication to all routes below this point
+app.use(authenticateToken);
 
 // ========================================
 // Notification Helper
@@ -131,19 +145,6 @@ const calculatePercentage = (score: number, maxScore: number): number => {
 const calculateWeightedScore = (score: number, coefficient: number): number => {
   return score * coefficient;
 };
-
-// ========================================
-// Health Check
-// ========================================
-
-app.get('/health', (req: Request, res: Response) => {
-  res.json({
-    service: 'grade-service',
-    status: 'healthy',
-    port: PORT,
-    timestamp: new Date().toISOString(),
-  });
-});
 
 // ========================================
 // GRADE CRUD ENDPOINTS
