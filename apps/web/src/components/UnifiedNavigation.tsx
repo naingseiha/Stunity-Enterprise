@@ -118,18 +118,18 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       badge: null,
     },
     { 
+      name: 'Learn', 
+      icon: BookOpen, 
+      path: `/${locale}/learn`,
+      active: isLearnContext,
+      badge: null,
+    },
+    { 
       name: 'School', 
       icon: GraduationCap, 
       path: `/${locale}/dashboard`,
       active: isSchoolContext,
       badge: null,
-    },
-    { 
-      name: 'Learn', 
-      icon: BookOpen, 
-      path: `/${locale}/learn`,
-      active: isLearnContext,
-      badge: 'Soon',
     },
   ], [locale, isFeedContext, isClubsContext, isEventsContext, isSchoolContext, isLearnContext]);
 
