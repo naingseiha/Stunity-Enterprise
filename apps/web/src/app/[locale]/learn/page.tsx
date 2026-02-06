@@ -49,6 +49,7 @@ import {
   Zap,
   Lock,
   PlayCircle,
+  Plus,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
@@ -97,6 +98,7 @@ interface Course {
   isFree: boolean;
   isFeatured: boolean;
   isNew: boolean;
+  isPublished?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -371,7 +373,7 @@ export default function LearnHubPage() {
   
   // UI State
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'explore' | 'my-courses' | 'curriculum' | 'paths'>('explore');
+  const [activeTab, setActiveTab] = useState<'explore' | 'my-courses' | 'curriculum' | 'paths' | 'my-created'>('explore');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedLevel, setSelectedLevel] = useState('');
@@ -384,6 +386,7 @@ export default function LearnHubPage() {
   // Data State
   const [courses, setCourses] = useState<Course[]>([]);
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
+  const [createdCourses, setCreatedCourses] = useState<Course[]>([]);
   const [learningPaths, setLearningPaths] = useState<LearningPath[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [myGrades, setMyGrades] = useState<Grade[]>([]);
@@ -462,6 +465,25 @@ export default function LearnHubPage() {
     }
   }, [getAuthToken]);
 
+  // Fetch my created courses
+  const fetchCreatedCourses = useCallback(async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+      
+      const response = await fetch(`${FEED_SERVICE}/courses/my-created`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCreatedCourses(data.courses || []);
+      }
+    } catch (err) {
+      console.error('Error fetching created courses:', err);
+    }
+  }, [getAuthToken]);
+
   // Fetch subjects (for curriculum tab)
   const fetchSubjects = useCallback(async () => {
     try {
@@ -519,11 +541,12 @@ export default function LearnHubPage() {
     if (currentUser) {
       fetchCourses();
       fetchEnrolledCourses();
+      fetchCreatedCourses();
       fetchLearningPaths();
       fetchSubjects();
       fetchGrades();
     }
-  }, [currentUser, fetchCourses, fetchEnrolledCourses, fetchLearningPaths, fetchSubjects, fetchGrades]);
+  }, [currentUser, fetchCourses, fetchEnrolledCourses, fetchCreatedCourses, fetchLearningPaths, fetchSubjects, fetchGrades]);
 
   const handleLogout = () => {
     TokenManager.clearTokens();
@@ -840,6 +863,7 @@ export default function LearnHubPage() {
                 {[
                   { id: 'explore', label: 'Explore Courses', icon: Compass, desc: 'Discover new skills' },
                   { id: 'my-courses', label: 'My Courses', icon: BookOpen, desc: 'Continue learning' },
+                  { id: 'my-created', label: 'My Created', icon: Video, desc: 'Courses you teach' },
                   { id: 'paths', label: 'Learning Paths', icon: Route, desc: 'Guided journeys' },
                   ...(isStudent ? [{ id: 'curriculum', label: 'My Curriculum', icon: GraduationCap, desc: 'School subjects' }] : []),
                 ].map(tab => (
@@ -862,6 +886,17 @@ export default function LearnHubPage() {
                   </button>
                 ))}
               </nav>
+              
+              {/* Create Course Button */}
+              <div className="p-3 border-t border-gray-100">
+                <Link
+                  href={`/${locale}/learn/create`}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Course
+                </Link>
+              </div>
             </div>
 
             {/* Categories Filter */}
@@ -1025,6 +1060,95 @@ export default function LearnHubPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {enrolledCourses.map(course => (
                       <CourseCard key={course.id} course={course} enrolled />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* MY CREATED COURSES TAB */}
+            {activeTab === 'my-created' && (
+              <div className="space-y-4">
+                {/* Create Course CTA */}
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200 p-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-1">Share your knowledge</h3>
+                    <p className="text-sm text-gray-600">Create a course and reach learners worldwide</p>
+                  </div>
+                  <Link
+                    href={`/${locale}/learn/create`}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-colors whitespace-nowrap"
+                  >
+                    <Plus className="w-4 h-4" />
+                    New Course
+                  </Link>
+                </div>
+
+                {createdCourses.length === 0 ? (
+                  <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                    <Video className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No courses created yet</h3>
+                    <p className="text-gray-500 mb-4">Create your first course and share your expertise with the world</p>
+                    <Link 
+                      href={`/${locale}/learn/create`}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Create Your First Course
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {createdCourses.map(course => (
+                      <div key={course.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all">
+                        <div className="relative">
+                          <div className={`aspect-video ${course.thumbnail ? '' : 'bg-gradient-to-br from-amber-200 to-orange-200'}`}>
+                            {course.thumbnail && (
+                              <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
+                            )}
+                          </div>
+                          {/* Status badge */}
+                          <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${
+                            course.isPublished 
+                              ? 'bg-green-500 text-white' 
+                              : 'bg-yellow-500 text-white'
+                          }`}>
+                            {course.isPublished ? 'Published' : 'Draft'}
+                          </div>
+                        </div>
+                        <div className="p-4">
+                          <h4 className="font-medium text-gray-900 mb-1 line-clamp-2">{course.title}</h4>
+                          <p className="text-sm text-gray-500 mb-3 line-clamp-2">{course.description}</p>
+                          
+                          {/* Stats */}
+                          <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
+                            <span className="flex items-center gap-1">
+                              <Users className="w-4 h-4" />
+                              {course.enrolledCount || 0} students
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <PlayCircle className="w-4 h-4" />
+                              {course.lessonsCount || 0} lessons
+                            </span>
+                          </div>
+                          
+                          {/* Actions */}
+                          <div className="flex gap-2">
+                            <Link
+                              href={`/${locale}/learn/course/${course.id}`}
+                              className="flex-1 text-center py-2 px-3 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                              View
+                            </Link>
+                            <Link
+                              href={`/${locale}/learn/course/${course.id}/edit`}
+                              className="flex-1 text-center py-2 px-3 bg-amber-100 text-amber-700 text-sm font-medium rounded-lg hover:bg-amber-200 transition-colors"
+                            >
+                              Edit
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}

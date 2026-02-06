@@ -220,6 +220,69 @@ router.get('/my-courses', async (req: AuthRequest, res: Response) => {
 });
 
 /**
+ * GET /courses/my-created - Get courses created by the user
+ */
+router.get('/my-created', async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const courses = await prisma.course.findMany({
+      where: { instructorId: userId },
+      include: {
+        instructor: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true,
+            professionalTitle: true,
+          },
+        },
+        _count: {
+          select: {
+            lessons: true,
+            enrollments: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({
+      courses: courses.map(course => ({
+        id: course.id,
+        title: course.title,
+        description: course.description,
+        thumbnail: course.thumbnail,
+        category: course.category,
+        level: course.level,
+        duration: course.duration,
+        lessonsCount: course._count.lessons,
+        enrolledCount: course._count.enrollments,
+        rating: course.rating,
+        price: course.price,
+        isFree: course.isFree,
+        isPublished: course.isPublished,
+        createdAt: course.createdAt,
+        updatedAt: course.updatedAt,
+        instructor: {
+          id: course.instructor.id,
+          name: `${course.instructor.firstName} ${course.instructor.lastName}`,
+          avatar: course.instructor.profilePictureUrl,
+          title: course.instructor.professionalTitle,
+        },
+      })),
+    });
+  } catch (error: any) {
+    console.error('Error fetching created courses:', error);
+    res.status(500).json({ message: 'Error fetching created courses', error: error.message });
+  }
+});
+
+/**
  * GET /courses/featured - Get featured courses
  */
 router.get('/featured', async (req: AuthRequest, res: Response) => {
@@ -631,17 +694,12 @@ router.post('/:id/enroll', async (req: AuthRequest, res: Response) => {
 router.post('/', async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
-    const userRole = req.user?.role;
 
     if (!userId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    // Only teachers and admins can create courses
-    if (!['TEACHER', 'ADMIN', 'SUPER_ADMIN'].includes(userRole || '')) {
-      return res.status(403).json({ message: 'Only teachers can create courses' });
-    }
-
+    // Open Platform: Anyone can create courses
     const {
       title,
       description,
