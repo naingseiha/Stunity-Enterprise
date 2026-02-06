@@ -324,16 +324,16 @@ export default function ProfilePage() {
   
   if (!profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50/50 via-white to-amber-50/30">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50/40 via-white to-orange-50/30">
         <div className="text-center bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-orange-100 to-amber-100 rounded-full flex items-center justify-center">
-            <Users className="w-8 h-8 text-orange-500" />
+          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center">
+            <Users className="w-8 h-8 text-amber-600" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Profile Not Found</h2>
           <p className="text-gray-600 mb-6">This profile doesn&apos;t exist or is private.</p>
           <Link 
             href={`/${locale}/feed`} 
-            className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-full font-medium hover:from-orange-600 hover:to-amber-600 transition-all shadow-md hover:shadow-lg"
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full font-medium hover:from-amber-600 hover:to-orange-600 transition-all shadow-md hover:shadow-lg"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Feed
@@ -348,7 +348,7 @@ export default function ProfilePage() {
       {/* Zoom loader for page transitions */}
       <ProfileZoomLoader isLoading={loading} minimumDuration={400} />
       
-      <div className={`min-h-screen bg-gradient-to-br from-orange-50/30 via-white to-amber-50/20 transition-all duration-700 ease-out ${pageReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      <div className={`min-h-screen bg-gradient-to-br from-amber-50/40 via-white to-orange-50/30 transition-all duration-700 ease-out ${pageReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         {/* Navigation Bar */}
         <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
         
@@ -361,7 +361,7 @@ export default function ProfilePage() {
             }}
           >
             {/* Cover Photo - Larger height for better visual impact */}
-            <div className="relative h-56 md:h-72 bg-gradient-to-br from-orange-400 via-amber-500 to-orange-600">
+            <div className="relative h-56 md:h-72 bg-gradient-to-br from-amber-400 via-orange-400 to-amber-500">
               {profile.coverPhotoUrl ? (
                 <Image
                   src={profile.coverPhotoUrl}
@@ -383,7 +383,7 @@ export default function ProfilePage() {
                   href={`/${locale}/profile/me/edit`}
                   className="absolute top-4 right-4 p-2.5 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all hover:scale-105 group"
                 >
-                  <Edit3 className="w-4 h-4 text-gray-700 group-hover:text-orange-600" />
+                  <Edit3 className="w-4 h-4 text-gray-700 group-hover:text-amber-600" />
                 </Link>
               )}
               {/* Cover gradient overlay */}
@@ -395,7 +395,7 @@ export default function ProfilePage() {
               {/* Avatar - Overlapping cover with larger size */}
               <div className="relative -mt-20 md:-mt-24 mb-4">
                 <div className="relative inline-block group">
-                  <div className="w-36 h-36 md:w-44 md:h-44 rounded-full border-4 border-white dark:border-gray-800 overflow-hidden bg-gradient-to-br from-orange-400 to-amber-500 shadow-xl ring-4 ring-orange-100/50">
+                  <div className="w-36 h-36 md:w-44 md:h-44 rounded-full border-4 border-white dark:border-gray-800 overflow-hidden bg-gradient-to-br from-amber-400 to-orange-400 shadow-xl ring-4 ring-amber-100/50">
                     {profile.profilePictureUrl ? (
                       <Image
                         src={profile.profilePictureUrl}
@@ -440,7 +440,7 @@ export default function ProfilePage() {
                       {profile.firstName} {profile.lastName}
                     </h1>
                     {profile.isVerified && (
-                      <span className="bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                      <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm">
                         <CheckCircle className="w-3.5 h-3.5" />
                         Verified
                       </span>
@@ -456,13 +456,13 @@ export default function ProfilePage() {
                   <p className="text-gray-500 dark:text-gray-400 text-sm mt-1.5">
                     {profile.location && <span>{profile.location}</span>}
                     {profile.location && <span> · </span>}
-                    <span className="text-orange-600 hover:text-orange-700 hover:underline cursor-pointer transition-colors">Contact info</span>
+                    <span className="text-amber-600 hover:text-amber-700 hover:underline cursor-pointer transition-colors">Contact info</span>
                   </p>
 
                   {/* Connections */}
                   <Link 
                     href={`/${locale}/profile/${userId}/connections`}
-                    className="text-orange-600 hover:text-orange-700 hover:underline text-sm font-semibold mt-2 inline-block transition-colors"
+                    className="text-amber-600 hover:text-amber-700 hover:underline text-sm font-semibold mt-2 inline-block transition-colors"
                   >
                     {profile.stats.followers + profile.stats.following} connections
                   </Link>
@@ -470,8 +470,8 @@ export default function ProfilePage() {
 
                 {/* School/Organization Logo */}
                 {profile.school && (
-                  <div className="flex items-center gap-3 text-sm bg-gradient-to-r from-orange-50 to-amber-50 px-4 py-2.5 rounded-xl border border-orange-100">
-                    <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-amber-500 rounded-lg flex items-center justify-center shadow-sm">
+                  <div className="flex items-center gap-3 text-sm bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-2.5 rounded-xl border border-amber-100">
+                    <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-400 rounded-lg flex items-center justify-center shadow-sm">
                       <GraduationCap className="w-5 h-5 text-white" />
                     </div>
                     <span className="text-gray-800 dark:text-gray-200 font-semibold">{profile.school.name}</span>
@@ -485,13 +485,13 @@ export default function ProfilePage() {
                   <>
                     <Link
                       href={`/${locale}/profile/${profile.id}/edit`}
-                      className="px-5 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-full text-sm font-semibold transition-all shadow-md hover:shadow-lg"
+                      className="px-5 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-full text-sm font-semibold transition-all shadow-md hover:shadow-lg"
                     >
                       Open to
                     </Link>
                     <Link
                       href={`/${locale}/profile/${profile.id}/edit`}
-                      className="px-5 py-2 border-2 border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-full text-sm font-semibold transition-all"
+                      className="px-5 py-2 border-2 border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-full text-sm font-semibold transition-all"
                     >
                       Add profile section
                     </Link>
@@ -512,14 +512,14 @@ export default function ProfilePage() {
                       className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
                         following
                           ? 'border-2 border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400'
-                          : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-md hover:shadow-lg'
+                          : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md hover:shadow-lg'
                       }`}
                     >
                       {following ? 'Following' : 'Connect'}
                     </button>
                     <Link
                       href={`/${locale}/messages?startWith=${profile.id}`}
-                      className="px-5 py-2 border-2 border-orange-500 text-orange-600 hover:bg-orange-50 rounded-full text-sm font-semibold transition-all"
+                      className="px-5 py-2 border-2 border-amber-500 text-amber-600 hover:bg-amber-50 rounded-full text-sm font-semibold transition-all"
                     >
                       Message
                     </Link>
@@ -537,7 +537,7 @@ export default function ProfilePage() {
                     <div>
                       <p className="font-semibold text-gray-900 dark:text-white">Open to work</p>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">Teacher and Educator roles</p>
-                      <button className="text-orange-600 hover:text-orange-700 hover:underline text-sm font-medium mt-1.5 transition-colors">Show details</button>
+                      <button className="text-amber-600 hover:text-amber-700 hover:underline text-sm font-medium mt-1.5 transition-colors">Show details</button>
                     </div>
                     <button className="p-2 hover:bg-green-100 dark:hover:bg-green-800 rounded-lg transition-colors">
                       <Edit3 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
@@ -571,7 +571,7 @@ export default function ProfilePage() {
                   onClick={() => setActiveTab(tab.key)}
                   className={`flex items-center gap-2 px-4 py-2.5 font-medium text-sm whitespace-nowrap transition-all rounded-lg ${
                     activeTab === tab.key
-                      ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
@@ -600,9 +600,9 @@ export default function ProfilePage() {
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=about`}
-                          className="p-2 hover:bg-orange-50 dark:hover:bg-gray-700 rounded-lg transition-colors group"
+                          className="p-2 hover:bg-amber-50 dark:hover:bg-gray-700 rounded-lg transition-colors group"
                         >
-                          <Edit3 className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
+                          <Edit3 className="w-5 h-5 text-gray-400 group-hover:text-amber-500 transition-colors" />
                         </Link>
                       )}
                     </div>
@@ -617,7 +617,7 @@ export default function ProfilePage() {
                           {profile.isOwnProfile && (
                             <Link
                               href={`/${locale}/profile/${userId}/edit?section=about`}
-                              className="inline-flex items-center gap-1 mt-3 text-orange-600 hover:text-orange-700 text-sm font-semibold transition-colors"
+                              className="inline-flex items-center gap-1 mt-3 text-amber-600 hover:text-amber-700 text-sm font-semibold transition-colors"
                             >
                               <Plus className="w-4 h-4" />
                               Add a summary
@@ -634,7 +634,7 @@ export default function ProfilePage() {
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white">Activity</h3>
                       <button 
                         onClick={() => setActiveTab('activity')}
-                        className="text-orange-600 hover:text-orange-700 text-sm font-semibold transition-colors"
+                        className="text-amber-600 hover:text-amber-700 text-sm font-semibold transition-colors"
                       >
                         See all activity →
                       </button>
@@ -659,14 +659,14 @@ export default function ProfilePage() {
                         {profile.isOwnProfile && (
                           <Link
                             href={`/${locale}/profile/${userId}/edit?section=experience`}
-                            className="p-2 hover:bg-orange-50 dark:hover:bg-gray-700 rounded-lg transition-colors group"
+                            className="p-2 hover:bg-amber-50 dark:hover:bg-gray-700 rounded-lg transition-colors group"
                           >
-                            <Plus className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
+                            <Plus className="w-5 h-5 text-gray-400 group-hover:text-amber-500 transition-colors" />
                           </Link>
                         )}
                         <button 
                           onClick={() => setActiveTab('experience')}
-                          className="text-orange-600 hover:text-orange-700 text-sm font-semibold transition-colors"
+                          className="text-amber-600 hover:text-amber-700 text-sm font-semibold transition-colors"
                         >
                           Show all →
                         </button>
@@ -680,7 +680,7 @@ export default function ProfilePage() {
                           {profile.isOwnProfile && (
                             <Link
                               href={`/${locale}/profile/${userId}/edit?section=experience`}
-                              className="inline-block mt-2 text-orange-600 hover:text-orange-700 text-sm font-medium"
+                              className="inline-block mt-2 text-amber-600 hover:text-amber-700 text-sm font-medium"
                             >
                               + Add experience
                             </Link>
@@ -721,7 +721,7 @@ export default function ProfilePage() {
                         )}
                         <button 
                           onClick={() => setActiveTab('education')}
-                          className="text-orange-600 hover:text-orange-700 text-sm font-medium"
+                          className="text-amber-600 hover:text-amber-700 text-sm font-medium"
                         >
                           Show all →
                         </button>
@@ -735,7 +735,7 @@ export default function ProfilePage() {
                           {profile.isOwnProfile && (
                             <Link
                               href={`/${locale}/profile/${userId}/edit?section=education`}
-                              className="inline-block mt-2 text-orange-600 hover:text-orange-700 text-sm font-medium"
+                              className="inline-block mt-2 text-amber-600 hover:text-amber-700 text-sm font-medium"
                             >
                               + Add education
                             </Link>
@@ -744,8 +744,8 @@ export default function ProfilePage() {
                       ) : (
                         education.slice(0, 2).map((edu) => (
                           <div key={edu.id} className="p-4 flex gap-4">
-                            <div className="w-12 h-12 bg-orange-50 dark:bg-orange-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <GraduationCap className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                            <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <GraduationCap className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <h4 className="font-semibold text-gray-900 dark:text-white">{edu.school}</h4>
@@ -777,7 +777,7 @@ export default function ProfilePage() {
                         )}
                         <button 
                           onClick={() => setActiveTab('skills')}
-                          className="text-orange-600 hover:text-orange-700 text-sm font-medium"
+                          className="text-amber-600 hover:text-amber-700 text-sm font-medium"
                         >
                           Show all →
                         </button>
@@ -791,7 +791,7 @@ export default function ProfilePage() {
                           {profile.isOwnProfile && (
                             <Link
                               href={`/${locale}/profile/${userId}/edit?section=skills`}
-                              className="inline-block mt-2 text-orange-600 hover:text-orange-700 text-sm font-medium"
+                              className="inline-block mt-2 text-amber-600 hover:text-amber-700 text-sm font-medium"
                             >
                               + Add skills
                             </Link>
@@ -802,7 +802,7 @@ export default function ProfilePage() {
                           {skills.slice(0, 6).map((skill) => (
                             <span 
                               key={skill.id} 
-                              className="px-3 py-1.5 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full text-sm font-medium"
+                              className="px-3 py-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-orange-300 rounded-full text-sm font-medium"
                             >
                               {skill.skillName}
                               {skill.endorsementCount > 0 && (
@@ -882,7 +882,7 @@ export default function ProfilePage() {
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=skills`}
-                          className="inline-block mt-3 text-orange-600 hover:text-orange-700 font-medium"
+                          className="inline-block mt-3 text-amber-600 hover:text-amber-700 font-medium"
                         >
                           + Add your skills
                         </Link>
@@ -896,8 +896,8 @@ export default function ProfilePage() {
                           <div key={skill.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                             <div className="flex items-start justify-between">
                               <div className="flex items-start gap-3">
-                                <div className="w-10 h-10 bg-orange-50 dark:bg-orange-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                                  <CategoryIcon className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                                <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <CategoryIcon className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                                 </div>
                                 <div>
                                   <h4 className="font-semibold text-gray-900 dark:text-white">{skill.skillName}</h4>
@@ -921,7 +921,7 @@ export default function ProfilePage() {
                                   </span>
                                 )}
                                 {!profile.isOwnProfile && (
-                                  <button className="px-3 py-1 border border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-full text-sm font-medium transition-colors">
+                                  <button className="px-3 py-1 border border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-full text-sm font-medium transition-colors">
                                     Endorse
                                   </button>
                                 )}
@@ -983,7 +983,7 @@ export default function ProfilePage() {
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=experience`}
-                          className="inline-block mt-3 text-orange-600 hover:text-orange-700 font-medium"
+                          className="inline-block mt-3 text-amber-600 hover:text-amber-700 font-medium"
                         >
                           + Add your experience
                         </Link>
@@ -1018,7 +1018,7 @@ export default function ProfilePage() {
                             {exp.skills.length > 0 && (
                               <div className="flex flex-wrap gap-1.5 mt-3">
                                 {exp.skills.slice(0, 4).map((skill, i) => (
-                                  <span key={i} className="px-2 py-0.5 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-xs font-medium">
+                                  <span key={i} className="px-2 py-0.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-xs font-medium">
                                     {skill}
                                   </span>
                                 ))}
@@ -1057,7 +1057,7 @@ export default function ProfilePage() {
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=education`}
-                          className="inline-block mt-3 text-orange-600 hover:text-orange-700 font-medium"
+                          className="inline-block mt-3 text-amber-600 hover:text-amber-700 font-medium"
                         >
                           + Add your education
                         </Link>
@@ -1067,8 +1067,8 @@ export default function ProfilePage() {
                     <div className="divide-y divide-gray-100 dark:divide-gray-700">
                       {education.map((edu) => (
                         <div key={edu.id} className="p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                          <div className="w-12 h-12 bg-orange-50 dark:bg-orange-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <GraduationCap className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                          <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <GraduationCap className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between">
@@ -1085,7 +1085,7 @@ export default function ProfilePage() {
                                 </p>
                               </div>
                               {edu.isCurrent && (
-                                <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-orange-700 dark:text-orange-400 text-xs font-medium rounded-full">
+                                <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
                                   Current
                                 </span>
                               )}
@@ -1101,7 +1101,7 @@ export default function ProfilePage() {
                             {edu.skills.length > 0 && (
                               <div className="flex flex-wrap gap-1.5 mt-3">
                                 {edu.skills.slice(0, 4).map((skill, i) => (
-                                  <span key={i} className="px-2 py-0.5 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-xs font-medium">
+                                  <span key={i} className="px-2 py-0.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-xs font-medium">
                                     {skill}
                                   </span>
                                 ))}
@@ -1140,7 +1140,7 @@ export default function ProfilePage() {
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=certifications`}
-                          className="inline-block mt-3 text-orange-600 hover:text-orange-700 font-medium"
+                          className="inline-block mt-3 text-amber-600 hover:text-amber-700 font-medium"
                         >
                           + Add your first certification
                         </Link>
@@ -1192,7 +1192,7 @@ export default function ProfilePage() {
                                   href={cert.credentialUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 text-orange-600 hover:text-orange-700 text-sm font-medium mt-2"
+                                  className="inline-flex items-center gap-1 text-amber-600 hover:text-amber-700 text-sm font-medium mt-2"
                                 >
                                   <ExternalLink className="w-3.5 h-3.5" />
                                   Show credential
@@ -1229,7 +1229,7 @@ export default function ProfilePage() {
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=projects`}
-                          className="inline-block mt-3 text-orange-600 hover:text-orange-700 font-medium"
+                          className="inline-block mt-3 text-amber-600 hover:text-amber-700 font-medium"
                         >
                           + Add your first project
                         </Link>
@@ -1319,7 +1319,7 @@ export default function ProfilePage() {
                     </div>
                     <Link
                       href={`/${locale}/feed?author=${profile.id}`}
-                      className="inline-flex items-center gap-1 text-orange-600 hover:text-orange-700 font-medium"
+                      className="inline-flex items-center gap-1 text-amber-600 hover:text-amber-700 font-medium"
                     >
                       See all activity
                       <ChevronRight className="w-4 h-4" />
@@ -1360,7 +1360,7 @@ export default function ProfilePage() {
                         </div>
                       ))}
                       {achievements.length > 3 && (
-                        <button className="text-orange-600 hover:text-orange-700 text-sm w-full text-center pt-2">
+                        <button className="text-amber-600 hover:text-amber-700 text-sm w-full text-center pt-2">
                           Show all {achievements.length}
                         </button>
                       )}
@@ -1405,14 +1405,14 @@ export default function ProfilePage() {
                         </div>
                       ))}
                       {recommendations.length > 2 && (
-                        <button className="text-orange-600 hover:text-orange-700 text-sm w-full text-center font-medium">
+                        <button className="text-amber-600 hover:text-amber-700 text-sm w-full text-center font-medium">
                           Show all {recommendations.length}
                         </button>
                       )}
                     </div>
                   )}
                   {!profile.isOwnProfile && (
-                    <button className="mt-4 w-full py-2.5 border-2 border-orange-500 text-orange-600 rounded-full text-sm font-semibold hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all">
+                    <button className="mt-4 w-full py-2.5 border-2 border-amber-500 text-amber-600 rounded-full text-sm font-semibold hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all">
                       Recommend {profile.firstName}
                     </button>
                   )}
@@ -1429,7 +1429,7 @@ export default function ProfilePage() {
               >
                 <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
                   <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-orange-500" />
+                    <TrendingUp className="w-4 h-4 text-amber-500" />
                     Profile Stats
                   </h3>
                 </div>

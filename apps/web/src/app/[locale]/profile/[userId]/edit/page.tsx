@@ -73,7 +73,7 @@ interface Certification {
 // Skeleton Component
 function EditProfileSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50/30 via-white to-amber-50/20 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50/40 via-white to-orange-50/30 p-4">
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Header skeleton */}
         <div className="h-16 bg-white rounded-xl shadow-sm animate-pulse" />
@@ -501,7 +501,7 @@ export default function EditProfilePage() {
         title="Change Cover Photo"
       />
 
-      <div className={`min-h-screen bg-gradient-to-br from-orange-50/30 via-white to-amber-50/20 transition-all duration-500 ${pageReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      <div className={`min-h-screen bg-gradient-to-br from-amber-50/40 via-white to-orange-50/30 transition-all duration-500 ${pageReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         {/* Toast Message */}
         {message && (
           <div className={`fixed top-4 right-4 z-50 px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-in slide-in-from-right ${
@@ -520,16 +520,16 @@ export default function EditProfilePage() {
             <div className="flex items-center gap-4">
               <Link
                 href={`/${locale}/profile/me`}
-                className="p-2 hover:bg-orange-50 dark:hover:bg-gray-700 rounded-full transition-colors group"
+                className="p-2 hover:bg-amber-50 dark:hover:bg-gray-700 rounded-full transition-colors group"
               >
-                <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300 group-hover:text-orange-600" />
+                <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300 group-hover:text-amber-600" />
               </Link>
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">Edit Profile</h1>
             </div>
             <button
               onClick={handleSaveProfile}
               disabled={saving}
-              className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:from-gray-400 disabled:to-gray-400 text-white rounded-xl font-semibold flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
+              className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-xl font-semibold flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Save Changes
@@ -544,7 +544,7 @@ export default function EditProfilePage() {
             style={{ animation: 'slideInUp 0.5s ease-out' }}
           >
             {/* Cover Photo */}
-            <div className="relative h-56 bg-gradient-to-br from-orange-400 via-amber-500 to-orange-600 group/cover">
+            <div className="relative h-56 bg-gradient-to-br from-amber-400 via-orange-400 to-amber-500 group/cover">
               {profile?.coverPhotoUrl ? (
                 <Image
                   src={profile.coverPhotoUrl}
@@ -581,7 +581,7 @@ export default function EditProfilePage() {
                 onClick={() => setShowCoverPhotoModal(true)}
                 className="absolute bottom-4 right-4 px-5 py-2.5 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-800 dark:text-white rounded-full text-sm font-semibold flex items-center gap-2.5 transition-all shadow-lg hover:shadow-xl border border-gray-200 dark:border-gray-600 group"
               >
-                <div className="p-1 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full">
+                <div className="p-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full">
                   <Camera className="w-3.5 h-3.5 text-white" />
                 </div>
                 <span>Edit Cover</span>
@@ -593,7 +593,7 @@ export default function EditProfilePage() {
               <div className="flex items-end gap-4">
                 {/* Profile Photo */}
                 <div className="relative group/avatar">
-                  <div className="w-32 h-32 rounded-full border-4 border-white dark:border-gray-800 shadow-xl overflow-hidden bg-gradient-to-br from-orange-400 to-amber-500 ring-4 ring-orange-100/50 dark:ring-orange-900/30">
+                  <div className="w-32 h-32 rounded-full border-4 border-white dark:border-gray-800 shadow-xl overflow-hidden bg-gradient-to-br from-amber-400 to-orange-400 ring-4 ring-amber-100/50 dark:ring-amber-900/30">
                     {profile?.profilePictureUrl ? (
                       <Image
                         src={profile.profilePictureUrl}
@@ -621,7 +621,7 @@ export default function EditProfilePage() {
                   {/* Small camera badge */}
                   <button
                     onClick={() => setShowProfilePhotoModal(true)}
-                    className="absolute bottom-1 right-1 p-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-full shadow-lg transition-all hover:scale-110 border-2 border-white dark:border-gray-800"
+                    className="absolute bottom-1 right-1 p-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-full shadow-lg transition-all hover:scale-110 border-2 border-white dark:border-gray-800"
                   >
                     <Camera className="w-4 h-4" />
                   </button>
@@ -646,7 +646,7 @@ export default function EditProfilePage() {
             style={{ animation: 'slideInUp 0.5s ease-out 0.1s both' }}
           >
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <Edit2 className="w-5 h-5 text-orange-500" />
+              <Edit2 className="w-5 h-5 text-amber-500" />
               Basic Information
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -679,7 +679,7 @@ export default function EditProfilePage() {
             style={{ animation: 'slideInUp 0.5s ease-out 0.15s both' }}
           >
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-orange-500" />
+              <BookOpen className="w-5 h-5 text-amber-500" />
               About
             </h2>
             <div className="space-y-4">
@@ -715,7 +715,7 @@ export default function EditProfilePage() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-orange-500" />
+                  <MapPin className="w-4 h-4 text-amber-500" />
                   Location
                 </label>
                 <input
@@ -728,7 +728,7 @@ export default function EditProfilePage() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                  <Target className="w-4 h-4 text-orange-500" />
+                  <Target className="w-4 h-4 text-amber-500" />
                   Career Goals
                 </label>
                 <textarea
@@ -748,7 +748,7 @@ export default function EditProfilePage() {
             style={{ animation: 'slideInUp 0.5s ease-out 0.2s both' }}
           >
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <Globe className="w-5 h-5 text-orange-500" />
+              <Globe className="w-5 h-5 text-amber-500" />
               Languages & Interests
             </h2>
             <div className="space-y-4">
@@ -807,7 +807,7 @@ export default function EditProfilePage() {
                     placeholder="Add an interest"
                     className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white"
                   />
-                  <button onClick={addInterest} className="px-3 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-lg">
+                  <button onClick={addInterest} className="px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg">
                     <Plus className="w-4 h-4" />
                   </button>
                 </div>
@@ -1051,7 +1051,7 @@ export default function EditProfilePage() {
             <button
               onClick={handleSaveProfile}
               disabled={saving}
-              className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:from-gray-400 disabled:to-gray-400 text-white rounded-lg font-semibold flex items-center gap-2 shadow-md hover:shadow-lg"
+              className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-lg font-semibold flex items-center gap-2 shadow-md hover:shadow-lg"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Save All Changes
@@ -1195,7 +1195,7 @@ function SkillModal({ skill, onSave, onClose }: { skill: Skill | null; onSave: (
             <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
               Cancel
             </button>
-            <button type="submit" className="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-lg">
+            <button type="submit" className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg">
               {skill ? 'Update' : 'Add'} Skill
             </button>
           </div>
@@ -1326,7 +1326,7 @@ function ExperienceModal({ experience, onSave, onClose }: { experience: Experien
             <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
               Cancel
             </button>
-            <button type="submit" className="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-lg">
+            <button type="submit" className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg">
               {experience ? 'Update' : 'Add'} Experience
             </button>
           </div>
@@ -1444,7 +1444,7 @@ function CertificationModal({ certification, onSave, onClose }: { certification:
             <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
               Cancel
             </button>
-            <button type="submit" className="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-lg">
+            <button type="submit" className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg">
               {certification ? 'Update' : 'Add'} Certification
             </button>
           </div>

@@ -11,7 +11,7 @@
  */
 export default function ProfileSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50/50 via-white to-amber-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50/40 via-white to-orange-50/30">
       {/* Navigation placeholder */}
       <div className="h-16 bg-white border-b border-gray-100 shadow-sm" />
 
@@ -27,7 +27,7 @@ export default function ProfileSkeleton() {
           <div 
             className="relative h-56 md:h-72 overflow-hidden"
             style={{
-              background: 'linear-gradient(135deg, #fed7aa 0%, #fdba74 50%, #fb923c 100%)',
+              background: 'linear-gradient(135deg, #fde68a 0%, #fcd34d 50%, #f59e0b 100%)',
             }}
           >
             {/* Shimmer overlay */}
@@ -50,7 +50,7 @@ export default function ProfileSkeleton() {
               <div 
                 className="w-36 h-36 md:w-44 md:h-44 rounded-full border-4 border-white shadow-lg overflow-hidden"
                 style={{
-                  background: 'linear-gradient(135deg, #fdba74 0%, #f97316 100%)',
+                  background: 'linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%)',
                   animation: 'pulseAvatar 2s ease-in-out infinite',
                 }}
               >
@@ -64,7 +64,7 @@ export default function ProfileSkeleton() {
                 />
               </div>
               {/* Badge skeleton */}
-              <div className="absolute -bottom-1 left-16 w-28 h-5 bg-gradient-to-r from-orange-200 to-amber-200 rounded-full animate-pulse" />
+              <div className="absolute -bottom-1 left-16 w-28 h-5 bg-gradient-to-r from-amber-200 to-yellow-200 rounded-full animate-pulse" />
             </div>
 
             {/* Name and Info */}
@@ -95,7 +95,7 @@ export default function ProfileSkeleton() {
               />
               {/* Connections */}
               <div 
-                className="h-4 w-32 bg-gradient-to-r from-orange-100 via-orange-200 to-orange-100 rounded-md"
+                className="h-4 w-32 bg-gradient-to-r from-amber-100 via-amber-200 to-amber-100 rounded-md"
                 style={{
                   backgroundSize: '200% 100%',
                   animation: 'shimmer 1.5s ease-in-out infinite 0.3s',
@@ -105,7 +105,7 @@ export default function ProfileSkeleton() {
               {/* Action buttons */}
               <div className="flex flex-wrap gap-3 mt-4 pt-2">
                 <div 
-                  className="h-9 w-24 bg-gradient-to-r from-orange-400 to-amber-400 rounded-full"
+                  className="h-9 w-24 bg-gradient-to-r from-amber-400 to-yellow-400 rounded-full"
                   style={{
                     animation: 'pulseButton 1.5s ease-in-out infinite',
                   }}
@@ -191,7 +191,7 @@ export default function ProfileSkeleton() {
             >
               <div className="px-6 py-4 border-b border-gray-50 flex justify-between items-center">
                 <div className="h-6 w-24 bg-gradient-to-r from-gray-200 to-gray-100 rounded-md animate-pulse" />
-                <div className="h-4 w-20 bg-orange-100 rounded-md animate-pulse" />
+                <div className="h-4 w-20 bg-amber-100 rounded-md animate-pulse" />
               </div>
               <div className="p-6">
                 <div className="flex gap-4 mb-4">
@@ -214,14 +214,14 @@ export default function ProfileSkeleton() {
                 <div className="h-6 w-28 bg-gradient-to-r from-gray-200 to-gray-100 rounded-md animate-pulse" />
                 <div className="flex gap-2">
                   <div className="w-8 h-8 bg-gray-100 rounded-full animate-pulse" />
-                  <div className="h-4 w-16 bg-orange-100 rounded-md animate-pulse mt-2" />
+                  <div className="h-4 w-16 bg-amber-100 rounded-md animate-pulse mt-2" />
                 </div>
               </div>
               <div className="divide-y divide-gray-50">
                 {[1, 2].map((i) => (
                   <div key={i} className="p-4 flex gap-4">
                     <div 
-                      className="w-14 h-14 bg-gradient-to-br from-orange-100 to-amber-100 rounded-xl flex-shrink-0"
+                      className="w-14 h-14 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-xl flex-shrink-0"
                       style={{ animation: 'pulseAvatar 2s ease-in-out infinite' }}
                     />
                     <div className="flex-1 space-y-2">
@@ -259,7 +259,7 @@ export default function ProfileSkeleton() {
                 {[1, 2, 3, 4].map((i) => (
                   <div key={i} className="text-center">
                     <div 
-                      className="h-8 w-12 mx-auto bg-gradient-to-br from-orange-200 to-amber-200 rounded-lg mb-2"
+                      className="h-8 w-12 mx-auto bg-gradient-to-br from-amber-200 to-yellow-200 rounded-lg mb-2"
                       style={{ animation: 'pulseButton 1.5s ease-in-out infinite' }}
                     />
                     <div className="h-3 w-16 mx-auto bg-gray-100 rounded animate-pulse" />
@@ -281,7 +281,7 @@ export default function ProfileSkeleton() {
                 {[1, 2, 3, 4, 5].map((i) => (
                   <div 
                     key={i}
-                    className="h-7 bg-gradient-to-r from-orange-100 to-amber-100 rounded-full"
+                    className="h-7 bg-gradient-to-r from-amber-100 to-yellow-100 rounded-full"
                     style={{ 
                       width: `${60 + i * 15}px`,
                       animation: `pulseButton 1.5s ease-in-out infinite ${i * 0.1}s`,
@@ -304,7 +304,7 @@ export default function ProfileSkeleton() {
                 {[1, 2, 3].map((i) => (
                   <div 
                     key={i}
-                    className="w-12 h-12 bg-gradient-to-br from-amber-200 to-orange-300 rounded-xl"
+                    className="w-12 h-12 bg-gradient-to-br from-yellow-200 to-amber-300 rounded-xl"
                     style={{ animation: `pulseAvatar 2s ease-in-out infinite ${i * 0.2}s` }}
                   />
                 ))}
