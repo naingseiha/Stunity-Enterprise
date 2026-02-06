@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { TokenManager } from '@/lib/api/auth';
@@ -19,6 +19,7 @@ import UpcomingEventsWidget from '@/components/feed/UpcomingEventsWidget';
 import TopContributorsWidget from '@/components/feed/TopContributorsWidget';
 import LearningStreakWidget from '@/components/feed/LearningStreakWidget';
 import QuickResourcesWidget from '@/components/feed/QuickResourcesWidget';
+import { useEventStream, SSEEvent } from '@/hooks/useEventStream';
 import {
   Users,
   BookOpen,
@@ -52,6 +53,8 @@ import {
   Microscope,
   UsersRound,
   User,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 
 const FEED_API = 'http://localhost:3010';
@@ -133,6 +136,98 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
   // Analytics state
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [selectedPostForAnalytics, setSelectedPostForAnalytics] = useState<string | null>(null);
+  
+  // Real-time state
+  const [newPostsAvailable, setNewPostsAvailable] = useState(0);
+  const pendingPostsRef = useRef<Post[]>([]);
+
+  // SSE Real-time event handler
+  const handleSSEEvent = useCallback((event: SSEEvent) => {
+    console.log('📡 SSE Event:', event.type, event.data);
+    
+    switch (event.type) {
+      case 'NEW_POST':
+        // Fetch the new post and add to pending
+        if (event.data.postId && event.data.authorId !== user?.id) {
+          setNewPostsAvailable(prev => prev + 1);
+        }
+        break;
+        
+      case 'NEW_LIKE':
+        // Update like count for the post
+        if (event.data.postId) {
+          setPosts(prev => prev.map(post => {
+            if (post.id === event.data.postId) {
+              return { ...post, likesCount: post.likesCount + 1 };
+            }
+            return post;
+          }));
+        }
+        break;
+        
+      case 'NEW_COMMENT':
+        // Update comment count for the post
+        if (event.data.postId) {
+          setPosts(prev => prev.map(post => {
+            if (post.id === event.data.postId) {
+              return { ...post, commentsCount: post.commentsCount + 1 };
+            }
+            return post;
+          }));
+        }
+        break;
+        
+      case 'POST_UPDATED':
+        // Refresh the updated post
+        if (event.data.postId) {
+          fetchSinglePost(event.data.postId);
+        }
+        break;
+        
+      case 'POST_DELETED':
+        // Remove the deleted post
+        if (event.data.postId) {
+          setPosts(prev => prev.filter(post => post.id !== event.data.postId));
+          setMyPosts(prev => prev.filter(post => post.id !== event.data.postId));
+        }
+        break;
+    }
+  }, [user?.id]);
+
+  // Connect to SSE for real-time updates
+  const { isConnected, unreadCounts } = useEventStream(user?.id, {
+    onEvent: handleSSEEvent,
+    enabled: !!user?.id,
+  });
+
+  // Fetch a single post by ID
+  const fetchSinglePost = async (postId: string) => {
+    const token = TokenManager.getAccessToken();
+    if (!token) return null;
+    
+    try {
+      const res = await fetch(`${FEED_API}/posts/${postId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setPosts(prev => prev.map(post => 
+          post.id === postId ? data.data : post
+        ));
+        return data.data;
+      }
+    } catch (error) {
+      console.error('Failed to fetch post:', error);
+    }
+    return null;
+  };
+
+  // Load new posts when user clicks the "new posts" banner
+  const loadNewPosts = async () => {
+    await fetchPosts();
+    setNewPostsAvailable(0);
+    pendingPostsRef.current = [];
+  };
 
   // Track post view
   const trackPostView = useCallback(async (postId: string) => {
@@ -849,7 +944,40 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                     <RefreshCw className={`w-4 h-4 ${loadingPosts ? 'animate-spin' : ''}`} />
                     Refresh
                   </button>
+                  
+                  {/* Real-time connection indicator */}
+                  <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs ${
+                    isConnected 
+                      ? 'bg-green-50 text-green-600' 
+                      : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {isConnected ? (
+                      <>
+                        <Wifi className="w-3 h-3" />
+                        <span className="hidden sm:inline">Live</span>
+                      </>
+                    ) : (
+                      <>
+                        <WifiOff className="w-3 h-3" />
+                        <span className="hidden sm:inline">Offline</span>
+                      </>
+                    )}
+                  </div>
                 </div>
+
+                {/* New Posts Available Banner */}
+                {newPostsAvailable > 0 && (
+                  <button
+                    onClick={loadNewPosts}
+                    className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg shadow-md hover:from-amber-600 hover:to-orange-600 transition-all animate-pulse"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span className="font-medium">
+                      {newPostsAvailable} new {newPostsAvailable === 1 ? 'post' : 'posts'} available
+                    </span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                )}
 
                 {/* Loading State - Use Skeleton */}
                 {loadingPosts && posts.length === 0 && (

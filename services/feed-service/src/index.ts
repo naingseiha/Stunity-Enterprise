@@ -346,6 +346,25 @@ app.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) =>
       },
     });
 
+    // Publish SSE event to followers for real-time feed updates
+    try {
+      const followers = await prisma.follow.findMany({
+        where: { followingId: req.user!.id },
+        select: { followerId: true }
+      });
+      const followerIds = followers.map(f => f.followerId);
+      if (followerIds.length > 0) {
+        EventPublisher.newPost(
+          req.user!.id,
+          followerIds,
+          post.id,
+          content.slice(0, 100)
+        );
+      }
+    } catch (sseError) {
+      console.error('SSE publish error (non-blocking):', sseError);
+    }
+
     res.status(201).json({
       success: true,
       data: {
