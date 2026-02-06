@@ -1,7 +1,7 @@
 # Next Implementation Roadmap
 
 **Last Updated:** February 6, 2026  
-**Status:** Course Service Complete - Ready for Next Phase
+**Status:** Course Detail & Lesson Viewer Complete - Ready for Next Phase
 
 This document outlines the planned next steps for Stunity Enterprise development.
 
@@ -9,7 +9,20 @@ This document outlines the planned next steps for Stunity Enterprise development
 
 ## ✅ Recently Completed (February 6, 2026)
 
-### Phase 21: Course Service Backend ✅ NEW
+### Phase 22: Course Detail & Lesson Viewer ✅ NEW
+- [x] Course detail page at `/learn/course/[id]`
+- [x] Hero header with course info, rating, stats
+- [x] Overview, Curriculum, Reviews tabs
+- [x] Instructor profile section
+- [x] Enroll/Continue learning functionality
+- [x] Lesson viewer at `/learn/course/[id]/lesson/[lessonId]`
+- [x] Dark theme video player layout
+- [x] Mark lesson as complete
+- [x] Previous/Next lesson navigation
+- [x] Course content sidebar with progress
+- [x] Course cards now link to detail page
+
+### Phase 21: Course Service Backend ✅
 - [x] Added 9 database models for courses and learning
 - [x] Course CRUD API endpoints
 - [x] Lesson management endpoints
@@ -25,14 +38,7 @@ This document outlines the planned next steps for Stunity Enterprise development
 - [x] Clubs & Events pages redesigned with clean 3-column layout
 - [x] Profile page updated with "Open to Learn" terminology
 - [x] Lighter color scheme (amber-100/orange-100 gradients)
-- [x] **Learn Hub** - Comprehensive learning platform with 4 modes:
-  - Explore Courses (Udemy/Coursera style)
-  - My Courses (progress tracking)
-  - Learning Paths (curated journeys)
-  - My Curriculum (school subjects - students only)
-- [x] Course cards, Learning Path cards, Subject cards
-- [x] Weekly goals, achievements, study streak widgets
-- [x] Grade service health endpoint fix
+- [x] **Learn Hub** - Comprehensive learning platform with 4 modes
 
 See `PROJECT_STATUS.md` for complete feature history.
 
@@ -40,41 +46,27 @@ See `PROJECT_STATUS.md` for complete feature history.
 
 ## 🎯 Priority 1: High Priority Features
 
-### 1.1 Course Detail Page ⭐ RECOMMENDED NEXT
+### 1.1 Course Creation UI ⭐ RECOMMENDED NEXT
 **Status:** Ready to implement  
-**Estimated Effort:** 1 session
-
-Create dedicated course detail page with lessons viewer.
-
-**Features:**
-- `/learn/course/[id]` - Course detail page
-- Course info, instructor bio, syllabus
-- Lesson list with progress indicators
-- Lesson viewer with video/content
-- Mark lesson as complete
-- Course reviews section
-
-**Files to create:**
-```
-apps/web/src/app/[locale]/learn/course/[id]/page.tsx
-apps/web/src/app/[locale]/learn/course/[id]/lesson/[lessonId]/page.tsx
-```
-
-### 1.2 Course Creation UI (Instructors)
-**Status:** Backend ready  
 **Estimated Effort:** 1-2 sessions
 
-Create course wizard for teachers to create their own courses.
+Create course wizard for instructors to build their own courses.
 
 **Features:**
 - Multi-step course creation wizard
 - Course info form (title, description, category, level)
-- Lesson builder (reorder, add resources)
+- Lesson builder with reorder/add/remove
 - Thumbnail upload
 - Preview before publish
 - Draft/Publish toggle
 
-### 1.3 Stories/Status Updates
+**Files to create:**
+```
+apps/web/src/app/[locale]/learn/create/page.tsx
+apps/web/src/app/[locale]/learn/course/[id]/edit/page.tsx
+```
+
+### 1.2 Stories/Status Updates
 **Status:** Not started  
 **Estimated Effort:** 2 sessions
 

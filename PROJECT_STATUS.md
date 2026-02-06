@@ -1,8 +1,8 @@
 # 🎓 Stunity Enterprise - Project Status
 
 **Date:** February 6, 2026  
-**Version:** 10.0  
-**Status:** Phase 21 Complete - Course Service Backend ✅
+**Version:** 11.0  
+**Status:** Phase 22 Complete - Course Detail & Lesson Viewer ✅
 
 ---
 
@@ -1045,7 +1045,39 @@ Full Course Service backend to power the Learn Hub with real data.
 - [x] Learning Paths tab shows real paths
 - [x] Updated categories and icons
 
-### Phase 22: Stories/Status Updates 🔜
+### Phase 22: Course Detail & Lesson Viewer ✅ COMPLETE
+**Completed:** February 6, 2026  
+**Status:** DONE
+
+Full course viewing experience with lesson player.
+
+#### Course Detail Page ✅
+- [x] `/learn/course/[id]` - Course detail page
+- [x] Hero header with course info, rating, stats
+- [x] Instructor profile section
+- [x] Overview tab with learning objectives
+- [x] Curriculum tab with lesson list
+- [x] Reviews tab with ratings display
+- [x] Sticky sidebar with enroll/continue button
+- [x] Progress tracking for enrolled users
+- [x] What you'll learn section
+- [x] Course includes section
+
+#### Lesson Viewer Page ✅
+- [x] `/learn/course/[id]/lesson/[lessonId]` - Lesson viewer
+- [x] Dark theme video player layout
+- [x] Lesson content display (HTML/video)
+- [x] Mark lesson as complete button
+- [x] Previous/Next lesson navigation
+- [x] Course content sidebar with progress
+- [x] Downloadable resources section
+
+#### Navigation Flow ✅
+- [x] Course cards link to detail page
+- [x] Lesson list navigates to lesson viewer
+- [x] Back navigation to course/learn hub
+
+### Phase 23: Stories/Status Updates 🔜
 **Priority: LOW | Estimated: 2 sessions**
 
 24-hour ephemeral content like Instagram/WhatsApp stories.
@@ -1062,7 +1094,7 @@ Full Course Service backend to power the Learn Hub with real data.
 - [ ] Story viewer with swipe navigation
 - [ ] Story view count
 
-### Phase 23: Advanced Notifications 🔜
+### Phase 24: Advanced Notifications 🔜
 **Priority: MEDIUM | Estimated: 2 sessions**
 
 #### Backend
@@ -1081,7 +1113,7 @@ Full Course Service backend to power the Learn Hub with real data.
 - [ ] Notification sound toggle
 - [ ] Email digest preferences
 
-### Phase 24: User Profiles Enhancement 🔜
+### Phase 25: User Profiles Enhancement 🔜
 **Priority: MEDIUM | Estimated: 2 sessions**
 *Note: Phase 16 completed core profile UI improvements*
 
