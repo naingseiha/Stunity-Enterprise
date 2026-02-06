@@ -1,8 +1,8 @@
 # 🎓 Stunity Enterprise - Project Status
 
 **Date:** February 6, 2026  
-**Version:** 6.5  
-**Status:** Phase 17.2 Complete - Feed UX Polish ✅
+**Version:** 7.0  
+**Status:** Phase 18 Complete - Study Clubs ✅
 
 ---
 
@@ -708,27 +708,43 @@ Optimistic UI and smooth animations for better user experience.
 - [x] Hover shadow effect on comment bubbles
 - [x] Animated comment section open/close
 
-### Phase 18: Groups & Communities 🔜
-**Priority: MEDIUM | Estimated: 3-4 sessions**
+### Phase 18: Study Clubs ✅ COMPLETE
+**Priority: MEDIUM | Completed: February 6, 2026**
 
-#### Backend
-- [ ] Add Group model (name, description, privacy, coverImage)
-- [ ] Add GroupMember model (userId, groupId, role, joinedAt)
-- [ ] Add GroupPost relation to Post model
-- [ ] Create group endpoints
-  - CRUD for groups
-  - Join/Leave group
-  - Invite members
-  - Group posts feed
-  - Group member management (admin/moderator roles)
+Education-focused collaborative learning groups (renamed from "Groups" to "Study Clubs").
 
-#### Frontend
-- [ ] Groups tab in feed navigation
-- [ ] Create group modal
-- [ ] Group detail page with members
-- [ ] Group-specific post feed
-- [ ] Group settings page
-- [ ] Discover groups page
+#### Backend ✅
+- [x] StudyClub model (name, description, clubType, category, privacy, coverImage, maxMembers)
+- [x] StudyClubMember model (userId, clubId, role, joinedAt, invitedBy)
+- [x] 8 Club Types: SUBJECT, SKILL, RESEARCH, PROJECT, EXAM_PREP, LANGUAGE, COMPETITION, TUTORING
+- [x] Privacy levels: PUBLIC, SCHOOL, PRIVATE, SECRET
+- [x] Member roles: OWNER, ADMIN, MODERATOR, MEMBER
+- [x] studyClubId field added to Post model for club posts
+- [x] 14 API endpoints in clubs.ts:
+  - POST /clubs - Create club
+  - GET /clubs - List user's clubs
+  - GET /clubs/discover - Discover public clubs
+  - GET /clubs/types - Get club types
+  - GET /clubs/:id - Get club details
+  - PUT /clubs/:id - Update club
+  - DELETE /clubs/:id - Delete club
+  - POST /clubs/:id/join - Join club
+  - POST /clubs/:id/leave - Leave club
+  - GET /clubs/:id/members - List members
+  - PUT /clubs/:id/members/:userId - Update member role
+  - DELETE /clubs/:id/members/:userId - Remove member
+  - GET /clubs/:id/posts - Get club posts
+  - POST /clubs/:id/invite - Invite members
+
+#### Frontend ✅
+- [x] "Clubs" added to navigation bar
+- [x] /clubs page with My Clubs and Discover tabs
+- [x] Create club modal (name, description, type, privacy, category)
+- [x] Club type selector with icons and colors
+- [x] Search and filter in Discover tab
+- [x] /clubs/[id] detail page with cover, stats, posts, members
+- [x] Join/Leave club buttons
+- [x] Member role badges (Owner crown, Admin shield, Moderator star)
 
 ### Phase 19: Events & Calendar 🔜
 **Priority: MEDIUM | Estimated: 2-3 sessions**
