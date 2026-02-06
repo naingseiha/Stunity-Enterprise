@@ -355,13 +355,13 @@ export default function ProfilePage() {
         <div className="max-w-5xl mx-auto px-4 py-6">
           {/* Profile Card - Contains Cover Photo */}
           <div 
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden"
+            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm dark:border-gray-700 overflow-hidden"
             style={{
               animation: pageReady ? 'slideInUp 0.6s ease-out forwards' : 'none',
             }}
           >
-            {/* Cover Photo - Larger height for better visual impact */}
-            <div className="relative h-56 md:h-72 bg-gradient-to-br from-amber-400 via-orange-400 to-amber-500">
+            {/* Cover Photo - Lighter gradient for better look */}
+            <div className="relative h-56 md:h-72 bg-gradient-to-br from-amber-100 via-orange-100 to-yellow-50">
               {profile.coverPhotoUrl ? (
                 <Image
                   src={profile.coverPhotoUrl}
@@ -371,10 +371,10 @@ export default function ProfilePage() {
                 />
               ) : (
                 /* Decorative pattern overlay for default cover */
-                <div className="absolute inset-0 opacity-20">
-                  <div className="absolute top-1/4 left-1/4 w-32 h-32 rounded-full border-2 border-white/30" />
-                  <div className="absolute top-1/3 right-1/4 w-24 h-24 rounded-full border-2 border-white/20" />
-                  <div className="absolute bottom-1/4 left-1/3 w-16 h-16 rounded-full border-2 border-white/25" />
+                <div className="absolute inset-0 opacity-30">
+                  <div className="absolute top-1/4 left-1/4 w-32 h-32 rounded-full border-2 border-amber-300/40" />
+                  <div className="absolute top-1/3 right-1/4 w-24 h-24 rounded-full border-2 border-orange-300/30" />
+                  <div className="absolute bottom-1/4 left-1/3 w-16 h-16 rounded-full border-2 border-yellow-300/35" />
                 </div>
               )}
               {/* Edit cover button */}
@@ -387,15 +387,15 @@ export default function ProfilePage() {
                 </Link>
               )}
               {/* Cover gradient overlay */}
-              <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/20 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white/40 to-transparent" />
             </div>
 
             {/* Profile Content */}
             <div className="px-6 pb-6">
-              {/* Avatar - Overlapping cover with larger size */}
+              {/* Avatar - Lighter gradient for default avatar */}
               <div className="relative -mt-20 md:-mt-24 mb-4">
                 <div className="relative inline-block group">
-                  <div className="w-36 h-36 md:w-44 md:h-44 rounded-full border-4 border-white dark:border-gray-800 overflow-hidden bg-gradient-to-br from-amber-400 to-orange-400 shadow-xl ring-4 ring-amber-100/50">
+                  <div className="w-36 h-36 md:w-44 md:h-44 rounded-full border-4 border-white dark:border-gray-800 overflow-hidden bg-gradient-to-br from-amber-200 to-orange-200 shadow-xl ring-4 ring-amber-50">
                     {profile.profilePictureUrl ? (
                       <Image
                         src={profile.profilePictureUrl}
@@ -405,10 +405,10 @@ export default function ProfilePage() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-white text-5xl font-bold">
+                      <div className="w-full h-full flex items-center justify-center text-amber-700 text-5xl font-bold">
                         {profile.firstName[0]}{profile.lastName[0]}
                       </div>
-                    )}
+                    )}}
                   </div>
                   {/* Edit avatar overlay for own profile */}
                   {profile.isOwnProfile && (
@@ -598,7 +598,7 @@ export default function ProfilePage() {
 
           {/* Navigation Tabs */}
           <div 
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mt-3 overflow-x-auto"
+            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm dark:border-gray-700 mt-3 overflow-x-auto"
             style={{
               animation: pageReady ? 'slideInUp 0.6s ease-out 0.1s forwards' : 'none',
               opacity: pageReady ? 1 : 0,
@@ -642,8 +642,8 @@ export default function ProfilePage() {
                   }}
                 >
                   {/* About Card - Always show */}
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm dark:border-gray-700 overflow-hidden hover:shadow-md transition-all">
+                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white">About</h3>
                       {profile.isOwnProfile && (
                         <Link
@@ -677,8 +677,8 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Activity Snapshot Card */}
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm dark:border-gray-700 overflow-hidden hover:shadow-md transition-all">
+                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white">Activity</h3>
                       <button 
                         onClick={() => setActiveTab('activity')}
@@ -700,8 +700,8 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Experience Snapshot */}
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm dark:border-gray-700 overflow-hidden hover:shadow-md transition-all">
+                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white">Experience</h3>
                       <div className="flex items-center gap-2">
                         {profile.isOwnProfile && (
@@ -755,8 +755,8 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Education Snapshot */}
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Education</h3>
                       <div className="flex items-center gap-2">
                         {profile.isOwnProfile && (
@@ -811,8 +811,8 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Skills Snapshot */}
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Skills</h3>
                       <div className="flex items-center gap-2">
                         {profile.isOwnProfile && (
@@ -873,8 +873,8 @@ export default function ProfilePage() {
 
                   {/* Interests & Languages */}
                   {(profile.interests.length > 0 || profile.languages.length > 0) && (
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden">
-                      <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
+                      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Interests & Languages</h3>
                       </div>
                       <div className="p-6 space-y-4">
@@ -910,8 +910,8 @@ export default function ProfilePage() {
 
               {/* Skills Section */}
               {activeTab === 'skills' && (
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Skills</h3>
                     {profile.isOwnProfile && (
                       <Link
@@ -1011,8 +1011,8 @@ export default function ProfilePage() {
 
               {/* Experience Section */}
               {activeTab === 'experience' && (
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Experience</h3>
                     {profile.isOwnProfile && (
                       <Link
@@ -1085,8 +1085,8 @@ export default function ProfilePage() {
 
               {/* Education Section */}
               {activeTab === 'education' && (
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Education</h3>
                     {profile.isOwnProfile && (
                       <Link
@@ -1168,8 +1168,8 @@ export default function ProfilePage() {
 
               {/* Certifications Section */}
               {activeTab === 'certifications' && (
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Licenses & Certifications</h3>
                     {profile.isOwnProfile && (
                       <Link
@@ -1257,8 +1257,8 @@ export default function ProfilePage() {
 
               {/* Projects Section */}
               {activeTab === 'projects' && (
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Projects</h3>
                     {profile.isOwnProfile && (
                       <Link
@@ -1345,8 +1345,8 @@ export default function ProfilePage() {
 
               {/* Activity Section */}
               {activeTab === 'activity' && (
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Activity</h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">{profile.stats.followers} followers</p>
                   </div>
@@ -1380,8 +1380,8 @@ export default function ProfilePage() {
             {/* Sidebar - Right */}
             <div className="space-y-4">
               {/* Achievements Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
-                <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <Trophy className="w-4 h-4 text-amber-500" />
                     Achievements
@@ -1418,8 +1418,8 @@ export default function ProfilePage() {
               </div>
 
               {/* Recommendations Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
-                <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <Star className="w-4 h-4 text-purple-500" />
                     Recommendations
@@ -1431,7 +1431,7 @@ export default function ProfilePage() {
                   ) : (
                     <div className="space-y-4">
                       {recommendations.slice(0, 2).map(rec => (
-                        <div key={rec.id} className="pb-4 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0">
+                        <div key={rec.id} className="pb-4 border-b border-gray-200 dark:border-gray-700 last:border-0 last:pb-0">
                           <div className="flex items-center gap-2 mb-2">
                             <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden flex-shrink-0">
                               {rec.author.profilePictureUrl ? (
@@ -1469,13 +1469,13 @@ export default function ProfilePage() {
 
               {/* Profile Stats Card */}
               <div 
-                className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow"
+                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm dark:border-gray-700 overflow-hidden hover:shadow-md transition-all"
                 style={{
                   animation: pageReady ? 'fadeInUpContent 0.5s ease-out 0.4s forwards' : 'none',
                   opacity: 0,
                 }}
               >
-                <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-amber-500" />
                     Profile Stats
