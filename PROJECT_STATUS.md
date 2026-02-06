@@ -1,8 +1,8 @@
 # 🎓 Stunity Enterprise - Project Status
 
 **Date:** February 6, 2026  
-**Version:** 8.4  
-**Status:** Phase 20 Complete - Study Clubs Full Features ✅
+**Version:** 8.5  
+**Status:** Phase 20.5 Complete - Study Clubs & Events UI Polish ✅
 
 ---
 
@@ -871,16 +871,25 @@ Enhanced study club experience with full functionality and polished UI.
 - [x] UnifiedNavigation with user/school from localStorage
 - [x] Card-based layout with Stunity orange/amber theme
 - [x] Page Header Card with gradient banner
+- [x] Circular avatar with ring effect (matching profile page)
+- [x] Taller cover height (h-48 md:h-56)
+- [x] Rounded stat icons (Members, Discover, Categories)
 
 #### Club Detail Page (`/clubs/[id]`) ✅ COMPLETE
-- [x] About tab with club info, statistics
-- [x] Discussion/posts section with create post (existed)
-- [x] Member management - role changes, removal (existed)
-- [x] Leave club functionality (existed)
-- [x] Delete club via settings page (existed)
+- [x] Redesigned to match clubs listing page style
+- [x] Card-based header with taller cover (h-48 md:h-56)
+- [x] Circular avatar with ring effect (w-32 h-32 md:w-36 md:h-36)
+- [x] Decorative patterns on cover when no image
+- [x] Privacy badge on avatar
+- [x] Club type & category badges
+- [x] Creator info with avatar
+- [x] Quick stats section with rounded icons (Members, Posts, Created)
+- [x] About tab with grid layout info cards
+- [x] Discussion/posts section with create post
+- [x] Member management - role changes, removal
+- [x] Improved non-member view with join button
 - [x] FeedZoomLoader for smooth Stunity logo loading
 - [x] UnifiedNavigation with user/school from localStorage
-- [x] handleLogout function for navigation
 - [ ] Cover photo upload/edit for admins (future - needs R2 integration)
 - [ ] Resources/files section (future)
 - [ ] Events section (club-specific events) (future)
@@ -890,7 +899,23 @@ Enhanced study club experience with full functionality and polished UI.
 - [x] FeedZoomLoader with Stunity logo smooth loading
 - [x] UnifiedNavigation with user/school from localStorage
 - [x] Page Header Card with gradient banner matching profile/clubs design
+- [x] Circular avatar with ring effect
+- [x] Taller cover height (h-48 md:h-56)
 - [x] handleLogout function for navigation
+
+#### Feed Sidebar Widgets ✅ COMPLETE
+- [x] StudyGroupsWidget fetches from /clubs/my-clubs API
+- [x] UpcomingEventsWidget fetches from /calendar/upcoming API
+- [x] Real API data instead of mock data
+- [x] Link navigation to club/event detail pages
+- [x] RSVP status display in events widget
+- [x] Proper loading and empty states
+- [x] Join club buttons in sidebar widget
+- [x] Rose/orange gradient design language
+
+#### Bug Fixes ✅
+- [x] Fixed missing slideInUp animation in globals.css (clubs were invisible)
+- [x] Club cards now properly animate and display
 
 #### Club Engagement Features - TODO (Future)
 - [ ] Club activity feed
@@ -914,7 +939,7 @@ Enhanced study club experience with full functionality and polished UI.
 - [ ] Story viewer with swipe navigation
 - [ ] Story view count
 
-### Phase 21: Advanced Notifications 🔜
+### Phase 22: Advanced Notifications 🔜
 **Priority: MEDIUM | Estimated: 2 sessions**
 
 #### Backend
@@ -933,7 +958,7 @@ Enhanced study club experience with full functionality and polished UI.
 - [ ] Notification sound toggle
 - [ ] Email digest preferences
 
-### Phase 22: User Profiles Enhancement 🔜
+### Phase 23: User Profiles Enhancement 🔜
 **Priority: MEDIUM | Estimated: 2 sessions**
 *Note: Phase 16 completed core profile UI improvements*
 
@@ -945,7 +970,7 @@ Enhanced study club experience with full functionality and polished UI.
 - [ ] Profile privacy settings
 - [ ] Block/Mute users
 
-### Phase 22: Mobile App (React Native) 🔜
+### Phase 24: Mobile App (React Native) 🔜
 **Priority: HIGH | Estimated: 5-7 sessions**
 
 #### Setup
