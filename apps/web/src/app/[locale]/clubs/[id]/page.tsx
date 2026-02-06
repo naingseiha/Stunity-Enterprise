@@ -33,9 +33,13 @@ import {
   Send,
   Edit3,
   ChevronDown,
+  Info,
+  Calendar,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import PostCard, { PostData } from '@/components/feed/PostCard';
+import FeedZoomLoader from '@/components/feed/FeedZoomLoader';
+import UnifiedNavigation from '@/components/UnifiedNavigation';
 
 interface ClubMember {
   id: string;
@@ -129,7 +133,7 @@ export default function ClubDetailPage() {
   const [posts, setPosts] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingPosts, setLoadingPosts] = useState(false);
-  const [activeTab, setActiveTab] = useState<'posts' | 'members'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'members' | 'about'>('posts');
   const [allMembers, setAllMembers] = useState<ClubMember[]>([]);
   const [joining, setJoining] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -138,8 +142,19 @@ export default function ClubDetailPage() {
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [newPostContent, setNewPostContent] = useState('');
   const [posting, setPosting] = useState(false);
+  const [showContent, setShowContent] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [school, setSchool] = useState<any>(null);
 
   useEffect(() => {
+    // Load user and school from localStorage for navigation
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem('user');
+      const schoolStr = localStorage.getItem('school');
+      if (userStr) setCurrentUser(JSON.parse(userStr));
+      if (schoolStr) setSchool(JSON.parse(schoolStr));
+    }
+    
     const userData = TokenManager.getUserData();
     if (userData?.user?.id) {
       setCurrentUserId(userData.user.id);
@@ -359,11 +374,18 @@ export default function ClubDetailPage() {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
   };
 
-  if (loading) {
+  const handleLogout = () => {
+    TokenManager.clearTokens();
+    router.push(`/${locale}/login`);
+  };
+
+  // Show zoom loader during initial load (same pattern as feed/profile)
+  if (loading || !showContent) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50/40 via-white to-orange-50/30 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-      </div>
+      <FeedZoomLoader 
+        isLoading={loading} 
+        onAnimationComplete={() => setShowContent(true)}
+      />
     );
   }
 
@@ -375,6 +397,9 @@ export default function ClubDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/40 via-white to-orange-50/30">
+      {/* Navigation Bar */}
+      <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
+      
       {/* Cover */}
       <div className={`h-48 md:h-64 bg-gradient-to-br ${CLUB_TYPE_COLORS[club.clubType] || 'from-amber-400 to-orange-500'} relative`}>
         {club.coverImage && (
@@ -520,6 +545,17 @@ export default function ClubDetailPage() {
                 <Users className="w-4 h-4" />
                 Members
               </button>
+              <button
+                onClick={() => setActiveTab('about')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                  activeTab === 'about'
+                    ? 'bg-white text-amber-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Info className="w-4 h-4" />
+                About
+              </button>
             </div>
 
             {/* Posts Tab */}
@@ -620,6 +656,76 @@ export default function ClubDetailPage() {
                     />
                   ))
                 )}
+              </div>
+            )}
+
+            {/* About Tab */}
+            {activeTab === 'about' && (
+              <div className="space-y-4">
+                {/* Club Info Card */}
+                <div className="bg-white rounded-2xl border border-gray-100 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Info className="w-5 h-5 text-amber-500" />
+                    About This Club
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm text-gray-500">Club Type</label>
+                      <p className="text-gray-900 font-medium flex items-center gap-2 mt-1">
+                        {CLUB_TYPE_ICONS[club.clubType]}
+                        {CLUB_TYPE_LABELS[club.clubType]}
+                      </p>
+                    </div>
+                    
+                    {club.category && (
+                      <div>
+                        <label className="text-sm text-gray-500">Category</label>
+                        <p className="text-gray-900 font-medium mt-1">{club.category}</p>
+                      </div>
+                    )}
+                    
+                    <div>
+                      <label className="text-sm text-gray-500">Privacy</label>
+                      <p className="text-gray-900 font-medium flex items-center gap-2 mt-1">
+                        {club.privacy === 'PUBLIC' && <Globe className="w-4 h-4 text-green-500" />}
+                        {club.privacy === 'SCHOOL' && <School className="w-4 h-4 text-blue-500" />}
+                        {club.privacy === 'PRIVATE' && <Lock className="w-4 h-4 text-amber-500" />}
+                        {club.privacy === 'SECRET' && <EyeOff className="w-4 h-4 text-red-500" />}
+                        {club.privacy}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm text-gray-500">Created</label>
+                      <p className="text-gray-900 font-medium flex items-center gap-2 mt-1">
+                        <Calendar className="w-4 h-4 text-gray-400" />
+                        {new Date(club.createdAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Stats Card */}
+                <div className="bg-white rounded-2xl border border-gray-100 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistics</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl">
+                      <Users className="w-6 h-6 text-amber-500 mx-auto mb-2" />
+                      <p className="text-2xl font-bold text-gray-900">{club._count.members}</p>
+                      <p className="text-sm text-gray-500">Members</p>
+                    </div>
+                    <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
+                      <FileText className="w-6 h-6 text-blue-500 mx-auto mb-2" />
+                      <p className="text-2xl font-bold text-gray-900">{club._count.posts}</p>
+                      <p className="text-sm text-gray-500">Posts</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </>

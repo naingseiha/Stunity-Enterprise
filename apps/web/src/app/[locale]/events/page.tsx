@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Calendar,
@@ -27,8 +27,11 @@ import {
   Award,
   Video,
   Globe,
+  Loader2,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
+import FeedZoomLoader from '@/components/feed/FeedZoomLoader';
+import UnifiedNavigation from '@/components/UnifiedNavigation';
 
 // Event type icons and colors
 const EVENT_TYPE_CONFIG: Record<string, { icon: any; color: string; bgColor: string }> = {
@@ -85,6 +88,9 @@ interface Event {
 
 export default function EventsPage() {
   const router = useRouter();
+  const params = useParams();
+  const locale = (params?.locale as string) || 'en';
+  
   const [events, setEvents] = useState<Event[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,10 +99,28 @@ export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showContent, setShowContent] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [school, setSchool] = useState<any>(null);
   
   // Calendar state
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarEvents, setCalendarEvents] = useState<Record<string, Event[]>>({});
+
+  useEffect(() => {
+    // Load user and school from localStorage for navigation
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem('user');
+      const schoolStr = localStorage.getItem('school');
+      if (userStr) setCurrentUser(JSON.parse(userStr));
+      if (schoolStr) setSchool(JSON.parse(schoolStr));
+    }
+  }, []);
+
+  const handleLogout = () => {
+    TokenManager.clearTokens();
+    router.push(`/${locale}/login`);
+  };
 
   const fetchEvents = useCallback(async () => {
     try {
@@ -408,49 +432,85 @@ export default function EventsPage() {
     );
   };
 
+  // Show zoom loader during initial load (same pattern as feed/profile/clubs)
+  if (loading || !showContent) {
+    return (
+      <FeedZoomLoader 
+        isLoading={loading} 
+        onAnimationComplete={() => setShowContent(true)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50/40 via-white to-orange-50/30">
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Events & Calendar</h1>
-            <p className="text-gray-600">Discover and join school events, club meetups, and more</p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* View Toggle */}
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-white text-amber-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <List className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('calendar')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  viewMode === 'calendar'
-                    ? 'bg-white text-amber-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <CalendarDays className="w-4 h-4" />
-              </button>
+      {/* Navigation Bar */}
+      <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
+      
+      <div className="max-w-5xl mx-auto px-4 py-6">
+        {/* Page Header Card - Matching Profile Page Style */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6 animate-fadeInUp">
+          {/* Gradient Header Banner - Taller like profile page */}
+          <div className="h-48 md:h-56 bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 relative overflow-hidden">
+            <div className="absolute inset-0 opacity-20">
+              <div className="absolute top-1/4 left-1/4 w-32 h-32 rounded-full border-2 border-white/30" />
+              <div className="absolute top-1/3 right-1/4 w-24 h-24 rounded-full border-2 border-white/20" />
+              <div className="absolute bottom-1/4 left-1/3 w-16 h-16 rounded-full border-2 border-white/25" />
             </div>
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/20 to-transparent" />
+          </div>
+          
+          {/* Header Content */}
+          <div className="px-6 pb-6">
+            {/* Avatar - Circular like profile page */}
+            <div className="relative -mt-16 md:-mt-20 mb-4">
+              <div className="w-32 h-32 md:w-36 md:h-36 rounded-full bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center border-4 border-white shadow-xl ring-4 ring-amber-100/50">
+                <Calendar className="w-14 h-14 md:w-16 md:h-16 text-white" />
+              </div>
+            </div>
+            
+            {/* Title and Actions */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Events & Calendar</h1>
+                <p className="text-gray-500 mt-1">Discover and join school events, club meetups, and more</p>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                {/* View Toggle */}
+                <div className="flex items-center bg-gray-100 rounded-xl p-1">
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      viewMode === 'list'
+                        ? 'bg-white text-amber-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('calendar')}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      viewMode === 'calendar'
+                        ? 'bg-white text-amber-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <CalendarDays className="w-4 h-4" />
+                  </button>
+                </div>
 
-            {/* Create Event Button */}
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-600 hover:to-orange-600 transition-all shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Create Event
-            </button>
+                {/* Create Event Button */}
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg shadow-amber-500/25 hover:shadow-xl hover:scale-105"
+                >
+                  <Plus className="w-5 h-5" />
+                  Create Event
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
