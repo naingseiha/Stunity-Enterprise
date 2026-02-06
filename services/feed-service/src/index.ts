@@ -13,6 +13,7 @@ import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from './utils/r2';
 import { initRedis, EventPublisher } from './redis';
 import sseRouter from './sse';
 import dmRouter, { initDMRoutes } from './dm';
+import clubsRouter, { initClubsRoutes } from './clubs';
 
 const app = express();
 const PORT = 3010; // Feed service always uses port 3010
@@ -2665,6 +2666,13 @@ app.use('/api/events', sseRouter);
 // ========================================
 
 app.use('/dm', authenticateToken as any, initDMRoutes(prisma));
+
+// ========================================
+// Study Clubs Router
+// ========================================
+
+initClubsRoutes(prisma);
+app.use('/clubs', authenticateToken as any, clubsRouter);
 
 // ========================================
 // Start Server

@@ -548,8 +548,10 @@ model User {
   blocking              UserBlock[]         @relation("Blocker")
   userSkills            UserSkill[]
   dmParticipations      DMParticipant[]
-  sentDirectMessages    DirectMessage[]   @relation("DMSender")
+  sentDirectMessages    DirectMessage[]     @relation("DMSender")
   dmReadReceipts        DMReadReceipt[]
+  createdStudyClubs     StudyClub[]         @relation("ClubCreator")
+  studyClubMemberships  StudyClubMember[]
   parent                Parent?             @relation(fields: [parentId], references: [id], onDelete: Cascade)
   school                School?             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   student               Student?            @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -625,7 +627,8 @@ model Post {
   projectStatus            String?
   projectDeadline          DateTime?
   projectTeamSize          Int?
-  mediaDisplayMode         String?           @default("AUTO") // AUTO, FIXED_HEIGHT, FULL_HEIGHT
+  mediaDisplayMode         String?        @default("AUTO") // AUTO, FIXED_HEIGHT, FULL_HEIGHT
+  studyClubId              String? // If posted in a study club
   comments                 Comment[]
   likes                    Like[]
   bookmarks                Bookmark[]
@@ -633,11 +636,13 @@ model Post {
   views                    PostView[]
   author                   User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   quizQuestions            QuizQuestion[]
+  studyClub                StudyClub?     @relation("ClubPosts", fields: [studyClubId], references: [id], onDelete: SetNull)
 
   @@index([authorId, createdAt(sort: Desc)])
   @@index([postType, createdAt(sort: Desc)])
   @@index([visibility, createdAt(sort: Desc)])
   @@index([pollExpiresAt])
+  @@index([studyClubId])
   @@map("posts")
 }
 
@@ -854,7 +859,7 @@ model Certification {
 }
 
 model Education {
-  id           String        @id @default(cuid())
+  id           String    @id @default(cuid())
   userId       String
   school       String
   degree       String?
@@ -862,15 +867,15 @@ model Education {
   grade        String?
   startDate    DateTime
   endDate      DateTime?
-  isCurrent    Boolean       @default(false)
+  isCurrent    Boolean   @default(false)
   description  String?
   activities   String[]
   skills       String[]
   mediaUrls    String[]
   mediaKeys    String[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, startDate(sort: Desc)])
   @@map("education")
@@ -1614,15 +1619,15 @@ enum TimetablePublishStatus {
 // ============================================
 
 model Conversation {
-  id            String    @id @default(cuid())
+  id            String   @id @default(cuid())
   schoolId      String
   teacherId     String
   parentId      String
   studentId     String?
-  lastMessageAt DateTime  @default(now())
-  isArchived    Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  lastMessageAt DateTime @default(now())
+  isArchived    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   messages Message[]
   teacher  Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
@@ -1638,14 +1643,14 @@ model Conversation {
 }
 
 model Message {
-  id             String       @id @default(cuid())
+  id             String     @id @default(cuid())
   conversationId String
   senderId       String
   senderType     SenderType
   content        String
-  isRead         Boolean      @default(false)
+  isRead         Boolean    @default(false)
   readAt         DateTime?
-  createdAt      DateTime     @default(now())
+  createdAt      DateTime   @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
@@ -1666,36 +1671,36 @@ enum SenderType {
 // ============================================
 
 model DMConversation {
-  id            String          @id @default(cuid())
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  lastMessageAt DateTime        @default(now())
-  lastMessage   String?         // Preview of last message
-  isGroup       Boolean         @default(false)
-  groupName     String?         // Only for group chats
-  groupAvatar   String?         // Only for group chats
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastMessageAt DateTime @default(now())
+  lastMessage   String? // Preview of last message
+  isGroup       Boolean  @default(false)
+  groupName     String? // Only for group chats
+  groupAvatar   String? // Only for group chats
 
-  participants  DMParticipant[]
-  messages      DirectMessage[]
+  participants DMParticipant[]
+  messages     DirectMessage[]
 
   @@index([lastMessageAt(sort: Desc)])
   @@map("dm_conversations")
 }
 
 model DMParticipant {
-  id             String         @id @default(cuid())
+  id             String    @id @default(cuid())
   conversationId String
   userId         String
-  joinedAt       DateTime       @default(now())
-  leftAt         DateTime?      // Null if still in conversation
-  isAdmin        Boolean        @default(false) // For group chats
-  isMuted        Boolean        @default(false)
+  joinedAt       DateTime  @default(now())
+  leftAt         DateTime? // Null if still in conversation
+  isAdmin        Boolean   @default(false) // For group chats
+  isMuted        Boolean   @default(false)
   mutedUntil     DateTime?
-  lastReadAt     DateTime?      // For tracking unread messages
-  unreadCount    Int            @default(0)
+  lastReadAt     DateTime? // For tracking unread messages
+  unreadCount    Int       @default(0)
 
-  conversation   DMConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation DMConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([conversationId, userId])
   @@index([userId, leftAt])
@@ -1704,25 +1709,25 @@ model DMParticipant {
 }
 
 model DirectMessage {
-  id             String          @id @default(cuid())
+  id             String        @id @default(cuid())
   conversationId String
   senderId       String
   content        String
-  messageType    DMMessageType   @default(TEXT)
-  mediaUrl       String?         // For image/file messages
-  mediaType      String?         // MIME type
-  replyToId      String?         // For replying to messages
-  isEdited       Boolean         @default(false)
+  messageType    DMMessageType @default(TEXT)
+  mediaUrl       String? // For image/file messages
+  mediaType      String? // MIME type
+  replyToId      String? // For replying to messages
+  isEdited       Boolean       @default(false)
   editedAt       DateTime?
-  isDeleted      Boolean         @default(false)
+  isDeleted      Boolean       @default(false)
   deletedAt      DateTime?
-  createdAt      DateTime        @default(now())
+  createdAt      DateTime      @default(now())
 
-  conversation   DMConversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender         User            @relation("DMSender", fields: [senderId], references: [id], onDelete: Cascade)
-  replyTo        DirectMessage?  @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
-  replies        DirectMessage[] @relation("MessageReplies")
-  readReceipts   DMReadReceipt[]
+  conversation DMConversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User            @relation("DMSender", fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo      DirectMessage?  @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies      DirectMessage[] @relation("MessageReplies")
+  readReceipts DMReadReceipt[]
 
   @@index([conversationId, createdAt])
   @@index([senderId])
@@ -1731,13 +1736,13 @@ model DirectMessage {
 }
 
 model DMReadReceipt {
-  id        String        @id @default(cuid())
+  id        String   @id @default(cuid())
   messageId String
   userId    String
-  readAt    DateTime      @default(now())
+  readAt    DateTime @default(now())
 
-  message   DirectMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message DirectMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([messageId, userId])
   @@index([messageId])
@@ -1752,5 +1757,79 @@ enum DMMessageType {
   VOICE
   VIDEO
   STICKER
-  SYSTEM   // e.g., "User joined the group"
+  SYSTEM // e.g., "User joined the group"
+}
+
+// ============================================
+// PHASE 18: Study Clubs
+// Education-focused groups for collaborative learning
+// ============================================
+
+model StudyClub {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  clubType    StudyClubType @default(SUBJECT)
+  category    String? // e.g., "Mathematics", "Programming", "Science"
+  privacy     ClubPrivacy   @default(PUBLIC)
+  coverImage  String?
+  creatorId   String
+  schoolId    String? // Optional school association
+  maxMembers  Int? // Optional member limit
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  creator User              @relation("ClubCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  members StudyClubMember[]
+  posts   Post[]            @relation("ClubPosts")
+
+  @@index([creatorId])
+  @@index([clubType])
+  @@index([privacy])
+  @@index([category])
+  @@index([schoolId])
+  @@map("study_clubs")
+}
+
+model StudyClubMember {
+  id        String         @id @default(cuid())
+  clubId    String
+  userId    String
+  role      ClubMemberRole @default(MEMBER)
+  joinedAt  DateTime       @default(now())
+  invitedBy String? // Who invited this member
+
+  club StudyClub @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, userId])
+  @@index([userId])
+  @@index([clubId])
+  @@map("study_club_members")
+}
+
+enum StudyClubType {
+  SUBJECT // Math Club, Science Club, Literature Club
+  SKILL // Coding Club, Debate Club, Public Speaking
+  RESEARCH // Research groups for specific topics
+  PROJECT // Project teams for collaborative work
+  EXAM_PREP // Exam preparation study groups
+  LANGUAGE // Language learning clubs
+  COMPETITION // Olympiad, competitions preparation
+  TUTORING // Peer tutoring and mentoring
+}
+
+enum ClubPrivacy {
+  PUBLIC // Anyone can see and join
+  SCHOOL // Only school members can see and join
+  PRIVATE // Invite-only, visible to members
+  SECRET // Invite-only, hidden from search
+}
+
+enum ClubMemberRole {
+  OWNER // Creator of the club
+  ADMIN // Can manage members and settings
+  MODERATOR // Can moderate posts and comments
+  MEMBER // Regular member
 }

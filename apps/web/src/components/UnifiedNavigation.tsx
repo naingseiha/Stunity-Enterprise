@@ -90,6 +90,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   , [pathname]);
   
   const isFeedContext = useMemo(() => pathname.includes('/feed'), [pathname]);
+  const isClubsContext = useMemo(() => pathname.includes('/clubs'), [pathname]);
   const isLearnContext = useMemo(() => pathname.includes('/learn'), [pathname]);
 
   // Memoized nav items to prevent re-creation on every render
@@ -99,6 +100,13 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       icon: Home, 
       path: `/${locale}/feed`,
       active: isFeedContext,
+      badge: null,
+    },
+    { 
+      name: 'Clubs', 
+      icon: Users, 
+      path: `/${locale}/clubs`,
+      active: isClubsContext,
       badge: null,
     },
     { 
@@ -115,7 +123,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       active: isLearnContext,
       badge: 'Soon',
     },
-  ], [locale, isFeedContext, isSchoolContext, isLearnContext]);
+  ], [locale, isFeedContext, isClubsContext, isSchoolContext, isLearnContext]);
 
   // Memoized school menu items
   const schoolMenuItems = useMemo(() => [
