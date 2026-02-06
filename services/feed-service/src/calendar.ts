@@ -1,12 +1,10 @@
 import express from 'express';
 import { PrismaClient, CalendarEventType, EventPrivacy, RSVPStatus } from '@prisma/client';
-import { authMiddleware } from './middleware/auth';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Apply auth middleware to all routes
-router.use(authMiddleware);
+// Note: Auth middleware is applied in index.ts where this router is mounted
 
 // Get event type definitions
 const EVENT_TYPE_INFO = {

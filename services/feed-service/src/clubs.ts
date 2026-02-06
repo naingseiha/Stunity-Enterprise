@@ -319,7 +319,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
     }
 
     // Get user's membership status
-    let myMembership = null;
+    let myMembership: any = null;
     if (userId) {
       myMembership = await prisma.studyClubMember.findUnique({
         where: { clubId_userId: { clubId: id, userId } },
