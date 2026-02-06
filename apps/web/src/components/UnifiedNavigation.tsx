@@ -94,6 +94,25 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   const isEventsContext = useMemo(() => pathname.includes('/events'), [pathname]);
   const isLearnContext = useMemo(() => pathname.includes('/learn'), [pathname]);
 
+  // Optimistic active state - uses pending path if navigating, otherwise actual path
+  const getOptimisticActive = useCallback((itemPath: string, actualActive: boolean) => {
+    if (optimisticPath) {
+      // Check if this item's path matches the optimistic path
+      return optimisticPath.startsWith(itemPath) || itemPath.startsWith(optimisticPath);
+    }
+    return actualActive;
+  }, [optimisticPath]);
+
+  // Handle optimistic navigation with instant visual feedback
+  const handleNavClick = useCallback((e: React.MouseEvent, path: string) => {
+    // Set optimistic path immediately for instant visual feedback
+    setOptimisticPath(path);
+    // Use transition for smooth navigation
+    startTransition(() => {
+      router.push(path);
+    });
+  }, [router, startTransition]);
+
   // Memoized nav items to prevent re-creation on every render
   const navItems = useMemo(() => [
     { 
@@ -171,6 +190,13 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
 
   return (
     <>
+      {/* Global Navigation Loading Bar */}
+      {isPending && (
+        <div className="fixed top-0 left-0 right-0 z-[60] h-0.5 bg-gray-200 overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 animate-loading-bar" />
+        </div>
+      )}
+
       {/* Apple-inspired Navigation Bar */}
       <nav className={`
         sticky top-0 z-50 transition-all duration-300 ease-out
@@ -186,7 +212,12 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
             <div className="flex items-center gap-10">
               {/* Logo */}
               <button 
-                onClick={() => router.push(isSchoolContext ? `/${locale}/dashboard` : `/${locale}/feed`)}
+                onClick={() => {
+                  setOptimisticPath(isSchoolContext ? `/${locale}/dashboard` : `/${locale}/feed`);
+                  startTransition(() => {
+                    router.push(isSchoolContext ? `/${locale}/dashboard` : `/${locale}/feed`);
+                  });
+                }}
                 className="flex items-center gap-2 group relative"
                 title={isSchoolContext ? "Go to Dashboard" : "Go to Feed"}
               >
@@ -201,30 +232,37 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
               <div className="hidden md:flex items-center">
                 {navItems.map((item) => {
                   const Icon = item.icon;
+                  const isActive = getOptimisticActive(item.path, item.active);
+                  const isNavigating = optimisticPath === item.path && isPending;
                   return (
                     <Link
                       key={item.name}
                       href={item.path}
                       prefetch={true}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleNavClick(e, item.path);
+                      }}
                       className="relative group px-4 py-2"
                     >
                       <span className={`
-                        relative z-10 flex items-center gap-1.5 text-[13px] font-medium tracking-tight transition-colors duration-200
-                        ${item.active 
+                        relative z-10 flex items-center gap-1.5 text-[13px] font-medium tracking-tight transition-colors duration-150
+                        ${isActive 
                           ? 'text-gray-900 dark:text-white' 
                           : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white'
                         }
                       `}>
+                        {isNavigating && <Loader2 className="w-3 h-3 animate-spin" />}
                         {item.name}
                       </span>
                       {/* Active indicator - subtle underline */}
-                      {item.active && (
-                        <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-gradient-to-r from-orange-500 to-amber-500 rounded-full" />
+                      {isActive && (
+                        <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-150" />
                       )}
                       {/* Hover indicator */}
                       <span className={`
-                        absolute inset-0 rounded-lg bg-gray-100 dark:bg-gray-800 opacity-0 group-hover:opacity-100 transition-opacity duration-200
-                        ${item.active ? 'opacity-0 group-hover:opacity-0' : ''}
+                        absolute inset-0 rounded-lg bg-gray-100 dark:bg-gray-800 opacity-0 group-hover:opacity-100 transition-opacity duration-150
+                        ${isActive ? 'opacity-0 group-hover:opacity-0' : ''}
                       `} />
                       {/* Badge */}
                       {item.badge && (
@@ -390,28 +428,38 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
             <div className="px-3 py-3 space-y-0.5">
               {navItems.map((item) => {
                 const Icon = item.icon;
+                const isActive = getOptimisticActive(item.path, item.active);
+                const isNavigating = optimisticPath === item.path && isPending;
                 return (
                   <Link
                     key={item.name}
                     href={item.path}
                     prefetch={true}
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setMobileMenuOpen(false);
+                      handleNavClick(e, item.path);
+                    }}
                     className={`
-                      flex items-center gap-3 px-4 py-3 rounded-xl text-[15px] font-medium transition-all duration-200
-                      ${item.active 
+                      flex items-center gap-3 px-4 py-3 rounded-xl text-[15px] font-medium transition-all duration-150
+                      ${isActive 
                         ? 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20' 
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/80'
                       }
                     `}
                   >
-                    <Icon className={`w-5 h-5 ${item.active ? 'text-orange-500' : 'text-gray-400'}`} />
+                    {isNavigating ? (
+                      <Loader2 className="w-5 h-5 text-orange-500 animate-spin" />
+                    ) : (
+                      <Icon className={`w-5 h-5 ${isActive ? 'text-orange-500' : 'text-gray-400'}`} />
+                    )}
                     <span className="flex-1">{item.name}</span>
                     {item.badge && (
                       <span className="px-2 py-0.5 bg-gradient-to-r from-purple-500 to-violet-500 text-white text-[10px] font-semibold rounded-full uppercase">
                         {item.badge}
                       </span>
                     )}
-                    <ChevronRight className={`w-4 h-4 ${item.active ? 'text-orange-400' : 'text-gray-300'}`} />
+                    <ChevronRight className={`w-4 h-4 ${isActive ? 'text-orange-400' : 'text-gray-300'}`} />
                   </Link>
                 );
               })}
