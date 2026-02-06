@@ -14,6 +14,7 @@ import { initRedis, EventPublisher } from './redis';
 import sseRouter from './sse';
 import dmRouter, { initDMRoutes } from './dm';
 import clubsRouter, { initClubsRoutes } from './clubs';
+import calendarRouter from './calendar';
 
 const app = express();
 const PORT = 3010; // Feed service always uses port 3010
@@ -2673,6 +2674,12 @@ app.use('/dm', authenticateToken as any, initDMRoutes(prisma));
 
 initClubsRoutes(prisma);
 app.use('/clubs', authenticateToken as any, clubsRouter);
+
+// ========================================
+// PHASE 19: Events & Calendar Routes
+// ========================================
+
+app.use('/calendar', authenticateToken as any, calendarRouter);
 
 // ========================================
 // Start Server

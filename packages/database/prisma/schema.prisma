@@ -552,6 +552,8 @@ model User {
   dmReadReceipts        DMReadReceipt[]
   createdStudyClubs     StudyClub[]         @relation("ClubCreator")
   studyClubMemberships  StudyClubMember[]
+  createdEvents         Event[]             @relation("EventCreator")
+  eventAttendances      EventAttendee[]
   parent                Parent?             @relation(fields: [parentId], references: [id], onDelete: Cascade)
   school                School?             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   student               Student?            @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -1832,4 +1834,85 @@ enum ClubMemberRole {
   ADMIN // Can manage members and settings
   MODERATOR // Can moderate posts and comments
   MEMBER // Regular member
+}
+
+// ============================================
+// PHASE 19: Events & Calendar
+// School and club events with RSVP functionality
+// ============================================
+
+model Event {
+  id           String            @id @default(cuid())
+  title        String
+  description  String?
+  startDate    DateTime
+  endDate      DateTime?
+  allDay       Boolean           @default(false)
+  location     String?
+  virtualLink  String? // For online events (Zoom, Meet, etc.)
+  coverImage   String?
+  eventType    CalendarEventType @default(GENERAL)
+  privacy      EventPrivacy      @default(PUBLIC)
+  maxAttendees Int? // Optional capacity limit
+  creatorId    String
+  schoolId     String? // School-wide events
+  studyClubId  String? // Club-specific events
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  creator   User            @relation("EventCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  attendees EventAttendee[]
+
+  @@index([creatorId])
+  @@index([schoolId])
+  @@index([studyClubId])
+  @@index([startDate])
+  @@index([eventType])
+  @@map("events")
+}
+
+model EventAttendee {
+  id         String      @id @default(cuid())
+  eventId    String
+  userId     String
+  status     RSVPStatus  @default(PENDING)
+  respondedAt DateTime?
+  createdAt  DateTime    @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([userId])
+  @@index([eventId])
+  @@index([status])
+  @@map("event_attendees")
+}
+
+enum CalendarEventType {
+  GENERAL // General school events
+  ACADEMIC // Exams, tests, deadlines
+  SPORTS // Sports events, competitions
+  CULTURAL // Cultural events, festivals
+  CLUB // Study club meetups
+  WORKSHOP // Workshops, training sessions
+  MEETING // Parent-teacher meetings, staff meetings
+  HOLIDAY // School holidays
+  DEADLINE // Assignment/project deadlines
+  COMPETITION // Academic competitions, olympiads
+}
+
+enum EventPrivacy {
+  PUBLIC // Anyone can see and RSVP
+  SCHOOL // Only school members
+  CLUB // Only club members (requires studyClubId)
+  INVITE_ONLY // Only invited users can see
+}
+
+enum RSVPStatus {
+  PENDING // Not yet responded
+  GOING // Confirmed attendance
+  MAYBE // Tentative
+  NOT_GOING // Declined
 }
