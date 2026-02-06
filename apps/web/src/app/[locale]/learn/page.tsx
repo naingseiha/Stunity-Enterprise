@@ -387,8 +387,8 @@ export default function LearnPage() {
         onLogout={handleLogout}
       />
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="max-w-6xl mx-auto px-4 py-5">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           
           {/* Left Sidebar - Stats & Quick Actions */}
           <aside className="lg:col-span-3 space-y-4">
