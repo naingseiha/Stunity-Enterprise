@@ -70,6 +70,20 @@ interface Certification {
   skills: string[];
 }
 
+interface Education {
+  id: string;
+  school: string;
+  degree?: string;
+  fieldOfStudy?: string;
+  grade?: string;
+  startDate: string;
+  endDate?: string;
+  isCurrent: boolean;
+  description?: string;
+  activities: string[];
+  skills: string[];
+}
+
 // Skeleton Component
 function EditProfileSkeleton() {
   return (
@@ -146,6 +160,7 @@ export default function EditProfilePage() {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [certifications, setCertifications] = useState<Certification[]>([]);
+  const [educationList, setEducationList] = useState<Education[]>([]);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [pageReady, setPageReady] = useState(false);
 
@@ -168,9 +183,11 @@ export default function EditProfilePage() {
   const [showSkillModal, setShowSkillModal] = useState(false);
   const [showExpModal, setShowExpModal] = useState(false);
   const [showCertModal, setShowCertModal] = useState(false);
+  const [showEduModal, setShowEduModal] = useState(false);
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
   const [editingExp, setEditingExp] = useState<Experience | null>(null);
   const [editingCert, setEditingCert] = useState<Certification | null>(null);
+  const [editingEdu, setEditingEdu] = useState<Education | null>(null);
 
   // Photo upload modals
   const [showProfilePhotoModal, setShowProfilePhotoModal] = useState(false);
@@ -206,18 +223,20 @@ export default function EditProfilePage() {
 
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [profileRes, skillsRes, expRes, certRes] = await Promise.all([
+      const [profileRes, skillsRes, expRes, certRes, eduRes] = await Promise.all([
         fetch(`${feedUrl}/users/me/profile`, { headers }),
         fetch(`${feedUrl}/users/me/skills`, { headers }),
         fetch(`${feedUrl}/users/me/experiences`, { headers }),
         fetch(`${feedUrl}/users/me/certifications`, { headers }),
+        fetch(`${feedUrl}/users/me/education`, { headers }),
       ]);
 
-      const [profileData, skillsData, expData, certData] = await Promise.all([
+      const [profileData, skillsData, expData, certData, eduData] = await Promise.all([
         profileRes.json(),
         skillsRes.json(),
         expRes.json(),
         certRes.json(),
+        eduRes.json(),
       ]);
 
       if (profileData.success) {
@@ -241,6 +260,7 @@ export default function EditProfilePage() {
       if (skillsData.success) setSkills(skillsData.skills);
       if (expData.success) setExperiences(expData.experiences);
       if (certData.success) setCertifications(certData.certifications);
+      if (eduData.success) setEducationList(eduData.education || []);
 
       setLoading(false);
       setTimeout(() => setPageReady(true), 100);
@@ -453,6 +473,57 @@ export default function EditProfilePage() {
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to delete certification' });
+    }
+  };
+
+  // Education handlers
+  const handleSaveEducation = async (eduData: Partial<Education>) => {
+    try {
+      const token = TokenManager.getAccessToken();
+      const isEdit = !!editingEdu;
+      const url = isEdit
+        ? `${feedUrl}/users/me/education/${editingEdu!.id}`
+        : `${feedUrl}/users/me/education`;
+
+      const res = await fetch(url, {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(eduData),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        if (isEdit) {
+          setEducationList(prev => prev.map(e => e.id === editingEdu!.id ? data.education : e));
+        } else {
+          setEducationList(prev => [...prev, data.education]);
+        }
+        setShowEduModal(false);
+        setEditingEdu(null);
+        setMessage({ type: 'success', text: `Education ${isEdit ? 'updated' : 'added'}!` });
+        setTimeout(() => setMessage(null), 3000);
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to save education' });
+    }
+  };
+
+  const handleDeleteEducation = async (eduId: string) => {
+    if (!confirm('Delete this education entry?')) return;
+    try {
+      const token = TokenManager.getAccessToken();
+      await fetch(`${feedUrl}/users/me/education/${eduId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setEducationList(prev => prev.filter(e => e.id !== eduId));
+      setMessage({ type: 'success', text: 'Education deleted' });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to delete education' });
     }
   };
 
@@ -981,6 +1052,74 @@ export default function EditProfilePage() {
             )}
           </div>
 
+          {/* Education Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-350">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <GraduationCap className="w-5 h-5 text-green-500" />
+                Education
+              </h2>
+              <button
+                onClick={() => { setEditingEdu(null); setShowEduModal(true); }}
+                className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+              >
+                <Plus className="w-4 h-4" />
+                Add Education
+              </button>
+            </div>
+            {educationList.length === 0 ? (
+              <p className="text-gray-500 dark:text-gray-400 text-center py-4">No education added yet</p>
+            ) : (
+              <div className="space-y-3">
+                {educationList.map(edu => (
+                  <div key={edu.id} className="flex items-start justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <div className="flex gap-3">
+                      <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <GraduationCap className="w-5 h-5 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900 dark:text-white">{edu.school}</h4>
+                        {edu.degree && (
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            {edu.degree}{edu.fieldOfStudy ? `, ${edu.fieldOfStudy}` : ''}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          <span>
+                            {new Date(edu.startDate).getFullYear()} - {edu.isCurrent ? 'Present' : edu.endDate ? new Date(edu.endDate).getFullYear() : 'N/A'}
+                          </span>
+                          {edu.grade && (
+                            <>
+                              <span>•</span>
+                              <span>Grade: {edu.grade}</span>
+                            </>
+                          )}
+                        </div>
+                        {edu.description && (
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 line-clamp-2">{edu.description}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => { setEditingEdu(edu); setShowEduModal(true); }}
+                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteEducation(edu.id)}
+                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Settings Section */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-350">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Settings</h2>
@@ -1083,6 +1222,15 @@ export default function EditProfilePage() {
             certification={editingCert}
             onSave={handleSaveCertification}
             onClose={() => { setShowCertModal(false); setEditingCert(null); }}
+          />
+        )}
+
+        {/* Education Modal */}
+        {showEduModal && (
+          <EducationModal
+            education={editingEdu}
+            onSave={handleSaveEducation}
+            onClose={() => { setShowEduModal(false); setEditingEdu(null); }}
           />
         )}
       </div>
@@ -1446,6 +1594,155 @@ function CertificationModal({ certification, onSave, onClose }: { certification:
             </button>
             <button type="submit" className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg">
               {certification ? 'Update' : 'Add'} Certification
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Education Modal Component
+function EducationModal({ education, onSave, onClose }: { education: Education | null; onSave: (data: Partial<Education>) => void; onClose: () => void }) {
+  const [formData, setFormData] = useState({
+    school: education?.school || '',
+    degree: education?.degree || '',
+    fieldOfStudy: education?.fieldOfStudy || '',
+    grade: education?.grade || '',
+    startDate: education?.startDate ? education.startDate.split('T')[0] : '',
+    endDate: education?.endDate ? education.endDate.split('T')[0] : '',
+    isCurrent: education?.isCurrent || false,
+    description: education?.description || '',
+    activities: education?.activities?.join(', ') || '',
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({
+      ...formData,
+      endDate: formData.isCurrent ? undefined : formData.endDate || undefined,
+      activities: formData.activities ? formData.activities.split(',').map(a => a.trim()).filter(Boolean) : [],
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
+        <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            {education ? 'Edit Education' : 'Add Education'}
+          </h3>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">School *</label>
+            <input
+              type="text"
+              value={formData.school}
+              onChange={(e) => setFormData(prev => ({ ...prev, school: e.target.value }))}
+              required
+              placeholder="e.g., Stanford University"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Degree</label>
+            <select
+              value={formData.degree}
+              onChange={(e) => setFormData(prev => ({ ...prev, degree: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+            >
+              <option value="">Select degree</option>
+              <option value="High School Diploma">High School Diploma</option>
+              <option value="Associate Degree">Associate Degree</option>
+              <option value="Bachelor's Degree">Bachelor's Degree</option>
+              <option value="Master's Degree">Master's Degree</option>
+              <option value="Doctoral Degree">Doctoral Degree</option>
+              <option value="Certificate">Certificate</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Field of Study</label>
+            <input
+              type="text"
+              value={formData.fieldOfStudy}
+              onChange={(e) => setFormData(prev => ({ ...prev, fieldOfStudy: e.target.value }))}
+              placeholder="e.g., Computer Science"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Grade</label>
+            <input
+              type="text"
+              value={formData.grade}
+              onChange={(e) => setFormData(prev => ({ ...prev, grade: e.target.value }))}
+              placeholder="e.g., 3.8 GPA, First Class Honors"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date *</label>
+              <input
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                required
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Date</label>
+              <input
+                type="date"
+                value={formData.endDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                disabled={formData.isCurrent}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white disabled:opacity-50"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="isCurrent"
+              checked={formData.isCurrent}
+              onChange={(e) => setFormData(prev => ({ ...prev, isCurrent: e.target.checked, endDate: e.target.checked ? '' : prev.endDate }))}
+              className="w-4 h-4 text-orange-500 rounded focus:ring-orange-500"
+            />
+            <label htmlFor="isCurrent" className="text-sm text-gray-700 dark:text-gray-300">I currently study here</label>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Activities & Societies</label>
+            <input
+              type="text"
+              value={formData.activities}
+              onChange={(e) => setFormData(prev => ({ ...prev, activities: e.target.value }))}
+              placeholder="e.g., Chess Club, Debate Team (comma separated)"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              rows={3}
+              placeholder="Describe your achievements, coursework, or experiences..."
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white resize-none"
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+              Cancel
+            </button>
+            <button type="submit" className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg">
+              {education ? 'Save Changes' : 'Add Education'}
             </button>
           </div>
         </form>
