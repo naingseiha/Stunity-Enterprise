@@ -601,37 +601,41 @@
   - ChevronRight indicators
   - Orange accent for active items
 
-### Phase 17: Social Media Direct Messages (DMs) 🔜
-**Priority: HIGH | Estimated: 2-3 sessions**
+### Phase 17: Social Media Direct Messages (DMs) ✅ COMPLETE
+**Priority: HIGH | Completed: February 6, 2026**
 
-Different from Teacher-Parent Messaging (formal), this is casual chat for the social feed.
+Real-time direct messaging for the social feed platform.
 
-#### Backend
-- [ ] Add DMConversation model to schema
-- [ ] Add DirectMessage model with read receipts
-- [ ] Create DM endpoints in feed-service or new dm-service
+#### Backend ✅
+- [x] DMConversation, DMParticipant, DirectMessage models in schema
+- [x] DM routes in feed-service (`dm.ts`)
   - POST /dm/conversations - Start new DM
   - GET /dm/conversations - List all DMs
-  - GET /dm/conversations/:id/messages - Get messages
+  - GET /dm/conversations/:id - Get conversation with messages
   - POST /dm/conversations/:id/messages - Send message
-  - PUT /dm/messages/:id/read - Mark as read
-  - DELETE /dm/conversations/:id - Delete conversation
-- [ ] Add online status tracking (optional WebSocket)
-- [ ] Add typing indicators (optional WebSocket)
+  - POST /dm/conversations/:id/read - Mark as read
+  - POST /dm/conversations/:id/typing - Typing indicator
+  - PUT /dm/conversations/:id/mute - Mute/unmute
+  - DELETE /dm/conversations/:id - Leave conversation
+  - GET /dm/unread-count - Get total unread count
+- [x] SSE integration for real-time message delivery
+- [x] Redis PubSub for multi-instance sync (with in-memory fallback)
 
-#### Frontend - Web
-- [ ] Add Messages icon in feed header
-- [ ] Create DM list sidebar/modal
-- [ ] Create chat window component
-- [ ] Add "Message" button on user profiles
-- [ ] Add "Send Message" option in post menu
-- [ ] Real-time message polling (5-10s)
-- [ ] Message notifications badge
+#### SSE Infrastructure ✅
+- [x] SSE handler (`sse.ts`) with heartbeat and reconnection
+- [x] Event types: NEW_DM, TYPING_START, TYPING_STOP, DM_READ
+- [x] Redis publisher/subscriber pattern (`redis.ts`)
+- [x] Frontend hook `useEventStream` with auto-reconnect
 
-#### Frontend - Mobile (React Native)
-- [ ] Chat list screen
-- [ ] Chat detail screen
-- [ ] Push notification integration
+#### Frontend - Web ✅
+- [x] Messages page (`/messages`) with full chat UI
+- [x] Conversation list with search
+- [x] Chat window with message bubbles
+- [x] New conversation modal with user search
+- [x] Typing indicators (animated dots)
+- [x] Real-time updates via SSE
+- [x] "Message" button on user profiles
+- [x] Stunity orange theme applied
 
 ### Phase 18: Groups & Communities 🔜
 **Priority: MEDIUM | Estimated: 3-4 sessions**
