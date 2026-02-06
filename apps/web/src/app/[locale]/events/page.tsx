@@ -7,7 +7,6 @@ import {
   Calendar,
   Plus,
   Search,
-  Filter,
   MapPin,
   Clock,
   Users,
@@ -28,6 +27,9 @@ import {
   Video,
   Globe,
   Loader2,
+  Compass,
+  X,
+  TrendingUp,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import FeedZoomLoader from '@/components/feed/FeedZoomLoader';
@@ -48,9 +50,9 @@ const EVENT_TYPE_CONFIG: Record<string, { icon: any; color: string; bgColor: str
 };
 
 const RSVP_CONFIG = {
-  GOING: { icon: CheckCircle2, label: 'Going', color: 'text-green-600', bgColor: 'bg-green-50 border-green-200' },
-  MAYBE: { icon: HelpCircle, label: 'Maybe', color: 'text-amber-600', bgColor: 'bg-amber-50 border-amber-200' },
-  NOT_GOING: { icon: XCircle, label: "Can't Go", color: 'text-gray-500', bgColor: 'bg-gray-50 border-gray-200' },
+  GOING: { icon: CheckCircle2, label: 'Going', color: 'text-green-600', bgColor: 'bg-green-50' },
+  MAYBE: { icon: HelpCircle, label: 'Maybe', color: 'text-amber-600', bgColor: 'bg-amber-50' },
+  NOT_GOING: { icon: XCircle, label: "Can't Go", color: 'text-gray-500', bgColor: 'bg-gray-50' },
 };
 
 interface Event {
@@ -108,7 +110,6 @@ export default function EventsPage() {
   const [calendarEvents, setCalendarEvents] = useState<Record<string, Event[]>>({});
 
   useEffect(() => {
-    // Load user and school from localStorage for navigation
     if (typeof window !== 'undefined') {
       const userStr = localStorage.getItem('user');
       const schoolStr = localStorage.getItem('school');
@@ -210,7 +211,6 @@ export default function EventsPage() {
       });
 
       if (response.ok) {
-        // Update local state
         setEvents((prev) =>
           prev.map((e) =>
             e.id === eventId ? { ...e, userRSVPStatus: status } : e
@@ -227,7 +227,7 @@ export default function EventsPage() {
     }
   };
 
-  const formatEventDate = (startDate: string, endDate: string | null, allDay: boolean) => {
+  const formatEventDate = (startDate: string, allDay: boolean) => {
     const start = new Date(startDate);
     const options: Intl.DateTimeFormatOptions = {
       weekday: 'short',
@@ -256,16 +256,13 @@ export default function EventsPage() {
     const startPadding = firstDay.getDay();
     const days = [];
 
-    // Header
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'];
 
-    // Add padding days
     for (let i = 0; i < startPadding; i++) {
-      days.push(<div key={`pad-${i}`} className="h-24 bg-gray-50" />);
+      days.push(<div key={`pad-${i}`} className="h-20 bg-gray-50" />);
     }
 
-    // Add actual days
     for (let day = 1; day <= lastDay.getDate(); day++) {
       const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const dayEvents = calendarEvents[dateKey] || [];
@@ -274,28 +271,28 @@ export default function EventsPage() {
       days.push(
         <div
           key={day}
-          className={`h-24 border border-gray-100 p-1 overflow-hidden ${
-            isToday ? 'bg-amber-50 ring-2 ring-amber-400' : 'bg-white hover:bg-gray-50'
+          className={`h-20 border border-gray-100 p-1 overflow-hidden ${
+            isToday ? 'bg-amber-50 ring-1 ring-amber-400' : 'bg-white hover:bg-gray-50'
           }`}
         >
-          <div className={`text-sm font-medium ${isToday ? 'text-amber-600' : 'text-gray-700'}`}>
+          <div className={`text-xs font-medium ${isToday ? 'text-amber-600' : 'text-gray-700'}`}>
             {day}
           </div>
-          <div className="space-y-0.5 mt-1">
+          <div className="space-y-0.5 mt-0.5">
             {dayEvents.slice(0, 2).map((event) => {
               const config = EVENT_TYPE_CONFIG[event.eventType] || EVENT_TYPE_CONFIG.GENERAL;
               return (
                 <Link
                   key={event.id}
-                  href={`/en/events/${event.id}`}
-                  className={`block text-xs px-1 py-0.5 rounded truncate ${config.bgColor} ${config.color} hover:opacity-80`}
+                  href={`/${locale}/events/${event.id}`}
+                  className={`block text-[10px] px-1 py-0.5 rounded truncate ${config.bgColor} ${config.color} hover:opacity-80`}
                 >
                   {event.title}
                 </Link>
               );
             })}
             {dayEvents.length > 2 && (
-              <div className="text-xs text-gray-500 px-1">+{dayEvents.length - 2} more</div>
+              <div className="text-[10px] text-gray-500 px-1">+{dayEvents.length - 2} more</div>
             )}
           </div>
         </div>
@@ -303,365 +300,348 @@ export default function EventsPage() {
     }
 
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        {/* Calendar Header */}
-        <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-amber-50 to-orange-50">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="flex items-center justify-between p-3 border-b border-gray-100">
           <button
             onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
-            className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-4 h-4" />
           </button>
-          <h3 className="text-lg font-semibold text-gray-800">
+          <h3 className="text-sm font-semibold text-gray-900">
             {monthNames[month]} {year}
           </h3>
           <button
             onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
-            className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Day headers */}
         <div className="grid grid-cols-7 bg-gray-50">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-            <div key={day} className="py-2 text-center text-sm font-medium text-gray-600">
+          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+            <div key={i} className="py-1.5 text-center text-xs font-medium text-gray-500">
               {day}
             </div>
           ))}
         </div>
 
-        {/* Calendar grid */}
         <div className="grid grid-cols-7">{days}</div>
       </div>
     );
   };
 
+  // Clean event card design
   const EventCard = ({ event }: { event: Event }) => {
     const config = EVENT_TYPE_CONFIG[event.eventType] || EVENT_TYPE_CONFIG.GENERAL;
     const Icon = config.icon;
     const rsvpConfig = event.userRSVPStatus ? RSVP_CONFIG[event.userRSVPStatus as keyof typeof RSVP_CONFIG] : null;
 
     return (
-      <Link href={`/en/events/${event.id}`}>
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-200 group">
-          {/* Cover Image or Gradient */}
-          {event.coverImage ? (
-            <div className="h-32 bg-cover bg-center" style={{ backgroundImage: `url(${event.coverImage})` }} />
-          ) : (
-            <div className={`h-24 bg-gradient-to-br ${config.bgColor} flex items-center justify-center`}>
-              <Icon className={`w-12 h-12 ${config.color} opacity-50`} />
-            </div>
-          )}
-
-          <div className="p-4">
-            {/* Event Type Badge */}
-            <div className="flex items-center gap-2 mb-2">
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${config.bgColor} ${config.color}`}>
-                <Icon className="w-3 h-3" />
-                {event.eventType.replace('_', ' ')}
-              </span>
+      <Link 
+        href={`/${locale}/events/${event.id}`}
+        className="block bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md hover:border-amber-200 transition-all group"
+      >
+        <div className="flex items-start gap-4">
+          {/* Event Icon */}
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${config.bgColor}`}>
+            <Icon className={`w-5 h-5 ${config.color}`} />
+          </div>
+          
+          {/* Event Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-semibold text-gray-900 truncate group-hover:text-amber-600 transition-colors">
+                {event.title}
+              </h3>
               {event.virtualLink && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600 flex-shrink-0">
                   <Video className="w-3 h-3" />
                   Online
                 </span>
               )}
             </div>
-
-            {/* Title */}
-            <h3 className="font-semibold text-gray-900 group-hover:text-amber-600 transition-colors line-clamp-2">
-              {event.title}
-            </h3>
-
-            {/* Date & Time */}
-            <div className="flex items-center gap-1.5 mt-2 text-sm text-gray-600">
-              <Clock className="w-4 h-4 text-amber-500" />
-              {formatEventDate(event.startDate, event.endDate, event.allDay)}
-            </div>
-
-            {/* Location */}
-            {event.location && (
-              <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-600">
-                <MapPin className="w-4 h-4 text-amber-500" />
-                <span className="truncate">{event.location}</span>
-              </div>
-            )}
-
-            {/* Attendees & RSVP */}
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-              <div className="flex items-center gap-2">
-                {/* Attendee avatars */}
-                <div className="flex -space-x-2">
-                  {event.attendees.slice(0, 3).map((attendee) => (
-                    <div
-                      key={attendee.user.id}
-                      className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-orange-400 border-2 border-white flex items-center justify-center"
-                    >
-                      {attendee.user.profilePictureUrl ? (
-                        <img
-                          src={attendee.user.profilePictureUrl}
-                          alt=""
-                          className="w-full h-full rounded-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-[10px] text-white font-medium">
-                          {attendee.user.firstName[0]}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <span className="text-sm text-gray-500">
-                  {event._count.attendees} {event._count.attendees === 1 ? 'attendee' : 'attendees'}
+            
+            {/* Date & Location */}
+            <div className="flex items-center gap-3 text-sm text-gray-500 mb-2">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-amber-500" />
+                {formatEventDate(event.startDate, event.allDay)}
+              </span>
+              {event.location && (
+                <span className="flex items-center gap-1 truncate">
+                  <MapPin className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                  <span className="truncate">{event.location}</span>
                 </span>
-              </div>
-
-              {/* RSVP Status Badge */}
+              )}
+            </div>
+            
+            {/* Meta info */}
+            <div className="flex items-center gap-3 text-xs text-gray-400">
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${config.bgColor} ${config.color}`}>
+                {event.eventType.replace('_', ' ')}
+              </span>
+              <span className="flex items-center gap-1">
+                <Users className="w-3.5 h-3.5" />
+                {event._count.attendees}
+              </span>
               {rsvpConfig && (
-                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${rsvpConfig.bgColor} ${rsvpConfig.color}`}>
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${rsvpConfig.bgColor} ${rsvpConfig.color}`}>
                   <rsvpConfig.icon className="w-3 h-3" />
                   {rsvpConfig.label}
                 </span>
               )}
             </div>
           </div>
+          
+          {/* Arrow */}
+          <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
         </div>
       </Link>
     );
   };
 
-  // Show zoom loader during initial load (same pattern as feed/profile/clubs)
-  if (loading || !showContent) {
-    return (
+  return (
+    <>
       <FeedZoomLoader 
         isLoading={loading} 
         onAnimationComplete={() => setShowContent(true)}
+        minimumDuration={600}
       />
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50/40 via-white to-orange-50/30">
-      {/* Navigation Bar */}
-      <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
       
-      <div className="max-w-5xl mx-auto px-4 py-6">
-        {/* Page Header Card - Matching Profile Page Style */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6 animate-fadeInUp">
-          {/* Gradient Header Banner - Taller like profile page */}
-          <div className="h-48 md:h-56 bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 relative overflow-hidden">
-            <div className="absolute inset-0 opacity-20">
-              <div className="absolute top-1/4 left-1/4 w-32 h-32 rounded-full border-2 border-white/30" />
-              <div className="absolute top-1/3 right-1/4 w-24 h-24 rounded-full border-2 border-white/20" />
-              <div className="absolute bottom-1/4 left-1/3 w-16 h-16 rounded-full border-2 border-white/25" />
-            </div>
-            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/20 to-transparent" />
-          </div>
+      {showContent && (
+        <div className="min-h-screen bg-gray-50">
+          <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
           
-          {/* Header Content */}
-          <div className="px-6 pb-6">
-            {/* Avatar - Circular like profile page */}
-            <div className="relative -mt-16 md:-mt-20 mb-4">
-              <div className="w-32 h-32 md:w-36 md:h-36 rounded-full bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center border-4 border-white shadow-xl ring-4 ring-amber-100/50">
-                <Calendar className="w-14 h-14 md:w-16 md:h-16 text-white" />
-              </div>
-            </div>
-            
-            {/* Title and Actions */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Events & Calendar</h1>
-                <p className="text-gray-500 mt-1">Discover and join school events, club meetups, and more</p>
-              </div>
+          {/* LinkedIn-style 3-column layout */}
+          <div className="max-w-6xl mx-auto px-4 py-5">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
               
-              <div className="flex items-center gap-3">
-                {/* View Toggle */}
-                <div className="flex items-center bg-gray-100 rounded-xl p-1">
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      viewMode === 'list'
-                        ? 'bg-white text-amber-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    <List className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('calendar')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      viewMode === 'calendar'
-                        ? 'bg-white text-amber-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    <CalendarDays className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Create Event Button */}
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg shadow-amber-500/25 hover:shadow-xl hover:scale-105"
-                >
-                  <Plus className="w-5 h-5" />
-                  Create Event
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid lg:grid-cols-4 gap-6">
-          {/* Left Sidebar - Upcoming Events */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sticky top-20">
-              <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-amber-500" />
-                Upcoming Events
-              </h2>
-              <div className="space-y-3">
-                {upcomingEvents.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">No upcoming events</p>
-                ) : (
-                  upcomingEvents.map((event) => {
-                    const config = EVENT_TYPE_CONFIG[event.eventType] || EVENT_TYPE_CONFIG.GENERAL;
-                    const Icon = config.icon;
-                    return (
-                      <Link
-                        key={event.id}
-                        href={`/en/events/${event.id}`}
-                        className="block p-3 rounded-xl bg-gray-50 hover:bg-amber-50 transition-colors group"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className={`p-2 rounded-lg ${config.bgColor}`}>
-                            <Icon className={`w-4 h-4 ${config.color}`} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-sm text-gray-900 truncate group-hover:text-amber-600">
-                              {event.title}
-                            </h4>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                              {new Date(event.startDate).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                hour: 'numeric',
-                                minute: '2-digit',
-                              })}
-                            </p>
-                          </div>
+              {/* Left Sidebar */}
+              <aside className="hidden lg:block lg:col-span-3">
+                <div className="sticky top-20 space-y-3">
+                  {/* Overview Card */}
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="h-16 bg-gradient-to-r from-amber-500 to-rose-500 relative">
+                      <Calendar className="absolute bottom-2 right-3 w-6 h-6 text-white/30" />
+                    </div>
+                    <div className="p-4">
+                      <h2 className="font-bold text-gray-900">Events</h2>
+                      <p className="text-xs text-gray-500 mt-0.5">Discover and join events</p>
+                      
+                      <div className="grid grid-cols-2 gap-2 mt-4">
+                        <div className="bg-amber-50 rounded-lg p-2.5 text-center">
+                          <p className="text-lg font-bold text-gray-900">{upcomingEvents.length}</p>
+                          <p className="text-[10px] text-gray-500">Upcoming</p>
                         </div>
-                      </Link>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            {viewMode === 'calendar' ? (
-              renderCalendar()
-            ) : (
-              <>
-                {/* Tabs & Search */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6">
-                  <div className="flex flex-col md:flex-row md:items-center gap-4">
-                    {/* Tabs */}
-                    <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-                      {[
-                        { id: 'upcoming', label: 'Upcoming' },
-                        { id: 'my-events', label: 'My Events' },
-                        { id: 'discover', label: 'Discover' },
-                      ].map((tab) => (
-                        <button
-                          key={tab.id}
-                          onClick={() => setActiveTab(tab.id as any)}
-                          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                            activeTab === tab.id
-                              ? 'bg-white text-amber-600 shadow-sm'
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          {tab.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Search */}
-                    <div className="flex-1 relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="Search events..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-gray-50 rounded-xl border-0 focus:ring-2 focus:ring-amber-500 text-sm"
-                      />
-                    </div>
-
-                    {/* Type Filter */}
-                    <select
-                      value={selectedType}
-                      onChange={(e) => setSelectedType(e.target.value)}
-                      className="px-3 py-2 bg-gray-50 rounded-xl border-0 text-sm focus:ring-2 focus:ring-amber-500"
-                    >
-                      <option value="">All Types</option>
-                      {Object.keys(EVENT_TYPE_CONFIG).map((type) => (
-                        <option key={type} value={type}>
-                          {type.replace('_', ' ')}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Events Grid */}
-                {loading ? (
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-pulse">
-                        <div className="h-24 bg-gray-200" />
-                        <div className="p-4 space-y-3">
-                          <div className="h-4 bg-gray-200 rounded w-1/4" />
-                          <div className="h-5 bg-gray-200 rounded w-3/4" />
-                          <div className="h-4 bg-gray-200 rounded w-1/2" />
+                        <div className="bg-blue-50 rounded-lg p-2.5 text-center">
+                          <p className="text-lg font-bold text-gray-900">{events.length}</p>
+                          <p className="text-[10px] text-gray-500">All Events</p>
                         </div>
                       </div>
-                    ))}
+                    </div>
                   </div>
-                ) : events.length === 0 ? (
-                  <div className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-100">
-                    <Calendar className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No events found</h3>
-                    <p className="text-gray-500 mb-4">
-                      {activeTab === 'my-events'
-                        ? "You haven't joined any events yet"
-                        : 'Create an event or check back later'}
-                    </p>
+                  
+                  {/* Quick Actions */}
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3">
                     <button
                       onClick={() => setShowCreateModal(true)}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-600 hover:to-orange-600"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg font-medium hover:from-amber-600 hover:to-orange-600 transition-all"
                     >
                       <Plus className="w-4 h-4" />
                       Create Event
                     </button>
                   </div>
+                  
+                  {/* Event Types Filter */}
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <h3 className="font-semibold text-sm text-gray-900">Event Types</h3>
+                    </div>
+                    <nav className="py-1">
+                      <button
+                        onClick={() => setSelectedType('')}
+                        className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors ${
+                          !selectedType ? 'bg-amber-50 text-amber-600 font-medium' : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        All Types
+                      </button>
+                      {Object.entries(EVENT_TYPE_CONFIG).slice(0, 6).map(([type, config]) => {
+                        const Icon = config.icon;
+                        return (
+                          <button
+                            key={type}
+                            onClick={() => setSelectedType(type)}
+                            className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors ${
+                              selectedType === type ? 'bg-amber-50 text-amber-600 font-medium' : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <Icon className="w-4 h-4" />
+                            {type.replace('_', ' ')}
+                          </button>
+                        );
+                      })}
+                    </nav>
+                  </div>
+                </div>
+              </aside>
+              
+              {/* Main Content */}
+              <main className="lg:col-span-6">
+                {/* View Toggle & Tabs */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-4">
+                  <div className="flex items-center justify-between border-b border-gray-100 px-3">
+                    {/* Tabs */}
+                    <div className="flex">
+                      {[
+                        { id: 'upcoming', label: 'Upcoming', icon: Calendar },
+                        { id: 'my-events', label: 'My Events', icon: Users },
+                        { id: 'discover', label: 'Discover', icon: Compass },
+                      ].map((tab) => (
+                        <button
+                          key={tab.id}
+                          onClick={() => setActiveTab(tab.id as any)}
+                          className={`flex items-center gap-1.5 px-3 py-3 text-sm font-medium transition-colors ${
+                            activeTab === tab.id
+                              ? 'text-amber-600 border-b-2 border-amber-500'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          <tab.icon className="w-4 h-4" />
+                          <span className="hidden sm:inline">{tab.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* View Toggle */}
+                    <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                      <button
+                        onClick={() => setViewMode('list')}
+                        className={`p-1.5 rounded-md transition-colors ${
+                          viewMode === 'list'
+                            ? 'bg-white text-amber-600 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        <List className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setViewMode('calendar')}
+                        className={`p-1.5 rounded-md transition-colors ${
+                          viewMode === 'calendar'
+                            ? 'bg-white text-amber-600 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        <CalendarDays className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Search */}
+                  <div className="p-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search events..."
+                        className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Content */}
+                {viewMode === 'calendar' ? (
+                  renderCalendar()
                 ) : (
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {events.map((event) => (
-                      <EventCard key={event.id} event={event} />
-                    ))}
+                  <div className="space-y-3">
+                    {events.length === 0 ? (
+                      <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                        <div className="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                          <Calendar className="w-7 h-7 text-amber-600" />
+                        </div>
+                        <h3 className="font-semibold text-gray-900 mb-1">No events found</h3>
+                        <p className="text-sm text-gray-500 mb-4">
+                          {activeTab === 'my-events'
+                            ? "You haven't joined any events yet"
+                            : 'Create an event or check back later'}
+                        </p>
+                        <button
+                          onClick={() => setShowCreateModal(true)}
+                          className="px-4 py-2 bg-amber-500 text-white text-sm font-medium rounded-lg hover:bg-amber-600"
+                        >
+                          Create Event
+                        </button>
+                      </div>
+                    ) : (
+                      events.map((event) => <EventCard key={event.id} event={event} />)
+                    )}
                   </div>
                 )}
-              </>
-            )}
+              </main>
+              
+              {/* Right Sidebar */}
+              <aside className="hidden lg:block lg:col-span-3">
+                <div className="sticky top-20 space-y-3">
+                  {/* Upcoming Events Widget */}
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-amber-500" />
+                      <h3 className="font-semibold text-sm text-gray-900">Coming Soon</h3>
+                    </div>
+                    <div className="p-3 space-y-2">
+                      {upcomingEvents.slice(0, 4).map((event) => {
+                        const config = EVENT_TYPE_CONFIG[event.eventType] || EVENT_TYPE_CONFIG.GENERAL;
+                        const Icon = config.icon;
+                        return (
+                          <Link
+                            key={event.id}
+                            href={`/${locale}/events/${event.id}`}
+                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${config.bgColor}`}>
+                              <Icon className={`w-4 h-4 ${config.color}`} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">{event.title}</p>
+                              <p className="text-xs text-gray-500">
+                                {new Date(event.startDate).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                })}
+                              </p>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                      {upcomingEvents.length === 0 && (
+                        <p className="text-sm text-gray-500 text-center py-2">No upcoming events</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Footer Links */}
+                  <div className="px-4 py-3">
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400">
+                      <Link href="#" className="hover:text-gray-600">About</Link>
+                      <Link href="#" className="hover:text-gray-600">Help</Link>
+                      <Link href="#" className="hover:text-gray-600">Privacy</Link>
+                      <Link href="#" className="hover:text-gray-600">Terms</Link>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">© 2026 Stunity</p>
+                  </div>
+                </div>
+              </aside>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Create Event Modal */}
       {showCreateModal && (
@@ -674,7 +654,7 @@ export default function EventsPage() {
           }}
         />
       )}
-    </div>
+    </>
   );
 }
 
@@ -710,7 +690,6 @@ function CreateEventModal({
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
-      // Combine date and time
       const startDateTime = formData.allDay
         ? new Date(formData.startDate).toISOString()
         : new Date(`${formData.startDate}T${formData.startTime}`).toISOString();
@@ -753,187 +732,160 @@ function CreateEventModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-100">
-          <h2 className="text-xl font-semibold text-gray-900">Create Event</h2>
-          <p className="text-sm text-gray-500 mt-1">Fill in the details for your new event</p>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div 
+        className="bg-white rounded-xl w-full max-w-md shadow-xl max-h-[90vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray-900">Create Event</h2>
+              <p className="text-xs text-gray-500">Schedule a new event</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Title */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Event Title *</label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              required
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-              placeholder="Give your event a name"
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
-              placeholder="What's this event about?"
-            />
-          </div>
-
-          {/* Event Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Event Type</label>
-            <select
-              value={formData.eventType}
-              onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-            >
-              {Object.keys(EVENT_TYPE_CONFIG).map((type) => (
-                <option key={type} value={type}>
-                  {type.replace('_', ' ')}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* All Day Toggle */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.allDay}
-              onChange={(e) => setFormData({ ...formData, allDay: e.target.checked })}
-              className="w-4 h-4 text-amber-500 border-gray-300 rounded focus:ring-amber-500"
-            />
-            <span className="text-sm text-gray-700">All day event</span>
-          </label>
-
-          {/* Date & Time */}
-          <div className="grid grid-cols-2 gap-4">
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="p-5 space-y-4 overflow-y-auto flex-1">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date *</label>
-              <input
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                required
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-              />
-            </div>
-            {!formData.allDay && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Start Time *</label>
-                <input
-                  type="time"
-                  value={formData.startTime}
-                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                  required={!formData.allDay}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                />
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-              <input
-                type="date"
-                value={formData.endDate}
-                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-              />
-            </div>
-            {!formData.allDay && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                <input
-                  type="time"
-                  value={formData.endTime}
-                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Location */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Event Title *</label>
               <input
                 type="text"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                placeholder="Add a location"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+                placeholder="Give your event a name"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
               />
             </div>
-          </div>
 
-          {/* Virtual Link */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Virtual Meeting Link</label>
-            <div className="relative">
-              <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={2}
+                placeholder="What's this event about?"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 resize-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Type</label>
+                <select
+                  value={formData.eventType}
+                  onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                >
+                  {Object.keys(EVENT_TYPE_CONFIG).map((type) => (
+                    <option key={type} value={type}>{type.replace('_', ' ')}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Privacy</label>
+                <select
+                  value={formData.privacy}
+                  onChange={(e) => setFormData({ ...formData, privacy: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                >
+                  <option value="PUBLIC">Public</option>
+                  <option value="SCHOOL">School Only</option>
+                  <option value="INVITE_ONLY">Invite Only</option>
+                </select>
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2 cursor-pointer">
               <input
-                type="url"
-                value={formData.virtualLink}
-                onChange={(e) => setFormData({ ...formData, virtualLink: e.target.value })}
-                className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                placeholder="https://zoom.us/..."
+                type="checkbox"
+                checked={formData.allDay}
+                onChange={(e) => setFormData({ ...formData, allDay: e.target.checked })}
+                className="w-4 h-4 text-amber-500 border-gray-300 rounded focus:ring-amber-500"
               />
+              <span className="text-sm text-gray-700">All day event</span>
+            </label>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Start Date *</label>
+                <input
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                />
+              </div>
+              {!formData.allDay && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Start Time *</label>
+                  <input
+                    type="time"
+                    value={formData.startTime}
+                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                    required={!formData.allDay}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Location</label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  placeholder="Add a location"
+                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Virtual Link</label>
+              <div className="relative">
+                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="url"
+                  value={formData.virtualLink}
+                  onChange={(e) => setFormData({ ...formData, virtualLink: e.target.value })}
+                  placeholder="https://zoom.us/..."
+                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Privacy */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Privacy</label>
-            <select
-              value={formData.privacy}
-              onChange={(e) => setFormData({ ...formData, privacy: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-            >
-              <option value="PUBLIC">Public - Anyone can see and RSVP</option>
-              <option value="SCHOOL">School Only - Only school members</option>
-              <option value="INVITE_ONLY">Invite Only - Only invited users</option>
-            </select>
-          </div>
-
-          {/* Max Attendees */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Max Attendees (optional)</label>
-            <input
-              type="number"
-              value={formData.maxAttendees}
-              onChange={(e) => setFormData({ ...formData, maxAttendees: e.target.value })}
-              min="1"
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-              placeholder="Leave empty for unlimited"
-            />
-          </div>
-
-          {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4">
+          {/* Footer */}
+          <div className="flex justify-end gap-3 px-5 py-4 border-t border-gray-100 bg-gray-50 flex-shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
+              className="px-4 py-2 text-gray-700 text-sm font-medium hover:bg-gray-200 rounded-lg transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !formData.title || !formData.startDate}
-              className="px-6 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white text-sm font-medium rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50"
             >
-              {loading ? 'Creating...' : 'Create Event'}
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              Create
             </button>
           </div>
         </form>
