@@ -1,8 +1,8 @@
 # 🎓 Stunity Enterprise - Project Status
 
 **Date:** February 6, 2026  
-**Version:** 6.4  
-**Status:** Phase 17.1 Complete - Real-Time Feed Updates ✅
+**Version:** 6.5  
+**Status:** Phase 17.2 Complete - Feed UX Polish ✅
 
 ---
 
@@ -685,6 +685,28 @@ Real-time feed updates like Facebook using SSE infrastructure.
 - NEW_DM, TYPING_START, TYPING_STOP, DM_READ
 - NOTIFICATION, ANNOUNCEMENT
 - HEARTBEAT, CONNECTED, RECONNECT
+
+### Phase 17.2: Feed UX Polish ✅ COMPLETE
+**Priority: HIGH | Completed: February 6, 2026**
+
+Optimistic UI and smooth animations for better user experience.
+
+#### Like & Value Buttons - Optimistic UI ✅
+- [x] Instant color change on click (no API wait)
+- [x] Local state: localIsLiked, localLikesCount, localIsValued, localValuesCount
+- [x] Scale + pulse animation on active state
+- [x] Auto-revert on API error
+- [x] Sync with server state when post updates
+
+#### Comments Section Improvements ✅
+- [x] Smooth skeleton loading animation (3 placeholder items)
+- [x] Amber/orange gradient skeleton matching Stunity theme
+- [x] Collapsible comments: shows first 3 by default
+- [x] "View X more comments" / "View less" toggle (Facebook-style)
+- [x] Staggered fadeIn animation for each comment (50ms delay)
+- [x] Added timestamp to each comment
+- [x] Hover shadow effect on comment bubbles
+- [x] Animated comment section open/close
 
 ### Phase 18: Groups & Communities 🔜
 **Priority: MEDIUM | Estimated: 3-4 sessions**
