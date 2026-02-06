@@ -20,6 +20,12 @@ import {
 } from './types';
 import { Colors, Typography, Shadows } from '@/config';
 
+// Implemented Screens
+import { FeedScreen } from '@/screens/feed';
+import { LearnScreen } from '@/screens/learn';
+import { ProfileScreen } from '@/screens/profile';
+import { ConversationsScreen, ChatScreen } from '@/screens/messages';
+
 // Placeholder screens (will be implemented)
 const PlaceholderScreen = ({ title }: { title: string }) => (
   <View style={styles.placeholder}>
@@ -27,8 +33,7 @@ const PlaceholderScreen = ({ title }: { title: string }) => (
   </View>
 );
 
-// Feed Stack Screens
-const FeedScreen = () => <PlaceholderScreen title="Feed" />;
+// Feed Stack Screens (placeholders for remaining)
 const PostDetailScreen = () => <PlaceholderScreen title="Post Detail" />;
 const UserProfileScreen = () => <PlaceholderScreen title="User Profile" />;
 const HashtagScreen = () => <PlaceholderScreen title="Hashtag" />;
@@ -38,7 +43,6 @@ const EventsScreen = () => <PlaceholderScreen title="Events" />;
 const EventDetailScreen = () => <PlaceholderScreen title="Event Detail" />;
 
 // Learn Stack Screens
-const LearnScreen = () => <PlaceholderScreen title="Learn" />;
 const CourseDetailScreen = () => <PlaceholderScreen title="Course Detail" />;
 const LessonViewerScreen = () => <PlaceholderScreen title="Lesson Viewer" />;
 const CreateCourseScreen = () => <PlaceholderScreen title="Create Course" />;
@@ -48,13 +52,10 @@ const MyCoursesScreen = () => <PlaceholderScreen title="My Courses" />;
 const MyCreatedCoursesScreen = () => <PlaceholderScreen title="My Created Courses" />;
 
 // Messages Stack Screens
-const ConversationsScreen = () => <PlaceholderScreen title="Messages" />;
-const ChatScreen = () => <PlaceholderScreen title="Chat" />;
 const NewMessageScreen = () => <PlaceholderScreen title="New Message" />;
 const GroupInfoScreen = () => <PlaceholderScreen title="Group Info" />;
 
 // Profile Stack Screens
-const ProfileScreen = () => <PlaceholderScreen title="Profile" />;
 const EditProfileScreen = () => <PlaceholderScreen title="Edit Profile" />;
 const ConnectionsScreen = () => <PlaceholderScreen title="Connections" />;
 const SettingsScreen = () => <PlaceholderScreen title="Settings" />;
@@ -84,7 +85,7 @@ const FeedStackNavigator: React.FC = () => (
 // Learn Stack Navigator
 const LearnStackNavigator: React.FC = () => (
   <LearnStack.Navigator screenOptions={{ headerShown: false }}>
-    <LearnStack.Screen name="Learn" component={LearnScreen} />
+    <LearnStack.Screen name="LearnHub" component={LearnScreen} />
     <LearnStack.Screen name="CourseDetail" component={CourseDetailScreen} />
     <LearnStack.Screen name="LessonViewer" component={LessonViewerScreen} />
     <LearnStack.Screen name="CreateCourse" component={CreateCourseScreen} />

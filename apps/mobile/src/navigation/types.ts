@@ -62,7 +62,7 @@ export type FeedStackParamList = {
 
 // Learn Stack
 export type LearnStackParamList = {
-  Learn: undefined;
+  LearnHub: undefined;
   CourseDetail: { courseId: string };
   LessonViewer: { courseId: string; lessonId: string };
   CreateCourse: undefined;
@@ -75,14 +75,14 @@ export type LearnStackParamList = {
 // Messages Stack
 export type MessagesStackParamList = {
   Conversations: undefined;
-  Chat: { conversationId: string };
+  Chat: { conversationId?: string; userId?: string };
   NewMessage: undefined;
   GroupInfo: { conversationId: string };
 };
 
 // Profile Stack
 export type ProfileStackParamList = {
-  Profile: undefined;
+  Profile: { userId?: string } | undefined;
   EditProfile: undefined;
   Connections: { type: 'followers' | 'following' };
   Settings: undefined;
