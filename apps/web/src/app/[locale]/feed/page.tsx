@@ -19,6 +19,7 @@ import UpcomingEventsWidget from '@/components/feed/UpcomingEventsWidget';
 import TopContributorsWidget from '@/components/feed/TopContributorsWidget';
 import LearningStreakWidget from '@/components/feed/LearningStreakWidget';
 import QuickResourcesWidget from '@/components/feed/QuickResourcesWidget';
+import Stories from '@/components/feed/Stories';
 import { useEventStream, SSEEvent } from '@/hooks/useEventStream';
 import {
   Users,
@@ -858,6 +859,9 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                 );
               })}
             </div>
+
+            {/* Stories Section */}
+            <Stories currentUser={user} />
 
             {/* Create Post Box - LinkedIn Style */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-3">

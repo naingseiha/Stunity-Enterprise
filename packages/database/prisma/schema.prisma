@@ -559,6 +559,8 @@ model User {
   enrollments           Enrollment[]
   courseReviews         CourseReview[]
   createdPaths          LearningPath[]      @relation("PathCreator")
+  // Story relations
+  stories               Story[]             @relation("UserStories")
   parent                Parent?             @relation(fields: [parentId], references: [id], onDelete: Cascade)
   school                School?             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   student               Student?            @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -2111,4 +2113,65 @@ enum ResourceType {
   PDF
   VIDEO
   AUDIO
+}
+
+// =============================================
+// STORIES (24-hour ephemeral content)
+// =============================================
+
+model Story {
+  id              String      @id @default(cuid())
+  authorId        String
+  author          User        @relation("UserStories", fields: [authorId], references: [id], onDelete: Cascade)
+  type            StoryType   @default(TEXT)
+  mediaUrl        String?     // Image or video URL
+  thumbnailUrl    String?     // Video thumbnail
+  text            String?     // Text content
+  backgroundColor String?     // For text stories (hex color)
+  textColor       String?     // Text color (hex)
+  fontStyle       String?     // Font family
+  duration        Int         @default(5) // Display duration in seconds
+  views           StoryView[]
+  reactions       StoryReaction[]
+  viewCount       Int         @default(0)
+  isActive        Boolean     @default(true)
+  expiresAt       DateTime    // 24 hours from creation
+  createdAt       DateTime    @default(now())
+
+  @@index([authorId])
+  @@index([expiresAt])
+  @@index([isActive])
+  @@map("stories")
+}
+
+model StoryView {
+  id        String   @id @default(cuid())
+  storyId   String
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  viewerId  String
+  viewedAt  DateTime @default(now())
+
+  @@unique([storyId, viewerId])
+  @@index([storyId])
+  @@index([viewerId])
+  @@map("story_views")
+}
+
+model StoryReaction {
+  id        String   @id @default(cuid())
+  storyId   String
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  userId    String
+  emoji     String   // 👍 ❤️ 😂 😮 😢 😡
+  createdAt DateTime @default(now())
+
+  @@unique([storyId, userId])
+  @@index([storyId])
+  @@map("story_reactions")
+}
+
+enum StoryType {
+  TEXT
+  IMAGE
+  VIDEO
 }

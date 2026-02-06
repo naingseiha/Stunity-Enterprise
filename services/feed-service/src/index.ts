@@ -16,6 +16,7 @@ import dmRouter, { initDMRoutes } from './dm';
 import clubsRouter, { initClubsRoutes } from './clubs';
 import calendarRouter from './calendar';
 import coursesRouter from './courses';
+import storiesRouter from './stories';
 
 const app = express();
 const PORT = 3010; // Feed service always uses port 3010
@@ -2726,13 +2727,19 @@ app.use('/courses', authenticateToken as any, coursesRouter);
 app.use('/learning-paths', authenticateToken as any, coursesRouter);
 
 // ========================================
+// PHASE 24: Stories Routes
+// ========================================
+
+app.use('/stories', authenticateToken as any, storiesRouter);
+
+// ========================================
 // Start Server
 // ========================================
 
 app.listen(PORT, () => {
   console.log('');
   console.log('╔════════════════════════════════════════════════╗');
-  console.log('║   📱 Feed Service - Stunity Enterprise v5.0   ║');
+  console.log('║   📱 Feed Service - Stunity Enterprise v6.0   ║');
   console.log('╚════════════════════════════════════════════════╝');
   console.log('');
   console.log(`✅ Server running on port ${PORT}`);
