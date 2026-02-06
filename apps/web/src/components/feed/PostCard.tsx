@@ -39,6 +39,13 @@ import {
   UsersRound,
   Calendar,
   Sparkles,
+  Trophy,
+  Medal,
+  Crown,
+  Zap,
+  GraduationCap,
+  BadgeCheck,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface PollOption {
@@ -57,12 +64,24 @@ interface Comment {
   createdAt: string;
 }
 
+interface AuthorBadge {
+  id: string;
+  type: string;
+  title: string;
+  rarity: string;
+  badgeUrl?: string;
+}
+
 interface Author {
   id: string;
   firstName: string;
   lastName: string;
   profileImage?: string | null;
   role?: string;
+  isVerified?: boolean;
+  professionalTitle?: string;
+  level?: number;
+  achievements?: AuthorBadge[];
 }
 
 export interface PostData {
@@ -103,6 +122,32 @@ interface PostCardProps {
   currentUserId?: string;
   loadingComments?: boolean;
 }
+
+// Badge configurations for different achievement rarities
+const RARITY_STYLES: Record<string, { bg: string; icon: string; border: string }> = {
+  LEGENDARY: { bg: 'bg-gradient-to-r from-amber-400 to-orange-500', icon: 'text-white', border: 'ring-amber-400' },
+  EPIC: { bg: 'bg-gradient-to-r from-purple-500 to-violet-600', icon: 'text-white', border: 'ring-purple-400' },
+  RARE: { bg: 'bg-gradient-to-r from-blue-500 to-cyan-500', icon: 'text-white', border: 'ring-blue-400' },
+  UNCOMMON: { bg: 'bg-gradient-to-r from-green-500 to-emerald-500', icon: 'text-white', border: 'ring-green-400' },
+  COMMON: { bg: 'bg-gray-200', icon: 'text-gray-600', border: 'ring-gray-300' },
+};
+
+// Achievement type icons
+const ACHIEVEMENT_ICONS: Record<string, any> = {
+  TOP_PERFORMER: Trophy,
+  COMPETITION_WIN: Medal,
+  TEACHING_EXCELLENCE: GraduationCap,
+  LEADERSHIP: Crown,
+  SKILL_MASTERY: Zap,
+  COURSE_COMPLETION: BookOpen,
+  CERTIFICATION: ShieldCheck,
+  INNOVATION: Rocket,
+  COLLABORATION: Users,
+  COMMUNITY_CONTRIBUTION: Heart,
+  CONSISTENCY_STREAK: TrendingUp,
+  MILESTONE: Star,
+  PUBLICATION: FileText,
+};
 
 export default function PostCard({ 
   post, 
@@ -387,11 +432,47 @@ export default function PostCard({
               )}
             </Link>
             <div>
-              <Link href={`/${locale}/profile/${post.author.id}`} className="font-semibold text-gray-900 text-sm hover:text-[#F9A825] hover:underline">
-                {post.author.firstName} {post.author.lastName}
-              </Link>
+              <div className="flex items-center gap-1.5">
+                <Link href={`/${locale}/profile/${post.author.id}`} className="font-semibold text-gray-900 text-sm hover:text-[#F9A825] hover:underline">
+                  {post.author.firstName} {post.author.lastName}
+                </Link>
+                {/* Verified Badge */}
+                {post.author.isVerified && (
+                  <span className="inline-flex items-center justify-center w-4 h-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full" title="Verified">
+                    <BadgeCheck className="w-3 h-3 text-white" />
+                  </span>
+                )}
+                {/* Level Badge */}
+                {post.author.level && post.author.level >= 5 && (
+                  <span 
+                    className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      post.author.level >= 20 ? 'bg-gradient-to-r from-purple-500 to-violet-600 text-white' :
+                      post.author.level >= 10 ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' :
+                      'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+                    }`}
+                    title={`Level ${post.author.level}`}
+                  >
+                    <Zap className="w-2.5 h-2.5" />
+                    {post.author.level}
+                  </span>
+                )}
+                {/* Top Achievement Badges */}
+                {post.author.achievements && post.author.achievements.slice(0, 2).map((achievement) => {
+                  const IconComponent = ACHIEVEMENT_ICONS[achievement.type] || Award;
+                  const styles = RARITY_STYLES[achievement.rarity] || RARITY_STYLES.COMMON;
+                  return (
+                    <span 
+                      key={achievement.id}
+                      className={`inline-flex items-center justify-center w-4 h-4 rounded-full ${styles.bg}`}
+                      title={achievement.title}
+                    >
+                      <IconComponent className={`w-2.5 h-2.5 ${styles.icon}`} />
+                    </span>
+                  );
+                })}
+              </div>
               <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                <span className="capitalize">{post.author.role?.toLowerCase()}</span>
+                <span className="capitalize">{post.author.professionalTitle || post.author.role?.toLowerCase()}</span>
                 <span>•</span>
                 <span>{formatDate(post.createdAt)}</span>
                 <VisibilityIcon className="w-3 h-3 ml-0.5" />

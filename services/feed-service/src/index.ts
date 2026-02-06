@@ -248,6 +248,24 @@ app.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => 
               lastName: true,
               profilePictureUrl: true,
               role: true,
+              isVerified: true,
+              professionalTitle: true,
+              level: true,
+              achievements: {
+                where: { isPublic: true },
+                orderBy: [
+                  { rarity: 'desc' },
+                  { issuedDate: 'desc' },
+                ],
+                take: 3,
+                select: {
+                  id: true,
+                  type: true,
+                  title: true,
+                  rarity: true,
+                  badgeUrl: true,
+                },
+              },
             },
           },
           pollOptions: {
@@ -395,6 +413,24 @@ app.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Response)
             lastName: true,
             profilePictureUrl: true,
             role: true,
+            isVerified: true,
+            professionalTitle: true,
+            level: true,
+            achievements: {
+              where: { isPublic: true },
+              orderBy: [
+                { rarity: 'desc' },
+                { issuedDate: 'desc' },
+              ],
+              take: 3,
+              select: {
+                id: true,
+                type: true,
+                title: true,
+                rarity: true,
+                badgeUrl: true,
+              },
+            },
           },
         },
         pollOptions: {

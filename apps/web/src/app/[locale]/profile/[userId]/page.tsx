@@ -445,7 +445,55 @@ export default function ProfilePage() {
                         Verified
                       </span>
                     )}
+                    {/* Level Badge */}
+                    {profile.level >= 5 && (
+                      <span 
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
+                          profile.level >= 20 ? 'bg-gradient-to-r from-purple-500 to-violet-600 text-white' :
+                          profile.level >= 10 ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' :
+                          'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+                        }`}
+                        title={`Level ${profile.level}`}
+                      >
+                        <Zap className="w-3.5 h-3.5" />
+                        Level {profile.level}
+                      </span>
+                    )}
                   </div>
+                  
+                  {/* Top Achievements Row - Show featured badges */}
+                  {achievements.length > 0 && (
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      {achievements.slice(0, 4).map((achievement) => {
+                        const rarityColors: Record<string, string> = {
+                          LEGENDARY: 'from-amber-400 to-orange-500',
+                          EPIC: 'from-purple-500 to-violet-600',
+                          RARE: 'from-blue-500 to-cyan-500',
+                          UNCOMMON: 'from-green-500 to-emerald-500',
+                          COMMON: 'from-gray-400 to-gray-500',
+                        };
+                        const gradient = rarityColors[achievement.rarity] || rarityColors.COMMON;
+                        return (
+                          <span 
+                            key={achievement.id}
+                            className={`inline-flex items-center gap-1.5 px-2 py-1 bg-gradient-to-r ${gradient} text-white text-xs font-medium rounded-full shadow-sm`}
+                            title={achievement.description}
+                          >
+                            {achievement.type === 'TOP_PERFORMER' && <Trophy className="w-3 h-3" />}
+                            {achievement.type === 'COMPETITION_WIN' && <Trophy className="w-3 h-3" />}
+                            {achievement.type === 'TEACHING_EXCELLENCE' && <Star className="w-3 h-3" />}
+                            {achievement.type === 'SKILL_MASTERY' && <Zap className="w-3 h-3" />}
+                            {achievement.type === 'CERTIFICATION' && <Award className="w-3 h-3" />}
+                            {!['TOP_PERFORMER', 'COMPETITION_WIN', 'TEACHING_EXCELLENCE', 'SKILL_MASTERY', 'CERTIFICATION'].includes(achievement.type) && <Award className="w-3 h-3" />}
+                            {achievement.title}
+                          </span>
+                        );
+                      })}
+                      {achievements.length > 4 && (
+                        <span className="text-xs text-amber-600 font-medium">+{achievements.length - 4} more</span>
+                      )}
+                    </div>
+                  )}
                   
                   {/* Headline */}
                   <p className="text-gray-700 dark:text-gray-300 mt-1.5 text-lg">

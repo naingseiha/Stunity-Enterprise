@@ -76,6 +76,16 @@ interface Post {
     lastName: string;
     profilePictureUrl: string | null;
     role: string;
+    isVerified?: boolean;
+    professionalTitle?: string;
+    level?: number;
+    achievements?: Array<{
+      id: string;
+      type: string;
+      title: string;
+      rarity: string;
+      badgeUrl?: string;
+    }>;
   };
   isLiked?: boolean;
   isLikedByMe?: boolean;
@@ -1025,6 +1035,10 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                             lastName: post.author.lastName,
                             profileImage: post.author.profilePictureUrl,
                             role: post.author.role,
+                            isVerified: post.author.isVerified,
+                            professionalTitle: post.author.professionalTitle,
+                            level: post.author.level,
+                            achievements: post.author.achievements,
                           },
                           createdAt: post.createdAt,
                           likesCount: post.likesCount,
@@ -1152,6 +1166,10 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                             lastName: post.author.lastName,
                             profileImage: post.author.profilePictureUrl,
                             role: post.author.role,
+                            isVerified: post.author.isVerified,
+                            professionalTitle: post.author.professionalTitle,
+                            level: post.author.level,
+                            achievements: post.author.achievements,
                           },
                           createdAt: post.createdAt,
                           likesCount: post.likesCount,
@@ -1264,6 +1282,10 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                             lastName: post.author.lastName,
                             profileImage: post.author.profilePictureUrl,
                             role: post.author.role,
+                            isVerified: post.author.isVerified,
+                            professionalTitle: post.author.professionalTitle,
+                            level: post.author.level,
+                            achievements: post.author.achievements,
                           },
                           createdAt: post.createdAt,
                           likesCount: post.likesCount,
