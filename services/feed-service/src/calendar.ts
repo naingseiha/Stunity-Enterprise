@@ -1,5 +1,6 @@
 import express from 'express';
 import { PrismaClient, CalendarEventType, EventPrivacy, RSVPStatus } from '@prisma/client';
+import { publishEvent, createEvent } from './sse';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -7,7 +8,7 @@ const prisma = new PrismaClient();
 // Note: Auth middleware is applied in index.ts where this router is mounted
 
 // Get event type definitions
-const EVENT_TYPE_INFO = {
+const EVENT_TYPE_INFO: Record<string, { label: string; icon: string; color: string }> = {
   GENERAL: { label: 'General', icon: 'Calendar', color: '#6B7280' },
   ACADEMIC: { label: 'Academic', icon: 'BookOpen', color: '#3B82F6' },
   SPORTS: { label: 'Sports', icon: 'Trophy', color: '#10B981' },
@@ -263,6 +264,49 @@ router.post('/', async (req, res) => {
         respondedAt: new Date(),
       },
     });
+
+    // Create a feed post announcing the new event (only for PUBLIC events)
+    if (privacy !== 'INVITE_ONLY') {
+      try {
+        const eventTypeLabel = EVENT_TYPE_INFO[eventType]?.label || 'Event';
+        const eventDate = new Date(startDate);
+        const dateStr = eventDate.toLocaleDateString('en-US', { 
+          weekday: 'long', 
+          month: 'long', 
+          day: 'numeric',
+          hour: allDay ? undefined : 'numeric',
+          minute: allDay ? undefined : '2-digit',
+        });
+        
+        const feedPost = await prisma.post.create({
+          data: {
+            content: `📅 New ${eventTypeLabel}: **${title}**\n\n🗓️ ${dateStr}${location ? `\n📍 ${location}` : ''}${virtualLink ? '\n💻 Online Event' : ''}\n\n${description || 'Join us for this exciting event!'}`,
+            postType: 'EVENT_CREATED',
+            visibility: privacy === 'SCHOOL' ? 'SCHOOL' : 'PUBLIC',
+            authorId: userId,
+            mediaUrls: coverImage ? [coverImage] : [],
+          },
+        });
+
+        // Notify followers via SSE
+        const followers = await prisma.follow.findMany({
+          where: { followingId: userId },
+          select: { followerId: true },
+        });
+        
+        followers.forEach(f => {
+          publishEvent(f.followerId, createEvent('NEW_POST', {
+            postId: feedPost.id,
+            authorId: userId,
+            authorName: `${event.creator.firstName} ${event.creator.lastName}`,
+            postPreview: `Created a new event: ${title}`,
+          }));
+        });
+      } catch (postError) {
+        // Don't fail event creation if post creation fails
+        console.error('Failed to create event announcement post:', postError);
+      }
+    }
 
     res.status(201).json(event);
   } catch (error) {

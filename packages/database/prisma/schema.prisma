@@ -1444,6 +1444,8 @@ enum PostType {
   ACHIEVEMENT
   REFLECTION
   COLLABORATION
+  CLUB_CREATED // When a study club is created
+  EVENT_CREATED // When an event is created
 }
 
 enum PostVisibility {

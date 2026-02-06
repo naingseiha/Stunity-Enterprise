@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { PrismaClient, StudyClubType, ClubPrivacy, ClubMemberRole } from '@prisma/client';
+import { publishEvent, createEvent } from './sse';
 
 const router = express.Router();
 let prisma: PrismaClient;
@@ -16,6 +17,18 @@ interface AuthRequest extends Request {
     role?: string;
   };
 }
+
+// Club type labels for feed posts
+const CLUB_TYPE_LABELS: Record<string, string> = {
+  SUBJECT: 'Subject Study Club',
+  SKILL: 'Skill Development Club',
+  RESEARCH: 'Research Group',
+  PROJECT: 'Project Team',
+  EXAM_PREP: 'Exam Preparation Group',
+  LANGUAGE: 'Language Learning Club',
+  COMPETITION: 'Competition Team',
+  TUTORING: 'Tutoring & Mentoring Group',
+};
 
 // ============================================
 // Study Club CRUD
@@ -68,6 +81,41 @@ router.post('/', async (req: AuthRequest, res: Response) => {
         },
       },
     });
+
+    // Create a feed post announcing the new club (only for PUBLIC clubs)
+    if (privacy !== 'SECRET') {
+      try {
+        const clubTypeLabel = CLUB_TYPE_LABELS[clubType] || 'Study Club';
+        const feedPost = await prisma.post.create({
+          data: {
+            content: `🎉 Just created a new ${clubTypeLabel}: **${name.trim()}**!\n\n${description?.trim() || 'Join us to learn and grow together!'}\n\n${category ? `📚 Category: ${category}` : ''}`,
+            postType: 'CLUB_CREATED',
+            visibility: privacy === 'SCHOOL' ? 'SCHOOL' : 'PUBLIC',
+            authorId: userId,
+            studyClubId: club.id,
+            mediaUrls: coverImage ? [coverImage] : [],
+          },
+        });
+
+        // Notify followers via SSE
+        const followers = await prisma.follow.findMany({
+          where: { followingId: userId },
+          select: { followerId: true },
+        });
+        
+        followers.forEach(f => {
+          publishEvent(f.followerId, createEvent('NEW_POST', {
+            postId: feedPost.id,
+            authorId: userId,
+            authorName: `${club.creator.firstName} ${club.creator.lastName}`,
+            postPreview: `Created a new study club: ${name}`,
+          }));
+        });
+      } catch (postError) {
+        // Don't fail club creation if post creation fails
+        console.error('Failed to create club announcement post:', postError);
+      }
+    }
 
     res.status(201).json(club);
   } catch (error) {

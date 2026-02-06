@@ -109,6 +109,8 @@ const POST_TYPE_FILTERS = [
   { id: 'PROJECT', label: 'Projects', icon: Rocket },
   { id: 'RESEARCH', label: 'Research', icon: Microscope },
   { id: 'COLLABORATION', label: 'Collaboration', icon: UsersRound },
+  { id: 'CLUB_CREATED', label: 'Study Clubs', icon: Users },
+  { id: 'EVENT_CREATED', label: 'Events', icon: Calendar },
 ];
 
 export default function FeedPage({ params: { locale } }: { params: { locale: string } }) {

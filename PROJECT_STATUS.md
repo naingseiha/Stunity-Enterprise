@@ -1,8 +1,8 @@
 # 🎓 Stunity Enterprise - Project Status
 
 **Date:** February 6, 2026  
-**Version:** 8.0  
-**Status:** Phase 19 Complete - Events & Calendar ✅
+**Version:** 8.1  
+**Status:** Phase 19.5 Complete - Feed Integration for Clubs & Events ✅
 
 ---
 
@@ -797,6 +797,26 @@ School and club events with RSVP functionality and calendar view.
   - Location and virtual link display
   - Edit/Delete for creator
   - Share event button
+
+### Phase 19.5: Feed Integration for Clubs & Events ✅ COMPLETE
+**Priority: HIGH | Completed: February 6, 2026**
+
+Clubs and events now appear in the main feed for discoverability.
+
+#### Backend Integration ✅
+- [x] CLUB_CREATED and EVENT_CREATED added to PostType enum
+- [x] Club creation auto-posts to feed (for PUBLIC and SCHOOL clubs)
+- [x] Event creation auto-posts to feed (for PUBLIC and SCHOOL events)
+- [x] SSE notification to followers when club/event created
+- [x] studyClubId field links posts to their clubs
+
+#### Frontend Integration ✅
+- [x] PostCard displays CLUB_CREATED posts with purple gradient
+- [x] PostCard displays EVENT_CREATED posts with amber gradient
+- [x] "View & Join Club" button on club posts
+- [x] "View Event & RSVP" button on event posts
+- [x] Feed filter includes "Study Clubs" and "Events" categories
+- [x] Sparkles icon for clubs, Calendar icon for events
 
 ### Phase 20: Stories/Status Updates 🔜
 **Priority: LOW | Estimated: 2 sessions**

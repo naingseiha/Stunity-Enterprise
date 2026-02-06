@@ -37,6 +37,8 @@ import {
   Rocket,
   Microscope,
   UsersRound,
+  Calendar,
+  Sparkles,
 } from 'lucide-react';
 
 interface PollOption {
@@ -83,6 +85,7 @@ export interface PostData {
   pollOptions?: PollOption[];
   userVotedOptionId?: string;
   comments?: Comment[];
+  studyClubId?: string; // For CLUB_CREATED posts - link to club
 }
 
 interface PostCardProps {
@@ -232,6 +235,10 @@ export default function PostCard({
         return { icon: FileText, color: 'sky', label: 'Assignment', bgColor: 'bg-sky-50', borderColor: 'border-sky-200', textColor: 'text-sky-700' };
       case 'REFLECTION':
         return { icon: FileText, color: 'slate', label: 'Reflection', bgColor: 'bg-slate-50', borderColor: 'border-slate-200', textColor: 'text-slate-700' };
+      case 'CLUB_CREATED':
+        return { icon: Users, color: 'purple', label: 'New Study Club', bgColor: 'bg-purple-50', borderColor: 'border-purple-200', textColor: 'text-purple-700' };
+      case 'EVENT_CREATED':
+        return { icon: Calendar, color: 'amber', label: 'New Event', bgColor: 'bg-amber-50', borderColor: 'border-amber-200', textColor: 'text-amber-700' };
       default:
         return { icon: FileText, color: 'emerald', label: 'Article', bgColor: 'bg-white', borderColor: 'border-gray-100', textColor: 'text-amber-700' };
     }
@@ -253,6 +260,8 @@ export default function PostCard({
       case 'EXAM': return 'from-red-500 to-rose-500';
       case 'ASSIGNMENT': return 'from-sky-500 to-blue-500';
       case 'REFLECTION': return 'from-slate-500 to-gray-500';
+      case 'CLUB_CREATED': return 'from-purple-500 to-violet-600';
+      case 'EVENT_CREATED': return 'from-amber-500 to-orange-500';
       default: return 'from-[#F9A825] to-[#FFB74D]';
     }
   };
@@ -500,6 +509,32 @@ export default function PostCard({
               <Clock className="w-3 h-3" />
               {totalVotes} vote{totalVotes !== 1 ? 's' : ''}
             </p>
+          </div>
+        )}
+
+        {/* Club Created - Action Button */}
+        {post.postType === 'CLUB_CREATED' && post.studyClubId && (
+          <div className="mb-3">
+            <Link
+              href={`/${locale}/clubs/${post.studyClubId}`}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-violet-600 text-white rounded-xl font-medium text-sm hover:from-purple-600 hover:to-violet-700 transition-all shadow-sm"
+            >
+              <Users className="w-4 h-4" />
+              View & Join Club
+            </Link>
+          </div>
+        )}
+
+        {/* Event Created - Action Button */}
+        {post.postType === 'EVENT_CREATED' && (
+          <div className="mb-3">
+            <Link
+              href={`/${locale}/events`}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium text-sm hover:from-amber-600 hover:to-orange-600 transition-all shadow-sm"
+            >
+              <Calendar className="w-4 h-4" />
+              View Event & RSVP
+            </Link>
           </div>
         )}
 
