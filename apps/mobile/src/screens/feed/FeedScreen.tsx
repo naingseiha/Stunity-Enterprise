@@ -322,6 +322,8 @@ export default function FeedScreen() {
             </TouchableOpacity>
           </View>
         </View>
+        {/* Header Divider */}
+        <View style={styles.headerDivider} />
       </SafeAreaView>
 
       {/* Filter Tabs */}
@@ -360,6 +362,10 @@ const styles = StyleSheet.create({
   },
   headerSafe: {
     backgroundColor: '#fff',
+  },
+  headerDivider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
   },
   header: {
     flexDirection: 'row',

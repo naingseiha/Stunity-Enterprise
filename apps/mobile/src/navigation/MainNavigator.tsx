@@ -21,7 +21,7 @@ import {
 import { Colors, Typography, Shadows } from '@/config';
 
 // Implemented Screens
-import { FeedScreen, CreatePostScreen } from '@/screens/feed';
+import { FeedScreen, CreatePostScreen, PostDetailScreen } from '@/screens/feed';
 import { LearnScreen, CourseDetailScreen } from '@/screens/learn';
 import { ProfileScreen } from '@/screens/profile';
 import { ConversationsScreen, ChatScreen } from '@/screens/messages';
@@ -34,7 +34,6 @@ const PlaceholderScreen = ({ title }: { title: string }) => (
 );
 
 // Feed Stack Screens (placeholders for remaining)
-const PostDetailScreen = () => <PlaceholderScreen title="Post Detail" />;
 const UserProfileScreen = () => <PlaceholderScreen title="User Profile" />;
 const HashtagScreen = () => <PlaceholderScreen title="Hashtag" />;
 const ClubsScreen = () => <PlaceholderScreen title="Clubs" />;

@@ -93,6 +93,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             isVerified: post.author?.isVerified,
           },
           content: post.content,
+          postType: post.postType || 'ARTICLE',
           mediaUrls: post.mediaUrls || [],
           likes: post.likesCount || post._count?.likes || 0,
           comments: post.commentsCount || post._count?.comments || 0,
@@ -101,6 +102,28 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           isBookmarked: post.isBookmarked || false,
           createdAt: post.createdAt,
           updatedAt: post.updatedAt,
+          // E-Learning metadata
+          topicTags: post.topicTags || post.tags || [],
+          learningMeta: post.learningMeta || {
+            progress: post.progress,
+            totalSteps: post.totalSteps,
+            completedSteps: post.completedSteps,
+            difficulty: post.difficulty,
+            isLive: post.isLive,
+            liveViewers: post.liveViewers,
+            deadline: post.deadline,
+            isUrgent: post.isUrgent,
+            answerCount: post.answerCount,
+            isAnswered: post.isAnswered,
+            studyGroupId: post.studyGroupId,
+            studyGroupName: post.studyGroupName,
+            xpReward: post.xpReward,
+            estimatedMinutes: post.estimatedMinutes,
+            participantCount: post.participantCount,
+            hasCode: post.hasCode,
+            hasPdf: post.hasPdf,
+            hasFormula: post.hasFormula,
+          },
         }));
 
         set({

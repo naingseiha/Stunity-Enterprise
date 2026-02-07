@@ -85,6 +85,47 @@ export type PostType =
   | 'REFLECTION'
   | 'COLLABORATION';
 
+// E-Learning specific metadata for posts
+export type DifficultyLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+
+export interface PostLearningMeta {
+  // Progress tracking (for Course, Quiz, Assignment)
+  progress?: number; // 0-100
+  totalSteps?: number;
+  completedSteps?: number;
+  
+  // Difficulty level
+  difficulty?: DifficultyLevel;
+  
+  // Live session indicator
+  isLive?: boolean;
+  liveViewers?: number;
+  scheduledAt?: string;
+  
+  // Deadline for assignments/exams
+  deadline?: string;
+  isUrgent?: boolean; // < 24 hours remaining
+  
+  // Q&A specific
+  answerCount?: number;
+  isAnswered?: boolean;
+  acceptedAnswerId?: string;
+  
+  // Study group
+  studyGroupId?: string;
+  studyGroupName?: string;
+  
+  // XP and duration
+  xpReward?: number;
+  estimatedMinutes?: number;
+  participantCount?: number;
+  
+  // Rich content indicators
+  hasCode?: boolean;
+  hasPdf?: boolean;
+  hasFormula?: boolean;
+}
+
 export interface Post {
   id: string;
   content: string;
@@ -100,6 +141,9 @@ export interface Post {
   isBookmarked: boolean;
   visibility: 'PUBLIC' | 'CONNECTIONS' | 'PRIVATE';
   tags: string[];
+  // E-Learning enhancements
+  learningMeta?: PostLearningMeta;
+  topicTags?: string[]; // Subject hashtags like #Math, #Physics
   createdAt: string;
   updatedAt: string;
 }
