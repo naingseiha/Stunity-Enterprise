@@ -4,15 +4,17 @@
  * Enterprise e-learning social platform
  */
 
-import React, { useEffect } from 'react';
-import { StyleSheet, View, LogBox, Text, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import * as SplashScreen from 'expo-splash-screen';
+import * as ExpoSplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { LogBox } from 'react-native';
 
 import { RootNavigator } from '@/navigation';
 import { useAuthStore } from '@/stores';
+import { SplashScreen } from '@/components/common';
 
 // Ignore specific warnings in development
 if (__DEV__) {
@@ -22,49 +24,50 @@ if (__DEV__) {
   ]);
 }
 
-// Prevent auto-hide splash screen
-SplashScreen.preventAutoHideAsync().catch(() => {});
+// Prevent auto-hide expo splash screen
+ExpoSplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function App() {
-  const [appIsReady, setAppIsReady] = React.useState(false);
-  const { initialize, isAuthenticated, user } = useAuthStore();
+  const [appIsReady, setAppIsReady] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+  const { initialize } = useAuthStore();
 
   useEffect(() => {
     async function prepare() {
       try {
         // Initialize auth - this will restore persisted state
-        // and validate tokens if available
         await initialize();
       } catch (e) {
         console.warn('App init error:', e);
-        // Set initialized even on error so app can show login
         useAuthStore.setState({ 
           isInitialized: true, 
           isLoading: false 
         });
       } finally {
         setAppIsReady(true);
-        SplashScreen.hideAsync().catch(() => {});
+        // Hide expo's native splash screen
+        ExpoSplashScreen.hideAsync().catch(() => {});
       }
     }
 
     prepare();
   }, []);
 
-  if (!appIsReady) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#F59E0B" />
-        <Text style={styles.loadingText}>Loading Stunity...</Text>
-      </View>
-    );
-  }
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+  };
 
   return (
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
-        <StatusBar style="auto" />
-        <RootNavigator />
+        <StatusBar style="dark" />
+        {appIsReady && <RootNavigator />}
+        {showSplash && (
+          <SplashScreen 
+            onComplete={handleSplashComplete}
+            duration={2500}
+          />
+        )}
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
@@ -73,16 +76,5 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#6B7280',
   },
 });

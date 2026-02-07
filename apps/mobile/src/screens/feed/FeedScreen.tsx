@@ -30,7 +30,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 // Import actual Stunity logo
 const StunityLogo = require('../../../../../Stunity.png');
 
-import { PostCard } from '@/components/feed';
+import { PostCard, StoryCircles } from '@/components/feed';
 import { Avatar, PostSkeleton } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore } from '@/stores';
@@ -151,24 +151,72 @@ export default function FeedScreen() {
 
   const renderHeader = () => (
     <View style={styles.headerSection}>
-      {/* Create Post Card - Clean V1 style matching reference */}
-      <TouchableOpacity 
-        onPress={handleCreatePost} 
-        activeOpacity={0.8}
-        style={styles.createPostCard}
-      >
-        <Avatar
-          uri={user?.profilePictureUrl}
-          name={user ? `${user.firstName} ${user.lastName}` : 'User'}
-          size="md"
-        />
-        <Text style={styles.createPostPlaceholder}>
-          តើអ្នកកំពុងគិតអ្វី {user?.firstName || ''}?
-        </Text>
-        <View style={styles.createPostMediaButton}>
-          <Ionicons name="images-outline" size={22} color="#6366F1" />
-        </View>
-      </TouchableOpacity>
+      {/* Create Post Card with integrated Stories */}
+      <View style={styles.createPostCard}>
+        {/* Top row: Create post input */}
+        <TouchableOpacity 
+          onPress={handleCreatePost} 
+          activeOpacity={0.8}
+          style={styles.createPostRow}
+        >
+          <Avatar
+            uri={user?.profilePictureUrl}
+            name={user ? `${user.firstName} ${user.lastName}` : 'User'}
+            size="md"
+          />
+          <Text style={styles.createPostPlaceholder}>
+            តើអ្នកកំពុងគិតអ្វី {user?.firstName || ''}?
+          </Text>
+          <View style={styles.createPostMediaButton}>
+            <Ionicons name="images-outline" size={22} color="#6366F1" />
+          </View>
+        </TouchableOpacity>
+        
+        {/* Divider */}
+        <View style={styles.storyDivider} />
+        
+        {/* Bottom row: Story circles */}
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.storyScrollContent}
+        >
+          {/* Add Story Button */}
+          <TouchableOpacity onPress={handleCreateStory} style={styles.storyItem}>
+            <View style={styles.addStoryCircle}>
+              <Ionicons name="add" size={24} color="#6366F1" />
+            </View>
+            <Text style={styles.storyName}>Add</Text>
+          </TouchableOpacity>
+          
+          {/* Story circles */}
+          {storyGroups.map((group, index) => {
+            if (group.user.id === user?.id) return null;
+            return (
+              <TouchableOpacity
+                key={group.user.id}
+                onPress={() => handleStoryPress(index)}
+                style={styles.storyItem}
+              >
+                <View style={[
+                  styles.storyCircleWrapper,
+                  group.hasUnviewed && styles.storyCircleUnviewed
+                ]}>
+                  <Avatar
+                    uri={group.user.profilePictureUrl}
+                    name={`${group.user.firstName} ${group.user.lastName}`}
+                    size="md"
+                    showBorder={false}
+                  />
+                </View>
+                <Text style={styles.storyName} numberOfLines={1}>
+                  {group.user.firstName}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
     </View>
   );
 
@@ -403,21 +451,24 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   createPostCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#FFFFFF',
     marginHorizontal: 12,
     marginBottom: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    gap: 14,
+    paddingTop: 14,
+    paddingBottom: 12,
+    borderRadius: 16,
     // Soft neutral shadow
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 6,
+  },
+  createPostRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    gap: 12,
   },
   createPostPlaceholder: {
     flex: 1,
@@ -431,6 +482,49 @@ const styles = StyleSheet.create({
     backgroundColor: '#EEF2FF',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  storyDivider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginHorizontal: 16,
+    marginTop: 14,
+    marginBottom: 12,
+  },
+  storyScrollContent: {
+    paddingHorizontal: 16,
+    gap: 16,
+  },
+  storyItem: {
+    alignItems: 'center',
+    width: 56,
+  },
+  addStoryCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#EEF2FF',
+    borderWidth: 2,
+    borderColor: '#6366F1',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  storyCircleWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    padding: 2,
+    backgroundColor: '#E5E7EB',
+  },
+  storyCircleUnviewed: {
+    backgroundColor: '#F59E0B',
+  },
+  storyName: {
+    marginTop: 4,
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#6B7280',
+    textAlign: 'center',
   },
   footer: {
     paddingHorizontal: 16,

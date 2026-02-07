@@ -135,10 +135,10 @@ export const PostCard: React.FC<PostCardProps> = ({
           </View>
         </TouchableOpacity>
         
-        {/* Post Type Badge */}
-        <View style={[styles.typeBadge, { borderColor: typeConfig.color + '40', backgroundColor: typeConfig.bgColor }]}>
-          <Ionicons name={typeConfig.icon as any} size={14} color={typeConfig.color} />
-          <Text style={[styles.typeBadgeText, { color: typeConfig.color }]}>{typeConfig.label}</Text>
+        {/* XP Badge - Performance reward */}
+        <View style={styles.xpBadge}>
+          <Ionicons name="sparkles" size={14} color="#F59E0B" />
+          <Text style={styles.xpBadgeText}>+{Math.floor(Math.random() * 20) + 5} XP</Text>
         </View>
         
         <TouchableOpacity style={styles.moreButton}>
@@ -310,32 +310,33 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     marginTop: 2,
   },
-  typeBadge: {
+  xpBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 20,
-    gap: 5,
+    backgroundColor: '#FEF3C7',
+    gap: 4,
     marginRight: 4,
-    borderWidth: 1,
   },
-  typeBadgeText: {
+  xpBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#D97706',
   },
   moreButton: {
     padding: 6,
   },
   mediaWrapper: {
     marginHorizontal: 14,
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
     position: 'relative',
   },
   mediaImage: {
     width: '100%',
-    height: 200,
+    height: 240,
     backgroundColor: '#F3F4F6',
   },
   mediaCounter: {
