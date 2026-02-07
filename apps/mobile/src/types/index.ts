@@ -9,6 +9,7 @@ export interface User {
   id: string;
   firstName: string;
   lastName: string;
+  name?: string; // Full name (optional)
   email: string;
   phone?: string;
   role: UserRole;
@@ -66,9 +67,28 @@ export interface RegisterData {
 }
 
 // Post Types
+export type PostType = 
+  | 'ARTICLE'
+  | 'QUESTION'
+  | 'ANNOUNCEMENT'
+  | 'POLL'
+  | 'ACHIEVEMENT'
+  | 'PROJECT'
+  | 'COURSE'
+  | 'EVENT'
+  | 'QUIZ'
+  | 'EXAM'
+  | 'ASSIGNMENT'
+  | 'RESOURCE'
+  | 'TUTORIAL'
+  | 'RESEARCH'
+  | 'REFLECTION'
+  | 'COLLABORATION';
+
 export interface Post {
   id: string;
   content: string;
+  postType: PostType;
   mediaUrls: string[];
   mediaType?: 'IMAGE' | 'VIDEO' | 'DOCUMENT';
   author: User;

@@ -51,6 +51,7 @@ export type MainTabParamList = {
 // Feed Stack
 export type FeedStackParamList = {
   Feed: undefined;
+  CreatePost: undefined;
   PostDetail: { postId: string };
   UserProfile: { userId: string };
   Hashtag: { tag: string };

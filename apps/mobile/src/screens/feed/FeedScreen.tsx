@@ -1,7 +1,11 @@
 /**
  * Feed Screen
  * 
- * Main social feed with posts and stories
+ * Clean modern feed matching v1 app design:
+ * - White cards with subtle shadows (shadow-card)
+ * - Minimal clean design
+ * - rounded-2xl cards
+ * - Simple author info with avatar
  */
 
 import React, { useEffect, useCallback } from 'react';
@@ -86,7 +90,7 @@ export default function FeedScreen() {
   }, [navigation]);
 
   const renderHeader = () => (
-    <View>
+    <View style={styles.headerSection}>
       {/* Stories */}
       <StoryCircles
         storyGroups={storyGroups}
@@ -95,34 +99,39 @@ export default function FeedScreen() {
         currentUserId={user?.id}
       />
 
-      {/* Create Post Card */}
-      <Animated.View entering={FadeInDown.delay(200).duration(400)}>
-        <TouchableOpacity onPress={handleCreatePost} style={styles.createPostCard}>
-          <Avatar
-            uri={user?.profilePictureUrl}
-            name={user ? `${user.firstName} ${user.lastName}` : 'User'}
-            size="md"
-          />
-          <View style={styles.createPostInput}>
-            <Text style={styles.createPostPlaceholder}>
-              What's on your mind?
-            </Text>
-          </View>
-          <View style={styles.createPostActions}>
-            <TouchableOpacity style={styles.createPostAction}>
-              <Ionicons name="image-outline" size={22} color={Colors.success.main} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.createPostAction}>
-              <Ionicons name="videocam-outline" size={22} color={Colors.error.main} />
-            </TouchableOpacity>
-          </View>
+      {/* Create Post Card - Clean v1 style */}
+      <View style={styles.createPostCard}>
+        <Avatar
+          uri={user?.profilePictureUrl}
+          name={user ? `${user.firstName} ${user.lastName}` : 'User'}
+          size="md"
+        />
+        <TouchableOpacity onPress={handleCreatePost} style={styles.createPostInput}>
+          <Text style={styles.createPostPlaceholder}>
+            What's on your mind?
+          </Text>
         </TouchableOpacity>
-      </Animated.View>
+        <View style={styles.createPostActions}>
+          <TouchableOpacity style={styles.createPostAction}>
+            <View style={[styles.actionIconBg, { backgroundColor: '#10B98120' }]}>
+              <Ionicons name="image" size={18} color="#10B981" />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.createPostAction}>
+            <View style={[styles.actionIconBg, { backgroundColor: '#3B82F620' }]}>
+              <Ionicons name="videocam" size={18} color="#3B82F6" />
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 
   const renderPost = ({ item, index }: { item: Post; index: number }) => (
-    <Animated.View entering={FadeInDown.delay(100 * Math.min(index, 5)).duration(400)}>
+    <Animated.View 
+      entering={FadeInDown.delay(50 * Math.min(index, 3)).duration(300)}
+      style={styles.postWrapper}
+    >
       <PostCard
         post={item}
         onLike={() => handleLikePost(item)}
@@ -157,40 +166,50 @@ export default function FeedScreen() {
 
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="newspaper-outline" size={64} color={Colors.gray[300]} />
+        <View style={styles.emptyIconBg}>
+          <Ionicons name="document-text-outline" size={40} color="#9CA3AF" />
+        </View>
         <Text style={styles.emptyTitle}>No posts yet</Text>
         <Text style={styles.emptyText}>
-          Follow some people or create your first post!
+          Be the first to share something!
         </Text>
+        <TouchableOpacity onPress={handleCreatePost} style={styles.emptyButton}>
+          <Text style={styles.emptyButtonText}>Create Post</Text>
+        </TouchableOpacity>
       </View>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.logo}>Stunity</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity 
-            style={styles.headerButton}
-            onPress={() => navigation.navigate('Search' as any)}
-          >
-            <Ionicons name="search-outline" size={24} color={Colors.gray[700]} />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.headerButton}
-            onPress={() => navigation.navigate('Notifications' as any)}
-          >
-            <Ionicons name="notifications-outline" size={24} color={Colors.gray[700]} />
-            <View style={styles.notificationBadge}>
-              <Text style={styles.badgeText}>3</Text>
+      {/* Clean Header */}
+      <SafeAreaView edges={['top']} style={styles.headerSafe}>
+        <View style={styles.header}>
+          <View style={styles.logoContainer}>
+            <View style={styles.logoBox}>
+              <Ionicons name="school" size={18} color="#6366F1" />
             </View>
-          </TouchableOpacity>
+            <Text style={styles.logoName}>Stunity</Text>
+          </View>
+          <View style={styles.headerActions}>
+            <TouchableOpacity 
+              style={styles.headerButton}
+              onPress={() => navigation.navigate('Search' as any)}
+            >
+              <Ionicons name="search" size={22} color="#374151" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.headerButton}
+              onPress={() => navigation.navigate('Notifications' as any)}
+            >
+              <Ionicons name="notifications-outline" size={22} color="#374151" />
+              <View style={styles.notificationBadge} />
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </SafeAreaView>
 
       {/* Feed */}
       <FlatList
@@ -206,138 +225,184 @@ export default function FeedScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={Colors.primary[500]}
-            colors={[Colors.primary[500]]}
+            tintColor="#6366F1"
+            colors={['#6366F1']}
           />
         }
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
+        style={styles.list}
       />
 
-      {/* FAB */}
+      {/* FAB - Clean style */}
       <TouchableOpacity style={styles.fab} onPress={handleCreatePost}>
-        <Ionicons name="add" size={28} color={Colors.white} />
+        <Ionicons name="add" size={26} color="#fff" />
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.gray[50],
+    backgroundColor: '#F9FAFB',
+  },
+  headerSafe: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Spacing[4],
-    paddingVertical: Spacing[3],
-    backgroundColor: Colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[100],
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  logo: {
-    fontSize: Typography.fontSize['2xl'],
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  logoBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoName: {
+    fontSize: 20,
     fontWeight: '700',
-    color: Colors.primary[500],
-    letterSpacing: 1,
+    color: '#1F2937',
   },
   headerActions: {
     flexDirection: 'row',
-    gap: Spacing[2],
+    gap: 4,
   },
   headerButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.gray[100],
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
   },
   notificationBadge: {
     position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: Colors.error.main,
-    alignItems: 'center',
-    justifyContent: 'center',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    borderWidth: 2,
+    borderColor: '#fff',
   },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: Colors.white,
+  list: {
+    flex: 1,
   },
   listContent: {
     paddingBottom: 100,
   },
+  headerSection: {
+    paddingTop: 8,
+  },
+  postWrapper: {
+    marginBottom: 4,
+  },
   createPostCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
-    margin: Spacing[3],
-    padding: Spacing[4],
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginVertical: 12,
+    padding: 12,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     ...Shadows.sm,
   },
   createPostInput: {
     flex: 1,
-    marginLeft: Spacing[3],
-    paddingVertical: Spacing[2],
-    paddingHorizontal: Spacing[4],
-    backgroundColor: Colors.gray[100],
+    marginLeft: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: '#F3F4F6',
     borderRadius: 20,
   },
   createPostPlaceholder: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.gray[400],
+    fontSize: 14,
+    color: '#9CA3AF',
   },
   createPostActions: {
     flexDirection: 'row',
-    marginLeft: Spacing[2],
-    gap: Spacing[1],
+    marginLeft: 8,
+    gap: 4,
   },
   createPostAction: {
-    padding: Spacing[2],
+    padding: 2,
   },
-  footer: {
-    paddingHorizontal: Spacing[3],
-  },
-  skeletonContainer: {
-    paddingHorizontal: Spacing[3],
-    paddingTop: Spacing[3],
-  },
-  emptyContainer: {
-    flex: 1,
+  actionIconBg: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing[16],
+  },
+  footer: {
+    paddingHorizontal: 16,
+  },
+  skeletonContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 32,
+  },
+  emptyIconBg: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: Typography.fontSize.xl,
+    fontSize: 17,
     fontWeight: '600',
-    color: Colors.gray[700],
-    marginTop: Spacing[4],
+    color: '#374151',
   },
   emptyText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.gray[500],
+    fontSize: 14,
+    color: '#6B7280',
     textAlign: 'center',
-    marginTop: Spacing[2],
-    paddingHorizontal: Spacing[8],
+    marginTop: 6,
+  },
+  emptyButton: {
+    marginTop: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#6366F1',
+  },
+  emptyButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
   },
   fab: {
     position: 'absolute',
     bottom: 90,
-    right: Spacing[4],
+    right: 20,
     width: 56,
     height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.primary[500],
+    borderRadius: 16,
+    backgroundColor: '#6366F1',
     alignItems: 'center',
     justifyContent: 'center',
     ...Shadows.lg,

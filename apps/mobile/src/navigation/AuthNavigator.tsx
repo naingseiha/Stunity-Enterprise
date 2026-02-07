@@ -9,7 +9,14 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthStackParamList } from './types';
 import { Colors } from '@/config';
 
-// Placeholder components (will be implemented)
+// Import actual screen components
+import {
+  WelcomeScreen,
+  LoginScreen,
+  RegisterScreen,
+} from '@/screens/auth';
+
+// Placeholder for screens not yet implemented
 import { View, Text, StyleSheet } from 'react-native';
 
 const PlaceholderScreen = ({ title }: { title: string }) => (
@@ -18,9 +25,6 @@ const PlaceholderScreen = ({ title }: { title: string }) => (
   </View>
 );
 
-const WelcomeScreen = () => <PlaceholderScreen title="Welcome" />;
-const LoginScreen = () => <PlaceholderScreen title="Login" />;
-const RegisterScreen = () => <PlaceholderScreen title="Register" />;
 const ForgotPasswordScreen = () => <PlaceholderScreen title="Forgot Password" />;
 const VerifyOTPScreen = () => <PlaceholderScreen title="Verify OTP" />;
 const ResetPasswordScreen = () => <PlaceholderScreen title="Reset Password" />;

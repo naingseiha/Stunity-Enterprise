@@ -21,8 +21,8 @@ import {
 import { Colors, Typography, Shadows } from '@/config';
 
 // Implemented Screens
-import { FeedScreen } from '@/screens/feed';
-import { LearnScreen } from '@/screens/learn';
+import { FeedScreen, CreatePostScreen } from '@/screens/feed';
+import { LearnScreen, CourseDetailScreen } from '@/screens/learn';
 import { ProfileScreen } from '@/screens/profile';
 import { ConversationsScreen, ChatScreen } from '@/screens/messages';
 
@@ -42,8 +42,7 @@ const ClubDetailScreen = () => <PlaceholderScreen title="Club Detail" />;
 const EventsScreen = () => <PlaceholderScreen title="Events" />;
 const EventDetailScreen = () => <PlaceholderScreen title="Event Detail" />;
 
-// Learn Stack Screens
-const CourseDetailScreen = () => <PlaceholderScreen title="Course Detail" />;
+// Learn Stack Screens (placeholders for remaining)
 const LessonViewerScreen = () => <PlaceholderScreen title="Lesson Viewer" />;
 const CreateCourseScreen = () => <PlaceholderScreen title="Create Course" />;
 const EditCourseScreen = () => <PlaceholderScreen title="Edit Course" />;
@@ -72,6 +71,7 @@ const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 const FeedStackNavigator: React.FC = () => (
   <FeedStack.Navigator screenOptions={{ headerShown: false }}>
     <FeedStack.Screen name="Feed" component={FeedScreen} />
+    <FeedStack.Screen name="CreatePost" component={CreatePostScreen} />
     <FeedStack.Screen name="PostDetail" component={PostDetailScreen} />
     <FeedStack.Screen name="UserProfile" component={UserProfileScreen} />
     <FeedStack.Screen name="Hashtag" component={HashtagScreen} />

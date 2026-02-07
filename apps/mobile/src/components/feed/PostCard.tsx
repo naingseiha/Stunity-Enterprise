@@ -1,7 +1,12 @@
 /**
  * PostCard Component
  * 
- * Reusable post card for the social feed
+ * Matching v1 app design:
+ * - Clean white cards with rounded-2xl
+ * - Subtle shadow-card shadows
+ * - Author info with avatar
+ * - Post type badge (minimal)
+ * - Engagement buttons with gradient hover states
  */
 
 import React, { useState } from 'react';
@@ -10,7 +15,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,12 +26,9 @@ import Animated, {
   withSequence,
 } from 'react-native-reanimated';
 
-import { Avatar, Card } from '@/components/common';
-import { Colors, Typography, Spacing, BorderRadius } from '@/config';
+import { Avatar } from '@/components/common';
 import { Post } from '@/types';
 import { formatRelativeTime, formatNumber } from '@/utils';
-
-const { width } = Dimensions.get('window');
 
 interface PostCardProps {
   post: Post;
@@ -38,6 +39,26 @@ interface PostCardProps {
   onUserPress?: () => void;
   onPress?: () => void;
 }
+
+// Post type configurations - minimal style matching v1
+const POST_TYPE_CONFIG: Record<string, { icon: string; label: string; color: string; bgColor: string }> = {
+  ARTICLE: { icon: 'document-text', label: 'Article', color: '#F59E0B', bgColor: '#FEF3C7' },
+  QUESTION: { icon: 'help-circle', label: 'Question', color: '#3B82F6', bgColor: '#DBEAFE' },
+  ANNOUNCEMENT: { icon: 'megaphone', label: 'Announcement', color: '#EF4444', bgColor: '#FEE2E2' },
+  POLL: { icon: 'stats-chart', label: 'Poll', color: '#8B5CF6', bgColor: '#EDE9FE' },
+  ACHIEVEMENT: { icon: 'trophy', label: 'Achievement', color: '#F59E0B', bgColor: '#FEF3C7' },
+  PROJECT: { icon: 'folder', label: 'Project', color: '#F97316', bgColor: '#FFEDD5' },
+  COURSE: { icon: 'book', label: 'Course', color: '#10B981', bgColor: '#D1FAE5' },
+  EVENT: { icon: 'calendar', label: 'Event', color: '#EC4899', bgColor: '#FCE7F3' },
+  QUIZ: { icon: 'bulb', label: 'Quiz', color: '#10B981', bgColor: '#D1FAE5' },
+  EXAM: { icon: 'clipboard', label: 'Exam', color: '#EF4444', bgColor: '#FEE2E2' },
+  ASSIGNMENT: { icon: 'book-outline', label: 'Assignment', color: '#F97316', bgColor: '#FFEDD5' },
+  RESOURCE: { icon: 'folder-open', label: 'Resource', color: '#6366F1', bgColor: '#EEF2FF' },
+  TUTORIAL: { icon: 'play-circle', label: 'Tutorial', color: '#14B8A6', bgColor: '#CCFBF1' },
+  RESEARCH: { icon: 'flask', label: 'Research', color: '#8B5CF6', bgColor: '#EDE9FE' },
+  REFLECTION: { icon: 'bulb', label: 'Reflection', color: '#F59E0B', bgColor: '#FEF3C7' },
+  COLLABORATION: { icon: 'people', label: 'Collaboration', color: '#06B6D4', bgColor: '#CFFAFE' },
+};
 
 export const PostCard: React.FC<PostCardProps> = ({
   post,
@@ -86,79 +107,80 @@ export const PostCard: React.FC<PostCardProps> = ({
     }
   };
 
+  const typeConfig = POST_TYPE_CONFIG[post.postType] || POST_TYPE_CONFIG.ARTICLE;
+  const authorName = post.author.name || `${post.author.firstName} ${post.author.lastName}`;
+
   return (
-    <Card style={styles.container} pressable onPress={onPress}>
-      {/* Header */}
-      <TouchableOpacity onPress={onUserPress} style={styles.header}>
+    <View style={styles.container}>
+      {/* Header - Instagram style */}
+      <TouchableOpacity onPress={onUserPress} style={styles.header} activeOpacity={0.7}>
         <Avatar
           uri={post.author.profilePictureUrl}
-          name={`${post.author.firstName} ${post.author.lastName}`}
+          name={authorName}
           size="md"
           showOnline
           isOnline={post.author.isOnline}
         />
         <View style={styles.headerText}>
-          <Text style={styles.authorName}>
-            {post.author.firstName} {post.author.lastName}
-          </Text>
+          <View style={styles.authorRow}>
+            <Text style={styles.authorName}>{authorName}</Text>
+            {post.author.isVerified && (
+              <View style={styles.verifiedBadge}>
+                <Ionicons name="checkmark" size={10} color="#fff" />
+              </View>
+            )}
+          </View>
           <View style={styles.metaRow}>
-            <Text style={styles.metaText}>
-              {post.author.headline || post.author.professionalTitle || 'Member'}
-            </Text>
-            <Text style={styles.metaDot}>•</Text>
             <Text style={styles.metaText}>
               {formatRelativeTime(post.createdAt)}
             </Text>
           </View>
         </View>
+        
+        {/* Post Type Badge - minimal v1 style */}
+        <View style={[styles.typeBadge, { backgroundColor: typeConfig.bgColor }]}>
+          <Ionicons name={typeConfig.icon as any} size={14} color={typeConfig.color} />
+          <Text style={[styles.typeBadgeText, { color: typeConfig.color }]}>
+            {typeConfig.label}
+          </Text>
+        </View>
+        
         <TouchableOpacity style={styles.moreButton}>
-          <Ionicons name="ellipsis-horizontal" size={20} color={Colors.gray[500]} />
+          <Ionicons name="ellipsis-vertical" size={18} color="#6B7280" />
         </TouchableOpacity>
       </TouchableOpacity>
 
-      {/* Content */}
-      <TouchableOpacity activeOpacity={0.9} onPress={handleDoubleTap}>
-        <Text style={styles.content}>{post.content}</Text>
+      {/* Media Gallery - YouTube thumbnail style (16:9) */}
+      {post.mediaUrls && post.mediaUrls.length > 0 && (
+        <View style={styles.mediaContainer}>
+          <Image
+            source={{ uri: post.mediaUrls[0] }}
+            style={styles.singleImage}
+            contentFit="cover"
+            transition={200}
+          />
+          {post.mediaUrls.length > 1 && (
+            <View style={styles.mediaCounter}>
+              <Text style={styles.mediaCounterText}>
+                1/{post.mediaUrls.length}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
 
-        {/* Media */}
-        {post.mediaUrls && post.mediaUrls.length > 0 && (
-          <View style={styles.mediaContainer}>
-            {post.mediaUrls.length === 1 ? (
-              <Image
-                source={{ uri: post.mediaUrls[0] }}
-                style={styles.singleImage}
-                contentFit="cover"
-                transition={200}
-              />
-            ) : (
-              <View style={styles.imageGrid}>
-                {post.mediaUrls.slice(0, 4).map((url, index) => (
-                  <View
-                    key={index}
-                    style={[
-                      styles.gridImage,
-                      post.mediaUrls.length === 2 && styles.gridImage2,
-                      post.mediaUrls.length === 3 && index === 0 && styles.gridImage3First,
-                    ]}
-                  >
-                    <Image
-                      source={{ uri: url }}
-                      style={styles.gridImageInner}
-                      contentFit="cover"
-                      transition={200}
-                    />
-                    {index === 3 && post.mediaUrls.length > 4 && (
-                      <View style={styles.moreImages}>
-                        <Text style={styles.moreImagesText}>
-                          +{post.mediaUrls.length - 4}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
+      {/* Content Section - Clickable */}
+      <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={styles.contentSection}>
+        {/* Title */}
+        <Text style={styles.contentTitle} numberOfLines={2}>
+          {post.content.split('\n')[0]}
+        </Text>
+        
+        {/* Description */}
+        {post.content.split('\n').length > 1 && (
+          <Text style={styles.contentDescription} numberOfLines={3}>
+            {post.content.split('\n').slice(1).join('\n')}
+          </Text>
         )}
       </TouchableOpacity>
 
@@ -173,209 +195,224 @@ export const PostCard: React.FC<PostCardProps> = ({
         </View>
       )}
 
-      {/* Stats */}
-      <View style={styles.statsRow}>
-        <View style={styles.statItem}>
-          <View style={styles.likesIcon}>
-            <Ionicons name="heart" size={12} color={Colors.white} />
-          </View>
-          <Text style={styles.statText}>{formatNumber(likeCount)}</Text>
-        </View>
-        <Text style={styles.statText}>
-          {formatNumber(post.comments)} comments • {formatNumber(post.shares)} shares
-        </Text>
-      </View>
+      {/* Engagement Section - v1 style with gradient hover */}
+      <View style={styles.engagementSection}>
+        <View style={styles.engagementRow}>
+          {/* Like Button */}
+          <Animated.View style={likeAnimatedStyle}>
+            <TouchableOpacity
+              onPress={handleLike}
+              style={[
+                styles.engagementButton,
+                liked && styles.engagementButtonActive,
+              ]}
+            >
+              <Ionicons
+                name={liked ? 'heart' : 'heart-outline'}
+                size={20}
+                color={liked ? '#EF4444' : '#6B7280'}
+              />
+              <Text style={[styles.engagementText, liked && styles.engagementTextActive]}>
+                {formatNumber(likeCount)}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
 
-      {/* Divider */}
-      <View style={styles.divider} />
-
-      {/* Actions */}
-      <View style={styles.actionsRow}>
-        <Animated.View style={likeAnimatedStyle}>
-          <TouchableOpacity onPress={handleLike} style={styles.actionButton}>
-            <Ionicons
-              name={liked ? 'heart' : 'heart-outline'}
-              size={22}
-              color={liked ? Colors.error.main : Colors.gray[600]}
-            />
-            <Text style={[styles.actionText, liked && styles.actionTextLiked]}>
-              Like
-            </Text>
+          {/* Comment Button */}
+          <TouchableOpacity onPress={onComment} style={styles.engagementButton}>
+            <Ionicons name="chatbubble-outline" size={20} color="#6B7280" />
+            <Text style={styles.engagementText}>{formatNumber(post.comments)}</Text>
           </TouchableOpacity>
-        </Animated.View>
 
-        <TouchableOpacity onPress={onComment} style={styles.actionButton}>
-          <Ionicons name="chatbubble-outline" size={22} color={Colors.gray[600]} />
-          <Text style={styles.actionText}>Comment</Text>
-        </TouchableOpacity>
+          {/* Share Button */}
+          <TouchableOpacity onPress={onShare} style={styles.engagementButton}>
+            <Ionicons name="share-social-outline" size={20} color="#6B7280" />
+            <Text style={styles.engagementText}>{formatNumber(post.shares)}</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity onPress={onShare} style={styles.actionButton}>
-          <Ionicons name="share-outline" size={22} color={Colors.gray[600]} />
-          <Text style={styles.actionText}>Share</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={handleBookmark} style={styles.actionButton}>
-          <Ionicons
-            name={bookmarked ? 'bookmark' : 'bookmark-outline'}
-            size={22}
-            color={bookmarked ? Colors.primary[500] : Colors.gray[600]}
-          />
-        </TouchableOpacity>
+          {/* Bookmark Button - Right aligned */}
+          <TouchableOpacity
+            onPress={handleBookmark}
+            style={[
+              styles.bookmarkButton,
+              bookmarked && styles.bookmarkButtonActive,
+            ]}
+          >
+            <Ionicons
+              name={bookmarked ? 'bookmark' : 'bookmark-outline'}
+              size={20}
+              color={bookmarked ? '#F59E0B' : '#6B7280'}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
-    </Card>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: Spacing[3],
-    padding: 0,
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    overflow: 'hidden',
+    // Clean shadow like v1 shadow-card
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing[4],
-    paddingBottom: Spacing[2],
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 10,
   },
   headerText: {
     flex: 1,
-    marginLeft: Spacing[3],
+  },
+  authorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   authorName: {
-    fontSize: Typography.fontSize.base,
+    fontSize: 14,
     fontWeight: '600',
-    color: Colors.gray[900],
+    color: '#1F2937',
+  },
+  verifiedBadge: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#3B82F6',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
+    marginTop: 1,
   },
   metaText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.gray[500],
+    fontSize: 12,
+    color: '#9CA3AF',
   },
-  metaDot: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.gray[400],
-    marginHorizontal: 4,
+  typeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  typeBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   moreButton: {
-    padding: Spacing[2],
-  },
-  content: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.gray[800],
-    lineHeight: 22,
-    paddingHorizontal: Spacing[4],
-    paddingVertical: Spacing[2],
+    padding: 4,
   },
   mediaContainer: {
-    marginTop: Spacing[2],
+    position: 'relative',
   },
   singleImage: {
     width: '100%',
-    height: 300,
-  },
-  imageGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 2,
-  },
-  gridImage: {
-    width: (width - 34) / 2,
-    height: 150,
-  },
-  gridImage2: {
     height: 200,
+    backgroundColor: '#F3F4F6',
   },
-  gridImage3First: {
-    width: width - 32,
-    height: 200,
+  mediaCounter: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
-  gridImageInner: {
-    width: '100%',
-    height: '100%',
+  mediaCounterText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#fff',
   },
-  moreImages: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  contentSection: {
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 8,
   },
-  moreImagesText: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: '700',
-    color: Colors.white,
+  contentTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+    lineHeight: 20,
+  },
+  contentDescription: {
+    fontSize: 13,
+    color: '#6B7280',
+    lineHeight: 19,
+    marginTop: 4,
   },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: Spacing[4],
-    paddingTop: Spacing[2],
-    gap: Spacing[2],
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    gap: 6,
   },
   tag: {
-    paddingHorizontal: Spacing[3],
-    paddingVertical: Spacing[1],
-    backgroundColor: Colors.primary[50],
-    borderRadius: BorderRadius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
   },
   tagText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.primary[600],
+    fontSize: 11,
+    color: '#6366F1',
     fontWeight: '500',
   },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing[4],
-    paddingVertical: Spacing[3],
+  engagementSection: {
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  likesIcon: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: Colors.error.main,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing[1],
-  },
-  statText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.gray[500],
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.gray[100],
-    marginHorizontal: Spacing[4],
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing[4],
-    paddingVertical: Spacing[2],
-  },
-  actionButton: {
+  engagementRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing[2],
-    paddingHorizontal: Spacing[3],
-    gap: Spacing[2],
+    gap: 2,
   },
-  actionText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.gray[600],
-    fontWeight: '500',
+  engagementButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    gap: 4,
   },
-  actionTextLiked: {
-    color: Colors.error.main,
+  engagementButtonActive: {
+    backgroundColor: '#FEF2F2',
+  },
+  engagementText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  engagementTextActive: {
+    color: '#EF4444',
+  },
+  bookmarkButton: {
+    marginLeft: 'auto',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  bookmarkButtonActive: {
+    backgroundColor: '#FFFBEB',
   },
 });
 

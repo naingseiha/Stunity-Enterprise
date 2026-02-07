@@ -1,8 +1,8 @@
 # 🎓 Stunity Enterprise - School Management + Social E-Learning Platform
 
-**Version:** 5.1  
-**Status:** Phase 15 Complete ✅  
-**Last Updated:** February 5, 2026
+**Version:** 5.2  
+**Status:** Phase 29 - Mobile App Working ✅  
+**Last Updated:** February 7, 2026
 
 A comprehensive, multi-tenant school management SaaS platform with social feed features, parent portal, teacher-parent messaging, full academic year support, student progression tracking, and historical data management.
 
@@ -26,6 +26,15 @@ Phone: 012345678
 Password: TestParent123!
 ```
 
+### 📱 Mobile App (Expo Go)
+```bash
+cd apps/mobile
+npx expo start --tunnel
+
+# Scan QR code with Expo Go app
+# Same login credentials as web
+```
+
 ---
 
 ## 📊 System Architecture
@@ -46,8 +55,15 @@ Password: TestParent123!
 | 3010 | Feed | Social feed posts, likes, comments |
 | 3011 | Messaging | Teacher-parent messaging 🆕 |
 
+### Mobile App
+| Platform | Technology | Status |
+|----------|------------|--------|
+| iOS | React Native (Expo) | 🟢 Working |
+| Android | React Native (Expo) | 🟢 Working |
+
 ### Tech Stack
 - **Frontend:** Next.js 14, React, TypeScript, TailwindCSS
+- **Mobile:** React Native, Expo SDK 54, Zustand
 - **Backend:** Node.js, Express, TypeScript
 - **Database:** PostgreSQL (Neon), Prisma ORM
 - **Auth:** JWT tokens

@@ -1,7 +1,7 @@
 /**
  * Story Circles Component
  * 
- * Instagram-style story circles at top of feed
+ * Instagram-style story circles - improved design
  */
 
 import React from 'react';
@@ -22,7 +22,7 @@ import { Colors, Typography, Spacing, BorderRadius } from '@/config';
 import { StoryGroup } from '@/types';
 
 const { width } = Dimensions.get('window');
-const STORY_SIZE = 68;
+const STORY_SIZE = 64;
 
 interface StoryCirclesProps {
   storyGroups: StoryGroup[];
@@ -42,6 +42,36 @@ export const StoryCircles: React.FC<StoryCirclesProps> = ({
     (group) => group.user.id === currentUserId
   );
 
+  if (storyGroups.length === 0) {
+    return (
+      <Animated.View entering={FadeIn.duration(400)} style={styles.container}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* Create Story Button */}
+          <TouchableOpacity onPress={onCreateStory} style={styles.storyItem}>
+            <View style={styles.createStoryButton}>
+              <LinearGradient
+                colors={[Colors.gray[100], Colors.gray[200]]}
+                style={styles.createPlaceholder}
+              >
+                <Ionicons name="person" size={28} color={Colors.gray[400]} />
+              </LinearGradient>
+              <View style={styles.addIcon}>
+                <Ionicons name="add" size={14} color={Colors.white} />
+              </View>
+            </View>
+            <Text style={styles.storyLabel} numberOfLines={1}>
+              Add story
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </Animated.View>
+    );
+  }
+
   return (
     <Animated.View entering={FadeIn.duration(400)} style={styles.container}>
       <ScrollView
@@ -53,22 +83,34 @@ export const StoryCircles: React.FC<StoryCirclesProps> = ({
         <TouchableOpacity onPress={onCreateStory} style={styles.storyItem}>
           <View style={styles.createStoryButton}>
             {hasOwnStory ? (
-              <Avatar
-                uri={storyGroups.find((g) => g.user.id === currentUserId)?.user.profilePictureUrl}
-                name="You"
-                size="lg"
-              />
+              <LinearGradient
+                colors={['#F59E0B', '#F97316', '#EF4444']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.storyRing}
+              >
+                <View style={styles.storyInner}>
+                  <Avatar
+                    uri={storyGroups.find((g) => g.user.id === currentUserId)?.user.profilePictureUrl}
+                    name="You"
+                    size="md"
+                  />
+                </View>
+              </LinearGradient>
             ) : (
-              <View style={styles.createPlaceholder}>
-                <Ionicons name="person" size={32} color={Colors.gray[400]} />
-              </View>
+              <LinearGradient
+                colors={[Colors.gray[100], Colors.gray[200]]}
+                style={styles.createPlaceholder}
+              >
+                <Ionicons name="person" size={28} color={Colors.gray[400]} />
+              </LinearGradient>
             )}
             <View style={styles.addIcon}>
-              <Ionicons name="add" size={16} color={Colors.white} />
+              <Ionicons name="add" size={14} color={Colors.white} />
             </View>
           </View>
           <Text style={styles.storyLabel} numberOfLines={1}>
-            Your story
+            {hasOwnStory ? 'Your story' : 'Add story'}
           </Text>
         </TouchableOpacity>
 
@@ -87,7 +129,7 @@ export const StoryCircles: React.FC<StoryCirclesProps> = ({
                 <LinearGradient
                   colors={
                     group.hasUnviewed
-                      ? [Colors.primary[400], Colors.secondary[500], Colors.error.main]
+                      ? ['#F59E0B', '#F97316', '#EF4444']
                       : [Colors.gray[300], Colors.gray[300]]
                   }
                   start={{ x: 0, y: 0 }}
@@ -98,7 +140,7 @@ export const StoryCircles: React.FC<StoryCirclesProps> = ({
                     <Avatar
                       uri={group.user.profilePictureUrl}
                       name={`${group.user.firstName} ${group.user.lastName}`}
-                      size="lg"
+                      size="md"
                     />
                   </View>
                 </LinearGradient>
@@ -118,11 +160,15 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: Colors.white,
     paddingVertical: Spacing[3],
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[100],
+    marginHorizontal: Spacing[3],
+    marginTop: Spacing[2],
+    marginBottom: Spacing[2],
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.gray[200],
   },
   scrollContent: {
-    paddingHorizontal: Spacing[4],
+    paddingHorizontal: Spacing[3],
     gap: Spacing[3],
   },
   storyItem: {
@@ -138,21 +184,20 @@ const styles = StyleSheet.create({
     width: STORY_SIZE,
     height: STORY_SIZE,
     borderRadius: STORY_SIZE / 2,
-    backgroundColor: Colors.gray[100],
     alignItems: 'center',
     justifyContent: 'center',
   },
   addIcon: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: Colors.primary[500],
+    bottom: -2,
+    right: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#F59E0B',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: Colors.white,
   },
   storyCircle: {
@@ -163,20 +208,20 @@ const styles = StyleSheet.create({
     width: STORY_SIZE,
     height: STORY_SIZE,
     borderRadius: STORY_SIZE / 2,
-    padding: 3,
+    padding: 2,
   },
   storyInner: {
     flex: 1,
-    borderRadius: (STORY_SIZE - 6) / 2,
+    borderRadius: (STORY_SIZE - 4) / 2,
     backgroundColor: Colors.white,
     padding: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   storyLabel: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.gray[700],
-    marginTop: Spacing[1],
+    fontSize: 11,
+    color: Colors.gray[600],
+    marginTop: 4,
     textAlign: 'center',
     maxWidth: STORY_SIZE,
   },

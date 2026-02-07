@@ -71,19 +71,46 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
     try {
       const response = await feedApi.get('/posts', {
-        params: { page, pageSize: 20 },
+        params: { page, limit: 20 },
       });
 
       if (response.data.success) {
-        const newPosts = response.data.posts || [];
-        const hasMore = response.data.pagination?.hasMore ?? newPosts.length === 20;
+        // Backend returns { success, data: posts[], pagination }
+        const newPosts = response.data.data || response.data.posts || [];
+        const pagination = response.data.pagination;
+        const hasMore = pagination?.hasMore ?? newPosts.length === 20;
+
+        // Transform posts to match mobile app Post type
+        const transformedPosts: Post[] = newPosts.map((post: any) => ({
+          id: post.id,
+          author: {
+            id: post.author?.id,
+            firstName: post.author?.firstName,
+            lastName: post.author?.lastName,
+            name: `${post.author?.firstName || ''} ${post.author?.lastName || ''}`.trim(),
+            profilePictureUrl: post.author?.profilePictureUrl,
+            role: post.author?.role,
+            isVerified: post.author?.isVerified,
+          },
+          content: post.content,
+          mediaUrls: post.mediaUrls || [],
+          likes: post.likesCount || post._count?.likes || 0,
+          comments: post.commentsCount || post._count?.comments || 0,
+          shares: post.sharesCount || 0,
+          isLiked: post.isLikedByMe || false,
+          isBookmarked: post.isBookmarked || false,
+          createdAt: post.createdAt,
+          updatedAt: post.updatedAt,
+        }));
 
         set({
-          posts: refresh ? newPosts : [...posts, ...newPosts],
+          posts: refresh ? transformedPosts : [...posts, ...transformedPosts],
           postsPage: page + 1,
           hasMorePosts: hasMore,
           isLoadingPosts: false,
         });
+      } else {
+        set({ isLoadingPosts: false });
       }
     } catch (error) {
       console.error('Failed to fetch posts:', error);
@@ -98,15 +125,42 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     try {
       const response = await feedApi.get('/stories');
 
-      if (response.data.success) {
-        set({
-          storyGroups: response.data.storyGroups || [],
-          isLoadingStories: false,
-        });
-      }
+      // Backend returns { stories: [...] } or { success, storyGroups }
+      const groups = response.data.stories || response.data.storyGroups || [];
+      
+      // Transform to mobile app format
+      const storyGroups: StoryGroup[] = groups.map((group: any) => ({
+        user: {
+          id: group.user?.id,
+          name: group.user?.name,
+          firstName: group.user?.name?.split(' ')[0],
+          lastName: group.user?.name?.split(' ').slice(1).join(' '),
+          profilePictureUrl: group.user?.avatar || group.user?.profilePictureUrl,
+        },
+        stories: (group.stories || []).map((story: any) => ({
+          id: story.id,
+          type: story.type,
+          mediaUrl: story.mediaUrl,
+          thumbnailUrl: story.thumbnailUrl,
+          text: story.text,
+          backgroundColor: story.backgroundColor,
+          textColor: story.textColor,
+          duration: story.duration || 5,
+          viewCount: story.viewCount || 0,
+          isViewed: story.isViewed || false,
+          createdAt: story.createdAt,
+          expiresAt: story.expiresAt,
+        })),
+        hasUnviewed: group.hasUnviewed || false,
+      }));
+
+      set({
+        storyGroups,
+        isLoadingStories: false,
+      });
     } catch (error) {
       console.error('Failed to fetch stories:', error);
-      set({ isLoadingStories: false });
+      set({ isLoadingStories: false, storyGroups: [] });
     }
   },
 

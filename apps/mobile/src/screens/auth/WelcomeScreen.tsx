@@ -11,18 +11,13 @@ import {
   StyleSheet,
   Dimensions,
   StatusBar,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Image } from 'expo-image';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  FadeInDown,
-  FadeInUp,
-} from 'react-native-reanimated';
 
-import { Button } from '@/components/common';
 import { Colors, Typography, Spacing } from '@/config';
 import { AuthStackScreenProps } from '@/navigation/types';
 
@@ -47,22 +42,16 @@ export default function WelcomeScreen() {
 
       <SafeAreaView style={styles.content}>
         {/* Logo and Branding */}
-        <Animated.View 
-          entering={FadeInDown.delay(200).duration(800)}
-          style={styles.brandingContainer}
-        >
+        <View style={styles.brandingContainer}>
           <View style={styles.logoContainer}>
             <Ionicons name="school" size={80} color={Colors.white} />
           </View>
           <Text style={styles.appName}>Stunity</Text>
           <Text style={styles.tagline}>Learn Together, Grow Together</Text>
-        </Animated.View>
+        </View>
 
         {/* Features Preview */}
-        <Animated.View 
-          entering={FadeInUp.delay(400).duration(800)}
-          style={styles.featuresContainer}
-        >
+        <View style={styles.featuresContainer}>
           <View style={styles.featureRow}>
             <FeatureItem icon="book-outline" text="Explore Courses" />
             <FeatureItem icon="people-outline" text="Join Clubs" />
@@ -71,45 +60,31 @@ export default function WelcomeScreen() {
             <FeatureItem icon="chatbubbles-outline" text="Connect" />
             <FeatureItem icon="trophy-outline" text="Achieve" />
           </View>
-        </Animated.View>
+        </View>
 
         {/* Auth Buttons */}
-        <Animated.View 
-          entering={FadeInUp.delay(600).duration(800)}
-          style={styles.buttonsContainer}
-        >
-          <Button
-            title="Get Started"
-            variant="secondary"
-            size="lg"
-            fullWidth
-            onPress={() => navigation.navigate('Register')}
+        <View style={styles.buttonsContainer}>
+          <TouchableOpacity
             style={styles.getStartedButton}
-            textStyle={styles.getStartedText}
-          />
+            onPress={() => navigation.navigate('Register')}
+          >
+            <Text style={styles.getStartedText}>Get Started</Text>
+          </TouchableOpacity>
           
-          <Button
-            title="I already have an account"
-            variant="ghost"
-            size="lg"
-            fullWidth
+          <TouchableOpacity
+            style={styles.loginButton}
             onPress={() => navigation.navigate('Login')}
-            textStyle={styles.loginText}
-          />
-        </Animated.View>
+          >
+            <Text style={styles.loginText}>I already have an account</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Footer */}
-        <Animated.View 
-          entering={FadeInUp.delay(800).duration(800)}
-          style={styles.footer}
-        >
+        <View style={styles.footer}>
           <Text style={styles.footerText}>
-            By continuing, you agree to our{' '}
-            <Text style={styles.footerLink}>Terms of Service</Text>
-            {' '}and{' '}
-            <Text style={styles.footerLink}>Privacy Policy</Text>
+            By continuing, you agree to our Terms of Service and Privacy Policy
           </Text>
-        </Animated.View>
+        </View>
       </SafeAreaView>
     </View>
   );
@@ -194,15 +169,26 @@ const styles = StyleSheet.create({
   },
   getStartedButton: {
     backgroundColor: Colors.white,
+    height: 52,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: Spacing[3],
   },
   getStartedText: {
     color: Colors.primary[600],
     fontWeight: '700',
+    fontSize: Typography.fontSize.lg,
+  },
+  loginButton: {
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   loginText: {
     color: Colors.white,
     fontWeight: '600',
+    fontSize: Typography.fontSize.lg,
   },
   footer: {
     alignItems: 'center',
@@ -213,9 +199,5 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
     lineHeight: 18,
-  },
-  footerLink: {
-    textDecorationLine: 'underline',
-    fontWeight: '500',
   },
 });

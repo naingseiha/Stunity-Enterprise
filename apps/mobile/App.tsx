@@ -27,20 +27,21 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function App() {
   const [appIsReady, setAppIsReady] = React.useState(false);
+  const { initialize, isAuthenticated, user } = useAuthStore();
 
   useEffect(() => {
     async function prepare() {
       try {
-        // Skip async token initialization for now
-        // Just set the store to initialized state
-        useAuthStore.setState({ 
-          isInitialized: true, 
-          isLoading: false,
-          isAuthenticated: false,
-          user: null 
-        });
+        // Initialize auth - this will restore persisted state
+        // and validate tokens if available
+        await initialize();
       } catch (e) {
         console.warn('App init error:', e);
+        // Set initialized even on error so app can show login
+        useAuthStore.setState({ 
+          isInitialized: true, 
+          isLoading: false 
+        });
       } finally {
         setAppIsReady(true);
         SplashScreen.hideAsync().catch(() => {});

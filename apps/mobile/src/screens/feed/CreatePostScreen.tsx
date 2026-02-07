@@ -1,0 +1,483 @@
+/**
+ * CreatePost Screen
+ * 
+ * Create new post with content and media
+ * Matching v1 app clean design style
+ */
+
+import React, { useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
+
+import { Avatar } from '@/components/common';
+import { useAuthStore, useFeedStore } from '@/stores';
+import { PostType } from '@/types';
+
+// Post type options
+const POST_TYPES: { type: PostType; icon: string; label: string; color: string }[] = [
+  { type: 'ARTICLE', icon: 'document-text', label: 'Article', color: '#F59E0B' },
+  { type: 'QUESTION', icon: 'help-circle', label: 'Question', color: '#3B82F6' },
+  { type: 'ANNOUNCEMENT', icon: 'megaphone', label: 'Announce', color: '#EF4444' },
+  { type: 'POLL', icon: 'stats-chart', label: 'Poll', color: '#8B5CF6' },
+  { type: 'COURSE', icon: 'book', label: 'Course', color: '#10B981' },
+  { type: 'PROJECT', icon: 'folder', label: 'Project', color: '#F97316' },
+];
+
+export default function CreatePostScreen() {
+  const navigation = useNavigation();
+  const { user } = useAuthStore();
+  const { createPost } = useFeedStore();
+
+  const [content, setContent] = useState('');
+  const [postType, setPostType] = useState<PostType>('ARTICLE');
+  const [mediaUris, setMediaUris] = useState<string[]>([]);
+  const [isPosting, setIsPosting] = useState(false);
+
+  const handleClose = useCallback(() => {
+    if (content.trim() || mediaUris.length > 0) {
+      Alert.alert(
+        'Discard Post?',
+        'You have unsaved changes. Are you sure you want to discard this post?',
+        [
+          { text: 'Keep Editing', style: 'cancel' },
+          { text: 'Discard', style: 'destructive', onPress: () => navigation.goBack() },
+        ]
+      );
+    } else {
+      navigation.goBack();
+    }
+  }, [content, mediaUris, navigation]);
+
+  const handlePickImage = useCallback(async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please grant access to your photos to add images.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.8,
+      selectionLimit: 4 - mediaUris.length,
+    });
+
+    if (!result.canceled && result.assets) {
+      const newUris = result.assets.map(asset => asset.uri);
+      setMediaUris(prev => [...prev, ...newUris].slice(0, 4));
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, [mediaUris]);
+
+  const handleTakePhoto = useCallback(async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please grant access to your camera to take photos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets) {
+      setMediaUris(prev => [...prev, result.assets[0].uri].slice(0, 4));
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, []);
+
+  const handleRemoveImage = useCallback((index: number) => {
+    Haptics.selectionAsync();
+    setMediaUris(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handlePost = useCallback(async () => {
+    if (!content.trim()) {
+      Alert.alert('Empty Post', 'Please write something before posting.');
+      return;
+    }
+
+    setIsPosting(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    try {
+      // TODO: Implement actual post creation with media upload
+      // await createPost({ content, postType, mediaUris });
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to create post. Please try again.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsPosting(false);
+    }
+  }, [content, postType, mediaUris, navigation]);
+
+  const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
+  const canPost = content.trim().length > 0;
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+          <Ionicons name="close" size={24} color="#374151" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Create Post</Text>
+        <TouchableOpacity
+          onPress={handlePost}
+          disabled={!canPost || isPosting}
+          style={[styles.postButton, (!canPost || isPosting) && styles.postButtonDisabled]}
+        >
+          {isPosting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={[styles.postButtonText, !canPost && styles.postButtonTextDisabled]}>
+              Post
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+      >
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* Author Info */}
+          <View style={styles.authorSection}>
+            <Avatar
+              uri={user?.profilePictureUrl}
+              name={userName}
+              size="md"
+            />
+            <View style={styles.authorInfo}>
+              <Text style={styles.authorName}>{userName}</Text>
+              <View style={styles.postTypeBadge}>
+                <Ionicons
+                  name={POST_TYPES.find(t => t.type === postType)?.icon as any || 'document-text'}
+                  size={12}
+                  color={POST_TYPES.find(t => t.type === postType)?.color || '#F59E0B'}
+                />
+                <Text style={[
+                  styles.postTypeBadgeText,
+                  { color: POST_TYPES.find(t => t.type === postType)?.color }
+                ]}>
+                  {POST_TYPES.find(t => t.type === postType)?.label || 'Article'}
+                </Text>
+                <Ionicons name="chevron-down" size={12} color="#9CA3AF" />
+              </View>
+            </View>
+          </View>
+
+          {/* Post Type Selector */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.typeSelector}
+            contentContainerStyle={styles.typeSelectorContent}
+          >
+            {POST_TYPES.map((type) => (
+              <TouchableOpacity
+                key={type.type}
+                onPress={() => {
+                  setPostType(type.type);
+                  Haptics.selectionAsync();
+                }}
+                style={[
+                  styles.typeOption,
+                  postType === type.type && { backgroundColor: type.color + '15', borderColor: type.color },
+                ]}
+              >
+                <Ionicons
+                  name={type.icon as any}
+                  size={16}
+                  color={postType === type.type ? type.color : '#6B7280'}
+                />
+                <Text style={[
+                  styles.typeOptionText,
+                  postType === type.type && { color: type.color },
+                ]}>
+                  {type.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {/* Content Input */}
+          <TextInput
+            style={styles.contentInput}
+            placeholder="What's on your mind?"
+            placeholderTextColor="#9CA3AF"
+            multiline
+            value={content}
+            onChangeText={setContent}
+            autoFocus
+          />
+
+          {/* Media Preview */}
+          {mediaUris.length > 0 && (
+            <View style={styles.mediaPreview}>
+              {mediaUris.map((uri, index) => (
+                <View key={uri} style={styles.mediaItem}>
+                  <Image source={{ uri }} style={styles.mediaImage} contentFit="cover" />
+                  <TouchableOpacity
+                    onPress={() => handleRemoveImage(index)}
+                    style={styles.removeMediaButton}
+                  >
+                    <Ionicons name="close" size={16} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Bottom Actions */}
+        <View style={styles.bottomActions}>
+          <View style={styles.mediaActions}>
+            <TouchableOpacity
+              onPress={handlePickImage}
+              style={styles.mediaButton}
+              disabled={mediaUris.length >= 4}
+            >
+              <View style={[styles.mediaButtonIcon, { backgroundColor: '#10B98120' }]}>
+                <Ionicons
+                  name="image"
+                  size={20}
+                  color={mediaUris.length >= 4 ? '#9CA3AF' : '#10B981'}
+                />
+              </View>
+              <Text style={[styles.mediaButtonText, mediaUris.length >= 4 && { color: '#9CA3AF' }]}>
+                Photo
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleTakePhoto}
+              style={styles.mediaButton}
+              disabled={mediaUris.length >= 4}
+            >
+              <View style={[styles.mediaButtonIcon, { backgroundColor: '#3B82F620' }]}>
+                <Ionicons
+                  name="camera"
+                  size={20}
+                  color={mediaUris.length >= 4 ? '#9CA3AF' : '#3B82F6'}
+                />
+              </View>
+              <Text style={[styles.mediaButtonText, mediaUris.length >= 4 && { color: '#9CA3AF' }]}>
+                Camera
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.mediaButton}>
+              <View style={[styles.mediaButtonIcon, { backgroundColor: '#8B5CF620' }]}>
+                <Ionicons name="videocam" size={20} color="#8B5CF6" />
+              </View>
+              <Text style={styles.mediaButtonText}>Video</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.mediaButton}>
+              <View style={[styles.mediaButtonIcon, { backgroundColor: '#F59E0B20' }]}>
+                <Ionicons name="document" size={20} color="#F59E0B" />
+              </View>
+              <Text style={styles.mediaButtonText}>File</Text>
+            </TouchableOpacity>
+          </View>
+
+          {mediaUris.length > 0 && (
+            <Text style={styles.mediaCount}>
+              {mediaUris.length}/4 photos
+            </Text>
+          )}
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  postButton: {
+    backgroundColor: '#6366F1',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    minWidth: 70,
+    alignItems: 'center',
+  },
+  postButtonDisabled: {
+    backgroundColor: '#E5E7EB',
+  },
+  postButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  postButtonTextDisabled: {
+    color: '#9CA3AF',
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  authorSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  authorInfo: {
+    flex: 1,
+  },
+  authorName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  postTypeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 4,
+  },
+  postTypeBadgeText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  typeSelector: {
+    maxHeight: 50,
+    marginBottom: 8,
+  },
+  typeSelectorContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  typeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 6,
+  },
+  typeOptionText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  contentInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1F2937',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    minHeight: 150,
+    textAlignVertical: 'top',
+  },
+  mediaPreview: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 16,
+    gap: 8,
+  },
+  mediaItem: {
+    position: 'relative',
+    width: '48%',
+    aspectRatio: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  mediaImage: {
+    width: '100%',
+    height: '100%',
+  },
+  removeMediaButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bottomActions: {
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+  },
+  mediaActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  mediaButton: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  mediaButtonIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mediaButtonText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  mediaCount: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 8,
+  },
+});
