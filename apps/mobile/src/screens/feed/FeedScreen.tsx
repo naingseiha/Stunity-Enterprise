@@ -30,7 +30,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 // Import actual Stunity logo
 const StunityLogo = require('../../../../../Stunity.png');
 
-import { PostCard, StoryCircles } from '@/components/feed';
+import { PostCard } from '@/components/feed';
 import { Avatar, PostSkeleton } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore } from '@/stores';
@@ -151,27 +151,24 @@ export default function FeedScreen() {
 
   const renderHeader = () => (
     <View style={styles.headerSection}>
-      {/* Stories */}
-      <StoryCircles
-        storyGroups={storyGroups}
-        onStoryPress={handleStoryPress}
-        onCreateStory={handleCreateStory}
-        currentUserId={user?.id}
-      />
-
-      {/* Create Post Card - V1 style */}
-      <View style={styles.createPostCard}>
+      {/* Create Post Card - Clean V1 style matching reference */}
+      <TouchableOpacity 
+        onPress={handleCreatePost} 
+        activeOpacity={0.8}
+        style={styles.createPostCard}
+      >
         <Avatar
           uri={user?.profilePictureUrl}
           name={user ? `${user.firstName} ${user.lastName}` : 'User'}
           size="md"
         />
-        <TouchableOpacity onPress={handleCreatePost} style={styles.createPostInput}>
-          <Text style={styles.createPostPlaceholder}>
-            តើអ្នកកំពុងគិតអ្វី?
-          </Text>
-        </TouchableOpacity>
-      </View>
+        <Text style={styles.createPostPlaceholder}>
+          តើអ្នកកំពុងគិតអ្វី {user?.firstName || ''}?
+        </Text>
+        <View style={styles.createPostMediaButton}>
+          <Ionicons name="images-outline" size={22} color="#6366F1" />
+        </View>
+      </TouchableOpacity>
     </View>
   );
 
@@ -249,7 +246,7 @@ export default function FeedScreen() {
               name={user ? `${user.firstName} ${user.lastName}` : 'User'}
               size="md"
               showBorder={true}
-              borderColor="#E5E7EB"
+              borderColor="#F59E0B"
             />
           </TouchableOpacity>
 
@@ -311,7 +308,7 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F8F7FC',
   },
   headerSafe: {
     backgroundColor: '#fff',
@@ -321,9 +318,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    paddingVertical: 12,
   },
   headerLogo: {
     height: 32,
@@ -353,13 +348,12 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    paddingBottom: 2,
   },
   filterScroll: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    gap: 8,
+    paddingVertical: 12,
+    gap: 10,
   },
   filterTab: {
     borderRadius: 50,
@@ -402,7 +396,8 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   headerSection: {
-    paddingTop: 4,
+    paddingTop: 12,
+    paddingBottom: 0,
   },
   postWrapper: {
     marginBottom: 0,
@@ -412,34 +407,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     marginHorizontal: 12,
-    marginTop: 8,
     marginBottom: 12,
-    padding: 14,
-    borderRadius: 16,
-    gap: 12,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 4 },
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 14,
+    // Soft neutral shadow
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
-    elevation: 4,
-  },
-  createPostInput: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 24,
+    elevation: 6,
   },
   createPostPlaceholder: {
-    fontSize: 14,
+    flex: 1,
+    fontSize: 15,
     color: '#9CA3AF',
   },
+  createPostMediaButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   footer: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
   },
   skeletonContainer: {
-    paddingHorizontal: 12,
-    paddingTop: 8,
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
   emptyContainer: {
     alignItems: 'center',

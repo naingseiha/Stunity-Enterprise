@@ -135,10 +135,10 @@ export const PostCard: React.FC<PostCardProps> = ({
           </View>
         </TouchableOpacity>
         
-        {/* XP Badge - Study reward */}
-        <View style={styles.xpBadge}>
-          <Ionicons name="sparkles" size={14} color="#F59E0B" />
-          <Text style={styles.xpBadgeText}>+{Math.floor(Math.random() * 20) + 5} XP</Text>
+        {/* Post Type Badge */}
+        <View style={[styles.typeBadge, { borderColor: typeConfig.color + '40', backgroundColor: typeConfig.bgColor }]}>
+          <Ionicons name={typeConfig.icon as any} size={14} color={typeConfig.color} />
+          <Text style={[styles.typeBadgeText, { color: typeConfig.color }]}>{typeConfig.label}</Text>
         </View>
         
         <TouchableOpacity style={styles.moreButton}>
@@ -169,19 +169,19 @@ export const PostCard: React.FC<PostCardProps> = ({
           {post.content}
         </Text>
 
-        {/* Stats Row - V1 style */}
+        {/* Stats Row - Clean simple style */}
         <View style={styles.statsRow}>
           <View style={styles.stat}>
-            <Ionicons name="star" size={16} color="#F59E0B" />
+            <Ionicons name="star" size={15} color="#F59E0B" />
             <Text style={styles.statText}>+{Math.floor(Math.random() * 50) + 10}</Text>
           </View>
           <Text style={styles.statDot}>•</Text>
           <View style={styles.stat}>
-            <Ionicons name="flame" size={16} color="#F97316" />
+            <Ionicons name="flame" size={15} color="#F97316" />
             <Text style={styles.statText}>{Math.floor(Math.random() * 7) + 1}d</Text>
           </View>
           <Text style={styles.statDot}>•</Text>
-          <Ionicons name="people" size={16} color="#9CA3AF" />
+          <Ionicons name="people-outline" size={15} color="#9CA3AF" />
         </View>
       </TouchableOpacity>
 
@@ -261,13 +261,13 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 12,
-    marginBottom: 14,
+    marginBottom: 12,
     borderRadius: 16,
-    overflow: 'hidden',
-    // Beautiful floating shadow like V1
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
+    overflow: 'visible',
+    // Soft neutral shadow - clean floating effect
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
     shadowRadius: 16,
     elevation: 8,
   },
@@ -275,8 +275,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingTop: 14,
+    paddingBottom: 14,
   },
   authorSection: {
     flex: 1,
@@ -310,33 +310,32 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     marginTop: 2,
   },
-  xpBadge: {
+  typeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: '#FEF3C7',
-    gap: 4,
+    gap: 5,
     marginRight: 4,
+    borderWidth: 1,
   },
-  xpBadgeText: {
+  typeBadgeText: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#D97706',
+    fontWeight: '600',
   },
   moreButton: {
     padding: 6,
   },
   mediaWrapper: {
-    marginHorizontal: 16,
-    borderRadius: 16,
+    marginHorizontal: 14,
+    borderRadius: 12,
     overflow: 'hidden',
     position: 'relative',
   },
   mediaImage: {
     width: '100%',
-    height: 220,
+    height: 200,
     backgroundColor: '#F3F4F6',
   },
   mediaCounter: {
@@ -355,19 +354,20 @@ const styles = StyleSheet.create({
   },
   contentSection: {
     paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 14,
+    paddingTop: 12,
+    paddingBottom: 12,
   },
   contentText: {
     fontSize: 15,
-    color: '#374151',
-    lineHeight: 23,
+    color: '#1F2937',
+    lineHeight: 22,
+    fontWeight: '500',
   },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 14,
-    gap: 8,
+    marginTop: 10,
+    gap: 6,
   },
   stat: {
     flexDirection: 'row',
@@ -385,21 +385,21 @@ const styles = StyleSheet.create({
   },
   infoSection: {
     flexDirection: 'row',
-    marginHorizontal: 16,
-    marginTop: 4,
-    marginBottom: 16,
-    padding: 14,
-    backgroundColor: '#F5F3FF',
-    borderRadius: 14,
+    marginHorizontal: 14,
+    marginTop: 2,
+    marginBottom: 14,
+    padding: 12,
+    backgroundColor: '#F8F7FF',
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E9D5FF',
+    borderColor: '#EDE9FE',
     alignItems: 'flex-start',
     gap: 12,
   },
   infoIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -424,16 +424,16 @@ const styles = StyleSheet.create({
   actionBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
   },
   actionButton: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 50,
   },
   actionButtonInner: {
     flexDirection: 'row',

@@ -74,7 +74,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   showOnline = false,
   isOnline = false,
   style,
-  borderColor = '#E5E7EB',
+  borderColor = '#F59E0B',
   showBorder = true,
 }) => {
   const dimension = SIZES[size];
