@@ -1,14 +1,14 @@
 /**
  * Feed Screen
  * 
- * Clean modern feed matching v1 app design:
- * - White cards with subtle shadows (shadow-card)
- * - Minimal clean design
- * - rounded-2xl cards
- * - Simple author info with avatar
+ * V1 App Design:
+ * - Header: Profile left, Stunity logo center, bell/search right
+ * - Horizontal filter tabs with purple active
+ * - Clean cards with proper shadows
+ * - CTA section per post type
  */
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -17,11 +17,18 @@ import {
   RefreshControl,
   TouchableOpacity,
   StatusBar,
+  ScrollView,
+  Image,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+
+// Import actual Stunity logo
+const StunityLogo = require('../../../../../Stunity.png');
 
 import { PostCard, StoryCircles } from '@/components/feed';
 import { Avatar, PostSkeleton } from '@/components/common';
@@ -31,6 +38,16 @@ import { Post } from '@/types';
 import { FeedStackScreenProps } from '@/navigation/types';
 
 type NavigationProp = FeedStackScreenProps<'Feed'>['navigation'];
+
+// Post type filter tabs
+const FILTER_TABS = [
+  { key: 'ALL', label: 'ទាំងអស់', icon: 'radio' },
+  { key: 'ARTICLE', label: 'អត្ថបទ', icon: 'document-text' },
+  { key: 'COURSE', label: 'វគ្គសិក្សា', icon: 'school' },
+  { key: 'PROJECT', label: 'គម្រោង', icon: 'folder' },
+  { key: 'EXAM', label: 'ប្រឡង', icon: 'clipboard' },
+  { key: 'QUIZ', label: 'សំណួរ', icon: 'bulb' },
+];
 
 export default function FeedScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -49,7 +66,8 @@ export default function FeedScreen() {
     setActiveStoryGroup,
   } = useFeedStore();
 
-  const [refreshing, setRefreshing] = React.useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('ALL');
 
   useEffect(() => {
     fetchPosts();
@@ -89,6 +107,48 @@ export default function FeedScreen() {
     navigation.navigate('CreatePost' as any);
   }, [navigation]);
 
+  // Filter tabs component
+  const renderFilterTabs = () => (
+    <View style={styles.filterContainer}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterScroll}
+      >
+        {FILTER_TABS.map((tab) => {
+          const isActive = activeFilter === tab.key;
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              onPress={() => setActiveFilter(tab.key)}
+              style={[
+                styles.filterTab,
+                isActive && styles.filterTabActive,
+              ]}
+            >
+              {isActive ? (
+                <LinearGradient
+                  colors={['#6366F1', '#8B5CF6']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.filterTabGradient}
+                >
+                  <Ionicons name={tab.icon as any} size={16} color="#fff" />
+                  <Text style={styles.filterTabTextActive}>{tab.label}</Text>
+                </LinearGradient>
+              ) : (
+                <View style={styles.filterTabInner}>
+                  <Ionicons name={tab.icon as any} size={16} color="#6B7280" />
+                  <Text style={styles.filterTabText}>{tab.label}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+
   const renderHeader = () => (
     <View style={styles.headerSection}>
       {/* Stories */}
@@ -99,7 +159,7 @@ export default function FeedScreen() {
         currentUserId={user?.id}
       />
 
-      {/* Create Post Card - Clean v1 style */}
+      {/* Create Post Card - V1 style */}
       <View style={styles.createPostCard}>
         <Avatar
           uri={user?.profilePictureUrl}
@@ -108,21 +168,9 @@ export default function FeedScreen() {
         />
         <TouchableOpacity onPress={handleCreatePost} style={styles.createPostInput}>
           <Text style={styles.createPostPlaceholder}>
-            What's on your mind?
+            តើអ្នកកំពុងគិតអ្វី?
           </Text>
         </TouchableOpacity>
-        <View style={styles.createPostActions}>
-          <TouchableOpacity style={styles.createPostAction}>
-            <View style={[styles.actionIconBg, { backgroundColor: '#10B98120' }]}>
-              <Ionicons name="image" size={18} color="#10B981" />
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.createPostAction}>
-            <View style={[styles.actionIconBg, { backgroundColor: '#3B82F620' }]}>
-              <Ionicons name="videocam" size={18} color="#3B82F6" />
-            </View>
-          </TouchableOpacity>
-        </View>
       </View>
     </View>
   );
@@ -169,12 +217,19 @@ export default function FeedScreen() {
         <View style={styles.emptyIconBg}>
           <Ionicons name="document-text-outline" size={40} color="#9CA3AF" />
         </View>
-        <Text style={styles.emptyTitle}>No posts yet</Text>
+        <Text style={styles.emptyTitle}>មិនមានប្រកាសទេ</Text>
         <Text style={styles.emptyText}>
-          Be the first to share something!
+          ចាប់ផ្តើមចែករំលែកអ្វីមួយជាមួយសហគមន៍!
         </Text>
         <TouchableOpacity onPress={handleCreatePost} style={styles.emptyButton}>
-          <Text style={styles.emptyButtonText}>Create Post</Text>
+          <LinearGradient
+            colors={['#6366F1', '#8B5CF6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.emptyButtonGradient}
+          >
+            <Text style={styles.emptyButtonText}>បង្កើតប្រកាស</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     );
@@ -184,32 +239,48 @@ export default function FeedScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
-      {/* Clean Header */}
+      {/* V1 Header - Profile left, Logo center, Actions right */}
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <View style={styles.logoBox}>
-              <Ionicons name="school" size={18} color="#6366F1" />
-            </View>
-            <Text style={styles.logoName}>Stunity</Text>
-          </View>
+          {/* Profile Picture - Left */}
+          <TouchableOpacity onPress={() => navigation.navigate('Profile' as any)}>
+            <Avatar
+              uri={user?.profilePictureUrl}
+              name={user ? `${user.firstName} ${user.lastName}` : 'User'}
+              size="md"
+              showBorder={true}
+              borderColor="#E5E7EB"
+            />
+          </TouchableOpacity>
+
+          {/* Stunity Logo - Center */}
+          <Image
+            source={StunityLogo}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
+
+          {/* Actions - Right */}
           <View style={styles.headerActions}>
-            <TouchableOpacity 
-              style={styles.headerButton}
-              onPress={() => navigation.navigate('Search' as any)}
-            >
-              <Ionicons name="search" size={22} color="#374151" />
-            </TouchableOpacity>
             <TouchableOpacity 
               style={styles.headerButton}
               onPress={() => navigation.navigate('Notifications' as any)}
             >
-              <Ionicons name="notifications-outline" size={22} color="#374151" />
+              <Ionicons name="notifications-outline" size={24} color="#374151" />
               <View style={styles.notificationBadge} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.headerButton}
+              onPress={() => navigation.navigate('Search' as any)}
+            >
+              <Ionicons name="search-outline" size={24} color="#374151" />
             </TouchableOpacity>
           </View>
         </View>
       </SafeAreaView>
+
+      {/* Filter Tabs */}
+      {renderFilterTabs()}
 
       {/* Feed */}
       <FlatList
@@ -233,11 +304,6 @@ export default function FeedScreen() {
         contentContainerStyle={styles.listContent}
         style={styles.list}
       />
-
-      {/* FAB - Clean style */}
-      <TouchableOpacity style={styles.fab} onPress={handleCreatePost}>
-        <Ionicons name="add" size={26} color="#fff" />
-      </TouchableOpacity>
     </View>
   );
 }
@@ -245,46 +311,32 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F3F4F6',
   },
   headerSafe: {
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  logoBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#EEF2FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1F2937',
+  headerLogo: {
+    height: 32,
+    width: 120,
   },
   headerActions: {
     flexDirection: 'row',
     gap: 4,
   },
   headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -299,6 +351,50 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#fff',
   },
+  filterContainer: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  filterScroll: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  filterTab: {
+    borderRadius: 50,
+    overflow: 'hidden',
+  },
+  filterTabActive: {},
+  filterTabGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    gap: 5,
+    borderRadius: 50,
+  },
+  filterTabInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    gap: 5,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 50,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  filterTabText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  filterTabTextActive: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#fff',
+  },
   list: {
     flex: 1,
   },
@@ -306,55 +402,43 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   headerSection: {
-    paddingTop: 8,
+    paddingTop: 4,
   },
   postWrapper: {
-    marginBottom: 4,
+    marginBottom: 0,
   },
   createPostCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginVertical: 12,
-    padding: 12,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 12,
+    marginTop: 8,
+    marginBottom: 12,
+    padding: 14,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    ...Shadows.sm,
+    gap: 12,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   createPostInput: {
     flex: 1,
-    marginLeft: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 24,
   },
   createPostPlaceholder: {
     fontSize: 14,
     color: '#9CA3AF',
   },
-  createPostActions: {
-    flexDirection: 'row',
-    marginLeft: 8,
-    gap: 4,
-  },
-  createPostAction: {
-    padding: 2,
-  },
-  actionIconBg: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   footer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
   },
   skeletonContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingTop: 8,
   },
   emptyContainer: {
@@ -385,26 +469,16 @@ const styles = StyleSheet.create({
   },
   emptyButton: {
     marginTop: 20,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  emptyButtonGradient: {
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: '#6366F1',
   },
   emptyButtonText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#fff',
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 90,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: '#6366F1',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Shadows.lg,
   },
 });

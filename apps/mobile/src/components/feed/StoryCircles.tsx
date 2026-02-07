@@ -1,7 +1,7 @@
 /**
  * Story Circles Component
  * 
- * Instagram-style story circles - improved design
+ * V1 App Design - Beautiful, clean, modern story circles
  */
 
 import React from 'react';
@@ -11,18 +11,16 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { Avatar } from '@/components/common';
-import { Colors, Typography, Spacing, BorderRadius } from '@/config';
 import { StoryGroup } from '@/types';
 
-const { width } = Dimensions.get('window');
-const STORY_SIZE = 64;
+const STORY_SIZE = 68;
+const RING_WIDTH = 3;
 
 interface StoryCirclesProps {
   storyGroups: StoryGroup[];
@@ -37,40 +35,63 @@ export const StoryCircles: React.FC<StoryCirclesProps> = ({
   onCreateStory,
   currentUserId,
 }) => {
-  // Check if current user has a story
   const hasOwnStory = storyGroups.some(
     (group) => group.user.id === currentUserId
   );
 
-  if (storyGroups.length === 0) {
+  const renderStoryAvatar = (
+    uri: string | undefined,
+    name: string,
+    hasUnviewed: boolean
+  ) => {
+    const initials = name
+      .split(' ')
+      .map((n) => n.charAt(0))
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+
     return (
-      <Animated.View entering={FadeIn.duration(400)} style={styles.container}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {/* Create Story Button */}
-          <TouchableOpacity onPress={onCreateStory} style={styles.storyItem}>
-            <View style={styles.createStoryButton}>
-              <LinearGradient
-                colors={[Colors.gray[100], Colors.gray[200]]}
-                style={styles.createPlaceholder}
-              >
-                <Ionicons name="person" size={28} color={Colors.gray[400]} />
-              </LinearGradient>
-              <View style={styles.addIcon}>
-                <Ionicons name="add" size={14} color={Colors.white} />
-              </View>
+      <View style={styles.avatarWrapper}>
+        {hasUnviewed ? (
+          <LinearGradient
+            colors={['#F59E0B', '#F97316', '#EF4444']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.gradientRing}
+          >
+            <View style={styles.avatarInner}>
+              {uri ? (
+                <Image source={{ uri }} style={styles.avatarImage} />
+              ) : (
+                <LinearGradient
+                  colors={['#6366F1', '#8B5CF6']}
+                  style={styles.avatarPlaceholder}
+                >
+                  <Text style={styles.avatarInitials}>{initials}</Text>
+                </LinearGradient>
+              )}
             </View>
-            <Text style={styles.storyLabel} numberOfLines={1}>
-              Add story
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </Animated.View>
+          </LinearGradient>
+        ) : (
+          <View style={styles.grayRing}>
+            <View style={styles.avatarInner}>
+              {uri ? (
+                <Image source={{ uri }} style={styles.avatarImage} />
+              ) : (
+                <LinearGradient
+                  colors={['#6366F1', '#8B5CF6']}
+                  style={styles.avatarPlaceholder}
+                >
+                  <Text style={styles.avatarInitials}>{initials}</Text>
+                </LinearGradient>
+              )}
+            </View>
+          </View>
+        )}
+      </View>
     );
-  }
+  };
 
   return (
     <Animated.View entering={FadeIn.duration(400)} style={styles.container}>
@@ -79,78 +100,65 @@ export const StoryCircles: React.FC<StoryCirclesProps> = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Create Story Button */}
+        {/* Create Story / Your Story */}
         <TouchableOpacity onPress={onCreateStory} style={styles.storyItem}>
-          <View style={styles.createStoryButton}>
+          <View style={styles.createStoryWrapper}>
             {hasOwnStory ? (
-              <LinearGradient
-                colors={['#F59E0B', '#F97316', '#EF4444']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.storyRing}
-              >
-                <View style={styles.storyInner}>
-                  <Avatar
-                    uri={storyGroups.find((g) => g.user.id === currentUserId)?.user.profilePictureUrl}
-                    name="You"
-                    size="md"
-                  />
-                </View>
-              </LinearGradient>
+              renderStoryAvatar(
+                storyGroups.find((g) => g.user.id === currentUserId)?.user
+                  .profilePictureUrl,
+                'You',
+                true
+              )
             ) : (
-              <LinearGradient
-                colors={[Colors.gray[100], Colors.gray[200]]}
-                style={styles.createPlaceholder}
-              >
-                <Ionicons name="person" size={28} color={Colors.gray[400]} />
-              </LinearGradient>
+              <View style={styles.createCircle}>
+                <Ionicons name="person" size={26} color="#9CA3AF" />
+              </View>
             )}
-            <View style={styles.addIcon}>
-              <Ionicons name="add" size={14} color={Colors.white} />
+            <View style={styles.addButton}>
+              <Ionicons name="add" size={14} color="#fff" />
             </View>
           </View>
-          <Text style={styles.storyLabel} numberOfLines={1}>
-            {hasOwnStory ? 'Your story' : 'Add story'}
+          <Text style={styles.storyName} numberOfLines={1}>
+            {hasOwnStory ? 'Your Story' : 'Add Story'}
           </Text>
         </TouchableOpacity>
 
-        {/* Story Groups */}
+        {/* Other Users' Stories */}
         {storyGroups.map((group, index) => {
-          // Skip own story in the list (shown first)
           if (group.user.id === currentUserId) return null;
 
+          const fullName = `${group.user.firstName} ${group.user.lastName}`;
+          
           return (
             <TouchableOpacity
               key={group.user.id}
               onPress={() => onStoryPress(index)}
               style={styles.storyItem}
             >
-              <View style={styles.storyCircle}>
-                <LinearGradient
-                  colors={
-                    group.hasUnviewed
-                      ? ['#F59E0B', '#F97316', '#EF4444']
-                      : [Colors.gray[300], Colors.gray[300]]
-                  }
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.storyRing}
-                >
-                  <View style={styles.storyInner}>
-                    <Avatar
-                      uri={group.user.profilePictureUrl}
-                      name={`${group.user.firstName} ${group.user.lastName}`}
-                      size="md"
-                    />
-                  </View>
-                </LinearGradient>
-              </View>
-              <Text style={styles.storyLabel} numberOfLines={1}>
+              {renderStoryAvatar(
+                group.user.profilePictureUrl,
+                fullName,
+                group.hasUnviewed
+              )}
+              <Text style={styles.storyName} numberOfLines={1}>
                 {group.user.firstName}
               </Text>
             </TouchableOpacity>
           );
         })}
+
+        {/* Empty state placeholders */}
+        {storyGroups.length <= 1 && (
+          <>
+            {[1, 2, 3, 4].map((i) => (
+              <View key={`placeholder-${i}`} style={styles.storyItem}>
+                <View style={styles.emptyCircle} />
+                <View style={styles.emptyName} />
+              </View>
+            ))}
+          </>
+        )}
       </ScrollView>
     </Animated.View>
   );
@@ -158,72 +166,119 @@ export const StoryCircles: React.FC<StoryCirclesProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.white,
-    paddingVertical: Spacing[3],
-    marginHorizontal: Spacing[3],
-    marginTop: Spacing[2],
-    marginBottom: Spacing[2],
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.gray[200],
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 14,
+    marginHorizontal: 12,
+    marginTop: 4,
+    marginBottom: 0,
+    borderRadius: 16,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   scrollContent: {
-    paddingHorizontal: Spacing[3],
-    gap: Spacing[3],
+    paddingHorizontal: 16,
+    gap: 14,
   },
   storyItem: {
     alignItems: 'center',
-    width: STORY_SIZE,
+    width: STORY_SIZE + 8,
   },
-  createStoryButton: {
-    width: STORY_SIZE,
-    height: STORY_SIZE,
+  createStoryWrapper: {
     position: 'relative',
   },
-  createPlaceholder: {
+  avatarWrapper: {
+    width: STORY_SIZE,
+    height: STORY_SIZE,
+  },
+  gradientRing: {
     width: STORY_SIZE,
     height: STORY_SIZE,
     borderRadius: STORY_SIZE / 2,
-    alignItems: 'center',
+    padding: RING_WIDTH,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  addIcon: {
+  grayRing: {
+    width: STORY_SIZE,
+    height: STORY_SIZE,
+    borderRadius: STORY_SIZE / 2,
+    padding: RING_WIDTH,
+    backgroundColor: '#E5E7EB',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInner: {
+    width: STORY_SIZE - RING_WIDTH * 2,
+    height: STORY_SIZE - RING_WIDTH * 2,
+    borderRadius: (STORY_SIZE - RING_WIDTH * 2) / 2,
+    backgroundColor: '#fff',
+    padding: 2,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: (STORY_SIZE - RING_WIDTH * 2 - 4) / 2,
+  },
+  avatarPlaceholder: {
+    width: '100%',
+    height: '100%',
+    borderRadius: (STORY_SIZE - RING_WIDTH * 2 - 4) / 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInitials: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  createCircle: {
+    width: STORY_SIZE,
+    height: STORY_SIZE,
+    borderRadius: STORY_SIZE / 2,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addButton: {
     position: 'absolute',
-    bottom: -2,
-    right: -2,
+    bottom: 0,
+    right: 0,
     width: 22,
     height: 22,
     borderRadius: 11,
     backgroundColor: '#F59E0B',
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 2,
-    borderColor: Colors.white,
+    borderColor: '#fff',
   },
-  storyCircle: {
-    width: STORY_SIZE,
-    height: STORY_SIZE,
+  storyName: {
+    marginTop: 6,
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#4B5563',
+    textAlign: 'center',
+    width: STORY_SIZE + 8,
   },
-  storyRing: {
+  emptyCircle: {
     width: STORY_SIZE,
     height: STORY_SIZE,
     borderRadius: STORY_SIZE / 2,
-    padding: 2,
+    backgroundColor: '#F3F4F6',
   },
-  storyInner: {
-    flex: 1,
-    borderRadius: (STORY_SIZE - 4) / 2,
-    backgroundColor: Colors.white,
-    padding: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  storyLabel: {
-    fontSize: 11,
-    color: Colors.gray[600],
-    marginTop: 4,
-    textAlign: 'center',
-    maxWidth: STORY_SIZE,
+  emptyName: {
+    marginTop: 6,
+    width: 40,
+    height: 10,
+    borderRadius: 4,
+    backgroundColor: '#F3F4F6',
   },
 });
 

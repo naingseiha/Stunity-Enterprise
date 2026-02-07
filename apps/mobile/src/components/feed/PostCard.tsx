@@ -1,12 +1,13 @@
 /**
  * PostCard Component
  * 
- * Matching v1 app design:
- * - Clean white cards with rounded-2xl
- * - Subtle shadow-card shadows
- * - Author info with avatar
- * - Post type badge (minimal)
- * - Engagement buttons with gradient hover states
+ * V1 App Design:
+ * - White cards with floating shadow
+ * - Author header with verification badge and type badge
+ * - Large rounded images
+ * - Stats row with star/flame/user icons
+ * - Info section showing post type details
+ * - Clean action bar (like, comment, analytics, share, bookmark)
  */
 
 import React, { useState } from 'react';
@@ -40,24 +41,31 @@ interface PostCardProps {
   onPress?: () => void;
 }
 
-// Post type configurations - minimal style matching v1
-const POST_TYPE_CONFIG: Record<string, { icon: string; label: string; color: string; bgColor: string }> = {
-  ARTICLE: { icon: 'document-text', label: 'Article', color: '#F59E0B', bgColor: '#FEF3C7' },
-  QUESTION: { icon: 'help-circle', label: 'Question', color: '#3B82F6', bgColor: '#DBEAFE' },
-  ANNOUNCEMENT: { icon: 'megaphone', label: 'Announcement', color: '#EF4444', bgColor: '#FEE2E2' },
-  POLL: { icon: 'stats-chart', label: 'Poll', color: '#8B5CF6', bgColor: '#EDE9FE' },
-  ACHIEVEMENT: { icon: 'trophy', label: 'Achievement', color: '#F59E0B', bgColor: '#FEF3C7' },
-  PROJECT: { icon: 'folder', label: 'Project', color: '#F97316', bgColor: '#FFEDD5' },
-  COURSE: { icon: 'book', label: 'Course', color: '#10B981', bgColor: '#D1FAE5' },
-  EVENT: { icon: 'calendar', label: 'Event', color: '#EC4899', bgColor: '#FCE7F3' },
-  QUIZ: { icon: 'bulb', label: 'Quiz', color: '#10B981', bgColor: '#D1FAE5' },
-  EXAM: { icon: 'clipboard', label: 'Exam', color: '#EF4444', bgColor: '#FEE2E2' },
-  ASSIGNMENT: { icon: 'book-outline', label: 'Assignment', color: '#F97316', bgColor: '#FFEDD5' },
-  RESOURCE: { icon: 'folder-open', label: 'Resource', color: '#6366F1', bgColor: '#EEF2FF' },
-  TUTORIAL: { icon: 'play-circle', label: 'Tutorial', color: '#14B8A6', bgColor: '#CCFBF1' },
-  RESEARCH: { icon: 'flask', label: 'Research', color: '#8B5CF6', bgColor: '#EDE9FE' },
-  REFLECTION: { icon: 'bulb', label: 'Reflection', color: '#F59E0B', bgColor: '#FEF3C7' },
-  COLLABORATION: { icon: 'people', label: 'Collaboration', color: '#06B6D4', bgColor: '#CFFAFE' },
+// Post type configurations - V1 style with gradients
+const POST_TYPE_CONFIG: Record<string, { 
+  icon: string; 
+  label: string; 
+  color: string; 
+  bgColor: string;
+  ctaLabel: string;
+  gradient: [string, string];
+}> = {
+  ARTICLE: { icon: 'document-text', label: 'Article', color: '#10B981', bgColor: '#D1FAE5', ctaLabel: 'Read Article', gradient: ['#10B981', '#059669'] },
+  QUESTION: { icon: 'help-circle', label: 'Question', color: '#14B8A6', bgColor: '#CCFBF1', ctaLabel: 'Answer', gradient: ['#14B8A6', '#0D9488'] },
+  ANNOUNCEMENT: { icon: 'megaphone', label: 'Announcement', color: '#F97316', bgColor: '#FFEDD5', ctaLabel: 'View Details', gradient: ['#F97316', '#EA580C'] },
+  POLL: { icon: 'stats-chart', label: 'Poll', color: '#8B5CF6', bgColor: '#EDE9FE', ctaLabel: 'Vote Now', gradient: ['#8B5CF6', '#7C3AED'] },
+  ACHIEVEMENT: { icon: 'trophy', label: 'Achievement', color: '#F59E0B', bgColor: '#FEF3C7', ctaLabel: 'Celebrate', gradient: ['#F59E0B', '#D97706'] },
+  PROJECT: { icon: 'folder', label: 'Project', color: '#F97316', bgColor: '#FFEDD5', ctaLabel: 'View Project', gradient: ['#F97316', '#EA580C'] },
+  COURSE: { icon: 'book', label: 'Course', color: '#3B82F6', bgColor: '#DBEAFE', ctaLabel: 'Enroll Now', gradient: ['#3B82F6', '#2563EB'] },
+  EVENT: { icon: 'calendar', label: 'Event', color: '#EC4899', bgColor: '#FCE7F3', ctaLabel: 'Join Event', gradient: ['#EC4899', '#DB2777'] },
+  QUIZ: { icon: 'bulb', label: 'Quiz', color: '#10B981', bgColor: '#D1FAE5', ctaLabel: 'Take Quiz', gradient: ['#10B981', '#059669'] },
+  EXAM: { icon: 'clipboard', label: 'Exam', color: '#EF4444', bgColor: '#FEE2E2', ctaLabel: 'View Exam Details', gradient: ['#EF4444', '#DC2626'] },
+  ASSIGNMENT: { icon: 'book-outline', label: 'Assignment', color: '#3B82F6', bgColor: '#DBEAFE', ctaLabel: 'Start Assignment', gradient: ['#3B82F6', '#2563EB'] },
+  RESOURCE: { icon: 'folder-open', label: 'Resource', color: '#6366F1', bgColor: '#EEF2FF', ctaLabel: 'Download', gradient: ['#6366F1', '#4F46E5'] },
+  TUTORIAL: { icon: 'play-circle', label: 'Tutorial', color: '#06B6D4', bgColor: '#CFFAFE', ctaLabel: 'Watch Tutorial', gradient: ['#06B6D4', '#0891B2'] },
+  RESEARCH: { icon: 'flask', label: 'Research', color: '#8B5CF6', bgColor: '#EDE9FE', ctaLabel: 'View Research', gradient: ['#8B5CF6', '#7C3AED'] },
+  REFLECTION: { icon: 'bulb', label: 'Reflection', color: '#84CC16', bgColor: '#ECFCCB', ctaLabel: 'Read More', gradient: ['#84CC16', '#65A30D'] },
+  COLLABORATION: { icon: 'people', label: 'Collaboration', color: '#EC4899', bgColor: '#FCE7F3', ctaLabel: 'Join Team', gradient: ['#EC4899', '#DB2777'] },
 };
 
 export const PostCard: React.FC<PostCardProps> = ({
@@ -101,150 +109,149 @@ export const PostCard: React.FC<PostCardProps> = ({
     onBookmark?.();
   };
 
-  const handleDoubleTap = () => {
-    if (!liked) {
-      handleLike();
-    }
-  };
-
   const typeConfig = POST_TYPE_CONFIG[post.postType] || POST_TYPE_CONFIG.ARTICLE;
   const authorName = post.author.name || `${post.author.firstName} ${post.author.lastName}`;
 
   return (
     <View style={styles.container}>
-      {/* Header - Instagram style */}
-      <TouchableOpacity onPress={onUserPress} style={styles.header} activeOpacity={0.7}>
-        <Avatar
-          uri={post.author.profilePictureUrl}
-          name={authorName}
-          size="md"
-          showOnline
-          isOnline={post.author.isOnline}
-        />
-        <View style={styles.headerText}>
-          <View style={styles.authorRow}>
-            <Text style={styles.authorName}>{authorName}</Text>
-            {post.author.isVerified && (
-              <View style={styles.verifiedBadge}>
-                <Ionicons name="checkmark" size={10} color="#fff" />
-              </View>
-            )}
+      {/* Author Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onUserPress} style={styles.authorSection}>
+          <Avatar
+            uri={post.author.profilePictureUrl}
+            name={authorName}
+            size="md"
+          />
+          <View style={styles.authorInfo}>
+            <View style={styles.authorRow}>
+              <Text style={styles.authorName}>{authorName}</Text>
+              {post.author.isVerified && (
+                <View style={styles.verifiedBadge}>
+                  <Ionicons name="checkmark" size={10} color="#fff" />
+                </View>
+              )}
+            </View>
+            <Text style={styles.timeText}>{formatRelativeTime(post.createdAt)}</Text>
           </View>
-          <View style={styles.metaRow}>
-            <Text style={styles.metaText}>
-              {formatRelativeTime(post.createdAt)}
-            </Text>
-          </View>
-        </View>
+        </TouchableOpacity>
         
-        {/* Post Type Badge - minimal v1 style */}
-        <View style={[styles.typeBadge, { backgroundColor: typeConfig.bgColor }]}>
-          <Ionicons name={typeConfig.icon as any} size={14} color={typeConfig.color} />
-          <Text style={[styles.typeBadgeText, { color: typeConfig.color }]}>
-            {typeConfig.label}
-          </Text>
+        {/* XP Badge - Study reward */}
+        <View style={styles.xpBadge}>
+          <Ionicons name="sparkles" size={14} color="#F59E0B" />
+          <Text style={styles.xpBadgeText}>+{Math.floor(Math.random() * 20) + 5} XP</Text>
         </View>
         
         <TouchableOpacity style={styles.moreButton}>
-          <Ionicons name="ellipsis-vertical" size={18} color="#6B7280" />
+          <Ionicons name="ellipsis-vertical" size={18} color="#9CA3AF" />
         </TouchableOpacity>
-      </TouchableOpacity>
+      </View>
 
-      {/* Media Gallery - YouTube thumbnail style (16:9) */}
+      {/* Media - Rounded corners matching V1 */}
       {post.mediaUrls && post.mediaUrls.length > 0 && (
-        <View style={styles.mediaContainer}>
+        <TouchableOpacity activeOpacity={0.95} onPress={onPress} style={styles.mediaWrapper}>
           <Image
             source={{ uri: post.mediaUrls[0] }}
-            style={styles.singleImage}
+            style={styles.mediaImage}
             contentFit="cover"
             transition={200}
           />
           {post.mediaUrls.length > 1 && (
             <View style={styles.mediaCounter}>
-              <Text style={styles.mediaCounterText}>
-                1/{post.mediaUrls.length}
-              </Text>
+              <Text style={styles.mediaCounterText}>1/{post.mediaUrls.length}</Text>
             </View>
           )}
-        </View>
+        </TouchableOpacity>
       )}
 
-      {/* Content Section - Clickable */}
+      {/* Content */}
       <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={styles.contentSection}>
-        {/* Title */}
-        <Text style={styles.contentTitle} numberOfLines={2}>
-          {post.content.split('\n')[0]}
+        <Text style={styles.contentText} numberOfLines={3}>
+          {post.content}
         </Text>
-        
-        {/* Description */}
-        {post.content.split('\n').length > 1 && (
-          <Text style={styles.contentDescription} numberOfLines={3}>
-            {post.content.split('\n').slice(1).join('\n')}
-          </Text>
-        )}
+
+        {/* Stats Row - V1 style */}
+        <View style={styles.statsRow}>
+          <View style={styles.stat}>
+            <Ionicons name="star" size={16} color="#F59E0B" />
+            <Text style={styles.statText}>+{Math.floor(Math.random() * 50) + 10}</Text>
+          </View>
+          <Text style={styles.statDot}>•</Text>
+          <View style={styles.stat}>
+            <Ionicons name="flame" size={16} color="#F97316" />
+            <Text style={styles.statText}>{Math.floor(Math.random() * 7) + 1}d</Text>
+          </View>
+          <Text style={styles.statDot}>•</Text>
+          <Ionicons name="people" size={16} color="#9CA3AF" />
+        </View>
       </TouchableOpacity>
 
-      {/* Tags */}
-      {post.tags && post.tags.length > 0 && (
-        <View style={styles.tagsContainer}>
-          {post.tags.slice(0, 3).map((tag) => (
-            <TouchableOpacity key={tag} style={styles.tag}>
-              <Text style={styles.tagText}>#{tag}</Text>
-            </TouchableOpacity>
-          ))}
+      {/* Info Section - V1 style (shows type info, field, collaborators) */}
+      <View style={styles.infoSection}>
+        <View style={[styles.infoIcon, { backgroundColor: typeConfig.bgColor }]}>
+          <Ionicons name={typeConfig.icon as any} size={20} color={typeConfig.color} />
         </View>
-      )}
+        <View style={styles.infoContent}>
+          <Text style={styles.infoTitle}>{typeConfig.label}</Text>
+          <Text style={styles.infoSubtitle}>Field: សិក្សា</Text>
+          <Text style={styles.infoCollaborators}>Collaborators: {authorName}</Text>
+        </View>
+      </View>
 
-      {/* Engagement Section - v1 style with gradient hover */}
-      <View style={styles.engagementSection}>
-        <View style={styles.engagementRow}>
-          {/* Like Button */}
-          <Animated.View style={likeAnimatedStyle}>
-            <TouchableOpacity
-              onPress={handleLike}
-              style={[
-                styles.engagementButton,
-                liked && styles.engagementButtonActive,
-              ]}
-            >
-              <Ionicons
-                name={liked ? 'heart' : 'heart-outline'}
-                size={20}
-                color={liked ? '#EF4444' : '#6B7280'}
-              />
-              <Text style={[styles.engagementText, liked && styles.engagementTextActive]}>
+      {/* Action Bar - Like, Value, Comment, Share, Bookmark */}
+      <View style={styles.actionBar}>
+        {/* Like */}
+        <Animated.View style={[likeAnimatedStyle, styles.actionButton]}>
+          <TouchableOpacity onPress={handleLike} style={styles.actionButtonInner}>
+            <Ionicons
+              name={liked ? 'heart' : 'heart-outline'}
+              size={22}
+              color={liked ? '#EF4444' : '#6B7280'}
+            />
+            {likeCount > 0 && (
+              <Text style={[styles.actionText, liked && styles.actionTextLiked]}>
                 {formatNumber(likeCount)}
               </Text>
-            </TouchableOpacity>
-          </Animated.View>
-
-          {/* Comment Button */}
-          <TouchableOpacity onPress={onComment} style={styles.engagementButton}>
-            <Ionicons name="chatbubble-outline" size={20} color="#6B7280" />
-            <Text style={styles.engagementText}>{formatNumber(post.comments)}</Text>
+            )}
           </TouchableOpacity>
+        </Animated.View>
 
-          {/* Share Button */}
-          <TouchableOpacity onPress={onShare} style={styles.engagementButton}>
-            <Ionicons name="share-social-outline" size={20} color="#6B7280" />
-            <Text style={styles.engagementText}>{formatNumber(post.shares)}</Text>
-          </TouchableOpacity>
+        {/* Value */}
+        <TouchableOpacity style={styles.actionButton}>
+          <View style={styles.actionButtonInner}>
+            <Ionicons name="star-outline" size={22} color="#6B7280" />
+          </View>
+        </TouchableOpacity>
 
-          {/* Bookmark Button - Right aligned */}
-          <TouchableOpacity
-            onPress={handleBookmark}
-            style={[
-              styles.bookmarkButton,
-              bookmarked && styles.bookmarkButtonActive,
-            ]}
-          >
+        {/* Comment */}
+        <TouchableOpacity onPress={onComment} style={styles.actionButton}>
+          <View style={styles.actionButtonInner}>
+            <Ionicons name="chatbubble-outline" size={22} color="#6B7280" />
+            {post.comments > 0 && (
+              <Text style={styles.actionText}>{formatNumber(post.comments)}</Text>
+            )}
+          </View>
+        </TouchableOpacity>
+
+        {/* Share */}
+        <TouchableOpacity onPress={onShare} style={styles.actionButton}>
+          <View style={styles.actionButtonInner}>
+            <Ionicons name="share-outline" size={22} color="#6B7280" />
+            {post.shares > 0 && (
+              <Text style={styles.actionText}>{formatNumber(post.shares)}</Text>
+            )}
+          </View>
+        </TouchableOpacity>
+
+        {/* Bookmark */}
+        <TouchableOpacity onPress={handleBookmark} style={styles.actionButton}>
+          <View style={styles.actionButtonInner}>
             <Ionicons
               name={bookmarked ? 'bookmark' : 'bookmark-outline'}
-              size={20}
+              size={22}
               color={bookmarked ? '#F59E0B' : '#6B7280'}
             />
-          </TouchableOpacity>
-        </View>
+          </View>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -252,167 +259,196 @@ export const PostCard: React.FC<PostCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginBottom: 12,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 12,
+    marginBottom: 14,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
     overflow: 'hidden',
-    // Clean shadow like v1 shadow-card
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    // Beautiful floating shadow like V1
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
-  headerText: {
+  authorSection: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  authorInfo: {
     flex: 1,
   },
   authorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   authorName: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: '#1F2937',
   },
   verifiedBadge: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: '#3B82F6',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 1,
-  },
-  metaText: {
-    fontSize: 12,
+  timeText: {
+    fontSize: 13,
     color: '#9CA3AF',
+    marginTop: 2,
   },
-  typeBadge: {
+  xpBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    backgroundColor: '#FEF3C7',
     gap: 4,
+    marginRight: 4,
   },
-  typeBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
+  xpBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#D97706',
   },
   moreButton: {
-    padding: 4,
+    padding: 6,
   },
-  mediaContainer: {
+  mediaWrapper: {
+    marginHorizontal: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
     position: 'relative',
   },
-  singleImage: {
+  mediaImage: {
     width: '100%',
-    height: 200,
+    height: 220,
     backgroundColor: '#F3F4F6',
   },
   mediaCounter: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
   },
   mediaCounterText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: '#fff',
   },
   contentSection: {
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 8,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 14,
   },
-  contentTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1F2937',
-    lineHeight: 20,
+  contentText: {
+    fontSize: 15,
+    color: '#374151',
+    lineHeight: 23,
   },
-  contentDescription: {
-    fontSize: 13,
-    color: '#6B7280',
-    lineHeight: 19,
-    marginTop: 4,
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 12,
-    paddingBottom: 8,
-    gap: 6,
-  },
-  tag: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 8,
-  },
-  tagText: {
-    fontSize: 11,
-    color: '#6366F1',
-    fontWeight: '500',
-  },
-  engagementSection: {
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  engagementRow: {
+  statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    marginTop: 14,
+    gap: 8,
   },
-  engagementButton: {
+  stat: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
     gap: 4,
   },
-  engagementButtonActive: {
-    backgroundColor: '#FEF2F2',
+  statText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#6B7280',
   },
-  engagementText: {
+  statDot: {
+    fontSize: 12,
+    color: '#D1D5DB',
+  },
+  infoSection: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 16,
+    padding: 14,
+    backgroundColor: '#F5F3FF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E9D5FF',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  infoIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoContent: {
+    flex: 1,
+  },
+  infoTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  infoSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  infoCollaborators: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 1,
+  },
+  actionBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  actionButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 4,
+  },
+  actionText: {
     fontSize: 13,
     fontWeight: '600',
     color: '#6B7280',
   },
-  engagementTextActive: {
+  actionTextLiked: {
     color: '#EF4444',
-  },
-  bookmarkButton: {
-    marginLeft: 'auto',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  bookmarkButtonActive: {
-    backgroundColor: '#FFFBEB',
   },
 });
 

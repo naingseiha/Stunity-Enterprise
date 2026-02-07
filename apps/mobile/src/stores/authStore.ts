@@ -31,6 +31,30 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
 }
 
+// Helper to map API response to User type
+const mapApiUserToUser = (apiUser: any): User => ({
+  id: apiUser.id,
+  firstName: apiUser.firstName || '',
+  lastName: apiUser.lastName || '',
+  name: apiUser.name || `${apiUser.firstName || ''} ${apiUser.lastName || ''}`.trim(),
+  email: apiUser.email,
+  phone: apiUser.phone,
+  role: apiUser.role,
+  profilePictureUrl: apiUser.profilePictureUrl || apiUser.avatar,
+  coverPhotoUrl: apiUser.coverPhotoUrl,
+  bio: apiUser.bio,
+  headline: apiUser.headline,
+  professionalTitle: apiUser.professionalTitle,
+  location: apiUser.location,
+  languages: apiUser.languages || [],
+  interests: apiUser.interests || [],
+  isVerified: apiUser.isVerified || false,
+  isOnline: apiUser.isOnline || false,
+  lastActiveAt: apiUser.lastActiveAt,
+  createdAt: apiUser.createdAt,
+  updatedAt: apiUser.updatedAt,
+});
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -58,7 +82,8 @@ export const useAuthStore = create<AuthState>()(
               if (hasTokens) {
                 authApi.get('/users/me').then(response => {
                   if (response.data.success) {
-                    set({ user: response.data.user || response.data.data?.user });
+                    const apiUser = response.data.user || response.data.data;
+                    set({ user: mapApiUserToUser(apiUser) });
                   }
                 }).catch(() => {
                   // Ignore - we still have cached user data
@@ -84,9 +109,9 @@ export const useAuthStore = create<AuthState>()(
               clearTimeout(timeoutId);
               
               if (response.data.success) {
-                const user = response.data.user || response.data.data?.user;
+                const apiUser = response.data.user || response.data.data;
                 set({
-                  user,
+                  user: mapApiUserToUser(apiUser),
                   isAuthenticated: true,
                   isLoading: false,
                   isInitialized: true,
@@ -131,7 +156,7 @@ export const useAuthStore = create<AuthState>()(
 
           if (response.data.success) {
             // Backend returns { success, message, data: { user, tokens, ... } }
-            const { user, tokens } = response.data.data || response.data;
+            const { user: apiUser, tokens } = response.data.data || response.data;
 
             if (!tokens) {
               throw new Error('No tokens in response');
@@ -139,7 +164,7 @@ export const useAuthStore = create<AuthState>()(
 
             // Save tokens
             await tokenService.setTokens(tokens);
-            await tokenService.setUserId(user.id);
+            await tokenService.setUserId(apiUser.id);
 
             // Set remember me preference
             if (credentials.rememberMe) {
@@ -147,7 +172,7 @@ export const useAuthStore = create<AuthState>()(
             }
 
             set({
-              user,
+              user: mapApiUserToUser(apiUser),
               isAuthenticated: true,
               isLoading: false,
             });
@@ -244,7 +269,8 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await authApi.get('/users/me');
           if (response.data.success) {
-            set({ user: response.data.user });
+            const apiUser = response.data.user || response.data.data;
+            set({ user: mapApiUserToUser(apiUser) });
           }
         } catch (error) {
           console.error('Failed to refresh user:', error);

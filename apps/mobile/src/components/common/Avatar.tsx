@@ -74,8 +74,8 @@ export const Avatar: React.FC<AvatarProps> = ({
   showOnline = false,
   isOnline = false,
   style,
-  borderColor = Colors.white,
-  showBorder = false,
+  borderColor = '#E5E7EB',
+  showBorder = true,
 }) => {
   const dimension = SIZES[size];
   const fontSize = FONT_SIZES[size];
@@ -85,10 +85,9 @@ export const Avatar: React.FC<AvatarProps> = ({
     width: dimension,
     height: dimension,
     borderRadius: dimension / 2,
-    ...(showBorder && {
-      borderWidth: 2,
-      borderColor,
-    }),
+    borderWidth: 2,
+    borderColor: showBorder ? borderColor : 'transparent',
+    backgroundColor: '#fff',
   };
 
   return (

@@ -934,6 +934,79 @@ app.post('/notifications/parent', async (req: Request, res: Response) => {
 // END NOTIFICATION ENDPOINTS
 // ============================================
 
+// ============================================
+// USER ENDPOINTS
+// ============================================
+
+// Get current user endpoint (for mobile app)
+app.get('/users/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      include: {
+        school: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            subscriptionTier: true,
+            subscriptionEnd: true,
+            isTrial: true,
+            isActive: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found',
+      });
+    }
+
+    // Calculate trial days remaining if applicable
+    let trialDaysRemaining = null;
+    if (user.school?.isTrial && user.school?.subscriptionEnd) {
+      const now = new Date();
+      const endDate = new Date(user.school.subscriptionEnd);
+      trialDaysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      if (trialDaysRemaining < 0) trialDaysRemaining = 0;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        avatar: user.profilePictureUrl,
+        phone: user.phone,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+        schoolId: user.schoolId,
+        school: user.school ? {
+          ...user.school,
+          trialDaysRemaining,
+        } : null,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get user error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get user',
+      details: error.message,
+    });
+  }
+});
+
+// ============================================
+// END USER ENDPOINTS
+// ============================================
+
 // Verify token endpoint
 app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
