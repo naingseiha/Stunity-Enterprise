@@ -26,7 +26,7 @@ import { NavigationProvider, useNavigationContext } from '@/contexts';
 // Implemented Screens
 import { FeedScreen, CreatePostScreen, PostDetailScreen } from '@/screens/feed';
 import { LearnScreen, CourseDetailScreen } from '@/screens/learn';
-import { ProfileScreen } from '@/screens/profile';
+import { ProfileScreen, EditProfileScreen } from '@/screens/profile';
 import { ConversationsScreen, ChatScreen } from '@/screens/messages';
 import { ClubsScreen } from '@/screens/clubs';
 
@@ -57,7 +57,6 @@ const NewMessageScreen = () => <PlaceholderScreen title="New Message" />;
 const GroupInfoScreen = () => <PlaceholderScreen title="Group Info" />;
 
 // Profile Stack Screens
-const EditProfileScreen = () => <PlaceholderScreen title="Edit Profile" />;
 const ConnectionsScreen = () => <PlaceholderScreen title="Connections" />;
 const SettingsScreen = () => <PlaceholderScreen title="Settings" />;
 const BookmarksScreen = () => <PlaceholderScreen title="Bookmarks" />;
