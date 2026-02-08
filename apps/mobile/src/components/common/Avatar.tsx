@@ -31,7 +31,7 @@ const SIZES: Record<AvatarSize, number> = {
   md: 40,
   lg: 48,
   xl: 64,
-  '2xl': 96,
+  '2xl': 120,
 };
 
 const FONT_SIZES: Record<AvatarSize, number> = {
@@ -40,7 +40,7 @@ const FONT_SIZES: Record<AvatarSize, number> = {
   md: 14,
   lg: 18,
   xl: 24,
-  '2xl': 36,
+  '2xl': 42,
 };
 
 const BORDER_WIDTH: Record<AvatarSize, number> = {

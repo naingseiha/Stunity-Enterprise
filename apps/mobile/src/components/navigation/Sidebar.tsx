@@ -16,6 +16,7 @@ import {
   Platform,
   Dimensions,
   Image,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -106,8 +107,11 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
       transparent={false}
       animationType="slide"
       onRequestClose={onClose}
+      presentationStyle="fullScreen"
     >
-      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <View style={styles.safeArea}>
+        <View style={styles.statusBarSpacer} />
         <View style={styles.container}>
             {/* Header with Logo and Close */}
             <View style={styles.header}>
@@ -194,7 +198,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
               </TouchableOpacity>
             </ScrollView>
         </View>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }
@@ -202,6 +206,10 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    backgroundColor: '#fff',
+  },
+  statusBarSpacer: {
+    height: Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 0,
     backgroundColor: '#fff',
   },
   container: {
