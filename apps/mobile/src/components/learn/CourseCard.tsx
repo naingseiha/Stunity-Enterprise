@@ -62,10 +62,10 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             />
           ) : (
             <LinearGradient
-              colors={[Colors.primary[400], Colors.secondary[500]]}
+              colors={['#F3F4F6', '#E5E7EB']}
               style={styles.thumbnailPlaceholder}
             >
-              <Ionicons name="book" size={isCompact ? 24 : 40} color={Colors.white} />
+              <Ionicons name="book" size={isCompact ? 24 : 40} color="#6B7280" />
             </LinearGradient>
           )}
 
@@ -170,22 +170,27 @@ export const CourseCard: React.FC<CourseCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.xl,
+    backgroundColor: '#fff',
+    borderRadius: 16,
     overflow: 'hidden',
-    marginBottom: Spacing[3],
-    ...Shadows.sm,
+    marginBottom: 16,
+    // Match Feed card shadow
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
   },
   compactContainer: {
     width: CARD_WIDTH,
     marginBottom: 0,
   },
   thumbnailContainer: {
-    height: 160,
+    height: 180,
     position: 'relative',
   },
   compactThumbnail: {
-    height: 100,
+    height: 120,
   },
   thumbnail: {
     width: '100%',
@@ -199,127 +204,129 @@ const styles = StyleSheet.create({
   },
   levelBadge: {
     position: 'absolute',
-    top: Spacing[2],
-    left: Spacing[2],
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: Spacing[2],
-    paddingVertical: Spacing[1],
-    borderRadius: BorderRadius.sm,
+    top: 12,
+    left: 12,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   levelText: {
-    fontSize: Typography.fontSize.xs,
+    fontSize: 11,
     color: Colors.white,
-    fontWeight: '600',
-    textTransform: 'capitalize',
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
   durationBadge: {
     position: 'absolute',
-    bottom: Spacing[2],
-    right: Spacing[2],
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    bottom: 12,
+    right: 12,
+    backgroundColor: 'rgba(0,0,0,0.7)',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing[2],
-    paddingVertical: Spacing[1],
-    borderRadius: BorderRadius.sm,
-    gap: Spacing[1],
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
   },
   durationText: {
-    fontSize: Typography.fontSize.xs,
+    fontSize: 11,
     color: Colors.white,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   content: {
-    padding: Spacing[4],
+    padding: 16,
   },
   compactContent: {
-    padding: Spacing[3],
+    padding: 12,
   },
   title: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: '600',
-    color: Colors.gray[900],
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1a1a1a',
     lineHeight: 24,
   },
   compactTitle: {
-    fontSize: Typography.fontSize.base,
+    fontSize: 15,
     lineHeight: 20,
   },
   description: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.gray[600],
-    marginTop: Spacing[2],
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 8,
     lineHeight: 20,
   },
   instructorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: Spacing[3],
-    gap: Spacing[2],
+    marginTop: 12,
+    gap: 8,
   },
   instructorName: {
     flex: 1,
-    fontSize: Typography.fontSize.sm,
-    color: Colors.gray[600],
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   statsRow: {
     flexDirection: 'row',
-    marginTop: Spacing[3],
-    gap: Spacing[4],
+    marginTop: 12,
+    gap: 16,
   },
   stat: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing[1],
+    gap: 4,
   },
   statText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.gray[500],
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: Spacing[3],
-    gap: Spacing[2],
+    marginTop: 12,
+    gap: 8,
   },
   progressBar: {
     flex: 1,
     height: 6,
-    backgroundColor: Colors.gray[100],
+    backgroundColor: '#F3F4F6',
     borderRadius: 3,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: Colors.primary[500],
+    backgroundColor: '#FFA500',
     borderRadius: 3,
   },
   progressText: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.gray[500],
-    fontWeight: '600',
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '700',
     width: 35,
     textAlign: 'right',
   },
   priceRow: {
-    marginTop: Spacing[3],
+    marginTop: 12,
   },
   price: {
-    fontSize: Typography.fontSize.xl,
+    fontSize: 20,
     fontWeight: '700',
-    color: Colors.gray[900],
+    color: '#FFA500',
   },
   freeBadge: {
-    backgroundColor: Colors.success.light,
+    backgroundColor: '#D1FAE5',
     alignSelf: 'flex-start',
-    paddingHorizontal: Spacing[3],
-    paddingVertical: Spacing[1],
-    borderRadius: BorderRadius.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   freeText: {
-    fontSize: Typography.fontSize.sm,
+    fontSize: 13,
     fontWeight: '700',
-    color: Colors.success.main,
+    color: '#059669',
   },
 });
 

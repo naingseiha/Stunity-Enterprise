@@ -36,6 +36,7 @@ import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore } from '@/stores';
 import { Post } from '@/types';
 import { FeedStackScreenProps } from '@/navigation/types';
+import { useNavigationContext } from '@/contexts';
 
 type NavigationProp = FeedStackScreenProps<'Feed'>['navigation'];
 
@@ -52,6 +53,7 @@ const FILTER_TABS = [
 export default function FeedScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
+  const { openSidebar } = useNavigationContext();
   const {
     posts,
     storyGroups,
@@ -229,6 +231,7 @@ export default function FeedScreen() {
         post={item}
         onLike={() => handleLikePost(item)}
         onComment={() => navigation.navigate('Comments' as any, { postId: item.id })}
+        onRepost={() => {}}
         onShare={() => {}}
         onBookmark={() => bookmarkPost(item.id)}
         onUserPress={() => navigation.navigate('UserProfile', { userId: item.author.id })}
@@ -287,15 +290,9 @@ export default function FeedScreen() {
       {/* V1 Header - Profile left, Logo center, Actions right */}
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.header}>
-          {/* Profile Picture - Left */}
-          <TouchableOpacity onPress={() => navigation.navigate('Profile' as any)}>
-            <Avatar
-              uri={user?.profilePictureUrl}
-              name={user ? `${user.firstName} ${user.lastName}` : 'User'}
-              size="md"
-              showBorder={true}
-              borderColor="#F59E0B"
-            />
+          {/* Menu Button - Left */}
+          <TouchableOpacity onPress={openSidebar} style={styles.menuButton}>
+            <Ionicons name="menu" size={28} color="#374151" />
           </TouchableOpacity>
 
           {/* Stunity Logo - Center */}
@@ -378,6 +375,13 @@ const styles = StyleSheet.create({
     height: 32,
     width: 120,
   },
+  menuButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerActions: {
     flexDirection: 'row',
     gap: 4,
@@ -458,7 +462,7 @@ const styles = StyleSheet.create({
   },
   createPostCard: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 12,
+    marginHorizontal: 16,
     marginBottom: 12,
     paddingTop: 14,
     paddingBottom: 12,

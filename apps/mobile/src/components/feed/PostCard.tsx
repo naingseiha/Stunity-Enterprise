@@ -43,6 +43,7 @@ interface PostCardProps {
   onLike?: () => void;
   onComment?: () => void;
   onShare?: () => void;
+  onRepost?: () => void;
   onBookmark?: () => void;
   onUserPress?: () => void;
   onPress?: () => void;
@@ -108,6 +109,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   onLike,
   onComment,
   onShare,
+  onRepost,
   onBookmark,
   onUserPress,
   onPress,
@@ -249,7 +251,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             uri={post.author.profilePictureUrl}
             name={authorName}
             size="md"
-            gradientBorder="purple"
+            gradientBorder="orange"
           />
           <View style={styles.authorInfo}>
             <View style={styles.authorRow}>
@@ -478,54 +480,63 @@ export const PostCard: React.FC<PostCardProps> = ({
         </View>
       </View>
 
-      {/* Action Bar - Like, Value, Comment, Share */}
+      {/* Action Bar - Instagram-style: Left (Like, Comment, Repost, Send) | Right (Value) */}
       <View style={styles.actionBar}>
-        {/* Like */}
-        <Animated.View style={[likeAnimatedStyle, styles.actionButton]}>
-          <TouchableOpacity onPress={handleLike} style={styles.actionButtonInner}>
-            <Ionicons
-              name={liked ? 'heart' : 'heart-outline'}
-              size={22}
-              color={liked ? '#EF4444' : '#6B7280'}
-            />
-            {likeCount > 0 && (
-              <Text style={[styles.actionText, liked && styles.actionTextLiked]}>
-                {formatNumber(likeCount)}
-              </Text>
-            )}
-          </TouchableOpacity>
-        </Animated.View>
+        <View style={styles.actionBarLeft}>
+          {/* Like */}
+          <Animated.View style={[likeAnimatedStyle, styles.actionButton]}>
+            <TouchableOpacity onPress={handleLike} style={styles.actionButtonInner}>
+              <Ionicons
+                name={liked ? 'heart' : 'heart-outline'}
+                size={24}
+                color={liked ? '#EF4444' : '#262626'}
+              />
+              {likeCount > 0 && (
+                <Text style={[styles.actionText, liked && styles.actionTextLiked]}>
+                  {formatNumber(likeCount)}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </Animated.View>
 
-        {/* Value - Diamond/Gem icon for valuable learning content */}
+          {/* Comment */}
+          <TouchableOpacity onPress={onComment} style={styles.actionButton}>
+            <View style={styles.actionButtonInner}>
+              <Ionicons name="chatbubble-outline" size={24} color="#262626" />
+              {post.comments > 0 && (
+                <Text style={styles.actionText}>{formatNumber(post.comments)}</Text>
+              )}
+            </View>
+          </TouchableOpacity>
+
+          {/* Repost */}
+          <TouchableOpacity onPress={onRepost} style={styles.actionButton}>
+            <View style={styles.actionButtonInner}>
+              <Ionicons name="repeat-outline" size={26} color="#262626" />
+              {post.shares > 0 && (
+                <Text style={styles.actionText}>{formatNumber(post.shares)}</Text>
+              )}
+            </View>
+          </TouchableOpacity>
+
+          {/* Send (Instagram-style) */}
+          <TouchableOpacity onPress={onShare} style={styles.actionButton}>
+            <View style={styles.actionButtonInner}>
+              <Ionicons name="paper-plane-outline" size={23} color="#262626" />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Value - Right side (like Instagram bookmark) */}
         <Animated.View style={[valueAnimatedStyle, styles.actionButton]}>
           <TouchableOpacity onPress={handleValue} style={styles.actionButtonInner}>
             <Ionicons 
               name={valued ? 'diamond' : 'diamond-outline'} 
-              size={22} 
-              color={valued ? '#8B5CF6' : '#6B7280'} 
+              size={24} 
+              color={valued ? '#8B5CF6' : '#262626'} 
             />
           </TouchableOpacity>
         </Animated.View>
-
-        {/* Comment */}
-        <TouchableOpacity onPress={onComment} style={styles.actionButton}>
-          <View style={styles.actionButtonInner}>
-            <Ionicons name="chatbubble-outline" size={22} color="#6B7280" />
-            {post.comments > 0 && (
-              <Text style={styles.actionText}>{formatNumber(post.comments)}</Text>
-            )}
-          </View>
-        </TouchableOpacity>
-
-        {/* Share */}
-        <TouchableOpacity onPress={onShare} style={styles.actionButton}>
-          <View style={styles.actionButtonInner}>
-            <Ionicons name="arrow-redo-outline" size={22} color="#6B7280" />
-            {post.shares > 0 && (
-              <Text style={styles.actionText}>{formatNumber(post.shares)}</Text>
-            )}
-          </View>
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -535,7 +546,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 12,
     borderRadius: 16,
     overflow: 'visible',
     position: 'relative',
@@ -942,16 +953,20 @@ const styles = StyleSheet.create({
   actionBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
   },
+  actionBarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
   actionButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 50,
   },
   actionButtonInner: {
     flexDirection: 'row',

@@ -52,15 +52,15 @@ const BORDER_WIDTH: Record<AvatarSize, number> = {
   '2xl': 3.5,
 };
 
-// Beautiful gradient presets
+// Beautiful gradient presets - Instagram story style
 const GRADIENT_PRESETS: Record<GradientPreset, string[]> = {
-  purple: ['#667EEA', '#764BA2'],
-  orange: ['#F97316', '#FBBF24', '#F59E0B'],
-  blue: ['#06B6D4', '#3B82F6', '#8B5CF6'],
-  green: ['#10B981', '#34D399', '#06B6D4'],
-  pink: ['#EC4899', '#F472B6', '#F97316'],
-  gold: ['#F59E0B', '#FBBF24', '#FCD34D'],
-  rainbow: ['#EF4444', '#F97316', '#FBBF24', '#10B981', '#3B82F6', '#8B5CF6'],
+  purple: ['#6366F1', '#8B5CF6', '#A855F7'],
+  orange: ['#FFA500', '#FF8C00', '#FF6B35'],
+  blue: ['#3B82F6', '#60A5FA', '#93C5FD'],
+  green: ['#10B981', '#34D399'],
+  pink: ['#EC4899', '#F472B6', '#FBCFE8'],
+  gold: ['#FBBF24', '#FCD34D', '#FDE68A'],
+  rainbow: ['#F97316', '#FBBF24', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'],
   none: ['transparent', 'transparent'],
 };
 
@@ -73,14 +73,15 @@ const getInitials = (name: string): string => {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 };
 
+// Light grey gradients for fallback avatars - clean and professional
 const getGradientColors = (name: string): [string, string] => {
   const gradients: [string, string][] = [
-    [Colors.primary[400], Colors.secondary[500]],
-    ['#EC4899', '#F97316'],
-    ['#8B5CF6', '#EC4899'],
-    ['#06B6D4', '#3B82F6'],
-    ['#10B981', '#06B6D4'],
-    ['#F59E0B', '#EF4444'],
+    ['#F3F4F6', '#E5E7EB'], // Light grey gradient
+    ['#E5E7EB', '#D1D5DB'], // Medium light grey
+    ['#F9FAFB', '#F3F4F6'], // Very light grey
+    ['#FAFAFA', '#F5F5F5'], // Off-white grey
+    ['#F8F9FA', '#E9ECEF'], // Soft grey
+    ['#F5F5F5', '#EEEEEE'], // Neutral grey
   ];
   
   const index = name
@@ -97,9 +98,9 @@ export const Avatar: React.FC<AvatarProps> = ({
   showOnline = false,
   isOnline = false,
   style,
-  borderColor = '#F59E0B',
+  borderColor = '#FFA500',
   showBorder = true,
-  gradientBorder = 'purple',
+  gradientBorder = 'orange',
 }) => {
   const dimension = SIZES[size];
   const fontSize = FONT_SIZES[size];
@@ -267,8 +268,8 @@ const styles = StyleSheet.create({
     borderRadius: 9999,
   },
   initials: {
-    color: Colors.white,
-    fontWeight: Typography.fontWeight.semibold,
+    color: '#1F2937',
+    fontWeight: Typography.fontWeight.bold,
   },
   onlineIndicator: {
     position: 'absolute',

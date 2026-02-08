@@ -123,6 +123,23 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             hasCode: post.hasCode,
             hasPdf: post.hasPdf,
             hasFormula: post.hasFormula,
+            // NEW: Enhanced learning features
+            isPartOfPath: post.isPartOfPath,
+            pathName: post.pathName,
+            pathStep: post.pathStep,
+            pathTotalSteps: post.pathTotalSteps,
+            prerequisiteIds: post.prerequisiteIds,
+            nextContentId: post.nextContentId,
+            activeStudyingCount: post.activeStudyingCount,
+            classmateEnrollments: post.classmateEnrollments,
+            peerHelpRequests: post.peerHelpRequests,
+            studySessionActive: post.studySessionActive,
+            hasAiExplanation: post.hasAiExplanation,
+            aiSuggested: post.aiSuggested,
+            relatedTopics: post.relatedTopics,
+            prerequisiteTopics: post.prerequisiteTopics,
+            enrolledToday: post.enrolledToday,
+            completionRate: post.completionRate,
           },
         }));
 

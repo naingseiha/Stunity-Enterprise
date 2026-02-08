@@ -22,11 +22,11 @@ interface EnvironmentConfig {
 }
 
 const development: EnvironmentConfig = {
-  apiBaseUrl: 'http://192.168.18.73:3001',
-  authUrl: 'http://192.168.18.73:3001',
-  feedUrl: 'http://192.168.18.73:3010',
-  mediaUrl: 'http://192.168.18.73:3010',
-  wsUrl: 'ws://192.168.18.73:3011',
+  apiBaseUrl: 'http://10.103.61.191:3001',
+  authUrl: 'http://10.103.61.191:3001',
+  feedUrl: 'http://10.103.61.191:3010',
+  mediaUrl: 'http://10.103.61.191:3010',
+  wsUrl: 'ws://10.103.61.191:3011',
   sentryDsn: '',
   analyticsKey: '',
   enableDebugMode: true,

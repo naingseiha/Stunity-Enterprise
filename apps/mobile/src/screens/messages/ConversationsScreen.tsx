@@ -1,7 +1,8 @@
 /**
  * Conversations Screen
  * 
- * List of message conversations
+ * Clean, professional design matching Feed/Learn screens
+ * Instagram/WhatsApp-inspired messaging interface
  */
 
 import React, { useState, useCallback } from 'react';
@@ -13,16 +14,21 @@ import {
   TouchableOpacity,
   RefreshControl,
   StatusBar,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInDown, FadeInRight } from 'react-native-reanimated';
+
+const StunityLogo = require('../../../../../Stunity.png');
 
 import { Avatar, Input, Card } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows, BorderRadius } from '@/config';
 import { formatRelativeTime } from '@/utils';
 import { MessagesStackScreenProps } from '@/navigation/types';
+import { useNavigationContext } from '@/contexts';
 
 type NavigationProp = MessagesStackScreenProps<'Conversations'>['navigation'];
 
@@ -97,6 +103,7 @@ const MOCK_CONVERSATIONS: Conversation[] = [
 
 export default function ConversationsScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { openSidebar } = useNavigationContext();
   
   const [conversations, setConversations] = useState<Conversation[]>(MOCK_CONVERSATIONS);
   const [searchQuery, setSearchQuery] = useState('');
@@ -126,7 +133,7 @@ export default function ConversationsScreen() {
   });
 
   const renderConversation = ({ item, index }: { item: Conversation; index: number }) => (
-    <Animated.View entering={FadeInDown.delay(50 * index).duration(300)}>
+    <Animated.View entering={FadeInDown.delay(30 * Math.min(index, 5)).duration(300)}>
       <TouchableOpacity
         onPress={() => handleConversationPress(item)}
         style={styles.conversationItem}
@@ -179,68 +186,103 @@ export default function ConversationsScreen() {
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Ionicons name="chatbubbles-outline" size={64} color={Colors.gray[300]} />
+      <View style={styles.emptyIconBg}>
+        <Ionicons name="chatbubbles-outline" size={48} color="#9CA3AF" />
+      </View>
       <Text style={styles.emptyTitle}>No conversations yet</Text>
       <Text style={styles.emptyText}>
         Start a conversation with your classmates or teachers
       </Text>
+      <TouchableOpacity onPress={handleNewMessage} style={styles.emptyButton}>
+        <LinearGradient
+          colors={['#FFA500', '#FF8C00']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.emptyButtonGradient}
+        >
+          <Ionicons name="add" size={20} color="#fff" />
+          <Text style={styles.emptyButtonText}>New Message</Text>
+        </LinearGradient>
+      </TouchableOpacity>
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Header */}
-      <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
-        <Text style={styles.headerTitle}>Messages</Text>
-        <TouchableOpacity onPress={handleNewMessage} style={styles.newMessageButton}>
-          <Ionicons name="create-outline" size={24} color={Colors.primary[500]} />
-        </TouchableOpacity>
-      </Animated.View>
+      {/* Header - matching Feed/Learn style */}
+      <SafeAreaView edges={['top']} style={styles.headerSafe}>
+        <View style={styles.header}>
+          {/* Menu Button - Left */}
+          <TouchableOpacity onPress={openSidebar} style={styles.menuButton}>
+            <Ionicons name="menu" size={28} color="#374151" />
+          </TouchableOpacity>
 
-      {/* Search */}
-      <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.searchContainer}>
-        <Input
-          placeholder="Search conversations..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          leftIcon="search-outline"
-          containerStyle={styles.searchInput}
-        />
-      </Animated.View>
+          {/* Stunity Logo - Center */}
+          <Image
+            source={StunityLogo}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
 
-      {/* Online Users */}
-      <Animated.View entering={FadeInDown.delay(150).duration(400)} style={styles.onlineContainer}>
-        <Text style={styles.onlineTitle}>Active Now</Text>
-        <FlatList
-          horizontal
-          data={conversations.filter((c) => c.user.isOnline)}
-          keyExtractor={(item) => item.id}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.onlineList}
-          renderItem={({ item, index }) => (
-            <Animated.View entering={FadeInRight.delay(50 * index).duration(300)}>
-              <TouchableOpacity 
-                onPress={() => handleConversationPress(item)}
-                style={styles.onlineUser}
-              >
-                <Avatar
-                  uri={item.user.profilePictureUrl}
-                  name={`${item.user.firstName} ${item.user.lastName}`}
-                  size="lg"
-                  showOnline
-                />
-                <Text style={styles.onlineUserName} numberOfLines={1}>
-                  {item.user.firstName}
-                </Text>
-              </TouchableOpacity>
-            </Animated.View>
-          )}
-        />
-      </Animated.View>
+          {/* Actions - Right */}
+          <View style={styles.headerActions}>
+            <TouchableOpacity 
+              style={styles.headerButton}
+              onPress={handleNewMessage}
+            >
+              <Ionicons name="create-outline" size={24} color="#374151" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.headerButton}>
+              <Ionicons name="search-outline" size={24} color="#374151" />
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View style={styles.headerDivider} />
+      </SafeAreaView>
+
+      {/* Active Now Section */}
+      {conversations.filter((c) => c.user.isOnline).length > 0 && (
+        <View style={styles.onlineSection}>
+          <Text style={styles.onlineTitle}>Active Now</Text>
+          <FlatList
+            horizontal
+            data={conversations.filter((c) => c.user.isOnline)}
+            keyExtractor={(item) => item.id}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.onlineList}
+            renderItem={({ item, index }) => (
+              <Animated.View entering={FadeInRight.delay(50 * index).duration(300)}>
+                <TouchableOpacity 
+                  onPress={() => handleConversationPress(item)}
+                  style={styles.onlineUser}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.onlineAvatarWrapper}>
+                    <Avatar
+                      uri={item.user.profilePictureUrl}
+                      name={`${item.user.firstName} ${item.user.lastName}`}
+                      size="lg"
+                      showBorder={false}
+                    />
+                    <View style={styles.onlineDot} />
+                  </View>
+                  <Text style={styles.onlineUserName} numberOfLines={1}>
+                    {item.user.firstName}
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
+            )}
+          />
+        </View>
+      )}
 
       {/* Conversations List */}
+      <View style={styles.conversationsHeader}>
+        <Text style={styles.conversationsTitle}>Messages</Text>
+      </View>
+
       <FlatList
         data={filteredConversations}
         renderItem={renderConversation}
@@ -252,86 +294,125 @@ export default function ConversationsScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={Colors.primary[500]}
+            tintColor="#FFA500"
+            colors={['#FFA500']}
           />
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: '#F8F7FC',
+  },
+  headerSafe: {
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Spacing[4],
-    paddingVertical: Spacing[3],
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[100],
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  headerTitle: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: '700',
-    color: Colors.gray[900],
+  headerDivider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
   },
-  newMessageButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.primary[50],
+  headerLogo: {
+    height: 32,
+    width: 120,
+  },
+  menuButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  searchContainer: {
-    paddingHorizontal: Spacing[4],
-    paddingVertical: Spacing[2],
+  headerActions: {
+    flexDirection: 'row',
+    gap: 4,
   },
-  searchInput: {
-    marginBottom: 0,
+  headerButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  onlineContainer: {
-    paddingTop: Spacing[2],
+  onlineSection: {
+    backgroundColor: '#fff',
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[100],
-    paddingBottom: Spacing[3],
+    borderBottomColor: '#E5E7EB',
   },
   onlineTitle: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: '600',
-    color: Colors.gray[500],
-    paddingHorizontal: Spacing[4],
-    marginBottom: Spacing[2],
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6B7280',
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   onlineList: {
-    paddingHorizontal: Spacing[4],
-    gap: Spacing[4],
+    paddingHorizontal: 16,
+    gap: 16,
   },
   onlineUser: {
     alignItems: 'center',
-    width: 60,
+    width: 64,
+  },
+  onlineAvatarWrapper: {
+    position: 'relative',
+  },
+  onlineDot: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#10B981',
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   onlineUserName: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.gray[600],
-    marginTop: Spacing[1],
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 6,
     textAlign: 'center',
+    fontWeight: '500',
+  },
+  conversationsHeader: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  conversationsTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1a1a1a',
   },
   listContent: {
     flexGrow: 1,
+    backgroundColor: '#fff',
   },
   conversationItem: {
     flexDirection: 'row',
-    padding: Spacing[4],
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[100],
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#E5E7EB',
   },
   avatarContainer: {
-    marginRight: Spacing[3],
+    marginRight: 12,
   },
   conversationContent: {
     flex: 1,
@@ -341,19 +422,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing[1],
+    marginBottom: 4,
   },
   userName: {
-    fontSize: Typography.fontSize.base,
+    fontSize: 16,
     fontWeight: '600',
-    color: Colors.gray[900],
+    color: '#1a1a1a',
   },
   timestamp: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.gray[400],
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontWeight: '500',
   },
   unreadTimestamp: {
-    color: Colors.primary[500],
+    color: '#FFA500',
     fontWeight: '600',
   },
   messageRow: {
@@ -363,45 +445,71 @@ const styles = StyleSheet.create({
   },
   lastMessage: {
     flex: 1,
-    fontSize: Typography.fontSize.sm,
-    color: Colors.gray[500],
-    marginRight: Spacing[2],
+    fontSize: 14,
+    color: '#6B7280',
+    marginRight: 8,
   },
   unreadMessage: {
-    color: Colors.gray[900],
-    fontWeight: '500',
+    color: '#1a1a1a',
+    fontWeight: '600',
   },
   unreadBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: Colors.primary[500],
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#FFA500',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: Spacing[1],
+    paddingHorizontal: 6,
   },
   unreadCount: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
-    color: Colors.white,
+    color: '#fff',
   },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing[16],
+    paddingVertical: 80,
+    paddingHorizontal: 32,
+  },
+  emptyIconBg: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: Typography.fontSize.xl,
+    fontSize: 17,
     fontWeight: '600',
-    color: Colors.gray[700],
-    marginTop: Spacing[4],
+    color: '#374151',
+    marginBottom: 8,
   },
   emptyText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.gray[500],
+    fontSize: 14,
+    color: '#6B7280',
     textAlign: 'center',
-    marginTop: Spacing[2],
-    paddingHorizontal: Spacing[8],
+    lineHeight: 20,
+  },
+  emptyButton: {
+    marginTop: 20,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  emptyButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  emptyButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#fff',
   },
 });

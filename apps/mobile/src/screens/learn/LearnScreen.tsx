@@ -1,7 +1,8 @@
 /**
  * Learn Hub Screen
  * 
- * Main learning screen with courses and paths
+ * Clean, professional design matching Feed screen
+ * Features: Explore courses, My courses, Created courses, Learning paths
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -15,6 +16,7 @@ import {
   RefreshControl,
   Dimensions,
   StatusBar,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -22,12 +24,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInDown, FadeInRight } from 'react-native-reanimated';
 
-import { Input, Card, Loading } from '@/components/common';
+const StunityLogo = require('../../../../../Stunity.png');
+
+import { Input, Card, Loading, Avatar } from '@/components/common';
 import { CourseCard } from '@/components/learn';
 import { Colors, Typography, Spacing, Shadows, BorderRadius } from '@/config';
 import { useAuthStore } from '@/stores';
 import { Course, LearningPath } from '@/types';
 import { LearnStackScreenProps } from '@/navigation/types';
+import { useNavigationContext } from '@/contexts';
 
 const { width } = Dimensions.get('window');
 
@@ -36,10 +41,10 @@ type NavigationProp = LearnStackScreenProps<'LearnHub'>['navigation'];
 type TabType = 'explore' | 'enrolled' | 'created' | 'paths';
 
 const TABS: { id: TabType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { id: 'explore', label: 'Explore', icon: 'compass-outline' },
-  { id: 'enrolled', label: 'My Courses', icon: 'book-outline' },
-  { id: 'created', label: 'Created', icon: 'create-outline' },
-  { id: 'paths', label: 'Paths', icon: 'git-branch-outline' },
+  { id: 'explore', label: 'Explore', icon: 'compass' },
+  { id: 'enrolled', label: 'My Courses', icon: 'book' },
+  { id: 'created', label: 'Created', icon: 'create' },
+  { id: 'paths', label: 'Paths', icon: 'git-branch' },
 ];
 
 // Mock data with correct types
@@ -171,9 +176,11 @@ const MOCK_PATHS: LearningPath[] = [
 export default function LearnScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
+  const { openSidebar } = useNavigationContext();
 
   const [activeTab, setActiveTab] = useState<TabType>('explore');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [courses, setCourses] = useState<Course[]>(MOCK_COURSES);
   const [paths, setPaths] = useState<LearningPath[]>(MOCK_PATHS);
   const [isLoading, setIsLoading] = useState(false);
@@ -195,46 +202,57 @@ export default function LearnScreen() {
   }, [navigation]);
 
   const filteredCourses = courses.filter((course) =>
-    course.title.toLowerCase().includes(searchQuery.toLowerCase())
+    course.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+    (selectedCategory === 'All' || course.category === selectedCategory)
   );
 
+  // Categories with Stunity orange theme
   const renderCategories = () => {
     const categories = [
-      { id: 'dev', name: 'Development', icon: 'code-slash', color: Colors.primary[500] },
-      { id: 'design', name: 'Design', icon: 'color-palette', color: Colors.secondary[500] },
-      { id: 'data', name: 'Data Science', icon: 'analytics', color: Colors.success.main },
-      { id: 'business', name: 'Business', icon: 'briefcase', color: Colors.warning.main },
-      { id: 'marketing', name: 'Marketing', icon: 'megaphone', color: Colors.error.main },
+      { id: 'all', name: 'All', icon: 'apps', color: '#FFA500' },
+      { id: 'dev', name: 'Development', icon: 'code-slash', color: '#6366F1' },
+      { id: 'design', name: 'Design', icon: 'color-palette', color: '#EC4899' },
+      { id: 'data', name: 'Data Science', icon: 'analytics', color: '#10B981' },
+      { id: 'business', name: 'Business', icon: 'briefcase', color: '#F59E0B' },
     ];
 
     return (
-      <Animated.View entering={FadeInDown.delay(200).duration(400)} style={styles.categoriesContainer}>
+      <View style={styles.categoriesSection}>
         <Text style={styles.sectionTitle}>Categories</Text>
         <ScrollView 
           horizontal 
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoriesScroll}
         >
-          {categories.map((cat, index) => (
-            <Animated.View 
-              key={cat.id} 
-              entering={FadeInRight.delay(100 * index).duration(300)}
-            >
-              <TouchableOpacity style={styles.categoryCard}>
-                <View style={[styles.categoryIcon, { backgroundColor: cat.color + '20' }]}>
-                  <Ionicons name={cat.icon as any} size={24} color={cat.color} />
-                </View>
-                <Text style={styles.categoryName}>{cat.name}</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          ))}
+          {categories.map((cat, index) => {
+            const isSelected = selectedCategory === cat.name;
+            return (
+              <Animated.View 
+                key={cat.id} 
+                entering={FadeInRight.delay(50 * index).duration(300)}
+              >
+                <TouchableOpacity 
+                  style={[styles.categoryCard, isSelected && styles.categoryCardActive]}
+                  onPress={() => setSelectedCategory(cat.name)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.categoryIcon, { backgroundColor: cat.color + '20' }]}>
+                    <Ionicons name={cat.icon as any} size={24} color={cat.color} />
+                  </View>
+                  <Text style={[styles.categoryName, isSelected && styles.categoryNameActive]}>
+                    {cat.name}
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          })}
         </ScrollView>
-      </Animated.View>
+      </View>
     );
   };
 
   const renderExploreCourses = () => (
-    <View style={styles.section}>
+    <View style={styles.coursesSection}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Popular Courses</Text>
         <TouchableOpacity>
@@ -245,7 +263,7 @@ export default function LearnScreen() {
       {filteredCourses.map((course, index) => (
         <Animated.View 
           key={course.id}
-          entering={FadeInDown.delay(100 * index).duration(400)}
+          entering={FadeInDown.delay(50 * Math.min(index, 3)).duration(300)}
         >
           <CourseCard course={course} onPress={() => handleCoursePress(course)} />
         </Animated.View>
@@ -254,22 +272,29 @@ export default function LearnScreen() {
   );
 
   const renderLearningPaths = () => (
-    <View style={styles.section}>
+    <View style={styles.pathsSection}>
       <Text style={styles.sectionTitle}>Learning Paths</Text>
       
       {paths.map((path, index) => (
         <Animated.View 
           key={path.id}
-          entering={FadeInDown.delay(100 * index).duration(400)}
+          entering={FadeInDown.delay(50 * index).duration(300)}
         >
-          <Card style={styles.pathCard}>
+          <TouchableOpacity activeOpacity={0.8} style={styles.pathCard}>
             <LinearGradient
-              colors={[Colors.primary[500], Colors.secondary[500]]}
+              colors={['#F9FAFB', '#F3F4F6']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.pathGradient}
             >
               <View style={styles.pathContent}>
+                <View style={styles.pathHeader}>
+                  <Ionicons name="school" size={24} color="#FFA500" />
+                  <View style={styles.pathBadge}>
+                    <Text style={styles.pathBadgeText}>{path.level}</Text>
+                  </View>
+                </View>
+                
                 <Text style={styles.pathTitle}>{path.title}</Text>
                 <Text style={styles.pathDescription} numberOfLines={2}>
                   {path.description}
@@ -277,36 +302,37 @@ export default function LearnScreen() {
                 
                 <View style={styles.pathStats}>
                   <View style={styles.pathStat}>
-                    <Ionicons name="book-outline" size={16} color={Colors.white} />
+                    <Ionicons name="book-outline" size={16} color="#6B7280" />
                     <Text style={styles.pathStatText}>
                       {path.courseIds.length} courses
                     </Text>
                   </View>
                   <View style={styles.pathStat}>
-                    <Ionicons name="time-outline" size={16} color={Colors.white} />
+                    <Ionicons name="time-outline" size={16} color="#6B7280" />
                     <Text style={styles.pathStatText}>
                       {Math.floor(path.estimatedDuration / 60)}h
                     </Text>
                   </View>
                   <View style={styles.pathStat}>
-                    <Ionicons name="trending-up-outline" size={16} color={Colors.white} />
-                    <Text style={styles.pathStatText}>
-                      {path.level}
-                    </Text>
+                    <Ionicons name="arrow-forward-circle" size={16} color="#FFA500" />
+                    <Text style={styles.pathStatText}>Start Path</Text>
                   </View>
                 </View>
               </View>
             </LinearGradient>
-          </Card>
+          </TouchableOpacity>
         </Animated.View>
       ))}
     </View>
   );
 
-  const renderEmptyState = (message: string, icon: keyof typeof Ionicons.glyphMap) => (
+  const renderEmptyState = (message: string, icon: keyof typeof Ionicons.glyphMap, subtitle?: string) => (
     <View style={styles.emptyState}>
-      <Ionicons name={icon} size={64} color={Colors.gray[300]} />
+      <View style={styles.emptyIconBg}>
+        <Ionicons name={icon} size={48} color="#9CA3AF" />
+      </View>
       <Text style={styles.emptyTitle}>{message}</Text>
+      {subtitle && <Text style={styles.emptySubtitle}>{subtitle}</Text>}
     </View>
   );
 
@@ -320,18 +346,26 @@ export default function LearnScreen() {
           </>
         );
       case 'enrolled':
-        return renderEmptyState('No enrolled courses', 'book-outline');
+        return renderEmptyState('No enrolled courses', 'book-outline', 'Start learning by enrolling in courses');
       case 'created':
         return (
-          <View style={styles.section}>
+          <View style={styles.createdSection}>
             <TouchableOpacity 
               style={styles.createCourseButton}
               onPress={handleCreateCourse}
+              activeOpacity={0.7}
             >
-              <Ionicons name="add-circle-outline" size={24} color={Colors.primary[500]} />
-              <Text style={styles.createCourseText}>Create New Course</Text>
+              <LinearGradient
+                colors={['#FFA500', '#FF8C00']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.createGradient}
+              >
+                <Ionicons name="add-circle-outline" size={24} color="#fff" />
+                <Text style={styles.createCourseText}>Create New Course</Text>
+              </LinearGradient>
             </TouchableOpacity>
-            {renderEmptyState('No courses created yet', 'create-outline')}
+            {renderEmptyState('No courses created yet', 'create-outline', 'Share your knowledge by creating courses')}
           </View>
         );
       case 'paths':
@@ -342,58 +376,74 @@ export default function LearnScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Header */}
-      <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
-        <Text style={styles.headerTitle}>Learn</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="bookmark-outline" size={24} color={Colors.gray[700]} />
+      {/* Header - matching Feed screen style */}
+      <SafeAreaView edges={['top']} style={styles.headerSafe}>
+        <View style={styles.header}>
+          {/* Menu Button - Left */}
+          <TouchableOpacity onPress={openSidebar} style={styles.menuButton}>
+            <Ionicons name="menu" size={28} color="#374151" />
           </TouchableOpacity>
+
+          {/* Stunity Logo - Center */}
+          <Image
+            source={StunityLogo}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
+
+          {/* Actions - Right */}
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.headerButton}>
+              <Ionicons name="bookmark-outline" size={24} color="#374151" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.headerButton}>
+              <Ionicons name="search-outline" size={24} color="#374151" />
+            </TouchableOpacity>
+          </View>
         </View>
-      </Animated.View>
+        <View style={styles.headerDivider} />
+      </SafeAreaView>
 
-      {/* Search */}
-      <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.searchContainer}>
-        <Input
-          placeholder="Search courses..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          leftIcon="search-outline"
-          containerStyle={styles.searchInput}
-        />
-      </Animated.View>
-
-      {/* Tabs */}
-      <Animated.View entering={FadeInDown.delay(150).duration(400)} style={styles.tabsContainer}>
+      {/* Tabs - matching Feed filter tabs */}
+      <View style={styles.tabsContainer}>
         <ScrollView 
           horizontal 
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.tabsContent}
         >
-          {TABS.map((tab) => (
-            <TouchableOpacity
-              key={tab.id}
-              onPress={() => setActiveTab(tab.id)}
-              style={[styles.tab, activeTab === tab.id && styles.activeTab]}
-            >
-              <Ionicons 
-                name={tab.icon} 
-                size={18} 
-                color={activeTab === tab.id ? Colors.primary[500] : Colors.gray[500]} 
-              />
-              <Text style={[
-                styles.tabText, 
-                activeTab === tab.id && styles.activeTabText
-              ]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                onPress={() => setActiveTab(tab.id)}
+                style={styles.tab}
+                activeOpacity={0.7}
+              >
+                {isActive ? (
+                  <LinearGradient
+                    colors={['#FFA500', '#FF8C00']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.tabGradient}
+                  >
+                    <Ionicons name={tab.icon} size={18} color="#fff" />
+                    <Text style={styles.tabTextActive}>{tab.label}</Text>
+                  </LinearGradient>
+                ) : (
+                  <View style={styles.tabInner}>
+                    <Ionicons name={tab.icon} size={18} color="#6B7280" />
+                    <Text style={styles.tabText}>{tab.label}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
-      </Animated.View>
+      </View>
 
       {/* Content */}
       <ScrollView
@@ -403,199 +453,280 @@ export default function LearnScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={Colors.primary[500]}
+            tintColor="#FFA500"
+            colors={['#FFA500']}
           />
         }
       >
         {renderTabContent()}
         <View style={{ height: 100 }} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.gray[50],
+    backgroundColor: '#F8F7FC',
+  },
+  headerSafe: {
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Spacing[4],
-    paddingVertical: Spacing[3],
-    backgroundColor: Colors.white,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  headerTitle: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: '700',
-    color: Colors.gray[900],
+  headerDivider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
   },
-  headerActions: {
-    flexDirection: 'row',
-    gap: Spacing[2],
+  headerLogo: {
+    height: 32,
+    width: 120,
   },
-  headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.gray[100],
+  menuButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  searchContainer: {
-    paddingHorizontal: Spacing[4],
-    paddingVertical: Spacing[2],
-    backgroundColor: Colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[100],
+  headerActions: {
+    flexDirection: 'row',
+    gap: 4,
   },
-  searchInput: {
-    marginBottom: 0,
+  headerButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tabsContainer: {
-    backgroundColor: Colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[100],
+    backgroundColor: '#fff',
+    paddingBottom: 2,
   },
   tabsContent: {
-    paddingHorizontal: Spacing[4],
-    paddingVertical: Spacing[2],
-    gap: Spacing[2],
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 10,
   },
   tab: {
+    borderRadius: 50,
+    overflow: 'hidden',
+  },
+  tabGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing[4],
-    paddingVertical: Spacing[2],
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.gray[100],
-    gap: Spacing[2],
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    gap: 5,
+    borderRadius: 50,
   },
-  activeTab: {
-    backgroundColor: Colors.primary[50],
+  tabInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    gap: 5,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 50,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   tabText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.gray[500],
-    fontWeight: '500',
-  },
-  activeTabText: {
-    color: Colors.primary[500],
+    fontSize: 13,
     fontWeight: '600',
+    color: '#6B7280',
+  },
+  tabTextActive: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#fff',
   },
   content: {
     flex: 1,
   },
-  categoriesContainer: {
-    paddingTop: Spacing[4],
+  categoriesSection: {
+    paddingTop: 16,
+    paddingBottom: 8,
+    backgroundColor: '#fff',
+    marginBottom: 12,
   },
   categoriesScroll: {
-    paddingHorizontal: Spacing[4],
-    paddingTop: Spacing[3],
-    gap: Spacing[3],
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    gap: 12,
   },
   categoryCard: {
     alignItems: 'center',
     width: 80,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderRadius: 12,
+  },
+  categoryCardActive: {
+    backgroundColor: '#FFF9F0',
   },
   categoryIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 8,
   },
   categoryName: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.gray[700],
-    marginTop: Spacing[2],
+    fontSize: 12,
+    color: '#374151',
+    fontWeight: '500',
     textAlign: 'center',
   },
-  section: {
-    padding: Spacing[4],
+  categoryNameActive: {
+    color: '#FFA500',
+    fontWeight: '600',
+  },
+  coursesSection: {
+    paddingHorizontal: 16,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing[3],
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: '600',
-    color: Colors.gray[900],
-    paddingHorizontal: Spacing[4],
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    paddingHorizontal: 16,
   },
   seeAll: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.primary[500],
-    fontWeight: '500',
+    fontSize: 14,
+    color: '#FFA500',
+    fontWeight: '600',
+  },
+  pathsSection: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   pathCard: {
-    marginBottom: Spacing[3],
+    marginBottom: 16,
+    borderRadius: 16,
     overflow: 'hidden',
-    padding: 0,
+    // Match Feed card shadow
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
   },
   pathGradient: {
-    padding: Spacing[5],
+    padding: 20,
   },
   pathContent: {
-    gap: Spacing[2],
+    gap: 12,
+  },
+  pathHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  pathBadge: {
+    backgroundColor: '#FFF9F0',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FFE5B4',
+  },
+  pathBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFA500',
+    textTransform: 'uppercase',
   },
   pathTitle: {
-    fontSize: Typography.fontSize.xl,
+    fontSize: 20,
     fontWeight: '700',
-    color: Colors.white,
+    color: '#1a1a1a',
   },
   pathDescription: {
-    fontSize: Typography.fontSize.sm,
-    color: 'rgba(255,255,255,0.9)',
+    fontSize: 14,
+    color: '#6B7280',
     lineHeight: 20,
   },
   pathStats: {
     flexDirection: 'row',
-    marginTop: Spacing[3],
-    gap: Spacing[4],
+    marginTop: 8,
+    gap: 16,
   },
   pathStat: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing[1],
+    gap: 6,
   },
   pathStatText: {
-    fontSize: Typography.fontSize.sm,
-    color: 'rgba(255,255,255,0.9)',
-    fontWeight: '500',
-    textTransform: 'capitalize',
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '600',
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing[16],
+    paddingVertical: 60,
+    paddingHorizontal: 32,
+  },
+  emptyIconBg: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: Typography.fontSize.lg,
-    color: Colors.gray[400],
-    marginTop: Spacing[4],
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 6,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  createdSection: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   createCourseButton: {
+    marginBottom: 24,
+    borderRadius: 16,
+    overflow: 'hidden',
+    // Match Feed card shadow
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  createGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.white,
-    padding: Spacing[4],
-    borderRadius: BorderRadius.xl,
-    borderWidth: 2,
-    borderColor: Colors.primary[200],
-    borderStyle: 'dashed',
-    gap: Spacing[2],
-    marginBottom: Spacing[4],
+    paddingVertical: 16,
+    gap: 10,
   },
   createCourseText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.primary[500],
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
   },
 });

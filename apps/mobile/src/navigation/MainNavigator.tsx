@@ -1,7 +1,8 @@
 /**
  * Main Tab Navigator
  * 
- * Bottom tab navigation for authenticated users
+ * Instagram-style bottom tab navigation for authenticated users
+ * Features: Feed, Learn, Clubs, Profile (icon-only)
  */
 
 import React from 'react';
@@ -19,12 +20,15 @@ import {
   ProfileStackParamList,
 } from './types';
 import { Colors, Typography, Shadows } from '@/config';
+import { Sidebar } from '@/components/navigation';
+import { NavigationProvider, useNavigationContext } from '@/contexts';
 
 // Implemented Screens
 import { FeedScreen, CreatePostScreen, PostDetailScreen } from '@/screens/feed';
 import { LearnScreen, CourseDetailScreen } from '@/screens/learn';
 import { ProfileScreen } from '@/screens/profile';
 import { ConversationsScreen, ChatScreen } from '@/screens/messages';
+import { ClubsScreen } from '@/screens/clubs';
 
 // Placeholder screens (will be implemented)
 const PlaceholderScreen = ({ title }: { title: string }) => (
@@ -36,7 +40,6 @@ const PlaceholderScreen = ({ title }: { title: string }) => (
 // Feed Stack Screens (placeholders for remaining)
 const UserProfileScreen = () => <PlaceholderScreen title="User Profile" />;
 const HashtagScreen = () => <PlaceholderScreen title="Hashtag" />;
-const ClubsScreen = () => <PlaceholderScreen title="Clubs" />;
 const ClubDetailScreen = () => <PlaceholderScreen title="Club Detail" />;
 const EventsScreen = () => <PlaceholderScreen title="Events" />;
 const EventDetailScreen = () => <PlaceholderScreen title="Event Detail" />;
@@ -66,6 +69,16 @@ const LearnStack = createNativeStackNavigator<LearnStackParamList>();
 const MessagesStack = createNativeStackNavigator<MessagesStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 
+// Clubs Stack
+const ClubsStack = createNativeStackNavigator();
+
+const ClubsStackNavigator: React.FC = () => (
+  <ClubsStack.Navigator screenOptions={{ headerShown: false }}>
+    <ClubsStack.Screen name="ClubsList" component={ClubsScreen} />
+    <ClubsStack.Screen name="ClubDetail" component={ClubDetailScreen} />
+  </ClubsStack.Navigator>
+);
+
 // Feed Stack Navigator
 const FeedStackNavigator: React.FC = () => (
   <FeedStack.Navigator screenOptions={{ headerShown: false }}>
@@ -74,8 +87,6 @@ const FeedStackNavigator: React.FC = () => (
     <FeedStack.Screen name="PostDetail" component={PostDetailScreen} />
     <FeedStack.Screen name="UserProfile" component={UserProfileScreen} />
     <FeedStack.Screen name="Hashtag" component={HashtagScreen} />
-    <FeedStack.Screen name="Clubs" component={ClubsScreen} />
-    <FeedStack.Screen name="ClubDetail" component={ClubDetailScreen} />
     <FeedStack.Screen name="Events" component={EventsScreen} />
     <FeedStack.Screen name="EventDetail" component={EventDetailScreen} />
   </FeedStack.Navigator>
@@ -126,78 +137,127 @@ interface TabBarIconProps {
   size: number;
 }
 
+const MainNavigatorContent: React.FC = () => {
+  const { sidebarVisible, closeSidebar } = useNavigationContext();
+
+  const handleNavigate = (screen: string) => {
+    // Navigation will be handled by the sidebar component
+    console.log('Navigate to:', screen);
+  };
+
+  return (
+    <>
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          tabBarShowLabel: false, // Instagram-style: icons only
+          tabBarActiveTintColor: '#000000', // Black when active (Instagram style)
+          tabBarInactiveTintColor: '#C7C7CC', // Light gray when inactive
+          tabBarStyle: {
+            backgroundColor: '#FFFFFF',
+            borderTopWidth: 0.5,
+            borderTopColor: '#E5E5E5',
+            height: Platform.OS === 'ios' ? 80 : 60,
+            paddingTop: 8,
+            paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+            elevation: 0,
+            shadowColor: '#000',
+            shadowOffset: {
+              width: 0,
+              height: -2,
+            },
+            shadowOpacity: 0.08,
+            shadowRadius: 8,
+          },
+          tabBarIcon: ({ focused, color, size }: TabBarIconProps) => {
+            let iconName: keyof typeof Ionicons.glyphMap;
+            let iconSize = 26;
+
+            switch (route.name) {
+              case 'FeedTab':
+                // Home icon - Instagram style
+                iconName = focused ? 'home' : 'home-outline';
+                iconSize = 28;
+                break;
+              case 'LearnTab':
+                // Compass for exploration/learning
+                iconName = focused ? 'compass' : 'compass-outline';
+                iconSize = 28;
+                break;
+              case 'MessagesTab':
+                // Multiple chat bubbles for messages - cleaner look
+                iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
+                iconSize = 27;
+                break;
+              case 'ClubsTab':
+                // School for clubs/study groups
+                iconName = focused ? 'school' : 'school-outline';
+                iconSize = 28;
+                break;
+              case 'ProfileTab':
+                // Circle person for profile - Instagram style
+                iconName = focused ? 'person-circle' : 'person-circle-outline';
+                iconSize = 28;
+                break;
+              default:
+                iconName = 'help-outline';
+            }
+
+            // Render custom tab bar icons
+            return (
+              <View style={styles.tabIconContainer}>
+                <Ionicons 
+                  name={iconName} 
+                  size={iconSize} 
+                  color={color} 
+                />
+              </View>
+            );
+          },
+        })}
+        screenListeners={{
+          tabPress: () => {
+            Haptics.selectionAsync();
+          },
+        }}
+      >
+        <Tab.Screen
+          name="FeedTab"
+          component={FeedStackNavigator}
+        />
+        <Tab.Screen
+          name="LearnTab"
+          component={LearnStackNavigator}
+        />
+        <Tab.Screen
+          name="MessagesTab"
+          component={MessagesStackNavigator}
+        />
+        <Tab.Screen
+          name="ClubsTab"
+          component={ClubsStackNavigator}
+        />
+        <Tab.Screen
+          name="ProfileTab"
+          component={ProfileStackNavigator}
+        />
+      </Tab.Navigator>
+
+      {/* Sidebar for additional navigation */}
+      <Sidebar
+        visible={sidebarVisible}
+        onClose={closeSidebar}
+        onNavigate={handleNavigate}
+      />
+    </>
+  );
+};
+
 const MainNavigator: React.FC = () => {
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarShowLabel: true,
-        tabBarActiveTintColor: Colors.primary[500],
-        tabBarInactiveTintColor: Colors.gray[400],
-        tabBarLabelStyle: {
-          fontSize: Typography.fontSize.xs,
-          fontWeight: Typography.fontWeight.medium,
-          marginTop: -4,
-          marginBottom: Platform.OS === 'ios' ? 0 : 8,
-        },
-        tabBarStyle: {
-          backgroundColor: Colors.white,
-          borderTopWidth: 1,
-          borderTopColor: Colors.gray[200],
-          height: Platform.OS === 'ios' ? 85 : 65,
-          paddingTop: 8,
-          ...Shadows.sm,
-        },
-        tabBarIcon: ({ focused, color, size }: TabBarIconProps) => {
-          let iconName: keyof typeof Ionicons.glyphMap;
-
-          switch (route.name) {
-            case 'FeedTab':
-              iconName = focused ? 'home' : 'home-outline';
-              break;
-            case 'LearnTab':
-              iconName = focused ? 'book' : 'book-outline';
-              break;
-            case 'MessagesTab':
-              iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
-              break;
-            case 'ProfileTab':
-              iconName = focused ? 'person' : 'person-outline';
-              break;
-            default:
-              iconName = 'help-outline';
-          }
-
-          return <Ionicons name={iconName} size={24} color={color} />;
-        },
-      })}
-      screenListeners={{
-        tabPress: () => {
-          Haptics.selectionAsync();
-        },
-      }}
-    >
-      <Tab.Screen
-        name="FeedTab"
-        component={FeedStackNavigator}
-        options={{ title: 'Feed' }}
-      />
-      <Tab.Screen
-        name="LearnTab"
-        component={LearnStackNavigator}
-        options={{ title: 'Learn' }}
-      />
-      <Tab.Screen
-        name="MessagesTab"
-        component={MessagesStackNavigator}
-        options={{ title: 'Messages' }}
-      />
-      <Tab.Screen
-        name="ProfileTab"
-        component={ProfileStackNavigator}
-        options={{ title: 'Profile' }}
-      />
-    </Tab.Navigator>
+    <NavigationProvider>
+      <MainNavigatorContent />
+    </NavigationProvider>
   );
 };
 
@@ -212,6 +272,12 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: Colors.gray[400],
+  },
+  tabIconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 50,
+    height: 50,
   },
 });
 

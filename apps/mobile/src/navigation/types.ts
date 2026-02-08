@@ -45,6 +45,7 @@ export type MainTabParamList = {
   FeedTab: NavigatorScreenParams<FeedStackParamList>;
   LearnTab: NavigatorScreenParams<LearnStackParamList>;
   MessagesTab: NavigatorScreenParams<MessagesStackParamList>;
+  ClubsTab: undefined;
   ProfileTab: NavigatorScreenParams<ProfileStackParamList>;
 };
 
