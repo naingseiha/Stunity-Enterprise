@@ -3,6 +3,42 @@
 echo "🚀 Quick Start - Stunity Services"
 echo "=================================="
 
+# Check for architecture mismatch on Apple Silicon
+ARCH=$(uname -m)
+NODE_ARCH=$(node -p "process.arch")
+
+if [[ "$ARCH" == "arm64" && "$NODE_ARCH" == "x64" ]]; then
+    echo ""
+    echo "⚠️  WARNING: Architecture Mismatch Detected!"
+    echo "Your M1/M2 Mac is running Node.js in Rosetta (x64) mode."
+    echo "This will cause esbuild errors in services."
+    echo ""
+    echo "Run this to fix permanently: ./fix-architecture.sh"
+    echo ""
+    read -p "Continue anyway? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+fi
+
+# Helper function to start service with correct architecture
+start_service() {
+    local service_path=$1
+    local port=$2
+    local log_file=$3
+    local name=$4
+    
+    echo "  ⚙️  Starting $name ($port)..."
+    cd /Users/naingseiha/Documents/Stunity-Enterprise/$service_path
+    
+    if [[ "$ARCH" == "arm64" ]]; then
+        arch -arm64 npm run dev > /tmp/$log_file 2>&1 &
+    else
+        npm run dev > /tmp/$log_file 2>&1 &
+    fi
+}
+
 # Kill all existing processes
 echo ""
 echo "🛑 Stopping any running services..."
@@ -18,61 +54,37 @@ sleep 2
 echo ""
 echo "🚀 Starting services..."
 
-cd /Users/naingseiha/Documents/Stunity-Enterprise
-
-# Start auth service
-echo "  ⚙️  Starting Auth Service (3001)..."
-cd services/auth-service && npm run dev > /tmp/auth.log 2>&1 &
+start_service "services/auth-service" 3001 "auth.log" "Auth Service"
 sleep 3
 
-# Start school service  
-echo "  ⚙️  Starting School Service (3002)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/services/school-service && npm run dev > /tmp/school.log 2>&1 &
+start_service "services/school-service" 3002 "school.log" "School Service"
 sleep 3
 
-# Start student service
-echo "  ⚙️  Starting Student Service (3003)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/services/student-service && npm run dev > /tmp/student.log 2>&1 &
+start_service "services/student-service" 3003 "student.log" "Student Service"
 sleep 2
 
-# Start teacher service
-echo "  ⚙️  Starting Teacher Service (3004)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/services/teacher-service && npm run dev > /tmp/teacher.log 2>&1 &
+start_service "services/teacher-service" 3004 "teacher.log" "Teacher Service"
 sleep 2
 
-# Start class service
-echo "  ⚙️  Starting Class Service (3005)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/services/class-service && npm run dev > /tmp/class.log 2>&1 &
+start_service "services/class-service" 3005 "class.log" "Class Service"
 sleep 2
 
-# Start subject service
-echo "  ⚙️  Starting Subject Service (3006)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/services/subject-service && npm run dev > /tmp/subject.log 2>&1 &
+start_service "services/subject-service" 3006 "subject.log" "Subject Service"
 sleep 2
 
-# Start grade service
-echo "  ⚙️  Starting Grade Service (3007)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/services/grade-service && npm run dev > /tmp/grade.log 2>&1 &
+start_service "services/grade-service" 3007 "grade.log" "Grade Service"
 sleep 2
 
-# Start attendance service
-echo "  ⚙️  Starting Attendance Service (3008)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/services/attendance-service && npm run dev > /tmp/attendance.log 2>&1 &
+start_service "services/attendance-service" 3008 "attendance.log" "Attendance Service"
 sleep 2
 
-# Start timetable service
-echo "  ⚙️  Starting Timetable Service (3009)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/services/timetable-service && npm run dev > /tmp/timetable.log 2>&1 &
+start_service "services/timetable-service" 3009 "timetable.log" "Timetable Service"
 sleep 2
 
-# Start feed service
-echo "  ⚙️  Starting Feed Service (3010)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/services/feed-service && npm run dev > /tmp/feed.log 2>&1 &
+start_service "services/feed-service" 3010 "feed.log" "Feed Service"
 sleep 2
 
-# Start web app
-echo "  ⚙️  Starting Web App (3000)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/web && npm run dev > /tmp/web.log 2>&1 &
+start_service "apps/web" 3000 "web.log" "Web App"
 sleep 5
 
 echo ""
