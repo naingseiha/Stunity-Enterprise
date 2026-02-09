@@ -7,6 +7,7 @@
  * - Dot indicators and counter
  * - Smooth animations
  * - Supports both fixed and auto-sized images
+ * - Handles CloudFlare R2 URLs and relative keys
  */
 
 import React, { useState, useRef, useMemo, useEffect } from 'react';
@@ -24,6 +25,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { normalizeMediaUrls } from '@/utils';
 
 type AspectRatioMode = 'auto' | 'landscape' | 'portrait' | 'square';
 
@@ -52,22 +54,42 @@ export default function ImageCarousel({
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // Normalize image URLs (handle R2 keys and relative paths)
+  const normalizedImages = useMemo(() => {
+    const normalized = normalizeMediaUrls(images);
+    
+    // Log URL normalization in development
+    if (__DEV__ && images.length > 0) {
+      const hasChanges = images.some((img, i) => img !== normalized[i]);
+      if (hasChanges) {
+        console.log('📸 [ImageCarousel] Normalized URLs:');
+        images.forEach((original, i) => {
+          if (original !== normalized[i]) {
+            console.log(`  ${i}: ${original} → ${normalized[i]}`);
+          }
+        });
+      }
+    }
+    
+    return normalized;
+  }, [images]);
+
   // Load first image dimensions for auto mode
   useEffect(() => {
-    if (mode === 'auto' && images.length > 0) {
+    if (mode === 'auto' && normalizedImages.length > 0) {
       RNImage.getSize(
-        images[0],
+        normalizedImages[0],
         (width: number, height: number) => {
           setImageDimensions({ width, height });
         },
         (error: any) => {
-          console.warn('Failed to get image size:', error);
+          console.warn('Failed to get image size:', error, normalizedImages[0]);
           // Fallback to landscape
           setImageDimensions({ width: 16, height: 9 });
         }
       );
     }
-  }, [images, mode]);
+  }, [normalizedImages, mode]);
 
   // Calculate image height based on mode and dimensions
   const IMAGE_HEIGHT = useMemo(() => {
@@ -117,10 +139,10 @@ export default function ImageCarousel({
     setActiveIndex(index);
   };
 
-  if (images.length === 0) return null;
+  if (normalizedImages.length === 0) return null;
 
   // Show loading state while dimensions are being fetched for auto mode
-  if (mode === 'auto' && !imageDimensions && images.length > 0) {
+  if (mode === 'auto' && !imageDimensions && normalizedImages.length > 0) {
     return (
       <View style={[styles.loadingContainer, { width: IMAGE_WIDTH, height: IMAGE_WIDTH * 0.75 }]}>
         <View style={styles.loadingPlaceholder} />
@@ -129,7 +151,7 @@ export default function ImageCarousel({
   }
 
   // Single image - no carousel needed
-  if (images.length === 1) {
+  if (normalizedImages.length === 1) {
     return (
       <TouchableOpacity 
         activeOpacity={0.95} 
@@ -140,7 +162,7 @@ export default function ImageCarousel({
         }]}
       >
         <Image
-          source={{ uri: images[0] }}
+          source={{ uri: normalizedImages[0] }}
           style={[styles.image, { borderRadius }]}
           contentFit="cover"
           transition={200}
@@ -165,7 +187,7 @@ export default function ImageCarousel({
         snapToAlignment="center"
         style={styles.scrollView}
       >
-        {images.map((uri, index) => (
+        {normalizedImages.map((uri, index) => (
           <TouchableOpacity
             key={`${uri}-${index}`}
             activeOpacity={0.95}
@@ -188,7 +210,7 @@ export default function ImageCarousel({
 
       {/* Dot Indicators - Instagram style */}
       <View style={styles.indicatorContainer}>
-        {images.map((_, index) => (
+        {normalizedImages.map((_, index) => (
           <TouchableOpacity
             key={index}
             onPress={() => scrollToIndex(index)}

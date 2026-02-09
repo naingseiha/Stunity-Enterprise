@@ -217,6 +217,34 @@ app.delete('/upload/:key(*)', authenticateToken, async (req: AuthRequest, res: R
   }
 });
 
+// GET /media/* - Proxy media files from R2 (for mobile app)
+// This allows the mobile app to access R2 files even when R2_PUBLIC_URL is not set
+app.get('/media/*', async (req: Request, res: Response) => {
+  try {
+    const key = req.params[0]; // Everything after /media/
+    
+    if (!key) {
+      return res.status(400).json({ success: false, error: 'Missing media key' });
+    }
+
+    // If R2 is configured and has public URL, redirect
+    const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL;
+    if (R2_PUBLIC_URL) {
+      return res.redirect(`${R2_PUBLIC_URL}/${key}`);
+    }
+
+    // Otherwise return error - R2 not configured
+    res.status(503).json({ 
+      success: false, 
+      error: 'Media storage not configured',
+      message: 'Please configure R2_PUBLIC_URL environment variable'
+    });
+  } catch (error: any) {
+    console.error('Media proxy error:', error);
+    res.status(500).json({ success: false, error: 'Failed to load media', details: error.message });
+  }
+});
+
 // ========================================
 // POSTS ENDPOINTS
 // ========================================

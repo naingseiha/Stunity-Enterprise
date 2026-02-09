@@ -283,3 +283,14 @@ export const platform = {
   isAndroid: Platform.OS === 'android',
   version: Platform.Version,
 };
+
+/**
+ * Media utilities
+ */
+export {
+  normalizeMediaUrl,
+  normalizeMediaUrls,
+  isValidMediaUrl,
+  getMediaType,
+} from './mediaUtils';
+
