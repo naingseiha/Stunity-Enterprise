@@ -22,16 +22,16 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 
 // Import actual Stunity logo
 const StunityLogo = require('../../../../../Stunity.png');
 
 import { PostCard, StoryCircles } from '@/components/feed';
-import { Avatar, PostSkeleton } from '@/components/common';
+import { Avatar, PostSkeleton, NetworkStatus } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore } from '@/stores';
 import { Post } from '@/types';
@@ -75,6 +75,16 @@ export default function FeedScreen() {
     fetchPosts();
     fetchStories();
   }, []);
+
+  // Refresh posts when screen comes into focus (e.g., after creating a post)
+  useFocusEffect(
+    useCallback(() => {
+      // Only refresh if we have posts (screen has been loaded before)
+      if (posts.length > 0) {
+        fetchPosts(true);
+      }
+    }, [posts.length, fetchPosts])
+  );
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -286,6 +296,9 @@ export default function FeedScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
+      
+      {/* Network Status Banner */}
+      <NetworkStatus onRetry={handleRefresh} />
       
       {/* V1 Header - Profile left, Logo center, Actions right */}
       <SafeAreaView edges={['top']} style={styles.headerSafe}>

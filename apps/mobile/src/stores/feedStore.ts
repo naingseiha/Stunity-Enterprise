@@ -24,7 +24,7 @@ interface FeedState {
   // Actions
   fetchPosts: (refresh?: boolean) => Promise<void>;
   fetchStories: () => Promise<void>;
-  createPost: (content: string, mediaUrls?: string[]) => Promise<boolean>;
+  createPost: (content: string, mediaUrls?: string[], postType?: string, pollOptions?: string[]) => Promise<boolean>;
   likePost: (postId: string) => Promise<void>;
   unlikePost: (postId: string) => Promise<void>;
   bookmarkPost: (postId: string) => Promise<void>;
@@ -205,23 +205,57 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   },
 
   // Create a new post
-  createPost: async (content, mediaUrls = []) => {
+  createPost: async (content, mediaUrls = [], postType = 'ARTICLE', pollOptions = []) => {
     try {
       const response = await feedApi.post('/posts', {
         content,
         mediaUrls,
+        postType,
+        visibility: 'SCHOOL',
+        mediaDisplayMode: 'AUTO',
+        pollOptions: postType === 'POLL' ? pollOptions : undefined,
       });
 
       if (response.data.success) {
-        const newPost = response.data.post;
+        const newPostData = response.data.data || response.data.post;
+        
+        // Transform to match mobile app Post type
+        const newPost: Post = {
+          id: newPostData.id,
+          author: {
+            id: newPostData.author?.id,
+            firstName: newPostData.author?.firstName,
+            lastName: newPostData.author?.lastName,
+            name: `${newPostData.author?.firstName || ''} ${newPostData.author?.lastName || ''}`.trim(),
+            profilePictureUrl: newPostData.author?.profilePictureUrl,
+            role: newPostData.author?.role,
+            isVerified: newPostData.author?.isVerified || false,
+          },
+          content: newPostData.content,
+          postType: newPostData.postType || postType,
+          mediaUrls: newPostData.mediaUrls || mediaUrls,
+          likes: newPostData.likesCount || 0,
+          comments: newPostData.commentsCount || 0,
+          shares: newPostData.sharesCount || 0,
+          isLiked: false,
+          isBookmarked: false,
+          createdAt: newPostData.createdAt || new Date().toISOString(),
+          updatedAt: newPostData.updatedAt || new Date().toISOString(),
+          topicTags: newPostData.topicTags || [],
+          learningMeta: newPostData.learningMeta || {},
+        };
+        
+        // Add to top of feed with optimistic update
         set((state) => ({
           posts: [newPost, ...state.posts],
         }));
+        
         return true;
       }
       return false;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create post:', error);
+      console.error('Error details:', error.response?.data);
       return false;
     }
   },

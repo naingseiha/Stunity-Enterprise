@@ -48,6 +48,32 @@ export default function CreatePostScreen() {
   const [postType, setPostType] = useState<PostType>('ARTICLE');
   const [mediaUris, setMediaUris] = useState<string[]>([]);
   const [isPosting, setIsPosting] = useState(false);
+  
+  // Poll state
+  const [pollOptions, setPollOptions] = useState<string[]>(['', '']);
+  
+  // Add poll option
+  const addPollOption = () => {
+    if (pollOptions.length < 6) {
+      setPollOptions([...pollOptions, '']);
+      Haptics.selectionAsync();
+    }
+  };
+  
+  // Remove poll option
+  const removePollOption = (index: number) => {
+    if (pollOptions.length > 2) {
+      setPollOptions(pollOptions.filter((_, i) => i !== index));
+      Haptics.selectionAsync();
+    }
+  };
+  
+  // Update poll option
+  const updatePollOption = (index: number, value: string) => {
+    const updated = [...pollOptions];
+    updated[index] = value;
+    setPollOptions(updated);
+  };
 
   const handleClose = useCallback(() => {
     if (content.trim() || mediaUris.length > 0) {
@@ -112,26 +138,44 @@ export default function CreatePostScreen() {
       Alert.alert('Empty Post', 'Please write something before posting.');
       return;
     }
+    
+    // Validate poll if it's a poll post
+    if (postType === 'POLL') {
+      const validOptions = pollOptions.filter(opt => opt.trim().length > 0);
+      if (validOptions.length < 2) {
+        Alert.alert('Invalid Poll', 'Please add at least 2 poll options.');
+        return;
+      }
+    }
 
     setIsPosting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      // TODO: Implement actual post creation with media upload
-      // await createPost({ content, postType, mediaUris });
+      // Prepare poll options if it's a poll
+      const validPollOptions = postType === 'POLL' 
+        ? pollOptions.filter(opt => opt.trim().length > 0)
+        : [];
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call the API to create post
+      // For now, passing URIs directly - in production, upload to CDN first
+      const success = await createPost(content, mediaUris, postType, validPollOptions);
       
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      navigation.goBack();
-    } catch (error) {
-      Alert.alert('Error', 'Failed to create post. Please try again.');
+      if (success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        navigation.goBack();
+      } else {
+        Alert.alert('Error', 'Failed to create post. Please try again.');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+    } catch (error: any) {
+      console.error('Post creation error:', error);
+      Alert.alert('Error', error.message || 'Failed to create post. Please try again.');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsPosting(false);
     }
-  }, [content, postType, mediaUris, navigation]);
+  }, [content, postType, mediaUris, pollOptions, navigation, createPost]);
 
   const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
   const canPost = content.trim().length > 0;
@@ -234,6 +278,38 @@ export default function CreatePostScreen() {
             onChangeText={setContent}
             autoFocus
           />
+          
+          {/* Poll Options (only for POLL type) */}
+          {postType === 'POLL' && (
+            <View style={styles.pollSection}>
+              <Text style={styles.pollLabel}>Poll Options</Text>
+              {pollOptions.map((option, index) => (
+                <View key={index} style={styles.pollOption}>
+                  <TextInput
+                    style={styles.pollInput}
+                    placeholder={`Option ${index + 1}`}
+                    placeholderTextColor="#9CA3AF"
+                    value={option}
+                    onChangeText={(text) => updatePollOption(index, text)}
+                  />
+                  {pollOptions.length > 2 && (
+                    <TouchableOpacity
+                      onPress={() => removePollOption(index)}
+                      style={styles.removePollButton}
+                    >
+                      <Ionicons name="close-circle" size={20} color="#EF4444" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+              {pollOptions.length < 6 && (
+                <TouchableOpacity onPress={addPollOption} style={styles.addPollButton}>
+                  <Ionicons name="add-circle" size={20} color="#6366F1" />
+                  <Text style={styles.addPollText}>Add Option</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
           {/* Media Preview */}
           {mediaUris.length > 0 && (
@@ -479,5 +555,49 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#9CA3AF',
     marginTop: 8,
+  },
+  // Poll styles
+  pollSection: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  pollLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 12,
+  },
+  pollOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  pollInput: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#1F2937',
+  },
+  removePollButton: {
+    padding: 4,
+  },
+  addPollButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    gap: 6,
+  },
+  addPollText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6366F1',
   },
 });

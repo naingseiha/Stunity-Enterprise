@@ -109,7 +109,21 @@ const transformError = (error: AxiosError<ApiResponse<unknown>>): ApiError => {
   const response = error.response;
   
   if (!response) {
-    // Network error
+    // Network error - check if it's a timeout or connection issue
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      return {
+        code: 'TIMEOUT_ERROR',
+        message: 'Request timed out. Please check your connection and try again.',
+      };
+    }
+    
+    if (error.code === 'ERR_NETWORK' || !navigator.onLine) {
+      return {
+        code: 'NETWORK_ERROR',
+        message: 'No internet connection. Please check your network.',
+      };
+    }
+    
     return {
       code: 'NETWORK_ERROR',
       message: 'Unable to connect to the server. Please check your internet connection.',

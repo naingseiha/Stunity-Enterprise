@@ -33,7 +33,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { Avatar } from '@/components/common';
+import { Avatar, ImageCarousel } from '@/components/common';
 import { Post, DifficultyLevel } from '@/types';
 import { useAuthStore } from '@/stores';
 import { formatRelativeTime, formatNumber } from '@/utils';
@@ -338,20 +338,14 @@ export const PostCard: React.FC<PostCardProps> = ({
         </View>
       )}
 
-      {/* Media - Rounded corners */}
+      {/* Media - Instagram-style Carousel */}
       {post.mediaUrls && post.mediaUrls.length > 0 && (
-        <TouchableOpacity activeOpacity={0.95} onPress={onPress} style={styles.mediaWrapper}>
-          <Image
-            source={{ uri: post.mediaUrls[0] }}
-            style={styles.mediaImage}
-            contentFit="cover"
-            transition={200}
+        <View style={styles.mediaWrapper}>
+          <ImageCarousel 
+            images={post.mediaUrls}
+            onImagePress={onPress}
+            borderRadius={12}
           />
-          {post.mediaUrls.length > 1 && (
-            <View style={styles.mediaCounter}>
-              <Text style={styles.mediaCounterText}>1/{post.mediaUrls.length}</Text>
-            </View>
-          )}
           {/* Rich content indicators on media */}
           {(learningMeta?.hasCode || learningMeta?.hasPdf || learningMeta?.hasFormula) && (
             <View style={styles.richContentIndicators}>
@@ -372,7 +366,7 @@ export const PostCard: React.FC<PostCardProps> = ({
               )}
             </View>
           )}
-        </TouchableOpacity>
+        </View>
       )}
 
       {/* Content - Below image */}

@@ -38,7 +38,7 @@ import Animated, {
   withSequence,
 } from 'react-native-reanimated';
 
-import { Avatar } from '@/components/common';
+import { Avatar, ImageCarousel } from '@/components/common';
 import { useAuthStore, useFeedStore } from '@/stores';
 import { Post, Comment, DifficultyLevel } from '@/types';
 import { formatRelativeTime, formatNumber } from '@/utils';
@@ -334,51 +334,62 @@ export default function PostDetailScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* Post Card */}
-          <Animated.View entering={FadeInDown.duration(400)} style={styles.postCard}>
-            {/* Author Header */}
-            <View style={styles.authorSection}>
-              <TouchableOpacity 
-                style={styles.authorInfo}
-                onPress={() => navigation.navigate('UserProfile' as any, { userId: post.author.id })}
-              >
-                <Avatar
-                  uri={post.author.profilePictureUrl}
-                  name={authorName}
-                  size="lg"
-                  gradientBorder="purple"
-                />
-                <View style={styles.authorDetails}>
-                  <View style={styles.authorNameRow}>
-                    <Text style={styles.authorName}>{authorName}</Text>
-                    {(post.author.isVerified || isCurrentUser) && (
-                      <View style={styles.verifiedBadge}>
-                        <Ionicons name="checkmark" size={10} color="#fff" />
-                      </View>
-                    )}
-                    {post.author.role === 'TEACHER' && (
-                      <View style={styles.roleBadge}>
-                        <Ionicons name="school" size={10} color="#3B82F6" />
-                        <Text style={styles.roleBadgeText}>Teacher</Text>
-                      </View>
-                    )}
-                  </View>
-                  <View style={styles.authorMeta}>
-                    <Text style={styles.timeText}>{formatRelativeTime(post.createdAt)}</Text>
-                    {learningMeta?.studyGroupName && (
-                      <>
-                        <Text style={styles.metaDot}>•</Text>
-                        <View style={styles.studyGroupBadge}>
-                          <Ionicons name="people" size={10} color="#8B5CF6" />
-                          <Text style={styles.studyGroupText}>{learningMeta.studyGroupName}</Text>
-                        </View>
-                      </>
-                    )}
-                  </View>
+          {/* Author Header - Above image like Instagram */}
+          <Animated.View entering={FadeInDown.duration(300)} style={styles.authorHeaderCard}>
+            <TouchableOpacity 
+              style={styles.authorInfo}
+              onPress={() => navigation.navigate('UserProfile' as any, { userId: post.author.id })}
+            >
+              <Avatar
+                uri={post.author.profilePictureUrl}
+                name={authorName}
+                size="lg"
+                gradientBorder="orange"
+              />
+              <View style={styles.authorDetails}>
+                <View style={styles.authorNameRow}>
+                  <Text style={styles.authorName}>{authorName}</Text>
+                  {(post.author.isVerified || isCurrentUser) && (
+                    <View style={styles.verifiedBadge}>
+                      <Ionicons name="checkmark" size={10} color="#fff" />
+                    </View>
+                  )}
+                  {post.author.role === 'TEACHER' && (
+                    <View style={styles.roleBadge}>
+                      <Ionicons name="school" size={10} color="#3B82F6" />
+                      <Text style={styles.roleBadgeText}>Teacher</Text>
+                    </View>
+                  )}
                 </View>
-              </TouchableOpacity>
-            </View>
+                <View style={styles.authorMeta}>
+                  <Text style={styles.timeText}>{formatRelativeTime(post.createdAt)}</Text>
+                  {learningMeta?.studyGroupName && (
+                    <>
+                      <Text style={styles.metaDot}>•</Text>
+                      <View style={styles.studyGroupBadge}>
+                        <Ionicons name="people" size={10} color="#8B5CF6" />
+                        <Text style={styles.studyGroupText}>{learningMeta.studyGroupName}</Text>
+                      </View>
+                    </>
+                  )}
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
 
+          {/* Media - Full width hero image */}
+          {post.mediaUrls && post.mediaUrls.length > 0 && (
+            <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.mediaContainer}>
+              <ImageCarousel 
+                images={post.mediaUrls}
+                borderRadius={0}
+                aspectRatio={1} // Square aspect ratio for detail view (1:1)
+              />
+            </Animated.View>
+          )}
+
+          {/* Post Content Card */}
+          <Animated.View entering={FadeInDown.delay(200).duration(400)} style={styles.contentCard}>
             {/* Post Content */}
             <View style={styles.contentSection}>
               <Text style={styles.contentText}>{post.content}</Text>
@@ -390,26 +401,6 @@ export default function PostDetailScreen() {
                 {post.topicTags.map((tag, index) => (
                   <TouchableOpacity key={index} style={styles.topicTag}>
                     <Text style={styles.topicTagText}>#{tag}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-
-            {/* Media */}
-            {post.mediaUrls && post.mediaUrls.length > 0 && (
-              <View style={styles.mediaSection}>
-                {post.mediaUrls.map((url, index) => (
-                  <TouchableOpacity 
-                    key={index} 
-                    activeOpacity={0.95}
-                    onPress={() => navigation.navigate('ImageViewer' as any, { images: post.mediaUrls, initialIndex: index })}
-                  >
-                    <Image
-                      source={{ uri: url }}
-                      style={styles.mediaImage}
-                      contentFit="cover"
-                      transition={200}
-                    />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -446,37 +437,40 @@ export default function PostDetailScreen() {
                 </View>
               </View>
             </View>
+          </Animated.View>
 
-            {/* Progress Bar (if applicable) */}
-            {learningMeta?.progress !== undefined && ['COURSE', 'QUIZ', 'TUTORIAL'].includes(post.postType) && (
-              <View style={styles.progressSection}>
-                <View style={styles.progressHeader}>
-                  <Text style={styles.progressLabel}>Your Progress</Text>
-                  <Text style={styles.progressPercent}>{learningMeta.progress}%</Text>
-                </View>
-                <View style={styles.progressBarBg}>
-                  <LinearGradient
-                    colors={['#6366F1', '#8B5CF6']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={[styles.progressBarFill, { width: `${learningMeta.progress}%` }]}
-                  />
-                </View>
+          {/* Progress Bar (if applicable) */}
+          {learningMeta?.progress !== undefined && ['COURSE', 'QUIZ', 'TUTORIAL'].includes(post.postType) && (
+            <Animated.View entering={FadeInDown.delay(250).duration(400)} style={styles.progressCard}>
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressLabel}>Your Progress</Text>
+                <Text style={styles.progressPercent}>{learningMeta.progress}%</Text>
               </View>
-            )}
+              <View style={styles.progressBarBg}>
+                <LinearGradient
+                  colors={['#6366F1', '#8B5CF6']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[styles.progressBarFill, { width: `${learningMeta.progress}%` }]}
+                />
+              </View>
+            </Animated.View>
+          )}
 
+          {/* Engagement Stats & Actions Card */}
+          <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.actionsCard}>
             {/* Engagement Stats */}
             <View style={styles.statsBar}>
               <View style={styles.statItem}>
-                <Ionicons name="heart" size={16} color="#EF4444" />
+                <Ionicons name="heart" size={18} color="#EF4444" />
                 <Text style={styles.statText}>{formatNumber(likeCount)} likes</Text>
               </View>
               <View style={styles.statItem}>
-                <Ionicons name="chatbubble" size={16} color="#6B7280" />
+                <Ionicons name="chatbubble" size={18} color="#6B7280" />
                 <Text style={styles.statText}>{comments.length} comments</Text>
               </View>
               <View style={styles.statItem}>
-                <Ionicons name="arrow-redo" size={16} color="#6B7280" />
+                <Ionicons name="arrow-redo" size={18} color="#6B7280" />
                 <Text style={styles.statText}>{formatNumber(post.shares)} shares</Text>
               </View>
             </View>
@@ -487,8 +481,8 @@ export default function PostDetailScreen() {
                 <TouchableOpacity onPress={handleLike} style={styles.actionButtonInner}>
                   <Ionicons
                     name={liked ? 'heart' : 'heart-outline'}
-                    size={24}
-                    color={liked ? '#EF4444' : '#6B7280'}
+                    size={26}
+                    color={liked ? '#EF4444' : '#374151'}
                   />
                   <Text style={[styles.actionText, liked && styles.actionTextLiked]}>Like</Text>
                 </TouchableOpacity>
@@ -498,8 +492,8 @@ export default function PostDetailScreen() {
                 <TouchableOpacity onPress={handleValue} style={styles.actionButtonInner}>
                   <Ionicons 
                     name={valued ? 'diamond' : 'diamond-outline'} 
-                    size={24} 
-                    color={valued ? '#8B5CF6' : '#6B7280'} 
+                    size={26} 
+                    color={valued ? '#8B5CF6' : '#374151'} 
                   />
                   <Text style={[styles.actionText, valued && styles.actionTextValued]}>Value</Text>
                 </TouchableOpacity>
@@ -507,14 +501,14 @@ export default function PostDetailScreen() {
 
               <TouchableOpacity style={styles.actionButton}>
                 <View style={styles.actionButtonInner}>
-                  <Ionicons name="chatbubble-outline" size={24} color="#6B7280" />
+                  <Ionicons name="chatbubble-outline" size={26} color="#374151" />
                   <Text style={styles.actionText}>Comment</Text>
                 </View>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.actionButton}>
                 <View style={styles.actionButtonInner}>
-                  <Ionicons name="arrow-redo-outline" size={24} color="#6B7280" />
+                  <Ionicons name="arrow-redo-outline" size={26} color="#374151" />
                   <Text style={styles.actionText}>Share</Text>
                 </View>
               </TouchableOpacity>
@@ -578,13 +572,13 @@ export default function PostDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8F7FC',
   },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8F7FC',
   },
   headerSafe: {
     backgroundColor: '#fff',
@@ -647,7 +641,33 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 20,
+    paddingBottom: 100,
+  },
+  // Card-based layout styles
+  authorHeaderCard: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
+  },
+  mediaContainer: {
+    width: '100%',
+    backgroundColor: '#000',
+    marginTop: 1,
+  },
+  contentCard: {
+    backgroundColor: '#fff',
+    marginTop: 1,
+  },
+  progressCard: {
+    backgroundColor: '#fff',
+    marginTop: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  actionsCard: {
+    backgroundColor: '#fff',
+    marginTop: 1,
   },
   postCard: {
     backgroundColor: '#fff',
@@ -727,7 +747,9 @@ const styles = StyleSheet.create({
     color: '#8B5CF6',
   },
   contentSection: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
   contentText: {
     fontSize: 16,
@@ -738,7 +760,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 16,
     gap: 8,
   },
   topicTag: {
@@ -765,7 +787,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 16,
+    paddingBottom: 16,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
     gap: 8,
@@ -818,35 +841,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   progressLabel: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: '#6B7280',
   },
   progressPercent: {
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: '700',
     color: '#6366F1',
   },
   progressBarBg: {
-    height: 8,
+    height: 10,
     backgroundColor: '#E5E7EB',
-    borderRadius: 4,
+    borderRadius: 5,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 5,
   },
   statsBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
   statItem: {
     flexDirection: 'row',
@@ -854,28 +878,27 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   statText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '600',
     color: '#6B7280',
   },
   actionBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
   actionButton: {
     alignItems: 'center',
   },
   actionButtonInner: {
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   actionText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
     color: '#6B7280',
   },
   actionTextLiked: {
@@ -888,15 +911,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     marginTop: 8,
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderTopWidth: 8,
-    borderTopColor: '#F3F4F6',
+    paddingVertical: 20,
   },
   commentsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: '#1F2937',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   commentItem: {
     flexDirection: 'row',
