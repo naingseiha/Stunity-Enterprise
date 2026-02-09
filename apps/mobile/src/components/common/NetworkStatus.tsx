@@ -5,9 +5,10 @@
  * - Smooth slide in/out animations
  * - Auto-hide when online
  * - Retry button when offline
+ * - Debounced to prevent rapid changes during WiFi switching
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -32,49 +33,71 @@ export default function NetworkStatus({ onRetry }: NetworkStatusProps) {
   const [isConnected, setIsConnected] = useState(true);
   const [showBanner, setShowBanner] = useState(false);
   const translateY = useSharedValue(-100);
+  const [hasInitialized, setHasInitialized] = useState(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Subscribe to network state updates
     const unsubscribe = NetInfo.addEventListener(state => {
-      const connected = state.isConnected && state.isInternetReachable !== false;
-      
-      console.log('Network Status:', {
-        isConnected: state.isConnected,
-        isInternetReachable: state.isInternetReachable,
-        type: state.type,
-        details: state.details,
-      });
-
-      setIsConnected(connected);
-
-      if (!connected) {
-        // Show offline banner immediately
-        setShowBanner(true);
-        translateY.value = withSpring(0, {
-          damping: 15,
-          stiffness: 150,
-        });
-      } else if (showBanner) {
-        // Hide banner after 2 seconds when back online
-        setTimeout(() => {
-          translateY.value = withTiming(-100, { duration: 300 });
-          setTimeout(() => setShowBanner(false), 300);
-        }, 2000);
+      // Debounce network state changes to prevent rapid updates during WiFi switching
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
       }
+
+      debounceTimerRef.current = setTimeout(() => {
+        const connected = state.isConnected && state.isInternetReachable !== false;
+        
+        // Only log if there's an actual change or issue
+        if (!connected || (connected && !isConnected && hasInitialized)) {
+          console.log('Network Status Changed:', {
+            status: connected ? 'Online' : 'Offline',
+            type: state.type,
+          });
+        }
+
+        const wasConnected = isConnected;
+        setIsConnected(connected);
+
+        if (!connected) {
+          // Show offline banner immediately
+          setShowBanner(true);
+          translateY.value = withSpring(0, {
+            damping: 15,
+            stiffness: 150,
+          });
+        } else if (!wasConnected && connected && hasInitialized) {
+          // Only show "back online" message if we were previously offline
+          setShowBanner(true);
+          translateY.value = withSpring(0);
+          // Hide banner after 2 seconds when back online
+          setTimeout(() => {
+            translateY.value = withTiming(-100, { duration: 300 });
+            setTimeout(() => setShowBanner(false), 300);
+          }, 2000);
+        }
+      }, 500); // 500ms debounce delay
     });
 
     // Initial check
     NetInfo.fetch().then(state => {
       const connected = state.isConnected && state.isInternetReachable !== false;
       setIsConnected(connected);
+      setHasInitialized(true);
+      
       if (!connected) {
+        console.log('Initial network status: Offline');
         setShowBanner(true);
         translateY.value = withSpring(0);
       }
     });
 
-    return () => unsubscribe();
-  }, [showBanner]);
+    return () => {
+      unsubscribe();
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []); // Remove showBanner dependency to prevent re-subscriptions
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],

@@ -1,15 +1,15 @@
 /**
  * ImageCarousel Component
  * 
- * Instagram-style image slider with:
+ * Flexible image slider with LinkedIn-style layout:
  * - Swipeable horizontal scroll
- * - Dot indicators
- * - Image counter
+ * - Adaptive aspect ratios (landscape, portrait, square)
+ * - Dot indicators and counter
  * - Smooth animations
- * - Adaptive sizing for feed vs detail views
+ * - Supports both fixed and auto-sized images
  */
 
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import {
   Text,
   View,
@@ -20,22 +20,27 @@ import {
   NativeSyntheticEvent,
   TouchableOpacity,
   useWindowDimensions,
+  Image as RNImage,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+
+type AspectRatioMode = 'auto' | 'landscape' | 'portrait' | 'square';
 
 interface ImageCarouselProps {
   images: string[];
   onImagePress?: (index: number) => void;
   borderRadius?: number;
-  aspectRatio?: number; // width/height ratio (default: 4/3)
+  aspectRatio?: number; // Fixed aspect ratio (height/width)
+  mode?: AspectRatioMode; // Layout mode: auto detects from image, or use fixed mode
 }
 
 export default function ImageCarousel({ 
   images, 
   onImagePress,
   borderRadius = 12,
-  aspectRatio = 0.75, // height = width * aspectRatio (default 4:3)
+  aspectRatio,
+  mode = 'auto', // Default to auto-detect
 }: ImageCarouselProps) {
   const { width: SCREEN_WIDTH } = useWindowDimensions();
   const IMAGE_WIDTH = useMemo(() => {
@@ -43,10 +48,58 @@ export default function ImageCarousel({
     return borderRadius === 0 ? SCREEN_WIDTH : SCREEN_WIDTH - 32;
   }, [SCREEN_WIDTH, borderRadius]);
   
-  const IMAGE_HEIGHT = useMemo(() => IMAGE_WIDTH * aspectRatio, [IMAGE_WIDTH, aspectRatio]);
-  
   const [activeIndex, setActiveIndex] = useState(0);
+  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // Load first image dimensions for auto mode
+  useEffect(() => {
+    if (mode === 'auto' && images.length > 0) {
+      RNImage.getSize(
+        images[0],
+        (width: number, height: number) => {
+          setImageDimensions({ width, height });
+        },
+        (error: any) => {
+          console.warn('Failed to get image size:', error);
+          // Fallback to landscape
+          setImageDimensions({ width: 16, height: 9 });
+        }
+      );
+    }
+  }, [images, mode]);
+
+  // Calculate image height based on mode and dimensions
+  const IMAGE_HEIGHT = useMemo(() => {
+    // If fixed aspectRatio is provided, use it
+    if (aspectRatio !== undefined) {
+      return IMAGE_WIDTH * aspectRatio;
+    }
+
+    // Auto mode - use actual image dimensions
+    if (mode === 'auto' && imageDimensions) {
+      const imageAspectRatio = imageDimensions.height / imageDimensions.width;
+      const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
+      
+      // Constrain height between 200px and screen height - 100px
+      const minHeight = 200;
+      const maxHeight = SCREEN_WIDTH * 1.5; // Max 1.5x width for very tall images
+      
+      return Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
+    }
+
+    // Preset modes
+    switch (mode) {
+      case 'landscape':
+        return IMAGE_WIDTH * 0.5625; // 16:9
+      case 'portrait':
+        return IMAGE_WIDTH * 1.5; // 2:3
+      case 'square':
+        return IMAGE_WIDTH; // 1:1
+      default:
+        return IMAGE_WIDTH * 0.75; // 4:3 fallback
+    }
+  }, [IMAGE_WIDTH, aspectRatio, mode, imageDimensions, SCREEN_WIDTH]);
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollPosition = event.nativeEvent.contentOffset.x;
@@ -65,6 +118,15 @@ export default function ImageCarousel({
   };
 
   if (images.length === 0) return null;
+
+  // Show loading state while dimensions are being fetched for auto mode
+  if (mode === 'auto' && !imageDimensions && images.length > 0) {
+    return (
+      <View style={[styles.loadingContainer, { width: IMAGE_WIDTH, height: IMAGE_WIDTH * 0.75 }]}>
+        <View style={styles.loadingPlaceholder} />
+      </View>
+    );
+  }
 
   // Single image - no carousel needed
   if (images.length === 1) {
@@ -176,6 +238,17 @@ export default function ImageCarousel({
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
+  },
+  loadingContainer: {
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E5E7EB',
   },
   singleImageContainer: {
     width: '100%',

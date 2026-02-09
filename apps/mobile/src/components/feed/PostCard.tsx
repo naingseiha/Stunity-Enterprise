@@ -338,13 +338,14 @@ export const PostCard: React.FC<PostCardProps> = ({
         </View>
       )}
 
-      {/* Media - Instagram-style Carousel */}
+      {/* Media - Flexible Layout (LinkedIn-style) */}
       {post.mediaUrls && post.mediaUrls.length > 0 && (
         <View style={styles.mediaWrapper}>
           <ImageCarousel 
             images={post.mediaUrls}
             onImagePress={onPress}
             borderRadius={12}
+            mode="auto"
           />
           {/* Rich content indicators on media */}
           {(learningMeta?.hasCode || learningMeta?.hasPdf || learningMeta?.hasFormula) && (

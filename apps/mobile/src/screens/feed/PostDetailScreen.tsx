@@ -383,7 +383,7 @@ export default function PostDetailScreen() {
               <ImageCarousel 
                 images={post.mediaUrls}
                 borderRadius={0}
-                aspectRatio={1} // Square aspect ratio for detail view (1:1)
+                mode="auto"
               />
             </Animated.View>
           )}
