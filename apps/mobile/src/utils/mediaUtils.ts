@@ -27,7 +27,13 @@ export const normalizeMediaUrl = (url: string | undefined | null): string | null
   // In development, we need to get it from our feed service which can proxy to R2
   // Format: http://YOUR_API:3010/media/posts/123-abc.jpg
   const mediaBaseUrl = Config.mediaUrl;
-  return `${mediaBaseUrl}/media/${url}`;
+  const normalized = `${mediaBaseUrl}/media/${url}`;
+  
+  if (__DEV__) {
+    console.log(`🔗 [MediaUtils] Normalized: ${url} → ${normalized}`);
+  }
+  
+  return normalized;
 };
 
 /**

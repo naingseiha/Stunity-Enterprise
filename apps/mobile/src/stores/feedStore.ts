@@ -82,6 +82,11 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         const pagination = response.data.pagination;
         const hasMore = pagination?.hasMore ?? newPosts.length === 20;
 
+        // Debug: Log mediaUrls from first post
+        if (__DEV__ && newPosts.length > 0 && newPosts[0].mediaUrls) {
+          console.log('📥 [FeedStore] Sample post mediaUrls:', newPosts[0].mediaUrls);
+        }
+
         // Transform posts to match mobile app Post type
         const transformedPosts: Post[] = newPosts.map((post: any) => ({
           id: post.id,

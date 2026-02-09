@@ -77,13 +77,21 @@ export default function ImageCarousel({
   // Load first image dimensions for auto mode
   useEffect(() => {
     if (mode === 'auto' && normalizedImages.length > 0) {
+      if (__DEV__) {
+        console.log('📐 [ImageCarousel] Fetching dimensions for:', normalizedImages[0]);
+      }
+      
       RNImage.getSize(
         normalizedImages[0],
         (width: number, height: number) => {
+          if (__DEV__) {
+            console.log(`✅ [ImageCarousel] Got dimensions: ${width}x${height}`);
+          }
           setImageDimensions({ width, height });
         },
         (error: any) => {
-          console.warn('Failed to get image size:', error, normalizedImages[0]);
+          console.warn('⚠️  [ImageCarousel] Failed to get image size:', normalizedImages[0]);
+          console.warn('   Error:', error);
           // Fallback to landscape
           setImageDimensions({ width: 16, height: 9 });
         }
@@ -167,6 +175,17 @@ export default function ImageCarousel({
           contentFit="cover"
           transition={200}
           placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+          onError={(error) => {
+            if (__DEV__) {
+              console.error('❌ [ImageCarousel] Failed to load image:', normalizedImages[0]);
+              console.error('   Error:', error);
+            }
+          }}
+          onLoad={() => {
+            if (__DEV__) {
+              console.log('✅ [ImageCarousel] Image loaded successfully:', normalizedImages[0]);
+            }
+          }}
         />
       </TouchableOpacity>
     );
@@ -203,6 +222,17 @@ export default function ImageCarousel({
               contentFit="cover"
               transition={200}
               placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+              onError={(error) => {
+                if (__DEV__) {
+                  console.error(`❌ [ImageCarousel] Failed to load image ${index}:`, uri);
+                  console.error('   Error:', error);
+                }
+              }}
+              onLoad={() => {
+                if (__DEV__) {
+                  console.log(`✅ [ImageCarousel] Image ${index} loaded:`, uri);
+                }
+              }}
             />
           </TouchableOpacity>
         ))}
