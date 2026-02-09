@@ -72,6 +72,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     try {
       const response = await feedApi.get('/posts', {
         params: { page, limit: 20 },
+        timeout: 15000, // Reduce timeout to 15s for faster feedback
       });
 
       if (response.data.success) {
@@ -163,7 +164,9 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     set({ isLoadingStories: true });
 
     try {
-      const response = await feedApi.get('/stories');
+      const response = await feedApi.get('/stories', {
+        timeout: 15000, // Reduce timeout to 15s
+      });
 
       // Backend returns { stories: [...] } or { success, storyGroups }
       const groups = response.data.stories || response.data.storyGroups || [];

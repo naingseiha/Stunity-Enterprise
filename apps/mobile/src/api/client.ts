@@ -59,7 +59,30 @@ const createApiClient = (baseURL: string): AxiosInstance => {
       return response;
     },
     async (error: AxiosError<ApiResponse<unknown>>) => {
-      const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+      const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean; _retryCount?: number };
+
+      // Handle timeout errors with retry
+      if (error.code === 'ECONNABORTED' && !originalRequest._retry) {
+        const retryCount = (originalRequest._retryCount || 0) + 1;
+        
+        if (retryCount <= 2) { // Retry up to 2 times for timeouts
+          originalRequest._retryCount = retryCount;
+          originalRequest._retry = true;
+          
+          // Exponential backoff: 1s, 2s
+          const delay = 1000 * retryCount;
+          if (__DEV__) {
+            console.log(`⏳ [API] Retrying ${originalRequest.url} (attempt ${retryCount}/2) after ${delay}ms...`);
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, delay));
+          
+          // Increase timeout for retry
+          originalRequest.timeout = (originalRequest.timeout || 15000) + 5000;
+          
+          return client(originalRequest);
+        }
+      }
 
       // Handle 401 - Token expired
       if (error.response?.status === 401 && !originalRequest._retry) {
@@ -82,8 +105,7 @@ const createApiClient = (baseURL: string): AxiosInstance => {
 
       // Handle other errors
       if (__DEV__) {
-        console.error(`❌ [API] ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${error.response?.status}`);
-        console.error('Error:', error.response?.data || error.message);
+        console.error(`❌ [API] ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${error.response?.status || error.code}`);
       }
 
       // Transform error to consistent format
@@ -113,7 +135,7 @@ const transformError = (error: AxiosError<ApiResponse<unknown>>): ApiError => {
     if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
       return {
         code: 'TIMEOUT_ERROR',
-        message: 'Request timed out. Please check your connection and try again.',
+        message: 'Server is taking too long to respond. Please try again.',
       };
     }
     
@@ -126,7 +148,7 @@ const transformError = (error: AxiosError<ApiResponse<unknown>>): ApiError => {
     
     return {
       code: 'NETWORK_ERROR',
-      message: 'Unable to connect to the server. Please check your internet connection.',
+      message: 'Unable to connect. Please check your internet.',
     };
   }
 
