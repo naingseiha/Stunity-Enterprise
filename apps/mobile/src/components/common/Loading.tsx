@@ -1,11 +1,19 @@
 /**
  * Loading Component
  * 
- * Various loading states for the app
+ * Various loading states for the app with shimmer animations
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  interpolate,
+} from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Typography, Spacing } from '@/config';
 
 interface LoadingProps {
@@ -55,6 +63,28 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   borderRadius = 4,
   style,
 }) => {
+  const shimmerTranslate = useSharedValue(-1);
+
+  useEffect(() => {
+    shimmerTranslate.value = withRepeat(
+      withTiming(1, { duration: 1500 }),
+      -1,
+      false
+    );
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const translateX = interpolate(
+      shimmerTranslate.value,
+      [-1, 1],
+      [-300, 300]
+    );
+
+    return {
+      transform: [{ translateX }],
+    };
+  });
+
   return (
     <View
       style={[
@@ -66,7 +96,16 @@ export const Skeleton: React.FC<SkeletonProps> = ({
         },
         style,
       ]}
-    />
+    >
+      <Animated.View style={[styles.shimmer, animatedStyle]}>
+        <LinearGradient
+          colors={['transparent', 'rgba(255, 255, 255, 0.5)', 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.shimmerGradient}
+        />
+      </Animated.View>
+    </View>
   );
 };
 
@@ -153,8 +192,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   skeleton: {
-    backgroundColor: Colors.gray[200],
+    backgroundColor: '#E5E7EB',
     overflow: 'hidden',
+  },
+  shimmer: {
+    width: '100%',
+    height: '100%',
+  },
+  shimmerGradient: {
+    width: 300,
+    height: '100%',
   },
   postSkeleton: {
     backgroundColor: Colors.white,

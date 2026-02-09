@@ -38,7 +38,7 @@ import {
   SubjectFilters,
   FloatingActionButton,
 } from '@/components/feed';
-import { Avatar, PostSkeleton, NetworkStatus } from '@/components/common';
+import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore } from '@/stores';
 import { Post } from '@/types';
@@ -282,25 +282,13 @@ export default function FeedScreen() {
     }
 
     return (
-      <View style={styles.emptyContainer}>
-        <View style={styles.emptyIconBg}>
-          <Ionicons name="document-text-outline" size={40} color="#9CA3AF" />
-        </View>
-        <Text style={styles.emptyTitle}>មិនមានប្រកាសទេ</Text>
-        <Text style={styles.emptyText}>
-          ចាប់ផ្តើមចែករំលែកអ្វីមួយជាមួយសហគមន៍!
-        </Text>
-        <TouchableOpacity onPress={handleCreatePost} style={styles.emptyButton}>
-          <LinearGradient
-            colors={['#6366F1', '#8B5CF6']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.emptyButtonGradient}
-          >
-            <Text style={styles.emptyButtonText}>បង្កើតប្រកាស</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
+      <EmptyState
+        type="posts"
+        title="No Posts Yet"
+        message="Be the first to share something with the community!"
+        actionLabel="Create Post"
+        onAction={handleCreatePost}
+      />
     );
   };
 
