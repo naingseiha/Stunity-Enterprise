@@ -189,7 +189,7 @@ export default function FeedScreen() {
             activeOpacity={0.7}
             style={styles.inCardAction}
           >
-            <Ionicons name="help-circle" size={20} color="#6366F1" />
+            <Ionicons name="help-circle" size={24} color="#6366F1" />
             <Text style={styles.inCardActionText}>Ask Question</Text>
           </TouchableOpacity>
           
@@ -200,7 +200,7 @@ export default function FeedScreen() {
             activeOpacity={0.7}
             style={styles.inCardAction}
           >
-            <Ionicons name="people" size={20} color="#EC4899" />
+            <Ionicons name="people" size={24} color="#EC4899" />
             <Text style={styles.inCardActionText}>Study Buddy</Text>
           </TouchableOpacity>
           
@@ -211,7 +211,7 @@ export default function FeedScreen() {
             activeOpacity={0.7}
             style={styles.inCardAction}
           >
-            <Ionicons name="trophy" size={20} color="#F59E0B" />
+            <Ionicons name="trophy" size={24} color="#F59E0B" />
             <Text style={styles.inCardActionText}>Daily Challenge</Text>
           </TouchableOpacity>
         </View>
@@ -468,14 +468,14 @@ const styles = StyleSheet.create({
   },
   inCardAction: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
     gap: 6,
   },
   inCardActionText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#374151',
   },
