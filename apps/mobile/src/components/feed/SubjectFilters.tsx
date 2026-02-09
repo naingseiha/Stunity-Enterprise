@@ -141,7 +141,7 @@ export default function SubjectFilters({
                   { backgroundColor: subject.bgColor }
                 ]}
               >
-                <Ionicons name={subject.icon} size={18} color={subject.iconColor} />
+                <Ionicons name={subject.icon} size={16} color={subject.iconColor} />
                 <Text style={[styles.filterChipText, { color: subject.textColor }]}>
                   {subject.label}
                 </Text>
@@ -171,13 +171,13 @@ const styles = StyleSheet.create({
   filterChipInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 24,
-    gap: 8,
+    gap: 6,
   },
   filterChipText: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600',
     fontFamily: Typography.fontFamily.semibold,
   },
