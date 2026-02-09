@@ -26,6 +26,7 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { normalizeMediaUrls } from '@/utils';
+import ImageViewerModal from './ImageViewerModal';
 
 type AspectRatioMode = 'auto' | 'landscape' | 'portrait' | 'square';
 
@@ -54,6 +55,8 @@ export default function ImageCarousel({
   const [activeIndex, setActiveIndex] = useState(0);
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
   const [isCropped, setIsCropped] = useState(false); // Track if image is height-limited
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalInitialIndex, setModalInitialIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Normalize image URLs (handle R2 keys and relative paths)
@@ -170,6 +173,15 @@ export default function ImageCarousel({
     setActiveIndex(index);
   };
 
+  const handleImagePress = (index: number) => {
+    // Open modal viewer for full image viewing
+    setModalInitialIndex(index);
+    setModalVisible(true);
+    
+    // Also call parent's onImagePress if provided (for analytics, etc.)
+    onImagePress?.(index);
+  };
+
   if (normalizedImages.length === 0) return null;
 
   // Show loading state while dimensions are being fetched for auto mode
@@ -184,33 +196,43 @@ export default function ImageCarousel({
   // Single image - no carousel needed
   if (normalizedImages.length === 1) {
     return (
-      <TouchableOpacity 
-        activeOpacity={0.95} 
-        onPress={() => onImagePress?.(0)}
-        style={[styles.singleImageContainer, { 
-          width: IMAGE_WIDTH,
-          height: IMAGE_HEIGHT
-        }]}
-      >
-        <Image
-          source={{ uri: normalizedImages[0] }}
-          style={[styles.image, { borderRadius }]}
-          contentFit="cover"
-          transition={200}
-          placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
-          onError={(error) => {
-            if (__DEV__) {
-              console.error('❌ [ImageCarousel] Failed to load image:', normalizedImages[0]);
-              console.error('   Error:', error);
-            }
-          }}
-          onLoad={() => {
-            if (__DEV__) {
-              console.log('✅ [ImageCarousel] Image loaded successfully:', normalizedImages[0]);
-            }
-          }}
+      <>
+        <TouchableOpacity 
+          activeOpacity={0.95} 
+          onPress={() => handleImagePress(0)}
+          style={[styles.singleImageContainer, { 
+            width: IMAGE_WIDTH,
+            height: IMAGE_HEIGHT
+          }]}
+        >
+          <Image
+            source={{ uri: normalizedImages[0] }}
+            style={[styles.image, { borderRadius }]}
+            contentFit="cover"
+            transition={200}
+            placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+            onError={(error) => {
+              if (__DEV__) {
+                console.error('❌ [ImageCarousel] Failed to load image:', normalizedImages[0]);
+                console.error('   Error:', error);
+              }
+            }}
+            onLoad={() => {
+              if (__DEV__) {
+                console.log('✅ [ImageCarousel] Image loaded successfully:', normalizedImages[0]);
+              }
+            }}
+          />
+        </TouchableOpacity>
+
+        {/* Image Viewer Modal */}
+        <ImageViewerModal
+          visible={modalVisible}
+          images={normalizedImages}
+          initialIndex={modalInitialIndex}
+          onClose={() => setModalVisible(false)}
         />
-      </TouchableOpacity>
+      </>
     );
   }
 
@@ -233,7 +255,7 @@ export default function ImageCarousel({
           <TouchableOpacity
             key={`${uri}-${index}`}
             activeOpacity={0.95}
-            onPress={() => onImagePress?.(index)}
+            onPress={() => handleImagePress(index)}
             style={[styles.imageContainer, { 
               width: IMAGE_WIDTH,
               height: IMAGE_HEIGHT
@@ -316,6 +338,14 @@ export default function ImageCarousel({
           </View>
         </TouchableOpacity>
       )}
+
+      {/* Image Viewer Modal */}
+      <ImageViewerModal
+        visible={modalVisible}
+        images={normalizedImages}
+        initialIndex={modalInitialIndex}
+        onClose={() => setModalVisible(false)}
+      />
     </View>
   );
 }
