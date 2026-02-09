@@ -34,7 +34,6 @@ import {
   PostCard, 
   StoryCircles, 
   PostAnalyticsModal,
-  QuickActionBar,
   SubjectFilters,
   FloatingActionButton,
 } from '@/components/feed';
@@ -183,61 +182,40 @@ export default function FeedScreen() {
         {/* Divider */}
         <View style={styles.storyDivider} />
         
-        {/* Bottom row: Story circles */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.storyScrollContent}
-        >
-          {/* Add Story Button */}
-          <TouchableOpacity onPress={handleCreateStory} style={styles.storyItem}>
-            <View style={styles.addStoryCircle}>
-              <Ionicons name="add" size={24} color="#6366F1" />
-            </View>
-            <Text style={styles.storyName}>Add</Text>
+        {/* Quick Action Bar - Integrated in Create Post Card */}
+        <View style={styles.quickActionsInCard}>
+          <TouchableOpacity
+            onPress={handleAskQuestion}
+            activeOpacity={0.7}
+            style={styles.inCardAction}
+          >
+            <Ionicons name="help-circle" size={20} color="#6366F1" />
+            <Text style={styles.inCardActionText}>Ask Question</Text>
           </TouchableOpacity>
           
-          {/* Story circles */}
-          {storyGroups.map((group, index) => {
-            if (group.user.id === user?.id) return null;
-            return (
-              <TouchableOpacity
-                key={group.user.id}
-                onPress={() => handleStoryPress(index)}
-                style={styles.storyItem}
-              >
-                <View style={[
-                  styles.storyCircleWrapper,
-                  group.hasUnviewed && styles.storyCircleUnviewed
-                ]}>
-                  <Avatar
-                    uri={group.user.profilePictureUrl}
-                    name={`${group.user.firstName} ${group.user.lastName}`}
-                    size="md"
-                    showBorder={false}
-                  />
-                </View>
-                <Text style={styles.storyName} numberOfLines={1}>
-                  {group.user.firstName}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+          <View style={styles.actionDivider} />
+          
+          <TouchableOpacity
+            onPress={handleFindStudyBuddy}
+            activeOpacity={0.7}
+            style={styles.inCardAction}
+          >
+            <Ionicons name="people" size={20} color="#EC4899" />
+            <Text style={styles.inCardActionText}>Study Buddy</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.actionDivider} />
+          
+          <TouchableOpacity
+            onPress={handleDailyChallenge}
+            activeOpacity={0.7}
+            style={styles.inCardAction}
+          >
+            <Ionicons name="trophy" size={20} color="#F59E0B" />
+            <Text style={styles.inCardActionText}>Daily Challenge</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-
-      {/* Quick Action Bar */}
-      <QuickActionBar
-        onAskQuestion={handleAskQuestion}
-        onFindStudyBuddy={handleFindStudyBuddy}
-        onDailyChallenge={handleDailyChallenge}
-      />
-
-      {/* Subject Filters */}
-      <SubjectFilters
-        activeFilter={activeSubjectFilter}
-        onFilterChange={handleSubjectFilterChange}
-      />
     </View>
   );
 
@@ -334,6 +312,12 @@ export default function FeedScreen() {
         {/* Header Divider */}
         <View style={styles.headerDivider} />
       </SafeAreaView>
+
+      {/* Subject Filters - Fixed under app bar */}
+      <SubjectFilters
+        activeFilter={activeSubjectFilter}
+        onFilterChange={handleSubjectFilterChange}
+      />
 
       {/* Feed */}
       <FlatList
@@ -476,41 +460,29 @@ const styles = StyleSheet.create({
     marginTop: 14,
     marginBottom: 12,
   },
-  storyScrollContent: {
+  quickActionsInCard: {
+    flexDirection: 'row',
     paddingHorizontal: 16,
-    gap: 16,
+    paddingBottom: 14,
+    gap: 8,
   },
-  storyItem: {
-    alignItems: 'center',
-    width: 56,
-  },
-  addStoryCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#EEF2FF',
-    borderWidth: 2,
-    borderColor: '#6366F1',
-    borderStyle: 'dashed',
+  inCardAction: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 10,
+    gap: 6,
   },
-  storyCircleWrapper: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    padding: 2,
+  inCardActionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  actionDivider: {
+    width: 1,
+    height: '100%',
     backgroundColor: '#E5E7EB',
-  },
-  storyCircleUnviewed: {
-    backgroundColor: '#F59E0B',
-  },
-  storyName: {
-    marginTop: 4,
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#6B7280',
-    textAlign: 'center',
   },
   footer: {
     paddingHorizontal: 16,
