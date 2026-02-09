@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import { Post, Story, StoryGroup, PaginationParams } from '@/types';
 import { feedApi } from '@/api/client';
+import { mockPosts, mockStories } from '@/api/mockData';
 
 interface FeedState {
   // Posts
@@ -153,9 +154,21 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       } else {
         set({ isLoadingPosts: false });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch posts:', error);
-      set({ isLoadingPosts: false });
+      
+      // Use mock data if API fails in development
+      if (__DEV__ && error.code === 'TIMEOUT_ERROR') {
+        console.log('📦 Using mock data for offline development');
+        set({
+          posts: refresh ? mockPosts : [...posts, ...mockPosts],
+          postsPage: page + 1,
+          hasMorePosts: false,
+          isLoadingPosts: false,
+        });
+      } else {
+        set({ isLoadingPosts: false });
+      }
     }
   },
 
@@ -201,9 +214,19 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         storyGroups,
         isLoadingStories: false,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch stories:', error);
-      set({ isLoadingStories: false, storyGroups: [] });
+      
+      // Use mock data if API fails in development
+      if (__DEV__ && error.code === 'TIMEOUT_ERROR') {
+        console.log('📦 Using mock stories for offline development');
+        set({ 
+          storyGroups: mockStories, 
+          isLoadingStories: false 
+        });
+      } else {
+        set({ isLoadingStories: false, storyGroups: [] });
+      }
     }
   },
 
