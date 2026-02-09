@@ -64,3 +64,5 @@ temp/
 
 expo-env.d.ts
 # @end expo-cli
+# Local environment configuration
+.env.local
