@@ -135,6 +135,9 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   const likeScale = useSharedValue(1);
   const valueScale = useSharedValue(1);
+  const commentScale = useSharedValue(1);
+  const repostScale = useSharedValue(1);
+  const shareScale = useSharedValue(1);
   const livePulse = useSharedValue(1);
 
   // Animate live indicator
@@ -157,6 +160,18 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   const valueAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: valueScale.value }],
+  }));
+
+  const commentAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: commentScale.value }],
+  }));
+
+  const repostAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: repostScale.value }],
+  }));
+
+  const shareAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: shareScale.value }],
   }));
 
   const liveAnimatedStyle = useAnimatedStyle(() => ({
@@ -193,6 +208,33 @@ export const PostCard: React.FC<PostCardProps> = ({
     setBookmarked(!bookmarked);
     setShowMenu(false);
     onBookmark?.();
+  };
+
+  const handleComment = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    commentScale.value = withSequence(
+      withSpring(1.2, { damping: 10 }),
+      withSpring(1, { damping: 15 })
+    );
+    onComment?.();
+  };
+
+  const handleRepost = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    repostScale.value = withSequence(
+      withSpring(1.3, { damping: 8 }),
+      withSpring(1, { damping: 12 })
+    );
+    onRepost?.();
+  };
+
+  const handleShare = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    shareScale.value = withSequence(
+      withSpring(1.2, { damping: 10 }),
+      withSpring(1, { damping: 15 })
+    );
+    onShare?.();
   };
 
   const handleMenuToggle = () => {
@@ -542,31 +584,31 @@ export const PostCard: React.FC<PostCardProps> = ({
           </Animated.View>
 
           {/* Comment */}
-          <TouchableOpacity onPress={onComment} style={styles.actionButton}>
-            <View style={styles.actionButtonInner}>
+          <Animated.View style={[commentAnimatedStyle, styles.actionButton]}>
+            <TouchableOpacity onPress={handleComment} style={styles.actionButtonInner}>
               <Ionicons name="chatbubble-outline" size={24} color="#262626" />
               {post.comments > 0 && (
                 <Text style={styles.actionText}>{formatNumber(post.comments)}</Text>
               )}
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </Animated.View>
 
           {/* Repost */}
-          <TouchableOpacity onPress={onRepost} style={styles.actionButton}>
-            <View style={styles.actionButtonInner}>
+          <Animated.View style={[repostAnimatedStyle, styles.actionButton]}>
+            <TouchableOpacity onPress={handleRepost} style={styles.actionButtonInner}>
               <Ionicons name="repeat-outline" size={26} color="#262626" />
               {post.shares > 0 && (
                 <Text style={styles.actionText}>{formatNumber(post.shares)}</Text>
               )}
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </Animated.View>
 
           {/* Send (Instagram-style) */}
-          <TouchableOpacity onPress={onShare} style={styles.actionButton}>
-            <View style={styles.actionButtonInner}>
+          <Animated.View style={[shareAnimatedStyle, styles.actionButton]}>
+            <TouchableOpacity onPress={handleShare} style={styles.actionButtonInner}>
               <Ionicons name="paper-plane-outline" size={23} color="#262626" />
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
 
         {/* Value - Right side (like Instagram bookmark) */}
