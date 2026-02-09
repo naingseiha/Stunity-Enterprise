@@ -238,9 +238,55 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   // Create a new post
   createPost: async (content, mediaUrls = [], postType = 'ARTICLE', pollOptions = []) => {
     try {
+      // Upload local images to R2 before creating post
+      let uploadedMediaUrls = mediaUrls;
+      
+      if (mediaUrls.length > 0 && mediaUrls.some(url => url.startsWith('file://'))) {
+        console.log('📤 [FeedStore] Uploading images to R2...');
+        
+        try {
+          // Create FormData with images
+          const formData = new FormData();
+          
+          for (const uri of mediaUrls) {
+            if (uri.startsWith('file://')) {
+              // Extract filename from URI
+              const filename = uri.split('/').pop() || `image-${Date.now()}.jpg`;
+              
+              // Append file to form data
+              formData.append('files', {
+                uri,
+                type: 'image/jpeg', // Could be detected from extension
+                name: filename,
+              } as any);
+            }
+          }
+          
+          // Upload to backend
+          const uploadResponse = await feedApi.post('/upload', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+            timeout: 60000, // 60s for file uploads
+          });
+          
+          if (uploadResponse.data.success && uploadResponse.data.data) {
+            uploadedMediaUrls = uploadResponse.data.data.map((file: any) => file.url);
+            console.log('✅ [FeedStore] Images uploaded successfully:', uploadedMediaUrls);
+          } else {
+            console.error('❌ [FeedStore] Upload failed:', uploadResponse.data);
+            throw new Error('Failed to upload images');
+          }
+        } catch (uploadError: any) {
+          console.error('❌ [FeedStore] Upload error:', uploadError);
+          throw new Error('Failed to upload images. Please check your connection.');
+        }
+      }
+      
+      // Now create post with uploaded URLs
       const response = await feedApi.post('/posts', {
         content,
-        mediaUrls,
+        mediaUrls: uploadedMediaUrls,
         postType,
         visibility: 'SCHOOL',
         mediaDisplayMode: 'AUTO',
@@ -264,7 +310,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           },
           content: newPostData.content,
           postType: newPostData.postType || postType,
-          mediaUrls: newPostData.mediaUrls || mediaUrls,
+          mediaUrls: newPostData.mediaUrls || uploadedMediaUrls,
           likes: newPostData.likesCount || 0,
           comments: newPostData.commentsCount || 0,
           shares: newPostData.sharesCount || 0,

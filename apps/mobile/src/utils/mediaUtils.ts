@@ -18,6 +18,15 @@ import { Config } from '@/config/env';
 export const normalizeMediaUrl = (url: string | undefined | null): string | null => {
   if (!url) return null;
 
+  // Local file:// URIs should NOT be normalized - they indicate upload failed!
+  if (url.startsWith('file://')) {
+    if (__DEV__) {
+      console.error('🚨 [MediaUtils] LOCAL FILE URI DETECTED - Image was not uploaded!', url);
+      console.error('   This image only exists on this device and cannot be loaded by others.');
+    }
+    return null; // Return null to prevent attempting to load local files
+  }
+
   // Already a complete URL (http/https) or data URL
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
     return url;

@@ -157,8 +157,8 @@ export default function CreatePostScreen() {
         ? pollOptions.filter(opt => opt.trim().length > 0)
         : [];
       
-      // Call the API to create post
-      // For now, passing URIs directly - in production, upload to CDN first
+      // Upload images and create post
+      // The createPost function will handle uploading local file:// URIs to R2
       const success = await createPost(content, mediaUris, postType, validPollOptions);
       
       if (success) {
