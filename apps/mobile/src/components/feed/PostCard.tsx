@@ -545,12 +545,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'visible',
     position: 'relative',
-    // Soft neutral shadow - clean floating effect
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 8,
+    // Flat design - thin border instead of shadow
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   // LIVE Badge styles
   liveBadge: {

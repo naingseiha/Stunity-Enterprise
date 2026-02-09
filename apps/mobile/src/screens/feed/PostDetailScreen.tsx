@@ -615,11 +615,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 8,
     minWidth: 160,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 10,
+    // Flat design - border instead of shadow
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     zIndex: 1000,
   },
   menuItem: {
