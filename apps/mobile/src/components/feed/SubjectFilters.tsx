@@ -16,26 +16,98 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Typography, Spacing } from '@/config';
 
 export interface SubjectFilter {
   key: string;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
+  bgColor: string;
+  textColor: string;
+  iconColor: string;
 }
 
 const SUBJECTS: SubjectFilter[] = [
-  { key: 'ALL', label: 'All', icon: 'grid-outline' },
-  { key: 'MATH', label: 'Math', icon: 'calculator-outline' },
-  { key: 'PHYSICS', label: 'Physics', icon: 'planet-outline' },
-  { key: 'CHEMISTRY', label: 'Chemistry', icon: 'flask-outline' },
-  { key: 'BIOLOGY', label: 'Biology', icon: 'leaf-outline' },
-  { key: 'CS', label: 'Computer Sci', icon: 'code-slash-outline' },
-  { key: 'ENGLISH', label: 'English', icon: 'book-outline' },
-  { key: 'HISTORY', label: 'History', icon: 'time-outline' },
-  { key: 'ECONOMICS', label: 'Economics', icon: 'trending-up-outline' },
-  { key: 'ARTS', label: 'Arts', icon: 'color-palette-outline' },
+  { 
+    key: 'ALL', 
+    label: 'All', 
+    icon: 'grid-outline',
+    bgColor: '#EEF2FF', // Light indigo
+    textColor: '#4F46E5', // Indigo
+    iconColor: '#4F46E5',
+  },
+  { 
+    key: 'MATH', 
+    label: 'Math', 
+    icon: 'calculator-outline',
+    bgColor: '#DBEAFE', // Light blue
+    textColor: '#1D4ED8', // Blue
+    iconColor: '#1D4ED8',
+  },
+  { 
+    key: 'PHYSICS', 
+    label: 'Physics', 
+    icon: 'planet-outline',
+    bgColor: '#FEE2E2', // Light red
+    textColor: '#DC2626', // Red
+    iconColor: '#DC2626',
+  },
+  { 
+    key: 'CHEMISTRY', 
+    label: 'Chemistry', 
+    icon: 'flask-outline',
+    bgColor: '#D1FAE5', // Light green
+    textColor: '#059669', // Green
+    iconColor: '#059669',
+  },
+  { 
+    key: 'BIOLOGY', 
+    label: 'Biology', 
+    icon: 'leaf-outline',
+    bgColor: '#DCFCE7', // Light lime
+    textColor: '#16A34A', // Lime green
+    iconColor: '#16A34A',
+  },
+  { 
+    key: 'CS', 
+    label: 'Computer Sci', 
+    icon: 'code-slash-outline',
+    bgColor: '#E0E7FF', // Light indigo blue
+    textColor: '#4338CA', // Indigo blue
+    iconColor: '#4338CA',
+  },
+  { 
+    key: 'ENGLISH', 
+    label: 'English', 
+    icon: 'book-outline',
+    bgColor: '#FCE7F3', // Light pink
+    textColor: '#DB2777', // Pink
+    iconColor: '#DB2777',
+  },
+  { 
+    key: 'HISTORY', 
+    label: 'History', 
+    icon: 'time-outline',
+    bgColor: '#FEF3C7', // Light yellow
+    textColor: '#D97706', // Orange
+    iconColor: '#D97706',
+  },
+  { 
+    key: 'ECONOMICS', 
+    label: 'Economics', 
+    icon: 'trending-up-outline',
+    bgColor: '#FAE8FF', // Light purple
+    textColor: '#A21CAF', // Purple
+    iconColor: '#A21CAF',
+  },
+  { 
+    key: 'ARTS', 
+    label: 'Arts', 
+    icon: 'color-palette-outline',
+    bgColor: '#FFE4E6', // Light rose
+    textColor: '#E11D48', // Rose
+    iconColor: '#E11D48',
+  },
 ];
 
 interface SubjectFiltersProps {
@@ -60,28 +132,20 @@ export default function SubjectFilters({
             <TouchableOpacity
               key={subject.key}
               onPress={() => onFilterChange(subject.key)}
-              style={[
-                styles.filterChip,
-                isActive && styles.filterChipActive,
-              ]}
+              style={styles.filterChip}
               activeOpacity={0.7}
             >
-              {isActive ? (
-                <LinearGradient
-                  colors={['#6366F1', '#8B5CF6']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.filterChipGradient}
-                >
-                  <Ionicons name={subject.icon} size={16} color="#fff" />
-                  <Text style={styles.filterChipTextActive}>{subject.label}</Text>
-                </LinearGradient>
-              ) : (
-                <View style={styles.filterChipInner}>
-                  <Ionicons name={subject.icon} size={16} color="#6B7280" />
-                  <Text style={styles.filterChipText}>{subject.label}</Text>
-                </View>
-              )}
+              <View 
+                style={[
+                  styles.filterChipInner,
+                  { backgroundColor: subject.bgColor }
+                ]}
+              >
+                <Ionicons name={subject.icon} size={18} color={subject.iconColor} />
+                <Text style={[styles.filterChipText, { color: subject.textColor }]}>
+                  {subject.label}
+                </Text>
+              </View>
             </TouchableOpacity>
           );
         })}
@@ -93,50 +157,27 @@ export default function SubjectFilters({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    paddingVertical: 4,
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 8,
+    paddingVertical: 12,
+    gap: 10,
   },
   filterChip: {
-    marginRight: 8,
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
-  filterChipActive: {
-    // Active state handled by gradient
-  },
-  filterChipGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 6,
+    marginRight: 0, // gap handles spacing
   },
   filterChipInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 20,
-    gap: 6,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 24,
+    gap: 8,
   },
   filterChipText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#6B7280',
-    fontFamily: Typography.fontFamily.medium,
-  },
-  filterChipTextActive: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
     fontFamily: Typography.fontFamily.semibold,
   },
 });
