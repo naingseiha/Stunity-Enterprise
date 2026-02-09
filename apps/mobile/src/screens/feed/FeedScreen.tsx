@@ -30,7 +30,7 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 // Import actual Stunity logo
 const StunityLogo = require('../../../../../Stunity.png');
 
-import { PostCard, StoryCircles } from '@/components/feed';
+import { PostCard, StoryCircles, PostAnalyticsModal } from '@/components/feed';
 import { Avatar, PostSkeleton, NetworkStatus } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore } from '@/stores';
@@ -66,10 +66,14 @@ export default function FeedScreen() {
     unlikePost,
     bookmarkPost,
     setActiveStoryGroup,
+    voteOnPoll,
+    sharePost,
+    trackPostView,
   } = useFeedStore();
 
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState('ALL');
+  const [analyticsPostId, setAnalyticsPostId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPosts();
@@ -105,6 +109,21 @@ export default function FeedScreen() {
       likePost(post.id);
     }
   }, [likePost, unlikePost]);
+
+  const handleSharePost = useCallback(async (postId: string) => {
+    await sharePost(postId);
+    // TODO: Open native share sheet if needed
+  }, [sharePost]);
+
+  const handleVoteOnPoll = useCallback((postId: string, optionId: string) => {
+    voteOnPoll(postId, optionId);
+  }, [voteOnPoll]);
+
+  const handlePostPress = useCallback((post: Post) => {
+    // Track view when post detail is opened
+    trackPostView(post.id);
+    navigation.navigate('PostDetail', { postId: post.id });
+  }, [trackPostView, navigation]);
 
   const handleStoryPress = useCallback((index: number) => {
     setActiveStoryGroup(index);
@@ -240,12 +259,14 @@ export default function FeedScreen() {
       <PostCard
         post={item}
         onLike={() => handleLikePost(item)}
-        onComment={() => navigation.navigate('Comments' as any, { postId: item.id })}
+        onComment={() => navigation.navigate('Comments', { postId: item.id })}
         onRepost={() => {}}
-        onShare={() => {}}
+        onShare={() => handleSharePost(item.id)}
         onBookmark={() => bookmarkPost(item.id)}
         onUserPress={() => navigation.navigate('UserProfile', { userId: item.author.id })}
-        onPress={() => navigation.navigate('PostDetail', { postId: item.id })}
+        onPress={() => handlePostPress(item)}
+        onVote={(optionId) => handleVoteOnPoll(item.id, optionId)}
+        onViewAnalytics={() => setAnalyticsPostId(item.id)}
       />
     </Animated.View>
   );
@@ -360,6 +381,13 @@ export default function FeedScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         style={styles.list}
+      />
+      
+      {/* Post Analytics Modal */}
+      <PostAnalyticsModal
+        isOpen={!!analyticsPostId}
+        onClose={() => setAnalyticsPostId(null)}
+        postId={analyticsPostId || ''}
       />
     </View>
   );

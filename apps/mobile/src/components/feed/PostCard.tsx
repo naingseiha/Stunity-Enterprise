@@ -23,6 +23,7 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import Animated, {
   useSharedValue,
@@ -34,6 +35,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Avatar, ImageCarousel } from '@/components/common';
+import { PollVoting } from '@/components/feed';
 import { Post, DifficultyLevel } from '@/types';
 import { useAuthStore } from '@/stores';
 import { formatRelativeTime, formatNumber } from '@/utils';
@@ -47,6 +49,8 @@ interface PostCardProps {
   onBookmark?: () => void;
   onUserPress?: () => void;
   onPress?: () => void;
+  onVote?: (optionId: string) => void;
+  onViewAnalytics?: () => void;
   currentUserId?: string; // Optional: for showing blue tick on current user
 }
 
@@ -113,8 +117,12 @@ export const PostCard: React.FC<PostCardProps> = ({
   onBookmark,
   onUserPress,
   onPress,
+  onVote,
+  onViewAnalytics,
   currentUserId,
 }) => {
+  const navigation = useNavigation<any>();
+  
   // Get current user from auth store for blue tick experiment
   const { user: currentUser } = useAuthStore();
   const isCurrentUser = currentUserId ? post.author.id === currentUserId : post.author.id === currentUser?.id;
@@ -190,6 +198,18 @@ export const PostCard: React.FC<PostCardProps> = ({
   const handleMenuToggle = () => {
     Haptics.selectionAsync();
     setShowMenu(!showMenu);
+  };
+
+  const handleEdit = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowMenu(false);
+    navigation.navigate('EditPost', { post });
+  };
+
+  const handleViewAnalytics = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowMenu(false);
+    onViewAnalytics?.();
   };
 
   const typeConfig = POST_TYPE_CONFIG[post.postType] || POST_TYPE_CONFIG.ARTICLE;
@@ -297,6 +317,22 @@ export const PostCard: React.FC<PostCardProps> = ({
           {/* Dropdown Menu */}
           {showMenu && (
             <View style={styles.dropdownMenu}>
+              {isCurrentUser && (
+                <>
+                  <TouchableOpacity style={styles.menuItem} onPress={handleEdit}>
+                    <Ionicons name="create-outline" size={18} color="#0066FF" />
+                    <Text style={[styles.menuItemText, { color: '#0066FF' }]}>
+                      Edit Post
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.menuItem} onPress={handleViewAnalytics}>
+                    <Ionicons name="stats-chart-outline" size={18} color="#10B981" />
+                    <Text style={[styles.menuItemText, { color: '#10B981' }]}>
+                      View Analytics
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
               <TouchableOpacity style={styles.menuItem} onPress={handleBookmark}>
                 <Ionicons 
                   name={bookmarked ? 'bookmark' : 'bookmark-outline'} 
@@ -376,6 +412,17 @@ export const PostCard: React.FC<PostCardProps> = ({
           {post.content}
         </Text>
       </TouchableOpacity>
+
+      {/* Poll Voting */}
+      {post.postType === 'POLL' && post.pollOptions && post.pollOptions.length > 0 && (
+        <View style={styles.pollSection}>
+          <PollVoting
+            options={post.pollOptions}
+            userVotedOptionId={post.userVotedOptionId}
+            onVote={onVote || (() => {})}
+          />
+        </View>
+      )}
 
       {/* Topic Tags */}
       {post.topicTags && post.topicTags.length > 0 && (
@@ -981,6 +1028,10 @@ const styles = StyleSheet.create({
   },
   actionTextLiked: {
     color: '#EF4444',
+  },
+  pollSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
   },
 });
 

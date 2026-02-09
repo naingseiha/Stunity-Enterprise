@@ -144,6 +144,14 @@ export interface Post {
   // E-Learning enhancements
   learningMeta?: PostLearningMeta;
   topicTags?: string[]; // Subject hashtags like #Math, #Physics
+  // Poll fields
+  pollOptions?: Array<{
+    id: string;
+    text: string;
+    votes?: number;
+    _count?: { votes: number };
+  }>;
+  userVotedOptionId?: string;
   createdAt: string;
   updatedAt: string;
 }

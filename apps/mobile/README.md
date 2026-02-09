@@ -116,15 +116,21 @@ npm run android
 
 ### Environment Configuration
 
-Create `.env` file:
+Create `.env.local` file (see `.env.local.example`):
 
 ```env
-EXPO_PUBLIC_APP_ENV=development
-EXPO_PUBLIC_API_URL=http://localhost:3001
-EXPO_PUBLIC_FEED_URL=http://localhost:3010
-EXPO_PUBLIC_SENTRY_DSN=your-sentry-dsn
-EXPO_PUBLIC_ANALYTICS_KEY=your-analytics-key
+# API Host - Update with your Mac's IP address
+EXPO_PUBLIC_API_HOST=192.168.1.100  # Change to your IP
 ```
+
+**Important for iOS Simulator:**
+- iOS Simulator can't use `localhost` - you must use your Mac's IP address
+- Find your IP: `ipconfig getifaddr en0`
+- Quick update: `./scripts/update-mobile-ip.sh`
+- After changing IP, **restart Expo dev server**
+
+**Troubleshooting Connection Issues:**  
+See [NETWORK_TROUBLESHOOTING.md](./NETWORK_TROUBLESHOOTING.md) if you get timeout errors.
 
 ## 🎨 Design System
 

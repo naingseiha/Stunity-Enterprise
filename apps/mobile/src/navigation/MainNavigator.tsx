@@ -24,7 +24,7 @@ import { Sidebar } from '@/components/navigation';
 import { NavigationProvider, useNavigationContext } from '@/contexts';
 
 // Implemented Screens
-import { FeedScreen, CreatePostScreen, PostDetailScreen } from '@/screens/feed';
+import { FeedScreen, CreatePostScreen, EditPostScreen, PostDetailScreen, CommentsScreen, BookmarksScreen, MyPostsScreen } from '@/screens/feed';
 import { LearnScreen, CourseDetailScreen } from '@/screens/learn';
 import { ProfileScreen, EditProfileScreen } from '@/screens/profile';
 import { ConversationsScreen, ChatScreen } from '@/screens/messages';
@@ -59,8 +59,6 @@ const GroupInfoScreen = () => <PlaceholderScreen title="Group Info" />;
 // Profile Stack Screens
 const ConnectionsScreen = () => <PlaceholderScreen title="Connections" />;
 const SettingsScreen = () => <PlaceholderScreen title="Settings" />;
-const BookmarksScreen = () => <PlaceholderScreen title="Bookmarks" />;
-const MyPostsScreen = () => <PlaceholderScreen title="My Posts" />;
 
 // Create Stack Navigators
 const FeedStack = createNativeStackNavigator<FeedStackParamList>();
@@ -83,7 +81,11 @@ const FeedStackNavigator: React.FC = () => (
   <FeedStack.Navigator screenOptions={{ headerShown: false }}>
     <FeedStack.Screen name="Feed" component={FeedScreen} />
     <FeedStack.Screen name="CreatePost" component={CreatePostScreen} />
+    <FeedStack.Screen name="EditPost" component={EditPostScreen} />
     <FeedStack.Screen name="PostDetail" component={PostDetailScreen} />
+    <FeedStack.Screen name="Comments" component={CommentsScreen} />
+    <FeedStack.Screen name="Bookmarks" component={BookmarksScreen} />
+    <FeedStack.Screen name="MyPosts" component={MyPostsScreen} />
     <FeedStack.Screen name="UserProfile" component={UserProfileScreen} />
     <FeedStack.Screen name="Hashtag" component={HashtagScreen} />
     <FeedStack.Screen name="Events" component={EventsScreen} />

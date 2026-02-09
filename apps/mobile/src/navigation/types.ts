@@ -8,6 +8,7 @@ import { NavigatorScreenParams } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
+import { Post } from '@/types';
 
 // Root Stack
 export type RootStackParamList = {
@@ -16,6 +17,7 @@ export type RootStackParamList = {
   Main: NavigatorScreenParams<MainTabParamList>;
   // Modal screens
   CreatePost: undefined;
+  EditPost: { post: Post };
   CreateStory: undefined;
   PostDetail: { postId: string };
   StoryViewer: { groupIndex: number };
@@ -53,7 +55,11 @@ export type MainTabParamList = {
 export type FeedStackParamList = {
   Feed: undefined;
   CreatePost: undefined;
+  EditPost: { post: Post };
   PostDetail: { postId: string };
+  Comments: { postId: string };
+  Bookmarks: undefined;
+  MyPosts: undefined;
   UserProfile: { userId: string };
   Hashtag: { tag: string };
   Clubs: undefined;

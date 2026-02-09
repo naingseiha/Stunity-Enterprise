@@ -328,11 +328,26 @@ app.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => 
     });
     const likedPostIds = new Set(userLikes.map(l => l.postId));
 
+    // Check if current user voted on any polls
+    const pollPostIds = posts.filter(p => p.postType === 'POLL').map(p => p.id);
+    const userVotes = pollPostIds.length > 0 ? await prisma.pollVote.findMany({
+      where: {
+        postId: { in: pollPostIds },
+        userId: req.user!.id,
+      },
+      select: { postId: true, optionId: true },
+    }) : [];
+    const votedOptions = new Map(userVotes.map(v => [v.postId, v.optionId]));
+
     const formattedPosts = posts.map(post => ({
       ...post,
       isLikedByMe: likedPostIds.has(post.id),
       likesCount: post._count.likes,
       commentsCount: post._count.comments,
+      // Add userVotedOptionId for polls
+      ...(post.postType === 'POLL' && {
+        userVotedOptionId: votedOptions.get(post.id) || null,
+      }),
     }));
 
     res.json({
@@ -480,6 +495,19 @@ app.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Response)
       where: { postId: post.id, userId: req.user!.id },
     });
 
+    // Check if user voted on this poll
+    let userVotedOptionId = null;
+    if (post.postType === 'POLL') {
+      const userVote = await prisma.pollVote.findFirst({
+        where: {
+          postId: post.id,
+          userId: req.user!.id,
+        },
+        select: { optionId: true },
+      });
+      userVotedOptionId = userVote?.optionId || null;
+    }
+
     res.json({
       success: true,
       data: {
@@ -487,6 +515,7 @@ app.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Response)
         isLikedByMe: !!isLiked,
         likesCount: post._count.likes,
         commentsCount: post._count.comments,
+        ...(post.postType === 'POLL' && { userVotedOptionId }),
       },
     });
   } catch (error: any) {
@@ -685,7 +714,7 @@ app.delete('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
   }
 });
 
-// POST /posts/:id/vote - Vote on poll
+// POST /posts/:id/vote - Vote on poll (allows changing vote)
 app.post('/posts/:id/vote', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { optionId } = req.body;
@@ -702,21 +731,39 @@ app.post('/posts/:id/vote', authenticateToken, async (req: AuthRequest, res: Res
       return res.status(400).json({ success: false, error: 'Not a poll' });
     }
 
+    // Verify optionId belongs to this post
+    const validOption = post.pollOptions.find(o => o.id === optionId);
+    if (!validOption) {
+      return res.status(400).json({ success: false, error: 'Invalid option' });
+    }
+
     // Check if already voted
     const existingVote = await prisma.pollVote.findFirst({
       where: { optionId: { in: post.pollOptions.map(o => o.id) }, userId },
     });
 
-    if (existingVote && !post.pollAllowMultiple) {
-      return res.status(400).json({ success: false, error: 'Already voted' });
+    if (existingVote) {
+      if (existingVote.optionId === optionId) {
+        // Same option - no change needed
+        return res.json({ success: true, message: 'Already voted for this option', userVotedOptionId: optionId });
+      }
+      
+      if (!post.pollAllowMultiple) {
+        // Change vote - delete old vote and create new one
+        await prisma.pollVote.delete({
+          where: { id: existingVote.id },
+        });
+      }
     }
 
+    // Create new vote
     await prisma.pollVote.create({
       data: { postId, optionId, userId },
     });
 
-    res.json({ success: true, message: 'Vote recorded' });
+    res.json({ success: true, message: 'Vote recorded', userVotedOptionId: optionId });
   } catch (error: any) {
+    console.error('Vote error:', error);
     res.status(500).json({ success: false, error: 'Failed to vote' });
   }
 });

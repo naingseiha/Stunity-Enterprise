@@ -186,10 +186,17 @@ export default function PostDetailScreen() {
   const { postId } = route.params;
   
   const { user } = useAuthStore();
-  const { posts, likePost, unlikePost, bookmarkPost } = useFeedStore();
+  const { posts, likePost, unlikePost, bookmarkPost, trackPostView } = useFeedStore();
   
   // Find the post (in real app, fetch from API)
   const post = posts.find(p => p.id === postId) || posts[0];
+
+  // Track view when post detail opens
+  useEffect(() => {
+    if (post) {
+      trackPostView(post.id);
+    }
+  }, [post?.id, trackPostView]);
   
   const [liked, setLiked] = useState(post?.isLiked || false);
   const [bookmarked, setBookmarked] = useState(post?.isBookmarked || false);

@@ -1,8 +1,56 @@
 # 📱 Stunity Mobile App - Implementation Status
 
 **Last Updated:** February 9, 2026  
-**Version:** 2.0  
-**Status:** ✅ Ready for API Integration
+**Version:** 2.1  
+**Status:** ✅ Feed Features Complete with Poll Voting
+
+---
+
+## 🎯 Latest Updates
+
+### ✅ Phase 1.5: Poll Voting Feature - COMPLETE (Feb 9, 2026)
+
+**Major Achievement:** Implemented full poll voting system with X/Twitter-style design!
+
+#### Backend Enhancements
+1. **Vote Changing Support** (`services/feed-service/src/index.ts`)
+   - ✅ POST `/posts/:id/vote` now allows changing votes
+   - ✅ Deletes old vote before creating new one
+   - ✅ Returns `userVotedOptionId` in response
+   - ✅ Validates option belongs to post
+
+2. **User Vote Tracking**
+   - ✅ GET `/posts` includes `userVotedOptionId` for polls
+   - ✅ GET `/posts/:id` includes user's vote
+   - ✅ Proper vote querying and mapping
+
+#### Mobile App Implementation
+1. **Beautiful Poll Component** (`src/components/feed/PollVoting.tsx`)
+   - ✨ X/Twitter-inspired design
+   - 💊 Fully rounded pill buttons
+   - 🎨 Soft pastel colors (green/purple/gray)
+   - ✓ Checkmark for selected option
+   - 📊 Live percentages and vote counts
+   - 🔄 Vote changing capability
+   - 📱 Smooth animations & haptic feedback
+
+2. **Feed Store Updates** (`src/stores/feedStore.ts`)
+   - ✅ Enhanced `voteOnPoll` with optimistic updates
+   - ✅ Vote changing logic (remove old, add new)
+   - ✅ Comprehensive debug logging
+   - ✅ Proper error handling with rollback
+
+#### Design Features
+- **Fully Rounded Pills:** `borderRadius: 50` for perfect curves
+- **Color System:**
+  - Selected: Light green `#D4F4DD` with checkmark
+  - High votes (30%+): Light purple `#E5DEFF`
+  - Medium votes (15-30%): Light gray `#F0F0F0`
+  - Low votes (<15%): Very light gray `#FAFAFA`
+- **Clean Layout:** Vote count • Hint • Options • Footer
+- **Smooth Animations:** Scale on press, haptic feedback
+
+📄 **Full Documentation:** See `POLL_VOTING_COMPLETE.md`
 
 ---
 
