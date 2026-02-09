@@ -16,7 +16,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing } from '@/config';
+import { Colors, Typography, Spacing, Shadows } from '@/config';
 
 export interface SubjectFilter {
   key: string;
@@ -157,7 +157,10 @@ export default function SubjectFilters({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
-    paddingVertical: 4,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 16,
+    ...Shadows.sm,
   },
   scrollContent: {
     paddingHorizontal: 16,

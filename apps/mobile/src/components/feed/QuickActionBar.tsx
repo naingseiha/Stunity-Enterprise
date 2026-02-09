@@ -96,10 +96,14 @@ export default function QuickActionBar({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
     gap: 10,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 16,
+    ...Shadows.sm,
   },
   actionButton: {
     flex: 1,
