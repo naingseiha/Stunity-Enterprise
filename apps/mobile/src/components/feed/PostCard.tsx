@@ -540,14 +540,16 @@ export const PostCard: React.FC<PostCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 16,
+    marginHorizontal: 0, // Full width - no side margins
+    marginBottom: 0, // No bottom margin - use divider instead
+    borderRadius: 0, // No radius for seamless full-width look
     overflow: 'visible',
     position: 'relative',
-    // Flat design - thin border instead of shadow
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    // Bottom divider line instead of border
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    // Add padding inside for content
+    paddingTop: 16,
   },
   // LIVE Badge styles
   liveBadge: {
@@ -585,10 +587,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 14,
-    paddingRight: 14,
-    paddingTop: 14,
-    paddingBottom: 14,
+    paddingHorizontal: 16, // Consistent 16px padding
+    paddingBottom: 12,
   },
   authorSection: {
     flex: 1,
@@ -776,7 +776,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   contentSection: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 16, // Consistent 16px padding
     paddingTop: 14,
     paddingBottom: 10,
   },
@@ -790,7 +790,7 @@ const styles = StyleSheet.create({
   topicTagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16, // Consistent 16px padding
     paddingBottom: 10,
     gap: 8,
   },
@@ -946,8 +946,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16, // Consistent 16px padding
     paddingVertical: 12,
+    paddingBottom: 16, // Add bottom padding for breathing room
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
   },

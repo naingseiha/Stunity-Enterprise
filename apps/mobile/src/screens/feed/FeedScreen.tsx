@@ -368,7 +368,7 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F7FC',
+    backgroundColor: '#FFFFFF', // Pure white for seamless full-width cards
   },
   headerSafe: {
     backgroundColor: '#fff',
