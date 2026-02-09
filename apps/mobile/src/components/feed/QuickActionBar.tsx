@@ -22,7 +22,9 @@ interface QuickAction {
   id: string;
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
-  color: string;
+  bgColor: string;
+  textColor: string;
+  iconColor: string;
   onPress: () => void;
 }
 
@@ -40,43 +42,51 @@ export default function QuickActionBar({
   const actions: QuickAction[] = [
     {
       id: 'ask',
-      icon: 'help-circle-outline',
+      icon: 'help-circle',
       label: 'Ask Question',
-      color: '#6366F1', // Vibrant indigo
+      bgColor: '#EEF2FF', // Light indigo
+      textColor: '#4F46E5', // Indigo
+      iconColor: '#6366F1', // Vibrant indigo
       onPress: onAskQuestion,
     },
     {
       id: 'buddy',
-      icon: 'people-outline',
+      icon: 'people',
       label: 'Study Buddy',
-      color: '#EC4899', // Vibrant pink
+      bgColor: '#FCE7F3', // Light pink
+      textColor: '#BE185D', // Dark pink
+      iconColor: '#EC4899', // Vibrant pink
       onPress: onFindStudyBuddy,
     },
     {
       id: 'challenge',
-      icon: 'trophy-outline',
+      icon: 'trophy',
       label: 'Daily Challenge',
-      color: '#F59E0B', // Vibrant amber
+      bgColor: '#FEF3C7', // Light amber
+      textColor: '#B45309', // Dark amber
+      iconColor: '#F59E0B', // Vibrant amber
       onPress: onDailyChallenge,
     },
   ];
 
   return (
     <View style={styles.container}>
-      {actions.map((action, index) => (
+      {actions.map((action) => (
         <TouchableOpacity
           key={action.id}
           onPress={action.onPress}
           activeOpacity={0.7}
           style={[
             styles.actionButton,
-            index < actions.length - 1 && styles.actionButtonWithMargin,
+            { backgroundColor: action.bgColor },
           ]}
         >
-          <View style={[styles.iconContainer, { backgroundColor: `${action.color}20` }]}>
-            <Ionicons name={action.icon} size={24} color={action.color} />
+          <View style={styles.iconContainer}>
+            <Ionicons name={action.icon} size={22} color={action.iconColor} />
           </View>
-          <Text style={styles.actionLabel}>{action.label}</Text>
+          <Text style={[styles.actionLabel, { color: action.textColor }]}>
+            {action.label}
+          </Text>
         </TouchableOpacity>
       ))}
     </View>
@@ -93,32 +103,21 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 8,
-    borderWidth: 1.5,
-    borderColor: '#F3F4F6',
     ...Shadows.sm,
   },
-  actionButtonWithMargin: {
-    marginRight: 0, // gap handles spacing now
-  },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 6,
+    marginBottom: 6,
   },
   actionLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
     fontFamily: Typography.fontFamily.semibold,
+    textAlign: 'center',
   },
 });
