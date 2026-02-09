@@ -21,12 +21,25 @@ interface EnvironmentConfig {
   playStoreUrl: string;
 }
 
+// Get API host dynamically based on environment
+const getApiHost = (): string => {
+  // You can set this in .env.local: EXPO_PUBLIC_API_HOST=192.168.1.100
+  const envHost = process.env.EXPO_PUBLIC_API_HOST;
+  if (envHost) return envHost;
+  
+  // Default to localhost for development
+  // This works when your backend is running on the same machine as the simulator
+  return 'localhost';
+};
+
+const API_HOST = getApiHost();
+
 const development: EnvironmentConfig = {
-  apiBaseUrl: 'http://10.103.61.191:3001',
-  authUrl: 'http://10.103.61.191:3001',
-  feedUrl: 'http://10.103.61.191:3010',
-  mediaUrl: 'http://10.103.61.191:3010',
-  wsUrl: 'ws://10.103.61.191:3011',
+  apiBaseUrl: `http://${API_HOST}:3001`,
+  authUrl: `http://${API_HOST}:3001`,
+  feedUrl: `http://${API_HOST}:3010`,
+  mediaUrl: `http://${API_HOST}:3010`,
+  wsUrl: `ws://${API_HOST}:3011`,
   sentryDsn: '',
   analyticsKey: '',
   enableDebugMode: true,
