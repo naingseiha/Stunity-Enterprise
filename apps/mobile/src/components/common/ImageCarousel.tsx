@@ -209,8 +209,9 @@ export default function ImageCarousel({
             source={{ uri: normalizedImages[0] }}
             style={[styles.image, { borderRadius }]}
             contentFit="cover"
-            transition={200}
+            transition={300}
             placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+            placeholderContentFit="cover"
             onError={(error) => {
               if (__DEV__) {
                 console.error('❌ [ImageCarousel] Failed to load image:', normalizedImages[0]);
@@ -265,8 +266,9 @@ export default function ImageCarousel({
               source={{ uri }}
               style={[styles.image, { borderRadius }]}
               contentFit="cover"
-              transition={200}
+              transition={300}
               placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+              placeholderContentFit="cover"
               onError={(error) => {
                 if (__DEV__) {
                   console.error(`❌ [ImageCarousel] Failed to load image ${index}:`, uri);

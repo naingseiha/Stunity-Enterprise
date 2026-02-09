@@ -155,7 +155,9 @@ export const Avatar: React.FC<AvatarProps> = ({
                 source={{ uri }}
                 style={styles.image}
                 contentFit="cover"
-                transition={200}
+                transition={300}
+                placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+                placeholderContentFit="cover"
               />
             ) : (
               <LinearGradient
@@ -208,7 +210,9 @@ export const Avatar: React.FC<AvatarProps> = ({
           source={{ uri }}
           style={styles.image}
           contentFit="cover"
-          transition={200}
+          transition={300}
+          placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+          placeholderContentFit="cover"
         />
       ) : (
         <LinearGradient
