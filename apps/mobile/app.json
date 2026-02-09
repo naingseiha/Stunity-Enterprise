@@ -6,7 +6,9 @@
     "orientation": "portrait",
     "scheme": "stunity",
     "userInterfaceStyle": "automatic",
+    "icon": "./assets/Stunity.png",
     "splash": {
+      "image": "./assets/Stunity.png",
       "resizeMode": "contain",
       "backgroundColor": "#F59E0B"
     },
@@ -27,6 +29,15 @@
     "android": {
       "package": "com.stunity.mobile",
       "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/Stunity.png",
+        "backgroundColor": "#F59E0B"
+      },
+      "splash": {
+        "image": "./assets/Stunity.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#F59E0B"
+      },
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
@@ -41,6 +52,14 @@
     },
     "plugins": [
       "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F59E0B",
+          "image": "./assets/Stunity.png",
+          "imageWidth": 200
+        }
+      ],
       [
         "expo-camera",
         {
