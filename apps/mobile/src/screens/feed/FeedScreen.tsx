@@ -30,7 +30,14 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 // Import actual Stunity logo
 const StunityLogo = require('../../../../../Stunity.png');
 
-import { PostCard, StoryCircles, PostAnalyticsModal } from '@/components/feed';
+import { 
+  PostCard, 
+  StoryCircles, 
+  PostAnalyticsModal,
+  QuickActionBar,
+  SubjectFilters,
+  FloatingActionButton,
+} from '@/components/feed';
 import { Avatar, PostSkeleton, NetworkStatus } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore } from '@/stores';
@@ -39,16 +46,6 @@ import { FeedStackScreenProps } from '@/navigation/types';
 import { useNavigationContext } from '@/contexts';
 
 type NavigationProp = FeedStackScreenProps<'Feed'>['navigation'];
-
-// Post type filter tabs
-const FILTER_TABS = [
-  { key: 'ALL', label: 'ទាំងអស់', icon: 'radio' },
-  { key: 'ARTICLE', label: 'អត្ថបទ', icon: 'document-text' },
-  { key: 'COURSE', label: 'វគ្គសិក្សា', icon: 'school' },
-  { key: 'PROJECT', label: 'គម្រោង', icon: 'folder' },
-  { key: 'EXAM', label: 'ប្រឡង', icon: 'clipboard' },
-  { key: 'QUIZ', label: 'សំណួរ', icon: 'bulb' },
-];
 
 export default function FeedScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -72,7 +69,7 @@ export default function FeedScreen() {
   } = useFeedStore();
 
   const [refreshing, setRefreshing] = useState(false);
-  const [activeFilter, setActiveFilter] = useState('ALL');
+  const [activeSubjectFilter, setActiveSubjectFilter] = useState('ALL');
   const [analyticsPostId, setAnalyticsPostId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -138,47 +135,27 @@ export default function FeedScreen() {
     navigation.navigate('CreatePost' as any);
   }, [navigation]);
 
-  // Filter tabs component
-  const renderFilterTabs = () => (
-    <View style={styles.filterContainer}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterScroll}
-      >
-        {FILTER_TABS.map((tab) => {
-          const isActive = activeFilter === tab.key;
-          return (
-            <TouchableOpacity
-              key={tab.key}
-              onPress={() => setActiveFilter(tab.key)}
-              style={[
-                styles.filterTab,
-                isActive && styles.filterTabActive,
-              ]}
-            >
-              {isActive ? (
-                <LinearGradient
-                  colors={['#6366F1', '#8B5CF6']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.filterTabGradient}
-                >
-                  <Ionicons name={tab.icon as any} size={16} color="#fff" />
-                  <Text style={styles.filterTabTextActive}>{tab.label}</Text>
-                </LinearGradient>
-              ) : (
-                <View style={styles.filterTabInner}>
-                  <Ionicons name={tab.icon as any} size={16} color="#6B7280" />
-                  <Text style={styles.filterTabText}>{tab.label}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-    </View>
-  );
+  // Quick action handlers
+  const handleAskQuestion = useCallback(() => {
+    // Navigate to CreatePost with question type pre-selected
+    navigation.navigate('CreatePost' as any, { postType: 'QUESTION' });
+  }, [navigation]);
+
+  const handleFindStudyBuddy = useCallback(() => {
+    // TODO: Navigate to Study Buddy finder screen when implemented
+    console.log('Find Study Buddy pressed');
+  }, []);
+
+  const handleDailyChallenge = useCallback(() => {
+    // TODO: Navigate to Daily Challenge screen when implemented
+    console.log('Daily Challenge pressed');
+  }, []);
+
+  const handleSubjectFilterChange = useCallback((filterKey: string) => {
+    setActiveSubjectFilter(filterKey);
+    // TODO: Implement actual filtering logic when backend supports it
+    console.log('Subject filter changed:', filterKey);
+  }, []);
 
   const renderHeader = () => (
     <View style={styles.headerSection}>
@@ -248,6 +225,19 @@ export default function FeedScreen() {
           })}
         </ScrollView>
       </View>
+
+      {/* Quick Action Bar */}
+      <QuickActionBar
+        onAskQuestion={handleAskQuestion}
+        onFindStudyBuddy={handleFindStudyBuddy}
+        onDailyChallenge={handleDailyChallenge}
+      />
+
+      {/* Subject Filters */}
+      <SubjectFilters
+        activeFilter={activeSubjectFilter}
+        onFilterChange={handleSubjectFilterChange}
+      />
     </View>
   );
 
@@ -357,9 +347,6 @@ export default function FeedScreen() {
         <View style={styles.headerDivider} />
       </SafeAreaView>
 
-      {/* Filter Tabs */}
-      {renderFilterTabs()}
-
       {/* Feed */}
       <FlatList
         data={posts}
@@ -389,6 +376,9 @@ export default function FeedScreen() {
         onClose={() => setAnalyticsPostId(null)}
         postId={analyticsPostId || ''}
       />
+
+      {/* Floating Action Button */}
+      <FloatingActionButton onPress={handleCreatePost} />
     </View>
   );
 }
@@ -444,49 +434,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#EF4444',
     borderWidth: 2,
     borderColor: '#fff',
-  },
-  filterContainer: {
-    backgroundColor: '#fff',
-    paddingBottom: 2,
-  },
-  filterScroll: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 10,
-  },
-  filterTab: {
-    borderRadius: 50,
-    overflow: 'hidden',
-  },
-  filterTabActive: {},
-  filterTabGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    gap: 5,
-    borderRadius: 50,
-  },
-  filterTabInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    gap: 5,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 50,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  filterTabText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  filterTabTextActive: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#fff',
   },
   list: {
     flex: 1,
