@@ -374,13 +374,13 @@ export const PostCard: React.FC<PostCardProps> = ({
         </View>
       )}
 
-      {/* Media - Flexible Layout (LinkedIn-style) */}
+      {/* Media - Full Width (Instagram-style) */}
       {post.mediaUrls && post.mediaUrls.length > 0 && (
         <View style={styles.mediaWrapper}>
           <ImageCarousel 
             images={post.mediaUrls}
             onImagePress={onPress}
-            borderRadius={12}
+            borderRadius={0}
             mode="auto"
           />
           {/* Rich content indicators on media */}
@@ -783,8 +783,10 @@ const styles = StyleSheet.create({
     color: '#DC2626',
   },
   mediaWrapper: {
-    marginHorizontal: 14,
-    borderRadius: 16,
+    marginHorizontal: 0,        // Full-width, edge-to-edge
+    marginTop: 12,              // Breathing room from content above
+    marginBottom: 12,           // Breathing room from content below
+    borderRadius: 0,            // No rounded corners for modern look
     overflow: 'hidden',
     position: 'relative',
   },

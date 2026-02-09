@@ -53,6 +53,7 @@ export default function ImageCarousel({
   
   const [activeIndex, setActiveIndex] = useState(0);
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [isCropped, setIsCropped] = useState(false); // Track if image is height-limited
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Normalize image URLs (handle R2 keys and relative paths)
@@ -89,46 +90,67 @@ export default function ImageCarousel({
             console.log(`✅ [ImageCarousel] Got dimensions: ${width}x${height}`);
           }
           setImageDimensions({ width, height });
+          
+          // Check if image will be cropped (height limited to 1.4x width)
+          const imageAspectRatio = height / width;
+          const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
+          const maxHeight = IMAGE_WIDTH * 1.4;
+          setIsCropped(calculatedHeight > maxHeight);
         },
         (error: any) => {
           console.warn('⚠️  [ImageCarousel] Failed to get image size:', normalizedImages[0]);
           console.warn('   Error:', error);
           // Fallback to landscape
           setImageDimensions({ width: 16, height: 9 });
+          setIsCropped(false);
         }
       );
     }
-  }, [normalizedImages, mode]);
+  }, [normalizedImages, mode, IMAGE_WIDTH]);
 
   // Calculate image height based on mode and dimensions
+  // Following Facebook/LinkedIn/Instagram approach for scannable feeds
   const IMAGE_HEIGHT = useMemo(() => {
     // If fixed aspectRatio is provided, use it
     if (aspectRatio !== undefined) {
       return IMAGE_WIDTH * aspectRatio;
     }
 
-    // Auto mode - use actual image dimensions
+    // Auto mode - use actual image dimensions with smart limits
     if (mode === 'auto' && imageDimensions) {
       const imageAspectRatio = imageDimensions.height / imageDimensions.width;
       const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
       
-      // Constrain height between 200px and screen height - 100px
-      const minHeight = 200;
-      const maxHeight = SCREEN_WIDTH * 1.5; // Max 1.5x width for very tall images
+      // Facebook/LinkedIn style limits for scannable feed
+      // Landscape images: min 240px (very wide panoramas)
+      // Portrait images: max 1.4x width (like Facebook) for feed scannability
+      // Very tall images get cropped, user clicks to see full
       
-      return Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
+      const minHeight = 240;              // Minimum for very wide images
+      const maxHeight = IMAGE_WIDTH * 1.4; // Facebook/LinkedIn standard (1.4:1 max)
+      
+      const finalHeight = Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
+      
+      // Log for debugging
+      if (__DEV__) {
+        const ratio = imageAspectRatio.toFixed(2);
+        const limited = calculatedHeight > maxHeight;
+        console.log(`📐 Image ratio: ${ratio} | Calculated: ${calculatedHeight.toFixed(0)}px | Final: ${finalHeight.toFixed(0)}px${limited ? ' (LIMITED)' : ''}`);
+      }
+      
+      return finalHeight;
     }
 
     // Preset modes
     switch (mode) {
       case 'landscape':
-        return IMAGE_WIDTH * 0.5625; // 16:9
+        return IMAGE_WIDTH * 0.5625; // 16:9 (standard landscape)
       case 'portrait':
-        return IMAGE_WIDTH * 1.5; // 2:3
+        return IMAGE_WIDTH * 1.25;   // 4:5 (Instagram portrait standard)
       case 'square':
-        return IMAGE_WIDTH; // 1:1
+        return IMAGE_WIDTH;          // 1:1 (Instagram square)
       default:
-        return IMAGE_WIDTH * 0.75; // 4:3 fallback
+        return IMAGE_WIDTH * 0.75;   // 4:3 (classic photo ratio)
     }
   }, [IMAGE_WIDTH, aspectRatio, mode, imageDimensions, SCREEN_WIDTH]);
 
@@ -194,7 +216,7 @@ export default function ImageCarousel({
 
   // Multiple images - show carousel
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { height: IMAGE_HEIGHT }]}>
       <ScrollView
         ref={scrollViewRef}
         horizontal
@@ -203,8 +225,9 @@ export default function ImageCarousel({
         onScroll={handleScroll}
         scrollEventThrottle={16}
         decelerationRate="fast"
+        snapToInterval={IMAGE_WIDTH}
+        snapToAlignment="start"
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
       >
         {normalizedImages.map((uri, index) => (
           <TouchableOpacity
@@ -262,6 +285,16 @@ export default function ImageCarousel({
         </View>
       </View>
 
+      {/* "See Full Image" indicator for cropped images - Facebook style */}
+      {isCropped && (
+        <View style={styles.expandIndicator}>
+          <View style={styles.expandBadge}>
+            <Ionicons name="expand-outline" size={14} color="#fff" />
+            <Text style={styles.expandText}>Tap to see full</Text>
+          </View>
+        </View>
+      )}
+
       {/* Navigation Arrows (optional - for desktop/tablet) */}
       {images.length > 1 && activeIndex > 0 && (
         <TouchableOpacity
@@ -306,13 +339,12 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   scrollView: {
-    width: '100%',
-  },
-  scrollContent: {
-    flexGrow: 1,
+    flex: 1,
   },
   imageContainer: {
     // width and height set dynamically inline
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   image: {
     width: '100%',
@@ -361,6 +393,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
     marginLeft: 4,
+  },
+  
+  // Expand Indicator - Facebook style "See Full Image"
+  expandIndicator: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+  },
+  expandBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
+  expandText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
   },
   
   // Navigation Arrows
