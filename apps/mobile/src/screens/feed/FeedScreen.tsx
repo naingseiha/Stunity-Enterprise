@@ -368,7 +368,7 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF', // Pure white for seamless full-width cards
+    backgroundColor: '#F8F7FC', // Light purple background for card separation
   },
   headerSafe: {
     backgroundColor: '#fff',
@@ -475,17 +475,17 @@ const styles = StyleSheet.create({
   },
   createPostCard: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
+    marginHorizontal: 14,
     marginBottom: 12,
     paddingTop: 14,
     paddingBottom: 12,
     borderRadius: 16,
-    // Soft neutral shadow
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 6,
+    // Subtle shadow matching PostCard
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   createPostRow: {
     flexDirection: 'row',

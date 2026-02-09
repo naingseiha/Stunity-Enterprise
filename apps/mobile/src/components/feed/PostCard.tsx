@@ -540,14 +540,20 @@ export const PostCard: React.FC<PostCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 0, // Full width - no side margins
-    marginBottom: 0, // No bottom margin - use divider instead
-    borderRadius: 0, // No radius for seamless full-width look
+    marginHorizontal: 14,
+    marginBottom: 16,
+    borderRadius: 16,
     overflow: 'visible',
     position: 'relative',
-    // Bottom divider line instead of border
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    // Subtle card elevation with shadow
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
     // Add padding inside for content
     paddingTop: 16,
   },

@@ -47,7 +47,8 @@ export default function ImageCarousel({
   const { width: SCREEN_WIDTH } = useWindowDimensions();
   const IMAGE_WIDTH = useMemo(() => {
     // If borderRadius is 0, it's full screen (detail view)
-    return borderRadius === 0 ? SCREEN_WIDTH : SCREEN_WIDTH - 32;
+    // Otherwise, account for the 14px margins on each side from PostCard mediaWrapper
+    return borderRadius === 0 ? SCREEN_WIDTH : SCREEN_WIDTH - 28;
   }, [SCREEN_WIDTH, borderRadius]);
   
   const [activeIndex, setActiveIndex] = useState(0);
@@ -202,9 +203,8 @@ export default function ImageCarousel({
         onScroll={handleScroll}
         scrollEventThrottle={16}
         decelerationRate="fast"
-        snapToInterval={IMAGE_WIDTH}
-        snapToAlignment="center"
         style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
       >
         {normalizedImages.map((uri, index) => (
           <TouchableOpacity
@@ -307,6 +307,9 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     width: '100%',
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   imageContainer: {
     // width and height set dynamically inline
