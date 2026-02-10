@@ -2,6 +2,67 @@
 
 All notable changes to Stunity Enterprise will be documented in this file.
 
+## [2.5.0] - 2026-02-10
+
+### Added - Professional Mobile UI/UX
+
+#### Fullscreen Sidebar Navigation
+- **Instagram-style fullscreen sidebar** (100% width, no backdrop)
+- Enhanced sizing: 24px padding, 44x44 icons, 20px profile name
+- Professional enterprise styling (#111827, #374151, #6B7280)
+- Gradient logout button (red gradient with confirmation)
+- Better touch targets (56px minimum)
+- Smooth slide animation (right-to-left)
+- Replaces 85% width overlay design
+
+**Rationale:** Fullscreen design better suits enterprise school management features and provides cleaner, more focused navigation experience.
+
+#### Avatar Gradient Redesign
+- **12 beautiful light gradient colors** for post/feed/comment avatars
+- **No borders** on post variant (cleaner appearance)
+- **Deterministic color selection** based on name (consistent per user)
+- **Profile page avatars unchanged** (kept gradient borders)
+- Colors: light red/rose, blue, yellow, green, pink, indigo, orange, purple, sky, rose, lime, amber
+- Enhanced text color (#374151) for better readability
+- Variant system: 'default', 'post', 'profile'
+
+**Files Updated:**
+- `Avatar.tsx` - Added variant prop and getPostGradientColors()
+- `PostCard.tsx` - Uses variant="post"
+- `CreatePostScreen.tsx` - Uses variant="post"
+- `FeedScreen.tsx` - Uses variant="post"
+- `CommentSection.tsx` - Uses variant="post"
+
+#### Logout Functionality
+- **POST /auth/logout endpoint** added to Auth Service v2.4
+- Proper 200 success response with message
+- Client-side token clearing (localStorage/AsyncStorage)
+- Fixed 404 error on logout button click
+
+**Auth Service v2.4:**
+- Port 3001
+- Endpoint: `POST /auth/logout`
+- Returns: `{ message: "Logged out successfully" }`
+
+#### Documentation
+- `FULLSCREEN_SIDEBAR_UPDATE.md` (7.5KB) - Sidebar redesign details
+- `SIDEBAR_LOGOUT_FIX.md` (6.2KB) - Logout implementation
+- `AVATAR_GRADIENT_REDESIGN.md` (7.1KB) - Avatar system specs
+
+### Changed
+- **Sidebar.tsx** - Redesigned from 85% overlay to 100% fullscreen
+- **Avatar.tsx** - Added variant system with 12 light gradients
+- **Auth Service** - Version 2.3 → 2.4 (logout endpoint)
+
+### Technical Details
+- Mobile UI components: 6 files modified
+- Backend services: 1 file modified
+- Lines of code: ~200 added
+- TypeScript compilation: ✅ No errors
+- Git commits: 5
+
+---
+
 ## [2.4.0] - 2026-02-10
 
 ### Added - Claim Code & ID Generation System
@@ -168,6 +229,7 @@ See: `ENHANCED_AUTH_DESIGN.md`, `DESIGN_CONSISTENCY_UPDATE.md`
 
 ## Version History Summary
 
+- **v2.5.0** (2026-02-10): Professional Mobile UI/UX ✅
 - **v2.4.0** (2026-02-10): Claim Code & ID Generation System ✅
 - **v2.3.0** (2026-02-09): Enterprise Mobile Auth UI
 - **v2.2.0** (2026-01-15): Multi-tenant School Management
