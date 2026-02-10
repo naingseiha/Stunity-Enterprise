@@ -189,8 +189,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.white,
     borderWidth: 1.5,
-    borderColor: Colors.gray[300],
-    borderRadius: BorderRadius.lg,
+    borderColor: Colors.gray[200],
+    borderRadius: 999,
     overflow: 'hidden',
   },
   inputContainerFocused: {
@@ -208,25 +208,26 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    height: 48,
+    height: 56,
     paddingHorizontal: Spacing[4],
     fontSize: Typography.fontSize.base,
     color: Colors.gray[900],
   },
   inputWithLeftIcon: {
-    paddingLeft: 0,
+    paddingLeft: Spacing[3],
   },
   inputWithRightIcon: {
-    paddingRight: 0,
+    paddingRight: Spacing[3],
   },
   inputDisabled: {
     color: Colors.gray[500],
   },
   leftIcon: {
-    marginLeft: Spacing[4],
+    marginLeft: Spacing[5],
   },
   rightIconContainer: {
-    padding: Spacing[3],
+    paddingHorizontal: Spacing[4],
+    paddingVertical: Spacing[3],
   },
   helper: {
     marginTop: Spacing[1],

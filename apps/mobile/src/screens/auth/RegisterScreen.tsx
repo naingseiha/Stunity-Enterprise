@@ -1,7 +1,7 @@
 /**
  * Register Screen
  * 
- * User registration with role selection
+ * Soft, modern design matching reference style
  */
 
 import React, { useState, useRef } from 'react';
@@ -17,12 +17,17 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
+import Animated, { 
+  FadeInDown, 
+  FadeInUp,
+  FadeIn,
+} from 'react-native-reanimated';
 
 import { Button, Input } from '@/components/common';
-import { Colors, Typography, Spacing, BorderRadius } from '@/config';
+import { Colors, Typography, Spacing } from '@/config';
 import { useAuthStore } from '@/stores';
 import { AuthStackScreenProps } from '@/navigation/types';
 import { UserRole } from '@/types';
@@ -101,49 +106,61 @@ export default function RegisterScreen() {
   };
 
   const renderStep1 = () => (
-    <Animated.View entering={FadeInRight.duration(400)} style={styles.stepContent}>
+    <Animated.View 
+      entering={FadeIn.duration(400)} 
+      style={styles.stepContent}
+    >
       <Text style={styles.stepTitle}>What's your name?</Text>
-      <Text style={styles.stepSubtitle}>Let's start with the basics</Text>
+      <Text style={styles.stepSubtitle}>Let's get started</Text>
       
-      <Input
-        label="First Name"
-        placeholder="Enter your first name"
-        value={firstName}
-        onChangeText={setFirstName}
-        autoCapitalize="words"
-        leftIcon="person-outline"
-        returnKeyType="next"
-        onSubmitEditing={() => lastNameRef.current?.focus()}
-      />
-      
-      <Input
-        ref={lastNameRef}
-        label="Last Name"
-        placeholder="Enter your last name"
-        value={lastName}
-        onChangeText={setLastName}
-        autoCapitalize="words"
-        leftIcon="person-outline"
-        returnKeyType="next"
-        onSubmitEditing={handleNextStep}
-      />
+      <View style={styles.formContainer}>
+        <Input
+          label="First Name"
+          placeholder="Enter your first name"
+          value={firstName}
+          onChangeText={setFirstName}
+          autoCapitalize="words"
+          leftIcon="person-outline"
+          returnKeyType="next"
+          onSubmitEditing={() => lastNameRef.current?.focus()}
+        />
+        
+        <Input
+          ref={lastNameRef}
+          label="Last Name"
+          placeholder="Enter your last name"
+          value={lastName}
+          onChangeText={setLastName}
+          autoCapitalize="words"
+          leftIcon="person-outline"
+          returnKeyType="next"
+          onSubmitEditing={handleNextStep}
+        />
+      </View>
 
-      <Button
-        title="Continue"
-        variant="primary"
-        size="lg"
-        fullWidth
+      <TouchableOpacity
         onPress={handleNextStep}
-        gradient
-        style={styles.continueButton}
-      />
+        activeOpacity={0.8}
+      >
+        <LinearGradient
+          colors={['#F59E0B', '#D97706']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.continueButton}
+        >
+          <Text style={styles.continueButtonText}>Continue</Text>
+        </LinearGradient>
+      </TouchableOpacity>
     </Animated.View>
   );
 
   const renderStep2 = () => (
-    <Animated.View entering={FadeInRight.duration(400)} style={styles.stepContent}>
+    <Animated.View 
+      entering={FadeIn.duration(400)} 
+      style={styles.stepContent}
+    >
       <Text style={styles.stepTitle}>I am a...</Text>
-      <Text style={styles.stepSubtitle}>Choose your role on Stunity</Text>
+      <Text style={styles.stepSubtitle}>Choose your role</Text>
       
       <View style={styles.rolesContainer}>
         {ROLES.map((r) => (
@@ -151,90 +168,102 @@ export default function RegisterScreen() {
             key={r.value}
             style={[styles.roleCard, role === r.value && styles.roleCardSelected]}
             onPress={() => setRole(r.value)}
+            activeOpacity={0.8}
           >
             <View style={[styles.roleIcon, role === r.value && styles.roleIconSelected]}>
               <Ionicons
                 name={r.icon}
-                size={28}
-                color={role === r.value ? Colors.white : Colors.primary[500]}
+                size={24}
+                color={role === r.value ? Colors.white : '#F59E0B'}
               />
             </View>
-            <Text style={[styles.roleLabel, role === r.value && styles.roleLabelSelected]}>
-              {r.label}
-            </Text>
-            <Text style={styles.roleDescription}>{r.description}</Text>
+            <View style={styles.roleInfo}>
+              <Text style={[styles.roleLabel, role === r.value && styles.roleLabelSelected]}>
+                {r.label}
+              </Text>
+              <Text style={styles.roleDescription}>
+                {r.description}
+              </Text>
+            </View>
             {role === r.value && (
-              <View style={styles.checkIcon}>
-                <Ionicons name="checkmark-circle" size={24} color={Colors.primary[500]} />
-              </View>
+              <Ionicons name="checkmark-circle" size={24} color="#F59E0B" />
             )}
           </TouchableOpacity>
         ))}
       </View>
 
-      <Button
-        title="Continue"
-        variant="primary"
-        size="lg"
-        fullWidth
+      <TouchableOpacity
         onPress={handleNextStep}
-        gradient
-        style={styles.continueButton}
-      />
+        activeOpacity={0.8}
+      >
+        <LinearGradient
+          colors={['#F59E0B', '#D97706']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.continueButton}
+        >
+          <Text style={styles.continueButtonText}>Continue</Text>
+        </LinearGradient>
+      </TouchableOpacity>
     </Animated.View>
   );
 
   const renderStep3 = () => (
-    <Animated.View entering={FadeInRight.duration(400)} style={styles.stepContent}>
+    <Animated.View 
+      entering={FadeIn.duration(400)} 
+      style={styles.stepContent}
+    >
       <Text style={styles.stepTitle}>Create your account</Text>
-      <Text style={styles.stepSubtitle}>Almost there! Set up your credentials</Text>
+      <Text style={styles.stepSubtitle}>Final step</Text>
       
-      <Input
-        ref={emailRef}
-        label="Email"
-        placeholder="Enter your email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        leftIcon="mail-outline"
-        returnKeyType="next"
-        onSubmitEditing={() => passwordRef.current?.focus()}
-      />
-      
-      <Input
-        ref={passwordRef}
-        label="Password"
-        placeholder="Create a password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        leftIcon="lock-closed-outline"
-        showPasswordToggle
-        hint={password ? (passwordValidation.isValid ? '✓ Strong password' : passwordValidation.errors[0]) : undefined}
-        error={password && !passwordValidation.isValid ? undefined : undefined}
-        returnKeyType="next"
-        onSubmitEditing={() => confirmPasswordRef.current?.focus()}
-      />
-      
-      <Input
-        ref={confirmPasswordRef}
-        label="Confirm Password"
-        placeholder="Confirm your password"
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-        secureTextEntry
-        leftIcon="lock-closed-outline"
-        showPasswordToggle
-        error={confirmPassword && password !== confirmPassword ? 'Passwords do not match' : undefined}
-        returnKeyType="done"
-        onSubmitEditing={handleRegister}
-      />
+      <View style={styles.formContainer}>
+        <Input
+          ref={emailRef}
+          label="Email"
+          placeholder="Enter your email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          leftIcon="mail-outline"
+          returnKeyType="next"
+          onSubmitEditing={() => passwordRef.current?.focus()}
+        />
+        
+        <Input
+          ref={passwordRef}
+          label="Password"
+          placeholder="Create a password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          leftIcon="lock-closed-outline"
+          showPasswordToggle
+          hint={password ? (passwordValidation.isValid ? '✓ Strong password' : passwordValidation.errors[0]) : undefined}
+          returnKeyType="next"
+          onSubmitEditing={() => confirmPasswordRef.current?.focus()}
+        />
+        
+        <Input
+          ref={confirmPasswordRef}
+          label="Confirm Password"
+          placeholder="Confirm your password"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+          leftIcon="lock-closed-outline"
+          showPasswordToggle
+          error={confirmPassword && password !== confirmPassword ? 'Passwords do not match' : undefined}
+          returnKeyType="done"
+          onSubmitEditing={handleRegister}
+        />
+      </View>
 
       {/* Terms */}
       <TouchableOpacity
         onPress={() => setAcceptTerms(!acceptTerms)}
         style={styles.termsRow}
+        activeOpacity={0.7}
       >
         <View style={[styles.checkbox, acceptTerms && styles.checkboxChecked]}>
           {acceptTerms && (
@@ -249,82 +278,87 @@ export default function RegisterScreen() {
         </Text>
       </TouchableOpacity>
 
-      <Button
-        title="Create Account"
-        variant="primary"
-        size="lg"
-        fullWidth
-        loading={isLoading}
+      <TouchableOpacity
         onPress={handleRegister}
-        gradient
-        style={styles.continueButton}
-      />
+        disabled={isLoading}
+        activeOpacity={0.8}
+      >
+        <LinearGradient
+          colors={['#F59E0B', '#D97706']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.continueButton}
+        >
+          <Text style={styles.continueButtonText}>
+            {isLoading ? 'Creating Account...' : 'Create Account'}
+          </Text>
+        </LinearGradient>
+      </TouchableOpacity>
     </Animated.View>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+    <View style={styles.container}>
+      {/* Light Yellow to White Gradient Background */}
+      <LinearGradient
+        colors={['#FEF3C7', '#FFFFFF']}
+        style={styles.background}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      />
+      
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity
-              onPress={() => step > 1 ? setStep(step - 1) : navigation.goBack()}
-              style={styles.backButton}
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Header */}
+            <Animated.View 
+              entering={FadeInDown.delay(100).duration(500)}
+              style={styles.header}
             >
-              <Ionicons name="arrow-back" size={24} color={Colors.gray[700]} />
-            </TouchableOpacity>
-            
-            {/* Progress Indicator */}
-            <View style={styles.progressContainer}>
-              {[1, 2, 3].map((s) => (
-                <View
-                  key={s}
-                  style={[
-                    styles.progressDot,
-                    s <= step && styles.progressDotActive,
-                  ]}
-                />
-              ))}
-            </View>
-            
-            <View style={styles.placeholder} />
-          </View>
-
-          {/* Step Content */}
-          {step === 1 && renderStep1()}
-          {step === 2 && renderStep2()}
-          {step === 3 && renderStep3()}
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Already have an account?{' '}
-              <Text
-                style={styles.footerLink}
-                onPress={() => navigation.navigate('Login')}
+              <TouchableOpacity
+                onPress={() => step > 1 ? setStep(step - 1) : navigation.goBack()}
+                style={styles.backButton}
               >
-                Sign In
-              </Text>
-            </Text>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+                <Ionicons name="arrow-back" size={22} color={Colors.gray[700]} />
+              </TouchableOpacity>
+              
+              <Text style={styles.headerTitle}>Profile Setup</Text>
+              <Text style={styles.stepIndicator}>0{step} of 03</Text>
+            </Animated.View>
+
+            {/* Content */}
+            <Animated.View 
+              entering={FadeInUp.delay(200).duration(500)}
+              style={styles.content}
+            >
+              {/* Step Content */}
+              {step === 1 && renderStep1()}
+              {step === 2 && renderStep2()}
+              {step === 3 && renderStep3()}
+            </Animated.View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
+  },
+  background: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  safeArea: {
+    flex: 1,
   },
   keyboardView: {
     flex: 1,
@@ -332,114 +366,146 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: Spacing[6],
-    paddingBottom: Spacing[6],
+    paddingTop: Spacing[6],
+    paddingBottom: Spacing[8],
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: Spacing[2],
     marginBottom: Spacing[6],
+    justifyContent: 'space-between',
   },
   backButton: {
     width: 44,
     height: 44,
-    borderRadius: BorderRadius.lg,
-    backgroundColor: Colors.gray[100],
+    borderRadius: 22,
+    backgroundColor: Colors.white,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  progressContainer: {
-    flexDirection: 'row',
-    gap: Spacing[2],
+  headerTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: '600',
+    color: Colors.gray[900],
+    flex: 1,
+    textAlign: 'center',
   },
-  progressDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.gray[200],
+  stepIndicator: {
+    fontSize: Typography.fontSize.sm,
+    color: '#F59E0B',
+    fontWeight: '500',
   },
-  progressDotActive: {
-    backgroundColor: Colors.primary[500],
-    width: 24,
-  },
-  placeholder: {
-    width: 44,
+  content: {
+    paddingTop: Spacing[4],
   },
   stepContent: {
     flex: 1,
   },
+  stepSubtitle: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.gray[600],
+    marginBottom: Spacing[6],
+  },
+  formContainer: {
+    marginBottom: Spacing[6],
+  },
   stepTitle: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: '700',
+    fontSize: Typography.fontSize.xl,
+    fontWeight: '600',
     color: Colors.gray[900],
     marginBottom: Spacing[2],
   },
-  stepSubtitle: {
+  inputGroup: {
+    marginBottom: Spacing[5],
+  },
+  label: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.gray[700],
+    marginBottom: Spacing[2],
+    fontWeight: '500',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 16,
+    paddingHorizontal: Spacing[4],
+    height: 56,
+  },
+  input: {
+    flex: 1,
     fontSize: Typography.fontSize.base,
-    color: Colors.gray[500],
-    marginBottom: Spacing[6],
+    color: Colors.gray[900],
+  },
+  inputIcon: {
+    marginLeft: Spacing[2],
   },
   continueButton: {
-    marginTop: Spacing[4],
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: Spacing[6],
+  },
+  continueButtonText: {
+    color: Colors.white,
+    fontWeight: '600',
+    fontSize: Typography.fontSize.base,
   },
   rolesContainer: {
-    gap: Spacing[3],
-    marginBottom: Spacing[4],
+    gap: Spacing[4],
+    marginBottom: Spacing[6],
   },
   roleCard: {
     padding: Spacing[4],
-    borderRadius: BorderRadius.xl,
-    borderWidth: 2,
+    borderRadius: 20,
+    borderWidth: 1.5,
     borderColor: Colors.gray[200],
+    backgroundColor: '#F5F5F5',
     flexDirection: 'row',
     alignItems: 'center',
   },
   roleCardSelected: {
-    borderColor: Colors.primary[500],
-    backgroundColor: Colors.primary[50],
+    borderColor: '#F59E0B',
+    backgroundColor: '#FEF3C7',
   },
   roleIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.primary[100],
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: Spacing[4],
+    marginRight: Spacing[3],
   },
   roleIconSelected: {
-    backgroundColor: Colors.primary[500],
+    backgroundColor: '#F59E0B',
+  },
+  roleInfo: {
+    flex: 1,
   },
   roleLabel: {
-    fontSize: Typography.fontSize.lg,
+    fontSize: Typography.fontSize.base,
     fontWeight: '600',
     color: Colors.gray[900],
+    marginBottom: 2,
   },
   roleLabelSelected: {
-    color: Colors.primary[700],
+    color: '#F59E0B',
   },
   roleDescription: {
     fontSize: Typography.fontSize.sm,
-    color: Colors.gray[500],
-    position: 'absolute',
-    left: 76,
-    top: 38,
-  },
-  checkIcon: {
-    position: 'absolute',
-    right: Spacing[4],
+    color: Colors.gray[600],
   },
   termsRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginTop: Spacing[4],
-    marginBottom: Spacing[2],
+    marginBottom: Spacing[6],
   },
   checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
+    width: 22,
+    height: 22,
+    borderRadius: 6,
     borderWidth: 2,
     borderColor: Colors.gray[300],
     alignItems: 'center',
@@ -448,8 +514,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   checkboxChecked: {
-    backgroundColor: Colors.primary[500],
-    borderColor: Colors.primary[500],
+    backgroundColor: '#F59E0B',
+    borderColor: '#F59E0B',
   },
   termsText: {
     flex: 1,
@@ -458,19 +524,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   termsLink: {
-    color: Colors.primary[500],
-    fontWeight: '500',
-  },
-  footer: {
-    alignItems: 'center',
-    paddingTop: Spacing[6],
-  },
-  footerText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.gray[600],
-  },
-  footerLink: {
-    color: Colors.primary[500],
+    color: '#F59E0B',
     fontWeight: '600',
   },
 });

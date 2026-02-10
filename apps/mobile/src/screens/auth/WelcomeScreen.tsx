@@ -1,7 +1,7 @@
 /**
  * Welcome Screen
  * 
- * App entry point with branding and auth options
+ * Soft, modern design with light blue background
  */
 
 import React from 'react';
@@ -12,10 +12,15 @@ import {
   Dimensions,
   StatusBar,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
+import Animated, { 
+  FadeInDown, 
+  FadeInUp,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Colors, Typography, Spacing } from '@/config';
@@ -30,74 +35,86 @@ export default function WelcomeScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
       
-      {/* Background Gradient */}
+      {/* Light Yellow to White Gradient Background */}
       <LinearGradient
-        colors={[Colors.primary[500], Colors.secondary[600]]}
+        colors={['#FEF3C7', '#FFFFFF']}
+        style={styles.background}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.gradient}
+        end={{ x: 0, y: 1 }}
       />
 
       <SafeAreaView style={styles.content}>
         {/* Logo and Branding */}
-        <View style={styles.brandingContainer}>
-          <View style={styles.logoContainer}>
-            <Ionicons name="school" size={80} color={Colors.white} />
-          </View>
-          <Text style={styles.appName}>Stunity</Text>
-          <Text style={styles.tagline}>Learn Together, Grow Together</Text>
-        </View>
+        <Animated.View 
+          entering={FadeInDown.delay(200).duration(600)}
+          style={styles.brandingContainer}
+        >
+          <Image 
+            source={require('../../../assets/Stunity.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          
+          <Text style={styles.tagline}>
+            Welcome to Stunity 👋
+          </Text>
+          
+          <Text style={styles.description}>
+            Your educational social learning platform
+          </Text>
+        </Animated.View>
 
-        {/* Features Preview */}
-        <View style={styles.featuresContainer}>
-          <View style={styles.featureRow}>
-            <FeatureItem icon="book-outline" text="Explore Courses" />
-            <FeatureItem icon="people-outline" text="Join Clubs" />
-          </View>
-          <View style={styles.featureRow}>
-            <FeatureItem icon="chatbubbles-outline" text="Connect" />
-            <FeatureItem icon="trophy-outline" text="Achieve" />
-          </View>
-        </View>
+        <View style={styles.spacer} />
 
-        {/* Auth Buttons */}
-        <View style={styles.buttonsContainer}>
+        {/* Buttons */}
+        <Animated.View 
+          entering={FadeInUp.delay(400).duration(600)}
+          style={styles.buttonsContainer}
+        >
           <TouchableOpacity
-            style={styles.getStartedButton}
             onPress={() => navigation.navigate('Register')}
+            activeOpacity={0.8}
           >
-            <Text style={styles.getStartedText}>Get Started</Text>
+            <LinearGradient
+              colors={['#F59E0B', '#D97706']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.primaryButton}
+            >
+              <Text style={styles.primaryButtonText}>Get Started</Text>
+            </LinearGradient>
           </TouchableOpacity>
           
           <TouchableOpacity
-            style={styles.loginButton}
+            style={styles.secondaryButton}
             onPress={() => navigation.navigate('Login')}
+            activeOpacity={0.8}
           >
-            <Text style={styles.loginText}>I already have an account</Text>
+            <Ionicons name="logo-google" size={20} color={Colors.gray[700]} style={styles.buttonIcon} />
+            <Text style={styles.secondaryButtonText}>Continue With Google</Text>
           </TouchableOpacity>
-        </View>
+          
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => navigation.navigate('Login')}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="logo-apple" size={20} color={Colors.gray[700]} style={styles.buttonIcon} />
+            <Text style={styles.secondaryButtonText}>Continue With Apple</Text>
+          </TouchableOpacity>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            By continuing, you agree to our Terms of Service and Privacy Policy
-          </Text>
-        </View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Login')}
+            style={styles.linkButton}
+          >
+            <Text style={styles.linkText}>
+              Already have an account? <Text style={styles.linkBold}>Login</Text>
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
       </SafeAreaView>
-    </View>
-  );
-}
-
-// Feature Item Component
-function FeatureItem({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: string }) {
-  return (
-    <View style={styles.featureItem}>
-      <View style={styles.featureIcon}>
-        <Ionicons name={icon} size={24} color={Colors.white} />
-      </View>
-      <Text style={styles.featureText}>{text}</Text>
     </View>
   );
 }
@@ -106,98 +123,80 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  gradient: {
+  background: {
     ...StyleSheet.absoluteFillObject,
   },
   content: {
     flex: 1,
     paddingHorizontal: Spacing[6],
-    justifyContent: 'space-between',
+    justifyContent: 'center',
   },
   brandingContainer: {
     alignItems: 'center',
-    marginTop: height * 0.1,
+    marginTop: height * 0.08,
   },
-  logoContainer: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing[4],
-  },
-  appName: {
-    fontSize: 48,
-    fontWeight: '700',
-    color: Colors.white,
-    letterSpacing: 2,
+  logo: {
+    width: 180,
+    height: 180,
+    marginBottom: Spacing[6],
   },
   tagline: {
-    fontSize: Typography.fontSize.lg,
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginTop: Spacing[2],
-  },
-  featuresContainer: {
-    marginVertical: Spacing[8],
-  },
-  featureRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: Spacing[4],
-  },
-  featureItem: {
-    alignItems: 'center',
-    width: width * 0.4,
-  },
-  featureIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing[2],
-  },
-  featureText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.white,
-    fontWeight: '500',
-  },
-  buttonsContainer: {
-    marginBottom: Spacing[4],
-  },
-  getStartedButton: {
-    backgroundColor: Colors.white,
-    height: 52,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    fontSize: Typography.fontSize['2xl'],
+    fontWeight: '600',
+    color: Colors.gray[900],
+    textAlign: 'center',
     marginBottom: Spacing[3],
   },
-  getStartedText: {
-    color: Colors.primary[600],
-    fontWeight: '700',
-    fontSize: Typography.fontSize.lg,
+  description: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.gray[600],
+    textAlign: 'center',
+    lineHeight: 22,
   },
-  loginButton: {
-    height: 52,
+  spacer: {
+    flex: 1,
+  },
+  buttonsContainer: {
+    marginBottom: Spacing[8],
+    gap: Spacing[3],
+  },
+  primaryButton: {
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  loginText: {
+  primaryButtonText: {
     color: Colors.white,
     fontWeight: '600',
-    fontSize: Typography.fontSize.lg,
+    fontSize: Typography.fontSize.base,
   },
-  footer: {
+  secondaryButton: {
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
-    paddingBottom: Spacing[4],
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+    flexDirection: 'row',
   },
-  footerText: {
-    fontSize: Typography.fontSize.xs,
-    color: 'rgba(255, 255, 255, 0.7)',
-    textAlign: 'center',
-    lineHeight: 18,
+  buttonIcon: {
+    marginRight: Spacing[2],
+  },
+  secondaryButtonText: {
+    color: Colors.gray[900],
+    fontWeight: '500',
+    fontSize: Typography.fontSize.base,
+  },
+  linkButton: {
+    alignItems: 'center',
+    marginTop: Spacing[4],
+  },
+  linkText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.gray[700],
+  },
+  linkBold: {
+    fontWeight: '600',
+    color: '#F59E0B',
   },
 });
