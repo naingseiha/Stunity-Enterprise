@@ -332,6 +332,123 @@ app.post(
 );
 
 // ============================================
+// REGISTER ENDPOINT
+// ============================================
+
+/**
+ * POST /auth/register
+ * Basic registration for social-only users (no school affiliation)
+ */
+app.post(
+  '/auth/register',
+  [
+    body('email').isEmail().withMessage('Valid email is required'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('firstName').notEmpty().withMessage('First name is required'),
+    body('lastName').notEmpty().withMessage('Last name is required'),
+  ],
+  async (req: Request, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          errors: errors.array(),
+        });
+      }
+
+      const { email, password, firstName, lastName, phone, role = 'STUDENT' } = req.body;
+
+      console.log('📝 Registration attempt:', {
+        email,
+        firstName,
+        lastName,
+        role,
+        timestamp: new Date().toISOString()
+      });
+
+      // Check if user already exists
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email already registered',
+        });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create user
+      const user = await prisma.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          firstName,
+          lastName,
+          phone,
+          role,
+          accountType: 'SOCIAL_ONLY', // No school affiliation
+          socialFeaturesEnabled: true,
+          isEmailVerified: false,
+          isActive: true,
+        },
+      });
+
+      console.log('✅ User created:', user.email);
+
+      // Generate tokens
+      const accessToken = jwt.sign(
+        {
+          userId: user.id,
+          email: user.email,
+          role: user.role,
+          accountType: user.accountType,
+        },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
+      );
+
+      const refreshToken = jwt.sign(
+        { userId: user.id },
+        JWT_SECRET,
+        { expiresIn: REFRESH_TOKEN_EXPIRATION } as jwt.SignOptions
+      );
+
+      res.status(201).json({
+        success: true,
+        message: 'Account created successfully',
+        data: {
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: user.role,
+            accountType: user.accountType,
+          },
+          tokens: {
+            accessToken,
+            refreshToken,
+            expiresIn: JWT_EXPIRATION,
+          },
+        },
+      });
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create account',
+        details: error.message,
+      });
+    }
+  }
+);
+
+// ============================================
 // PARENT PORTAL ENDPOINTS
 // ============================================
 

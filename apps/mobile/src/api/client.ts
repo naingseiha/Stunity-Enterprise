@@ -85,7 +85,12 @@ const createApiClient = (baseURL: string): AxiosInstance => {
       }
 
       // Handle 401 - Token expired
-      if (error.response?.status === 401 && !originalRequest._retry) {
+      // Skip token refresh for auth endpoints (login, register, refresh)
+      const isAuthEndpoint = originalRequest.url?.includes('/auth/login') || 
+                            originalRequest.url?.includes('/auth/register') ||
+                            originalRequest.url?.includes('/auth/refresh');
+      
+      if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
         originalRequest._retry = true;
 
         try {
