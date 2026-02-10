@@ -12,6 +12,7 @@ import { Colors, Typography, BorderRadius } from '@/config';
 
 type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 type GradientPreset = 'purple' | 'orange' | 'blue' | 'green' | 'pink' | 'gold' | 'rainbow' | 'none';
+type AvatarVariant = 'default' | 'post' | 'profile';
 
 interface AvatarProps {
   uri?: string | null;
@@ -23,6 +24,7 @@ interface AvatarProps {
   borderColor?: string;
   showBorder?: boolean;
   gradientBorder?: GradientPreset | [string, string] | [string, string, string];
+  variant?: AvatarVariant;
 }
 
 const SIZES: Record<AvatarSize, number> = {
@@ -91,6 +93,30 @@ const getGradientColors = (name: string): [string, string] => {
   return gradients[index];
 };
 
+// Beautiful light gradients for post avatars - colorful and vibrant
+const getPostGradientColors = (name: string): [string, string] => {
+  const gradients: [string, string][] = [
+    ['#FEE2E2', '#FECACA'], // Light red/rose
+    ['#DBEAFE', '#BFDBFE'], // Light blue
+    ['#FEF3C7', '#FDE68A'], // Light yellow
+    ['#D1FAE5', '#A7F3D0'], // Light green
+    ['#FCE7F3', '#FBCFE8'], // Light pink
+    ['#E0E7FF', '#C7D2FE'], // Light indigo
+    ['#FFEDD5', '#FED7AA'], // Light orange
+    ['#E9D5FF', '#D8B4FE'], // Light purple
+    ['#BAE6FD', '#7DD3FC'], // Light sky
+    ['#FED7E2', '#FBB6CE'], // Light rose
+    ['#D9F99D', '#BEF264'], // Light lime
+    ['#FEE4C7', '#FDBA74'], // Light amber
+  ];
+  
+  const index = name
+    ? name.charCodeAt(0) % gradients.length
+    : 0;
+  
+  return gradients[index];
+};
+
 export const Avatar: React.FC<AvatarProps> = ({
   uri,
   name = '',
@@ -101,15 +127,23 @@ export const Avatar: React.FC<AvatarProps> = ({
   borderColor = '#FFA500',
   showBorder = true,
   gradientBorder = 'orange',
+  variant = 'default',
 }) => {
   const dimension = SIZES[size];
   const fontSize = FONT_SIZES[size];
   const borderWidth = BORDER_WIDTH[size];
   const onlineSize = Math.max(8, dimension * 0.25);
   
+  // For 'post' variant, use light gradients and no border
+  const isPostVariant = variant === 'post';
+  const effectiveShowBorder = isPostVariant ? false : showBorder;
+  const backgroundGradient = isPostVariant 
+    ? getPostGradientColors(name) 
+    : getGradientColors(name);
+  
   // Determine gradient colors
   const getGradientBorderColors = (): string[] => {
-    if (!showBorder || gradientBorder === 'none') {
+    if (!effectiveShowBorder || gradientBorder === 'none') {
       return ['transparent', 'transparent'];
     }
     if (Array.isArray(gradientBorder)) {
@@ -119,7 +153,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   };
 
   const gradientColors = getGradientBorderColors();
-  const useGradientBorder = showBorder && gradientBorder !== 'none';
+  const useGradientBorder = effectiveShowBorder && gradientBorder !== 'none';
   const innerDimension = dimension - (borderWidth * 2);
 
   // If using gradient border, wrap in LinearGradient
@@ -161,12 +195,12 @@ export const Avatar: React.FC<AvatarProps> = ({
               />
             ) : (
               <LinearGradient
-                colors={getGradientColors(name)}
+                colors={backgroundGradient}
                 style={styles.fallback}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-                <Text style={[styles.initials, { fontSize: fontSize - 2 }]}>
+                <Text style={[styles.initials, { fontSize: fontSize - 2, color: isPostVariant ? '#374151' : '#1F2937' }]}>
                   {getInitials(name)}
                 </Text>
               </LinearGradient>
@@ -193,14 +227,15 @@ export const Avatar: React.FC<AvatarProps> = ({
     );
   }
 
-  // Fallback to solid border
+  // Simple avatar without gradient border
   const containerStyle: ViewStyle = {
     width: dimension,
     height: dimension,
     borderRadius: dimension / 2,
-    borderWidth: showBorder ? borderWidth : 0,
-    borderColor: showBorder ? borderColor : 'transparent',
-    backgroundColor: '#fff',
+    borderWidth: effectiveShowBorder ? borderWidth : 0,
+    borderColor: effectiveShowBorder ? borderColor : 'transparent',
+    backgroundColor: isPostVariant ? 'transparent' : '#fff',
+    overflow: 'hidden',
   };
 
   return (
@@ -216,12 +251,12 @@ export const Avatar: React.FC<AvatarProps> = ({
         />
       ) : (
         <LinearGradient
-          colors={getGradientColors(name)}
+          colors={backgroundGradient}
           style={styles.fallback}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
-          <Text style={[styles.initials, { fontSize }]}>
+          <Text style={[styles.initials, { fontSize, color: isPostVariant ? '#374151' : '#1F2937' }]}>
             {getInitials(name)}
           </Text>
         </LinearGradient>
@@ -236,8 +271,8 @@ export const Avatar: React.FC<AvatarProps> = ({
               height: onlineSize,
               borderRadius: onlineSize / 2,
               backgroundColor: isOnline ? Colors.success.main : Colors.gray[400],
-              right: showBorder ? -1 : 0,
-              bottom: showBorder ? -1 : 0,
+              right: effectiveShowBorder ? -1 : 0,
+              bottom: effectiveShowBorder ? -1 : 0,
             },
           ]}
         />

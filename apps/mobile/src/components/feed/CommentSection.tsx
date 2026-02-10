@@ -54,6 +54,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
           uri={comment.author.profilePictureUrl || undefined}
           size="sm"
           showOnline={false}
+          variant="post"
         />
         <View style={styles.commentContent}>
           <View style={styles.commentHeader}>

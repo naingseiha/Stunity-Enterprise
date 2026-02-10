@@ -170,6 +170,7 @@ export default function FeedScreen() {
             uri={user?.profilePictureUrl}
             name={user ? `${user.firstName} ${user.lastName}` : 'User'}
             size="md"
+            variant="post"
           />
           <Text style={styles.createPostPlaceholder}>
             តើអ្នកកំពុងគិតអ្វី {user?.firstName || ''}?

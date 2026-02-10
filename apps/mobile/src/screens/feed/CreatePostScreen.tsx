@@ -214,6 +214,7 @@ export default function CreatePostScreen() {
               uri={user?.profilePictureUrl}
               name={userName}
               size="md"
+              variant="post"
             />
             <View style={styles.authorInfo}>
               <Text style={styles.authorName}>{userName}</Text>

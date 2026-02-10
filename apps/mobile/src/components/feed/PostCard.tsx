@@ -313,7 +313,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             uri={post.author.profilePictureUrl}
             name={authorName}
             size="md"
-            gradientBorder="orange"
+            variant="post"
           />
           <View style={styles.authorInfo}>
             <View style={styles.authorRow}>
