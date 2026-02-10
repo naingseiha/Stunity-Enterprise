@@ -449,6 +449,37 @@ app.post(
 );
 
 // ============================================
+// LOGOUT ENDPOINT
+// ============================================
+
+/**
+ * POST /auth/logout
+ * Logout user and invalidate refresh token
+ */
+app.post('/auth/logout', async (req: Request, res: Response) => {
+  try {
+    // In a production system, you would:
+    // 1. Get refresh token from request
+    // 2. Blacklist/invalidate the refresh token
+    // 3. Update lastLogout timestamp
+    
+    // For now, just return success
+    // The client will clear tokens locally
+    res.json({
+      success: true,
+      message: 'Logged out successfully',
+    });
+  } catch (error: any) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to logout',
+      details: error.message,
+    });
+  }
+});
+
+// ============================================
 // PARENT PORTAL ENDPOINTS
 // ============================================
 
