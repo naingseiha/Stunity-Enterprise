@@ -187,7 +187,17 @@ export const useAuthStore = create<AuthState>()(
           return false;
         } catch (error: any) {
           console.error('Login error:', error);
-          const message = error.message || 'An error occurred during login';
+          
+          // If session expired or unauthorized, clear tokens
+          if (error?.response?.status === 401 || error?.response?.data?.code === 'UNAUTHORIZED') {
+            await tokenService.clearTokens();
+            set({
+              user: null,
+              isAuthenticated: false,
+            });
+          }
+          
+          const message = error?.response?.data?.message || error.message || 'An error occurred during login';
           set({
             isLoading: false,
             error: message,

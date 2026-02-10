@@ -25,6 +25,7 @@ import Animated, {
   FadeInUp,
 } from 'react-native-reanimated';
 import * as LocalAuthentication from 'expo-local-authentication';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Button, Input } from '@/components/common';
 import { Colors, Typography, Spacing } from '@/config';
@@ -35,7 +36,7 @@ type NavigationProp = AuthStackScreenProps<'Login'>['navigation'];
 
 export default function LoginScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { login, isLoading, error, clearError} = useAuthStore();
+  const { login, logout, isLoading, error, clearError} = useAuthStore();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -334,6 +335,38 @@ export default function LoginScreen() {
                 </TouchableOpacity>
               </View>
 
+              {/* Clear Cache Button - Dev/Debug Only */}
+              {__DEV__ && (
+                <TouchableOpacity
+                  onPress={async () => {
+                    Alert.alert(
+                      'Clear Cache & Logout',
+                      'This will log you out and clear all cached data. You will need to login again.',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Clear Cache',
+                          style: 'destructive',
+                          onPress: async () => {
+                            try {
+                              await AsyncStorage.clear();
+                              await logout();
+                              Alert.alert('Success', 'Cache cleared! Please login again.');
+                            } catch (error) {
+                              Alert.alert('Error', 'Failed to clear cache');
+                            }
+                          }
+                        }
+                      ]
+                    );
+                  }}
+                  style={styles.clearCacheButton}
+                >
+                  <Ionicons name="trash-outline" size={16} color={Colors.gray[500]} />
+                  <Text style={styles.clearCacheText}>Clear Cache & Logout (Dev)</Text>
+                </TouchableOpacity>
+              )}
+
               {/* Footer */}
               <TouchableOpacity
                 onPress={() => navigation.navigate('Register')}
@@ -599,6 +632,24 @@ const styles = StyleSheet.create({
     color: Colors.gray[900],
     fontWeight: '600',
     fontSize: Typography.fontSize.base,
+  },
+  clearCacheButton: {
+    marginTop: Spacing[4],
+    paddingVertical: Spacing[3],
+    paddingHorizontal: Spacing[4],
+    borderRadius: 16,
+    backgroundColor: Colors.gray[50],
+    borderWidth: 1,
+    borderColor: Colors.gray[200],
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing[2],
+  },
+  clearCacheText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.gray[600],
+    fontWeight: '500',
   },
   footer: {
     alignItems: 'center',
