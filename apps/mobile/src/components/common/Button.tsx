@@ -102,7 +102,7 @@ export const Button: React.FC<ButtonProps> = ({
         {...rest}
       >
         <LinearGradient
-          colors={[Colors.primary[400], Colors.secondary[500]]}
+          colors={['#FEF3C7', '#FDE68A', '#FCD34D']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={[buttonStyles, styles.gradient]}
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing[2],
-    borderRadius: BorderRadius.lg,
+    borderRadius: 999,
     ...Shadows.sm,
   },
 
@@ -140,14 +140,17 @@ const styles = StyleSheet.create({
   size_sm: {
     height: 36,
     paddingHorizontal: Spacing[4],
+    borderRadius: 18,
   },
   size_md: {
     height: 44,
     paddingHorizontal: Spacing[5],
+    borderRadius: 22,
   },
   size_lg: {
-    height: 52,
+    height: 56,
     paddingHorizontal: Spacing[6],
+    borderRadius: 28,
   },
 
   // Variants
@@ -181,7 +184,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   gradient: {
-    borderRadius: BorderRadius.lg,
+    borderRadius: 999,
   },
 
   // Text
@@ -199,7 +202,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.lg,
   },
   text_primary: {
-    color: Colors.white,
+    color: '#92400E',
   },
   text_secondary: {
     color: Colors.gray[700],

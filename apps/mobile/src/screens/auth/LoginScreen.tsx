@@ -39,9 +39,12 @@ export default function LoginScreen() {
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [organization, setOrganization] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<'google' | 'apple' | null>(null);
   
+  const organizationRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
 
   const handleLogin = async () => {
@@ -86,6 +89,21 @@ export default function LoginScreen() {
     }
   };
 
+  const handleSocialLogin = async (provider: 'google' | 'apple') => {
+    setSocialLoading(provider);
+    try {
+      // TODO: Implement social auth
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      Alert.alert('Coming Soon', `${provider === 'google' ? 'Google' : 'Apple'} authentication will be available soon.`);
+    } finally {
+      setSocialLoading(null);
+    }
+  };
+
+  const handleSSOLogin = () => {
+    Alert.alert('Enterprise SSO', 'Please contact your organization administrator for SSO access.');
+  };
+
   return (
     <View style={styles.container}>
       {/* Light Yellow to White Gradient Background */}
@@ -121,18 +139,56 @@ export default function LoginScreen() {
               entering={FadeInUp.delay(200).duration(500)}
               style={styles.content}
             >
-              <Text style={styles.title}>Hello there 👋</Text>
-              <Text style={styles.subtitle}>
-                Please enter your email & password to access your account
-              </Text>
+              <View style={styles.headerContainer}>
+                <Text style={styles.title}>Welcome Back</Text>
+                <Text style={styles.subtitle}>
+                  Sign in to access your educational social learning platform
+                </Text>
+              </View>
+
+              {error && (
+                <Animated.View 
+                  entering={FadeInDown.duration(300)}
+                  style={styles.errorContainer}
+                >
+                  <Ionicons name="alert-circle" size={20} color="#DC2626" />
+                  <Text style={styles.errorText}>{error}</Text>
+                </Animated.View>
+              )}
+
+              {/* Organization Input */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>
+                  <Ionicons name="business" size={14} color={Colors.gray[600]} /> Organization
+                  <Text style={styles.optionalLabel}> (Optional)</Text>
+                </Text>
+                <View style={[styles.inputContainer, styles.inputShadow]}>
+                  <TextInput
+                    ref={organizationRef}
+                    style={styles.input}
+                    placeholder="Institution or organization code"
+                    value={organization}
+                    onChangeText={setOrganization}
+                    autoCapitalize="none"
+                    returnKeyType="next"
+                    onSubmitEditing={() => passwordRef.current?.focus()}
+                    placeholderTextColor={Colors.gray[400]}
+                  />
+                  <View style={styles.iconContainer}>
+                    <Ionicons name="business" size={20} color="#F59E0B" />
+                  </View>
+                </View>
+              </View>
 
               {/* Email Input */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email Address</Text>
-                <View style={styles.inputContainer}>
+                <Text style={styles.label}>
+                  <Ionicons name="mail" size={14} color={Colors.gray[600]} /> Email Address
+                </Text>
+                <View style={[styles.inputContainer, styles.inputShadow]}>
                   <TextInput
                     style={styles.input}
-                    placeholder="Email"
+                    placeholder="your.email@example.com"
                     value={email}
                     onChangeText={setEmail}
                     keyboardType="email-address"
@@ -142,18 +198,22 @@ export default function LoginScreen() {
                     onSubmitEditing={() => passwordRef.current?.focus()}
                     placeholderTextColor={Colors.gray[400]}
                   />
-                  <Ionicons name="mail" size={20} color="#F59E0B" style={styles.inputIcon} />
+                  <View style={styles.iconContainer}>
+                    <Ionicons name="mail" size={20} color="#F59E0B" />
+                  </View>
                 </View>
               </View>
 
               {/* Password Input */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Password</Text>
-                <View style={styles.inputContainer}>
+                <Text style={styles.label}>
+                  <Ionicons name="lock-closed" size={14} color={Colors.gray[600]} /> Password
+                </Text>
+                <View style={[styles.inputContainer, styles.inputShadow]}>
                   <TextInput
                     ref={passwordRef}
                     style={styles.input}
-                    placeholder="••••••"
+                    placeholder="Enter your password"
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
@@ -161,12 +221,14 @@ export default function LoginScreen() {
                     onSubmitEditing={handleLogin}
                     placeholderTextColor={Colors.gray[400]}
                   />
-                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <TouchableOpacity 
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.iconContainer}
+                  >
                     <Ionicons 
                       name={showPassword ? "eye-off" : "eye"} 
                       size={20} 
                       color="#F59E0B" 
-                      style={styles.inputIcon} 
                     />
                   </TouchableOpacity>
                 </View>
@@ -198,35 +260,77 @@ export default function LoginScreen() {
                 onPress={handleLogin}
                 disabled={isLoading}
                 activeOpacity={0.8}
+                accessibilityLabel="Sign in"
+                accessibilityRole="button"
+                style={styles.loginButtonShadow}
               >
                 <LinearGradient
-                  colors={['#F59E0B', '#D97706']}
+                  colors={isLoading ? ['#9CA3AF', '#6B7280'] : ['#F59E0B', '#D97706']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.loginButton}
                 >
-                  <Text style={styles.loginButtonText}>
-                    {isLoading ? 'Signing In...' : 'Continue'}
-                  </Text>
+                  {isLoading ? (
+                    <View style={styles.loadingContainer}>
+                      <Text style={styles.loginButtonText}>Signing In...</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.loginButtonText}>Sign In</Text>
+                  )}
                 </LinearGradient>
               </TouchableOpacity>
+
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or continue with</Text>
+                <View style={styles.dividerLine} />
+              </View>
 
               {/* Social Login */}
               <View style={styles.socialButtons}>
                 <TouchableOpacity 
-                  style={styles.socialButton}
+                  style={[styles.socialButton, styles.socialButtonShadow]}
                   activeOpacity={0.8}
+                  onPress={() => handleSocialLogin('google')}
+                  disabled={socialLoading !== null}
+                  accessibilityLabel="Sign in with Google"
+                  accessibilityRole="button"
                 >
-                  <Ionicons name="logo-google" size={20} color={Colors.gray[700]} style={styles.socialIcon} />
-                  <Text style={styles.socialButtonText}>Continue With Google</Text>
+                  <View style={styles.socialIconContainer}>
+                    <Ionicons name="logo-google" size={20} color="#EA4335" />
+                  </View>
+                  <Text style={styles.socialButtonText}>
+                    {socialLoading === 'google' ? 'Connecting...' : 'Google'}
+                  </Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity 
-                  style={styles.socialButton}
+                  style={[styles.socialButton, styles.socialButtonShadow]}
                   activeOpacity={0.8}
+                  onPress={() => handleSocialLogin('apple')}
+                  disabled={socialLoading !== null}
+                  accessibilityLabel="Sign in with Apple"
+                  accessibilityRole="button"
                 >
-                  <Ionicons name="logo-apple" size={20} color={Colors.gray[700]} style={styles.socialIcon} />
-                  <Text style={styles.socialButtonText}>Continue With Apple</Text>
+                  <View style={styles.socialIconContainer}>
+                    <Ionicons name="logo-apple" size={20} color="#000000" />
+                  </View>
+                  <Text style={styles.socialButtonText}>
+                    {socialLoading === 'apple' ? 'Connecting...' : 'Apple'}
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[styles.ssoButton, styles.socialButtonShadow]}
+                  activeOpacity={0.8}
+                  onPress={handleSSOLogin}
+                  accessibilityLabel="Enterprise SSO"
+                  accessibilityRole="button"
+                >
+                  <View style={styles.ssoIconContainer}>
+                    <Ionicons name="business" size={18} color="#F59E0B" />
+                  </View>
+                  <Text style={styles.ssoButtonText}>Enterprise SSO</Text>
                 </TouchableOpacity>
               </View>
 
@@ -234,9 +338,11 @@ export default function LoginScreen() {
               <TouchableOpacity
                 onPress={() => navigation.navigate('Register')}
                 style={styles.footer}
+                accessibilityLabel="Create new account"
+                accessibilityRole="button"
               >
                 <Text style={styles.footerText}>
-                  New here? Create an account. <Text style={styles.footerLink}>Sign up</Text>
+                  Don't have an account? <Text style={styles.footerLink}>Create Account</Text>
                 </Text>
               </TouchableOpacity>
             </Animated.View>
@@ -276,19 +382,22 @@ const styles = StyleSheet.create({
     marginBottom: Spacing[6],
   },
   content: {
-    paddingTop: Spacing[4],
+    paddingTop: Spacing[6],
+  },
+  headerContainer: {
+    marginBottom: Spacing[8],
   },
   title: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: '600',
+    fontSize: 32,
+    fontWeight: '700',
     color: Colors.gray[900],
     marginBottom: Spacing[2],
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: Typography.fontSize.sm,
+    fontSize: Typography.fontSize.base,
     color: Colors.gray[600],
-    marginBottom: Spacing[8],
-    lineHeight: 20,
+    lineHeight: 22,
   },
   inputGroup: {
     marginBottom: Spacing[5],
@@ -296,18 +405,29 @@ const styles = StyleSheet.create({
   label: {
     fontSize: Typography.fontSize.sm,
     color: Colors.gray[700],
-    marginBottom: Spacing[2],
-    fontWeight: '500',
+    marginBottom: Spacing[3],
+    fontWeight: '600',
+  },
+  optionalLabel: {
+    color: Colors.gray[500],
+    fontWeight: '400',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.white,
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: Colors.gray[200],
     borderRadius: 28,
     paddingHorizontal: Spacing[5],
     height: 56,
+  },
+  inputShadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   input: {
     flex: 1,
@@ -315,8 +435,13 @@ const styles = StyleSheet.create({
     color: Colors.gray[900],
     paddingRight: Spacing[3],
   },
-  inputIcon: {
-    marginLeft: Spacing[3],
+  iconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   optionsRow: {
     flexDirection: 'row',
@@ -360,16 +485,62 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   loginButton: {
-    height: 56,
-    borderRadius: 28,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing[5],
+  },
+  loginButtonShadow: {
+    shadowColor: '#F59E0B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+    borderRadius: 30,
+    marginBottom: Spacing[6],
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   loginButtonText: {
     color: Colors.white,
-    fontWeight: '600',
-    fontSize: Typography.fontSize.base,
+    fontWeight: '700',
+    fontSize: Typography.fontSize.lg,
+    letterSpacing: 0.5,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing[6],
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.gray[200],
+  },
+  dividerText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.gray[500],
+    marginHorizontal: Spacing[4],
+    fontWeight: '500',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEE2E2',
+    padding: Spacing[4],
+    borderRadius: 28,
+    marginBottom: Spacing[5],
+    gap: Spacing[3],
+    borderLeftWidth: 4,
+    borderLeftColor: '#DC2626',
+  },
+  errorText: {
+    flex: 1,
+    fontSize: Typography.fontSize.sm,
+    color: '#DC2626',
+    fontWeight: '500',
   },
   socialButtons: {
     gap: Spacing[3],
@@ -379,17 +550,54 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderWidth: 1,
+    backgroundColor: Colors.white,
+    borderWidth: 2,
     borderColor: Colors.gray[200],
     flexDirection: 'row',
+    gap: Spacing[3],
   },
-  socialIcon: {
-    marginRight: Spacing[2],
+  socialButtonShadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  socialIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.gray[50],
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   socialButtonText: {
     color: Colors.gray[900],
-    fontWeight: '500',
+    fontWeight: '600',
+    fontSize: Typography.fontSize.base,
+  },
+  ssoButton: {
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF3C7',
+    borderWidth: 2,
+    borderColor: '#FDE68A',
+    flexDirection: 'row',
+    gap: Spacing[2],
+  },
+  ssoIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ssoButtonText: {
+    color: Colors.gray[900],
+    fontWeight: '600',
     fontSize: Typography.fontSize.base,
   },
   footer: {

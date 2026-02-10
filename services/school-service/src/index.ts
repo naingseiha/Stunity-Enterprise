@@ -5,6 +5,7 @@ import { PrismaClient, SubscriptionTier, SchoolType } from '@prisma/client';
 import slugify from 'slugify';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
+import ClaimCodeGenerator from './utils/claimCodeGenerator';
 import {
   CAMBODIAN_SUBJECTS_HIGH_SCHOOL,
   getCambodianHolidays,
@@ -2964,10 +2965,500 @@ app.get('/schools/:schoolId/academic-years/comparison', async (req: Request, res
   }
 });
 
+// ============================================================================
+// CLAIM CODE MANAGEMENT ENDPOINTS
+// ============================================================================
+
+/**
+ * POST /schools/:id/claim-codes/generate
+ * Generate claim codes for students or teachers
+ * Supports bulk generation
+ */
+app.post('/schools/:id/claim-codes/generate', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { type, count = 1, studentIds, teacherIds, expiresInDays = 365 } = req.body;
+
+    // Validate type
+    if (!type || !['STUDENT', 'TEACHER', 'STAFF', 'PARENT'].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Valid claim code type is required (STUDENT, TEACHER, STAFF, or PARENT)',
+      });
+    }
+
+    // Check if school exists
+    const school = await prisma.school.findUnique({
+      where: { id },
+    });
+
+    if (!school) {
+      return res.status(404).json({
+        success: false,
+        error: 'School not found',
+      });
+    }
+
+    const codes = [];
+
+    // Generate codes for specific students
+    if (type === 'STUDENT' && studentIds && Array.isArray(studentIds)) {
+      for (const studentId of studentIds) {
+        const student = await prisma.student.findUnique({
+          where: { id: studentId },
+        });
+
+        if (!student || student.schoolId !== id) {
+          continue; // Skip invalid students
+        }
+
+        const code = ClaimCodeGenerator.generateCode(type);
+        const expiresAt = ClaimCodeGenerator.generateExpirationDate(expiresInDays);
+
+        const claimCode = await prisma.claimCode.create({
+          data: {
+            code,
+            type,
+            schoolId: id,
+            studentId,
+            expiresAt,
+            verificationData: {
+              firstName: student.firstName,
+              lastName: student.lastName,
+              dateOfBirth: student.dateOfBirth,
+            },
+          },
+          include: {
+            student: {
+              select: {
+                id: true,
+                studentId: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        });
+
+        codes.push(claimCode);
+      }
+    }
+    // Generate codes for specific teachers
+    else if (type === 'TEACHER' && teacherIds && Array.isArray(teacherIds)) {
+      for (const teacherId of teacherIds) {
+        const teacher = await prisma.teacher.findUnique({
+          where: { id: teacherId },
+        });
+
+        if (!teacher || teacher.schoolId !== id) {
+          continue; // Skip invalid teachers
+        }
+
+        const code = ClaimCodeGenerator.generateCode(type);
+        const expiresAt = ClaimCodeGenerator.generateExpirationDate(expiresInDays);
+
+        const claimCode = await prisma.claimCode.create({
+          data: {
+            code,
+            type,
+            schoolId: id,
+            teacherId,
+            expiresAt,
+            verificationData: {
+              firstName: teacher.firstName,
+              lastName: teacher.lastName,
+              dateOfBirth: teacher.dateOfBirth,
+            },
+          },
+          include: {
+            teacher: {
+              select: {
+                id: true,
+                teacherId: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        });
+
+        codes.push(claimCode);
+      }
+    }
+    // Generate generic codes (not linked to specific people)
+    else {
+      for (let i = 0; i < count; i++) {
+        const code = ClaimCodeGenerator.generateCode(type);
+        const expiresAt = ClaimCodeGenerator.generateExpirationDate(expiresInDays);
+
+        const claimCode = await prisma.claimCode.create({
+          data: {
+            code,
+            type,
+            schoolId: id,
+            expiresAt,
+          },
+        });
+
+        codes.push(claimCode);
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `Generated ${codes.length} claim code(s)`,
+      data: {
+        codes,
+        count: codes.length,
+      },
+    });
+  } catch (error: any) {
+    console.error('Generate claim codes error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate claim codes',
+      details: error.message,
+    });
+  }
+});
+
+/**
+ * GET /schools/:id/claim-codes
+ * List claim codes for a school
+ * Supports filtering by type, status (active, claimed, expired)
+ */
+app.get('/schools/:id/claim-codes', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { type, status, page = '1', limit = '50' } = req.query;
+
+    const pageNum = parseInt(page as string, 10);
+    const limitNum = parseInt(limit as string, 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build where clause
+    const where: any = {
+      schoolId: id,
+    };
+
+    if (type) {
+      where.type = type;
+    }
+
+    // Filter by status
+    if (status === 'active') {
+      where.isActive = true;
+      where.claimedAt = null;
+      where.revokedAt = null;
+      where.expiresAt = { gt: new Date() };
+    } else if (status === 'claimed') {
+      where.claimedAt = { not: null };
+    } else if (status === 'expired') {
+      where.expiresAt = { lt: new Date() };
+      where.claimedAt = null;
+    } else if (status === 'revoked') {
+      where.revokedAt = { not: null };
+    }
+
+    // Get total count
+    const total = await prisma.claimCode.count({ where });
+
+    // Get codes with pagination
+    const codes = await prisma.claimCode.findMany({
+      where,
+      include: {
+        student: {
+          select: {
+            id: true,
+            studentId: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        teacher: {
+          select: {
+            id: true,
+            teacherId: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        claimedByUser: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip,
+      take: limitNum,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        codes,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('List claim codes error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to list claim codes',
+      details: error.message,
+    });
+  }
+});
+
+/**
+ * GET /schools/:id/claim-codes/:codeId
+ * Get details of a specific claim code
+ */
+app.get('/schools/:id/claim-codes/:codeId', async (req: Request, res: Response) => {
+  try {
+    const { id, codeId } = req.params;
+
+    const claimCode = await prisma.claimCode.findFirst({
+      where: {
+        id: codeId,
+        schoolId: id,
+      },
+      include: {
+        student: {
+          select: {
+            id: true,
+            studentId: true,
+            firstName: true,
+            lastName: true,
+            dateOfBirth: true,
+            gender: true,
+          },
+        },
+        teacher: {
+          select: {
+            id: true,
+            teacherId: true,
+            firstName: true,
+            lastName: true,
+            dateOfBirth: true,
+            gender: true,
+          },
+        },
+        claimedByUser: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    if (!claimCode) {
+      return res.status(404).json({
+        success: false,
+        error: 'Claim code not found',
+      });
+    }
+
+    // Add status information
+    const now = new Date();
+    const isExpired = claimCode.expiresAt && claimCode.expiresAt < now;
+    const isClaimed = !!claimCode.claimedAt;
+    const isRevoked = !!claimCode.revokedAt;
+    const isActive = claimCode.isActive && !isExpired && !isClaimed && !isRevoked;
+
+    res.json({
+      success: true,
+      data: {
+        ...claimCode,
+        status: {
+          isActive,
+          isClaimed,
+          isExpired,
+          isRevoked,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Get claim code error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get claim code',
+      details: error.message,
+    });
+  }
+});
+
+/**
+ * POST /schools/:id/claim-codes/:codeId/revoke
+ * Revoke a claim code
+ */
+app.post('/schools/:id/claim-codes/:codeId/revoke', async (req: Request, res: Response) => {
+  try {
+    const { id, codeId } = req.params;
+    const { reason } = req.body;
+
+    const claimCode = await prisma.claimCode.findFirst({
+      where: {
+        id: codeId,
+        schoolId: id,
+      },
+    });
+
+    if (!claimCode) {
+      return res.status(404).json({
+        success: false,
+        error: 'Claim code not found',
+      });
+    }
+
+    if (claimCode.claimedAt) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot revoke a claim code that has already been claimed',
+      });
+    }
+
+    if (claimCode.revokedAt) {
+      return res.status(400).json({
+        success: false,
+        error: 'Claim code is already revoked',
+      });
+    }
+
+    const updated = await prisma.claimCode.update({
+      where: { id: codeId },
+      data: {
+        revokedAt: new Date(),
+        revokedReason: reason || 'Revoked by administrator',
+        isActive: false,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Claim code revoked successfully',
+      data: updated,
+    });
+  } catch (error: any) {
+    console.error('Revoke claim code error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to revoke claim code',
+      details: error.message,
+    });
+  }
+});
+
+/**
+ * GET /schools/:id/claim-codes/export
+ * Export claim codes as CSV
+ * Useful for printing and distribution
+ */
+app.get('/schools/:id/claim-codes/export', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { type, status } = req.query;
+
+    // Build where clause
+    const where: any = {
+      schoolId: id,
+    };
+
+    if (type) {
+      where.type = type;
+    }
+
+    if (status === 'active') {
+      where.isActive = true;
+      where.claimedAt = null;
+      where.revokedAt = null;
+      where.expiresAt = { gt: new Date() };
+    } else if (status === 'unclaimed') {
+      where.claimedAt = null;
+      where.revokedAt = null;
+    }
+
+    // Get codes
+    const codes = await prisma.claimCode.findMany({
+      where,
+      include: {
+        student: {
+          select: {
+            studentId: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        teacher: {
+          select: {
+            teacherId: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // Generate CSV
+    const csvRows = [
+      'Code,Type,Person ID,Name,Expires At,Status,Created At',
+    ];
+
+    for (const code of codes) {
+      const personId = code.student?.studentId || code.teacher?.teacherId || '';
+      const personName = code.student
+        ? `${code.student.firstName} ${code.student.lastName}`
+        : code.teacher
+        ? `${code.teacher.firstName} ${code.teacher.lastName}`
+        : '';
+      
+      const now = new Date();
+      const isExpired = code.expiresAt && code.expiresAt < now;
+      const isClaimed = !!code.claimedAt;
+      const isRevoked = !!code.revokedAt;
+      const status = isRevoked ? 'Revoked' : isClaimed ? 'Claimed' : isExpired ? 'Expired' : 'Active';
+
+      csvRows.push(
+        `${code.code},${code.type},${personId},"${personName}",${code.expiresAt?.toISOString() || ''},${status},${code.createdAt.toISOString()}`
+      );
+    }
+
+    const csv = csvRows.join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="claim-codes-${id}-${Date.now()}.csv"`);
+    res.send(csv);
+  } catch (error: any) {
+    console.error('Export claim codes error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to export claim codes',
+      details: error.message,
+    });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log('\n╔════════════════════════════════════════════════════╗');
-  console.log('║   🏫 School Service - Stunity Enterprise v2.3    ║');
+  console.log('║   🏫 School Service - Stunity Enterprise v2.4    ║');
   console.log('╚════════════════════════════════════════════════════╝\n');
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`🌐 Health check: http://localhost:${PORT}/health`);
@@ -2980,7 +3471,14 @@ app.listen(PORT, () => {
   console.log('   - GET /schools/:id/academic-years/:yearId/template');
   console.log('   - POST /schools/:id/academic-years/wizard');
   console.log('   - GET /schools/:id/setup-templates');
-  console.log('   - GET /schools/:id/academic-years/comparison\n');
+  console.log('   - GET /schools/:id/academic-years/comparison');
+  console.log('');
+  console.log('🎫 Claim Code Management APIs:');
+  console.log('   - POST /schools/:id/claim-codes/generate       - Generate claim codes');
+  console.log('   - GET  /schools/:id/claim-codes                - List claim codes');
+  console.log('   - GET  /schools/:id/claim-codes/:codeId        - Get code details');
+  console.log('   - GET  /schools/:id/claim-codes/export         - Export as CSV');
+  console.log('   - POST /schools/:id/claim-codes/:codeId/revoke - Revoke a code\n');
   console.log('Press Ctrl+C to stop');
 });
 

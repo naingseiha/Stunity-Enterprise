@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { body, validationResult } from 'express-validator';
+import ClaimCodeGenerator from './utils/claimCodeGenerator';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
@@ -1058,11 +1059,629 @@ app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Respons
   }
 });
 
+// ============================================================================
+// CLAIM CODE ENDPOINTS
+// ============================================================================
+
+/**
+ * POST /auth/claim-codes/validate
+ * Validate a claim code without claiming it
+ * Returns school and student/teacher information if valid
+ */
+app.post('/auth/claim-codes/validate', async (req: Request, res: Response) => {
+  try {
+    const { code } = req.body;
+
+    if (!code) {
+      return res.status(400).json({
+        success: false,
+        error: 'Claim code is required',
+      });
+    }
+
+    // Validate format
+    if (!ClaimCodeGenerator.validateFormat(code)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid claim code format',
+      });
+    }
+
+    // Find claim code in database
+    const claimCode = await prisma.claimCode.findUnique({
+      where: { code },
+      include: {
+        school: {
+          select: {
+            id: true,
+            name: true,
+            schoolType: true,
+            address: true,
+          },
+        },
+        student: {
+          select: {
+            id: true,
+            studentId: true,
+            firstName: true,
+            lastName: true,
+            dateOfBirth: true,
+            gender: true,
+          },
+        },
+        teacher: {
+          select: {
+            id: true,
+            teacherId: true,
+            firstName: true,
+            lastName: true,
+            dateOfBirth: true,
+            gender: true,
+          },
+        },
+      },
+    });
+
+    if (!claimCode) {
+      return res.status(404).json({
+        success: false,
+        error: 'Claim code not found',
+      });
+    }
+
+    // Check if expired
+    if (claimCode.expiresAt && claimCode.expiresAt < new Date()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Claim code has expired',
+      });
+    }
+
+    // Check if already claimed
+    if (claimCode.claimedAt) {
+      return res.status(400).json({
+        success: false,
+        error: 'Claim code has already been used',
+      });
+    }
+
+    // Check if revoked
+    if (claimCode.revokedAt) {
+      return res.status(400).json({
+        success: false,
+        error: 'Claim code has been revoked',
+      });
+    }
+
+    // Check if active
+    if (!claimCode.isActive) {
+      return res.status(400).json({
+        success: false,
+        error: 'Claim code is inactive',
+      });
+    }
+
+    // Return validation success with data
+    res.json({
+      success: true,
+      data: {
+        code: claimCode.code,
+        type: claimCode.type,
+        school: claimCode.school,
+        student: claimCode.student || null,
+        teacher: claimCode.teacher || null,
+        expiresAt: claimCode.expiresAt,
+        requiresVerification: !!claimCode.verificationData,
+      },
+    });
+  } catch (error: any) {
+    console.error('Validate claim code error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to validate claim code',
+      details: error.message,
+    });
+  }
+});
+
+/**
+ * POST /auth/claim-codes/link
+ * Link a claim code to an existing user account
+ * Requires authentication
+ */
+app.post('/auth/claim-codes/link', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { code, verificationData } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not authenticated',
+      });
+    }
+
+    if (!code) {
+      return res.status(400).json({
+        success: false,
+        error: 'Claim code is required',
+      });
+    }
+
+    // Find claim code
+    const claimCode = await prisma.claimCode.findUnique({
+      where: { code },
+      include: {
+        school: true,
+        student: true,
+        teacher: true,
+      },
+    });
+
+    if (!claimCode) {
+      return res.status(404).json({
+        success: false,
+        error: 'Claim code not found',
+      });
+    }
+
+    // Validate claim code status
+    if (claimCode.expiresAt && claimCode.expiresAt < new Date()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Claim code has expired',
+      });
+    }
+
+    if (claimCode.claimedAt) {
+      return res.status(400).json({
+        success: false,
+        error: 'Claim code has already been used',
+      });
+    }
+
+    if (claimCode.revokedAt || !claimCode.isActive) {
+      return res.status(400).json({
+        success: false,
+        error: 'Claim code is not valid',
+      });
+    }
+
+    // Verify data if required
+    if (claimCode.verificationData) {
+      const expectedData = claimCode.verificationData as any;
+      
+      if (expectedData.firstName && verificationData?.firstName) {
+        if (expectedData.firstName.toLowerCase() !== verificationData.firstName.toLowerCase()) {
+          return res.status(400).json({
+            success: false,
+            error: 'Verification failed: First name does not match',
+          });
+        }
+      }
+
+      if (expectedData.lastName && verificationData?.lastName) {
+        if (expectedData.lastName.toLowerCase() !== verificationData.lastName.toLowerCase()) {
+          return res.status(400).json({
+            success: false,
+            error: 'Verification failed: Last name does not match',
+          });
+        }
+      }
+
+      if (expectedData.dateOfBirth && verificationData?.dateOfBirth) {
+        if (expectedData.dateOfBirth !== verificationData.dateOfBirth) {
+          return res.status(400).json({
+            success: false,
+            error: 'Verification failed: Date of birth does not match',
+          });
+        }
+      }
+    }
+
+    // Link account based on type
+    await prisma.$transaction(async (tx) => {
+      // Mark claim code as claimed
+      await tx.claimCode.update({
+        where: { id: claimCode.id },
+        data: {
+          claimedAt: new Date(),
+          claimedByUserId: userId,
+        },
+      });
+
+      // Update user account
+      const updateData: any = {
+        accountType: 'HYBRID',
+        organizationCode: claimCode.school.id, // Using school ID as organization code
+        organizationName: claimCode.school.name,
+        organizationType: claimCode.school.schoolType,
+        socialFeaturesEnabled: true,
+      };
+
+      // Link to student or teacher by setting studentId/teacherId in User
+      if (claimCode.type === 'STUDENT' && claimCode.studentId) {
+        updateData.studentId = claimCode.studentId;
+        updateData.role = 'STUDENT';
+      } else if (claimCode.type === 'TEACHER' && claimCode.teacherId) {
+        updateData.teacherId = claimCode.teacherId;
+        updateData.role = 'TEACHER';
+      }
+
+      await tx.user.update({
+        where: { id: userId },
+        data: updateData,
+      });
+    });
+
+    // Return success
+    res.json({
+      success: true,
+      message: 'Account successfully linked to school',
+      data: {
+        accountType: 'HYBRID',
+        school: {
+          id: claimCode.school.id,
+          name: claimCode.school.name,
+          type: claimCode.school.schoolType,
+        },
+        role: claimCode.type,
+      },
+    });
+  } catch (error: any) {
+    console.error('Link claim code error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to link claim code',
+      details: error.message,
+    });
+  }
+});
+
+/**
+ * POST /auth/register/with-claim-code
+ * Register a new account with a claim code
+ * Creates user account and immediately links to school account
+ */
+app.post('/auth/register/with-claim-code', async (req: Request, res: Response) => {
+  try {
+    const { code, email, password, firstName, lastName, phone, verificationData } = req.body;
+
+    // Validate required fields
+    if (!code || !email || !password || !firstName || !lastName) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields',
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid email format',
+      });
+    }
+
+    // Check if email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email already registered',
+      });
+    }
+
+    // Find and validate claim code
+    const claimCode = await prisma.claimCode.findUnique({
+      where: { code },
+      include: {
+        school: true,
+        student: true,
+        teacher: true,
+      },
+    });
+
+    if (!claimCode) {
+      return res.status(404).json({
+        success: false,
+        error: 'Claim code not found',
+      });
+    }
+
+    if (claimCode.expiresAt && claimCode.expiresAt < new Date()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Claim code has expired',
+      });
+    }
+
+    if (claimCode.claimedAt) {
+      return res.status(400).json({
+        success: false,
+        error: 'Claim code has already been used',
+      });
+    }
+
+    if (claimCode.revokedAt || !claimCode.isActive) {
+      return res.status(400).json({
+        success: false,
+        error: 'Claim code is not valid',
+      });
+    }
+
+    // Verify data if required
+    if (claimCode.verificationData) {
+      const expectedData = claimCode.verificationData as any;
+      
+      if (expectedData.firstName && expectedData.firstName.toLowerCase() !== firstName.toLowerCase()) {
+        return res.status(400).json({
+          success: false,
+          error: 'Verification failed: First name does not match school records',
+        });
+      }
+
+      if (expectedData.lastName && expectedData.lastName.toLowerCase() !== lastName.toLowerCase()) {
+        return res.status(400).json({
+          success: false,
+          error: 'Verification failed: Last name does not match school records',
+        });
+      }
+
+      if (expectedData.dateOfBirth && verificationData?.dateOfBirth) {
+        if (expectedData.dateOfBirth !== verificationData.dateOfBirth) {
+          return res.status(400).json({
+            success: false,
+            error: 'Verification failed: Date of birth does not match',
+          });
+        }
+      }
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user and link account in transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Create user
+      const user = await tx.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          firstName,
+          lastName,
+          phone,
+          accountType: 'HYBRID',
+          organizationCode: claimCode.school.id,
+          organizationName: claimCode.school.name,
+          organizationType: claimCode.school.schoolType,
+          role: claimCode.type === 'TEACHER' ? 'TEACHER' : 'STUDENT',
+          socialFeaturesEnabled: true,
+          isEmailVerified: false,
+          // Link to student or teacher via foreign key
+          studentId: claimCode.type === 'STUDENT' ? claimCode.studentId : undefined,
+          teacherId: claimCode.type === 'TEACHER' ? claimCode.teacherId : undefined,
+        },
+      });
+
+      // Mark claim code as claimed
+      await tx.claimCode.update({
+        where: { id: claimCode.id },
+        data: {
+          claimedAt: new Date(),
+          claimedByUserId: user.id,
+        },
+      });
+
+      return user;
+    });
+
+    // Generate JWT token
+    const token = jwt.sign(
+      {
+        id: result.id,
+        email: result.email,
+        role: result.role,
+      },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
+    );
+
+    // Return success with token
+    res.status(201).json({
+      success: true,
+      message: 'Account created and linked successfully',
+      data: {
+        user: {
+          id: result.id,
+          email: result.email,
+          firstName: result.firstName,
+          lastName: result.lastName,
+          role: result.role,
+          accountType: result.accountType,
+        },
+        school: {
+          id: claimCode.school.id,
+          name: claimCode.school.name,
+          type: claimCode.school.schoolType,
+        },
+        token,
+      },
+    });
+  } catch (error: any) {
+    console.error('Register with claim code error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to register with claim code',
+      details: error.message,
+    });
+  }
+});
+
+/**
+ * POST /auth/login/claim-code
+ * First-time login with claim code (for students/teachers who haven't registered yet)
+ * Uses claim code as temporary authentication
+ */
+app.post('/auth/login/claim-code', async (req: Request, res: Response) => {
+  try {
+    const { code, temporaryPassword, verificationData } = req.body;
+
+    if (!code) {
+      return res.status(400).json({
+        success: false,
+        error: 'Claim code is required',
+      });
+    }
+
+    // Find claim code
+    const claimCode = await prisma.claimCode.findUnique({
+      where: { code },
+      include: {
+        school: true,
+        student: {
+          include: {
+            user: true,
+          },
+        },
+        teacher: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    if (!claimCode) {
+      return res.status(404).json({
+        success: false,
+        error: 'Claim code not found',
+      });
+    }
+
+    // Validate claim code status
+    if (claimCode.expiresAt && claimCode.expiresAt < new Date()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Claim code has expired',
+      });
+    }
+
+    if (claimCode.revokedAt || !claimCode.isActive) {
+      return res.status(400).json({
+        success: false,
+        error: 'Claim code is not valid',
+      });
+    }
+
+    // Check if already claimed (has user account)
+    let user = null;
+    if (claimCode.type === 'STUDENT' && claimCode.student?.user) {
+      user = claimCode.student.user;
+    } else if (claimCode.type === 'TEACHER' && claimCode.teacher?.user) {
+      user = claimCode.teacher.user;
+    }
+
+    if (user) {
+      return res.status(400).json({
+        success: false,
+        error: 'This account has already been activated. Please use regular login.',
+        shouldUseRegularLogin: true,
+      });
+    }
+
+    // Verify data if required
+    if (claimCode.verificationData) {
+      const expectedData = claimCode.verificationData as any;
+      
+      if (expectedData.firstName && verificationData?.firstName) {
+        if (expectedData.firstName.toLowerCase() !== verificationData.firstName.toLowerCase()) {
+          return res.status(400).json({
+            success: false,
+            error: 'Verification failed: First name does not match',
+          });
+        }
+      }
+
+      if (expectedData.lastName && verificationData?.lastName) {
+        if (expectedData.lastName.toLowerCase() !== verificationData.lastName.toLowerCase()) {
+          return res.status(400).json({
+            success: false,
+            error: 'Verification failed: Last name does not match',
+          });
+        }
+      }
+
+      if (expectedData.dateOfBirth && verificationData?.dateOfBirth) {
+        if (expectedData.dateOfBirth !== verificationData.dateOfBirth) {
+          return res.status(400).json({
+            success: false,
+            error: 'Verification failed: Date of birth does not match',
+          });
+        }
+      }
+    }
+
+    // Generate temporary token for account setup
+    const setupToken = jwt.sign(
+      {
+        claimCodeId: claimCode.id,
+        code: claimCode.code,
+        type: claimCode.type,
+        schoolId: claimCode.schoolId,
+        studentId: claimCode.studentId,
+        teacherId: claimCode.teacherId,
+        setup: true,
+      },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // Return setup token and instructions
+    res.json({
+      success: true,
+      message: 'Claim code verified. Please complete account setup.',
+      data: {
+        setupToken,
+        requiresSetup: true,
+        school: {
+          id: claimCode.school.id,
+          name: claimCode.school.name,
+          type: claimCode.school.schoolType,
+        },
+        student: claimCode.student ? {
+          id: claimCode.student.id,
+          studentId: claimCode.student.studentId,
+          firstName: claimCode.student.firstName,
+          lastName: claimCode.student.lastName,
+        } : null,
+        teacher: claimCode.teacher ? {
+          id: claimCode.teacher.id,
+          teacherId: claimCode.teacher.teacherId,
+          firstName: claimCode.teacher.firstName,
+          lastName: claimCode.teacher.lastName,
+        } : null,
+      },
+    });
+  } catch (error: any) {
+    console.error('Login with claim code error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to login with claim code',
+      details: error.message,
+    });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log('');
   console.log('╔════════════════════════════════════════════════╗');
-  console.log('║   🔐 Auth Service - Stunity Enterprise v2.2   ║');
+  console.log('║   🔐 Auth Service - Stunity Enterprise v2.3   ║');
   console.log('╚════════════════════════════════════════════════╝');
   console.log('');
   console.log(`✅ Server running on port ${PORT}`);
@@ -1072,6 +1691,12 @@ app.listen(PORT, () => {
   console.log('📋 Auth Endpoints:');
   console.log('   POST /auth/login         - Login user');
   console.log('   GET  /auth/verify        - Verify token');
+  console.log('');
+  console.log('🎫 Claim Code Endpoints:');
+  console.log('   POST /auth/claim-codes/validate           - Validate claim code');
+  console.log('   POST /auth/claim-codes/link               - Link code to account');
+  console.log('   POST /auth/register/with-claim-code       - Register with code');
+  console.log('   POST /auth/login/claim-code               - First-time login');
   console.log('');
   console.log('👨‍👩‍👧 Parent Portal Endpoints:');
   console.log('   GET  /auth/parent/find-student  - Find student');

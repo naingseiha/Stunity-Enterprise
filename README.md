@@ -1,10 +1,40 @@
 # 🎓 Stunity Enterprise - School Management + Social E-Learning Platform
 
-**Version:** 6.0  
-**Status:** Phase 31 - Mobile App UI Complete ✅ | Ready for API Integration 🚀  
-**Last Updated:** February 8, 2026
+**Version:** 7.0 (Claim Code System)  
+**Status:** Production Ready 🚀 | Claim Code & ID Generation Complete ✅  
+**Last Updated:** February 10, 2026
 
-A comprehensive, multi-tenant school management SaaS platform with social feed features, parent portal, teacher-parent messaging, full academic year support, student progression tracking, and historical data management.
+A comprehensive, multi-tenant school management SaaS platform with social feed features, **claim code system for account linking**, student/teacher ID generation, parent portal, teacher-parent messaging, full academic year support, student progression tracking, and historical data management.
+
+---
+
+## 🎉 New in v7.0: Claim Code & ID Generation System
+
+### Key Features
+- 🎫 **Claim Code System** - One-step registration linking school accounts to social accounts
+- 🆔 **Smart ID Generation** - 3 formats (STRUCTURED, SIMPLIFIED, HYBRID) with Luhn check digits
+- 🔗 **HYBRID Accounts** - Unified access to both social and school features
+- 📱 **Mobile Integration** - Claim code validation in RegisterScreen
+- 📊 **Bulk Management** - Generate, list, export, and revoke codes
+- 🌍 **Standards Compliant** - Cambodia/ASEAN student ID standards, GDPR/FERPA ready
+
+### Quick Demo
+```bash
+# Generate 5 claim codes for teachers
+curl -X POST http://localhost:3002/schools/{schoolId}/claim-codes/generate \
+  -H "Content-Type: application/json" \
+  -d '{"type": "TEACHER", "count": 5, "expiresInDays": 365}'
+
+# Validate a claim code
+curl -X POST http://localhost:3001/auth/claim-codes/validate \
+  -H "Content-Type: application/json" \
+  -d '{"code": "STNT-AB12-CD34"}'
+
+# Register with claim code (mobile app)
+# See: MOBILE_INTEGRATION_COMPLETE.md
+```
+
+**Documentation**: `CLAIM_CODE_API_IMPLEMENTATION.md`, `MOBILE_INTEGRATION_COMPLETE.md`
 
 ---
 

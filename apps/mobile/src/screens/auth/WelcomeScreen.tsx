@@ -58,11 +58,11 @@ export default function WelcomeScreen() {
           />
           
           <Text style={styles.tagline}>
-            Welcome to Stunity 👋
+            Welcome to Stunity
           </Text>
           
           <Text style={styles.description}>
-            Your educational social learning platform
+            Enterprise Social Learning Platform for Educational Excellence
           </Text>
         </Animated.View>
 
@@ -76,6 +76,9 @@ export default function WelcomeScreen() {
           <TouchableOpacity
             onPress={() => navigation.navigate('Register')}
             activeOpacity={0.8}
+            accessibilityLabel="Create new account"
+            accessibilityRole="button"
+            style={styles.buttonShadow}
           >
             <LinearGradient
               colors={['#F59E0B', '#D97706']}
@@ -83,36 +86,52 @@ export default function WelcomeScreen() {
               end={{ x: 1, y: 0 }}
               style={styles.primaryButton}
             >
-              <Text style={styles.primaryButtonText}>Get Started</Text>
+              <Text style={styles.primaryButtonText}>Create Account</Text>
             </LinearGradient>
           </TouchableOpacity>
           
           <TouchableOpacity
-            style={styles.secondaryButton}
             onPress={() => navigation.navigate('Login')}
             activeOpacity={0.8}
+            accessibilityLabel="Sign in with existing account"
+            accessibilityRole="button"
+            style={styles.buttonShadow}
           >
-            <Ionicons name="logo-google" size={20} color={Colors.gray[700]} style={styles.buttonIcon} />
-            <Text style={styles.secondaryButtonText}>Continue With Google</Text>
+            <LinearGradient
+              colors={['#3B82F6', '#2563EB']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.secondaryButton}
+            >
+              <Ionicons name="log-in-outline" size={20} color={Colors.white} style={styles.buttonIcon} />
+              <Text style={styles.secondaryButtonText}>Sign In</Text>
+            </LinearGradient>
           </TouchableOpacity>
           
           <TouchableOpacity
-            style={styles.secondaryButton}
+            style={[styles.ssoButton, styles.ssoButtonShadow]}
             onPress={() => navigation.navigate('Login')}
             activeOpacity={0.8}
+            accessibilityLabel="Enterprise SSO login"
+            accessibilityRole="button"
           >
-            <Ionicons name="logo-apple" size={20} color={Colors.gray[700]} style={styles.buttonIcon} />
-            <Text style={styles.secondaryButtonText}>Continue With Apple</Text>
+            <View style={styles.ssoIconContainer}>
+              <Ionicons name="business" size={18} color="#F59E0B" />
+            </View>
+            <Text style={styles.ssoButtonText}>Enterprise SSO</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Login')}
-            style={styles.linkButton}
-          >
-            <Text style={styles.linkText}>
-              Already have an account? <Text style={styles.linkBold}>Login</Text>
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Ionicons name="shield-checkmark" size={16} color={Colors.gray[400]} />
+            <View style={styles.dividerLine} />
+          </View>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Trusted by educational institutions worldwide
             </Text>
-          </TouchableOpacity>
+          </View>
         </Animated.View>
       </SafeAreaView>
     </View>
@@ -136,67 +155,119 @@ const styles = StyleSheet.create({
     marginTop: height * 0.08,
   },
   logo: {
-    width: 180,
-    height: 180,
-    marginBottom: Spacing[6],
+    width: 200,
+    height: 200,
+    marginBottom: Spacing[8],
   },
   tagline: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: '600',
+    fontSize: 32,
+    fontWeight: '700',
     color: Colors.gray[900],
     textAlign: 'center',
     marginBottom: Spacing[3],
+    letterSpacing: -0.5,
   },
   description: {
     fontSize: Typography.fontSize.base,
     color: Colors.gray[600],
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 24,
+    paddingHorizontal: Spacing[4],
   },
   spacer: {
     flex: 1,
   },
   buttonsContainer: {
     marginBottom: Spacing[8],
-    gap: Spacing[3],
+    gap: Spacing[4],
+  },
+  buttonShadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    borderRadius: 28,
   },
   primaryButton: {
-    height: 56,
-    borderRadius: 28,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryButtonText: {
     color: Colors.white,
-    fontWeight: '600',
-    fontSize: Typography.fontSize.base,
+    fontWeight: '700',
+    fontSize: Typography.fontSize.lg,
+    letterSpacing: 0.5,
   },
   secondaryButton: {
-    height: 56,
-    borderRadius: 28,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.white,
     flexDirection: 'row',
   },
   buttonIcon: {
     marginRight: Spacing[2],
   },
   secondaryButtonText: {
-    color: Colors.gray[900],
-    fontWeight: '500',
+    color: Colors.white,
+    fontWeight: '700',
+    fontSize: Typography.fontSize.lg,
+    letterSpacing: 0.5,
+  },
+  ssoButton: {
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+    borderWidth: 2,
+    borderColor: '#FEF3C7',
+    flexDirection: 'row',
+  },
+  ssoButtonShadow: {
+    shadowColor: '#F59E0B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  ssoIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing[2],
+  },
+  ssoButtonText: {
+    color: Colors.gray[700],
+    fontWeight: '600',
     fontSize: Typography.fontSize.base,
   },
-  linkButton: {
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: Spacing[2],
+    gap: Spacing[2],
+  },
+  dividerLine: {
+    width: 40,
+    height: 1,
+    backgroundColor: Colors.gray[300],
+  },
+  footer: {
     alignItems: 'center',
     marginTop: Spacing[4],
   },
-  linkText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.gray[700],
-  },
-  linkBold: {
-    fontWeight: '600',
-    color: '#F59E0B',
+  footerText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.gray[500],
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });

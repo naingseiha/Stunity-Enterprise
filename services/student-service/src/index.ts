@@ -8,6 +8,7 @@ import fs from 'fs';
 import dotenv from 'dotenv';
 import { generateStudentId } from './utils/studentIdGenerator';
 import { parseDate } from './utils/dateParser';
+import IdGenerator from './utils/idGenerator';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
@@ -718,9 +719,62 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Generate student ID (school-specific)
-    const studentId = await generateStudentId(classId, schoolId);
+    // Generate student ID using new ID generator system
+    // Get school configuration for ID format
+    const schoolConfig = await prisma.school.findUnique({
+      where: { id: schoolId },
+      select: {
+        idFormat: true,
+        idPrefix: true,
+        nextStudentNumber: true,
+        schoolType: true,
+      },
+    });
+
+    if (!schoolConfig) {
+      return res.status(404).json({
+        success: false,
+        message: "School configuration not found",
+      });
+    }
+
+    // Get next sequential number atomically
+    const sequentialNumber = await prisma.$transaction(async (tx) => {
+      const updated = await tx.school.update({
+        where: { id: schoolId },
+        data: { nextStudentNumber: { increment: 1 } },
+      });
+      return updated.nextStudentNumber;
+    });
+
+    // Prepare student params for ID generation
+    const studentParams = {
+      gender: gender as Gender,
+      entryYear: new Date().getFullYear(),
+      classId,
+      schoolType: schoolConfig.schoolType,
+    };
+
+    // Generate student ID using configured format
+    const studentId = IdGenerator.generateStudentId(
+      schoolConfig.idFormat,
+      schoolConfig.idPrefix || '01',
+      studentParams,
+      sequentialNumber
+    );
+
+    // Generate permanent ID
+    const permanentId = IdGenerator.generatePermanentId('STU');
+
+    // Generate metadata for audit trail
+    const studentIdMeta = IdGenerator.generateStudentMetadata(
+      schoolConfig.idFormat,
+      studentParams,
+      sequentialNumber
+    );
+
     console.log(`🎯 Generated Student ID: ${studentId}`);
+    console.log(`🔒 Permanent ID: ${permanentId}`);
 
     const studentEmail =
       email && email.trim() !== ""
@@ -749,6 +803,10 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
     const studentData: any = {
       schoolId, // Multi-tenant
       studentId,
+      permanentId,
+      studentIdFormat: schoolConfig.idFormat,
+      studentIdMeta,
+      entryYear: new Date().getFullYear(),
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       khmerName: khmerName.trim(),
@@ -791,9 +849,23 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
       data: { currentStudents: currentStudents + 1 },
     });
 
+    // Log ID generation for audit trail
+    await prisma.idGenerationLog.create({
+      data: {
+        schoolId,
+        entityType: 'STUDENT',
+        entityId: student.id,
+        generatedId: studentId,
+        format: schoolConfig.idFormat,
+        metadata: studentIdMeta,
+        createdBy: req.user!.id,
+      },
+    });
+
     console.log("✅ Student created successfully!");
     console.log(`   ID: ${student.id}`);
     console.log(`   Student ID: ${student.studentId}`);
+    console.log(`   Permanent ID: ${student.permanentId}`);
     console.log(`   Name: ${student.khmerName}`);
     console.log(`   School: ${schoolId}`);
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");

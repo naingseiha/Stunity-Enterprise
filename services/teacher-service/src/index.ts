@@ -7,6 +7,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import dotenv from 'dotenv';
+import IdGenerator from './utils/idGenerator';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
@@ -828,6 +829,63 @@ app.post('/teachers', async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Generate teacher ID using new ID generator system
+    // Get school configuration for ID format
+    const schoolConfig = await prisma.school.findUnique({
+      where: { id: schoolId },
+      select: {
+        idFormat: true,
+        idPrefix: true,
+        nextTeacherNumber: true,
+        schoolType: true,
+      },
+    });
+
+    if (!schoolConfig) {
+      return res.status(500).json({
+        success: false,
+        message: 'School configuration not found',
+      });
+    }
+
+    // Get next sequential number atomically
+    const sequentialNumber = await prisma.$transaction(async (tx) => {
+      const updated = await tx.school.update({
+        where: { id: schoolId },
+        data: { nextTeacherNumber: { increment: 1 } },
+      });
+      return updated.nextTeacherNumber;
+    });
+
+    // Prepare teacher params for ID generation
+    const teacherParams = {
+      gender,
+      hireDate,
+      hireYear: hireDate ? new Date(hireDate).getFullYear() : new Date().getFullYear(),
+      position,
+    };
+
+    // Generate teacher ID using configured format
+    const teacherId = IdGenerator.generateTeacherId(
+      schoolConfig.idFormat,
+      schoolConfig.idPrefix || '01',
+      teacherParams,
+      sequentialNumber
+    );
+
+    // Generate permanent ID
+    const permanentId = IdGenerator.generatePermanentId('TCH');
+
+    // Generate metadata for audit trail
+    const teacherIdMeta = IdGenerator.generateTeacherMetadata(
+      schoolConfig.idFormat,
+      teacherParams,
+      sequentialNumber
+    );
+
+    console.log(`🎯 Generated Teacher ID: ${teacherId}`);
+    console.log(`🔒 Permanent ID: ${permanentId}`);
+
     // Verify homeroom class belongs to school (if provided)
     if (homeroomClassId) {
       const homeroomClass = await prisma.class.findFirst({
@@ -848,6 +906,11 @@ app.post('/teachers', async (req: AuthRequest, res: Response) => {
     // Create teacher with relations
     const teacher = await prisma.teacher.create({
       data: {
+        teacherId,
+        permanentId,
+        teacherIdFormat: schoolConfig.idFormat,
+        teacherIdMeta,
+        hireYear: teacherParams.hireYear,
         firstName,
         lastName,
         khmerName,
@@ -916,7 +979,22 @@ app.post('/teachers', async (req: AuthRequest, res: Response) => {
       },
     });
 
+    // Log ID generation for audit trail
+    await prisma.idGenerationLog.create({
+      data: {
+        schoolId,
+        entityType: 'TEACHER',
+        entityId: teacher.id,
+        generatedId: teacherId,
+        format: schoolConfig.idFormat,
+        metadata: teacherIdMeta,
+        createdBy: req.user!.id,
+      },
+    });
+
     console.log(`✅ [School ${schoolId}] Created teacher: ${teacher.firstName} ${teacher.lastName}`);
+    console.log(`   Teacher ID: ${teacher.teacherId}`);
+    console.log(`   Permanent ID: ${teacher.permanentId}`);
 
     res.status(201).json({
       success: true,
