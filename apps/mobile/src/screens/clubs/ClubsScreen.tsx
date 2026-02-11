@@ -31,11 +31,10 @@ import { useNavigationContext } from '@/contexts';
 import { clubsApi, Club } from '@/api';
 
 const CLUB_TYPES = [
-  { id: 'all', name: 'All', icon: 'apps' },
-  { id: 'CASUAL_STUDY_GROUP', name: 'Study Groups', icon: 'people' },
-  { id: 'STRUCTURED_CLASS', name: 'Classes', icon: 'school' },
-  { id: 'PROJECT_GROUP', name: 'Projects', icon: 'rocket' },
-  { id: 'EXAM_PREP', name: 'Exam Prep', icon: 'book' },
+  { id: 'CASUAL_STUDY_GROUP', name: 'Study Groups', icon: 'people', color: '#2563EB', bgColor: '#DBEAFE' },
+  { id: 'STRUCTURED_CLASS', name: 'Classes', icon: 'school', color: '#059669', bgColor: '#D1FAE5' },
+  { id: 'PROJECT_GROUP', name: 'Projects', icon: 'rocket', color: '#DC2626', bgColor: '#FEE2E2' },
+  { id: 'EXAM_PREP', name: 'Exam Prep', icon: 'book', color: '#7C3AED', bgColor: '#EDE9FE' },
 ];
 
 export default function ClubsScreen() {
@@ -120,12 +119,12 @@ export default function ClubsScreen() {
               <Image source={{ uri: club.coverImage }} style={styles.clubCover} />
             ) : (
               <LinearGradient
-                colors={['#6366F1', '#8B5CF6']}
+                colors={[getTypeColor(club.type), getTypeColorDark(club.type)]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.clubCover}
               >
-                <Ionicons name="school" size={32} color="rgba(255,255,255,0.9)" />
+                <Ionicons name={getTypeIcon(club.type)} size={32} color="rgba(255,255,255,0.9)" />
               </LinearGradient>
             )}
 
@@ -190,20 +189,29 @@ export default function ClubsScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Header */}
+      {/* Header - Match FeedScreen Design */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={openSidebar} style={styles.logoContainer}>
-          <Image source={StunityLogo} style={styles.logo} />
+        <TouchableOpacity onPress={openSidebar} style={styles.menuButton}>
+          <Ionicons name="menu" size={28} color="#374151" />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Clubs</Text>
+        <Image
+          source={StunityLogo}
+          style={styles.headerLogo}
+          resizeMode="contain"
+        />
 
-        <TouchableOpacity style={styles.iconButton}>
-          <Ionicons name="search" size={22} color={Colors.text} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.headerButton}>
+            <Ionicons name="notifications-outline" size={24} color="#374151" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerButton}>
+            <Ionicons name="search-outline" size={24} color="#374151" />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Filter Pills - Clean Design */}
+      {/* Filter Pills */}
       <View style={styles.filterSection}>
         <ScrollView
           horizontal
@@ -239,20 +247,21 @@ export default function ClubsScreen() {
               key={type.id}
               style={[
                 styles.filterPill,
-                selectedType === type.id && styles.filterPillActive,
+                selectedType === type.id && { backgroundColor: type.color },
+                selectedType !== type.id && { backgroundColor: type.bgColor },
               ]}
               onPress={() => setSelectedType(type.id)}
             >
               <Ionicons
                 name={type.icon as any}
                 size={16}
-                color={selectedType === type.id ? 'white' : Colors.textSecondary}
+                color={selectedType === type.id ? 'white' : type.color}
                 style={styles.filterIcon}
               />
               <Text
                 style={[
                   styles.filterPillText,
-                  selectedType === type.id && styles.filterPillTextActive,
+                  selectedType === type.id ? { color: 'white' } : { color: type.color },
                 ]}
               >
                 {type.name}
@@ -308,11 +317,31 @@ export default function ClubsScreen() {
 // Helper functions
 const getTypeColor = (type: string) => {
   switch (type) {
-    case 'CASUAL_STUDY_GROUP': return '#6366F1';
-    case 'STRUCTURED_CLASS': return '#10B981';
-    case 'PROJECT_GROUP': return '#EC4899';
-    case 'EXAM_PREP': return '#8B5CF6';
-    default: return '#FFA500';
+    case 'CASUAL_STUDY_GROUP': return '#2563EB';
+    case 'STRUCTURED_CLASS': return '#059669';
+    case 'PROJECT_GROUP': return '#DC2626';
+    case 'EXAM_PREP': return '#7C3AED';
+    default: return '#F59E0B';
+  }
+};
+
+const getTypeColorDark = (type: string) => {
+  switch (type) {
+    case 'CASUAL_STUDY_GROUP': return '#1E40AF';
+    case 'STRUCTURED_CLASS': return '#047857';
+    case 'PROJECT_GROUP': return '#B91C1C';
+    case 'EXAM_PREP': return '#6D28D9';
+    default: return '#D97706';
+  }
+};
+
+const getTypeIcon = (type: string) => {
+  switch (type) {
+    case 'CASUAL_STUDY_GROUP': return 'people';
+    case 'STRUCTURED_CLASS': return 'school';
+    case 'PROJECT_GROUP': return 'rocket';
+    case 'EXAM_PREP': return 'book';
+    default: return 'school';
   }
 };
 
@@ -341,23 +370,27 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  logoContainer: {
-    padding: 4,
+  menuButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  logo: {
-    width: 32,
+  headerLogo: {
+    width: 120,
     height: 32,
-    borderRadius: 8,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.text,
-    flex: 1,
-    textAlign: 'center',
+  headerActions: {
+    flexDirection: 'row',
+    gap: 4,
   },
-  iconButton: {
-    padding: 4,
+  headerButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   filterSection: {
     backgroundColor: 'white',
@@ -367,16 +400,14 @@ const styles = StyleSheet.create({
   filterScroll: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 8,
   },
   filterPill: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: Colors.background,
-    marginRight: 8,
+    borderRadius: 24,
+    marginRight: 10,
   },
   filterPillActive: {
     backgroundColor: Colors.primary,
@@ -385,9 +416,8 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   filterPillText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: Colors.textSecondary,
   },
   filterPillTextActive: {
     color: 'white',
@@ -396,22 +426,30 @@ const styles = StyleSheet.create({
     width: 1,
     height: 24,
     backgroundColor: Colors.border,
-    marginHorizontal: 4,
+    marginHorizontal: 8,
+    alignSelf: 'center',
   },
   listContent: {
     padding: 16,
     paddingBottom: 32,
   },
   clubCard: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   cardInner: {
     overflow: 'hidden',
     padding: 0,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   clubCover: {
     width: '100%',
-    height: 100,
+    height: 120,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -469,9 +507,9 @@ const styles = StyleSheet.create({
   joinButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
     backgroundColor: Colors.primary,
     gap: 4,
   },
@@ -505,7 +543,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     backgroundColor: Colors.primary,
-    borderRadius: 8,
+    borderRadius: 20,
   },
   retryButtonText: {
     fontSize: 14,

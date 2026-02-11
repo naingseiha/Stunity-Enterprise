@@ -149,12 +149,12 @@ export default function ClubDetailsScreen() {
             <Image source={{ uri: club.coverImage }} style={styles.coverImage} />
           ) : (
             <LinearGradient
-              colors={['#6366F1', '#8B5CF6', '#EC4899']}
+              colors={[getTypeColor(club.type), getTypeColorDark(club.type)]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.coverImage}
             >
-              <Ionicons name="school" size={64} color="white" />
+              <Ionicons name={getTypeIcon(club.type)} size={64} color="white" />
             </LinearGradient>
           )}
 
@@ -342,11 +342,31 @@ export default function ClubDetailsScreen() {
 // Helper functions
 const getTypeColor = (type: string) => {
   switch (type) {
-    case 'CASUAL_STUDY_GROUP': return '#6366F1';
-    case 'STRUCTURED_CLASS': return '#10B981';
-    case 'PROJECT_GROUP': return '#EC4899';
-    case 'EXAM_PREP': return '#8B5CF6';
-    default: return '#FFA500';
+    case 'CASUAL_STUDY_GROUP': return '#2563EB';
+    case 'STRUCTURED_CLASS': return '#059669';
+    case 'PROJECT_GROUP': return '#DC2626';
+    case 'EXAM_PREP': return '#7C3AED';
+    default: return '#F59E0B';
+  }
+};
+
+const getTypeColorDark = (type: string) => {
+  switch (type) {
+    case 'CASUAL_STUDY_GROUP': return '#1E40AF';
+    case 'STRUCTURED_CLASS': return '#047857';
+    case 'PROJECT_GROUP': return '#B91C1C';
+    case 'EXAM_PREP': return '#6D28D9';
+    default: return '#D97706';
+  }
+};
+
+const getTypeIcon = (type: string) => {
+  switch (type) {
+    case 'CASUAL_STUDY_GROUP': return 'people';
+    case 'STRUCTURED_CLASS': return 'school';
+    case 'PROJECT_GROUP': return 'rocket';
+    case 'EXAM_PREP': return 'book';
+    default: return 'school';
   }
 };
 
@@ -383,22 +403,24 @@ const formatRole = (role: string) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#F8F7FC',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F8F7FC',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 32,
+    backgroundColor: '#F8F7FC',
   },
   errorText: {
     fontSize: 16,
-    color: Colors.error,
+    color: '#EF4444',
     marginTop: 16,
     textAlign: 'center',
   },
@@ -406,8 +428,8 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: Colors.primary,
-    borderRadius: 8,
+    backgroundColor: '#F59E0B',
+    borderRadius: 20,
   },
   retryButtonText: {
     fontSize: 14,
@@ -451,6 +473,13 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   titleRow: {
     flexDirection: 'row',
@@ -461,7 +490,7 @@ const styles = StyleSheet.create({
   clubName: {
     fontSize: 24,
     fontWeight: '700',
-    color: Colors.text,
+    color: '#374151',
     flex: 1,
     marginRight: 12,
   },
@@ -487,12 +516,12 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 14,
-    color: Colors.textSecondary,
+    color: '#6B7280',
   },
   description: {
     fontSize: 15,
     lineHeight: 22,
-    color: Colors.text,
+    color: '#374151',
     marginBottom: 16,
   },
   tagsContainer: {
@@ -504,12 +533,12 @@ const styles = StyleSheet.create({
   tag: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: Colors.background,
+    backgroundColor: '#FEF3C7',
     borderRadius: 16,
   },
   tagText: {
     fontSize: 13,
-    color: Colors.primary,
+    color: '#F59E0B',
     fontWeight: '500',
   },
   actionButtons: {
@@ -522,14 +551,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
-    backgroundColor: Colors.primary,
+    backgroundColor: '#F59E0B',
     borderRadius: 12,
     gap: 8,
   },
   joinedButton: {
     backgroundColor: 'white',
     borderWidth: 2,
-    borderColor: Colors.primary,
+    borderColor: '#F59E0B',
   },
   primaryButtonText: {
     fontSize: 16,
@@ -537,7 +566,7 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   joinedButtonText: {
-    color: Colors.primary,
+    color: '#F59E0B',
   },
   secondaryButton: {
     width: 50,
@@ -546,7 +575,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: Colors.border,
+    borderColor: '#E5E7EB',
+    backgroundColor: 'white',
   },
   roleContainer: {
     flexDirection: 'row',
@@ -554,12 +584,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: '#E5E7EB',
     gap: 6,
   },
   roleText: {
     fontSize: 14,
-    color: Colors.primary,
+    color: '#F59E0B',
     fontWeight: '600',
   },
   statsSection: {
@@ -568,11 +598,18 @@ const styles = StyleSheet.create({
   },
   statsCard: {
     padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.text,
+    color: '#374151',
     marginBottom: 16,
   },
   statsGrid: {
@@ -585,12 +622,12 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: Colors.primary,
+    color: '#F59E0B',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: '#6B7280',
   },
   creatorSection: {
     paddingHorizontal: 16,
@@ -598,6 +635,13 @@ const styles = StyleSheet.create({
   },
   creatorCard: {
     padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   creatorInfo: {
     flexDirection: 'row',
@@ -610,12 +654,12 @@ const styles = StyleSheet.create({
   creatorName: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.text,
+    color: '#374151',
     marginBottom: 2,
   },
   creatorRole: {
     fontSize: 14,
-    color: Colors.textSecondary,
+    color: '#6B7280',
   },
   membersSection: {
     paddingHorizontal: 16,
@@ -623,6 +667,13 @@ const styles = StyleSheet.create({
   },
   membersCard: {
     padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -632,7 +683,7 @@ const styles = StyleSheet.create({
   },
   seeAllText: {
     fontSize: 14,
-    color: Colors.primary,
+    color: '#F59E0B',
     fontWeight: '600',
   },
   memberItem: {
@@ -640,7 +691,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: '#E5E7EB',
   },
   memberInfo: {
     flex: 1,
@@ -649,12 +700,12 @@ const styles = StyleSheet.create({
   memberName: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.text,
+    color: '#374151',
     marginBottom: 2,
   },
   memberRole: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: '#6B7280',
   },
   ownerBadge: {
     marginLeft: 8,
@@ -666,10 +717,17 @@ const styles = StyleSheet.create({
   },
   featuresCard: {
     padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   comingSoonText: {
     fontSize: 14,
-    color: Colors.textSecondary,
+    color: '#6B7280',
     lineHeight: 20,
   },
 });

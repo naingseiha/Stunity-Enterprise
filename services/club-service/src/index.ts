@@ -89,6 +89,33 @@ const authMiddleware = async (
   }
 };
 
+// Optional auth middleware (allows both authenticated and anonymous access)
+const optionalAuthMiddleware = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+
+    if (token) {
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      if (decoded.userId) {
+        req.user = {
+          userId: decoded.userId,
+          email: decoded.email,
+          role: decoded.role,
+        };
+      }
+    }
+    
+    next(); // Continue regardless of auth status
+  } catch (error: any) {
+    // Silently continue without auth
+    next();
+  }
+};
+
 // ===========================
 // Health Check
 // ===========================
@@ -113,7 +140,10 @@ import submissionRoutes from './routes/submissions';
 import awardRoutes from './routes/awards';
 import reportRoutes from './routes/reports';
 
-app.use('/clubs', authMiddleware, clubRoutes);
+// Club routes with optional auth for discovery
+app.use('/clubs', optionalAuthMiddleware, clubRoutes);
+
+// All other routes require auth
 app.use('/subjects', authMiddleware, subjectRoutes);
 app.use('/grades', authMiddleware, gradeRoutes);
 app.use('/sessions', authMiddleware, sessionRoutes);

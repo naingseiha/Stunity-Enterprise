@@ -93,7 +93,7 @@ export const createClub = async (req: AuthRequest, res: Response) => {
 
 export const getClubs = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user!.userId;
+    const userId = req.user?.userId; // Optional - may be undefined
     const { type, myClubs, schoolId, search } = req.query;
 
     const where: any = {};
@@ -101,7 +101,7 @@ export const getClubs = async (req: AuthRequest, res: Response) => {
     if (type) where.clubType = type;
     if (schoolId) where.schoolId = schoolId;
 
-    if (myClubs === 'true') {
+    if (myClubs === 'true' && userId) {
       where.members = { some: { userId } };
     }
 
@@ -145,7 +145,7 @@ export const getClubs = async (req: AuthRequest, res: Response) => {
 export const getClubById = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.userId;
+    const userId = req.user?.userId; // Optional
 
     const club = await prisma.studyClub.findUnique({
       where: { id },

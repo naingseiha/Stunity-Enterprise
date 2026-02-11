@@ -76,6 +76,17 @@ export const Colors = {
   white: '#FFFFFF',
   black: '#000000',
   transparent: 'transparent',
+  
+  // Common shorthand colors (matching FeedScreen pattern)
+  primary: '#F59E0B',
+  secondary: '#6366F1',
+  background: '#F8F7FC',
+  card: '#FFFFFF',
+  text: '#374151',
+  textSecondary: '#6B7280',
+  textTertiary: '#9CA3AF',
+  border: '#E5E7EB',
+  error: '#EF4444',
 } as const;
 
 // Light Theme
