@@ -9,6 +9,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Download, Search, Filter } from 'lucide-react';
 import { claimCodeService, type ClaimCode, type ClaimCodeStats } from '@/lib/api/claimCodes';
+import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -38,6 +39,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import GenerateCodesModal from '@/components/claim-codes/GenerateCodesModal';
 
 export default function ClaimCodesPage() {
+  const { schoolId } = useAcademicYear();
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [codes, setCodes] = useState<ClaimCode[]>([]);
   const [stats, setStats] = useState<ClaimCodeStats | null>(null);
@@ -48,8 +50,16 @@ export default function ClaimCodesPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // TODO: Get actual school ID from auth context
-  const schoolId = 'demo-school-id';
+  // Show loading state if no schoolId yet
+  if (!schoolId) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="text-center">
+          <p className="text-gray-500">Loading school information...</p>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     loadData();
