@@ -22,7 +22,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { format, isPast, isFuture, differenceInDays, differenceInHours } from 'date-fns';
 
 import { Colors } from '@/config';
-import { assignmentsApi, ClubAssignment } from '@/api';
+import { assignmentsApi } from '@/api';
+import type { ClubAssignment } from '@/api/assignments';
 import type { ClubsStackScreenProps } from '@/navigation/types';
 
 export default function AssignmentDetailScreen() {
