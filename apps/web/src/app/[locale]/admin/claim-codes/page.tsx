@@ -38,27 +38,9 @@ export default function ClaimCodesPage() {
     router.push('/en/login');
   };
 
-  // Show loading if no schoolId
-  if (!schoolId) {
-    return (
-      <>
-        <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
-        <div className="lg:ml-64 min-h-screen bg-[#f8fafc]">
-          <main className="p-6 lg:p-8">
-            <div className="text-center">
-              <p className="text-gray-500">Loading school information...</p>
-            </div>
-          </main>
-        </div>
-      </>
-    );
-  }
-
-  useEffect(() => {
-    loadData();
-  }, [typeFilter, statusFilter, page, schoolId]);
-
   const loadData = async (refresh = false) => {
+    if (!schoolId) return; // Guard clause
+    
     if (refresh) setIsRefreshing(true);
     setLoading(true);
     try {
@@ -79,8 +61,30 @@ export default function ClaimCodesPage() {
       console.error('Failed to load claim codes:', error);
     } finally {
       setLoading(false);
+      if (refresh) setIsRefreshing(false);
     }
   };
+
+  // HOOKS MUST BE BEFORE ANY CONDITIONAL RETURNS
+  useEffect(() => {
+    loadData();
+  }, [typeFilter, statusFilter, page, schoolId]);
+
+  // Show loading if no schoolId - AFTER all hooks
+  if (!schoolId) {
+    return (
+      <>
+        <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
+        <div className="lg:ml-64 min-h-screen bg-[#f8fafc]">
+          <main className="p-6 lg:p-8">
+            <div className="text-center">
+              <p className="text-gray-500">Loading school information...</p>
+            </div>
+          </main>
+        </div>
+      </>
+    );
+  }
 
   const handleExport = async () => {
     try {
