@@ -8,6 +8,7 @@ import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import { parse } from 'csv-parse/sync';
 import ClaimCodeGenerator from './utils/claimCodeGenerator';
+import { sendBulkClaimCodeEmails } from './utils/emailService';
 import {
   CAMBODIAN_SUBJECTS_HIGH_SCHOOL,
   getCambodianHolidays,
@@ -3273,7 +3274,7 @@ app.post('/schools/:id/claim-codes/bulk-upload', upload.single('file'), async (r
       data: {
         total: codes.length,
         distribution: {
-          emailSent: emailList.length,
+          emailSent: 0, // Will be updated after email sending
           manualRequired: manualList.length,
           failed: errors.length,
         },
@@ -3284,10 +3285,35 @@ app.post('/schools/:id/claim-codes/bulk-upload', upload.single('file'), async (r
       },
     };
 
-    // TODO: Send emails here if sendEmails is true
-    // For now, we'll just prepare the list
+    // Send emails if requested and there are recipients
     if (sendEmails === 'true' && emailList.length > 0) {
-      response.data.emailNote = 'Email sending will be implemented in next phase';
+      try {
+        const emailResults = await sendBulkClaimCodeEmails({
+          recipients: emailList,
+          schoolName: school.name,
+          expiresAt: expiresInDays ? ClaimCodeGenerator.generateExpirationDate(expiresInDays) : codes[0]?.expiresAt || new Date(),
+        });
+
+        response.data.distribution.emailSent = emailResults.sent.length;
+        response.data.emailResults = {
+          sent: emailResults.sent.length,
+          failed: emailResults.failed.length,
+          failedEmails: emailResults.failed,
+        };
+
+        if (emailResults.sent.length > 0) {
+          response.data.emailNote = `✓ ${emailResults.sent.length} email(s) sent successfully`;
+        }
+        if (emailResults.failed.length > 0) {
+          response.data.emailWarning = `⚠ ${emailResults.failed.length} email(s) failed to send`;
+        }
+      } catch (emailError: any) {
+        console.error('Email sending error:', emailError);
+        response.data.emailNote = '⚠ Email sending failed: ' + emailError.message;
+        response.data.emailError = emailError.message;
+      }
+    } else if (sendEmails === 'false' && emailList.length > 0) {
+      response.data.emailNote = `📧 ${emailList.length} student(s) ready for email (sending disabled)`;
     }
 
     res.status(201).json(response);
@@ -3713,6 +3739,81 @@ app.get('/schools/:id/claim-codes/export', async (req: Request, res: Response) =
     res.status(500).json({
       success: false,
       error: 'Failed to export claim codes',
+      details: error.message,
+    });
+  }
+});
+
+/**
+ * POST /schools/:id/claim-codes/test-email
+ * Test email configuration by sending a test claim code email
+ */
+app.post('/schools/:id/claim-codes/test-email', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email address is required',
+      });
+    }
+
+    // Get school info
+    const school = await prisma.school.findUnique({
+      where: { id },
+    });
+
+    if (!school) {
+      return res.status(404).json({
+        success: false,
+        error: 'School not found',
+      });
+    }
+
+    // Import email service
+    const { sendClaimCodeEmail, testEmailConfig } = await import('./utils/emailService');
+
+    // Test email configuration first
+    const configTest = await testEmailConfig();
+    if (!configTest.success) {
+      return res.status(500).json({
+        success: false,
+        error: 'Email configuration is invalid',
+        details: configTest.error,
+      });
+    }
+
+    // Send test email
+    const result = await sendClaimCodeEmail({
+      to: email,
+      studentName: 'Test Student',
+      claimCode: 'TEST-1234-5678',
+      schoolName: school.name,
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      grade: '10',
+    });
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Test email sent successfully',
+        messageId: result.messageId,
+        email: result.email,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Failed to send test email',
+        details: result.error,
+      });
+    }
+  } catch (error: any) {
+    console.error('Test email error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send test email',
       details: error.message,
     });
   }
