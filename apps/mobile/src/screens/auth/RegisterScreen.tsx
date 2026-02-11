@@ -32,6 +32,7 @@ import { useAuthStore } from '@/stores';
 import { AuthStackScreenProps } from '@/navigation/types';
 import { UserRole } from '@/types';
 import { validatePassword } from '@/utils';
+import { authApi } from '@/api/client';
 
 type NavigationProp = AuthStackScreenProps<'Register'>['navigation'];
 
@@ -43,7 +44,7 @@ const ROLES: { value: UserRole; label: string; icon: keyof typeof Ionicons.glyph
 
 export default function RegisterScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { register, isLoading, error, clearError } = useAuthStore();
+  const { register, login, isLoading, error, clearError } = useAuthStore();
   
   const [step, setStep] = useState(1);
   const [firstName, setFirstName] = useState('');
@@ -81,20 +82,17 @@ export default function RegisterScreen() {
 
     setValidatingCode(true);
     try {
-      const response = await fetch('http://localhost:3001/auth/claim-codes/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: claimCode.trim() }),
+      const response = await authApi.post('/auth/claim-codes/validate', {
+        code: claimCode.trim(),
       });
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.data.success) {
+        const data = response.data.data;
         setClaimCodeValidated(true);
-        setClaimCodeData(data.data);
+        setClaimCodeData(data);
         
         // Auto-fill organization details
-        setOrganization(data.data.school.name);
+        setOrganization(data.school.name);
         
         // Map school type to organization type
         const schoolTypeMap: Record<string, any> = {
@@ -104,27 +102,28 @@ export default function RegisterScreen() {
           'UNIVERSITY': 'university',
           'INTERNATIONAL': 'school',
         };
-        setOrganizationType(schoolTypeMap[data.data.school.schoolType] || 'school');
+        setOrganizationType(schoolTypeMap[data.school.schoolType] || 'school');
         
         // Auto-set role based on claim code type
-        if (data.data.type === 'STUDENT') {
+        if (data.type === 'STUDENT') {
           setRole('STUDENT');
-        } else if (data.data.type === 'TEACHER') {
+        } else if (data.type === 'TEACHER') {
           setRole('TEACHER');
         }
         
         Alert.alert(
           'Claim Code Validated',
-          `Successfully linked to ${data.data.school.name}`,
+          `Successfully linked to ${data.school.name}`,
           [{ text: 'Continue', style: 'default' }]
         );
       } else {
-        Alert.alert('Invalid Claim Code', data.error || 'Please check your code and try again');
+        Alert.alert('Invalid Claim Code', response.data.error || response.data.message || 'Please check your code and try again');
         setClaimCodeValidated(false);
         setClaimCodeData(null);
       }
-    } catch (error) {
-      Alert.alert('Connection Error', 'Unable to validate claim code. Please check your connection.');
+    } catch (error: any) {
+      const message = error?.message || 'Unable to validate claim code. Please check your connection.';
+      Alert.alert('Connection Error', message);
       setClaimCodeValidated(false);
       setClaimCodeData(null);
     } finally {
@@ -180,36 +179,40 @@ export default function RegisterScreen() {
     // If using claim code, call the special register endpoint
     if (useClaimCode && claimCodeValidated && claimCodeData) {
       try {
-        const response = await fetch('http://localhost:3001/auth/register/with-claim-code', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code: claimCode.trim(),
-            email: email.trim(),
-            password,
-            firstName: firstName.trim(),
-            lastName: lastName.trim(),
-            verificationData: claimCodeData.requiresVerification ? {
-              dateOfBirth: claimCodeData.student?.dateOfBirth || claimCodeData.teacher?.dateOfBirth
-            } : undefined,
-          }),
+        const response = await authApi.post('/auth/register/with-claim-code', {
+          code: claimCode.trim(),
+          email: email.trim(),
+          password,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          verificationData: claimCodeData.requiresVerification ? {
+            dateOfBirth: claimCodeData.student?.dateOfBirth || claimCodeData.teacher?.dateOfBirth
+          } : undefined,
         });
 
-        const data = await response.json();
-
-        if (data.success) {
-          // Store token and user data
-          // Note: You'll need to add these methods to your auth store
-          Alert.alert(
-            'Account Created',
-            `Welcome to ${data.data.school.name}! Your account has been linked successfully.`,
-            [{ text: 'Get Started', onPress: () => navigation.navigate('Home' as any) }]
-          );
+        if (response.data.success) {
+          const { user, tokens } = response.data.data || response.data;
+          
+          // Store tokens using token service (via authStore)
+          const loginSuccess = await login({
+            email: email.trim(),
+            password,
+            rememberMe: true,
+          });
+          
+          if (loginSuccess) {
+            Alert.alert(
+              'Account Created',
+              `Welcome to ${claimCodeData.school.name}! Your account has been linked successfully.`,
+              [{ text: 'Get Started' }]
+            );
+          }
         } else {
-          Alert.alert('Registration Failed', data.error || 'Unable to create account with claim code');
+          Alert.alert('Registration Failed', response.data.error || response.data.message || 'Unable to create account with claim code');
         }
-      } catch (error) {
-        Alert.alert('Connection Error', 'Unable to complete registration. Please try again.');
+      } catch (error: any) {
+        const message = error?.message || 'Unable to complete registration. Please try again.';
+        Alert.alert('Connection Error', message);
       }
       return;
     }
@@ -221,13 +224,15 @@ export default function RegisterScreen() {
       email: email.trim(),
       password,
       role,
+      organization: organization.trim() || undefined,
+      organizationType: organizationType,
     });
 
     if (success) {
       Alert.alert(
         'Account Created', 
-        'Your account has been created successfully. Please check your email to verify your account.',
-        [{ text: 'OK' }]
+        'Your account has been created successfully.',
+        [{ text: 'Get Started' }]
       );
     } else if (error) {
       Alert.alert('Registration Failed', error);

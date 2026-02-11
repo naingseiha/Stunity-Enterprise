@@ -138,7 +138,30 @@ class TokenService {
    * Save tokens to secure storage
    */
   async setTokens(tokens: AuthTokens): Promise<void> {
-    const expiryTime = Date.now() + tokens.expiresIn * 1000;
+    // Handle expiresIn as either number (seconds) or string (e.g., "7d")
+    let expiresInSeconds: number;
+    
+    if (typeof tokens.expiresIn === 'string') {
+      // Parse string like "7d" -> 7 * 24 * 60 * 60 seconds
+      const match = tokens.expiresIn.match(/^(\d+)([smhd])$/);
+      if (match) {
+        const value = parseInt(match[1]);
+        const unit = match[2];
+        const multipliers: Record<string, number> = {
+          's': 1,
+          'm': 60,
+          'h': 3600,
+          'd': 86400,
+        };
+        expiresInSeconds = value * (multipliers[unit] || 86400); // Default to days
+      } else {
+        expiresInSeconds = 7 * 24 * 60 * 60; // Default to 7 days
+      }
+    } else {
+      expiresInSeconds = tokens.expiresIn;
+    }
+    
+    const expiryTime = Date.now() + expiresInSeconds * 1000;
 
     await Promise.all([
       SecureStore.setItemAsync(KEYS.ACCESS_TOKEN, tokens.accessToken),

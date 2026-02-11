@@ -100,7 +100,7 @@ export const APP_CONFIG = {
   BUILD_NUMBER: '1',
   
   // API Settings
-  API_TIMEOUT: 30000,
+  API_TIMEOUT: 45000, // 45 seconds (increased from 30s for slower networks)
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000,
   

@@ -48,7 +48,7 @@ export interface UserStats {
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
-  expiresIn: number;
+  expiresIn: number | string; // Can be number (seconds) or string like "7d"
 }
 
 export interface LoginCredentials {
@@ -64,6 +64,8 @@ export interface RegisterData {
   password: string;
   role: UserRole;
   phone?: string;
+  organization?: string;
+  organizationType?: 'university' | 'school' | 'corporate' | 'other';
 }
 
 // Post Types

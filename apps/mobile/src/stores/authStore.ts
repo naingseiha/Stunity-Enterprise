@@ -72,30 +72,48 @@ export const useAuthStore = create<AuthState>()(
           
           // First check if we have persisted auth state from Zustand
           const currentState = get();
-          if (currentState.isAuthenticated && currentState.user) {
-            // Already have persisted state, just mark as initialized
+          
+          // IMPORTANT: Also verify tokens exist, not just persisted state
+          const hasTokens = await tokenService.initialize();
+          
+          if (currentState.isAuthenticated && currentState.user && hasTokens) {
+            // Already have persisted state AND valid tokens
             console.log('Auth: Restoring persisted session for', currentState.user.email);
             set({ isLoading: false, isInitialized: true });
             
             // Optionally refresh user in background (don't block)
-            tokenService.initialize().then(hasTokens => {
-              if (hasTokens) {
-                authApi.get('/users/me').then(response => {
-                  if (response.data.success) {
-                    const apiUser = response.data.user || response.data.data;
-                    set({ user: mapApiUserToUser(apiUser) });
-                  }
-                }).catch(() => {
-                  // Ignore - we still have cached user data
-                });
+            authApi.get('/users/me').then(response => {
+              if (response.data.success) {
+                const apiUser = response.data.user || response.data.data;
+                set({ user: mapApiUserToUser(apiUser) });
               }
+            }).catch(() => {
+              // Token expired or invalid - clear everything
+              console.warn('Session expired, logging out');
+              tokenService.clearTokens();
+              set({
+                user: null,
+                isAuthenticated: false,
+              });
             });
             return;
           }
           
-          // No persisted state - check for tokens
-          const hasTokens = await tokenService.initialize();
+          // Persisted state but no tokens? Clear it
+          if (currentState.isAuthenticated && !hasTokens) {
+            console.log('Auth: Clearing stale persisted state (no tokens)');
+            set({
+              user: null,
+              isAuthenticated: false,
+              isLoading: false,
+              isInitialized: true,
+            });
+            return;
+          }
           
+          // Has tokens but no persisted state? Validate token
+          
+          // Has tokens but no persisted state? Validate token
           if (hasTokens) {
             // Validate token and get user profile
             try {
@@ -214,14 +232,20 @@ export const useAuthStore = create<AuthState>()(
           const response = await authApi.post('/auth/register', data);
 
           if (response.data.success) {
-            const { user, tokens } = response.data;
+            // Backend returns: { success, message, data: { user, tokens } }
+            const responseData = response.data.data || response.data;
+            const { user, tokens } = responseData;
+
+            if (!tokens || !user) {
+              throw new Error('Invalid response from server');
+            }
 
             // Save tokens
             await tokenService.setTokens(tokens);
             await tokenService.setUserId(user.id);
 
             set({
-              user,
+              user: mapApiUserToUser(user),
               isAuthenticated: true,
               isLoading: false,
             });
@@ -247,6 +271,14 @@ export const useAuthStore = create<AuthState>()(
       // Logout
       logout: async () => {
         try {
+          const { isLoading } = get();
+          
+          // Prevent multiple simultaneous logout calls
+          if (isLoading) {
+            console.log('Logout already in progress, skipping...');
+            return;
+          }
+          
           set({ isLoading: true });
 
           // Call logout endpoint (invalidate refresh token on server)
@@ -265,9 +297,9 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           });
-
-          // Emit logout event
-          eventEmitter.emit('auth:logout');
+          
+          // DON'T emit logout event here - would cause infinite loop
+          // eventEmitter.emit('auth:logout');
         } catch (error) {
           console.error('Logout error:', error);
           set({ isLoading: false });
