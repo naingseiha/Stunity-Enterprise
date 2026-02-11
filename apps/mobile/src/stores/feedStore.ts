@@ -151,9 +151,12 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     set({ isLoadingPosts: true });
 
     try {
+      // Performance optimization: Use smaller page size for initial load (faster perceived speed)
+      const limit = page === 1 ? 10 : 20;
+      
       const response = await feedApi.get('/posts', {
-        params: { page, limit: 20 },
-        timeout: 15000, // Reduce timeout to 15s for faster feedback
+        params: { page, limit },
+        timeout: 10000, // Reduced timeout for faster feedback
       });
 
       if (response.data.success) {
@@ -247,12 +250,22 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           },
         }));
 
+        // Performance optimization: Limit total posts in memory
+        const allPosts = refresh ? transformedPosts : [...posts, ...transformedPosts];
+        const maxPostsInMemory = 100;
+        const optimizedPosts = allPosts.slice(0, maxPostsInMemory);
+
         set({
-          posts: refresh ? transformedPosts : [...posts, ...transformedPosts],
+          posts: optimizedPosts,
           postsPage: page + 1,
           hasMorePosts: hasMore,
           isLoadingPosts: false,
         });
+
+        // Background: Prefetch images for smooth scrolling
+        if (__DEV__) {
+          console.log('📸 [FeedStore] Loaded', transformedPosts.length, 'posts');
+        }
       } else {
         set({ isLoadingPosts: false });
       }

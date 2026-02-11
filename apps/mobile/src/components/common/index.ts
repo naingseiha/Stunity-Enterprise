@@ -8,6 +8,7 @@ export { Avatar } from './Avatar';
 export { Card } from './Card';
 export { Loading, Skeleton, PostSkeleton, ProfileSkeleton, ListItemSkeleton } from './Loading';
 export { SplashScreen } from './SplashScreen';
+export { OptimizedImage } from './OptimizedImage';
 export { default as ImageCarousel } from './ImageCarousel';
 export { default as ImageViewerModal } from './ImageViewerModal';
 export { default as NetworkStatus } from './NetworkStatus';
