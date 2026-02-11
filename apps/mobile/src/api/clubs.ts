@@ -4,7 +4,7 @@
  * Handles all API calls to the Club Service (Port 3012)
  */
 
-import { api } from './client';
+import { clubsApi as api } from './client';
 
 // ============================================================================
 // Types

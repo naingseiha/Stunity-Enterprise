@@ -1,7 +1,7 @@
 /**
  * Clubs Screen
  * 
- * Discover and join study clubs with real-time data
+ * Clean, professional club discovery interface
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -31,11 +31,11 @@ import { useNavigationContext } from '@/contexts';
 import { clubsApi, Club } from '@/api';
 
 const CLUB_TYPES = [
-  { id: 'all', name: 'All Clubs', icon: 'apps', color: '#FFA500' },
-  { id: 'CASUAL_STUDY_GROUP', name: 'Study Groups', icon: 'people', color: '#6366F1' },
-  { id: 'STRUCTURED_CLASS', name: 'Classes', icon: 'school', color: '#10B981' },
-  { id: 'PROJECT_GROUP', name: 'Projects', icon: 'rocket', color: '#EC4899' },
-  { id: 'EXAM_PREP', name: 'Exam Prep', icon: 'book', color: '#8B5CF6' },
+  { id: 'all', name: 'All', icon: 'apps' },
+  { id: 'CASUAL_STUDY_GROUP', name: 'Study Groups', icon: 'people' },
+  { id: 'STRUCTURED_CLASS', name: 'Classes', icon: 'school' },
+  { id: 'PROJECT_GROUP', name: 'Projects', icon: 'rocket' },
+  { id: 'EXAM_PREP', name: 'Exam Prep', icon: 'book' },
 ];
 
 export default function ClubsScreen() {
@@ -54,14 +54,12 @@ export default function ClubsScreen() {
       setError(null);
       const params: any = {};
       
-      // Filter by joined status
       if (selectedFilter === 'joined') {
         params.joined = true;
       } else if (selectedFilter === 'discover') {
         params.joined = false;
       }
       
-      // Filter by type
       if (selectedType !== 'all') {
         params.type = selectedType;
       }
@@ -77,18 +75,15 @@ export default function ClubsScreen() {
     }
   }, [selectedFilter, selectedType]);
 
-  // Initial load
   useEffect(() => {
     fetchClubs();
   }, [fetchClubs]);
 
-  // Pull to refresh
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
     fetchClubs();
   }, [fetchClubs]);
 
-  // Join/Leave club
   const handleToggleJoin = useCallback(async (clubId: string, isJoined: boolean) => {
     try {
       if (isJoined) {
@@ -96,8 +91,6 @@ export default function ClubsScreen() {
       } else {
         await clubsApi.joinClub(clubId);
       }
-      
-      // Refresh club list
       fetchClubs();
     } catch (err: any) {
       console.error('Failed to toggle club membership:', err);
@@ -105,14 +98,12 @@ export default function ClubsScreen() {
     }
   }, [fetchClubs]);
 
-  // Filter clubs by type
   const filteredClubs = selectedType === 'all' 
     ? clubs 
     : clubs.filter(club => club.type === selectedType);
 
-  // Render club card
   const renderClubCard = ({ item: club, index }: { item: Club; index: number }) => {
-    const isJoined = club.memberCount !== undefined; // Simple check, could be improved
+    const isJoined = club.memberCount !== undefined;
 
     return (
       <Animated.View
@@ -124,17 +115,17 @@ export default function ClubsScreen() {
           onPress={() => navigation.navigate('ClubDetails' as never, { clubId: club.id } as never)}
         >
           <Card style={styles.cardInner}>
-            {/* Cover Image */}
+            {/* Cover */}
             {club.coverImage ? (
               <Image source={{ uri: club.coverImage }} style={styles.clubCover} />
             ) : (
               <LinearGradient
-                colors={['#6366F1', '#8B5CF6', '#EC4899']}
+                colors={['#6366F1', '#8B5CF6']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.clubCover}
               >
-                <Ionicons name="school" size={40} color="white" />
+                <Ionicons name="school" size={32} color="rgba(255,255,255,0.9)" />
               </LinearGradient>
             )}
 
@@ -144,10 +135,10 @@ export default function ClubsScreen() {
                 <Text style={styles.clubName} numberOfLines={1}>
                   {club.name}
                 </Text>
-                
-                {/* Club Type Badge */}
-                <View style={[styles.typeBadge, { backgroundColor: getTypeColor(club.type) }]}>
-                  <Text style={styles.typeBadgeText}>{getTypeLabel(club.type)}</Text>
+                <View style={[styles.typeBadge, { backgroundColor: getTypeColor(club.type) + '15' }]}>
+                  <Text style={[styles.typeBadgeText, { color: getTypeColor(club.type) }]}>
+                    {getTypeLabel(club.type)}
+                  </Text>
                 </View>
               </View>
 
@@ -155,37 +146,32 @@ export default function ClubsScreen() {
                 {club.description}
               </Text>
 
-              {/* Creator */}
-              {club.creator && (
-                <View style={styles.creatorRow}>
-                  <Avatar
-                    size="xs"
-                    name={`${club.creator.firstName} ${club.creator.lastName}`}
-                    imageUrl={club.creator.profilePictureUrl}
-                  />
-                  <Text style={styles.creatorName}>
-                    {club.creator.firstName} {club.creator.lastName}
-                  </Text>
-                </View>
-              )}
-
-              {/* Footer */}
               <View style={styles.clubFooter}>
-                <View style={styles.memberCount}>
-                  <Ionicons name="people" size={16} color={Colors.textSecondary} />
-                  <Text style={styles.memberCountText}>
-                    {club.memberCount || 0} members
-                  </Text>
+                <View style={styles.metaRow}>
+                  <Ionicons name="people" size={14} color={Colors.textSecondary} />
+                  <Text style={styles.metaText}>{club.memberCount || 0}</Text>
+                  
+                  {club.creator && (
+                    <>
+                      <View style={styles.dot} />
+                      <Text style={styles.metaText}>
+                        {club.creator.firstName} {club.creator.lastName.charAt(0)}.
+                      </Text>
+                    </>
+                  )}
                 </View>
 
                 <TouchableOpacity
                   style={[styles.joinButton, isJoined && styles.joinedButton]}
-                  onPress={() => handleToggleJoin(club.id, isJoined)}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleToggleJoin(club.id, isJoined);
+                  }}
                   activeOpacity={0.7}
                 >
                   <Ionicons
-                    name={isJoined ? 'checkmark-circle' : 'add-circle'}
-                    size={18}
+                    name={isJoined ? 'checkmark' : 'add'}
+                    size={16}
                     color={isJoined ? Colors.primary : 'white'}
                   />
                   <Text style={[styles.joinButtonText, isJoined && styles.joinedButtonText]}>
@@ -213,73 +199,68 @@ export default function ClubsScreen() {
         <Text style={styles.headerTitle}>Clubs</Text>
 
         <TouchableOpacity style={styles.iconButton}>
-          <Ionicons name="search" size={24} color={Colors.text} />
+          <Ionicons name="search" size={22} color={Colors.text} />
         </TouchableOpacity>
       </View>
 
-      {/* Filter Tabs */}
-      <View style={styles.filterTabs}>
-        {['all', 'joined', 'discover'].map((filter) => (
-          <TouchableOpacity
-            key={filter}
-            style={[
-              styles.filterTab,
-              selectedFilter === filter && styles.filterTabActive,
-            ]}
-            onPress={() => setSelectedFilter(filter as any)}
-          >
-            <Text
-              style={[
-                styles.filterTabText,
-                selectedFilter === filter && styles.filterTabTextActive,
-              ]}
-            >
-              {filter === 'all' ? 'All' : filter === 'joined' ? 'My Clubs' : 'Discover'}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Type Categories */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoriesContainer}
-        style={styles.categoriesScroll}
-      >
-        {CLUB_TYPES.map((type, index) => (
-          <Animated.View
-            key={type.id}
-            entering={FadeInRight.delay(index * 50).springify()}
-          >
+      {/* Filter Pills - Clean Design */}
+      <View style={styles.filterSection}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterScroll}
+        >
+          {/* Main Filters */}
+          {(['all', 'joined', 'discover'] as const).map((filter) => (
             <TouchableOpacity
+              key={filter}
               style={[
-                styles.categoryChip,
-                selectedType === type.id && {
-                  backgroundColor: type.color,
-                  borderColor: type.color,
-                },
+                styles.filterPill,
+                selectedFilter === filter && styles.filterPillActive,
+              ]}
+              onPress={() => setSelectedFilter(filter)}
+            >
+              <Text
+                style={[
+                  styles.filterPillText,
+                  selectedFilter === filter && styles.filterPillTextActive,
+                ]}
+              >
+                {filter === 'all' ? 'All' : filter === 'joined' ? 'My Clubs' : 'Discover'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+
+          <View style={styles.divider} />
+
+          {/* Type Filters */}
+          {CLUB_TYPES.map((type) => (
+            <TouchableOpacity
+              key={type.id}
+              style={[
+                styles.filterPill,
+                selectedType === type.id && styles.filterPillActive,
               ]}
               onPress={() => setSelectedType(type.id)}
-              activeOpacity={0.7}
             >
               <Ionicons
                 name={type.icon as any}
-                size={18}
-                color={selectedType === type.id ? 'white' : type.color}
+                size={16}
+                color={selectedType === type.id ? 'white' : Colors.textSecondary}
+                style={styles.filterIcon}
               />
               <Text
                 style={[
-                  styles.categoryChipText,
-                  selectedType === type.id && styles.categoryChipTextActive,
+                  styles.filterPillText,
+                  selectedType === type.id && styles.filterPillTextActive,
                 ]}
               >
                 {type.name}
               </Text>
             </TouchableOpacity>
-          </Animated.View>
-        ))}
-      </ScrollView>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* Clubs List */}
       {loading ? (
@@ -310,6 +291,7 @@ export default function ClubsScreen() {
           renderItem={renderClubCard}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -377,64 +359,48 @@ const styles = StyleSheet.create({
   iconButton: {
     padding: 4,
   },
-  filterTabs: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  filterTab: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-    borderRadius: 8,
-    marginHorizontal: 4,
-  },
-  filterTabActive: {
-    backgroundColor: Colors.primary,
-  },
-  filterTabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-  },
-  filterTabTextActive: {
-    color: 'white',
-  },
-  categoriesScroll: {
+  filterSection: {
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  categoriesContainer: {
+  filterScroll: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 8,
   },
-  categoryChip: {
+  filterPill: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: 'white',
-    borderWidth: 1.5,
-    borderColor: Colors.border,
+    backgroundColor: Colors.background,
     marginRight: 8,
-    gap: 6,
   },
-  categoryChipText: {
+  filterPillActive: {
+    backgroundColor: Colors.primary,
+  },
+  filterIcon: {
+    marginRight: 6,
+  },
+  filterPillText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.text,
+    color: Colors.textSecondary,
   },
-  categoryChipTextActive: {
+  filterPillTextActive: {
     color: 'white',
+  },
+  divider: {
+    width: 1,
+    height: 24,
+    backgroundColor: Colors.border,
+    marginHorizontal: 4,
   },
   listContent: {
     padding: 16,
+    paddingBottom: 32,
   },
   clubCard: {
     marginBottom: 16,
@@ -445,7 +411,7 @@ const styles = StyleSheet.create({
   },
   clubCover: {
     width: '100%',
-    height: 120,
+    height: 100,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -459,21 +425,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   clubName: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: Colors.text,
     flex: 1,
     marginRight: 8,
   },
   typeBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 12,
   },
   typeBadgeText: {
     fontSize: 11,
     fontWeight: '600',
-    color: 'white',
   },
   clubDescription: {
     fontSize: 14,
@@ -481,36 +446,32 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 12,
   },
-  creatorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 8,
-  },
-  creatorName: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-  },
   clubFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  memberCount: {
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
-  memberCountText: {
+  metaText: {
     fontSize: 13,
     color: Colors.textSecondary,
+  },
+  dot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: Colors.textSecondary,
   },
   joinButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 16,
     backgroundColor: Colors.primary,
     gap: 4,
   },
@@ -520,7 +481,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary,
   },
   joinButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: 'white',
   },

@@ -163,6 +163,7 @@ const createApiClient = (baseURL: string): AxiosInstance => {
 export const authApi = createApiClient(Config.authUrl);
 export const feedApi = createApiClient(Config.feedUrl);
 export const mediaApi = createApiClient(Config.mediaUrl);
+export const clubsApi = createApiClient(Config.clubUrl);
 
 // Helper functions
 const generateRequestId = (): string => {
@@ -273,4 +274,4 @@ const isRetryableError = (error: unknown): boolean => {
   return false;
 };
 
-export default { authApi, feedApi, mediaApi };
+export default { authApi, feedApi, mediaApi, clubsApi };
