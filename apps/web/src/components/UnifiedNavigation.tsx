@@ -87,7 +87,8 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
     pathname.includes('/attendance') ||
     pathname.includes('/timetable') ||
     pathname.includes('/settings') ||
-    pathname.includes('/reports')
+    pathname.includes('/reports') ||
+    pathname.includes('/admin')  // Added for admin pages like claim-codes
   , [pathname]);
   
   const isFeedContext = useMemo(() => pathname.includes('/feed'), [pathname]);
