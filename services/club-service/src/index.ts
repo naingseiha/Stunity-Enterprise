@@ -108,62 +108,99 @@ import subjectRoutes from './routes/subjects';
 import gradeRoutes from './routes/grades';
 import sessionRoutes from './routes/sessions';
 import attendanceRoutes from './routes/attendance';
+import assignmentRoutes from './routes/assignments';
+import submissionRoutes from './routes/submissions';
+import awardRoutes from './routes/awards';
+import reportRoutes from './routes/reports';
 
 app.use('/clubs', authMiddleware, clubRoutes);
 app.use('/subjects', authMiddleware, subjectRoutes);
 app.use('/grades', authMiddleware, gradeRoutes);
 app.use('/sessions', authMiddleware, sessionRoutes);
 app.use('/attendance', authMiddleware, attendanceRoutes);
+app.use('/assignments', authMiddleware, assignmentRoutes);
+app.use('/submissions', authMiddleware, submissionRoutes);
+app.use('/awards', authMiddleware, awardRoutes);
+app.use('/reports', authMiddleware, reportRoutes);
 
 // Start server
 app.listen(PORT, () => {
   console.log(`
 🎓 Club Service running on port ${PORT}
-📚 Core Endpoints:
+📚 All Endpoints (55 total):
    GET    /health
    
-   Club Management:
-   POST   /clubs (create club)
-   GET    /clubs (list clubs)
-   GET    /clubs/:id (get club details)
-   PUT    /clubs/:id (update club)
-   DELETE /clubs/:id (delete club)
-   POST   /clubs/:id/join (join club)
-   POST   /clubs/:id/leave (leave club)
-   GET    /clubs/:id/members (list members)
-   PUT    /clubs/:id/members/:userId/role (update role)
-   DELETE /clubs/:id/members/:userId (remove member)
+   Club Management (10 endpoints):
+   POST   /clubs - Create club
+   GET    /clubs - List clubs
+   GET    /clubs/:id - Get club details
+   PUT    /clubs/:id - Update club
+   DELETE /clubs/:id - Delete club
+   POST   /clubs/:id/join - Join club
+   POST   /clubs/:id/leave - Leave club
+   GET    /clubs/:id/members - List members
+   PUT    /clubs/:id/members/:userId/role - Update role
+   DELETE /clubs/:id/members/:userId - Remove member
    
-   Subject Management:
-   POST   /subjects/clubs/:clubId/subjects (create subject)
-   GET    /subjects/clubs/:clubId/subjects (list subjects)
-   GET    /subjects/:id (get subject)
-   PUT    /subjects/:id (update subject)
-   DELETE /subjects/:id (delete subject)
-   PUT    /subjects/:id/instructor (assign instructor)
+   Subject Management (6 endpoints):
+   POST   /subjects/clubs/:clubId/subjects - Create subject
+   GET    /subjects/clubs/:clubId/subjects - List subjects
+   GET    /subjects/:id - Get subject
+   PUT    /subjects/:id - Update subject
+   DELETE /subjects/:id - Delete subject
+   PUT    /subjects/:id/instructor - Assign instructor
    
-   Grade Book:
-   POST   /grades/clubs/:clubId/grades (create grade)
-   GET    /grades/clubs/:clubId/grades (list grades)
-   GET    /grades/clubs/:clubId/grades/members/:memberId/summary (member summary)
-   GET    /grades/clubs/:clubId/grades/statistics (statistics)
-   PUT    /grades/:id (update grade)
-   DELETE /grades/:id (delete grade)
+   Grade Book (6 endpoints):
+   POST   /grades/clubs/:clubId/grades - Create grade
+   GET    /grades/clubs/:clubId/grades - List grades
+   GET    /grades/clubs/:clubId/grades/members/:memberId/summary - Member summary
+   GET    /grades/clubs/:clubId/grades/statistics - Statistics
+   PUT    /grades/:id - Update grade
+   DELETE /grades/:id - Delete grade
    
-   Session Management:
-   POST   /sessions/clubs/:clubId/sessions (create session)
-   GET    /sessions/clubs/:clubId/sessions (list sessions)
-   GET    /sessions/:id (get session with attendance)
-   PUT    /sessions/:id (update session)
-   DELETE /sessions/:id (delete session)
+   Session Management (5 endpoints):
+   POST   /sessions/clubs/:clubId/sessions - Create session
+   GET    /sessions/clubs/:clubId/sessions - List sessions
+   GET    /sessions/:id - Get session with attendance
+   PUT    /sessions/:id - Update session
+   DELETE /sessions/:id - Delete session
    
-   Attendance Tracking:
-   POST   /attendance/sessions/:sessionId/attendance (mark attendance)
-   GET    /attendance/sessions/:sessionId/attendance (session attendance)
-   GET    /attendance/clubs/:clubId/attendance/members/:memberId/summary (member summary)
-   GET    /attendance/clubs/:clubId/attendance/statistics (statistics)
-   PUT    /attendance/:id (update attendance)
-   DELETE /attendance/:id (delete attendance)
+   Attendance Tracking (6 endpoints):
+   POST   /attendance/sessions/:sessionId/attendance - Mark attendance
+   GET    /attendance/sessions/:sessionId/attendance - Session attendance
+   GET    /attendance/clubs/:clubId/attendance/members/:memberId/summary - Member summary
+   GET    /attendance/clubs/:clubId/attendance/statistics - Statistics
+   PUT    /attendance/:id - Update attendance
+   DELETE /attendance/:id - Delete attendance
+   
+   Assignment Management (7 endpoints):
+   POST   /assignments/clubs/:clubId/assignments - Create assignment
+   GET    /assignments/clubs/:clubId/assignments - List assignments
+   GET    /assignments/:id - Get assignment
+   PUT    /assignments/:id - Update assignment
+   DELETE /assignments/:id - Delete assignment
+   POST   /assignments/:id/publish - Publish assignment
+   GET    /assignments/:id/statistics - Assignment statistics
+   
+   Submission System (6 endpoints):
+   POST   /submissions/assignments/:assignmentId/submit - Submit assignment
+   GET    /submissions/assignments/:assignmentId/submissions - List submissions
+   GET    /submissions/clubs/:clubId/members/:memberId/submissions - Member submissions
+   GET    /submissions/:id - Get submission
+   PUT    /submissions/:id/grade - Grade submission
+   DELETE /submissions/:id - Delete submission
+   
+   Awards & Certificates (5 endpoints):
+   POST   /awards/clubs/:clubId/awards - Create award
+   GET    /awards/clubs/:clubId/awards - List club awards
+   GET    /awards/clubs/:clubId/members/:memberId/awards - Member awards
+   GET    /awards/:id - Get award details
+   DELETE /awards/:id - Revoke award
+   
+   Reports & Transcripts (3 endpoints):
+   GET    /reports/clubs/:clubId/members/:memberId/report - Generate member report
+   GET    /reports/clubs/:clubId/report - Generate club report
+   GET    /reports/clubs/:clubId/members/:memberId/transcript - Get transcript
   `);
 });
 
