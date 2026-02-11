@@ -104,15 +104,25 @@ app.get('/health', (req: Request, res: Response) => {
 
 // Import routes
 import clubRoutes from './routes/clubs';
+import subjectRoutes from './routes/subjects';
+import gradeRoutes from './routes/grades';
+import sessionRoutes from './routes/sessions';
+import attendanceRoutes from './routes/attendance';
 
 app.use('/clubs', authMiddleware, clubRoutes);
+app.use('/subjects', authMiddleware, subjectRoutes);
+app.use('/grades', authMiddleware, gradeRoutes);
+app.use('/sessions', authMiddleware, sessionRoutes);
+app.use('/attendance', authMiddleware, attendanceRoutes);
 
 // Start server
 app.listen(PORT, () => {
   console.log(`
 🎓 Club Service running on port ${PORT}
-📚 Endpoints:
+📚 Core Endpoints:
    GET    /health
+   
+   Club Management:
    POST   /clubs (create club)
    GET    /clubs (list clubs)
    GET    /clubs/:id (get club details)
@@ -123,6 +133,37 @@ app.listen(PORT, () => {
    GET    /clubs/:id/members (list members)
    PUT    /clubs/:id/members/:userId/role (update role)
    DELETE /clubs/:id/members/:userId (remove member)
+   
+   Subject Management:
+   POST   /subjects/clubs/:clubId/subjects (create subject)
+   GET    /subjects/clubs/:clubId/subjects (list subjects)
+   GET    /subjects/:id (get subject)
+   PUT    /subjects/:id (update subject)
+   DELETE /subjects/:id (delete subject)
+   PUT    /subjects/:id/instructor (assign instructor)
+   
+   Grade Book:
+   POST   /grades/clubs/:clubId/grades (create grade)
+   GET    /grades/clubs/:clubId/grades (list grades)
+   GET    /grades/clubs/:clubId/grades/members/:memberId/summary (member summary)
+   GET    /grades/clubs/:clubId/grades/statistics (statistics)
+   PUT    /grades/:id (update grade)
+   DELETE /grades/:id (delete grade)
+   
+   Session Management:
+   POST   /sessions/clubs/:clubId/sessions (create session)
+   GET    /sessions/clubs/:clubId/sessions (list sessions)
+   GET    /sessions/:id (get session with attendance)
+   PUT    /sessions/:id (update session)
+   DELETE /sessions/:id (delete session)
+   
+   Attendance Tracking:
+   POST   /attendance/sessions/:sessionId/attendance (mark attendance)
+   GET    /attendance/sessions/:sessionId/attendance (session attendance)
+   GET    /attendance/clubs/:clubId/attendance/members/:memberId/summary (member summary)
+   GET    /attendance/clubs/:clubId/attendance/statistics (statistics)
+   PUT    /attendance/:id (update attendance)
+   DELETE /attendance/:id (delete attendance)
   `);
 });
 

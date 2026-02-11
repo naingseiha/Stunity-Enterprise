@@ -1,9 +1,21 @@
 import { Router } from 'express';
+import {
+  createGrade,
+  getClubGrades,
+  getStudentGradeSummary,
+  updateGrade,
+  deleteGrade,
+  getGradeStatistics
+} from '../controllers/gradeController';
 
 const router = Router();
 
-// TODO: Implement grade management endpoints  
-router.post('/', (req, res) => res.json({ message: 'Add grade - Coming soon' }));
-router.get('/:id', (req, res) => res.json({ message: 'Get grades - Coming soon' }));
+// Grade routes
+router.post('/clubs/:clubId/grades', createGrade);
+router.get('/clubs/:clubId/grades', getClubGrades);
+router.get('/clubs/:clubId/grades/members/:memberId/summary', getStudentGradeSummary);
+router.get('/clubs/:clubId/grades/statistics', getGradeStatistics);
+router.put('/:id', updateGrade);
+router.delete('/:id', deleteGrade);
 
 export default router;

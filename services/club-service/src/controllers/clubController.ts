@@ -32,13 +32,13 @@ export const createClub = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ success: false, message: 'Club name is required' });
     }
 
-    const club = await prisma.club.create({
+    const club = await prisma.studyClub.create({
       data: {
         name,
         description,
         clubType: type,
         mode,
-        createdById: userId,
+        creatorId: userId,
         schoolId,
         coverImage,
         subject,
@@ -61,12 +61,12 @@ export const createClub = async (req: AuthRequest, res: Response) => {
         },
       },
       include: {
-        createdBy: {
+        creator: {
           select: {
             id: true,
             firstName: true,
             lastName: true,
-            profilePicture: true,
+            profilePictureUrl: true,
           },
         },
         members: {
@@ -76,7 +76,7 @@ export const createClub = async (req: AuthRequest, res: Response) => {
                 id: true,
                 firstName: true,
                 lastName: true,
-                profilePicture: true,
+                profilePictureUrl: true,
               },
             },
           },
@@ -113,15 +113,15 @@ export const getClubs = async (req: AuthRequest, res: Response) => {
       ];
     }
 
-    const clubs = await prisma.club.findMany({
+    const clubs = await prisma.studyClub.findMany({
       where,
       include: {
-        createdBy: {
+        creator: {
           select: {
             id: true,
             firstName: true,
             lastName: true,
-            profilePicture: true,
+            profilePictureUrl: true,
           },
         },
         _count: {
@@ -147,15 +147,15 @@ export const getClubById = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const userId = req.user!.userId;
 
-    const club = await prisma.club.findUnique({
+    const club = await prisma.studyClub.findUnique({
       where: { id },
       include: {
-        createdBy: {
+        creator: {
           select: {
             id: true,
             firstName: true,
             lastName: true,
-            profilePicture: true,
+            profilePictureUrl: true,
             role: true,
           },
         },
@@ -166,7 +166,7 @@ export const getClubById = async (req: AuthRequest, res: Response) => {
                 id: true,
                 firstName: true,
                 lastName: true,
-                profilePicture: true,
+                profilePictureUrl: true,
                 role: true,
               },
             },
@@ -182,7 +182,7 @@ export const getClubById = async (req: AuthRequest, res: Response) => {
                 id: true,
                 firstName: true,
                 lastName: true,
-                profilePicture: true,
+                profilePictureUrl: true,
               },
             },
           },
@@ -204,7 +204,13 @@ export const getClubById = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, message: 'Club not found' });
     }
 
-    const membership = club.members.find(m => m.userId === userId);
+    // Check user membership
+    const membership = await prisma.clubMember.findFirst({
+      where: {
+        clubId: id,
+        userId: req.user!.userId
+      }
+    });
 
     res.json({ success: true, club, membership });
   } catch (error: any) {
@@ -218,7 +224,7 @@ export const updateClub = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const userId = req.user!.userId;
 
-    const club = await prisma.club.findUnique({
+    const club = await prisma.studyClub.findUnique({
       where: { id },
       include: {
         members: {
@@ -253,7 +259,7 @@ export const updateClub = async (req: AuthRequest, res: Response) => {
       enableAwards,
     } = req.body;
 
-    const updatedClub = await prisma.club.update({
+    const updatedClub = await prisma.studyClub.update({
       where: { id },
       data: {
         ...(name && { name }),
@@ -285,7 +291,7 @@ export const deleteClub = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const userId = req.user!.userId;
 
-    const club = await prisma.club.findUnique({
+    const club = await prisma.studyClub.findUnique({
       where: { id },
       include: {
         members: {
@@ -303,7 +309,7 @@ export const deleteClub = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ success: false, message: 'Only club owner can delete the club' });
     }
 
-    await prisma.club.delete({ where: { id } });
+    await prisma.studyClub.delete({ where: { id } });
 
     res.json({ success: true, message: 'Club deleted successfully' });
   } catch (error: any) {
@@ -317,7 +323,7 @@ export const joinClub = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const userId = req.user!.userId;
 
-    const club = await prisma.club.findUnique({
+    const club = await prisma.studyClub.findUnique({
       where: { id },
       include: {
         members: true,
@@ -352,7 +358,7 @@ export const joinClub = async (req: AuthRequest, res: Response) => {
             id: true,
             firstName: true,
             lastName: true,
-            profilePicture: true,
+            profilePictureUrl: true,
           },
         },
       },
@@ -406,7 +412,7 @@ export const getClubMembers = async (req: AuthRequest, res: Response) => {
             id: true,
             firstName: true,
             lastName: true,
-            profilePicture: true,
+            profilePictureUrl: true,
             email: true,
           },
         },

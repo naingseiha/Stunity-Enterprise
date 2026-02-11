@@ -1,9 +1,21 @@
 import { Router } from 'express';
+import {
+  createSubject,
+  getSubjects,
+  getSubjectById,
+  updateSubject,
+  deleteSubject,
+  assignInstructor
+} from '../controllers/subjectController';
 
 const router = Router();
 
-// TODO: Implement subject management endpoints
-router.post('/', (req, res) => res.json({ message: 'Add subject - Coming soon' }));
-router.get('/:id', (req, res) => res.json({ message: 'Get subject - Coming soon' }));
+// Subject routes
+router.post('/clubs/:clubId/subjects', createSubject);
+router.get('/clubs/:clubId/subjects', getSubjects);
+router.get('/:id', getSubjectById);
+router.put('/:id', updateSubject);
+router.delete('/:id', deleteSubject);
+router.put('/:id/instructor', assignInstructor);
 
 export default router;
