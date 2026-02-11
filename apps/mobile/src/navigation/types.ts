@@ -47,7 +47,7 @@ export type MainTabParamList = {
   FeedTab: NavigatorScreenParams<FeedStackParamList>;
   LearnTab: NavigatorScreenParams<LearnStackParamList>;
   MessagesTab: NavigatorScreenParams<MessagesStackParamList>;
-  ClubsTab: undefined;
+  ClubsTab: NavigatorScreenParams<ClubsStackParamList>;
   ProfileTab: NavigatorScreenParams<ProfileStackParamList>;
 };
 
@@ -86,6 +86,18 @@ export type MessagesStackParamList = {
   Chat: { conversationId?: string; userId?: string };
   NewMessage: undefined;
   GroupInfo: { conversationId: string };
+};
+
+// Clubs Stack
+export type ClubsStackParamList = {
+  ClubsList: undefined;
+  ClubDetails: { clubId: string };
+  AssignmentsList: { clubId: string };
+  AssignmentDetail: { assignmentId: string; clubId: string };
+  CreateAssignment: { clubId: string };
+  SubmissionForm: { assignmentId: string; clubId: string };
+  SubmissionsList: { assignmentId: string; clubId: string };
+  GradeSubmission: { submissionId: string; assignmentId: string; clubId: string };
 };
 
 // Profile Stack
@@ -135,6 +147,12 @@ export type MessagesStackScreenProps<T extends keyof MessagesStackParamList> =
 export type ProfileStackScreenProps<T extends keyof ProfileStackParamList> =
   CompositeScreenProps<
     NativeStackScreenProps<ProfileStackParamList, T>,
+    MainTabScreenProps<keyof MainTabParamList>
+  >;
+
+export type ClubsStackScreenProps<T extends keyof ClubsStackParamList> =
+  CompositeScreenProps<
+    NativeStackScreenProps<ClubsStackParamList, T>,
     MainTabScreenProps<keyof MainTabParamList>
   >;
 

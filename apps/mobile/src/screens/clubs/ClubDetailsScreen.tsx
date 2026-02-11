@@ -233,6 +233,18 @@ export default function ClubDetailsScreen() {
               )}
             </View>
 
+            {/* Assignments Button */}
+            {isJoined && (
+              <TouchableOpacity
+                style={styles.assignmentsButton}
+                onPress={() => navigation.navigate('AssignmentsList', { clubId })}
+              >
+                <Ionicons name="document-text" size={20} color={Colors.primary} />
+                <Text style={styles.assignmentsButtonText}>View Assignments</Text>
+                <Ionicons name="chevron-forward" size={20} color={Colors.gray[400]} />
+              </TouchableOpacity>
+            )}
+
             {/* User Role Badge */}
             {userRole && (
               <View style={styles.roleContainer}>
@@ -577,6 +589,25 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#E5E7EB',
     backgroundColor: 'white',
+  },
+  assignmentsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+  },
+  assignmentsButtonText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#F59E0B',
+    marginLeft: 12,
   },
   roleContainer: {
     flexDirection: 'row',
