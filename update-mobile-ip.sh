@@ -1,7 +1,16 @@
 #!/bin/bash
 
-# Update Mobile IP Script
-# Automatically detects current local IP and updates .env file
+# ============================================================================
+# Mobile IP Auto-Update Script (OPTIONAL)
+# ============================================================================
+# 
+# This script automatically detects your local IP address and updates the
+# .env file for the mobile app.
+#
+# 🎉 NEW: As of Feb 2026, this script is now OPTIONAL!
+# The mobile app auto-detects your IP using Expo's hostUri.
+# Only use this if you need to manually override auto-detection.
+# ============================================================================
 
 set -e
 
@@ -61,4 +70,7 @@ echo ""
 echo -e "${YELLOW}⚠️  Restart Expo dev server to apply changes:${NC}"
 echo -e "   1. Stop Expo (Ctrl+C)"
 echo -e "   2. Run: ${GREEN}cd apps/mobile && npx expo start --clear${NC}"
+echo ""
+echo -e "${BLUE}💡 TIP: The app now auto-detects IP changes!${NC}"
+echo -e "   You only need this script if auto-detection fails."
 echo ""

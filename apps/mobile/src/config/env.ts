@@ -5,6 +5,9 @@
  * Supports development, staging, and production environments
  */
 
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
+
 export type Environment = 'development' | 'staging' | 'production';
 
 interface EnvironmentConfig {
@@ -22,14 +25,34 @@ interface EnvironmentConfig {
   playStoreUrl: string;
 }
 
-// Get API host dynamically based on environment
+/**
+ * Smart API host detection that works across WiFi changes
+ * 
+ * Priority:
+ * 1. Manual override via EXPO_PUBLIC_API_HOST env var
+ * 2. Expo's debuggerHost (auto-detects dev machine IP)
+ * 3. Localhost fallback
+ */
 const getApiHost = (): string => {
-  // You can set this in .env.local: EXPO_PUBLIC_API_HOST=192.168.1.100
+  // Allow manual override via .env
   const envHost = process.env.EXPO_PUBLIC_API_HOST;
-  if (envHost) return envHost;
+  if (envHost) {
+    console.log('📡 [ENV] Using manual API host:', envHost);
+    return envHost;
+  }
   
-  // Default to localhost for development
-  // This works when your backend is running on the same machine as the simulator
+  // In development, use Expo's auto-detected debugger host
+  // This automatically adapts when WiFi changes!
+  if (__DEV__ && Constants.expoConfig?.hostUri) {
+    const debuggerHost = Constants.expoConfig.hostUri.split(':').shift();
+    if (debuggerHost) {
+      console.log('📡 [ENV] Auto-detected API host from Expo:', debuggerHost);
+      return debuggerHost;
+    }
+  }
+  
+  // Fallback: localhost (works for iOS simulator on same machine)
+  console.log('📡 [ENV] Using localhost fallback');
   return 'localhost';
 };
 
