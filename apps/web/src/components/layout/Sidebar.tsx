@@ -14,6 +14,7 @@ import {
   Settings,
   ChevronLeft,
   School,
+  Ticket,
 } from 'lucide-react';
 
 const navigation = [
@@ -23,6 +24,7 @@ const navigation = [
   { name: 'Classes', href: '/classes', icon: School },
   { name: 'Subjects', href: '/subjects', icon: BookOpen },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
+  { name: 'Claim Codes', href: '/admin/claim-codes', icon: Ticket },
   { name: 'Reports', href: '/reports', icon: FileText },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },

@@ -24,6 +24,7 @@ import {
   Loader2,
   MessageCircle,
   ChevronRight,
+  Ticket,
 } from 'lucide-react';
 import AcademicYearSelector from './AcademicYearSelector';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -167,6 +168,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
     { name: 'Grade Analytics', icon: TrendingUp, path: `/${locale}/grades/analytics`, prefetch: null },
     { name: 'Mark Attendance', icon: ClipboardCheck, path: `/${locale}/attendance/mark`, prefetch: null },
     { name: 'Attendance Reports', icon: ClipboardCheck, path: `/${locale}/attendance/reports`, prefetch: null },
+    { name: 'Claim Codes', icon: Ticket, path: `/${locale}/admin/claim-codes`, prefetch: null },
     { name: 'Promotion', icon: TrendingUp, path: `/${locale}/settings/promotion`, prefetch: null },
     { name: 'Settings', icon: Settings, path: `/${locale}/settings/academic-years`, prefetch: null },
   ], [locale]);
