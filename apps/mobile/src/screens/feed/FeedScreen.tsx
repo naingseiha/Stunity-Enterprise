@@ -150,11 +150,12 @@ export default function FeedScreen() {
     console.log('Daily Challenge pressed');
   }, []);
 
-  const handleSubjectFilterChange = useCallback((filterKey: string) => {
+  const handleSubjectFilterChange = useCallback(async (filterKey: string) => {
     setActiveSubjectFilter(filterKey);
-    // TODO: Implement actual filtering logic when backend supports it
-    console.log('Subject filter changed:', filterKey);
-  }, []);
+    
+    // Refresh feed with subject filter
+    await fetchPosts(true, filterKey);
+  }, [fetchPosts]);
 
   const renderHeader = () => (
     <View style={styles.headerSection}>

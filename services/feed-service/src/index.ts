@@ -252,7 +252,7 @@ app.get('/media/*', async (req: Request, res: Response) => {
 // GET /posts - Get feed posts
 app.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { page = 1, limit = 20, type } = req.query;
+    const { page = 1, limit = 20, type, subject } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
     const where: any = {
@@ -265,6 +265,13 @@ app.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => 
 
     if (type) {
       where.postType = type;
+    }
+
+    // Subject filter support
+    if (subject && subject !== 'ALL') {
+      where.topicTags = {
+        hasSome: [String(subject).toLowerCase()],
+      };
     }
 
     const [posts, total] = await Promise.all([

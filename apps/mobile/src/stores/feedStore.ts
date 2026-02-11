@@ -141,7 +141,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   ...initialState,
 
   // Fetch posts with pagination
-  fetchPosts: async (refresh = false) => {
+  fetchPosts: async (refresh = false, subject?: string) => {
     const { isLoadingPosts, postsPage, posts, hasMorePosts } = get();
     
     if (isLoadingPosts || (!refresh && !hasMorePosts)) return;
@@ -154,8 +154,15 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       // Performance optimization: Use smaller page size for initial load (faster perceived speed)
       const limit = page === 1 ? 10 : 20;
       
+      const params: any = { page, limit };
+      
+      // Add subject filter if provided
+      if (subject && subject !== 'ALL') {
+        params.subject = subject;
+      }
+      
       const response = await feedApi.get('/posts', {
-        params: { page, limit },
+        params,
         timeout: 10000, // Reduced timeout for faster feedback
       });
 
