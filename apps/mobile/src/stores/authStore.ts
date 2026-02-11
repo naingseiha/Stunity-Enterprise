@@ -9,7 +9,8 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, AuthTokens, LoginCredentials, RegisterData } from '@/types';
-import { authApi, eventEmitter } from '@/api/client';
+import { authApi } from '@/api/client';
+import { eventEmitter } from '@/utils/eventEmitter';
 import { tokenService } from '@/services/token';
 
 interface AuthState {

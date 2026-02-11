@@ -47,6 +47,7 @@ interface PostCardProps {
   onShare?: () => void;
   onRepost?: () => void;
   onBookmark?: () => void;
+  onValue?: () => void;  // NEW: Educational value rating
   onUserPress?: () => void;
   onPress?: () => void;
   onVote?: (optionId: string) => void;
@@ -115,6 +116,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   onShare,
   onRepost,
   onBookmark,
+  onValue,
   onUserPress,
   onPress,
   onVote,
@@ -200,7 +202,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       withSpring(1.4, { damping: 8 }),
       withSpring(1, { damping: 12 })
     );
-    setValued(!valued);
+    onValue?.(); // Open educational value modal
   };
 
   const handleBookmark = () => {

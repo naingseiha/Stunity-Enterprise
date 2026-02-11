@@ -587,6 +587,59 @@ app.post('/posts/:id/like', authenticateToken, async (req: AuthRequest, res: Res
   }
 });
 
+// POST /posts/:id/value - Submit educational value rating for a post
+app.post('/posts/:id/value', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const postId = req.params.id;
+    const userId = req.user!.id;
+    const { accuracy, helpfulness, clarity, depth, difficulty, wouldRecommend } = req.body;
+
+    // Validate ratings
+    if (!accuracy || !helpfulness || !clarity || !depth) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'All rating dimensions required (accuracy, helpfulness, clarity, depth)' 
+      });
+    }
+
+    // Verify post exists
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { id: true, authorId: true },
+    });
+
+    if (!post) {
+      return res.status(404).json({ success: false, error: 'Post not found' });
+    }
+
+    // Calculate average rating
+    const averageRating = (accuracy + helpfulness + clarity + depth) / 4;
+
+    // For now, log for analytics (will add to database schema later)
+    console.log('📊 Educational Value Submitted:', {
+      postId,
+      userId,
+      ratings: { accuracy, helpfulness, clarity, depth },
+      difficulty,
+      wouldRecommend,
+      averageRating: averageRating.toFixed(2),
+      timestamp: new Date().toISOString(),
+    });
+
+    // TODO: Store in EducationalValue table when schema is updated
+    // For now, we just acknowledge the submission
+    
+    res.json({ 
+      success: true, 
+      message: 'Educational value rating submitted',
+      averageRating: averageRating.toFixed(2),
+    });
+  } catch (error: any) {
+    console.error('Submit value error:', error);
+    res.status(500).json({ success: false, error: 'Failed to submit value rating' });
+  }
+});
+
 // GET /posts/:id/comments - Get post comments
 app.get('/posts/:id/comments', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {

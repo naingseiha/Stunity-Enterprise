@@ -55,6 +55,7 @@ model School {
   users               User[]
   claimCodes          ClaimCode[]
   idGenerationLogs    IdGenerationLog[]
+  studyClubs          StudyClub[]
 
   @@index([slug])
   @@index([subscriptionTier])
@@ -490,46 +491,46 @@ model Teacher {
 }
 
 model User {
-  id                      String              @id @default(cuid())
+  id                      String                     @id @default(cuid())
   schoolId                String?
-  email                   String?             @unique
+  email                   String?                    @unique
   password                String
   firstName               String
   lastName                String
-  createdAt               DateTime            @default(now())
-  updatedAt               DateTime            @updatedAt
-  failedAttempts          Int                 @default(0)
-  isActive                Boolean             @default(true)
+  createdAt               DateTime                   @default(now())
+  updatedAt               DateTime                   @updatedAt
+  failedAttempts          Int                        @default(0)
+  isActive                Boolean                    @default(true)
   lastLogin               DateTime?
   lockedUntil             DateTime?
-  loginCount              Int                 @default(0)
-  permissions             Json?               @default("{\"canEnterGrades\": true, \"canViewReports\": true, \"canMarkAttendance\": true}")
-  phone                   String?             @unique
-  studentId               String?             @unique
-  teacherId               String?             @unique
-  role                    UserRole            @default(TEACHER)
+  loginCount              Int                        @default(0)
+  permissions             Json?                      @default("{\"canEnterGrades\": true, \"canViewReports\": true, \"canMarkAttendance\": true}")
+  phone                   String?                    @unique
+  studentId               String?                    @unique
+  teacherId               String?                    @unique
+  role                    UserRole                   @default(TEACHER)
   accountSuspendedAt      DateTime?
-  isDefaultPassword       Boolean             @default(true)
-  isSuperAdmin            Boolean             @default(false)
+  isDefaultPassword       Boolean                    @default(true)
+  isSuperAdmin            Boolean                    @default(false)
   lastPasswordHashes      String[]
   passwordChangedAt       DateTime?
   passwordExpiresAt       DateTime?
   passwordResetExpiry     DateTime?
-  passwordResetToken      String?             @unique
+  passwordResetToken      String?                    @unique
   suspensionReason        String?
-  parentId                String?             @unique
+  parentId                String?                    @unique
   // NEW: Account type and SSO fields
-  accountType             AccountType         @default(SOCIAL_ONLY)
+  accountType             AccountType                @default(SOCIAL_ONLY)
   ssoProvider             String?
   ssoId                   String?
   ssoAccessToken          String?
   organizationCode        String?
   organizationType        String?
   organizationName        String?
-  socialFeaturesEnabled   Boolean             @default(true)
+  socialFeaturesEnabled   Boolean                    @default(true)
   privacySettings         Json?
-  isEmailVerified         Boolean             @default(false)
-  emailVerificationToken  String?             @unique
+  isEmailVerified         Boolean                    @default(false)
+  emailVerificationToken  String?                    @unique
   emailVerificationExpiry DateTime?
   profilePictureUrl       String?
   profilePictureKey       String?
@@ -540,69 +541,79 @@ model User {
   interests               String[]
   skills                  String[]
   socialLinks             Json?
-  profileCompleteness     Int                 @default(0)
+  profileCompleteness     Int                        @default(0)
   profileUpdatedAt        DateTime?
-  profileVisibility       ProfileVisibility   @default(SCHOOL)
+  profileVisibility       ProfileVisibility          @default(SCHOOL)
   careerGoals             String?
   location                String?
   languages               String[]
   professionalTitle       String?
-  isVerified              Boolean             @default(false)
+  isVerified              Boolean                    @default(false)
   verifiedAt              DateTime?
-  totalLearningHours      Int                 @default(0)
-  currentStreak           Int                 @default(0)
-  longestStreak           Int                 @default(0)
-  totalPoints             Int                 @default(0)
-  level                   Int                 @default(1)
-  isOpenToOpportunities   Boolean             @default(false)
+  totalLearningHours      Int                        @default(0)
+  currentStreak           Int                        @default(0)
+  longestStreak           Int                        @default(0)
+  totalPoints             Int                        @default(0)
+  level                   Int                        @default(1)
+  isOpenToOpportunities   Boolean                    @default(false)
   resumeUrl               String?
   resumeKey               String?
   achievements            Achievement[]
-  adminAuditLogs          AuditLog[]          @relation("AuditLogAdmin")
-  teacherAuditLogs        AuditLog[]          @relation("AuditLogTeacher")
+  adminAuditLogs          AuditLog[]                 @relation("AuditLogAdmin")
+  teacherAuditLogs        AuditLog[]                 @relation("AuditLogTeacher")
   certifications          Certification[]
   commentReactions        CommentReaction[]
   comments                Comment[]
   education               Education[]
   experiences             Experience[]
-  following               Follow[]            @relation("Following")
-  followers               Follow[]            @relation("Followers")
+  following               Follow[]                   @relation("Following")
+  followers               Follow[]                   @relation("Followers")
   gradeConfirmations      GradeConfirmation[]
   likes                   Like[]
-  bookmarks               Bookmark[]          @relation("UserBookmarks")
-  sentNotifications       Notification[]      @relation("NotificationActor")
-  notifications           Notification[]      @relation("NotificationRecipient")
-  pollVotes               PollVote[]          @relation("PollVotes")
-  reportedPosts           PostReport[]        @relation("PostReporter")
-  reviewedReports         PostReport[]        @relation("ReportReviewer")
+  bookmarks               Bookmark[]                 @relation("UserBookmarks")
+  sentNotifications       Notification[]             @relation("NotificationActor")
+  notifications           Notification[]             @relation("NotificationRecipient")
+  pollVotes               PollVote[]                 @relation("PollVotes")
+  reportedPosts           PostReport[]               @relation("PostReporter")
+  reviewedReports         PostReport[]               @relation("ReportReviewer")
   postViews               PostView[]
   posts                   Post[]
   projects                Project[]
-  givenRecommendations    Recommendation[]    @relation("RecommendationAuthor")
-  recommendations         Recommendation[]    @relation("RecommendationRecipient")
-  endorsementsGiven       SkillEndorsement[]  @relation("EndorsementGiver")
-  endorsementsReceived    SkillEndorsement[]  @relation("EndorsementRecipient")
-  blockedBy               UserBlock[]         @relation("Blocked")
-  blocking                UserBlock[]         @relation("Blocker")
+  givenRecommendations    Recommendation[]           @relation("RecommendationAuthor")
+  recommendations         Recommendation[]           @relation("RecommendationRecipient")
+  endorsementsGiven       SkillEndorsement[]         @relation("EndorsementGiver")
+  endorsementsReceived    SkillEndorsement[]         @relation("EndorsementRecipient")
+  blockedBy               UserBlock[]                @relation("Blocked")
+  blocking                UserBlock[]                @relation("Blocker")
   userSkills              UserSkill[]
   dmParticipations        DMParticipant[]
-  sentDirectMessages      DirectMessage[]     @relation("DMSender")
+  sentDirectMessages      DirectMessage[]            @relation("DMSender")
   dmReadReceipts          DMReadReceipt[]
-  createdStudyClubs       StudyClub[]         @relation("ClubCreator")
-  studyClubMemberships    StudyClubMember[]
-  createdEvents           Event[]             @relation("EventCreator")
+  createdStudyClubs       StudyClub[]                @relation("ClubCreator")
+  clubMemberships         ClubMember[]               @relation("ClubMemberships")
+  clubInstructions        ClubSubject[]              @relation("ClubInstructor")
+  clubGrades              ClubGrade[]                @relation("ClubGrader")
+  clubSessions            ClubSession[]              @relation("ClubSessionCreator")
+  clubAttendanceMarking   ClubAttendance[]           @relation("ClubAttendanceMarker")
+  clubAssignments         ClubAssignment[]           @relation("ClubAssignmentCreator")
+  clubSubmissionGrading   ClubAssignmentSubmission[] @relation("ClubSubmissionGrader")
+  clubReportsGenerated    ClubReport[]               @relation("ClubReportGenerator")
+  clubAwardsGiven         ClubAward[]                @relation("ClubAwardGiver")
+  clubMaterialsUploaded   ClubMaterial[]             @relation("ClubMaterialUploader")
+  clubAnnouncements       ClubAnnouncement[]         @relation("ClubAnnouncementCreator")
+  createdEvents           Event[]                    @relation("EventCreator")
   eventAttendances        EventAttendee[]
   // Course relations
-  createdCourses          Course[]            @relation("CourseInstructor")
+  createdCourses          Course[]                   @relation("CourseInstructor")
   enrollments             Enrollment[]
   courseReviews           CourseReview[]
-  createdPaths            LearningPath[]      @relation("PathCreator")
+  createdPaths            LearningPath[]             @relation("PathCreator")
   // Story relations
-  stories                 Story[]             @relation("UserStories")
-  parent                  Parent?             @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  school                  School?             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  student                 Student?            @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  teacher                 Teacher?            @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  stories                 Story[]                    @relation("UserStories")
+  parent                  Parent?                    @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  school                  School?                    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student                 Student?                   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher                 Teacher?                   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   claimedCode             ClaimCode?
 
   @@index([email, isActive])
@@ -1477,6 +1488,7 @@ enum AttendanceStatus {
   PERMISSION
   LATE
   EXCUSED
+  MEDICAL_LEAVE
 }
 
 enum DegreeLevel {
@@ -1875,77 +1887,611 @@ enum DMMessageType {
 }
 
 // ============================================
-// PHASE 18: Study Clubs
-// Education-focused groups for collaborative learning
+// PHASE 18: Enhanced Study Clubs
+// Full classroom management system + social learning groups
 // ============================================
 
 model StudyClub {
   id          String        @id @default(cuid())
   name        String
   description String?
-  clubType    StudyClubType @default(SUBJECT)
-  category    String? // e.g., "Mathematics", "Programming", "Science"
-  privacy     ClubPrivacy   @default(PUBLIC)
-  coverImage  String?
-  creatorId   String
-  schoolId    String? // Optional school association
-  maxMembers  Int? // Optional member limit
-  isActive    Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  clubType    StudyClubType @default(CASUAL_STUDY_GROUP)
+  mode        ClubMode      @default(PUBLIC)
 
-  creator User              @relation("ClubCreator", fields: [creatorId], references: [id], onDelete: Cascade)
-  members StudyClubMember[]
-  posts   Post[]            @relation("ClubPosts")
+  // Creator
+  creatorId String
+  creator   User   @relation("ClubCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+
+  // Optional school association
+  schoolId String?
+  school   School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+
+  // Feature flags for STRUCTURED_CLASS type
+  enableSubjects     Boolean @default(false) // Multiple subjects
+  enableGrading      Boolean @default(false) // Full grade book
+  enableAttendance   Boolean @default(false) // Attendance tracking
+  enableAssignments  Boolean @default(false) // Assignments system
+  enableReports      Boolean @default(false) // Report cards
+  enableTranscripts  Boolean @default(false) // Academic transcripts
+  enableAwards       Boolean @default(false) // Certificates/awards
+  enableParentAccess Boolean @default(false) // Parent/guardian view
+  enableAnalytics    Boolean @default(false) // Analytics dashboard
+
+  // Class details (for STRUCTURED_CLASS)
+  term          String? // "Spring 2026", "Fall 2026"
+  startDate     DateTime?
+  endDate       DateTime?
+  capacity      Int? // Max students
+  syllabus      String? // Course syllabus
+  objectives    String? // Learning objectives
+  prerequisites String? // Prerequisites
+
+  // Grading configuration
+  gradingScale String? // "PERCENTAGE", "LETTER", "GPA"
+  passingGrade Float? // Minimum to pass
+
+  // Visual
+  coverImage String?
+  color      String? @default("#FFA500")
+
+  // Metadata
+  category String? // General subject area
+  subject  String? // Specific subject
+  level    String? // Beginner, Intermediate, Advanced
+  tags     String[]
+  language String?  @default("en")
+
+  // Status
+  maxMembers Int? // Optional member limit
+  isActive   Boolean @default(true)
+
+  // Relations
+  members       ClubMember[]
+  subjects      ClubSubject[]
+  grades        ClubGrade[]
+  attendance    ClubAttendance[]
+  assignments   ClubAssignment[]
+  sessions      ClubSession[]
+  materials     ClubMaterial[]
+  announcements ClubAnnouncement[]
+  reports       ClubReport[]
+  awards        ClubAward[]
+  schedules     ClubSchedule[]
+  posts         Post[]             @relation("ClubPosts")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([creatorId])
   @@index([clubType])
-  @@index([privacy])
+  @@index([mode])
   @@index([category])
   @@index([schoolId])
+  @@index([isActive])
   @@map("study_clubs")
 }
 
-model StudyClubMember {
-  id        String         @id @default(cuid())
-  clubId    String
-  userId    String
-  role      ClubMemberRole @default(MEMBER)
-  joinedAt  DateTime       @default(now())
-  invitedBy String? // Who invited this member
+model ClubMember {
+  id     String         @id @default(cuid())
+  clubId String
+  club   StudyClub      @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  userId String
+  user   User           @relation("ClubMemberships", fields: [userId], references: [id], onDelete: Cascade)
+  role   ClubMemberRole @default(STUDENT)
 
-  club StudyClub @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Student-specific fields
+  studentNumber  String? // Custom student ID within club
+  enrollmentDate DateTime @default(now())
+
+  // Status
+  isActive         Boolean   @default(true)
+  withdrawnAt      DateTime?
+  withdrawalReason String?
+
+  // Relations
+  grades      ClubGrade[]
+  attendance  ClubAttendance[]
+  assignments ClubAssignmentSubmission[]
+  reports     ClubReport[]
+  awards      ClubAward[]
+
+  // Metadata
+  invitedBy String? // Who invited this member
+  joinedAt  DateTime @default(now())
 
   @@unique([clubId, userId])
   @@index([userId])
   @@index([clubId])
-  @@map("study_club_members")
+  @@index([clubId, role])
+  @@map("club_members")
 }
+
+// ========================================
+// SUBJECT MANAGEMENT
+// ========================================
+
+model ClubSubject {
+  id     String    @id @default(cuid())
+  clubId String
+  club   StudyClub @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  name        String // "Mathematics", "Physics", etc.
+  code        String? // "MATH101"
+  description String?
+
+  // Academic credits
+  credits     Float? // Credit hours
+  weeklyHours Float? // Hours per week
+  weight      Float  @default(1.0) // Weight in final grade
+
+  // Teaching
+  instructorId String?
+  instructor   User?   @relation("ClubInstructor", fields: [instructorId], references: [id], onDelete: SetNull)
+
+  // Grading
+  maxScore     Int    @default(100)
+  passingScore Float?
+
+  // Organization
+  order    Int?
+  isActive Boolean @default(true)
+
+  // Relations
+  grades      ClubGrade[]
+  assignments ClubAssignment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([clubId, code])
+  @@index([clubId])
+  @@index([instructorId])
+  @@map("club_subjects")
+}
+
+// ========================================
+// GRADING SYSTEM
+// ========================================
+
+model ClubGrade {
+  id        String      @id @default(cuid())
+  clubId    String
+  club      StudyClub   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  memberId  String
+  member    ClubMember  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  subjectId String
+  subject   ClubSubject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  // Assessment info
+  assessmentType AssessmentType
+  assessmentName String // "Midterm Exam", "Homework 3"
+
+  // Scores
+  score         Float
+  maxScore      Float
+  percentage    Float? // Auto-calculated
+  weightedScore Float? // Score * subject weight
+
+  // Grading period
+  term       String? // "Q1", "Q2", "Semester 1"
+  gradedDate DateTime @default(now())
+
+  // Teacher feedback
+  remarks    String?
+  gradedById String
+  gradedBy   User    @relation("ClubGrader", fields: [gradedById], references: [id])
+
+  // Workflow
+  isConfirmed Boolean   @default(false)
+  confirmedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([memberId, subjectId, assessmentType, assessmentName])
+  @@index([clubId])
+  @@index([memberId])
+  @@index([subjectId])
+  @@index([gradedById])
+  @@map("club_grades")
+}
+
+enum AssessmentType {
+  HOMEWORK
+  QUIZ
+  MIDTERM
+  FINAL_EXAM
+  PROJECT
+  PRESENTATION
+  PARTICIPATION
+  LAB_WORK
+  OTHER
+}
+
+// ========================================
+// ATTENDANCE TRACKING
+// ========================================
+
+model ClubSession {
+  id     String    @id @default(cuid())
+  clubId String
+  club   StudyClub @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  title       String // "Week 1: Introduction"
+  description String?
+  sessionDate DateTime
+  startTime   String // "09:00"
+  endTime     String // "10:30"
+  duration    Int // minutes
+
+  // Location
+  location   String? // "Room 101", "Online"
+  meetingUrl String? // Zoom/Google Meet link
+
+  // Content
+  topics    String[] // Topics covered
+  materials String[] // Material IDs
+
+  // Attendance
+  attendances        ClubAttendance[]
+  attendanceRequired Boolean          @default(true)
+
+  createdById String
+  createdBy   User     @relation("ClubSessionCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([clubId])
+  @@index([sessionDate])
+  @@index([createdById])
+  @@map("club_sessions")
+}
+
+model ClubAttendance {
+  id        String      @id @default(cuid())
+  sessionId String
+  session   ClubSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  memberId  String
+  member    ClubMember  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  status    AttendanceStatus @default(PRESENT)
+  arrivedAt DateTime? // Actual arrival time
+  notes     String? // Reason for absence, etc.
+
+  markedById  String? // Teacher/TA who marked
+  markedBy    User?      @relation("ClubAttendanceMarker", fields: [markedById], references: [id])
+  markedAt    DateTime   @default(now())
+  StudyClub   StudyClub? @relation(fields: [studyClubId], references: [id])
+  studyClubId String?
+
+  @@unique([sessionId, memberId])
+  @@index([memberId])
+  @@index([sessionId])
+  @@index([markedById])
+  @@map("club_attendance")
+}
+
+// ========================================
+// ASSIGNMENTS & ASSESSMENTS
+// ========================================
+
+model ClubAssignment {
+  id        String       @id @default(cuid())
+  clubId    String
+  club      StudyClub    @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  subjectId String?
+  subject   ClubSubject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+
+  title        String
+  description  String
+  instructions String?
+
+  // Type & weight
+  type      AssessmentType @default(HOMEWORK)
+  maxPoints Int
+  weight    Float          @default(1.0)
+
+  // Deadlines
+  publishedAt         DateTime?
+  dueDate             DateTime
+  lateDeadline        DateTime? // Allow late until
+  allowLateSubmission Boolean   @default(false)
+  latePenalty         Float? // % deduction per day
+
+  // Attachments
+  attachments Json? // [{url, name, type}]
+
+  // Settings
+  status           AssignmentStatus @default(DRAFT)
+  autoGrade        Boolean          @default(false)
+  requireFile      Boolean          @default(true)
+  maxFileSize      Int? // MB
+  allowedFileTypes String[] // ["pdf", "docx"]
+
+  // Submissions
+  submissions ClubAssignmentSubmission[]
+
+  createdById String
+  createdBy   User     @relation("ClubAssignmentCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([clubId])
+  @@index([subjectId])
+  @@index([dueDate])
+  @@index([createdById])
+  @@map("club_assignments")
+}
+
+model ClubAssignmentSubmission {
+  id           String         @id @default(cuid())
+  assignmentId String
+  assignment   ClubAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  memberId     String
+  member       ClubMember     @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  // Submission content
+  content     String? // Text submission
+  attachments Json? // [{url, name, type, size}]
+
+  // Timing
+  submittedAt DateTime @default(now())
+  isLate      Boolean  @default(false)
+
+  // Grading
+  status     SubmissionStatus @default(SUBMITTED)
+  score      Float?
+  feedback   String?
+  gradedAt   DateTime?
+  gradedById String?
+  gradedBy   User?            @relation("ClubSubmissionGrader", fields: [gradedById], references: [id])
+
+  // Resubmission
+  attemptNumber        Int                        @default(1)
+  previousSubmissionId String?
+  previousSubmission   ClubAssignmentSubmission?  @relation("Resubmissions", fields: [previousSubmissionId], references: [id], onDelete: SetNull)
+  resubmissions        ClubAssignmentSubmission[] @relation("Resubmissions")
+
+  @@unique([assignmentId, memberId, attemptNumber])
+  @@index([memberId])
+  @@index([assignmentId])
+  @@index([gradedById])
+  @@map("club_assignment_submissions")
+}
+
+enum AssignmentStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum SubmissionStatus {
+  NOT_SUBMITTED
+  SUBMITTED
+  LATE
+  GRADED
+  RESUBMISSION_REQUIRED
+}
+
+// ========================================
+// REPORTS & TRANSCRIPTS
+// ========================================
+
+model ClubReport {
+  id       String     @id @default(cuid())
+  clubId   String
+  club     StudyClub  @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  memberId String
+  member   ClubMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  reportType String // "PROGRESS", "FINAL", "TRANSCRIPT"
+  term       String? // "Q1", "Semester 1", "Full Course"
+
+  // Academic performance
+  overallGrade      Float?
+  overallPercentage Float?
+  letterGrade       String? // "A", "B+", etc.
+  gpa               Float?
+
+  // Attendance
+  totalSessions   Int?
+  sessionsPresent Int?
+  attendanceRate  Float?
+
+  // Summary
+  strengths           String?
+  areasForImprovement String?
+  teacherComments     String?
+  recommendations     String?
+
+  // Report file
+  pdfUrl String? // Generated PDF
+
+  generatedById String
+  generatedBy   User     @relation("ClubReportGenerator", fields: [generatedById], references: [id])
+  generatedAt   DateTime @default(now())
+
+  @@index([clubId])
+  @@index([memberId])
+  @@index([generatedById])
+  @@map("club_reports")
+}
+
+// ========================================
+// AWARDS & ACHIEVEMENTS
+// ========================================
+
+model ClubAward {
+  id       String     @id @default(cuid())
+  clubId   String
+  club     StudyClub  @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  memberId String
+  member   ClubMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  title       String // "Certificate of Excellence"
+  type        AwardType
+  description String?
+
+  // Criteria met
+  criteria String? // "GPA > 3.5 and Attendance > 90%"
+
+  // Certificate
+  certificateUrl    String? // Generated PDF
+  certificateDesign String? // Template used
+
+  awardedById String
+  awardedBy   User     @relation("ClubAwardGiver", fields: [awardedById], references: [id])
+  awardedAt   DateTime @default(now())
+
+  @@index([clubId])
+  @@index([memberId])
+  @@index([awardedById])
+  @@map("club_awards")
+}
+
+enum AwardType {
+  CERTIFICATE_OF_COMPLETION
+  HONOR_ROLL
+  PERFECT_ATTENDANCE
+  MOST_IMPROVED
+  BEST_PROJECT
+  EXCELLENCE_AWARD
+  CUSTOM
+}
+
+// ========================================
+// MATERIALS & RESOURCES
+// ========================================
+
+model ClubMaterial {
+  id     String    @id @default(cuid())
+  clubId String
+  club   StudyClub @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  type        MaterialType
+  url         String
+
+  // File info
+  fileName String?
+  fileSize Int? // bytes
+  mimeType String?
+
+  // Organization
+  category String? // "Week 1", "Chapter 2", "Exam Review"
+  week     Int?
+  order    Int?
+  tags     String[]
+
+  // Access control
+  isPublic           Boolean @default(false) // Visible to non-members
+  requiresEnrollment Boolean @default(true)
+
+  // Tracking
+  viewCount     Int @default(0)
+  downloadCount Int @default(0)
+
+  uploadedById String
+  uploadedBy   User     @relation("ClubMaterialUploader", fields: [uploadedById], references: [id])
+  uploadedAt   DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([clubId])
+  @@index([category])
+  @@index([uploadedById])
+  @@map("club_materials")
+}
+
+enum MaterialType {
+  DOCUMENT // PDF, DOCX
+  VIDEO // MP4, YouTube link
+  LINK // External URL
+  IMAGE // JPG, PNG
+  AUDIO // MP3
+  PRESENTATION // PPT, Google Slides
+  CODE // GitHub repo, code files
+  QUIZ // Interactive quiz
+}
+
+// ========================================
+// SCHEDULE & CALENDAR
+// ========================================
+
+model ClubSchedule {
+  id     String    @id @default(cuid())
+  clubId String
+  club   StudyClub @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  dayOfWeek DayOfWeek
+  startTime String // "09:00"
+  endTime   String // "10:30"
+
+  location   String?
+  meetingUrl String?
+
+  isRecurring    Boolean   @default(true)
+  effectiveFrom  DateTime?
+  effectiveUntil DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clubId])
+  @@index([dayOfWeek])
+  @@map("club_schedules")
+}
+
+// ========================================
+// ANNOUNCEMENTS
+// ========================================
+
+model ClubAnnouncement {
+  id     String    @id @default(cuid())
+  clubId String
+  club   StudyClub @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  title    String
+  content  String
+  isPinned Boolean @default(false)
+  priority String? // "LOW", "MEDIUM", "HIGH", "URGENT"
+
+  // Targeting
+  targetRoles ClubMemberRole[] // Announce to specific roles
+
+  createdById String
+  createdBy   User     @relation("ClubAnnouncementCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([clubId])
+  @@index([createdAt])
+  @@index([createdById])
+  @@map("club_announcements")
+}
+
+// ========================================
+// ENUMS
+// ========================================
 
 enum StudyClubType {
-  SUBJECT // Math Club, Science Club, Literature Club
-  SKILL // Coding Club, Debate Club, Public Speaking
-  RESEARCH // Research groups for specific topics
-  PROJECT // Project teams for collaborative work
-  EXAM_PREP // Exam preparation study groups
-  LANGUAGE // Language learning clubs
-  COMPETITION // Olympiad, competitions preparation
-  TUTORING // Peer tutoring and mentoring
+  CASUAL_STUDY_GROUP // Simple: Chat, resources, events
+  STRUCTURED_CLASS // Advanced: Full classroom management
+  PROJECT_GROUP // Collaboration: Tasks, deliverables
+  EXAM_PREP // Focused: Practice tests, study sessions
 }
 
-enum ClubPrivacy {
-  PUBLIC // Anyone can see and join
-  SCHOOL // Only school members can see and join
-  PRIVATE // Invite-only, visible to members
-  SECRET // Invite-only, hidden from search
+enum ClubMode {
+  PUBLIC // Anyone can join
+  INVITE_ONLY // Invite required
+  APPROVAL_REQUIRED // Join request approval
 }
 
 enum ClubMemberRole {
-  OWNER // Creator of the club
-  ADMIN // Can manage members and settings
-  MODERATOR // Can moderate posts and comments
-  MEMBER // Regular member
+  OWNER // Creator, full control
+  INSTRUCTOR // Can teach, grade, manage
+  TEACHING_ASSISTANT // Can help grade, take attendance
+  STUDENT // Regular member
+  OBSERVER // Read-only (e.g., parent)
 }
 
 // ============================================

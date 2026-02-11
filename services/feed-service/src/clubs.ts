@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { PrismaClient, StudyClubType, ClubPrivacy, ClubMemberRole } from '@prisma/client';
+import { PrismaClient, StudyClubType, ClubMode, ClubMemberRole } from '@prisma/client';
 import { EventPublisher } from './redis';
 
 const router = express.Router();
@@ -55,7 +55,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
         description: description?.trim(),
         clubType: clubType || 'SUBJECT',
         category: category?.trim(),
-        privacy: privacy || 'PUBLIC',
+        mode: privacy || 'PUBLIC',
         coverImage,
         maxMembers,
         creatorId: userId,
@@ -83,14 +83,14 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     });
 
     // Create a feed post announcing the new club (only for PUBLIC clubs)
-    if (privacy !== 'SECRET') {
+    if (privacy !== 'INVITE_ONLY') {
       try {
         const clubTypeLabel = CLUB_TYPE_LABELS[clubType] || 'Study Club';
         const feedPost = await prisma.post.create({
           data: {
             content: `🎉 Just created a new ${clubTypeLabel}: **${name.trim()}**!\n\n${description?.trim() || 'Join us to learn and grow together!'}\n\n${category ? `📚 Category: ${category}` : ''}`,
             postType: 'CLUB_CREATED',
-            visibility: privacy === 'SCHOOL' ? 'SCHOOL' : 'PUBLIC',
+            visibility: privacy === 'PUBLIC' ? 'SCHOOL' : 'PUBLIC',
             authorId: userId,
             studyClubId: club.id,
             mediaUrls: coverImage ? [coverImage] : [],
@@ -218,8 +218,8 @@ router.get('/discover', async (req: AuthRequest, res: Response) => {
     const where: any = {
       isActive: true,
       OR: [
-        { privacy: 'PUBLIC' },
-        { privacy: 'SCHOOL', schoolId },
+        { mode: 'PUBLIC' },
+        { mode: 'PUBLIC' },
       ],
     };
 
@@ -358,8 +358,8 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
     }
 
     // Check if user can view this club
-    if (club.privacy === 'SECRET' || club.privacy === 'PRIVATE') {
-      const isMember = await prisma.studyClubMember.findUnique({
+    if (club.mode === 'INVITE_ONLY' || club.mode === 'APPROVAL_REQUIRED') {
+      const isMember = await prisma.clubMember.findUnique({
         where: { clubId_userId: { clubId: id, userId: userId || '' } },
       });
       if (!isMember) {
@@ -370,7 +370,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
     // Get user's membership status
     let myMembership: any = null;
     if (userId) {
-      myMembership = await prisma.studyClubMember.findUnique({
+      myMembership = await prisma.clubMember.findUnique({
         where: { clubId_userId: { clubId: id, userId } },
       });
     }
@@ -399,11 +399,11 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     }
 
     // Check if user is admin
-    const membership = await prisma.studyClubMember.findUnique({
+    const membership = await prisma.clubMember.findUnique({
       where: { clubId_userId: { clubId: id, userId } },
     });
 
-    if (!membership || !['OWNER', 'ADMIN'].includes(membership.role)) {
+    if (!membership || !['OWNER', 'INSTRUCTOR'].includes(membership.role)) {
       return res.status(403).json({ error: 'Only admins can update the club' });
     }
 
@@ -414,7 +414,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
         ...(description !== undefined && { description: description?.trim() }),
         ...(clubType && { clubType }),
         ...(category !== undefined && { category: category?.trim() }),
-        ...(privacy && { privacy }),
+        ...(privacy && { mode: privacy }),
         ...(coverImage !== undefined && { coverImage }),
         ...(maxMembers !== undefined && { maxMembers }),
         ...(isActive !== undefined && { isActive }),
@@ -498,7 +498,7 @@ router.post('/:id/join', async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Club not found' });
     }
 
-    if (club.privacy === 'SECRET' || club.privacy === 'PRIVATE') {
+    if (club.mode === 'INVITE_ONLY' || club.mode === 'APPROVAL_REQUIRED') {
       return res.status(403).json({ error: 'This club requires an invitation' });
     }
 
@@ -507,7 +507,7 @@ router.post('/:id/join', async (req: AuthRequest, res: Response) => {
     }
 
     // Check if already a member
-    const existing = await prisma.studyClubMember.findUnique({
+    const existing = await prisma.clubMember.findUnique({
       where: { clubId_userId: { clubId: id, userId } },
     });
 
@@ -515,11 +515,11 @@ router.post('/:id/join', async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Already a member of this club' });
     }
 
-    const membership = await prisma.studyClubMember.create({
+    const membership = await prisma.clubMember.create({
       data: {
         clubId: id,
         userId,
-        role: 'MEMBER',
+        role: 'STUDENT',
       },
       include: {
         club: {
@@ -548,7 +548,7 @@ router.post('/:id/leave', async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const membership = await prisma.studyClubMember.findUnique({
+    const membership = await prisma.clubMember.findUnique({
       where: { clubId_userId: { clubId: id, userId } },
     });
 
@@ -557,9 +557,9 @@ router.post('/:id/leave', async (req: AuthRequest, res: Response) => {
     }
 
     if (membership.role === 'OWNER') {
-      // Count other admins
-      const adminCount = await prisma.studyClubMember.count({
-        where: { clubId: id, role: { in: ['OWNER', 'ADMIN'] }, userId: { not: userId } },
+      // Count other owners/instructors
+      const adminCount = await prisma.clubMember.count({
+        where: { clubId: id, role: { in: ['OWNER', 'INSTRUCTOR'] }, userId: { not: userId } },
       });
 
       if (adminCount === 0) {
@@ -569,7 +569,7 @@ router.post('/:id/leave', async (req: AuthRequest, res: Response) => {
       }
     }
 
-    await prisma.studyClubMember.delete({
+    await prisma.clubMember.delete({
       where: { clubId_userId: { clubId: id, userId } },
     });
 
@@ -595,7 +595,7 @@ router.get('/:id/members', async (req: AuthRequest, res: Response) => {
     }
 
     const [members, total] = await Promise.all([
-      prisma.studyClubMember.findMany({
+      prisma.clubMember.findMany({
         where,
         include: {
           user: {
@@ -616,7 +616,7 @@ router.get('/:id/members', async (req: AuthRequest, res: Response) => {
         skip,
         take,
       }),
-      prisma.studyClubMember.count({ where }),
+      prisma.clubMember.count({ where }),
     ]);
 
     res.json({
@@ -646,16 +646,16 @@ router.put('/:id/members/:userId', async (req: AuthRequest, res: Response) => {
     }
 
     // Check if requester is admin/owner
-    const requesterMembership = await prisma.studyClubMember.findUnique({
+    const requesterMembership = await prisma.clubMember.findUnique({
       where: { clubId_userId: { clubId: id, userId } },
     });
 
-    if (!requesterMembership || !['OWNER', 'ADMIN'].includes(requesterMembership.role)) {
+    if (!requesterMembership || !['OWNER', 'INSTRUCTOR'].includes(requesterMembership.role)) {
       return res.status(403).json({ error: 'Only admins can update member roles' });
     }
 
     // Cannot change owner role unless you're the owner
-    const targetMembership = await prisma.studyClubMember.findUnique({
+    const targetMembership = await prisma.clubMember.findUnique({
       where: { clubId_userId: { clubId: id, userId: targetUserId } },
     });
 
@@ -675,13 +675,13 @@ router.put('/:id/members/:userId', async (req: AuthRequest, res: Response) => {
     // Transfer ownership
     if (newRole === 'OWNER') {
       await prisma.$transaction([
-        // Demote current owner to admin
-        prisma.studyClubMember.update({
+        // Demote current owner to instructor
+        prisma.clubMember.update({
           where: { clubId_userId: { clubId: id, userId } },
-          data: { role: 'ADMIN' },
+          data: { role: 'INSTRUCTOR' },
         }),
         // Promote target to owner
-        prisma.studyClubMember.update({
+        prisma.clubMember.update({
           where: { clubId_userId: { clubId: id, userId: targetUserId } },
           data: { role: 'OWNER' },
         }),
@@ -692,7 +692,7 @@ router.put('/:id/members/:userId', async (req: AuthRequest, res: Response) => {
         }),
       ]);
     } else {
-      await prisma.studyClubMember.update({
+      await prisma.clubMember.update({
         where: { clubId_userId: { clubId: id, userId: targetUserId } },
         data: { role: newRole },
       });
@@ -716,15 +716,15 @@ router.delete('/:id/members/:userId', async (req: AuthRequest, res: Response) =>
     }
 
     // Check if requester is admin/owner
-    const requesterMembership = await prisma.studyClubMember.findUnique({
+    const requesterMembership = await prisma.clubMember.findUnique({
       where: { clubId_userId: { clubId: id, userId } },
     });
 
-    if (!requesterMembership || !['OWNER', 'ADMIN', 'MODERATOR'].includes(requesterMembership.role)) {
+    if (!requesterMembership || !['OWNER', 'INSTRUCTOR', 'TEACHING_ASSISTANT'].includes(requesterMembership.role)) {
       return res.status(403).json({ error: 'Only moderators and above can remove members' });
     }
 
-    const targetMembership = await prisma.studyClubMember.findUnique({
+    const targetMembership = await prisma.clubMember.findUnique({
       where: { clubId_userId: { clubId: id, userId: targetUserId } },
     });
 
@@ -737,12 +737,12 @@ router.delete('/:id/members/:userId', async (req: AuthRequest, res: Response) =>
       return res.status(403).json({ error: 'Cannot remove the owner' });
     }
 
-    // Admins can only be removed by owner
-    if (targetMembership.role === 'ADMIN' && requesterMembership.role !== 'OWNER') {
-      return res.status(403).json({ error: 'Only owner can remove admins' });
+    // Instructors can only be removed by owner
+    if (targetMembership.role === 'INSTRUCTOR' && requesterMembership.role !== 'OWNER') {
+      return res.status(403).json({ error: 'Only owner can remove instructors' });
     }
 
-    await prisma.studyClubMember.delete({
+    await prisma.clubMember.delete({
       where: { clubId_userId: { clubId: id, userId: targetUserId } },
     });
 
@@ -773,8 +773,8 @@ router.get('/:id/posts', async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Club not found' });
     }
 
-    if (club.privacy === 'SECRET' || club.privacy === 'PRIVATE') {
-      const isMember = await prisma.studyClubMember.findUnique({
+    if (club.mode === 'INVITE_ONLY' || club.mode === 'APPROVAL_REQUIRED') {
+      const isMember = await prisma.clubMember.findUnique({
         where: { clubId_userId: { clubId: id, userId: userId || '' } },
       });
       if (!isMember) {
@@ -865,11 +865,11 @@ router.post('/:id/invite', async (req: AuthRequest, res: Response) => {
     }
 
     // Check if requester is admin/owner
-    const membership = await prisma.studyClubMember.findUnique({
+    const membership = await prisma.clubMember.findUnique({
       where: { clubId_userId: { clubId: id, userId } },
     });
 
-    if (!membership || !['OWNER', 'ADMIN'].includes(membership.role)) {
+    if (!membership || !['OWNER', 'INSTRUCTOR'].includes(membership.role)) {
       return res.status(403).json({ error: 'Only admins can invite members' });
     }
 
@@ -888,7 +888,7 @@ router.post('/:id/invite', async (req: AuthRequest, res: Response) => {
     }
 
     // Filter out existing members
-    const existingMembers = await prisma.studyClubMember.findMany({
+    const existingMembers = await prisma.clubMember.findMany({
       where: { clubId: id, userId: { in: userIds } },
       select: { userId: true },
     });
@@ -900,11 +900,11 @@ router.post('/:id/invite', async (req: AuthRequest, res: Response) => {
     }
 
     // Create memberships
-    await prisma.studyClubMember.createMany({
+    await prisma.clubMember.createMany({
       data: newUserIds.map((uid: string) => ({
         clubId: id,
         userId: uid,
-        role: 'MEMBER',
+        role: 'STUDENT',
         invitedBy: userId,
       })),
     });

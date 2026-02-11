@@ -988,7 +988,7 @@ app.post('/teachers', async (req: AuthRequest, res: Response) => {
         generatedId: teacherId,
         format: schoolConfig.idFormat,
         metadata: teacherIdMeta,
-        createdBy: req.user!.id,
+        createdBy: req.user!.userId,
       },
     });
 

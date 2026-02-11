@@ -6,12 +6,14 @@
  * - Request/Response interceptors
  * - Retry logic with exponential backoff
  * - Request cancellation
- * - Offline queue
+ * - Offline queue with auto-retry on reconnect
  */
 
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { Config, APP_CONFIG } from '@/config';
 import { tokenService } from '@/services/token';
+import { networkService } from '@/services/network';
+import { eventEmitter } from '@/utils/eventEmitter';
 import { ApiResponse, ApiError } from '@/types';
 
 // Create axios instance
@@ -59,7 +61,42 @@ const createApiClient = (baseURL: string): AxiosInstance => {
       return response;
     },
     async (error: AxiosError<ApiResponse<unknown>>) => {
-      const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean; _retryCount?: number };
+      const originalRequest = error.config as InternalAxiosRequestConfig & { 
+        _retry?: boolean; 
+        _retryCount?: number;
+        _queuedForRetry?: boolean;
+      };
+
+      // Handle network errors - Queue for retry when network reconnects
+      if (error.code === 'ERR_NETWORK' && !originalRequest._queuedForRetry) {
+        const isOnline = networkService.getStatus();
+        
+        if (!isOnline) {
+          // Queue this request for automatic retry when network reconnects
+          originalRequest._queuedForRetry = true;
+          
+          networkService.queueRequest({
+            id: `${Date.now()}-${Math.random()}`,
+            url: originalRequest.url || '',
+            method: originalRequest.method || 'GET',
+            data: originalRequest.data,
+            headers: originalRequest.headers,
+            retry: () => client(originalRequest),
+            timestamp: Date.now(),
+          });
+
+          if (__DEV__) {
+            console.log(`📥 Queued for retry: ${originalRequest.method} ${originalRequest.url}`);
+          }
+        } else {
+          // Network says we're online but request failed - try once more
+          if (!originalRequest._retry) {
+            originalRequest._retry = true;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return client(originalRequest);
+          }
+        }
+      }
 
       // Handle timeout errors with retry
       if (error.code === 'ECONNABORTED' && !originalRequest._retry) {
@@ -169,7 +206,7 @@ const transformError = (error: AxiosError<ApiResponse<unknown>>): ApiError => {
     case 401:
       return {
         code: 'UNAUTHORIZED',
-        message: 'Session expired. Please log in again.',
+        message: data?.message || data?.error || 'Session expired. Please log in again.',
       };
     case 403:
       return {
@@ -211,40 +248,6 @@ const transformError = (error: AxiosError<ApiResponse<unknown>>): ApiError => {
   }
 };
 
-// Simple event emitter for auth events
-class EventEmitter {
-  private listeners: Map<string, Function[]> = new Map();
-
-  on(event: string, callback: Function) {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, []);
-    }
-    this.listeners.get(event)!.push(callback);
-    
-    // Return unsubscribe function
-    return () => this.off(event, callback);
-  }
-
-  off(event: string, callback: Function) {
-    const callbacks = this.listeners.get(event);
-    if (callbacks) {
-      const index = callbacks.indexOf(callback);
-      if (index > -1) {
-        callbacks.splice(index, 1);
-      }
-    }
-  }
-
-  emit(event: string, ...args: unknown[]) {
-    const callbacks = this.listeners.get(event);
-    if (callbacks) {
-      callbacks.forEach(callback => callback(...args));
-    }
-  }
-}
-
-export const eventEmitter = new EventEmitter();
-
 // Request with retry logic
 export const requestWithRetry = async <T>(
   requestFn: () => Promise<T>,
@@ -270,4 +273,4 @@ const isRetryableError = (error: unknown): boolean => {
   return false;
 };
 
-export default { authApi, feedApi, mediaApi, eventEmitter };
+export default { authApi, feedApi, mediaApi };

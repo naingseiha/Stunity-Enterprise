@@ -20,6 +20,7 @@ import {
   ScrollView,
   Image,
   Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -36,10 +37,13 @@ import {
   PostAnalyticsModal,
   SubjectFilters,
   FloatingActionButton,
+  EducationalValueModal,
+  type EducationalValue,
 } from '@/components/feed';
 import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore } from '@/stores';
+import { feedApi } from '@/api/client';
 import { Post } from '@/types';
 import { FeedStackScreenProps } from '@/navigation/types';
 import { useNavigationContext } from '@/contexts';
@@ -70,6 +74,8 @@ export default function FeedScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeSubjectFilter, setActiveSubjectFilter] = useState('ALL');
   const [analyticsPostId, setAnalyticsPostId] = useState<string | null>(null);
+  const [valuePostId, setValuePostId] = useState<string | null>(null);
+  const [valuePostData, setValuePostData] = useState<{ postType: string; authorName: string } | null>(null);
 
   useEffect(() => {
     fetchPosts();
@@ -107,9 +113,70 @@ export default function FeedScreen() {
   }, [likePost, unlikePost]);
 
   const handleSharePost = useCallback(async (postId: string) => {
-    await sharePost(postId);
-    // TODO: Open native share sheet if needed
-  }, [sharePost]);
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+
+    try {
+      // Use native share if available
+      if (Platform.OS === 'ios' || Platform.OS === 'android') {
+        const { default: Share } = await import('react-native');
+        await Share.share({
+          message: `Check out this ${post.postType.toLowerCase()} on Stunity:\n\n${post.content}\n\n#Stunity #Education`,
+          title: `${post.author.firstName}'s ${post.postType}`,
+          url: `https://stunity.com/posts/${postId}`, // Future: deep link
+        });
+      }
+      
+      // Track share
+      await sharePost(postId);
+    } catch (error) {
+      console.error('Share failed:', error);
+    }
+  }, [posts, sharePost]);
+
+  const handleValuePost = useCallback((post: Post) => {
+    setValuePostId(post.id);
+    setValuePostData({
+      postType: post.postType,
+      authorName: post.author.name || `${post.author.firstName} ${post.author.lastName}`,
+    });
+  }, []);
+
+  const handleSubmitValue = useCallback(async (value: EducationalValue) => {
+    if (!valuePostId) return;
+
+    try {
+      // Send to backend
+      const response = await feedApi.post(`/posts/${valuePostId}/value`, {
+        accuracy: value.accuracy,
+        helpfulness: value.helpfulness,
+        clarity: value.clarity,
+        depth: value.depth,
+        difficulty: value.difficulty,
+        wouldRecommend: value.wouldRecommend,
+      });
+      
+      console.log('✅ Educational Value submitted:', {
+        postId: valuePostId,
+        averageRating: response.data.averageRating,
+        value,
+      });
+
+      // Close modal
+      setValuePostId(null);
+      setValuePostData(null);
+
+      // Show success feedback
+      Alert.alert(
+        'Thank You! 🎉',
+        'Your feedback helps improve learning for everyone in the community.',
+        [{ text: 'Got it' }]
+      );
+    } catch (error: any) {
+      console.error('❌ Failed to submit value:', error);
+      Alert.alert('Error', 'Failed to submit rating. Please try again.');
+    }
+  }, [valuePostId]);
 
   const handleVoteOnPoll = useCallback((postId: string, optionId: string) => {
     voteOnPoll(postId, optionId);
@@ -233,6 +300,7 @@ export default function FeedScreen() {
         onRepost={() => {}}
         onShare={() => handleSharePost(item.id)}
         onBookmark={() => bookmarkPost(item.id)}
+        onValue={() => handleValuePost(item)}
         onUserPress={() => navigation.navigate('UserProfile', { userId: item.author.id })}
         onPress={() => handlePostPress(item)}
         onVote={(optionId) => handleVoteOnPoll(item.id, optionId)}
@@ -349,6 +417,18 @@ export default function FeedScreen() {
         isOpen={!!analyticsPostId}
         onClose={() => setAnalyticsPostId(null)}
         postId={analyticsPostId || ''}
+      />
+
+      {/* Educational Value Modal */}
+      <EducationalValueModal
+        visible={!!valuePostId}
+        onClose={() => {
+          setValuePostId(null);
+          setValuePostData(null);
+        }}
+        onSubmit={handleSubmitValue}
+        postType={valuePostData?.postType || 'POST'}
+        authorName={valuePostData?.authorName || 'Unknown'}
       />
 
       {/* Floating Action Button */}

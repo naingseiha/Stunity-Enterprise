@@ -2,4 +2,5 @@
  * API Exports
  */
 
-export { authApi, feedApi, mediaApi, eventEmitter, requestWithRetry } from './client';
+export { authApi, feedApi, mediaApi, requestWithRetry } from './client';
+export { eventEmitter } from '@/utils/eventEmitter';
