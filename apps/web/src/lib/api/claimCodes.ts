@@ -72,7 +72,7 @@ class ClaimCodeService {
   /**
    * Generate claim codes
    */
-  async generate(schoolId: string, params: GenerateCodesParams): Promise<{ codes: ClaimCode[] }> {
+  async generate(schoolId: string, params: GenerateCodesParams): Promise<string[]> {
     const response = await fetch(`${API_BASE_URL}/schools/${schoolId}/claim-codes/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -84,7 +84,9 @@ class ClaimCodeService {
       throw new Error(error.error || 'Failed to generate claim codes');
     }
 
-    return response.json();
+    const result = await response.json();
+    // Extract just the code strings from the response
+    return result.data.codes.map((c: any) => typeof c === 'string' ? c : c.code);
   }
 
   /**
@@ -111,7 +113,13 @@ class ClaimCodeService {
       throw new Error('Failed to fetch claim codes');
     }
 
-    return response.json();
+    const result = await response.json();
+    return {
+      codes: result.data.codes,
+      total: result.data.pagination.total,
+      pages: result.data.pagination.totalPages,
+      page: result.data.pagination.page,
+    };
   }
 
   /**
@@ -170,41 +178,28 @@ class ClaimCodeService {
    * Get statistics
    */
   async getStats(schoolId: string): Promise<ClaimCodeStats> {
-    // Get all codes and calculate stats client-side
-    const { codes } = await this.list(schoolId, { limit: 1000 });
+    const response = await fetch(`${API_BASE_URL}/schools/${schoolId}/claim-codes/stats`);
 
-    const now = new Date();
-    const stats: ClaimCodeStats = {
-      total: codes.length,
-      active: 0,
-      claimed: 0,
-      expired: 0,
-      revoked: 0,
+    if (!response.ok) {
+      throw new Error('Failed to fetch claim code statistics');
+    }
+
+    const result = await response.json();
+    const data = result.data;
+
+    return {
+      total: data.total,
+      active: data.active,
+      claimed: data.claimed,
+      expired: data.expired,
+      revoked: data.revoked,
       byType: {
-        student: 0,
-        teacher: 0,
-        staff: 0,
-        parent: 0,
+        student: data.byType.STUDENT || 0,
+        teacher: data.byType.TEACHER || 0,
+        staff: data.byType.STAFF || 0,
+        parent: data.byType.PARENT || 0,
       },
     };
-
-    codes.forEach((code) => {
-      // Count by type
-      stats.byType[code.type.toLowerCase() as keyof typeof stats.byType]++;
-
-      // Count by status
-      if (code.revokedAt) {
-        stats.revoked++;
-      } else if (code.claimedAt) {
-        stats.claimed++;
-      } else if (new Date(code.expiresAt) < now) {
-        stats.expired++;
-      } else if (code.isActive) {
-        stats.active++;
-      }
-    });
-
-    return stats;
   }
 }
 

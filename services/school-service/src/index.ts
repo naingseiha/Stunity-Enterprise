@@ -3222,6 +3222,90 @@ app.get('/schools/:id/claim-codes', async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /schools/:id/claim-codes/stats
+ * Get claim code statistics for a school
+ */
+app.get('/schools/:id/claim-codes/stats', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const now = new Date();
+
+    // Get total codes
+    const total = await prisma.claimCode.count({
+      where: { schoolId: id },
+    });
+
+    // Get active codes (not claimed, not expired, not revoked)
+    const active = await prisma.claimCode.count({
+      where: {
+        schoolId: id,
+        isActive: true,
+        claimedAt: null,
+        revokedAt: null,
+        expiresAt: { gt: now },
+      },
+    });
+
+    // Get claimed codes
+    const claimed = await prisma.claimCode.count({
+      where: {
+        schoolId: id,
+        claimedAt: { not: null },
+      },
+    });
+
+    // Get expired codes
+    const expired = await prisma.claimCode.count({
+      where: {
+        schoolId: id,
+        expiresAt: { lt: now },
+        claimedAt: null,
+      },
+    });
+
+    // Get revoked codes
+    const revoked = await prisma.claimCode.count({
+      where: {
+        schoolId: id,
+        revokedAt: { not: null },
+      },
+    });
+
+    // Get codes by type
+    const byType = await prisma.claimCode.groupBy({
+      by: ['type'],
+      where: { schoolId: id },
+      _count: true,
+    });
+
+    const typeStats = byType.reduce((acc: any, curr: any) => {
+      acc[curr.type] = curr._count;
+      return acc;
+    }, {});
+
+    res.json({
+      success: true,
+      data: {
+        total,
+        active,
+        claimed,
+        expired,
+        revoked,
+        byType: typeStats,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get claim code stats error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get claim code statistics',
+      details: error.message,
+    });
+  }
+});
+
+/**
  * GET /schools/:id/claim-codes/:codeId
  * Get details of a specific claim code
  */
