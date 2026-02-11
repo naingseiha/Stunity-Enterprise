@@ -5,14 +5,16 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Plus, Download, Search } from 'lucide-react';
+import { Plus, Download, Search, Upload } from 'lucide-react';
 import { claimCodeService, type ClaimCode, type ClaimCodeStats } from '@/lib/api/claimCodes';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import GenerateCodesModal from '@/components/claim-codes/GenerateCodesModal';
+import BulkUploadModal from '@/components/claim-codes/BulkUploadModal';
 
 export default function ClaimCodesPage() {
   const { schoolId } = useAcademicYear();
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
+  const [bulkUploadModalOpen, setBulkUploadModalOpen] = useState(false);
   const [codes, setCodes] = useState<ClaimCode[]>([]);
   const [stats, setStats] = useState<ClaimCodeStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -124,6 +126,13 @@ export default function ClaimCodesPage() {
           >
             <Download className="w-4 h-4" />
             Export CSV
+          </button>
+          <button
+            onClick={() => setBulkUploadModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition"
+          >
+            <Upload className="w-4 h-4" />
+            Bulk Upload
           </button>
           <button
             onClick={() => setGenerateModalOpen(true)}
@@ -279,6 +288,14 @@ export default function ClaimCodesPage() {
         open={generateModalOpen}
         onOpenChange={setGenerateModalOpen}
         onCodesGenerated={loadData}
+        schoolId={schoolId}
+      />
+
+      {/* Bulk Upload Modal */}
+      <BulkUploadModal
+        isOpen={bulkUploadModalOpen}
+        onClose={() => setBulkUploadModalOpen(false)}
+        onSuccess={loadData}
         schoolId={schoolId}
       />
     </div>

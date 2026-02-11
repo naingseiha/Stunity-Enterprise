@@ -5,6 +5,8 @@ import { PrismaClient, SubscriptionTier, SchoolType } from '@prisma/client';
 import slugify from 'slugify';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
+import multer from 'multer';
+import { parse } from 'csv-parse/sync';
 import ClaimCodeGenerator from './utils/claimCodeGenerator';
 import {
   CAMBODIAN_SUBJECTS_HIGH_SCHOOL,
@@ -64,6 +66,12 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
+
+// Configure multer for file uploads
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
 
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {
@@ -3117,6 +3125,177 @@ app.post('/schools/:id/claim-codes/generate', async (req: Request, res: Response
     res.status(500).json({
       success: false,
       error: 'Failed to generate claim codes',
+      details: error.message,
+    });
+  }
+});
+
+/**
+ * POST /schools/:id/claim-codes/bulk-upload
+ * Bulk upload students from CSV and generate claim codes
+ * Supports email detection and auto-send
+ */
+app.post('/schools/:id/claim-codes/bulk-upload', upload.single('file'), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { type = 'STUDENT', expiresInDays = 30, sendEmails = 'true' } = req.body;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        error: 'CSV file is required',
+      });
+    }
+
+    // Check if school exists
+    const school = await prisma.school.findUnique({
+      where: { id },
+    });
+
+    if (!school) {
+      return res.status(404).json({
+        success: false,
+        error: 'School not found',
+      });
+    }
+
+    // Parse CSV
+    const csvContent = file.buffer.toString('utf-8');
+    let records: any[];
+    
+    try {
+      records = parse(csvContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+      });
+    } catch (parseError: any) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid CSV format',
+        details: parseError.message,
+      });
+    }
+
+    if (records.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'CSV file is empty',
+      });
+    }
+
+    // Process each record
+    const codes = [];
+    const emailList = [];
+    const manualList = [];
+    const errors = [];
+
+    for (const record of records) {
+      try {
+        const firstName = record.firstName || record.first_name || '';
+        const lastName = record.lastName || record.last_name || '';
+        const email = record.email || '';
+        const phone = record.phone || record.phoneNumber || record.phone_number || '';
+        const grade = record.grade || '';
+        const studentId = record.studentId || record.student_id || '';
+
+        if (!firstName || !lastName) {
+          errors.push({
+            row: records.indexOf(record) + 2, // +2 for header and 0-index
+            error: 'Missing first name or last name',
+          });
+          continue;
+        }
+
+        if (!email && !phone) {
+          errors.push({
+            row: records.indexOf(record) + 2,
+            error: 'Missing both email and phone',
+            name: `${firstName} ${lastName}`,
+          });
+          continue;
+        }
+
+        // Generate code
+        const code = ClaimCodeGenerator.generateCode(type);
+        const expiresAt = ClaimCodeGenerator.generateExpirationDate(expiresInDays);
+
+        // Create claim code in database
+        const claimCode = await prisma.claimCode.create({
+          data: {
+            code,
+            type,
+            schoolId: id,
+            expiresAt,
+            isActive: true,
+            verificationData: JSON.stringify({
+              firstName,
+              lastName,
+              email: email || null,
+              phone: phone || null,
+              grade: grade || null,
+              studentId: studentId || null,
+            }),
+          },
+        });
+
+        codes.push(claimCode);
+
+        // Categorize for distribution
+        if (email) {
+          emailList.push({
+            name: `${firstName} ${lastName}`,
+            email,
+            code: claimCode.code,
+            grade,
+          });
+        } else if (phone) {
+          manualList.push({
+            name: `${firstName} ${lastName}`,
+            phone,
+            code: claimCode.code,
+            grade,
+          });
+        }
+      } catch (error: any) {
+        errors.push({
+          row: records.indexOf(record) + 2,
+          error: error.message,
+        });
+      }
+    }
+
+    // Prepare response
+    const response: any = {
+      success: true,
+      message: `Processed ${codes.length} codes from ${records.length} records`,
+      data: {
+        total: codes.length,
+        distribution: {
+          emailSent: emailList.length,
+          manualRequired: manualList.length,
+          failed: errors.length,
+        },
+        codes,
+        emailList: sendEmails === 'true' ? emailList : [],
+        manualList,
+        errors: errors.length > 0 ? errors : undefined,
+      },
+    };
+
+    // TODO: Send emails here if sendEmails is true
+    // For now, we'll just prepare the list
+    if (sendEmails === 'true' && emailList.length > 0) {
+      response.data.emailNote = 'Email sending will be implemented in next phase';
+    }
+
+    res.status(201).json(response);
+  } catch (error: any) {
+    console.error('Bulk upload error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process bulk upload',
       details: error.message,
     });
   }

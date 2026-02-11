@@ -201,6 +201,64 @@ class ClaimCodeService {
       },
     };
   }
+
+  /**
+   * Bulk upload students from CSV and generate claim codes
+   * Returns distribution summary with email and manual lists
+   */
+  async bulkUpload(
+    schoolId: string,
+    file: File,
+    options: {
+      type?: 'STUDENT' | 'TEACHER';
+      expiresInDays?: number;
+      sendEmails?: boolean;
+    } = {}
+  ): Promise<{
+    total: number;
+    distribution: {
+      emailSent: number;
+      manualRequired: number;
+      failed: number;
+    };
+    codes: any[];
+    emailList: Array<{
+      name: string;
+      email: string;
+      code: string;
+      grade?: string;
+    }>;
+    manualList: Array<{
+      name: string;
+      phone: string;
+      code: string;
+      grade?: string;
+    }>;
+    errors?: Array<{
+      row: number;
+      error: string;
+      name?: string;
+    }>;
+    emailNote?: string;
+  }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', options.type || 'STUDENT');
+    formData.append('expiresInDays', String(options.expiresInDays || 30));
+    formData.append('sendEmails', String(options.sendEmails !== false));
+
+    const response = await axios.post(
+      `${API_URL}/schools/${schoolId}/claim-codes/bulk-upload`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+
+    return response.data.data;
+  }
 }
 
 export const claimCodeService = new ClaimCodeService();
