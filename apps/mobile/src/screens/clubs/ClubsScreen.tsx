@@ -1,11 +1,10 @@
 /**
  * Clubs Screen
  * 
- * Clean, professional design matching Feed/Learn screens
- * Discover and join study clubs, student organizations
+ * Discover and join study clubs with real-time data
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +15,7 @@ import {
   StatusBar,
   FlatList,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,397 +27,538 @@ const StunityLogo = require('../../../../../Stunity.png');
 import { Avatar, Card } from '@/components/common';
 import { Colors } from '@/config';
 import { useNavigationContext } from '@/contexts';
+import { clubsApi, Club } from '@/api';
 
-interface Club {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  memberCount: number;
-  imageUrl?: string;
-  isJoined: boolean;
-}
-
-const MOCK_CLUBS: Club[] = [
-  {
-    id: '1',
-    name: 'Computer Science Club',
-    description: 'Learn programming, algorithms, and build projects together',
-    category: 'Technology',
-    memberCount: 124,
-    isJoined: true,
-  },
-  {
-    id: '2',
-    name: 'Mathematics Society',
-    description: 'Explore advanced math topics and compete in competitions',
-    category: 'Academics',
-    memberCount: 89,
-    isJoined: false,
-  },
-  {
-    id: '3',
-    name: 'English Debate Club',
-    description: 'Improve public speaking and critical thinking skills',
-    category: 'Language',
-    memberCount: 67,
-    isJoined: true,
-  },
-  {
-    id: '4',
-    name: 'Science Innovation Lab',
-    description: 'Conduct experiments and work on science fair projects',
-    category: 'Science',
-    memberCount: 52,
-    isJoined: false,
-  },
-];
-
-const CATEGORIES = [
-  { id: 'all', name: 'All', icon: 'apps', color: '#FFA500' },
-  { id: 'academics', name: 'Academics', icon: 'school', color: '#6366F1' },
-  { id: 'technology', name: 'Technology', icon: 'code-slash', color: '#10B981' },
-  { id: 'language', name: 'Language', icon: 'language', color: '#EC4899' },
-  { id: 'science', name: 'Science', icon: 'flask', color: '#8B5CF6' },
-  { id: 'arts', name: 'Arts', icon: 'color-palette', color: '#F59E0B' },
+const CLUB_TYPES = [
+  { id: 'all', name: 'All Clubs', icon: 'apps', color: '#FFA500' },
+  { id: 'CASUAL_STUDY_GROUP', name: 'Study Groups', icon: 'people', color: '#6366F1' },
+  { id: 'STRUCTURED_CLASS', name: 'Classes', icon: 'school', color: '#10B981' },
+  { id: 'PROJECT_GROUP', name: 'Projects', icon: 'rocket', color: '#EC4899' },
+  { id: 'EXAM_PREP', name: 'Exam Prep', icon: 'book', color: '#8B5CF6' },
 ];
 
 export default function ClubsScreen() {
   const { openSidebar } = useNavigationContext();
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [clubs, setClubs] = useState<Club[]>(MOCK_CLUBS);
+  const [selectedFilter, setSelectedFilter] = useState<'all' | 'joined' | 'discover'>('all');
+  const [selectedType, setSelectedType] = useState('all');
+  const [clubs, setClubs] = useState<Club[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleRefresh = useCallback(async () => {
+  // Fetch clubs
+  const fetchClubs = useCallback(async () => {
+    try {
+      setError(null);
+      const params: any = {};
+      
+      // Filter by joined status
+      if (selectedFilter === 'joined') {
+        params.joined = true;
+      } else if (selectedFilter === 'discover') {
+        params.joined = false;
+      }
+      
+      // Filter by type
+      if (selectedType !== 'all') {
+        params.type = selectedType;
+      }
+
+      const data = await clubsApi.getClubs(params);
+      setClubs(data);
+    } catch (err: any) {
+      console.error('Failed to fetch clubs:', err);
+      setError(err.message || 'Failed to load clubs');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [selectedFilter, selectedType]);
+
+  // Initial load
+  useEffect(() => {
+    fetchClubs();
+  }, [fetchClubs]);
+
+  // Pull to refresh
+  const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setRefreshing(false);
-  }, []);
+    fetchClubs();
+  }, [fetchClubs]);
 
-  const handleJoinClub = useCallback((clubId: string) => {
-    setClubs(clubs.map(club => 
-      club.id === clubId ? { ...club, isJoined: !club.isJoined } : club
-    ));
-  }, [clubs]);
+  // Join/Leave club
+  const handleToggleJoin = useCallback(async (clubId: string, isJoined: boolean) => {
+    try {
+      if (isJoined) {
+        await clubsApi.leaveClub(clubId);
+      } else {
+        await clubsApi.joinClub(clubId);
+      }
+      
+      // Refresh club list
+      fetchClubs();
+    } catch (err: any) {
+      console.error('Failed to toggle club membership:', err);
+      alert(err.message || 'Failed to update membership');
+    }
+  }, [fetchClubs]);
 
-  const filteredClubs = clubs.filter(club =>
-    selectedCategory === 'all' || club.category.toLowerCase() === selectedCategory
-  );
+  // Filter clubs by type
+  const filteredClubs = selectedType === 'all' 
+    ? clubs 
+    : clubs.filter(club => club.type === selectedType);
 
-  const renderClubCard = ({ item, index }: { item: Club; index: number }) => (
-    <Animated.View entering={FadeInDown.delay(30 * Math.min(index, 5)).duration(300)}>
-      <TouchableOpacity style={styles.clubCard} activeOpacity={0.8}>
-        <View style={styles.clubImageContainer}>
-          {item.imageUrl ? (
-            <Image source={{ uri: item.imageUrl }} style={styles.clubImage} />
-          ) : (
-            <LinearGradient
-              colors={['#F3F4F6', '#E5E7EB']}
-              style={styles.clubImagePlaceholder}
-            >
-              <Ionicons name="people" size={32} color="#6B7280" />
-            </LinearGradient>
-          )}
-        </View>
+  // Render club card
+  const renderClubCard = ({ item: club, index }: { item: Club; index: number }) => {
+    const isJoined = club.memberCount !== undefined; // Simple check, could be improved
 
-        <View style={styles.clubContent}>
-          <Text style={styles.clubName} numberOfLines={1}>
-            {item.name}
-          </Text>
-          <Text style={styles.clubDescription} numberOfLines={2}>
-            {item.description}
-          </Text>
-
-          <View style={styles.clubFooter}>
-            <View style={styles.clubStats}>
-              <Ionicons name="people-outline" size={16} color="#6B7280" />
-              <Text style={styles.clubMemberCount}>
-                {item.memberCount} members
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              onPress={() => handleJoinClub(item.id)}
-              style={[
-                styles.joinButton,
-                item.isJoined && styles.joinedButton,
-              ]}
-              activeOpacity={0.7}
-            >
-              {item.isJoined ? (
-                <>
-                  <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                  <Text style={styles.joinedButtonText}>Joined</Text>
-                </>
-              ) : (
-                <>
-                  <Ionicons name="add" size={16} color="#fff" />
-                  <Text style={styles.joinButtonText}>Join</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-
-  return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-
-      {/* Header - matching Feed/Learn style */}
-      <SafeAreaView edges={['top']} style={styles.headerSafe}>
-        <View style={styles.header}>
-          {/* Menu Button - Left */}
-          <TouchableOpacity onPress={openSidebar} style={styles.menuButton}>
-            <Ionicons name="menu" size={28} color="#374151" />
-          </TouchableOpacity>
-
-          {/* Stunity Logo - Center */}
-          <Image
-            source={StunityLogo}
-            style={styles.headerLogo}
-            resizeMode="contain"
-          />
-
-          {/* Actions - Right */}
-          <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.headerButton}>
-              <Ionicons name="add-circle-outline" size={24} color="#374151" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.headerButton}>
-              <Ionicons name="search-outline" size={24} color="#374151" />
-            </TouchableOpacity>
-          </View>
-        </View>
-        <View style={styles.headerDivider} />
-      </SafeAreaView>
-
-      {/* Categories */}
-      <View style={styles.categoriesSection}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesScroll}
+    return (
+      <Animated.View
+        entering={FadeInDown.delay(index * 50).springify()}
+        style={styles.clubCard}
+      >
+        <TouchableOpacity
+          activeOpacity={0.7}
+          // onPress={() => navigation.navigate('ClubDetails', { clubId: club.id })}
         >
-          {CATEGORIES.map((cat, index) => {
-            const isSelected = selectedCategory === cat.id;
-            return (
-              <Animated.View
-                key={cat.id}
-                entering={FadeInRight.delay(50 * index).duration(300)}
+          <Card style={styles.cardInner}>
+            {/* Cover Image */}
+            {club.coverImage ? (
+              <Image source={{ uri: club.coverImage }} style={styles.clubCover} />
+            ) : (
+              <LinearGradient
+                colors={['#6366F1', '#8B5CF6', '#EC4899']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.clubCover}
               >
+                <Ionicons name="school" size={40} color="white" />
+              </LinearGradient>
+            )}
+
+            {/* Content */}
+            <View style={styles.clubContent}>
+              <View style={styles.clubHeader}>
+                <Text style={styles.clubName} numberOfLines={1}>
+                  {club.name}
+                </Text>
+                
+                {/* Club Type Badge */}
+                <View style={[styles.typeBadge, { backgroundColor: getTypeColor(club.type) }]}>
+                  <Text style={styles.typeBadgeText}>{getTypeLabel(club.type)}</Text>
+                </View>
+              </View>
+
+              <Text style={styles.clubDescription} numberOfLines={2}>
+                {club.description}
+              </Text>
+
+              {/* Creator */}
+              {club.creator && (
+                <View style={styles.creatorRow}>
+                  <Avatar
+                    size="xs"
+                    name={`${club.creator.firstName} ${club.creator.lastName}`}
+                    imageUrl={club.creator.profilePictureUrl}
+                  />
+                  <Text style={styles.creatorName}>
+                    {club.creator.firstName} {club.creator.lastName}
+                  </Text>
+                </View>
+              )}
+
+              {/* Footer */}
+              <View style={styles.clubFooter}>
+                <View style={styles.memberCount}>
+                  <Ionicons name="people" size={16} color={Colors.textSecondary} />
+                  <Text style={styles.memberCountText}>
+                    {club.memberCount || 0} members
+                  </Text>
+                </View>
+
                 <TouchableOpacity
-                  style={styles.categoryChip}
-                  onPress={() => setSelectedCategory(cat.id)}
+                  style={[styles.joinButton, isJoined && styles.joinedButton]}
+                  onPress={() => handleToggleJoin(club.id, isJoined)}
                   activeOpacity={0.7}
                 >
-                  {isSelected ? (
-                    <LinearGradient
-                      colors={['#FFA500', '#FF8C00']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.categoryChipGradient}
-                    >
-                      <Ionicons name={cat.icon as any} size={18} color="#fff" />
-                      <Text style={styles.categoryChipTextActive}>{cat.name}</Text>
-                    </LinearGradient>
-                  ) : (
-                    <View style={styles.categoryChipInner}>
-                      <Ionicons name={cat.icon as any} size={18} color="#6B7280" />
-                      <Text style={styles.categoryChipText}>{cat.name}</Text>
-                    </View>
-                  )}
+                  <Ionicons
+                    name={isJoined ? 'checkmark-circle' : 'add-circle'}
+                    size={18}
+                    color={isJoined ? Colors.primary : 'white'}
+                  />
+                  <Text style={[styles.joinButtonText, isJoined && styles.joinedButtonText]}>
+                    {isJoined ? 'Joined' : 'Join'}
+                  </Text>
                 </TouchableOpacity>
-              </Animated.View>
-            );
-          })}
-        </ScrollView>
+              </View>
+            </View>
+          </Card>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar barStyle="dark-content" />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={openSidebar} style={styles.logoContainer}>
+          <Image source={StunityLogo} style={styles.logo} />
+        </TouchableOpacity>
+
+        <Text style={styles.headerTitle}>Clubs</Text>
+
+        <TouchableOpacity style={styles.iconButton}>
+          <Ionicons name="search" size={24} color={Colors.text} />
+        </TouchableOpacity>
       </View>
 
+      {/* Filter Tabs */}
+      <View style={styles.filterTabs}>
+        {['all', 'joined', 'discover'].map((filter) => (
+          <TouchableOpacity
+            key={filter}
+            style={[
+              styles.filterTab,
+              selectedFilter === filter && styles.filterTabActive,
+            ]}
+            onPress={() => setSelectedFilter(filter as any)}
+          >
+            <Text
+              style={[
+                styles.filterTabText,
+                selectedFilter === filter && styles.filterTabTextActive,
+              ]}
+            >
+              {filter === 'all' ? 'All' : filter === 'joined' ? 'My Clubs' : 'Discover'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Type Categories */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.categoriesContainer}
+        style={styles.categoriesScroll}
+      >
+        {CLUB_TYPES.map((type, index) => (
+          <Animated.View
+            key={type.id}
+            entering={FadeInRight.delay(index * 50).springify()}
+          >
+            <TouchableOpacity
+              style={[
+                styles.categoryChip,
+                selectedType === type.id && {
+                  backgroundColor: type.color,
+                  borderColor: type.color,
+                },
+              ]}
+              onPress={() => setSelectedType(type.id)}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={type.icon as any}
+                size={18}
+                color={selectedType === type.id ? 'white' : type.color}
+              />
+              <Text
+                style={[
+                  styles.categoryChipText,
+                  selectedType === type.id && styles.categoryChipTextActive,
+                ]}
+              >
+                {type.name}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+        ))}
+      </ScrollView>
+
       {/* Clubs List */}
-      <FlatList
-        data={filteredClubs}
-        renderItem={renderClubCard}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor="#FFA500"
-            colors={['#FFA500']}
-          />
-        }
-      />
-    </View>
+      {loading ? (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+        </View>
+      ) : error ? (
+        <View style={styles.centerContainer}>
+          <Ionicons name="alert-circle" size={48} color={Colors.error} />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchClubs}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : filteredClubs.length === 0 ? (
+        <View style={styles.centerContainer}>
+          <Ionicons name="search" size={48} color={Colors.textSecondary} />
+          <Text style={styles.emptyText}>No clubs found</Text>
+          <Text style={styles.emptySubtext}>
+            {selectedFilter === 'joined'
+              ? 'Join some clubs to see them here'
+              : 'Try changing your filters'}
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredClubs}
+          renderItem={renderClubCard}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={Colors.primary}
+            />
+          }
+        />
+      )}
+    </SafeAreaView>
   );
 }
+
+// Helper functions
+const getTypeColor = (type: string) => {
+  switch (type) {
+    case 'CASUAL_STUDY_GROUP': return '#6366F1';
+    case 'STRUCTURED_CLASS': return '#10B981';
+    case 'PROJECT_GROUP': return '#EC4899';
+    case 'EXAM_PREP': return '#8B5CF6';
+    default: return '#FFA500';
+  }
+};
+
+const getTypeLabel = (type: string) => {
+  switch (type) {
+    case 'CASUAL_STUDY_GROUP': return 'Study Group';
+    case 'STRUCTURED_CLASS': return 'Class';
+    case 'PROJECT_GROUP': return 'Project';
+    case 'EXAM_PREP': return 'Exam Prep';
+    default: return 'Club';
+  }
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F7FC',
-  },
-  headerSafe: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
-  headerDivider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
+  logoContainer: {
+    padding: 4,
   },
-  headerLogo: {
+  logo: {
+    width: 32,
     height: 32,
-    width: 120,
+    borderRadius: 8,
   },
-  menuButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.text,
+    flex: 1,
+    textAlign: 'center',
   },
-  headerActions: {
+  iconButton: {
+    padding: 4,
+  },
+  filterTabs: {
     flexDirection: 'row',
-    gap: 4,
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
-  headerButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
+  filterTab: {
+    flex: 1,
+    paddingVertical: 8,
     alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 8,
+    marginHorizontal: 4,
   },
-  categoriesSection: {
-    backgroundColor: '#fff',
-    paddingBottom: 2,
+  filterTabActive: {
+    backgroundColor: Colors.primary,
+  },
+  filterTabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  filterTabTextActive: {
+    color: 'white',
   },
   categoriesScroll: {
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  categoriesContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 10,
+    gap: 8,
   },
   categoryChip: {
-    borderRadius: 50,
-    overflow: 'hidden',
-  },
-  categoryChipGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    gap: 5,
-    borderRadius: 50,
-  },
-  categoryChipInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    gap: 5,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 50,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'white',
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    marginRight: 8,
+    gap: 6,
   },
   categoryChipText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
+    color: Colors.text,
   },
   categoryChipTextActive: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#fff',
+    color: 'white',
   },
   listContent: {
     padding: 16,
-    paddingBottom: 100,
   },
   clubCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
     marginBottom: 16,
+  },
+  cardInner: {
     overflow: 'hidden',
-    // Match Feed card shadow
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 6,
+    padding: 0,
   },
-  clubImageContainer: {
-    height: 140,
-  },
-  clubImage: {
+  clubCover: {
     width: '100%',
-    height: '100%',
-  },
-  clubImagePlaceholder: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
+    height: 120,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   clubContent: {
     padding: 16,
   },
+  clubHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   clubName: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 6,
+    color: Colors.text,
+    flex: 1,
+    marginRight: 8,
+  },
+  typeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  typeBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: 'white',
   },
   clubDescription: {
     fontSize: 14,
-    color: '#6B7280',
+    color: Colors.textSecondary,
     lineHeight: 20,
     marginBottom: 12,
   },
+  creatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  creatorName: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
   clubFooter: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  clubStats: {
+  memberCount: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
-  clubMemberCount: {
+  memberCountText: {
     fontSize: 13,
-    color: '#6B7280',
-    fontWeight: '500',
+    color: Colors.textSecondary,
   },
   joinButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFA500',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 10,
+    borderRadius: 20,
+    backgroundColor: Colors.primary,
     gap: 4,
   },
   joinedButton: {
-    backgroundColor: '#D1FAE5',
+    backgroundColor: 'white',
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
   },
   joinButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: 'white',
   },
   joinedButtonText: {
+    color: Colors.primary,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  errorText: {
+    fontSize: 16,
+    color: Colors.error,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: Colors.primary,
+    borderRadius: 8,
+  },
+  retryButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#10B981',
+    color: 'white',
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.text,
+    marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
   },
 });
