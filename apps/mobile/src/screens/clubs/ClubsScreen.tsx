@@ -21,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
+import { useNavigation } from '@react-navigation/native';
 
 const StunityLogo = require('../../../../../Stunity.png');
 
@@ -38,6 +39,7 @@ const CLUB_TYPES = [
 ];
 
 export default function ClubsScreen() {
+  const navigation = useNavigation();
   const { openSidebar } = useNavigationContext();
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'joined' | 'discover'>('all');
   const [selectedType, setSelectedType] = useState('all');
@@ -119,7 +121,7 @@ export default function ClubsScreen() {
       >
         <TouchableOpacity
           activeOpacity={0.7}
-          // onPress={() => navigation.navigate('ClubDetails', { clubId: club.id })}
+          onPress={() => navigation.navigate('ClubDetails' as never, { clubId: club.id } as never)}
         >
           <Card style={styles.cardInner}>
             {/* Cover Image */}

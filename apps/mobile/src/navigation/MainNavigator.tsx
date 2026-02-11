@@ -28,7 +28,7 @@ import { FeedScreen, CreatePostScreen, EditPostScreen, PostDetailScreen, Comment
 import { LearnScreen, CourseDetailScreen } from '@/screens/learn';
 import { ProfileScreen, EditProfileScreen } from '@/screens/profile';
 import { ConversationsScreen, ChatScreen } from '@/screens/messages';
-import { ClubsScreen } from '@/screens/clubs';
+import { ClubsScreen, ClubDetailsScreen } from '@/screens/clubs';
 
 // Placeholder screens (will be implemented)
 const PlaceholderScreen = ({ title }: { title: string }) => (
@@ -40,7 +40,6 @@ const PlaceholderScreen = ({ title }: { title: string }) => (
 // Feed Stack Screens (placeholders for remaining)
 const UserProfileScreen = () => <PlaceholderScreen title="User Profile" />;
 const HashtagScreen = () => <PlaceholderScreen title="Hashtag" />;
-const ClubDetailScreen = () => <PlaceholderScreen title="Club Detail" />;
 const EventsScreen = () => <PlaceholderScreen title="Events" />;
 const EventDetailScreen = () => <PlaceholderScreen title="Event Detail" />;
 
@@ -72,7 +71,7 @@ const ClubsStack = createNativeStackNavigator();
 const ClubsStackNavigator: React.FC = () => (
   <ClubsStack.Navigator screenOptions={{ headerShown: false }}>
     <ClubsStack.Screen name="ClubsList" component={ClubsScreen} />
-    <ClubsStack.Screen name="ClubDetail" component={ClubDetailScreen} />
+    <ClubsStack.Screen name="ClubDetails" component={ClubDetailsScreen} />
   </ClubsStack.Navigator>
 );
 
