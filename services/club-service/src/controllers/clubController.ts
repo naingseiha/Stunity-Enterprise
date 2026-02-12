@@ -135,7 +135,14 @@ export const getClubs = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    res.json({ success: true, clubs });
+    // Transform response to match mobile API expectations
+    const transformedClubs = clubs.map(club => ({
+      ...club,
+      type: club.clubType,  // Map clubType to type
+      memberCount: club._count.members,  // Map _count.members to memberCount
+    }));
+
+    res.json({ success: true, clubs: transformedClubs });
   } catch (error: any) {
     console.error('Get clubs error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch clubs', error: error.message });
@@ -212,7 +219,14 @@ export const getClubById = async (req: AuthRequest, res: Response) => {
       }
     });
 
-    res.json({ success: true, club, membership });
+    // Transform response to match mobile API expectations
+    const transformedClub = {
+      ...club,
+      type: club.clubType,  // Map clubType to type
+      memberCount: club.members.length,  // Count members
+    };
+
+    res.json({ success: true, club: transformedClub, membership });
   } catch (error: any) {
     console.error('Get club error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch club', error: error.message });
