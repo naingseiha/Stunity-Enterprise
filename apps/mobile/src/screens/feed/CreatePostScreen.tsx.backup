@@ -17,7 +17,6 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
-  LayoutAnimation,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -25,12 +24,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeIn, FadeOut, Layout, ZoomIn, ZoomOut } from 'react-native-reanimated';
 
 import { Avatar } from '@/components/common';
 import { useAuthStore, useFeedStore } from '@/stores';
 import { PostType } from '@/types';
-import { QuizForm } from './create-post/forms/QuizForm';
 
 // Post type options
 const POST_TYPES: { type: PostType; icon: string; label: string; color: string }[] = [
@@ -38,7 +35,6 @@ const POST_TYPES: { type: PostType; icon: string; label: string; color: string }
   { type: 'QUESTION', icon: 'help-circle', label: 'Question', color: '#3B82F6' },
   { type: 'ANNOUNCEMENT', icon: 'megaphone', label: 'Announce', color: '#EF4444' },
   { type: 'POLL', icon: 'stats-chart', label: 'Poll', color: '#8B5CF6' },
-  { type: 'QUIZ', icon: 'school', label: 'Quiz', color: '#EC4899' },
   { type: 'COURSE', icon: 'book', label: 'Course', color: '#10B981' },
   { type: 'PROJECT', icon: 'folder', label: 'Project', color: '#F97316' },
 ];
@@ -56,24 +52,19 @@ export default function CreatePostScreen() {
   // Poll state
   const [pollOptions, setPollOptions] = useState<string[]>(['', '']);
   
-  // Quiz state
-  const [quizData, setQuizData] = useState<any>(null);
-  
-  // Add poll option with animation
+  // Add poll option
   const addPollOption = () => {
     if (pollOptions.length < 6) {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setPollOptions([...pollOptions, '']);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Haptics.selectionAsync();
     }
   };
   
-  // Remove poll option with animation
+  // Remove poll option
   const removePollOption = (index: number) => {
     if (pollOptions.length > 2) {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setPollOptions(pollOptions.filter((_, i) => i !== index));
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Haptics.selectionAsync();
     }
   };
   
@@ -138,8 +129,7 @@ export default function CreatePostScreen() {
   }, []);
 
   const handleRemoveImage = useCallback((index: number) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.selectionAsync();
     setMediaUris(prev => prev.filter((_, i) => i !== index));
   }, []);
 
@@ -172,12 +162,7 @@ export default function CreatePostScreen() {
       const success = await createPost(content, mediaUris, postType, validPollOptions);
       
       if (success) {
-        // Success animation sequence
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        
-        // Small delay for haptic feedback to register
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
         navigation.goBack();
       } else {
         Alert.alert('Error', 'Failed to create post. Please try again.');
@@ -207,7 +192,6 @@ export default function CreatePostScreen() {
           onPress={handlePost}
           disabled={!canPost || isPosting}
           style={[styles.postButton, (!canPost || isPosting) && styles.postButtonDisabled]}
-          onPressIn={() => !(!canPost || isPosting) && Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
         >
           {isPosting ? (
             <ActivityIndicator size="small" color="#fff" />
@@ -259,35 +243,29 @@ export default function CreatePostScreen() {
             contentContainerStyle={styles.typeSelectorContent}
           >
             {POST_TYPES.map((type) => (
-              <Animated.View
+              <TouchableOpacity
                 key={type.type}
-                entering={FadeIn.duration(200)}
-                layout={Layout.springify()}
+                onPress={() => {
+                  setPostType(type.type);
+                  Haptics.selectionAsync();
+                }}
+                style={[
+                  styles.typeOption,
+                  postType === type.type && { backgroundColor: type.color + '15', borderColor: type.color },
+                ]}
               >
-                <TouchableOpacity
-                  onPress={() => {
-                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                    setPostType(type.type);
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  }}
-                  style={[
-                    styles.typeOption,
-                    postType === type.type && { backgroundColor: type.color + '15', borderColor: type.color },
-                  ]}
-                >
-                  <Ionicons
-                    name={type.icon as any}
-                    size={16}
-                    color={postType === type.type ? type.color : '#6B7280'}
-                  />
-                  <Text style={[
-                    styles.typeOptionText,
-                    postType === type.type && { color: type.color, fontWeight: '600' },
-                  ]}>
-                    {type.label}
-                  </Text>
-                </TouchableOpacity>
-              </Animated.View>
+                <Ionicons
+                  name={type.icon as any}
+                  size={16}
+                  color={postType === type.type ? type.color : '#6B7280'}
+                />
+                <Text style={[
+                  styles.typeOptionText,
+                  postType === type.type && { color: type.color },
+                ]}>
+                  {type.label}
+                </Text>
+              </TouchableOpacity>
             ))}
           </ScrollView>
 
@@ -304,20 +282,10 @@ export default function CreatePostScreen() {
           
           {/* Poll Options (only for POLL type) */}
           {postType === 'POLL' && (
-            <Animated.View 
-              entering={FadeIn.duration(300)}
-              exiting={FadeOut.duration(200)}
-              style={styles.pollSection}
-            >
+            <View style={styles.pollSection}>
               <Text style={styles.pollLabel}>Poll Options</Text>
               {pollOptions.map((option, index) => (
-                <Animated.View 
-                  key={index} 
-                  style={styles.pollOption}
-                  entering={ZoomIn.duration(200)}
-                  exiting={ZoomOut.duration(200)}
-                  layout={Layout.springify()}
-                >
+                <View key={index} style={styles.pollOption}>
                   <TextInput
                     style={styles.pollInput}
                     placeholder={`Option ${index + 1}`}
@@ -333,7 +301,7 @@ export default function CreatePostScreen() {
                       <Ionicons name="close-circle" size={20} color="#EF4444" />
                     </TouchableOpacity>
                   )}
-                </Animated.View>
+                </View>
               ))}
               {pollOptions.length < 6 && (
                 <TouchableOpacity onPress={addPollOption} style={styles.addPollButton}>
@@ -341,34 +309,14 @@ export default function CreatePostScreen() {
                   <Text style={styles.addPollText}>Add Option</Text>
                 </TouchableOpacity>
               )}
-            </Animated.View>
-          )}
-          
-          {/* Quiz Form (only for QUIZ type) */}
-          {postType === 'QUIZ' && (
-            <Animated.View 
-              entering={FadeIn.duration(300)}
-              exiting={FadeOut.duration(200)}
-            >
-              <QuizForm onDataChange={setQuizData} />
-            </Animated.View>
+            </View>
           )}
 
           {/* Media Preview */}
           {mediaUris.length > 0 && (
-            <Animated.View 
-              entering={FadeIn.duration(300)}
-              exiting={FadeOut.duration(200)}
-              style={styles.mediaPreview}
-            >
+            <View style={styles.mediaPreview}>
               {mediaUris.map((uri, index) => (
-                <Animated.View 
-                  key={uri} 
-                  style={styles.mediaItem}
-                  entering={ZoomIn.duration(300).delay(index * 50)}
-                  exiting={ZoomOut.duration(200)}
-                  layout={Layout.springify()}
-                >
+                <View key={uri} style={styles.mediaItem}>
                   <Image source={{ uri }} style={styles.mediaImage} contentFit="cover" />
                   <TouchableOpacity
                     onPress={() => handleRemoveImage(index)}
@@ -376,9 +324,9 @@ export default function CreatePostScreen() {
                   >
                     <Ionicons name="close" size={16} color="#fff" />
                   </TouchableOpacity>
-                </Animated.View>
+                </View>
               ))}
-            </Animated.View>
+            </View>
           )}
         </ScrollView>
 
