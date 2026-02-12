@@ -263,6 +263,13 @@ app.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => 
       ],
     };
 
+    console.log('📋 [GET /posts] Query filters:', {
+      userId: req.user!.id,
+      userSchoolId: req.user!.schoolId,
+      type,
+      subject,
+    });
+
     if (type) {
       where.postType = type;
     }
@@ -333,6 +340,13 @@ app.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => 
       }),
       prisma.post.count({ where }),
     ]);
+
+    console.log('📊 [GET /posts] Query results:', {
+      postsFound: posts.length,
+      totalCount: total,
+      quizPosts: posts.filter(p => p.postType === 'QUIZ').length,
+      postTypes: posts.map(p => p.postType),
+    });
 
     // Check if current user liked each post
     const postIds = posts.map(p => p.id);
@@ -416,7 +430,14 @@ app.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) =>
   try {
     const { content, title, postType = 'ARTICLE', visibility = 'SCHOOL', mediaUrls = [], mediaDisplayMode = 'AUTO', pollOptions, quizData } = req.body;
 
-    console.log('📝 Creating post:', { postType, hasQuizData: !!quizData, quizDataKeys: quizData ? Object.keys(quizData) : [] });
+    console.log('📝 Creating post:', { 
+      postType, 
+      visibility,
+      authorId: req.user!.id,
+      authorSchoolId: req.user!.schoolId,
+      hasQuizData: !!quizData, 
+      quizDataKeys: quizData ? Object.keys(quizData) : [] 
+    });
 
     if (!content || content.trim().length === 0) {
       return res.status(400).json({ success: false, error: 'Content is required' });
@@ -466,6 +487,15 @@ app.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) =>
         quiz: true,
         _count: { select: { comments: true, likes: true } },
       },
+    });
+
+    console.log('✅ Post created:', {
+      id: post.id,
+      postType: post.postType,
+      visibility: post.visibility,
+      authorId: post.authorId,
+      hasQuiz: !!post.quiz,
+      quizId: post.quiz?.id,
     });
 
     // Publish SSE event to followers for real-time feed updates
