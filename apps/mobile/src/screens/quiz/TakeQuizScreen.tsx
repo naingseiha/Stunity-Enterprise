@@ -81,7 +81,7 @@ export function TakeQuizScreen() {
     RNAnimated.timing(progressAnim, {
       toValue: progress,
       duration: 300,
-      useNativeDriver: false,
+      useNativeDriver: false, // Can't use native driver for width animation
     }).start();
   }, [currentQuestionIndex]);
 
@@ -205,9 +205,10 @@ export function TakeQuizScreen() {
             style={[
               styles.progressBarFill,
               {
-                width: progressAnim.interpolate({
+                flex: progressAnim.interpolate({
                   inputRange: [0, 100],
-                  outputRange: ['0%', '100%'],
+                  outputRange: [0, 1],
+                  extrapolate: 'clamp',
                 }),
               },
             ]}
@@ -468,6 +469,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     overflow: 'hidden',
     marginBottom: 8,
+    flexDirection: 'row',
   },
   progressBarFill: {
     height: '100%',
