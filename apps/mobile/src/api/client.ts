@@ -102,22 +102,27 @@ const createApiClient = (baseURL: string): AxiosInstance => {
       if (error.code === 'ECONNABORTED' && !originalRequest._retry) {
         const retryCount = (originalRequest._retryCount || 0) + 1;
         
-        if (retryCount <= 2) { // Retry up to 2 times for timeouts
+        if (retryCount <= 3) { // Retry up to 3 times for timeouts
           originalRequest._retryCount = retryCount;
           originalRequest._retry = true;
           
-          // Exponential backoff: 1s, 2s
-          const delay = 1000 * retryCount;
+          // Exponential backoff: 2s, 4s, 6s
+          const delay = 2000 * retryCount;
           if (__DEV__) {
-            console.log(`⏳ [API] Retrying ${originalRequest.url} (attempt ${retryCount}/2) after ${delay}ms...`);
+            console.log(`⏳ [API] Retrying ${originalRequest.url} (attempt ${retryCount}/3) after ${delay}ms...`);
           }
           
           await new Promise(resolve => setTimeout(resolve, delay));
           
-          // Increase timeout for retry
-          originalRequest.timeout = (originalRequest.timeout || 15000) + 5000;
+          // Significantly increase timeout for retry (WiFi switching needs more time)
+          originalRequest.timeout = 60000; // 60s for retries
           
           return client(originalRequest);
+        } else {
+          // After 3 retries, give a helpful error message
+          if (__DEV__) {
+            console.log('💡 [API] Timeout after retries. If you changed WiFi, please reload the app.');
+          }
         }
       }
 
@@ -178,20 +183,20 @@ const transformError = (error: AxiosError<ApiResponse<unknown>>): ApiError => {
     if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
       return {
         code: 'TIMEOUT_ERROR',
-        message: 'Server is taking too long to respond. Please try again.',
+        message: 'Connection timeout. If you changed WiFi, the app will reconnect automatically.',
       };
     }
     
     if (error.code === 'ERR_NETWORK' || !navigator.onLine) {
       return {
         code: 'NETWORK_ERROR',
-        message: 'No internet connection. Please check your network.',
+        message: 'Network unavailable. Checking connection...',
       };
     }
     
     return {
       code: 'NETWORK_ERROR',
-      message: 'Unable to connect. Please check your internet.',
+      message: 'Connection issue. Retrying...',
     };
   }
 

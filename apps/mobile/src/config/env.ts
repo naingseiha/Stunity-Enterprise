@@ -30,8 +30,16 @@ interface EnvironmentConfig {
  * 
  * Priority:
  * 1. Manual override via EXPO_PUBLIC_API_HOST env var
- * 2. Expo's debuggerHost (auto-detects dev machine IP)
+ * 2. Expo's debuggerHost (auto-detects dev machine IP) ⭐ RECOMMENDED
  * 3. Localhost fallback
+ * 
+ * NOTE: In development, Expo automatically detects your dev machine's IP
+ * when you start the app. This means WiFi changes are handled automatically!
+ * 
+ * If you still get network errors after WiFi change:
+ * 1. Wait 5-10 seconds for auto-retry
+ * 2. Pull down to refresh the screen
+ * 3. Restart the app with: npx expo start --clear
  */
 const getApiHost = (): string => {
   // Allow manual override via .env
@@ -127,9 +135,9 @@ export const APP_CONFIG = {
   BUILD_NUMBER: '1',
   
   // API Settings
-  API_TIMEOUT: 45000, // 45 seconds (increased from 30s for slower networks)
+  API_TIMEOUT: 60000, // 60 seconds (increased for WiFi switching scenarios)
   RETRY_ATTEMPTS: 3,
-  RETRY_DELAY: 1000,
+  RETRY_DELAY: 2000, // 2 seconds between retries
   
   // Cache Settings
   CACHE_TTL: 5 * 60 * 1000, // 5 minutes

@@ -48,7 +48,7 @@ class NetworkService {
   }
 
   private handleNetworkChange(state: NetInfoState) {
-    // Debounce to prevent rapid changes during WiFi switching
+    // Debounce to prevent rapid changes during WiFi switching (increased to 2s)
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);
     }
@@ -73,13 +73,16 @@ class NetworkService {
 
         // Retry queued requests when back online
         if (!wasConnected && isNowConnected) {
-          this.retryQueuedRequests();
+          // Wait a bit for network to stabilize before retrying
+          setTimeout(() => {
+            this.retryQueuedRequests();
+          }, 1000);
         }
 
         // Emit event for components
         eventEmitter.emit('network:change', { connected: isNowConnected });
       }
-    }, 800); // 800ms debounce (longer for WiFi switches)
+    }, 2000); // 2s debounce (longer for WiFi switches)
   }
 
   private notifyListeners(connected: boolean) {
