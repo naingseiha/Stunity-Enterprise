@@ -87,7 +87,7 @@ export const getClubs = async (params?: {
   schoolId?: string;
 }): Promise<Club[]> => {
   const response = await api.get('/clubs', { params });
-  return response.data;
+  return response.data.clubs || response.data;  // Handle both { clubs: [...] } and direct array
 };
 
 /**
@@ -95,7 +95,7 @@ export const getClubs = async (params?: {
  */
 export const getClubById = async (clubId: string): Promise<Club> => {
   const response = await api.get(`/clubs/${clubId}`);
-  return response.data;
+  return response.data.club || response.data;  // Handle both { club: {...} } and direct object
 };
 
 /**
