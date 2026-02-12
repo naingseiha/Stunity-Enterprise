@@ -50,8 +50,8 @@ export default function ClubDetailsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [joiningLoading, setJoiningLoading] = useState(false);
 
-  const isJoined = members.some(m => m.userId === user?.id && m.isActive);
-  const userMembership = members.find(m => m.userId === user?.id && m.isActive);
+  const isJoined = members?.some(m => m.userId === user?.id && m.isActive) || false;
+  const userMembership = members?.find(m => m.userId === user?.id && m.isActive);
   const isOwner = userMembership?.role === 'OWNER' || club?.creatorId === user?.id;
 
   // Fetch club details
@@ -64,7 +64,7 @@ export default function ClubDetailsScreen() {
       ]);
       
       setClub(clubData);
-      setMembers(membersData);
+      setMembers(membersData || []);
     } catch (err: any) {
       console.error('Failed to fetch club details:', err);
       setError(err.message || 'Failed to load club details');
@@ -238,7 +238,7 @@ export default function ClubDetailsScreen() {
           <View style={styles.statsRow}>
             <View style={styles.stat}>
               <Ionicons name="people" size={18} color="#6B7280" />
-              <Text style={styles.statText}>{club.memberCount || members.length} members</Text>
+              <Text style={styles.statText}>{club.memberCount || members?.length || 0} members</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.stat}>
@@ -294,8 +294,8 @@ export default function ClubDetailsScreen() {
         {/* Members Section */}
         <Animated.View entering={FadeInDown.delay(200)} style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Members ({members.length})</Text>
-            {members.length > 6 && (
+            <Text style={styles.sectionTitle}>Members ({members?.length || 0})</Text>
+            {(members?.length || 0) > 6 && (
               <TouchableOpacity>
                 <Text style={styles.seeAllText}>See All</Text>
               </TouchableOpacity>
@@ -303,7 +303,7 @@ export default function ClubDetailsScreen() {
           </View>
           
           <View style={styles.membersGrid}>
-            {members.slice(0, 6).map((member, index) => (
+            {members?.slice(0, 6).map((member, index) => (
               <View key={member.id} style={styles.memberItem}>
                 <Avatar
                   uri={member.user.profilePictureUrl}

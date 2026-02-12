@@ -145,7 +145,7 @@ export const leaveClub = async (clubId: string): Promise<{ message: string }> =>
  */
 export const getClubMembers = async (clubId: string): Promise<ClubMember[]> => {
   const response = await api.get(`/clubs/${clubId}/members`);
-  return response.data;
+  return response.data.members || response.data || [];
 };
 
 /**
