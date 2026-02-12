@@ -192,6 +192,13 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         // Transform posts to match mobile app Post type
         const transformedPosts: Post[] = newPosts.map((post: any) => {
           try {
+            // Debug: Log quiz post raw data
+            if (__DEV__ && post.postType === 'QUIZ') {
+              console.log('🔍 [FeedStore] Transforming QUIZ post:', post.id);
+              console.log('  - Has quiz object:', !!post.quiz);
+              console.log('  - Quiz data:', post.quiz ? JSON.stringify(post.quiz, null, 2) : 'NULL');
+            }
+            
             return {
           id: post.id,
           author: {
@@ -297,6 +304,17 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             return null;
           }
         }).filter(Boolean) as Post[];
+
+        // Debug: Log transformed quiz posts
+        if (__DEV__) {
+          const transformedQuizzes = transformedPosts.filter(p => p.postType === 'QUIZ');
+          if (transformedQuizzes.length > 0) {
+            console.log('✅ [FeedStore] Transformed quiz posts:', transformedQuizzes.length);
+            transformedQuizzes.forEach((qp) => {
+              console.log(`  - Post ${qp.id}: hasQuizData=${!!qp.quizData}, questions=${qp.quizData?.questions?.length}`);
+            });
+          }
+        }
 
         // Performance optimization: Limit total posts in memory
         const allPosts = refresh ? transformedPosts : [...posts, ...transformedPosts];
