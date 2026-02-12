@@ -172,13 +172,27 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         const pagination = response.data.pagination;
         const hasMore = pagination?.hasMore ?? newPosts.length === 20;
 
+        // Debug: Log posts received
+        if (__DEV__) {
+          console.log('📥 [FeedStore] Received', newPosts.length, 'posts');
+          const quizPosts = newPosts.filter((p: any) => p.postType === 'QUIZ');
+          if (quizPosts.length > 0) {
+            console.log('🎯 [FeedStore] Quiz posts:', quizPosts.length);
+            quizPosts.forEach((qp: any) => {
+              console.log('  - Quiz:', qp.id, 'hasQuiz:', !!qp.quiz, 'title:', qp.title);
+            });
+          }
+        }
+
         // Debug: Log mediaUrls from first post
         if (__DEV__ && newPosts.length > 0 && newPosts[0].mediaUrls) {
           console.log('📥 [FeedStore] Sample post mediaUrls:', newPosts[0].mediaUrls);
         }
 
         // Transform posts to match mobile app Post type
-        const transformedPosts: Post[] = newPosts.map((post: any) => ({
+        const transformedPosts: Post[] = newPosts.map((post: any) => {
+          try {
+            return {
           id: post.id,
           author: {
             id: post.author?.id,
@@ -274,7 +288,14 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             enrolledToday: post.enrolledToday,
             completionRate: post.completionRate,
           },
-        }));
+        };
+          } catch (error: any) {
+            console.error('❌ [FeedStore] Error transforming post:', post.id, error);
+            console.error('Post data:', JSON.stringify(post, null, 2));
+            // Return a minimal post object to prevent app crash
+            return null;
+          }
+        }).filter(Boolean) as Post[];
 
         // Performance optimization: Limit total posts in memory
         const allPosts = refresh ? transformedPosts : [...posts, ...transformedPosts];
