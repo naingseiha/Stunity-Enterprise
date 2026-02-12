@@ -1,12 +1,11 @@
 /**
- * Edit Post Screen
+ * Edit Post Screen - Phase 1: Basic Functionality Test
  * 
- * Clean editing interface for updating existing posts:
- * - Content editing with character count
+ * Testing features:
+ * - Content editing
  * - Visibility control
- * - Media management (add/remove/reorder)
- * - Poll editing (if no votes)
- * - Save/Cancel actions
+ * - Save/Cancel
+ * - Validation
  */
 
 import React, { useState, useEffect } from 'react';
@@ -19,7 +18,6 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -60,12 +58,19 @@ export default function EditPostScreen() {
   }, [content, visibility, post]);
   
   const handleSave = async () => {
+    console.log('🧪 [EditPost] Save button pressed');
+    console.log('🧪 [EditPost] Post ID:', post.id);
+    console.log('🧪 [EditPost] Content:', content.substring(0, 50) + '...');
+    console.log('🧪 [EditPost] Visibility:', visibility);
+    console.log('🧪 [EditPost] Has changes:', hasChanges);
+    
     if (!content.trim()) {
       Alert.alert('Empty Post', 'Please add some content to your post.');
       return;
     }
     
     if (!hasChanges) {
+      console.log('🧪 [EditPost] No changes detected, going back');
       navigation.goBack();
       return;
     }
@@ -74,6 +79,7 @@ export default function EditPostScreen() {
     setIsSubmitting(true);
     
     try {
+      console.log('🧪 [EditPost] Calling updatePost...');
       const success = await updatePost(post.id, {
         content: content.trim(),
         visibility,
@@ -81,17 +87,21 @@ export default function EditPostScreen() {
         mediaDisplayMode: post.mediaDisplayMode || 'AUTO',
       });
       
+      console.log('🧪 [EditPost] Update result:', success);
+      
       if (success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        console.log('✅ [EditPost] Post updated successfully!');
         Alert.alert('Success', 'Post updated successfully!', [
           { text: 'OK', onPress: () => navigation.goBack() },
         ]);
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        console.error('❌ [EditPost] Update failed');
         Alert.alert('Error', 'Failed to update post. Please try again.');
       }
     } catch (error) {
-      console.error('Failed to save post:', error);
+      console.error('❌ [EditPost] Exception:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
@@ -100,6 +110,7 @@ export default function EditPostScreen() {
   };
   
   const handleCancel = () => {
+    console.log('🧪 [EditPost] Cancel pressed, hasChanges:', hasChanges);
     if (hasChanges) {
       Alert.alert(
         'Discard Changes?',
@@ -121,15 +132,23 @@ export default function EditPostScreen() {
     }
   };
   
+  console.log('🧪 [EditPost] Rendering with:', { 
+    postId: post.id, 
+    contentLength: content.length,
+    visibility,
+    hasChanges,
+    isSubmitting 
+  });
+  
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
+      {/* Simple Header for Testing */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleCancel} style={styles.headerButton}>
           <Ionicons name="close" size={24} color="#262626" />
         </TouchableOpacity>
         
-        <Text style={styles.headerTitle}>Edit Post</Text>
+        <Text style={styles.headerTitle}>Edit Post (Testing)</Text>
         
         <TouchableOpacity
           onPress={handleSave}
@@ -156,6 +175,16 @@ export default function EditPostScreen() {
       </View>
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Debug Info */}
+        <View style={styles.debugBox}>
+          <Text style={styles.debugTitle}>🧪 Debug Info:</Text>
+          <Text style={styles.debugText}>Post ID: {post.id}</Text>
+          <Text style={styles.debugText}>Post Type: {post.postType}</Text>
+          <Text style={styles.debugText}>Has Changes: {hasChanges ? 'Yes' : 'No'}</Text>
+          <Text style={styles.debugText}>Is Submitting: {isSubmitting ? 'Yes' : 'No'}</Text>
+          <Text style={styles.debugText}>Character Count: {content.length}</Text>
+        </View>
+        
         {/* Content Input */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Content</Text>
@@ -163,7 +192,10 @@ export default function EditPostScreen() {
             <TextInput
               style={styles.contentInput}
               value={content}
-              onChangeText={setContent}
+              onChangeText={(text) => {
+                console.log('🧪 [EditPost] Content changed:', text.length, 'chars');
+                setContent(text);
+              }}
               placeholder="What's on your mind?"
               placeholderTextColor="#A3A3A3"
               multiline
@@ -185,6 +217,7 @@ export default function EditPostScreen() {
               <TouchableOpacity
                 key={option.value}
                 onPress={() => {
+                  console.log('🧪 [EditPost] Visibility changed to:', option.value);
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setVisibility(option.value);
                 }}
@@ -220,27 +253,6 @@ export default function EditPostScreen() {
             ))}
           </View>
         </View>
-        
-        {/* Media Preview (if exists) */}
-        {post.mediaUrls && post.mediaUrls.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Media</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.mediaScroll}
-            >
-              {post.mediaUrls.map((url, index) => (
-                <View key={index} style={styles.mediaItem}>
-                  <Image source={{ uri: url }} style={styles.mediaImage} />
-                </View>
-              ))}
-            </ScrollView>
-            <Text style={styles.mediaNote}>
-              Media editing coming soon. Delete and recreate post to change media.
-            </Text>
-          </View>
-        )}
         
         {/* Poll Notice */}
         {post.postType === 'POLL' && post.pollOptions && (
@@ -316,6 +328,28 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  
+  // Debug Box
+  debugBox: {
+    margin: 16,
+    padding: 12,
+    backgroundColor: '#FFF9E6',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFE066',
+  },
+  debugTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#B8860B',
+    marginBottom: 8,
+  },
+  debugText: {
+    fontSize: 12,
+    color: '#8B7500',
+    marginBottom: 4,
+  },
+  
   section: {
     padding: 16,
   },
@@ -390,26 +424,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8E8E93',
     marginTop: 2,
-  },
-  
-  // Media
-  mediaScroll: {
-    marginTop: 8,
-  },
-  mediaItem: {
-    marginRight: 12,
-  },
-  mediaImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 12,
-    backgroundColor: '#F0F0F0',
-  },
-  mediaNote: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 12,
-    fontStyle: 'italic',
   },
   
   // Notice Card
