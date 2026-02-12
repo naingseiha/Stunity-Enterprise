@@ -31,9 +31,47 @@ import * as ImagePicker from 'expo-image-picker';
 import { useFeedStore } from '@/stores';
 import { Colors, Shadows } from '@/config';
 import { Post } from '@/types';
+import { feedApi } from '@/api/client';
 
 const { width } = Dimensions.get('window');
 const IMAGE_SIZE = (width - 64) / 3; // 3 columns with padding
+
+// Helper to upload images to server
+const uploadImages = async (localUris: string[]): Promise<string[]> => {
+  if (localUris.length === 0) return [];
+  
+  try {
+    console.log('📤 [EditPost] Uploading', localUris.length, 'images...');
+    
+    const formData = new FormData();
+    
+    for (const uri of localUris) {
+      const filename = uri.split('/').pop() || 'image.jpg';
+      
+      formData.append('files', {
+        uri,
+        type: 'image/jpeg',
+        name: filename,
+      } as any);
+    }
+    
+    const response = await feedApi.post('/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
+    });
+    
+    if (response.data.success && response.data.data) {
+      const uploadedUrls = response.data.data.map((file: any) => file.url);
+      console.log('✅ [EditPost] Upload successful:', uploadedUrls.length, 'images');
+      return uploadedUrls;
+    }
+    
+    throw new Error('Upload response invalid');
+  } catch (error) {
+    console.error('❌ [EditPost] Upload failed:', error);
+    throw error;
+  }
+};
 
 type EditPostScreenRouteProp = RouteProp<{ EditPost: { post: Post } }, 'EditPost'>;
 
@@ -65,6 +103,7 @@ export default function EditPostScreen() {
   const [mediaUrls, setMediaUrls] = useState<string[]>(post.mediaUrls || []);
   const [newMediaUrls, setNewMediaUrls] = useState<string[]>([]); // Track new images
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   
   // Check if content or media changed
@@ -159,14 +198,8 @@ export default function EditPostScreen() {
     console.log('🧪 [EditPost] New visibility:', visibility);
     console.log('🧪 [EditPost] Original media count:', post.mediaUrls?.length || 0);
     console.log('🧪 [EditPost] New media count:', mediaUrls.length);
-    console.log('🧪 [EditPost] New images added:', newMediaUrls.length);
+    console.log('🧪 [EditPost] New images to upload:', newMediaUrls.length);
     console.log('🧪 [EditPost] Has changes:', hasChanges);
-    console.log('🧪 [EditPost] Data being sent:', JSON.stringify({
-      content: content.trim(),
-      visibility,
-      mediaUrls,
-      mediaDisplayMode: post.mediaDisplayMode || 'AUTO',
-    }, null, 2));
     
     if (!content.trim()) {
       Alert.alert('Empty Post', 'Please add some content to your post.');
@@ -183,11 +216,53 @@ export default function EditPostScreen() {
     setIsSubmitting(true);
     
     try {
-      console.log('🧪 [EditPost] Calling updatePost API...');
+      // Step 1: Upload new images if any
+      let finalMediaUrls = [...mediaUrls];
+      
+      if (newMediaUrls.length > 0) {
+        console.log('📤 [EditPost] Uploading', newMediaUrls.length, 'new images...');
+        setIsUploading(true);
+        
+        try {
+          const uploadedUrls = await uploadImages(newMediaUrls);
+          
+          // Replace local URIs with uploaded URLs
+          finalMediaUrls = mediaUrls.map(url => {
+            const newIndex = newMediaUrls.indexOf(url);
+            if (newIndex !== -1) {
+              return uploadedUrls[newIndex];
+            }
+            return url;
+          });
+          
+          setIsUploading(false);
+          console.log('✅ [EditPost] All images uploaded successfully');
+          console.log('🧪 [EditPost] Final URLs:', finalMediaUrls);
+        } catch (uploadError) {
+          setIsUploading(false);
+          setIsSubmitting(false);
+          Alert.alert(
+            'Upload Failed',
+            'Failed to upload images. Please check your connection and try again.',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+      }
+      
+      // Step 2: Update post with final URLs
+      console.log('🧪 [EditPost] Updating post...');
+      console.log('🧪 [EditPost] Data being sent:', JSON.stringify({
+        content: content.trim(),
+        visibility,
+        mediaUrls: finalMediaUrls,
+        mediaDisplayMode: post.mediaDisplayMode || 'AUTO',
+      }, null, 2));
+      
       const success = await updatePost(post.id, {
         content: content.trim(),
         visibility,
-        mediaUrls,
+        mediaUrls: finalMediaUrls,
         mediaDisplayMode: post.mediaDisplayMode || 'AUTO',
       });
       
@@ -256,15 +331,20 @@ export default function EditPostScreen() {
         
         <TouchableOpacity
           onPress={handleSave}
-          disabled={isSubmitting || !hasChanges}
+          disabled={isSubmitting || isUploading || !hasChanges}
           style={[
             styles.headerButton,
             styles.saveButton,
-            (!hasChanges || isSubmitting) && styles.saveButtonDisabled,
+            (!hasChanges || isSubmitting || isUploading) && styles.saveButtonDisabled,
           ]}
         >
-          {isSubmitting ? (
-            <ActivityIndicator size="small" color="#0066FF" />
+          {isSubmitting || isUploading ? (
+            <>
+              <ActivityIndicator size="small" color="#0066FF" />
+              {isUploading && (
+                <Text style={styles.uploadingText}>Uploading...</Text>
+              )}
+            </>
           ) : (
             <Text
               style={[
@@ -516,6 +596,11 @@ const styles = StyleSheet.create({
   },
   saveButtonTextDisabled: {
     color: '#A3A3A3',
+  },
+  uploadingText: {
+    fontSize: 12,
+    color: '#0066FF',
+    marginLeft: 8,
   },
   
   // Content
