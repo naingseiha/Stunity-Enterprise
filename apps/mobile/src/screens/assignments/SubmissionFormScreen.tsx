@@ -16,11 +16,14 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ActionSheetIOS,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 
 import { Colors } from '@/config';
 import { assignmentsApi } from '@/api';
@@ -37,8 +40,11 @@ export default function SubmissionFormScreen() {
     name: string;
     type: string;
     size: number;
+    uri?: string; // Local URI before upload
   }>>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
 
   const handleSubmit = useCallback(async () => {
     if (!content.trim() && attachments.length === 0) {
@@ -86,14 +92,118 @@ export default function SubmissionFormScreen() {
     );
   }, [content, attachments, assignmentId, navigation]);
 
-  const handleAddFile = useCallback(() => {
-    // TODO: Implement file picker
-    Alert.alert('Coming Soon', 'File attachment will be available in the next update.');
+  const handleAddFile = useCallback(async () => {
+    // Show action sheet on iOS, alert on Android
+    const pickFile = async (type: 'image' | 'document') => {
+      try {
+        setUploading(true);
+
+        if (type === 'image') {
+          // Request permission
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert('Permission Required', 'Please grant camera roll permission to upload images.');
+            return;
+          }
+
+          // Pick image
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: 'images',
+            allowsMultipleSelection: true,
+            quality: 0.8,
+            allowsEditing: false,
+          });
+
+          if (!result.canceled && result.assets.length > 0) {
+            const newAttachments = result.assets.map((asset, index) => ({
+              uri: asset.uri,
+              name: asset.fileName || `image-${Date.now()}-${index}.jpg`,
+              type: asset.type || 'image/jpeg',
+              size: asset.fileSize || 0,
+              url: asset.uri, // Temporary, will be replaced after upload
+            }));
+            setAttachments(prev => [...prev, ...newAttachments]);
+          }
+        } else {
+          // Pick document
+          const result = await DocumentPicker.getDocumentAsync({
+            type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'],
+            copyToCacheDirectory: true,
+            multiple: true,
+          });
+
+          if (!result.canceled && result.assets.length > 0) {
+            const newAttachments = result.assets.map(asset => ({
+              uri: asset.uri,
+              name: asset.name,
+              type: asset.mimeType || 'application/octet-stream',
+              size: asset.size || 0,
+              url: asset.uri, // Temporary
+            }));
+            setAttachments(prev => [...prev, ...newAttachments]);
+          }
+        }
+      } catch (err: any) {
+        console.error('File picker error:', err);
+        Alert.alert('Error', 'Failed to pick file. Please try again.');
+      } finally {
+        setUploading(false);
+      }
+    };
+
+    // Show options
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Choose Image', 'Choose Document'],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) pickFile('image');
+          if (buttonIndex === 2) pickFile('document');
+        }
+      );
+    } else {
+      Alert.alert(
+        'Add File',
+        'Choose file type',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Image', onPress: () => pickFile('image') },
+          { text: 'Document', onPress: () => pickFile('document') },
+        ]
+      );
+    }
   }, []);
 
   const handleRemoveAttachment = useCallback((index: number) => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   }, []);
+
+  // Get icon based on file type
+  const getFileIcon = (type: string): string => {
+    if (type.startsWith('image/')) return 'image';
+    if (type.includes('pdf')) return 'document-text';
+    if (type.includes('word') || type.includes('document')) return 'document';
+    if (type.includes('text')) return 'document-outline';
+    return 'attach';
+  };
+
+  // Get icon color based on file type
+  const getFileIconColor = (type: string): string => {
+    if (type.startsWith('image/')) return '#10B981';
+    if (type.includes('pdf')) return '#EF4444';
+    if (type.includes('word') || type.includes('document')) return '#3B82F6';
+    if (type.includes('text')) return '#6B7280';
+    return Colors.primary;
+  };
+
+  // Format file size
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -156,9 +266,16 @@ export default function SubmissionFormScreen() {
               <TouchableOpacity
                 onPress={handleAddFile}
                 style={styles.addFileButton}
+                disabled={uploading}
               >
-                <Ionicons name="add-circle" size={20} color={Colors.primary} />
-                <Text style={styles.addFileButtonText}>Add File</Text>
+                {uploading ? (
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                ) : (
+                  <>
+                    <Ionicons name="add-circle" size={20} color={Colors.primary} />
+                    <Text style={styles.addFileButtonText}>Add File</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
 
@@ -170,25 +287,32 @@ export default function SubmissionFormScreen() {
               </View>
             ) : (
               <View style={styles.attachmentsList}>
-                {attachments.map((attachment, index) => (
-                  <View key={index} style={styles.attachmentItem}>
-                    <Ionicons name="document" size={24} color={Colors.primary} />
-                    <View style={styles.attachmentInfo}>
-                      <Text style={styles.attachmentName} numberOfLines={1}>
-                        {attachment.name}
-                      </Text>
-                      <Text style={styles.attachmentSize}>
-                        {(attachment.size / 1024).toFixed(1)} KB
-                      </Text>
+                {attachments.map((attachment, index) => {
+                  const icon = getFileIcon(attachment.type);
+                  const iconColor = getFileIconColor(attachment.type);
+                  
+                  return (
+                    <View key={index} style={styles.attachmentItem}>
+                      <View style={[styles.fileIconContainer, { backgroundColor: iconColor + '15' }]}>
+                        <Ionicons name={icon as any} size={24} color={iconColor} />
+                      </View>
+                      <View style={styles.attachmentInfo}>
+                        <Text style={styles.attachmentName} numberOfLines={1}>
+                          {attachment.name}
+                        </Text>
+                        <Text style={styles.attachmentSize}>
+                          {formatFileSize(attachment.size)}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => handleRemoveAttachment(index)}
+                        style={styles.removeButton}
+                      >
+                        <Ionicons name="close-circle" size={24} color={Colors.error} />
+                      </TouchableOpacity>
                     </View>
-                    <TouchableOpacity
-                      onPress={() => handleRemoveAttachment(index)}
-                      style={styles.removeButton}
-                    >
-                      <Ionicons name="close-circle" size={24} color={Colors.error} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
+                  );
+                })}
               </View>
             )}
           </Animated.View>
@@ -205,7 +329,7 @@ export default function SubmissionFormScreen() {
             <View style={styles.guidelineItem}>
               <Ionicons name="checkmark-circle" size={16} color="#10B981" />
               <Text style={styles.guidelineText}>
-                Check all attachments before submitting
+                Supported files: Images (JPG, PNG), PDFs, Word documents
               </Text>
             </View>
             <View style={styles.guidelineItem}>
@@ -387,6 +511,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+  },
+  fileIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   attachmentInfo: {
     flex: 1,
