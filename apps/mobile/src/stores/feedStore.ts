@@ -228,6 +228,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           userVotedOptionId: post.userVotedOptionId,
           // Quiz fields
           quizData: post.postType === 'QUIZ' && post.quiz ? {
+            id: post.quiz.id,
             questions: post.quiz.questions || [],
             timeLimit: post.quiz.timeLimit,
             passingScore: post.quiz.passingScore,
