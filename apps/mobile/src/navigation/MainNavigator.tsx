@@ -28,7 +28,7 @@ import { FeedScreen, CreatePostScreen, EditPostScreen, PostDetailScreen, Comment
 import { LearnScreen, CourseDetailScreen } from '@/screens/learn';
 import { ProfileScreen, EditProfileScreen } from '@/screens/profile';
 import { ConversationsScreen, ChatScreen } from '@/screens/messages';
-import { ClubsScreen, ClubDetailsScreen } from '@/screens/clubs';
+import { ClubsScreen, ClubDetailsScreen, CreateClubScreen } from '@/screens/clubs';
 import { 
   AssignmentsListScreen, 
   AssignmentDetailScreen, 
@@ -79,6 +79,7 @@ const ClubsStackNavigator: React.FC = () => (
   <ClubsStack.Navigator screenOptions={{ headerShown: false }}>
     <ClubsStack.Screen name="ClubsList" component={ClubsScreen} />
     <ClubsStack.Screen name="ClubDetails" component={ClubDetailsScreen} />
+    <ClubsStack.Screen name="CreateClub" component={CreateClubScreen} />
     <ClubsStack.Screen name="AssignmentsList" component={AssignmentsListScreen} />
     <ClubsStack.Screen name="AssignmentDetail" component={AssignmentDetailScreen} />
     <ClubsStack.Screen name="SubmissionForm" component={SubmissionFormScreen} />
