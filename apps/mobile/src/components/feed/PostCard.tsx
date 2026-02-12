@@ -78,6 +78,7 @@ const POST_TYPE_CONFIG: Record<string, {
   RESOURCE: { icon: 'folder-open', label: 'Resource', color: '#6366F1', bgColor: '#EEF2FF', ctaLabel: 'Download', gradient: ['#6366F1', '#4F46E5'] },
   TUTORIAL: { icon: 'play-circle', label: 'Tutorial', color: '#06B6D4', bgColor: '#CFFAFE', ctaLabel: 'Watch Tutorial', gradient: ['#06B6D4', '#0891B2'] },
   RESEARCH: { icon: 'flask', label: 'Research', color: '#8B5CF6', bgColor: '#EDE9FE', ctaLabel: 'View Research', gradient: ['#8B5CF6', '#7C3AED'] },
+  CLUB_ANNOUNCEMENT: { icon: 'people', label: 'Study Club', color: '#6366F1', bgColor: '#EEF2FF', ctaLabel: 'View Club', gradient: ['#6366F1', '#4F46E5'] },
   REFLECTION: { icon: 'bulb', label: 'Reflection', color: '#84CC16', bgColor: '#ECFCCB', ctaLabel: 'Read More', gradient: ['#84CC16', '#65A30D'] },
   COLLABORATION: { icon: 'people', label: 'Collaboration', color: '#EC4899', bgColor: '#FCE7F3', ctaLabel: 'Join Team', gradient: ['#EC4899', '#DB2777'] },
 };
@@ -416,6 +417,40 @@ export const PostCard: React.FC<PostCardProps> = ({
             {deadlineInfo.isUrgent ? '⚡ Due soon: ' : 'Due: '}{deadlineInfo.text}
           </Text>
         </View>
+      )}
+
+      {/* Club Announcement Banner - Special design for club posts */}
+      {post.postType === 'CLUB_ANNOUNCEMENT' && (
+        <LinearGradient
+          colors={[typeConfig.bgColor, '#FFFFFF']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={styles.clubBanner}
+        >
+          <View style={styles.clubBannerContent}>
+            <View style={[styles.clubIconCircle, { backgroundColor: typeConfig.color + '20' }]}>
+              <Ionicons name="people" size={24} color={typeConfig.color} />
+            </View>
+            <View style={styles.clubBannerText}>
+              <View style={styles.clubBannerHeader}>
+                <Ionicons name="sparkles" size={14} color={typeConfig.color} />
+                <Text style={[styles.clubBannerTitle, { color: typeConfig.color }]}>
+                  New Study Club Available
+                </Text>
+              </View>
+              <Text style={styles.clubBannerSubtitle}>
+                Join this community and start learning together!
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity 
+            style={[styles.clubJoinButton, { backgroundColor: typeConfig.color }]}
+            onPress={onPress}
+          >
+            <Ionicons name="add" size={18} color="#fff" />
+            <Text style={styles.clubJoinButtonText}>View Club</Text>
+          </TouchableOpacity>
+        </LinearGradient>
       )}
 
       {/* Media - Full Width (Instagram-style) */}
@@ -1079,6 +1114,69 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
+  // Club announcement banner styles
+  clubBanner: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 8,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#EEF2FF',
+  },
+  clubBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  clubIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clubBannerText: {
+    flex: 1,
+  },
+  clubBannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  clubBannerTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  clubBannerSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    lineHeight: 18,
+  },
+  clubJoinButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  clubJoinButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.3,
+  },
 });
 
 export default PostCard;
+

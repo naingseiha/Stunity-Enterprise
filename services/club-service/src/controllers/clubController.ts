@@ -104,9 +104,15 @@ export const createClub = async (req: AuthRequest, res: Response) => {
           `${FEED_SERVICE_URL}/posts`,
           {
             content: postContent,
-            postType: 'ARTICLE',
+            postType: 'CLUB_ANNOUNCEMENT',
             visibility: 'SCHOOL',
             mediaUrls: [],
+            metadata: {
+              clubId: club.id,
+              clubName: name,
+              clubType: type,
+              clubMode: mode,
+            },
           },
           {
             headers: {
