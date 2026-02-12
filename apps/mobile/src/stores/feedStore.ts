@@ -500,7 +500,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     }));
 
     try {
-      await feedApi.delete(`/posts/${postId}/like`);
+      // Backend uses POST for toggle (handles both like and unlike)
+      await feedApi.post(`/posts/${postId}/like`);
     } catch (error) {
       // Revert on error
       set((state) => ({
@@ -513,7 +514,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     }
   },
 
-  // Bookmark a post
+  // Bookmark a post (toggle)
   bookmarkPost: async (postId) => {
     const post = get().posts.find((p) => p.id === postId);
     if (!post) return;
@@ -528,11 +529,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     }));
 
     try {
-      if (wasBookmarked) {
-        await feedApi.delete(`/posts/${postId}/bookmark`);
-      } else {
-        await feedApi.post(`/posts/${postId}/bookmark`);
-      }
+      // Backend uses POST for toggle (handles both bookmark and unbookmark)
+      await feedApi.post(`/posts/${postId}/bookmark`);
     } catch (error) {
       // Revert on error
       set((state) => ({
