@@ -104,6 +104,16 @@ export default function ClubsScreen() {
   const renderClubCard = ({ item: club, index }: { item: Club; index: number }) => {
     const isJoined = club.memberCount !== undefined && club.memberCount > 0;
     const typeConfig = CLUB_TYPES.find(t => t.id === club.type) || CLUB_TYPES[0];
+    
+    // Beautiful gradient colors for each type
+    const gradients: Record<string, [string, string]> = {
+      CASUAL_STUDY_GROUP: ['#667eea', '#764ba2'], // Purple to Dark Purple
+      STRUCTURED_CLASS: ['#56CCF2', '#2F80ED'], // Cyan to Blue
+      PROJECT_GROUP: ['#F2994A', '#F2C94C'], // Orange to Yellow
+      EXAM_PREP: ['#C471ED', '#F64F59'], // Purple to Pink
+    };
+    
+    const gradientColors = gradients[club.type] || gradients.CASUAL_STUDY_GROUP;
 
     return (
       <Animated.View
@@ -114,120 +124,84 @@ export default function ClubsScreen() {
           activeOpacity={0.7}
           onPress={() => navigation.navigate('ClubDetails' as never, { clubId: club.id } as never)}
         >
-          <View style={styles.cardInner}>
-            {/* Cover Image / Gradient */}
-            {club.coverImage ? (
-              <Image source={{ uri: club.coverImage }} style={styles.clubCover} />
-            ) : (
-              <LinearGradient
-                colors={[typeConfig.color, getTypeColorDark(club.type)]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.clubCover}
-              >
-                <Ionicons name={typeConfig.icon as any} size={40} color={getIconColor(club.type)} />
-              </LinearGradient>
-            )}
-
-            {/* Type Badge - Top Right Corner */}
-            <View style={[styles.typeBadgeCorner, { backgroundColor: typeConfig.color }]}>
-              <Ionicons name={typeConfig.icon as any} size={14} color="#fff" />
-              <Text style={styles.typeBadgeCornerText}>{typeConfig.name}</Text>
-            </View>
-
-            {/* Content */}
-            <View style={styles.clubContent}>
-              {/* Club Name */}
-              <Text style={styles.clubName} numberOfLines={2}>
-                {club.name}
-              </Text>
-
-              {/* Description */}
-              <Text style={styles.clubDescription} numberOfLines={2}>
-                {club.description}
-              </Text>
-
-              {/* Tags */}
-              {club.tags && club.tags.length > 0 && (
-                <View style={styles.tagsRow}>
-                  {club.tags.slice(0, 3).map((tag, i) => (
-                    <View key={i} style={[styles.tag, { backgroundColor: typeConfig.bgColor }]}>
-                      <Text style={[styles.tagText, { color: typeConfig.color }]}>
-                        #{tag}
-                      </Text>
-                    </View>
-                  ))}
-                  {club.tags.length > 3 && (
-                    <Text style={styles.moreTagsText}>+{club.tags.length - 3}</Text>
-                  )}
-                </View>
-              )}
-
-              {/* Footer */}
-              <View style={styles.clubFooter}>
-                {/* Creator & Member Info */}
-                <View style={styles.clubMeta}>
-                  {club.creator && (
-                    <View style={styles.creatorRow}>
-                      <Avatar
-                        uri={club.creator.profilePictureUrl}
-                        name={`${club.creator.firstName} ${club.creator.lastName}`}
-                        size="xs"
-                        variant="post"
-                      />
-                      <Text style={styles.creatorName} numberOfLines={1}>
-                        {club.creator.firstName} {club.creator.lastName.charAt(0)}.
-                      </Text>
-                    </View>
-                  )}
-                  <View style={styles.metaStats}>
-                    <Ionicons name="people" size={14} color="#9CA3AF" />
-                    <Text style={styles.memberCount}>
-                      {club.memberCount || 0} {club.memberCount === 1 ? 'member' : 'members'}
-                    </Text>
-                    {club.mode !== 'PUBLIC' && (
-                      <>
-                        <Text style={styles.metaDot}>•</Text>
-                        <Ionicons 
-                          name={club.mode === 'INVITE_ONLY' ? 'lock-closed' : 'checkmark-circle'} 
-                          size={12} 
-                          color="#9CA3AF" 
-                        />
-                        <Text style={styles.modeText}>
-                          {club.mode === 'INVITE_ONLY' ? 'Invite Only' : 'Approval Required'}
-                        </Text>
-                      </>
-                    )}
-                  </View>
-                </View>
-
-                {/* Join Button */}
-                <TouchableOpacity
-                  style={[
-                    styles.joinButton,
-                    isJoined && [styles.joinedButton, { borderColor: typeConfig.color }]
-                  ]}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleToggleJoin(club.id, isJoined);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name={isJoined ? 'checkmark' : 'add'}
-                    size={18}
-                    color={isJoined ? typeConfig.color : '#fff'}
-                  />
-                  <Text style={[
-                    styles.joinButtonText,
-                    isJoined && { color: typeConfig.color }
-                  ]}>
-                    {isJoined ? 'Joined' : 'Join'}
-                  </Text>
-                </TouchableOpacity>
+          <LinearGradient
+            colors={gradientColors}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.gradientCard}
+          >
+            {/* Top Section - Icon & Badge */}
+            <View style={styles.cardTopSection}>
+              {/* Icon in White Rounded Square */}
+              <View style={styles.iconSquare}>
+                <Ionicons name={typeConfig.icon as any} size={32} color={gradientColors[0]} />
+              </View>
+              
+              {/* Type Badge */}
+              <View style={styles.typeBadgeNew}>
+                <Text style={styles.typeBadgeTextNew}>{typeConfig.name}</Text>
               </View>
             </View>
-          </View>
+
+            {/* Club Name - Bold White */}
+            <Text style={styles.clubNameNew} numberOfLines={2}>
+              {club.name}
+            </Text>
+
+            {/* Description - Light White */}
+            <Text style={styles.clubDescriptionNew} numberOfLines={2}>
+              {club.description}
+            </Text>
+
+            {/* Tags Row */}
+            {club.tags && club.tags.length > 0 && (
+              <View style={styles.tagsRowNew}>
+                {club.tags.slice(0, 2).map((tag, i) => (
+                  <View key={i} style={styles.tagNew}>
+                    <Text style={styles.tagTextNew}>#{tag}</Text>
+                  </View>
+                ))}
+                {club.tags.length > 2 && (
+                  <Text style={styles.moreTagsTextNew}>+{club.tags.length - 2}</Text>
+                )}
+              </View>
+            )}
+
+            {/* Bottom Section - Creator & Stats */}
+            <View style={styles.cardBottomSection}>
+              {/* Creator Info */}
+              {club.creator && (
+                <View style={styles.creatorRowNew}>
+                  <Avatar
+                    uri={club.creator.profilePictureUrl}
+                    name={`${club.creator.firstName} ${club.creator.lastName}`}
+                    size="xs"
+                    variant="post"
+                  />
+                  <Text style={styles.creatorNameNew} numberOfLines={1}>
+                    {club.creator.firstName} {club.creator.lastName}
+                  </Text>
+                </View>
+              )}
+              
+              {/* Member Count with Icon */}
+              <View style={styles.memberBadgeNew}>
+                <Ionicons name="people" size={14} color="rgba(255,255,255,0.9)" />
+                <Text style={styles.memberCountNew}>{club.memberCount || 0}</Text>
+              </View>
+            </View>
+
+            {/* Mode Indicator (if not public) */}
+            {club.mode !== 'PUBLIC' && (
+              <View style={styles.modeIndicatorNew}>
+                <Ionicons 
+                  name={club.mode === 'INVITE_ONLY' ? 'lock-closed' : 'checkmark-circle'} 
+                  size={12} 
+                  color="rgba(255,255,255,0.9)" 
+                />
+              </View>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
       </Animated.View>
     );
@@ -510,12 +484,146 @@ const styles = StyleSheet.create({
   clubCard: {
     marginBottom: 16,
   },
+  // Beautiful gradient card design
+  gradientCard: {
+    borderRadius: 20,
+    padding: 20,
+    minHeight: 200,
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  cardTopSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  iconSquare: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  typeBadgeNew: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  typeBadgeTextNew: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  clubNameNew: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#fff',
+    lineHeight: 28,
+    marginBottom: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.15)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  clubDescriptionNew: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  tagsRowNew: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 16,
+  },
+  tagNew: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  tagTextNew: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  moreTagsTextNew: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.7)',
+    paddingHorizontal: 8,
+  },
+  cardBottomSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 'auto',
+  },
+  creatorRowNew: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  creatorNameNew: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#fff',
+    flex: 1,
+  },
+  memberBadgeNew: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  memberCountNew: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  modeIndicatorNew: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  // OLD STYLES - Remove these later
   cardInner: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     overflow: 'hidden',
     position: 'relative',
-    // Modern shadow like PostCard
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
