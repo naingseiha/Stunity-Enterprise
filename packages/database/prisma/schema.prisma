@@ -610,6 +610,8 @@ model User {
   createdPaths            LearningPath[]             @relation("PathCreator")
   // Story relations
   stories                 Story[]                    @relation("UserStories")
+  // Quiz relations
+  quizAttempts            QuizAttempt[]              @relation("QuizAttempts")
   parent                  Parent?                    @relation(fields: [parentId], references: [id], onDelete: Cascade)
   school                  School?                    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   student                 Student?                   @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -653,6 +655,7 @@ model Post {
   id                       String         @id @default(cuid())
   authorId                 String
   content                  String
+  title                    String? // Optional title for QUIZ, COURSE, etc
   mediaUrls                String[]
   mediaKeys                String[]
   postType                 PostType       @default(ARTICLE)
@@ -699,6 +702,7 @@ model Post {
   views                    PostView[]
   author                   User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   quizQuestions            QuizQuestion[]
+  quiz                     Quiz?
   studyClub                StudyClub?     @relation("ClubPosts", fields: [studyClubId], references: [id], onDelete: SetNull)
 
   @@index([authorId, createdAt(sort: Desc)])
@@ -784,6 +788,41 @@ model QuizQuestion {
 
   @@index([postId])
   @@map("quiz_questions")
+}
+
+model Quiz {
+  id                String         @id @default(cuid())
+  postId            String         @unique
+  questions         Json // Store questions as JSON array
+  timeLimit         Int // Time limit in minutes
+  passingScore      Int // Minimum score to pass (percentage)
+  totalPoints       Int // Total possible points
+  resultsVisibility String         @default("AFTER_SUBMISSION") // AFTER_SUBMISSION, IMMEDIATE, NEVER
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  post              Post           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  attempts          QuizAttempt[]
+
+  @@index([postId])
+  @@map("quizzes")
+}
+
+model QuizAttempt {
+  id           String   @id @default(cuid())
+  quizId       String
+  userId       String
+  answers      Json // User's answers as JSON array
+  score        Int // Score percentage (0-100)
+  pointsEarned Int // Points earned
+  passed       Boolean // Whether the user passed
+  submittedAt  DateTime @default(now())
+  quiz         Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user         User     @relation("QuizAttempts", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+  @@index([userId])
+  @@index([quizId, userId])
+  @@map("quiz_attempts")
 }
 
 model PollVote {

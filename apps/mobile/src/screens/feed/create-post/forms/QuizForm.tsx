@@ -1,6 +1,6 @@
 /**
- * Quiz Form Component - Redesigned
- * Beautiful, clean UI for quiz creation
+ * Quiz Form Component - Clean Modern Redesign
+ * Minimal, spacious UI for quiz creation
  */
 
 import React, { useState, useEffect } from 'react';
@@ -83,22 +83,25 @@ export function QuizForm({ onDataChange }: QuizFormProps) {
 
   return (
     <View style={styles.container}>
-      {/* Settings Card */}
-      <Animated.View entering={FadeIn.duration(300)} style={styles.card}>
+      {/* Settings Card - Clean Design */}
+      <Animated.View entering={FadeIn.duration(300)} style={styles.settingsCard}>
         <View style={styles.cardHeader}>
-          <View style={styles.iconBadge}>
-            <Ionicons name="settings-outline" size={18} color="#6366F1" />
-          </View>
+          <Ionicons name="settings-outline" size={20} color="#6366F1" />
           <Text style={styles.cardTitle}>Quiz Settings</Text>
         </View>
         
         {/* Time Limit */}
-        <View style={styles.settingGroup}>
-          <Text style={styles.settingLabel}>⏱️ Time Limit</Text>
+        <View style={styles.settingRow}>
+          <View style={styles.settingInfo}>
+            <Text style={styles.settingLabel}>Time Limit</Text>
+            <Text style={styles.settingValue}>
+              {timeLimit ? `${timeLimit} min` : 'No limit'}
+            </Text>
+          </View>
           <ScrollView 
             horizontal 
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipsContainer}
+            contentContainerStyle={styles.chipsScroll}
           >
             {TIME_LIMITS.map((option) => (
               <TouchableOpacity
@@ -124,15 +127,15 @@ export function QuizForm({ onDataChange }: QuizFormProps) {
         </View>
 
         {/* Passing Score */}
-        <View style={styles.settingGroup}>
-          <View style={styles.settingHeader}>
-            <Text style={styles.settingLabel}>🎯 Passing Score</Text>
+        <View style={[styles.settingRow, { marginBottom: 0 }]}>
+          <View style={styles.settingInfo}>
+            <Text style={styles.settingLabel}>Passing Score</Text>
             <Text style={styles.settingValue}>{passingScore}%</Text>
           </View>
           <ScrollView 
             horizontal 
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipsContainer}
+            contentContainerStyle={styles.chipsScroll}
           >
             {PASSING_SCORES.map((score) => (
               <TouchableOpacity
@@ -158,21 +161,23 @@ export function QuizForm({ onDataChange }: QuizFormProps) {
         </View>
       </Animated.View>
 
-      {/* Questions Section */}
-      <Animated.View entering={FadeIn.duration(300).delay(100)} style={styles.card}>
+      {/* Questions Card */}
+      <Animated.View entering={FadeIn.duration(300)} style={styles.questionsCard}>
         <View style={styles.cardHeader}>
-          <View style={styles.iconBadge}>
-            <Ionicons name="help-circle-outline" size={18} color="#6366F1" />
-          </View>
+          <Ionicons name="help-circle-outline" size={20} color="#6366F1" />
           <Text style={styles.cardTitle}>Questions</Text>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{questions.length}</Text>
-          </View>
-          <View style={[styles.badge, { marginLeft: 4 }]}>
-            <Text style={styles.badgeText}>{totalPoints} pts</Text>
+          <View style={styles.headerStats}>
+            <View style={styles.statBadge}>
+              <Text style={styles.statText}>{questions.length}</Text>
+            </View>
+            <View style={styles.statBadge}>
+              <Ionicons name="trophy" size={12} color="#F59E0B" />
+              <Text style={styles.statText}>{totalPoints}</Text>
+            </View>
           </View>
         </View>
 
+        {/* Questions List */}
         {questions.map((question, index) => (
           <Animated.View 
             key={question.id}
@@ -190,197 +195,180 @@ export function QuizForm({ onDataChange }: QuizFormProps) {
           </Animated.View>
         ))}
 
+        {/* Add Question Button */}
         <TouchableOpacity onPress={addQuestion} style={styles.addButton}>
-          <Ionicons name="add-circle-outline" size={20} color="#6366F1" />
+          <Ionicons name="add-circle" size={22} color="#6366F1" />
           <Text style={styles.addButtonText}>Add Question</Text>
         </TouchableOpacity>
       </Animated.View>
 
-      {/* Summary Card */}
-      <Animated.View entering={FadeIn.duration(300).delay(200)} style={styles.summaryCard}>
-        <View style={styles.summaryHeader}>
-          <Ionicons name="checkmark-circle" size={20} color="#10B981" />
-          <Text style={styles.summaryTitle}>Quiz Summary</Text>
+      {/* Summary Bar */}
+      <View style={styles.summaryBar}>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryLabel}>Questions</Text>
+          <Text style={styles.summaryValue}>{questions.length}</Text>
         </View>
-        <View style={styles.summaryGrid}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Questions</Text>
-            <Text style={styles.summaryValue}>{questions.length}</Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Total Points</Text>
-            <Text style={styles.summaryValue}>{totalPoints}</Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Time Limit</Text>
-            <Text style={styles.summaryValue}>
-              {timeLimit ? `${timeLimit} min` : 'No limit'}
-            </Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Pass Score</Text>
-            <Text style={styles.summaryValue}>{passingScore}%</Text>
-          </View>
+        <View style={styles.summaryDivider} />
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryLabel}>Points</Text>
+          <Text style={styles.summaryValue}>{totalPoints}</Text>
         </View>
-      </Animated.View>
+        <View style={styles.summaryDivider} />
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryLabel}>Time</Text>
+          <Text style={styles.summaryValue}>
+            {timeLimit ? `${timeLimit}m` : '∞'}
+          </Text>
+        </View>
+        <View style={styles.summaryDivider} />
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryLabel}>Pass</Text>
+          <Text style={styles.summaryValue}>{passingScore}%</Text>
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    gap: 20,
     paddingVertical: 20,
     paddingHorizontal: 16,
     paddingBottom: 40,
+    gap: 20,
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 24,
-    marginHorizontal: 0,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
+
+  // Settings Card
+  settingsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
     borderWidth: 1,
-    borderColor: '#F0F1FF',
+    borderColor: '#E5E7EB',
   },
+
+  // Questions Card
+  questionsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+
+  // Card Header
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
     marginBottom: 20,
-    gap: 10,
-  },
-  iconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#EEF2FF',
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: '#111827',
     flex: 1,
-    letterSpacing: -0.3,
   },
-  badge: {
-    backgroundColor: '#EEF2FF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
+  headerStats: {
+    flexDirection: 'row',
+    gap: 8,
   },
-  badgeText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#6366F1',
-    letterSpacing: -0.2,
+
+  // Settings
+  settingRow: {
+    marginBottom: 20,
   },
-  settingGroup: {
-    marginBottom: 28,
-  },
-  settingHeader: {
+  settingInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   settingLabel: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 14,
-    letterSpacing: -0.3,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#6B7280',
   },
   settingValue: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 15,
+    fontWeight: '700',
     color: '#6366F1',
   },
-  chipsContainer: {
-    gap: 12,
+  chipsScroll: {
+    gap: 8,
     paddingRight: 16,
   },
   chip: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
     backgroundColor: '#F9FAFB',
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: '#E5E7EB',
-    minWidth: 80,
-    alignItems: 'center',
   },
   chipSelected: {
     backgroundColor: '#6366F1',
     borderColor: '#6366F1',
-    borderWidth: 2.5,
   },
   chipText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#6B7280',
-    letterSpacing: -0.2,
   },
   chipTextSelected: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontWeight: '700',
   },
+
+  // Stats
+  statBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  statText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6B7280',
+  },
+
+  // Add Button
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    paddingVertical: 18,
-    borderRadius: 16,
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#C7D2FE',
+    borderColor: '#E5E7EB',
     borderStyle: 'dashed',
     marginTop: 20,
-    marginHorizontal: 0,
-    backgroundColor: '#FAFBFF',
   },
   addButtonText: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '700',
     color: '#6366F1',
-    letterSpacing: -0.3,
   },
-  summaryCard: {
-    backgroundColor: '#EEF2FF',
-    borderRadius: 20,
-    padding: 24,
-    marginHorizontal: 0,
+
+  // Summary Bar
+  summaryBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 16,
     borderWidth: 1,
-    borderColor: '#E0E7FF',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  summaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 20,
-  },
-  summaryTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#111827',
-    letterSpacing: -0.3,
-  },
-  summaryGrid: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    borderColor: '#E5E7EB',
   },
   summaryItem: {
     flex: 1,
@@ -388,20 +376,18 @@ const styles = StyleSheet.create({
   },
   summaryDivider: {
     width: 1,
-    height: 36,
-    backgroundColor: '#E0E7FF',
+    height: 32,
+    backgroundColor: '#E5E7EB',
   },
   summaryLabel: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginBottom: 6,
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginBottom: 4,
     fontWeight: '500',
-    letterSpacing: -0.1,
   },
   summaryValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
     color: '#111827',
-    letterSpacing: -0.5,
   },
 });

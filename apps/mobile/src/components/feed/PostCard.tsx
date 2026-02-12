@@ -524,6 +524,113 @@ export const PostCard: React.FC<PostCardProps> = ({
         </View>
       )}
 
+      {/* Quiz Card - Special Design */}
+      {post.postType === 'QUIZ' && post.quizData && (
+        <View style={styles.quizSection}>
+          <LinearGradient
+            colors={['#EC4899', '#DB2777']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.quizGradientCard}
+          >
+            {/* Quiz Header */}
+            <View style={styles.quizHeader}>
+              <View style={styles.quizIconCircle}>
+                <Ionicons name="rocket" size={24} color="#EC4899" />
+              </View>
+              <View style={styles.quizHeaderText}>
+                <Text style={styles.quizHeaderTitle}>Test Your Knowledge</Text>
+                <Text style={styles.quizHeaderSubtitle}>Complete this quiz to earn points!</Text>
+              </View>
+            </View>
+
+            {/* Quiz Stats Grid */}
+            <View style={styles.quizStatsGrid}>
+              <View style={styles.quizStatItem}>
+                <View style={styles.quizStatIconBg}>
+                  <Ionicons name="document-text-outline" size={20} color="#EC4899" />
+                </View>
+                <Text style={styles.quizStatValue}>{post.quizData.questions?.length || 0}</Text>
+                <Text style={styles.quizStatLabel}>Questions</Text>
+              </View>
+
+              <View style={styles.quizStatItem}>
+                <View style={styles.quizStatIconBg}>
+                  <Ionicons name="time-outline" size={20} color="#EC4899" />
+                </View>
+                <Text style={styles.quizStatValue}>
+                  {post.quizData.timeLimit ? `${post.quizData.timeLimit}m` : 'No limit'}
+                </Text>
+                <Text style={styles.quizStatLabel}>Time</Text>
+              </View>
+
+              <View style={styles.quizStatItem}>
+                <View style={styles.quizStatIconBg}>
+                  <Ionicons name="star" size={20} color="#F59E0B" />
+                </View>
+                <Text style={styles.quizStatValue}>{post.quizData.totalPoints || 100}</Text>
+                <Text style={styles.quizStatLabel}>Points</Text>
+              </View>
+
+              <View style={styles.quizStatItem}>
+                <View style={styles.quizStatIconBg}>
+                  <Ionicons name="checkmark-circle-outline" size={20} color="#10B981" />
+                </View>
+                <Text style={styles.quizStatValue}>{post.quizData.passingScore || 70}%</Text>
+                <Text style={styles.quizStatLabel}>Pass</Text>
+              </View>
+            </View>
+
+            {/* Take Quiz Button */}
+            <TouchableOpacity
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                navigation.navigate('TakeQuiz', { 
+                  quiz: {
+                    id: post.id,
+                    title: post.title || 'Quiz',
+                    description: post.content,
+                    questions: post.quizData.questions,
+                    timeLimit: post.quizData.timeLimit,
+                    passingScore: post.quizData.passingScore,
+                    totalPoints: post.quizData.totalPoints,
+                  }
+                });
+              }}
+              style={styles.takeQuizButton}
+            >
+              <Ionicons name="play-circle" size={22} color="#EC4899" />
+              <Text style={styles.takeQuizButtonText}>Take Quiz Now</Text>
+              <Ionicons name="arrow-forward" size={18} color="#EC4899" />
+            </TouchableOpacity>
+
+            {/* Previous Attempt (if exists) */}
+            {post.quizData.userAttempt && (
+              <View style={styles.previousAttempt}>
+                <View style={styles.attemptIconBg}>
+                  <Ionicons 
+                    name={post.quizData.userAttempt.passed ? 'checkmark-circle' : 'close-circle'} 
+                    size={16} 
+                    color={post.quizData.userAttempt.passed ? '#10B981' : '#EF4444'} 
+                  />
+                </View>
+                <Text style={styles.attemptText}>
+                  Previous: {post.quizData.userAttempt.score}%
+                </Text>
+                <View style={[
+                  styles.attemptBadge,
+                  post.quizData.userAttempt.passed ? styles.passedBadge : styles.failedBadge
+                ]}>
+                  <Text style={styles.attemptBadgeText}>
+                    {post.quizData.userAttempt.passed ? 'Passed' : 'Try Again'}
+                  </Text>
+                </View>
+              </View>
+            )}
+          </LinearGradient>
+        </View>
+      )}
+
       {/* Topic Tags */}
       {post.topicTags && post.topicTags.length > 0 && (
         <View style={styles.topicTagsContainer}>
@@ -1137,6 +1244,138 @@ const styles = StyleSheet.create({
   pollSection: {
     paddingHorizontal: 16,
     paddingBottom: 12,
+  },
+  // Quiz Section - Beautiful Quiz Card
+  quizSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  quizGradientCard: {
+    padding: 20,
+    borderRadius: 20,
+    gap: 16,
+  },
+  quizHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  quizIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  quizHeaderText: {
+    flex: 1,
+  },
+  quizHeaderTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 2,
+  },
+  quizHeaderSubtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    opacity: 0.9,
+  },
+  quizStatsGrid: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
+  },
+  quizStatItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+  },
+  quizStatIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FCE7F3',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  quizStatValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  quizStatLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  takeQuizButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 16,
+    borderRadius: 14,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  takeQuizButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#EC4899',
+  },
+  previousAttempt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  attemptIconBg: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attemptText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    flex: 1,
+  },
+  attemptBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  passedBadge: {
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+  },
+  failedBadge: {
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+  },
+  attemptBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   // Club announcement banner styles
   clubBanner: {

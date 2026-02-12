@@ -167,6 +167,14 @@ export default function CreatePostScreen() {
         return;
       }
     }
+    
+    // Validate quiz if it's a quiz post
+    if (postType === 'QUIZ') {
+      if (!quizData || !quizData.questions || quizData.questions.length === 0) {
+        Alert.alert('Invalid Quiz', 'Please add at least one question to your quiz.');
+        return;
+      }
+    }
 
     setIsPosting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -177,9 +185,15 @@ export default function CreatePostScreen() {
         ? pollOptions.filter(opt => opt.trim().length > 0)
         : [];
       
+      // Prepare quiz data if it's a quiz
+      const quizPayload = postType === 'QUIZ' && quizData ? quizData : undefined;
+      
+      // Extract title from quiz data for QUIZ posts
+      const postTitle = postType === 'QUIZ' && quizData?.title ? quizData.title : undefined;
+      
       // Upload images and create post
       // The createPost function will handle uploading local file:// URIs to R2
-      const success = await createPost(content, mediaUris, postType, validPollOptions);
+      const success = await createPost(content, mediaUris, postType, validPollOptions, quizPayload, postTitle);
       
       if (success) {
         // Success animation sequence
@@ -200,7 +214,7 @@ export default function CreatePostScreen() {
     } finally {
       setIsPosting(false);
     }
-  }, [content, postType, mediaUris, pollOptions, navigation, createPost]);
+  }, [content, postType, mediaUris, pollOptions, quizData, navigation, createPost]);
 
   const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
   const canPost = content.trim().length > 0;

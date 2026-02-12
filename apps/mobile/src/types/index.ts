@@ -131,6 +131,7 @@ export interface PostLearningMeta {
 export interface Post {
   id: string;
   content: string;
+  title?: string; // For Quiz, Course, etc.
   postType: PostType;
   mediaUrls: string[];
   mediaType?: 'IMAGE' | 'VIDEO' | 'DOCUMENT';
@@ -155,6 +156,28 @@ export interface Post {
     _count?: { votes: number };
   }>;
   userVotedOptionId?: string;
+  // Quiz fields
+  quizData?: {
+    questions: Array<{
+      id: string;
+      text: string;
+      type: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER';
+      options?: string[];
+      correctAnswer: string;
+      points: number;
+    }>;
+    timeLimit: number | null; // in minutes
+    passingScore: number; // percentage (0-100)
+    totalPoints: number;
+    resultsVisibility?: 'IMMEDIATE' | 'AFTER_SUBMISSION' | 'MANUAL';
+    userAttempt?: {
+      id: string;
+      score: number; // percentage
+      passed: boolean;
+      pointsEarned: number;
+      submittedAt: string;
+    };
+  };
   createdAt: string;
   updatedAt: string;
 }

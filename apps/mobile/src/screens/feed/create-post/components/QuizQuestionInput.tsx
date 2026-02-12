@@ -1,15 +1,15 @@
 /**
- * Quiz Question Input Component - ENTERPRISE REDESIGN V2
- * Clean, professional UI for individual questions
+ * Quiz Question Input Component - CLEAN MODERN REDESIGN
+ * Minimal, spacious UI without heavy cards
  */
 
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
-console.log('✅ QuizQuestionInput LOADED - Enterprise Redesign V2');
+console.log('✅ QuizQuestionInput LOADED - Clean Modern Redesign');
 
 export type QuestionType = 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER';
 
@@ -30,10 +30,10 @@ interface QuizQuestionInputProps {
   canRemove: boolean;
 }
 
-const QUESTION_TYPES: { type: QuestionType; label: string; icon: string }[] = [
-  { type: 'MULTIPLE_CHOICE', label: 'Multiple Choice', icon: 'list' },
-  { type: 'TRUE_FALSE', label: 'True/False', icon: 'help-circle' },
-  { type: 'SHORT_ANSWER', label: 'Short Answer', icon: 'create' },
+const QUESTION_TYPES: { type: QuestionType; label: string; icon: string; desc: string }[] = [
+  { type: 'MULTIPLE_CHOICE', label: 'Multiple Choice', icon: 'list-circle-outline', desc: 'Choose one answer' },
+  { type: 'TRUE_FALSE', label: 'True / False', icon: 'toggle-outline', desc: 'Yes or no question' },
+  { type: 'SHORT_ANSWER', label: 'Short Answer', icon: 'text-outline', desc: 'Type an answer' },
 ];
 
 const POINTS_OPTIONS = [1, 2, 3, 5, 10];
@@ -68,13 +68,13 @@ export function QuizQuestionInput({
   const renderOptions = () => {
     if (question.type === 'TRUE_FALSE') {
       return (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Correct Answer</Text>
-          <View style={styles.trueFalseButtons}>
+        <View style={styles.answerSection}>
+          <Text style={styles.answerLabel}>Correct Answer</Text>
+          <View style={styles.tfContainer}>
             <TouchableOpacity
               style={[
-                styles.trueFalseButton,
-                question.correctAnswer === 'true' && styles.trueFalseButtonTrue,
+                styles.tfButton,
+                question.correctAnswer === 'true' && styles.tfButtonTrue,
               ]}
               onPress={() => {
                 Haptics.selectionAsync();
@@ -83,12 +83,12 @@ export function QuizQuestionInput({
             >
               <Ionicons 
                 name="checkmark-circle" 
-                size={22} 
-                color={question.correctAnswer === 'true' ? '#FFFFFF' : '#9CA3AF'} 
+                size={28} 
+                color={question.correctAnswer === 'true' ? '#FFFFFF' : '#10B981'} 
               />
               <Text style={[
-                styles.trueFalseText,
-                question.correctAnswer === 'true' && styles.trueFalseTextTrue
+                styles.tfText,
+                question.correctAnswer === 'true' && styles.tfTextSelected
               ]}>
                 True
               </Text>
@@ -96,8 +96,8 @@ export function QuizQuestionInput({
 
             <TouchableOpacity
               style={[
-                styles.trueFalseButton,
-                question.correctAnswer === 'false' && styles.trueFalseButtonFalse,
+                styles.tfButton,
+                question.correctAnswer === 'false' && styles.tfButtonFalse,
               ]}
               onPress={() => {
                 Haptics.selectionAsync();
@@ -106,12 +106,12 @@ export function QuizQuestionInput({
             >
               <Ionicons 
                 name="close-circle" 
-                size={22} 
-                color={question.correctAnswer === 'false' ? '#FFFFFF' : '#9CA3AF'} 
+                size={28} 
+                color={question.correctAnswer === 'false' ? '#FFFFFF' : '#EF4444'} 
               />
               <Text style={[
-                styles.trueFalseText,
-                question.correctAnswer === 'false' && styles.trueFalseTextFalse
+                styles.tfText,
+                question.correctAnswer === 'false' && styles.tfTextSelected
               ]}>
                 False
               </Text>
@@ -123,10 +123,10 @@ export function QuizQuestionInput({
 
     if (question.type === 'SHORT_ANSWER') {
       return (
-        <View style={styles.section}>
-          <View style={styles.infoBox}>
-            <Ionicons name="information-circle" size={20} color="#6366F1" />
-            <Text style={styles.infoText}>Students will type their answer in a text field</Text>
+        <View style={styles.answerSection}>
+          <View style={styles.infoNote}>
+            <Ionicons name="pencil" size={18} color="#6366F1" />
+            <Text style={styles.infoNoteText}>Students will type their answer</Text>
           </View>
         </View>
       );
@@ -134,37 +134,36 @@ export function QuizQuestionInput({
 
     // Multiple Choice
     return (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Answer Options</Text>
-        <Text style={styles.sectionSubtitle}>Tap the circle to mark correct answer</Text>
+      <View style={styles.answerSection}>
+        <Text style={styles.answerLabel}>Answer Choices</Text>
         {question.options.map((option, optionIndex) => (
           <Animated.View
             key={optionIndex}
             entering={FadeIn.duration(200)}
             exiting={FadeOut.duration(150)}
             layout={Layout.springify()}
-            style={styles.optionRow}
+            style={styles.choiceRow}
           >
             <TouchableOpacity
               onPress={() => {
                 Haptics.selectionAsync();
                 onUpdate({ correctAnswer: optionIndex.toString() });
               }}
-              style={styles.radioButton}
+              style={styles.choiceCheck}
             >
-              <View style={[
-                styles.radio,
-                question.correctAnswer === optionIndex.toString() && styles.radioSelected
-              ]}>
-                {question.correctAnswer === optionIndex.toString() && (
-                  <View style={styles.radioDot} />
-                )}
-              </View>
+              <Ionicons
+                name={question.correctAnswer === optionIndex.toString() 
+                  ? 'checkmark-circle' 
+                  : 'ellipse-outline'
+                }
+                size={26}
+                color={question.correctAnswer === optionIndex.toString() ? '#10B981' : '#D1D5DB'}
+              />
             </TouchableOpacity>
 
             <TextInput
-              style={styles.optionInput}
-              placeholder={`Option ${optionIndex + 1}`}
+              style={styles.choiceInput}
+              placeholder={`Choice ${optionIndex + 1}`}
               placeholderTextColor="#9CA3AF"
               value={option}
               onChangeText={(text) => updateOption(optionIndex, text)}
@@ -173,18 +172,18 @@ export function QuizQuestionInput({
             {question.options.length > 2 && (
               <TouchableOpacity
                 onPress={() => removeOption(optionIndex)}
-                style={styles.removeOptionButton}
+                style={styles.choiceDelete}
               >
-                <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                <Ionicons name="close-circle" size={22} color="#9CA3AF" />
               </TouchableOpacity>
             )}
           </Animated.View>
         ))}
 
         {question.options.length < 6 && (
-          <TouchableOpacity onPress={addOption} style={styles.addOptionButton}>
-            <Ionicons name="add-circle" size={20} color="#6366F1" />
-            <Text style={styles.addOptionText}>Add Another Option</Text>
+          <TouchableOpacity onPress={addOption} style={styles.addChoice}>
+            <Ionicons name="add" size={20} color="#6366F1" />
+            <Text style={styles.addChoiceText}>Add choice</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -192,31 +191,37 @@ export function QuizQuestionInput({
   };
 
   return (
-    <View style={styles.wrapper}>
-      <Animated.View 
-        entering={FadeIn.duration(300)}
-        layout={Layout.springify()}
-        style={styles.container}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <View style={styles.questionNumber}>
-              <Text style={styles.questionNumberText}>Q{index + 1}</Text>
-            </View>
-            <Text style={styles.headerTitle}>Question {index + 1}</Text>
-          </View>
-          {canRemove && (
-            <TouchableOpacity onPress={onRemove} style={styles.removeButton}>
-              <Ionicons name="trash-outline" size={20} color="#EF4444" />
-            </TouchableOpacity>
-          )}
+    <Animated.View 
+      entering={FadeIn.duration(300)}
+      layout={Layout.springify()}
+      style={styles.container}
+    >
+      {/* Question Header - Simple & Clean */}
+      <View style={styles.header}>
+        <View style={styles.questionBadge}>
+          <Text style={styles.questionBadgeText}>Q{index + 1}</Text>
         </View>
+        <View style={styles.headerContent}>
+          <Text style={styles.questionLabel}>Question {index + 1}</Text>
+          <View style={styles.pointsDisplay}>
+            <Ionicons name="trophy" size={14} color="#F59E0B" />
+            <Text style={styles.pointsText}>{question.points} points</Text>
+          </View>
+        </View>
+        {canRemove && (
+          <TouchableOpacity onPress={onRemove} style={styles.deleteButton}>
+            <Ionicons name="trash-outline" size={22} color="#EF4444" />
+          </TouchableOpacity>
+        )}
+      </View>
 
-      {/* Question Type Selector */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Question Type</Text>
-        <View style={styles.typeCards}>
+      {/* Question Type Selector - Horizontal Pills */}
+      <View style={styles.typeSection}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.typeScroll}
+        >
           {QUESTION_TYPES.map((type) => (
             <TouchableOpacity
               key={type.type}
@@ -229,50 +234,31 @@ export function QuizQuestionInput({
                 });
               }}
               style={[
-                styles.typeCard,
-                question.type === type.type && styles.typeCardSelected
+                styles.typePill,
+                question.type === type.type && styles.typePillSelected
               ]}
             >
-              <View style={[
-                styles.typeCardIcon,
-                question.type === type.type && styles.typeCardIconSelected
+              <Ionicons
+                name={type.icon as any}
+                size={20}
+                color={question.type === type.type ? '#FFFFFF' : '#6366F1'}
+              />
+              <Text style={[
+                styles.typePillText,
+                question.type === type.type && styles.typePillTextSelected
               ]}>
-                <Ionicons
-                  name={type.icon as any}
-                  size={24}
-                  color={question.type === type.type ? '#FFFFFF' : '#6B7280'}
-                />
-              </View>
-              <View style={styles.typeCardContent}>
-                <Text style={[
-                  styles.typeCardText,
-                  question.type === type.type && styles.typeCardTextSelected
-                ]}>
-                  {type.label}
-                </Text>
-                <Text style={[
-                  styles.typeCardDescription,
-                  question.type === type.type && styles.typeCardDescriptionSelected
-                ]}>
-                  {type.type === 'MULTIPLE_CHOICE' && 'Students select from multiple choices'}
-                  {type.type === 'TRUE_FALSE' && 'Simple true or false question'}
-                  {type.type === 'SHORT_ANSWER' && 'Students type their own answer'}
-                </Text>
-              </View>
-              {question.type === type.type && (
-                <Ionicons name="checkmark-circle" size={26} color="#6366F1" />
-              )}
+                {type.label}
+              </Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
       </View>
 
-      {/* Question Text */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Question</Text>
+      {/* Question Input */}
+      <View style={styles.inputSection}>
         <TextInput
           style={styles.questionInput}
-          placeholder="What do you want to ask your students?"
+          placeholder="Type your question here..."
           placeholderTextColor="#9CA3AF"
           multiline
           value={question.text}
@@ -280,13 +266,13 @@ export function QuizQuestionInput({
         />
       </View>
 
-      {/* Options/Answers */}
+      {/* Options/Answers Section */}
       {renderOptions()}
 
-      {/* Points */}
-      <View style={[styles.section, { marginBottom: 0 }]}>
-        <Text style={styles.sectionTitle}>Points Value</Text>
-        <View style={styles.pointsContainer}>
+      {/* Points Selector - Bottom Bar */}
+      <View style={styles.bottomBar}>
+        <Text style={styles.bottomLabel}>Worth:</Text>
+        <View style={styles.pointsRow}>
           {POINTS_OPTIONS.map((pts) => (
             <TouchableOpacity
               key={pts}
@@ -295,13 +281,13 @@ export function QuizQuestionInput({
                 onUpdate({ points: pts });
               }}
               style={[
-                styles.pointButton,
-                question.points === pts && styles.pointButtonSelected
+                styles.pointChip,
+                question.points === pts && styles.pointChipSelected
               ]}
             >
               <Text style={[
-                styles.pointButtonText,
-                question.points === pts && styles.pointButtonTextSelected
+                styles.pointChipText,
+                question.points === pts && styles.pointChipTextSelected
               ]}>
                 {pts}
               </Text>
@@ -310,318 +296,253 @@ export function QuizQuestionInput({
         </View>
       </View>
     </Animated.View>
-    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    marginBottom: 20,
-  },
   container: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    marginHorizontal: 0,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
+    marginBottom: 32,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
+  
+  // Header - Clean & Simple
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
     gap: 12,
+    marginBottom: 20,
   },
-  questionNumber: {
-    width: 48,
-    height: 48,
+  questionBadge: {
+    width: 44,
+    height: 44,
     borderRadius: 12,
     backgroundColor: '#6366F1',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
-  questionNumberText: {
+  questionBadgeText: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '900',
     color: '#FFFFFF',
-    letterSpacing: -0.5,
   },
-  headerTitle: {
+  headerContent: {
     flex: 1,
-    fontSize: 20,
+  },
+  questionLabel: {
+    fontSize: 18,
     fontWeight: '700',
     color: '#111827',
-    letterSpacing: -0.4,
+    marginBottom: 4,
   },
-  removeButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#FEF2F2',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#FEE2E2',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 12,
-    letterSpacing: -0.3,
-  },
-  sectionSubtitle: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#6B7280',
-    marginBottom: 12,
-    letterSpacing: -0.1,
-  },
-  typeCards: {
-    gap: 10,
-  },
-  typeCard: {
+  pointsDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 14,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    gap: 14,
-  },
-  typeCardSelected: {
-    backgroundColor: '#EEF2FF',
-    borderColor: '#6366F1',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  typeCardIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#E5E7EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  typeCardIconSelected: {
-    backgroundColor: '#6366F1',
-  },
-  typeCardContent: {
-    flex: 1,
     gap: 4,
   },
-  typeCardText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-    letterSpacing: -0.3,
-  },
-  typeCardTextSelected: {
-    color: '#4F46E5',
-  },
-  typeCardDescription: {
+  pointsText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#9CA3AF',
-    letterSpacing: -0.1,
-    lineHeight: 17,
-  },
-  typeCardDescriptionSelected: {
+    fontWeight: '600',
     color: '#6B7280',
+  },
+  deleteButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Type Selector - Horizontal Pills
+  typeSection: {
+    marginBottom: 20,
+  },
+  typeScroll: {
+    gap: 10,
+    paddingRight: 16,
+  },
+  typePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+  },
+  typePillSelected: {
+    backgroundColor: '#6366F1',
+    borderColor: '#6366F1',
+  },
+  typePillText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#6366F1',
+  },
+  typePillTextSelected: {
+    color: '#FFFFFF',
+  },
+
+  // Question Input
+  inputSection: {
+    marginBottom: 20,
   },
   questionInput: {
     backgroundColor: '#F9FAFB',
     borderRadius: 12,
     padding: 16,
-    fontSize: 15,
+    fontSize: 16,
     color: '#111827',
     minHeight: 100,
     textAlignVertical: 'top',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#E5E7EB',
     lineHeight: 22,
+  },
+
+  // Answer Section
+  answerSection: {
+    marginBottom: 20,
+  },
+  answerLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginBottom: 12,
+  },
+
+  // True/False Buttons
+  tfContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  tfButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+  },
+  tfButtonTrue: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  tfButtonFalse: {
+    backgroundColor: '#EF4444',
+    borderColor: '#EF4444',
+  },
+  tfText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#6B7280',
+  },
+  tfTextSelected: {
+    color: '#FFFFFF',
+  },
+
+  // Info Note
+  infoNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    backgroundColor: '#EEF2FF',
+    borderRadius: 8,
+  },
+  infoNoteText: {
+    fontSize: 14,
+    color: '#6366F1',
     fontWeight: '500',
   },
-  optionRow: {
+
+  // Multiple Choice
+  choiceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     marginBottom: 10,
   },
-  radioButton: {
+  choiceCheck: {
     padding: 4,
   },
-  radio: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  radioSelected: {
-    borderColor: '#6366F1',
-    backgroundColor: '#EEF2FF',
-  },
-  radioDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#6366F1',
-  },
-  optionInput: {
+  choiceInput: {
     flex: 1,
     backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     fontSize: 15,
     color: '#111827',
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    fontWeight: '500',
-  },
-  removeOptionButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: '#FEF2F2',
-    alignItems: 'center',
-    justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#FEE2E2',
-  },
-  addOptionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#C7D2FE',
-    borderStyle: 'dashed',
-    marginTop: 6,
-    backgroundColor: '#FAFBFF',
-  },
-  addOptionText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#6366F1',
-    letterSpacing: -0.2,
-  },
-  trueFalseButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  trueFalseButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 18,
-    borderRadius: 14,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 2,
     borderColor: '#E5E7EB',
   },
-  trueFalseButtonTrue: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
+  choiceDelete: {
+    padding: 4,
   },
-  trueFalseButtonFalse: {
-    backgroundColor: '#EF4444',
-    borderColor: '#EF4444',
-  },
-  trueFalseText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#6B7280',
-    letterSpacing: -0.3,
-  },
-  trueFalseTextTrue: {
-    color: '#FFFFFF',
-  },
-  trueFalseTextFalse: {
-    color: '#FFFFFF',
-  },
-  infoBox: {
+  addChoice: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 16,
-    backgroundColor: '#EEF2FF',
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#C7D2FE',
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#4F46E5',
-    flex: 1,
-    fontWeight: '600',
-    letterSpacing: -0.2,
-    lineHeight: 20,
-  },
-  pointsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  pointButton: {
+    justifyContent: 'center',
+    gap: 6,
     paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 2,
+    borderRadius: 10,
+    borderWidth: 1.5,
     borderColor: '#E5E7EB',
-    minWidth: 60,
+    borderStyle: 'dashed',
+    marginTop: 4,
+  },
+  addChoiceText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6366F1',
+  },
+
+  // Bottom Bar - Points
+  bottomBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  bottomLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  pointsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flex: 1,
+  },
+  pointChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    minWidth: 44,
     alignItems: 'center',
   },
-  pointButtonSelected: {
+  pointChipSelected: {
     backgroundColor: '#6366F1',
     borderColor: '#6366F1',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 2,
   },
-  pointButtonText: {
-    fontSize: 16,
+  pointChipText: {
+    fontSize: 15,
     fontWeight: '700',
     color: '#6B7280',
-    letterSpacing: -0.3,
   },
-  pointButtonTextSelected: {
+  pointChipTextSelected: {
     color: '#FFFFFF',
   },
 });

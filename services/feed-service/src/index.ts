@@ -310,6 +310,16 @@ app.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => 
               _count: { select: { votes: true } },
             },
           },
+          quiz: {
+            select: {
+              id: true,
+              questions: true,
+              timeLimit: true,
+              passingScore: true,
+              totalPoints: true,
+              resultsVisibility: true,
+            },
+          },
           _count: {
             select: { comments: true, likes: true },
           },
@@ -346,6 +356,26 @@ app.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => 
     }) : [];
     const votedOptions = new Map(userVotes.map(v => [v.postId, v.optionId]));
 
+    // Check if current user has taken any quizzes
+    const quizPostIds = posts.filter(p => p.postType === 'QUIZ' && p.quiz).map(p => p.quiz?.id).filter(Boolean);
+    const userQuizAttempts = quizPostIds.length > 0 ? await prisma.quizAttempt.findMany({
+      where: {
+        quizId: { in: quizPostIds as string[] },
+        userId: req.user!.id,
+      },
+      orderBy: { submittedAt: 'desc' },
+      distinct: ['quizId'],
+      select: {
+        id: true,
+        quizId: true,
+        score: true,
+        passed: true,
+        pointsEarned: true,
+        submittedAt: true,
+      },
+    }) : [];
+    const quizAttempts = new Map(userQuizAttempts.map(a => [a.quizId, a]));
+
     const formattedPosts = posts.map(post => ({
       ...post,
       isLikedByMe: likedPostIds.has(post.id),
@@ -354,6 +384,13 @@ app.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => 
       // Add userVotedOptionId for polls
       ...(post.postType === 'POLL' && {
         userVotedOptionId: votedOptions.get(post.id) || null,
+      }),
+      // Add userAttempt for quizzes
+      ...(post.postType === 'QUIZ' && post.quiz && {
+        quiz: {
+          ...post.quiz,
+          userAttempt: quizAttempts.get(post.quiz.id) || null,
+        },
       }),
     }));
 
@@ -377,7 +414,7 @@ app.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => 
 // POST /posts - Create new post
 app.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { content, postType = 'ARTICLE', visibility = 'SCHOOL', mediaUrls = [], mediaDisplayMode = 'AUTO', pollOptions } = req.body;
+    const { content, title, postType = 'ARTICLE', visibility = 'SCHOOL', mediaUrls = [], mediaDisplayMode = 'AUTO', pollOptions, quizData } = req.body;
 
     if (!content || content.trim().length === 0) {
       return res.status(400).json({ success: false, error: 'Content is required' });
@@ -386,13 +423,14 @@ app.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) =>
     const postData: any = {
       authorId: req.user!.id,
       content: content.trim(),
+      title: title?.trim(),
       postType,
       visibility,
       mediaUrls,
       mediaDisplayMode,
     };
 
-    // Create post with poll options if it's a poll
+    // Create post with poll options if it's a poll, OR quiz if it's a quiz
     const post = await prisma.post.create({
       data: {
         ...postData,
@@ -401,6 +439,15 @@ app.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) =>
             text,
             position: index,
           })),
+        } : undefined,
+        quiz: postType === 'QUIZ' && quizData ? {
+          create: {
+            questions: quizData.questions || [],
+            timeLimit: quizData.timeLimit,
+            passingScore: quizData.passingScore,
+            totalPoints: quizData.totalPoints,
+            resultsVisibility: quizData.resultsVisibility || 'AFTER_SUBMISSION',
+          },
         } : undefined,
       },
       include: {
@@ -414,6 +461,7 @@ app.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) =>
           },
         },
         pollOptions: true,
+        quiz: true,
         _count: { select: { comments: true, likes: true } },
       },
     });
@@ -1097,6 +1145,246 @@ app.delete('/comments/:id', authenticateToken, async (req: AuthRequest, res: Res
     res.json({ success: true, message: 'Comment deleted' });
   } catch (error: any) {
     res.status(500).json({ success: false, error: 'Failed to delete comment' });
+  }
+});
+
+// ========================================
+// Quiz Endpoints
+// ========================================
+
+// POST /quizzes/:id/submit - Submit quiz answers
+app.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const quizId = req.params.id;
+    const userId = req.user!.id;
+    const { answers } = req.body;
+
+    if (!answers || !Array.isArray(answers)) {
+      return res.status(400).json({ success: false, error: 'Answers array is required' });
+    }
+
+    // Fetch quiz with questions
+    const quiz = await prisma.quiz.findUnique({
+      where: { id: quizId },
+      include: { post: true },
+    });
+
+    if (!quiz) {
+      return res.status(404).json({ success: false, error: 'Quiz not found' });
+    }
+
+    // Parse questions from JSON
+    const questions = quiz.questions as any[];
+    
+    // Calculate score
+    let pointsEarned = 0;
+    const answerResults = answers.map((userAnswer: any) => {
+      const question = questions.find((q: any) => q.id === userAnswer.questionId);
+      if (!question) {
+        return { questionId: userAnswer.questionId, correct: false, pointsEarned: 0 };
+      }
+
+      let isCorrect = false;
+      
+      // Check answer based on question type
+      if (question.type === 'MULTIPLE_CHOICE') {
+        isCorrect = parseInt(userAnswer.answer) === question.correctAnswer;
+      } else if (question.type === 'TRUE_FALSE') {
+        isCorrect = userAnswer.answer === question.correctAnswer.toString();
+      } else if (question.type === 'SHORT_ANSWER') {
+        // Case-insensitive comparison, trimmed
+        const userAns = userAnswer.answer?.toLowerCase().trim();
+        const correctAns = question.correctAnswer?.toLowerCase().trim();
+        isCorrect = userAns === correctAns;
+      }
+
+      const points = isCorrect ? (question.points || 10) : 0;
+      pointsEarned += points;
+
+      return {
+        questionId: userAnswer.questionId,
+        correct: isCorrect,
+        pointsEarned: points,
+        userAnswer: userAnswer.answer,
+        correctAnswer: question.correctAnswer,
+      };
+    });
+
+    // Calculate percentage score
+    const score = quiz.totalPoints > 0 ? Math.round((pointsEarned / quiz.totalPoints) * 100) : 0;
+    const passed = score >= quiz.passingScore;
+
+    // Save quiz attempt
+    const attempt = await prisma.quizAttempt.create({
+      data: {
+        quizId,
+        userId,
+        answers: answers,
+        score,
+        pointsEarned,
+        passed,
+      },
+    });
+
+    // Return results based on visibility settings
+    let resultsData: any = {
+      attemptId: attempt.id,
+      score,
+      passed,
+      pointsEarned,
+      totalPoints: quiz.totalPoints,
+      submittedAt: attempt.submittedAt,
+    };
+
+    // Include detailed results if visibility allows
+    if (quiz.resultsVisibility === 'IMMEDIATE' || quiz.resultsVisibility === 'AFTER_SUBMISSION') {
+      resultsData.results = answerResults;
+      resultsData.questions = questions;
+    }
+
+    res.json({
+      success: true,
+      data: resultsData,
+    });
+  } catch (error: any) {
+    console.error('Quiz submission error:', error);
+    res.status(500).json({ success: false, error: 'Failed to submit quiz', details: error.message });
+  }
+});
+
+// GET /quizzes/:id/attempts - Get all attempts for a quiz (instructor only)
+app.get('/quizzes/:id/attempts', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const quizId = req.params.id;
+    
+    // Get quiz and check if user is the author
+    const quiz = await prisma.quiz.findUnique({
+      where: { id: quizId },
+      include: { post: true },
+    });
+
+    if (!quiz) {
+      return res.status(404).json({ success: false, error: 'Quiz not found' });
+    }
+
+    if (quiz.post.authorId !== req.user!.id) {
+      return res.status(403).json({ success: false, error: 'Only quiz author can view all attempts' });
+    }
+
+    // Fetch all attempts with user info
+    const attempts = await prisma.quizAttempt.findMany({
+      where: { quizId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true,
+            studentId: true,
+          },
+        },
+      },
+      orderBy: { submittedAt: 'desc' },
+    });
+
+    // Calculate statistics
+    const totalAttempts = attempts.length;
+    const passedAttempts = attempts.filter(a => a.passed).length;
+    const avgScore = totalAttempts > 0 
+      ? attempts.reduce((sum, a) => sum + a.score, 0) / totalAttempts 
+      : 0;
+
+    res.json({
+      success: true,
+      data: {
+        attempts,
+        statistics: {
+          totalAttempts,
+          passedAttempts,
+          failedAttempts: totalAttempts - passedAttempts,
+          passRate: totalAttempts > 0 ? (passedAttempts / totalAttempts) * 100 : 0,
+          averageScore: Math.round(avgScore),
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Get attempts error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get attempts' });
+  }
+});
+
+// GET /quizzes/:id/attempts/my - Get current user's attempts for a quiz
+app.get('/quizzes/:id/attempts/my', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const quizId = req.params.id;
+    const userId = req.user!.id;
+
+    const attempts = await prisma.quizAttempt.findMany({
+      where: { quizId, userId },
+      orderBy: { submittedAt: 'desc' },
+    });
+
+    res.json({
+      success: true,
+      data: attempts,
+    });
+  } catch (error: any) {
+    console.error('Get my attempts error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get attempts' });
+  }
+});
+
+// GET /quizzes/:id/attempts/:attemptId - Get specific attempt details
+app.get('/quizzes/:id/attempts/:attemptId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id: quizId, attemptId } = req.params;
+    const userId = req.user!.id;
+
+    const attempt = await prisma.quizAttempt.findUnique({
+      where: { id: attemptId },
+      include: {
+        quiz: {
+          include: { post: true },
+        },
+      },
+    });
+
+    if (!attempt || attempt.quizId !== quizId) {
+      return res.status(404).json({ success: false, error: 'Attempt not found' });
+    }
+
+    // Only allow user to see their own attempt, or quiz author to see any attempt
+    if (attempt.userId !== userId && attempt.quiz.post.authorId !== userId) {
+      return res.status(403).json({ success: false, error: 'Not authorized to view this attempt' });
+    }
+
+    // Include questions for detailed review
+    const questions = attempt.quiz.questions as any[];
+    const answers = attempt.answers as any[];
+
+    res.json({
+      success: true,
+      data: {
+        ...attempt,
+        questions,
+        detailedAnswers: answers.map((userAnswer: any) => {
+          const question = questions.find((q: any) => q.id === userAnswer.questionId);
+          return {
+            questionId: userAnswer.questionId,
+            question: question?.text,
+            type: question?.type,
+            options: question?.options,
+            userAnswer: userAnswer.answer,
+            correctAnswer: question?.correctAnswer,
+            points: question?.points,
+          };
+        }),
+      },
+    });
+  } catch (error: any) {
+    console.error('Get attempt details error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get attempt details' });
   }
 });
 
@@ -2938,6 +3226,12 @@ app.listen(PORT, () => {
   console.log('   GET    /users/:id/achievements  - Get achievements');
   console.log('   GET    /users/:id/recommendations - Get recommendations');
   console.log('   POST   /users/:id/recommend     - Write recommendation');
+  console.log('');
+  console.log('🎯 Quiz Endpoints:');
+  console.log('   POST   /quizzes/:id/submit            - Submit quiz answers');
+  console.log('   GET    /quizzes/:id/attempts          - Get all attempts (instructor)');
+  console.log('   GET    /quizzes/:id/attempts/my       - Get my attempts');
+  console.log('   GET    /quizzes/:id/attempts/:attemptId - Get attempt details');
   console.log('');
   console.log('📊 Analytics Endpoints:');
   console.log('   GET    /posts/:id/analytics  - Post analytics (author)');

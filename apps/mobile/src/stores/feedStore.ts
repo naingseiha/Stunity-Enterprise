@@ -74,7 +74,7 @@ interface FeedState {
   // Actions
   fetchPosts: (refresh?: boolean) => Promise<void>;
   fetchStories: () => Promise<void>;
-  createPost: (content: string, mediaUrls?: string[], postType?: string, pollOptions?: string[]) => Promise<boolean>;
+  createPost: (content: string, mediaUrls?: string[], postType?: string, pollOptions?: string[], quizData?: any, title?: string) => Promise<boolean>;
   updatePost: (postId: string, data: { content: string; visibility?: string; mediaUrls?: string[]; mediaDisplayMode?: string; pollOptions?: string[] }) => Promise<boolean>;
   likePost: (postId: string) => Promise<void>;
   unlikePost: (postId: string) => Promise<void>;
@@ -190,6 +190,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             isVerified: post.author?.isVerified,
           },
           content: post.content,
+          title: post.title, // For quiz, course, etc.
           postType: post.postType || 'ARTICLE',
           visibility: post.visibility || 'PUBLIC', // FIXED: Include visibility field
           mediaUrls: post.mediaUrls || [],
@@ -211,6 +212,21 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             votes: opt.votes || opt._count?.votes || 0,
           })),
           userVotedOptionId: post.userVotedOptionId,
+          // Quiz fields
+          quizData: post.postType === 'QUIZ' && post.quiz ? {
+            questions: post.quiz.questions || [],
+            timeLimit: post.quiz.timeLimit,
+            passingScore: post.quiz.passingScore,
+            totalPoints: post.quiz.totalPoints || post.quiz.questions?.reduce((sum: number, q: any) => sum + (q.points || 0), 0) || 0,
+            resultsVisibility: post.quiz.resultsVisibility,
+            userAttempt: post.quiz.userAttempt ? {
+              id: post.quiz.userAttempt.id,
+              score: post.quiz.userAttempt.score,
+              passed: post.quiz.userAttempt.passed,
+              pointsEarned: post.quiz.userAttempt.pointsEarned,
+              submittedAt: post.quiz.userAttempt.submittedAt,
+            } : undefined,
+          } : undefined,
           
           // Debug poll data
           ...(post.postType === 'POLL' && __DEV__ && {
@@ -356,7 +372,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   },
 
   // Create a new post
-  createPost: async (content, mediaUrls = [], postType = 'ARTICLE', pollOptions = []) => {
+  createPost: async (content, mediaUrls = [], postType = 'ARTICLE', pollOptions = [], quizData, title) => {
     try {
       // Upload local images to R2 before creating post
       let uploadedMediaUrls = mediaUrls;
@@ -406,11 +422,13 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       // Now create post with uploaded URLs
       const response = await feedApi.post('/posts', {
         content,
+        title,
         mediaUrls: uploadedMediaUrls,
         postType,
         visibility: 'SCHOOL',
         mediaDisplayMode: 'AUTO',
         pollOptions: postType === 'POLL' ? pollOptions : undefined,
+        quizData: postType === 'QUIZ' ? quizData : undefined,
       });
 
       if (response.data.success) {
@@ -435,6 +453,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             updatedAt: newPostData.author?.updatedAt || new Date().toISOString(),
           },
           content: newPostData.content,
+          title: newPostData.title,
           postType: newPostData.postType || postType,
           mediaUrls: newPostData.mediaUrls || uploadedMediaUrls,
           authorId: newPostData.author?.id,
@@ -449,6 +468,18 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           updatedAt: newPostData.updatedAt || new Date().toISOString(),
           topicTags: newPostData.topicTags || [],
           learningMeta: newPostData.learningMeta || {},
+          // Add quiz data if it's a quiz post
+          ...(postType === 'QUIZ' && newPostData.quiz && {
+            quizData: {
+              id: newPostData.quiz.id,
+              questions: newPostData.quiz.questions || [],
+              timeLimit: newPostData.quiz.timeLimit,
+              passingScore: newPostData.quiz.passingScore,
+              totalPoints: newPostData.quiz.totalPoints,
+              resultsVisibility: newPostData.quiz.resultsVisibility,
+              userAttempt: null, // No attempt yet since just created
+            },
+          }),
         };
         
         // Add to top of feed with optimistic update
