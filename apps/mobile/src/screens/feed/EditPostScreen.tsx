@@ -1,11 +1,13 @@
 /**
- * Edit Post Screen - Phase 1: Basic Functionality Test
+ * Edit Post Screen - Modern Redesign
  * 
- * Testing features:
- * - Content editing
- * - Visibility control
- * - Save/Cancel
- * - Validation
+ * Features:
+ * - Gradient blue header
+ * - Card-based layout
+ * - Beautiful visibility selector
+ * - Modern media management
+ * - Character count warnings
+ * - Smooth animations
  */
 
 import React, { useState, useEffect } from 'react';
@@ -19,12 +21,12 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  FlatList,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -34,9 +36,9 @@ import { Post } from '@/types';
 import { feedApi } from '@/api/client';
 
 const { width } = Dimensions.get('window');
-const IMAGE_SIZE = (width - 64) / 3; // 3 columns with padding
+const IMAGE_SIZE = (width - 64) / 3;
 
-// Helper to upload images to server
+// Upload helper
 const uploadImages = async (localUris: string[]): Promise<string[]> => {
   if (localUris.length === 0) return [];
   
@@ -73,46 +75,68 @@ const uploadImages = async (localUris: string[]): Promise<string[]> => {
   }
 };
 
-type EditPostScreenRouteProp = RouteProp<{ EditPost: { post: Post } }, 'EditPost'>;
-
+// Visibility options with modern design
 const VISIBILITY_OPTIONS = [
-  { value: 'PUBLIC', label: 'Public', icon: 'earth' as const, desc: 'Anyone can see' },
-  { value: 'SCHOOL', label: 'School', icon: 'school' as const, desc: 'School members only' },
-  { value: 'CLASS', label: 'Class', icon: 'people' as const, desc: 'Class members only' },
-  { value: 'PRIVATE', label: 'Private', icon: 'lock-closed' as const, desc: 'Only you' },
+  { 
+    value: 'PUBLIC', 
+    label: 'Public', 
+    icon: 'earth', 
+    desc: 'Anyone can see',
+    color: '#10B981',
+    gradient: ['#10B981', '#059669']
+  },
+  { 
+    value: 'SCHOOL', 
+    label: 'School', 
+    icon: 'school', 
+    desc: 'School members',
+    color: '#3B82F6',
+    gradient: ['#3B82F6', '#2563EB']
+  },
+  { 
+    value: 'CLASS', 
+    label: 'Class', 
+    icon: 'people', 
+    desc: 'Class members',
+    color: '#8B5CF6',
+    gradient: ['#8B5CF6', '#7C3AED']
+  },
+  { 
+    value: 'PRIVATE', 
+    label: 'Private', 
+    icon: 'lock-closed', 
+    desc: 'Only you',
+    color: '#6B7280',
+    gradient: ['#6B7280', '#4B5563']
+  },
 ];
+
+type EditPostScreenRouteProp = RouteProp<{ EditPost: { post: Post } }, 'EditPost'>;
 
 export default function EditPostScreen() {
   const navigation = useNavigation();
   const route = useRoute<EditPostScreenRouteProp>();
   const { post } = route.params;
   
-  // DEBUG: Log the entire post object when screen opens
-  useEffect(() => {
-    console.log('🧪 [EditPost] ========== SCREEN OPENED ==========');
-    console.log('🧪 [EditPost] Full post object:', JSON.stringify(post, null, 2));
-    console.log('🧪 [EditPost] post.visibility value:', post.visibility);
-    console.log('🧪 [EditPost] post.visibility type:', typeof post.visibility);
-    console.log('🧪 [EditPost] Will initialize with:', post.visibility || 'PUBLIC');
-  }, []);
-  
   const { updatePost } = useFeedStore();
   
   const [content, setContent] = useState(post.content);
   const [visibility, setVisibility] = useState(post.visibility || 'PUBLIC');
   const [mediaUrls, setMediaUrls] = useState<string[]>(post.mediaUrls || []);
-  const [newMediaUrls, setNewMediaUrls] = useState<string[]>([]); // Track new images added in THIS session
+  const [newMediaUrls, setNewMediaUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   
-  // Helper to check if URL is local
+  // Helpers
   const isLocalUri = (uri: string) => uri.startsWith('file://');
-  
-  // Helper to get all local URIs that need upload
   const getLocalUris = () => mediaUrls.filter(isLocalUri);
   
-  // Check if content or media changed
+  // Character count with warnings
+  const charCount = content.length;
+  const charWarningColor = charCount >= 5000 ? '#EF4444' : charCount >= 4500 ? '#F59E0B' : '#9CA3AF';
+  
+  // Check for changes
   useEffect(() => {
     const contentChanged = content.trim() !== post.content.trim();
     const visibilityChanged = visibility !== (post.visibility || 'PUBLIC');
@@ -121,10 +145,10 @@ export default function EditPostScreen() {
     setHasChanges(contentChanged || visibilityChanged || mediaChanged);
   }, [content, visibility, mediaUrls, post]);
   
-  // Image Picker
+  // Image picker
   const pickImage = async () => {
     if (mediaUrls.length >= 10) {
-      Alert.alert('Limit Reached', 'You can only add up to 10 images per post.');
+      Alert.alert('Limit Reached', 'Maximum 10 images per post.');
       return;
     }
     
@@ -138,32 +162,27 @@ export default function EditPostScreen() {
       
       if (!result.canceled && result.assets) {
         const newUrls = result.assets.map(asset => asset.uri);
-        console.log('🖼️ [EditPost] Added images:', newUrls.length);
-        
         setMediaUrls(prev => [...prev, ...newUrls]);
         setNewMediaUrls(prev => [...prev, ...newUrls]);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch (error) {
-      console.error('Failed to pick image:', error);
       Alert.alert('Error', 'Failed to pick image');
     }
   };
   
-  // Delete Image
+  // Delete image
   const deleteImage = (index: number) => {
     Alert.alert(
       'Delete Image',
-      'Are you sure you want to remove this image?',
+      'Remove this image?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: () => {
-            console.log('🗑️ [EditPost] Deleting image at index:', index);
             const deletedUrl = mediaUrls[index];
-            
             setMediaUrls(prev => prev.filter((_, i) => i !== index));
             setNewMediaUrls(prev => prev.filter(url => url !== deletedUrl));
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -173,47 +192,25 @@ export default function EditPostScreen() {
     );
   };
   
-  // Move Image Up
-  const moveImageUp = (index: number) => {
-    if (index === 0) return;
+  // Reorder images
+  const moveImage = (index: number, direction: 'up' | 'down') => {
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= mediaUrls.length) return;
     
-    console.log('⬆️ [EditPost] Moving image up from index:', index);
     const newUrls = [...mediaUrls];
-    [newUrls[index - 1], newUrls[index]] = [newUrls[index], newUrls[index - 1]];
+    [newUrls[index], newUrls[newIndex]] = [newUrls[newIndex], newUrls[index]];
     setMediaUrls(newUrls);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
   
-  // Move Image Down
-  const moveImageDown = (index: number) => {
-    if (index === mediaUrls.length - 1) return;
-    
-    console.log('⬇️ [EditPost] Moving image down from index:', index);
-    const newUrls = [...mediaUrls];
-    [newUrls[index], newUrls[index + 1]] = [newUrls[index + 1], newUrls[index]];
-    setMediaUrls(newUrls);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-  
+  // Save
   const handleSave = async () => {
-    console.log('🧪 [EditPost] ========== SAVE STARTED ==========');
-    console.log('🧪 [EditPost] Post ID:', post.id);
-    console.log('🧪 [EditPost] Original content:', post.content.substring(0, 50) + '...');
-    console.log('🧪 [EditPost] New content:', content.substring(0, 50) + '...');
-    console.log('🧪 [EditPost] Original visibility:', post.visibility || 'PUBLIC');
-    console.log('🧪 [EditPost] New visibility:', visibility);
-    console.log('🧪 [EditPost] Original media count:', post.mediaUrls?.length || 0);
-    console.log('🧪 [EditPost] New media count:', mediaUrls.length);
-    console.log('🧪 [EditPost] New images to upload:', newMediaUrls.length);
-    console.log('🧪 [EditPost] Has changes:', hasChanges);
-    
     if (!content.trim()) {
-      Alert.alert('Empty Post', 'Please add some content to your post.');
+      Alert.alert('Empty Post', 'Please add some content.');
       return;
     }
     
     if (!hasChanges) {
-      console.log('🧪 [EditPost] No changes detected, going back');
       navigation.goBack();
       return;
     }
@@ -222,61 +219,34 @@ export default function EditPostScreen() {
     setIsSubmitting(true);
     
     try {
-      // Step 1: Upload any local URIs (both old and new)
+      // Upload local URIs
       let finalMediaUrls = [...mediaUrls];
       const localUris = getLocalUris();
       
       if (localUris.length > 0) {
-        console.log('📤 [EditPost] Found', localUris.length, 'local URIs that need upload');
-        console.log('🧪 [EditPost] Local URIs:', localUris);
         setIsUploading(true);
         
         try {
           const uploadedUrls = await uploadImages(localUris);
           
-          console.log('✅ [EditPost] Upload successful, got', uploadedUrls.length, 'URLs');
-          console.log('🧪 [EditPost] Uploaded URLs:', uploadedUrls);
-          
-          // Replace ALL local URIs with uploaded URLs
           finalMediaUrls = mediaUrls.map(url => {
             if (isLocalUri(url)) {
               const localIndex = localUris.indexOf(url);
-              if (localIndex !== -1 && uploadedUrls[localIndex]) {
-                console.log('🔄 [EditPost] Replacing:', url.substring(0, 50) + '...');
-                console.log('         → With:', uploadedUrls[localIndex]);
-                return uploadedUrls[localIndex];
-              }
+              return uploadedUrls[localIndex] || url;
             }
             return url;
           });
           
           setIsUploading(false);
-          console.log('✅ [EditPost] All local URIs replaced with server URLs');
-          console.log('🧪 [EditPost] Final URLs:', finalMediaUrls);
         } catch (uploadError) {
           setIsUploading(false);
           setIsSubmitting(false);
-          console.error('❌ [EditPost] Upload failed:', uploadError);
-          Alert.alert(
-            'Upload Failed',
-            'Failed to upload images. Please check your connection and try again.',
-            [{ text: 'OK' }]
-          );
+          Alert.alert('Upload Failed', 'Failed to upload images. Please try again.');
           return;
         }
-      } else {
-        console.log('✅ [EditPost] No local URIs found, all images already uploaded');
       }
       
-      // Step 2: Update post with final URLs
-      console.log('🧪 [EditPost] Updating post...');
-      console.log('🧪 [EditPost] Data being sent:', JSON.stringify({
-        content: content.trim(),
-        visibility,
-        mediaUrls: finalMediaUrls,
-        mediaDisplayMode: post.mediaDisplayMode || 'AUTO',
-      }, null, 2));
-      
+      // Update post
       const success = await updatePost(post.id, {
         content: content.trim(),
         visibility,
@@ -284,44 +254,29 @@ export default function EditPostScreen() {
         mediaDisplayMode: post.mediaDisplayMode || 'AUTO',
       });
       
-      console.log('🧪 [EditPost] Update result:', success);
+      setIsSubmitting(false);
       
       if (success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        console.log('✅ [EditPost] Post updated successfully!');
-        Alert.alert('Success', 'Post updated successfully!', [
-          { text: 'OK', onPress: () => navigation.goBack() },
-        ]);
+        navigation.goBack();
       } else {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        console.error('❌ [EditPost] Update failed');
         Alert.alert('Error', 'Failed to update post. Please try again.');
       }
     } catch (error) {
-      console.error('❌ [EditPost] Exception:', error);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', 'Something went wrong. Please try again.');
-    } finally {
       setIsSubmitting(false);
+      Alert.alert('Error', 'An error occurred. Please try again.');
     }
   };
   
+  // Cancel
   const handleCancel = () => {
-    console.log('🧪 [EditPost] Cancel pressed, hasChanges:', hasChanges);
     if (hasChanges) {
       Alert.alert(
         'Discard Changes?',
-        'You have unsaved changes. Are you sure you want to go back?',
+        'You have unsaved changes.',
         [
           { text: 'Keep Editing', style: 'cancel' },
-          {
-            text: 'Discard',
-            style: 'destructive',
-            onPress: () => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              navigation.goBack();
-            },
-          },
+          { text: 'Discard', style: 'destructive', onPress: () => navigation.goBack() },
         ]
       );
     } else {
@@ -329,107 +284,84 @@ export default function EditPostScreen() {
     }
   };
   
-  console.log('🧪 [EditPost] Rendering with:', { 
-    postId: post.id, 
-    contentLength: content.length,
-    visibility,
-    hasChanges,
-    isSubmitting 
-  });
-  
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Simple Header for Testing */}
-      <View style={styles.header}>
+      {/* Gradient Header */}
+      <LinearGradient
+        colors={['#0066FF', '#0052CC']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.header}
+      >
         <TouchableOpacity onPress={handleCancel} style={styles.headerButton}>
-          <Ionicons name="close" size={24} color="#262626" />
+          <Ionicons name="close" size={24} color="#FFFFFF" />
         </TouchableOpacity>
         
-        <Text style={styles.headerTitle}>Edit Post (Testing)</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Edit Post</Text>
+          {hasChanges && <View style={styles.unsavedDot} />}
+        </View>
         
         <TouchableOpacity
           onPress={handleSave}
           disabled={isSubmitting || isUploading || !hasChanges}
           style={[
-            styles.headerButton,
             styles.saveButton,
             (!hasChanges || isSubmitting || isUploading) && styles.saveButtonDisabled,
           ]}
         >
           {isSubmitting || isUploading ? (
-            <>
-              <ActivityIndicator size="small" color="#0066FF" />
-              {isUploading && (
-                <Text style={styles.uploadingText}>Uploading...</Text>
-              )}
-            </>
+            <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text
-              style={[
-                styles.saveButtonText,
-                (!hasChanges || isSubmitting) && styles.saveButtonTextDisabled,
-              ]}
-            >
-              Save
-            </Text>
+            <Ionicons name="checkmark" size={24} color="#FFFFFF" />
           )}
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Debug Info */}
-        <View style={styles.debugBox}>
-          <Text style={styles.debugTitle}>🧪 Debug Info:</Text>
-          <Text style={styles.debugText}>Post ID: {post.id}</Text>
-          <Text style={styles.debugText}>Post Type: {post.postType}</Text>
-          <Text style={styles.debugText}>Original Visibility: {post.visibility || 'PUBLIC'}</Text>
-          <Text style={styles.debugText}>Current Visibility: {visibility}</Text>
-          <Text style={styles.debugText}>Has Changes: {hasChanges ? 'Yes' : 'No'}</Text>
-          <Text style={styles.debugText}>Is Submitting: {isSubmitting ? 'Yes' : 'No'}</Text>
-          <Text style={styles.debugText}>Character Count: {content.length}</Text>
-          <Text style={styles.debugText}>Media Count: {mediaUrls.length}</Text>
-          <Text style={styles.debugText}>Local URIs: {getLocalUris().length}</Text>
-          <Text style={styles.debugText}>New Images: {newMediaUrls.length}</Text>
-        </View>
-        
-        {/* Content Input */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Content</Text>
-          <View style={[styles.inputContainer, Shadows.sm]}>
-            <TextInput
-              style={styles.contentInput}
-              value={content}
-              onChangeText={(text) => {
-                console.log('🧪 [EditPost] Content changed:', text.length, 'chars');
-                setContent(text);
-              }}
-              placeholder="What's on your mind?"
-              placeholderTextColor="#A3A3A3"
-              multiline
-              maxLength={5000}
-              editable={!isSubmitting}
-              textAlignVertical="top"
-            />
-            <Text style={styles.characterCount}>
-              {content.length}/5000
+        {/* Content Card */}
+        <View style={[styles.card, Shadows.md]}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="create-outline" size={20} color="#0066FF" />
+            <Text style={styles.cardTitle}>Content</Text>
+          </View>
+          <TextInput
+            style={styles.textInput}
+            value={content}
+            onChangeText={setContent}
+            placeholder="What's on your mind?"
+            placeholderTextColor="#A3A3A3"
+            multiline
+            maxLength={5000}
+            editable={!isSubmitting}
+            textAlignVertical="top"
+          />
+          <View style={styles.charCountRow}>
+            <Text style={[styles.charCount, { color: charWarningColor }]}>
+              {charCount}/5000
             </Text>
+            {charCount >= 4500 && (
+              <Text style={[styles.charWarning, { color: charWarningColor }]}>
+                {charCount >= 5000 ? 'Maximum reached' : 'Almost at limit'}
+              </Text>
+            )}
           </View>
         </View>
         
-        {/* Media Management */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionLabel}>Images ({mediaUrls.length}/10)</Text>
+        {/* Media Card */}
+        <View style={[styles.card, Shadows.md]}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="images-outline" size={20} color="#0066FF" />
+            <Text style={styles.cardTitle}>Images</Text>
+            <View style={styles.mediaCount}>
+              <Text style={styles.mediaCountText}>{mediaUrls.length}/10</Text>
+            </View>
             <TouchableOpacity
               onPress={pickImage}
               disabled={isSubmitting || mediaUrls.length >= 10}
-              style={[
-                styles.addButton,
-                (isSubmitting || mediaUrls.length >= 10) && styles.addButtonDisabled,
-              ]}
+              style={[styles.addImageButton, mediaUrls.length >= 10 && styles.addImageButtonDisabled]}
             >
-              <Ionicons name="add" size={20} color="#FFFFFF" />
-              <Text style={styles.addButtonText}>Add</Text>
+              <Ionicons name="add" size={18} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
           
@@ -437,54 +369,62 @@ export default function EditPostScreen() {
             <View style={styles.mediaGrid}>
               {mediaUrls.map((url, index) => {
                 const isNew = newMediaUrls.includes(url);
+                const isLocal = isLocalUri(url);
                 return (
-                  <View key={`${url}-${index}`} style={styles.mediaItemContainer}>
+                  <View key={`${url}-${index}`} style={styles.mediaItem}>
                     <Image
                       source={{ uri: url }}
                       style={styles.mediaImage}
-                      resizeMode="cover"
+                      contentFit="cover"
                     />
                     
-                    {/* Order Number */}
-                    <View style={styles.mediaOrderBadge}>
-                      <Text style={styles.mediaOrderText}>{index + 1}</Text>
+                    {/* Order badge */}
+                    <View style={styles.orderBadge}>
+                      <Text style={styles.orderText}>{index + 1}</Text>
                     </View>
                     
-                    {/* NEW Badge */}
+                    {/* NEW badge */}
                     {isNew && (
                       <View style={styles.newBadge}>
                         <Text style={styles.newBadgeText}>NEW</Text>
                       </View>
                     )}
                     
-                    {/* Delete Button */}
+                    {/* Local badge */}
+                    {isLocal && (
+                      <View style={styles.localBadge}>
+                        <Ionicons name="cloud-upload-outline" size={10} color="#FFFFFF" />
+                      </View>
+                    )}
+                    
+                    {/* Delete button */}
                     <TouchableOpacity
                       onPress={() => deleteImage(index)}
                       disabled={isSubmitting}
                       style={styles.deleteButton}
                     >
-                      <Ionicons name="close-circle" size={24} color="#FF3B30" />
+                      <Ionicons name="close-circle" size={24} color="#EF4444" />
                     </TouchableOpacity>
                     
-                    {/* Reorder Buttons */}
+                    {/* Reorder buttons */}
                     {mediaUrls.length > 1 && (
                       <View style={styles.reorderButtons}>
                         {index > 0 && (
                           <TouchableOpacity
-                            onPress={() => moveImageUp(index)}
+                            onPress={() => moveImage(index, 'up')}
                             disabled={isSubmitting}
                             style={styles.reorderButton}
                           >
-                            <Ionicons name="chevron-back" size={16} color="#FFFFFF" />
+                            <Ionicons name="chevron-back" size={14} color="#FFFFFF" />
                           </TouchableOpacity>
                         )}
                         {index < mediaUrls.length - 1 && (
                           <TouchableOpacity
-                            onPress={() => moveImageDown(index)}
+                            onPress={() => moveImage(index, 'down')}
                             disabled={isSubmitting}
                             style={styles.reorderButton}
                           >
-                            <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
+                            <Ionicons name="chevron-forward" size={14} color="#FFFFFF" />
                           </TouchableOpacity>
                         )}
                       </View>
@@ -497,75 +437,95 @@ export default function EditPostScreen() {
             <View style={styles.emptyMedia}>
               <Ionicons name="images-outline" size={48} color="#D1D5DB" />
               <Text style={styles.emptyMediaText}>No images</Text>
-              <Text style={styles.emptyMediaHint}>Tap "Add" to include images</Text>
+              <Text style={styles.emptyMediaHint}>Tap + to add images</Text>
             </View>
           )}
         </View>
         
-        {/* Visibility Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Visibility</Text>
-          <View style={styles.optionsContainer}>
-            {VISIBILITY_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                onPress={() => {
-                  console.log('🧪 [EditPost] Visibility changed to:', option.value);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setVisibility(option.value);
-                }}
-                disabled={isSubmitting}
-                style={[
-                  styles.optionCard,
-                  visibility === option.value && styles.optionCardSelected,
-                  Shadows.sm,
-                ]}
-              >
-                <View style={styles.optionIcon}>
-                  <Ionicons
-                    name={option.icon}
-                    size={20}
-                    color={visibility === option.value ? '#0066FF' : '#666'}
-                  />
-                </View>
-                <View style={styles.optionText}>
-                  <Text
-                    style={[
-                      styles.optionLabel,
-                      visibility === option.value && styles.optionLabelSelected,
-                    ]}
-                  >
+        {/* Visibility Card */}
+        <View style={[styles.card, Shadows.md]}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="eye-outline" size={20} color="#0066FF" />
+            <Text style={styles.cardTitle}>Visibility</Text>
+          </View>
+          <View style={styles.visibilityGrid}>
+            {VISIBILITY_OPTIONS.map((option) => {
+              const isSelected = visibility === option.value;
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  onPress={() => {
+                    setVisibility(option.value);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  disabled={isSubmitting}
+                  style={[
+                    styles.visibilityCard,
+                    isSelected && styles.visibilityCardSelected,
+                  ]}
+                >
+                  {isSelected && (
+                    <LinearGradient
+                      colors={option.gradient}
+                      style={styles.visibilityGradient}
+                    />
+                  )}
+                  <View style={[
+                    styles.visibilityIconContainer,
+                    { backgroundColor: option.color + '15' }
+                  ]}>
+                    <Ionicons
+                      name={option.icon as any}
+                      size={24}
+                      color={isSelected ? '#FFFFFF' : option.color}
+                    />
+                  </View>
+                  <Text style={[
+                    styles.visibilityLabel,
+                    isSelected && styles.visibilityLabelSelected
+                  ]}>
                     {option.label}
                   </Text>
-                  <Text style={styles.optionDesc}>{option.desc}</Text>
-                </View>
-                {visibility === option.value && (
-                  <Ionicons name="checkmark-circle" size={22} color="#0066FF" />
-                )}
-              </TouchableOpacity>
-            ))}
+                  <Text style={[
+                    styles.visibilityDesc,
+                    isSelected && styles.visibilityDescSelected
+                  ]}>
+                    {option.desc}
+                  </Text>
+                  {isSelected && (
+                    <View style={styles.selectedBadge}>
+                      <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
         
-        {/* Poll Notice */}
-        {post.postType === 'POLL' && post.pollOptions && (
-          <View style={styles.section}>
-            <View style={[styles.noticeCard, Shadows.sm]}>
-              <View style={styles.noticeIcon}>
-                <Ionicons name="information-circle" size={24} color="#0066FF" />
-              </View>
-              <View style={styles.noticeText}>
-                <Text style={styles.noticeTitle}>Poll Options</Text>
-                <Text style={styles.noticeDesc}>
-                  {post.pollOptions.map((opt) => opt.text).join(', ')}
-                </Text>
-                <Text style={[styles.noticeDesc, { marginTop: 4 }]}>
-                  Poll options cannot be edited after creation.
-                </Text>
-              </View>
+        {/* Upload Status */}
+        {(isUploading || getLocalUris().length > 0) && (
+          <View style={[styles.card, styles.uploadCard, Shadows.md]}>
+            <View style={styles.uploadRow}>
+              <Ionicons
+                name={isUploading ? "cloud-upload" : "information-circle"}
+                size={20}
+                color={isUploading ? "#0066FF" : "#F59E0B"}
+              />
+              <Text style={styles.uploadText}>
+                {isUploading
+                  ? `Uploading ${getLocalUris().length} image${getLocalUris().length > 1 ? 's' : ''}...`
+                  : `${getLocalUris().length} image${getLocalUris().length > 1 ? 's' : ''} will be uploaded`
+                }
+              </Text>
             </View>
+            {isUploading && (
+              <ActivityIndicator size="small" color="#0066FF" style={{ marginLeft: 28 }} />
+            )}
           </View>
         )}
+        
+        <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -574,7 +534,7 @@ export default function EditPostScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F9FAFB',
   },
   
   // Header
@@ -584,9 +544,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    ...Shadows.sm,
   },
   headerButton: {
     width: 40,
@@ -595,31 +552,34 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 20,
   },
+  headerCenter: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#262626',
-  },
-  saveButton: {
-    backgroundColor: '#0066FF',
-    paddingHorizontal: 16,
-    width: 'auto',
-  },
-  saveButtonDisabled: {
-    backgroundColor: '#E8E8E8',
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#FFFFFF',
   },
-  saveButtonTextDisabled: {
-    color: '#A3A3A3',
+  unsavedDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FCD34D',
   },
-  uploadingText: {
-    fontSize: 12,
-    color: '#0066FF',
-    marginLeft: 8,
+  saveButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  saveButtonDisabled: {
+    opacity: 0.5,
   },
   
   // Content
@@ -627,158 +587,82 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   
-  // Debug Box
-  debugBox: {
-    margin: 16,
-    padding: 12,
-    backgroundColor: '#FFF9E6',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FFE066',
+  // Card
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 16,
+    marginTop: 16,
   },
-  debugTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#B8860B',
-    marginBottom: 8,
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
   },
-  debugText: {
-    fontSize: 12,
-    color: '#8B7500',
-    marginBottom: 4,
-  },
-  
-  section: {
-    padding: 16,
-  },
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#262626',
-    marginBottom: 12,
-  },
-  
-  // Content Input
-  inputContainer: {
-    backgroundColor: '#F9F9F9',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-    padding: 12,
-  },
-  contentInput: {
+  cardTitle: {
     fontSize: 16,
-    color: '#262626',
+    fontWeight: '600',
+    color: '#1F2937',
+    flex: 1,
+  },
+  
+  // Text Input
+  textInput: {
+    fontSize: 16,
+    color: '#1F2937',
+    lineHeight: 24,
     minHeight: 120,
-    maxHeight: 300,
-    lineHeight: 22,
     textAlignVertical: 'top',
   },
-  characterCount: {
+  charCountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  charCount: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  charWarning: {
     fontSize: 12,
-    color: '#8E8E93',
-    textAlign: 'right',
-    marginTop: 8,
-  },
-  
-  // Visibility Options
-  optionsContainer: {
-    gap: 12,
-  },
-  optionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F9F9F9',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E8E8E8',
-    padding: 14,
-    gap: 12,
-  },
-  optionCardSelected: {
-    backgroundColor: '#F0F7FF',
-    borderColor: '#0066FF',
-  },
-  optionIcon: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-  },
-  optionText: {
-    flex: 1,
-  },
-  optionLabel: {
-    fontSize: 16,
     fontWeight: '600',
-    color: '#262626',
-  },
-  optionLabelSelected: {
-    color: '#0066FF',
-  },
-  optionDesc: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginTop: 2,
   },
   
-  // Notice Card
-  noticeCard: {
-    flexDirection: 'row',
-    backgroundColor: '#F0F7FF',
+  // Media
+  mediaCount: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#DBEAFE',
-    padding: 14,
-    gap: 12,
   },
-  noticeIcon: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  noticeText: {
-    flex: 1,
-  },
-  noticeTitle: {
-    fontSize: 15,
+  mediaCountText: {
+    fontSize: 12,
     fontWeight: '600',
-    color: '#262626',
-    marginBottom: 4,
+    color: '#6B7280',
   },
-  noticeDesc: {
-    fontSize: 13,
-    color: '#666',
-    lineHeight: 18,
-  },
-  
-  // Media Display
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+  addImageButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: '#0066FF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  addButtonDisabled: {
+  addImageButtonDisabled: {
     backgroundColor: '#D1D5DB',
-  },
-  addButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
   },
   mediaGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  mediaItemContainer: {
+  mediaItem: {
     width: IMAGE_SIZE,
     height: IMAGE_SIZE,
     borderRadius: 12,
@@ -790,16 +674,16 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  mediaOrderBadge: {
+  orderBadge: {
     position: 'absolute',
     bottom: 8,
     left: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  mediaOrderText: {
+  orderText: {
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
@@ -809,19 +693,31 @@ const styles = StyleSheet.create({
     top: 8,
     left: 8,
     backgroundColor: '#10B981',
-    borderRadius: 4,
+    borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
   newBadgeText: {
     color: '#FFFFFF',
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
-  deleteButton: {
+  localBadge: {
     position: 'absolute',
     top: 8,
     right: 8,
+    backgroundColor: '#F59E0B',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 12,
     width: 24,
@@ -837,7 +733,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   reorderButton: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
     borderRadius: 12,
     width: 24,
     height: 24,
@@ -848,7 +744,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 48,
-    backgroundColor: '#F9FAFB',
     borderRadius: 12,
     borderWidth: 2,
     borderColor: '#E5E7EB',
@@ -864,5 +759,79 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#9CA3AF',
     marginTop: 4,
+  },
+  
+  // Visibility
+  visibilityGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  visibilityCard: {
+    width: (width - 72) / 2,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  visibilityCardSelected: {
+    borderColor: 'transparent',
+  },
+  visibilityGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  visibilityIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  visibilityLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  visibilityLabelSelected: {
+    color: '#FFFFFF',
+  },
+  visibilityDesc: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  visibilityDescSelected: {
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  selectedBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+  },
+  
+  // Upload Card
+  uploadCard: {
+    backgroundColor: '#F0F7FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  uploadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  uploadText: {
+    fontSize: 14,
+    color: '#1F2937',
+    fontWeight: '500',
+    flex: 1,
   },
 });
