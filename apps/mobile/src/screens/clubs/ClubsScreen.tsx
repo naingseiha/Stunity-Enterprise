@@ -125,7 +125,7 @@ export default function ClubsScreen() {
                 end={{ x: 1, y: 1 }}
                 style={styles.clubCover}
               >
-                <Ionicons name={typeConfig.icon as any} size={40} color="rgba(255,255,255,0.95)" />
+                <Ionicons name={typeConfig.icon as any} size={40} color={getIconColor(club.type)} />
               </LinearGradient>
             )}
 
@@ -381,21 +381,21 @@ export default function ClubsScreen() {
 // Helper functions
 const getTypeColor = (type: string) => {
   switch (type) {
-    case 'CASUAL_STUDY_GROUP': return '#2563EB';
-    case 'STRUCTURED_CLASS': return '#059669';
-    case 'PROJECT_GROUP': return '#DC2626';
-    case 'EXAM_PREP': return '#7C3AED';
-    default: return '#F59E0B';
+    case 'CASUAL_STUDY_GROUP': return '#DBEAFE'; // Light blue
+    case 'STRUCTURED_CLASS': return '#D1FAE5'; // Light green
+    case 'PROJECT_GROUP': return '#FEE2E2'; // Light red
+    case 'EXAM_PREP': return '#EDE9FE'; // Light purple
+    default: return '#FEF3C7'; // Light amber
   }
 };
 
 const getTypeColorDark = (type: string) => {
   switch (type) {
-    case 'CASUAL_STUDY_GROUP': return '#1E40AF';
-    case 'STRUCTURED_CLASS': return '#047857';
-    case 'PROJECT_GROUP': return '#B91C1C';
-    case 'EXAM_PREP': return '#6D28D9';
-    default: return '#D97706';
+    case 'CASUAL_STUDY_GROUP': return '#BFDBFE'; // Slightly darker blue
+    case 'STRUCTURED_CLASS': return '#A7F3D0'; // Slightly darker green
+    case 'PROJECT_GROUP': return '#FECACA'; // Slightly darker red
+    case 'EXAM_PREP': return '#DDD6FE'; // Slightly darker purple
+    default: return '#FDE68A'; // Slightly darker amber
   }
 };
 
@@ -406,6 +406,16 @@ const getTypeIcon = (type: string) => {
     case 'PROJECT_GROUP': return 'rocket';
     case 'EXAM_PREP': return 'book';
     default: return 'school';
+  }
+};
+
+const getIconColor = (type: string) => {
+  switch (type) {
+    case 'CASUAL_STUDY_GROUP': return '#2563EB'; // Blue
+    case 'STRUCTURED_CLASS': return '#059669'; // Green
+    case 'PROJECT_GROUP': return '#DC2626'; // Red
+    case 'EXAM_PREP': return '#7C3AED'; // Purple
+    default: return '#F59E0B'; // Amber
   }
 };
 

@@ -30,11 +30,41 @@ import { useAuthStore } from '@/stores';
 
 const { width } = Dimensions.get('window');
 
-const CLUB_TYPE_CONFIG: Record<string, { icon: string; color: string; label: string }> = {
-  CASUAL_STUDY_GROUP: { icon: 'people', color: '#2563EB', label: 'Study Group' },
-  STRUCTURED_CLASS: { icon: 'school', color: '#059669', label: 'Class' },
-  PROJECT_GROUP: { icon: 'rocket', color: '#DC2626', label: 'Project' },
-  EXAM_PREP: { icon: 'book', color: '#7C3AED', label: 'Exam Prep' },
+const CLUB_TYPE_CONFIG: Record<string, { 
+  icon: string; 
+  color: string; 
+  lightColor: string;
+  lightColorEnd: string;
+  label: string;
+}> = {
+  CASUAL_STUDY_GROUP: { 
+    icon: 'people', 
+    color: '#2563EB', 
+    lightColor: '#DBEAFE',
+    lightColorEnd: '#BFDBFE',
+    label: 'Study Group' 
+  },
+  STRUCTURED_CLASS: { 
+    icon: 'school', 
+    color: '#059669', 
+    lightColor: '#D1FAE5',
+    lightColorEnd: '#A7F3D0',
+    label: 'Class' 
+  },
+  PROJECT_GROUP: { 
+    icon: 'rocket', 
+    color: '#DC2626', 
+    lightColor: '#FEE2E2',
+    lightColorEnd: '#FECACA',
+    label: 'Project' 
+  },
+  EXAM_PREP: { 
+    icon: 'book', 
+    color: '#7C3AED', 
+    lightColor: '#EDE9FE',
+    lightColorEnd: '#DDD6FE',
+    label: 'Exam Prep' 
+  },
 };
 
 export default function ClubDetailsScreen() {
@@ -187,12 +217,12 @@ export default function ClubDetailsScreen() {
         {/* Cover with Type Badge */}
         <Animated.View entering={FadeIn.duration(300)} style={styles.coverContainer}>
           <LinearGradient
-            colors={[typeConfig.color, typeConfig.color + 'CC']}
+            colors={[typeConfig.lightColor, typeConfig.lightColorEnd]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.cover}
           >
-            <Ionicons name={typeConfig.icon as any} size={64} color="rgba(255,255,255,0.95)" />
+            <Ionicons name={typeConfig.icon as any} size={64} color={typeConfig.color} />
           </LinearGradient>
           <View style={[styles.typeBadge, { backgroundColor: typeConfig.color }]}>
             <Ionicons name={typeConfig.icon as any} size={14} color="#fff" />
