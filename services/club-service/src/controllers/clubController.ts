@@ -1,8 +1,12 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../index';
+import axios from 'axios';
 
 const prisma = new PrismaClient();
+
+// Feed service URL
+const FEED_SERVICE_URL = process.env.FEED_SERVICE_URL || 'http://localhost:3010';
 
 export const createClub = async (req: AuthRequest, res: Response) => {
   try {
@@ -83,6 +87,40 @@ export const createClub = async (req: AuthRequest, res: Response) => {
         },
       },
     });
+
+    // 🚀 Create feed post if club is PUBLIC
+    if (mode === 'PUBLIC') {
+      try {
+        const clubTypeLabels: Record<string, string> = {
+          CASUAL_STUDY_GROUP: '📚 Study Group',
+          STRUCTURED_CLASS: '🎓 Class',
+          PROJECT_GROUP: '🚀 Project',
+          EXAM_PREP: '📖 Exam Prep',
+        };
+
+        const postContent = `${clubTypeLabels[type] || '📚'} New Club Created!\n\n${name}\n\n${description}\n\n${tags && tags.length > 0 ? tags.map((t: string) => `#${t}`).join(' ') : ''}`;
+
+        await axios.post(
+          `${FEED_SERVICE_URL}/posts`,
+          {
+            content: postContent,
+            postType: 'ARTICLE',
+            visibility: 'SCHOOL',
+            mediaUrls: [],
+          },
+          {
+            headers: {
+              Authorization: req.headers.authorization,
+            },
+          }
+        );
+
+        console.log(`✅ Created feed post for public club: ${club.name}`);
+      } catch (feedError: any) {
+        console.error('⚠️ Failed to create feed post (non-blocking):', feedError.message);
+        // Don't block club creation if feed post fails
+      }
+    }
 
     res.status(201).json({ success: true, message: 'Club created successfully', club });
   } catch (error: any) {
