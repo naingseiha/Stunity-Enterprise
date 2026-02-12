@@ -101,10 +101,16 @@ export default function EditPostScreen() {
   const [content, setContent] = useState(post.content);
   const [visibility, setVisibility] = useState(post.visibility || 'PUBLIC');
   const [mediaUrls, setMediaUrls] = useState<string[]>(post.mediaUrls || []);
-  const [newMediaUrls, setNewMediaUrls] = useState<string[]>([]); // Track new images
+  const [newMediaUrls, setNewMediaUrls] = useState<string[]>([]); // Track new images added in THIS session
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  
+  // Helper to check if URL is local
+  const isLocalUri = (uri: string) => uri.startsWith('file://');
+  
+  // Helper to get all local URIs that need upload
+  const getLocalUris = () => mediaUrls.filter(isLocalUri);
   
   // Check if content or media changed
   useEffect(() => {
@@ -216,31 +222,41 @@ export default function EditPostScreen() {
     setIsSubmitting(true);
     
     try {
-      // Step 1: Upload new images if any
+      // Step 1: Upload any local URIs (both old and new)
       let finalMediaUrls = [...mediaUrls];
+      const localUris = getLocalUris();
       
-      if (newMediaUrls.length > 0) {
-        console.log('📤 [EditPost] Uploading', newMediaUrls.length, 'new images...');
+      if (localUris.length > 0) {
+        console.log('📤 [EditPost] Found', localUris.length, 'local URIs that need upload');
+        console.log('🧪 [EditPost] Local URIs:', localUris);
         setIsUploading(true);
         
         try {
-          const uploadedUrls = await uploadImages(newMediaUrls);
+          const uploadedUrls = await uploadImages(localUris);
           
-          // Replace local URIs with uploaded URLs
+          console.log('✅ [EditPost] Upload successful, got', uploadedUrls.length, 'URLs');
+          console.log('🧪 [EditPost] Uploaded URLs:', uploadedUrls);
+          
+          // Replace ALL local URIs with uploaded URLs
           finalMediaUrls = mediaUrls.map(url => {
-            const newIndex = newMediaUrls.indexOf(url);
-            if (newIndex !== -1) {
-              return uploadedUrls[newIndex];
+            if (isLocalUri(url)) {
+              const localIndex = localUris.indexOf(url);
+              if (localIndex !== -1 && uploadedUrls[localIndex]) {
+                console.log('🔄 [EditPost] Replacing:', url.substring(0, 50) + '...');
+                console.log('         → With:', uploadedUrls[localIndex]);
+                return uploadedUrls[localIndex];
+              }
             }
             return url;
           });
           
           setIsUploading(false);
-          console.log('✅ [EditPost] All images uploaded successfully');
+          console.log('✅ [EditPost] All local URIs replaced with server URLs');
           console.log('🧪 [EditPost] Final URLs:', finalMediaUrls);
         } catch (uploadError) {
           setIsUploading(false);
           setIsSubmitting(false);
+          console.error('❌ [EditPost] Upload failed:', uploadError);
           Alert.alert(
             'Upload Failed',
             'Failed to upload images. Please check your connection and try again.',
@@ -248,6 +264,8 @@ export default function EditPostScreen() {
           );
           return;
         }
+      } else {
+        console.log('✅ [EditPost] No local URIs found, all images already uploaded');
       }
       
       // Step 2: Update post with final URLs
@@ -370,6 +388,7 @@ export default function EditPostScreen() {
           <Text style={styles.debugText}>Is Submitting: {isSubmitting ? 'Yes' : 'No'}</Text>
           <Text style={styles.debugText}>Character Count: {content.length}</Text>
           <Text style={styles.debugText}>Media Count: {mediaUrls.length}</Text>
+          <Text style={styles.debugText}>Local URIs: {getLocalUris().length}</Text>
           <Text style={styles.debugText}>New Images: {newMediaUrls.length}</Text>
         </View>
         
