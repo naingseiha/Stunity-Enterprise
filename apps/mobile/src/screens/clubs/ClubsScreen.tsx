@@ -25,7 +25,7 @@ import { useNavigation } from '@react-navigation/native';
 
 const StunityLogo = require('../../../../../Stunity.png');
 
-import { Avatar, Card } from '@/components/common';
+import { Avatar } from '@/components/common';
 import { Colors } from '@/config';
 import { useNavigationContext } from '@/contexts';
 import { clubsApi, Club } from '@/api';
@@ -102,7 +102,8 @@ export default function ClubsScreen() {
     : clubs.filter(club => club.type === selectedType);
 
   const renderClubCard = ({ item: club, index }: { item: Club; index: number }) => {
-    const isJoined = club.memberCount !== undefined;
+    const isJoined = club.memberCount !== undefined && club.memberCount > 0;
+    const typeConfig = CLUB_TYPES.find(t => t.id === club.type) || CLUB_TYPES[0];
 
     return (
       <Animated.View
@@ -113,55 +114,99 @@ export default function ClubsScreen() {
           activeOpacity={0.7}
           onPress={() => navigation.navigate('ClubDetails' as never, { clubId: club.id } as never)}
         >
-          <Card style={styles.cardInner}>
-            {/* Cover */}
+          <View style={styles.cardInner}>
+            {/* Cover Image / Gradient */}
             {club.coverImage ? (
               <Image source={{ uri: club.coverImage }} style={styles.clubCover} />
             ) : (
               <LinearGradient
-                colors={[getTypeColor(club.type), getTypeColorDark(club.type)]}
+                colors={[typeConfig.color, getTypeColorDark(club.type)]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.clubCover}
               >
-                <Ionicons name={getTypeIcon(club.type)} size={32} color="rgba(255,255,255,0.9)" />
+                <Ionicons name={typeConfig.icon as any} size={40} color="rgba(255,255,255,0.95)" />
               </LinearGradient>
             )}
 
+            {/* Type Badge - Top Right Corner */}
+            <View style={[styles.typeBadgeCorner, { backgroundColor: typeConfig.color }]}>
+              <Ionicons name={typeConfig.icon as any} size={14} color="#fff" />
+              <Text style={styles.typeBadgeCornerText}>{typeConfig.name}</Text>
+            </View>
+
             {/* Content */}
             <View style={styles.clubContent}>
-              <View style={styles.clubHeader}>
-                <Text style={styles.clubName} numberOfLines={1}>
-                  {club.name}
-                </Text>
-                <View style={[styles.typeBadge, { backgroundColor: getTypeColor(club.type) + '15' }]}>
-                  <Text style={[styles.typeBadgeText, { color: getTypeColor(club.type) }]}>
-                    {getTypeLabel(club.type)}
-                  </Text>
-                </View>
-              </View>
+              {/* Club Name */}
+              <Text style={styles.clubName} numberOfLines={2}>
+                {club.name}
+              </Text>
 
+              {/* Description */}
               <Text style={styles.clubDescription} numberOfLines={2}>
                 {club.description}
               </Text>
 
-              <View style={styles.clubFooter}>
-                <View style={styles.metaRow}>
-                  <Ionicons name="people" size={14} color={Colors.textSecondary} />
-                  <Text style={styles.metaText}>{club.memberCount || 0}</Text>
-                  
-                  {club.creator && (
-                    <>
-                      <View style={styles.dot} />
-                      <Text style={styles.metaText}>
-                        {club.creator.firstName} {club.creator.lastName.charAt(0)}.
+              {/* Tags */}
+              {club.tags && club.tags.length > 0 && (
+                <View style={styles.tagsRow}>
+                  {club.tags.slice(0, 3).map((tag, i) => (
+                    <View key={i} style={[styles.tag, { backgroundColor: typeConfig.bgColor }]}>
+                      <Text style={[styles.tagText, { color: typeConfig.color }]}>
+                        #{tag}
                       </Text>
-                    </>
+                    </View>
+                  ))}
+                  {club.tags.length > 3 && (
+                    <Text style={styles.moreTagsText}>+{club.tags.length - 3}</Text>
                   )}
                 </View>
+              )}
 
+              {/* Footer */}
+              <View style={styles.clubFooter}>
+                {/* Creator & Member Info */}
+                <View style={styles.clubMeta}>
+                  {club.creator && (
+                    <View style={styles.creatorRow}>
+                      <Avatar
+                        uri={club.creator.profilePictureUrl}
+                        name={`${club.creator.firstName} ${club.creator.lastName}`}
+                        size="xs"
+                        variant="post"
+                      />
+                      <Text style={styles.creatorName} numberOfLines={1}>
+                        {club.creator.firstName} {club.creator.lastName.charAt(0)}.
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.metaStats}>
+                    <Ionicons name="people" size={14} color="#9CA3AF" />
+                    <Text style={styles.memberCount}>
+                      {club.memberCount || 0} {club.memberCount === 1 ? 'member' : 'members'}
+                    </Text>
+                    {club.mode !== 'PUBLIC' && (
+                      <>
+                        <Text style={styles.metaDot}>•</Text>
+                        <Ionicons 
+                          name={club.mode === 'INVITE_ONLY' ? 'lock-closed' : 'checkmark-circle'} 
+                          size={12} 
+                          color="#9CA3AF" 
+                        />
+                        <Text style={styles.modeText}>
+                          {club.mode === 'INVITE_ONLY' ? 'Invite Only' : 'Approval Required'}
+                        </Text>
+                      </>
+                    )}
+                  </View>
+                </View>
+
+                {/* Join Button */}
                 <TouchableOpacity
-                  style={[styles.joinButton, isJoined && styles.joinedButton]}
+                  style={[
+                    styles.joinButton,
+                    isJoined && [styles.joinedButton, { borderColor: typeConfig.color }]
+                  ]}
                   onPress={(e) => {
                     e.stopPropagation();
                     handleToggleJoin(club.id, isJoined);
@@ -170,16 +215,19 @@ export default function ClubsScreen() {
                 >
                   <Ionicons
                     name={isJoined ? 'checkmark' : 'add'}
-                    size={16}
-                    color={isJoined ? Colors.primary : 'white'}
+                    size={18}
+                    color={isJoined ? typeConfig.color : '#fff'}
                   />
-                  <Text style={[styles.joinButtonText, isJoined && styles.joinedButtonText]}>
+                  <Text style={[
+                    styles.joinButtonText,
+                    isJoined && { color: typeConfig.color }
+                  ]}>
                     {isJoined ? 'Joined' : 'Join'}
                   </Text>
                 </TouchableOpacity>
               </View>
             </View>
-          </Card>
+          </View>
         </TouchableOpacity>
       </Animated.View>
     );
@@ -430,73 +478,132 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   listContent: {
-    padding: 16,
+    padding: 14,
     paddingBottom: 32,
   },
   clubCard: {
-    marginBottom: 14,
+    marginBottom: 16,
   },
   cardInner: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     overflow: 'hidden',
-    padding: 0,
-    backgroundColor: 'white',
-    borderRadius: 12,
+    position: 'relative',
+    // Modern shadow like PostCard
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
   clubCover: {
     width: '100%',
-    height: 120,
+    height: 140,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  typeBadgeCorner: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  typeBadgeCornerText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.3,
   },
   clubContent: {
     padding: 16,
   },
-  clubHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
   clubName: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
-    color: Colors.text,
-    flex: 1,
-    marginRight: 8,
-  },
-  typeBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  typeBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
+    color: '#1F2937',
+    lineHeight: 24,
+    marginBottom: 8,
   },
   clubDescription: {
     fontSize: 14,
-    color: Colors.textSecondary,
+    color: '#6B7280',
     lineHeight: 20,
     marginBottom: 12,
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 14,
+  },
+  tag: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  tagText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  moreTagsText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    alignSelf: 'center',
   },
   clubFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 12,
   },
-  metaRow: {
+  clubMeta: {
+    flex: 1,
+    gap: 6,
+  },
+  creatorRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  metaText: {
+  creatorName: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    fontWeight: '600',
+    color: '#374151',
+    flex: 1,
+  },
+  metaStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  memberCount: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontWeight: '500',
+  },
+  metaDot: {
+    fontSize: 12,
+    color: '#D1D5DB',
+    marginHorizontal: 2,
+  },
+  modeText: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '500',
   },
   dot: {
     width: 3,
@@ -507,24 +614,29 @@ const styles = StyleSheet.create({
   joinButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: Colors.primary,
-    gap: 4,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 24,
+    gap: 6,
+    // Gradient effect using solid color
+    backgroundColor: '#6366F1',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   joinedButton: {
-    backgroundColor: 'white',
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
   },
   joinButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: 'white',
-  },
-  joinedButtonText: {
-    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.3,
   },
   centerContainer: {
     flex: 1,
