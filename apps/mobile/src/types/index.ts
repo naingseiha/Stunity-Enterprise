@@ -134,6 +134,7 @@ export interface Post {
   postType: PostType;
   mediaUrls: string[];
   mediaType?: 'IMAGE' | 'VIDEO' | 'DOCUMENT';
+  mediaDisplayMode?: string; // 'AUTO', 'GRID', 'CAROUSEL', etc.
   author: User;
   authorId: string;
   likes: number;

@@ -43,6 +43,15 @@ export default function EditPostScreen() {
   const route = useRoute<EditPostScreenRouteProp>();
   const { post } = route.params;
   
+  // DEBUG: Log the entire post object when screen opens
+  useEffect(() => {
+    console.log('🧪 [EditPost] ========== SCREEN OPENED ==========');
+    console.log('🧪 [EditPost] Full post object:', JSON.stringify(post, null, 2));
+    console.log('🧪 [EditPost] post.visibility value:', post.visibility);
+    console.log('🧪 [EditPost] post.visibility type:', typeof post.visibility);
+    console.log('🧪 [EditPost] Will initialize with:', post.visibility || 'PUBLIC');
+  }, []);
+  
   const { updatePost } = useFeedStore();
   
   const [content, setContent] = useState(post.content);

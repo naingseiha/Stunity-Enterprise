@@ -191,7 +191,9 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           },
           content: post.content,
           postType: post.postType || 'ARTICLE',
+          visibility: post.visibility || 'PUBLIC', // FIXED: Include visibility field
           mediaUrls: post.mediaUrls || [],
+          mediaDisplayMode: post.mediaDisplayMode || 'AUTO', // FIXED: Include mediaDisplayMode
           likes: post.likesCount || post._count?.likes || 0,
           comments: post.commentsCount || post._count?.comments || 0,
           shares: post.sharesCount || 0,
@@ -201,6 +203,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           updatedAt: post.updatedAt,
           // E-Learning metadata
           topicTags: post.topicTags || post.tags || [],
+          tags: post.tags || post.topicTags || [], // FIXED: Include tags field
           // Poll fields
           pollOptions: post.pollOptions?.map((opt: any) => ({
             id: opt.id,
