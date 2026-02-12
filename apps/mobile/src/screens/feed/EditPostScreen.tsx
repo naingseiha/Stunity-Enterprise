@@ -19,15 +19,21 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  FlatList,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 
 import { useFeedStore } from '@/stores';
 import { Colors, Shadows } from '@/config';
 import { Post } from '@/types';
+
+const { width } = Dimensions.get('window');
+const IMAGE_SIZE = (width - 64) / 3; // 3 columns with padding
 
 type EditPostScreenRouteProp = RouteProp<{ EditPost: { post: Post } }, 'EditPost'>;
 
@@ -56,16 +62,93 @@ export default function EditPostScreen() {
   
   const [content, setContent] = useState(post.content);
   const [visibility, setVisibility] = useState(post.visibility || 'PUBLIC');
+  const [mediaUrls, setMediaUrls] = useState<string[]>(post.mediaUrls || []);
+  const [newMediaUrls, setNewMediaUrls] = useState<string[]>([]); // Track new images
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   
-  // Check if content changed
+  // Check if content or media changed
   useEffect(() => {
-    setHasChanges(
-      content.trim() !== post.content.trim() ||
-      visibility !== (post.visibility || 'PUBLIC')
+    const contentChanged = content.trim() !== post.content.trim();
+    const visibilityChanged = visibility !== (post.visibility || 'PUBLIC');
+    const mediaChanged = JSON.stringify(mediaUrls) !== JSON.stringify(post.mediaUrls || []);
+    
+    setHasChanges(contentChanged || visibilityChanged || mediaChanged);
+  }, [content, visibility, mediaUrls, post]);
+  
+  // Image Picker
+  const pickImage = async () => {
+    if (mediaUrls.length >= 10) {
+      Alert.alert('Limit Reached', 'You can only add up to 10 images per post.');
+      return;
+    }
+    
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: true,
+        quality: 0.8,
+        selectionLimit: 10 - mediaUrls.length,
+      });
+      
+      if (!result.canceled && result.assets) {
+        const newUrls = result.assets.map(asset => asset.uri);
+        console.log('🖼️ [EditPost] Added images:', newUrls.length);
+        
+        setMediaUrls(prev => [...prev, ...newUrls]);
+        setNewMediaUrls(prev => [...prev, ...newUrls]);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (error) {
+      console.error('Failed to pick image:', error);
+      Alert.alert('Error', 'Failed to pick image');
+    }
+  };
+  
+  // Delete Image
+  const deleteImage = (index: number) => {
+    Alert.alert(
+      'Delete Image',
+      'Are you sure you want to remove this image?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            console.log('🗑️ [EditPost] Deleting image at index:', index);
+            const deletedUrl = mediaUrls[index];
+            
+            setMediaUrls(prev => prev.filter((_, i) => i !== index));
+            setNewMediaUrls(prev => prev.filter(url => url !== deletedUrl));
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          },
+        },
+      ]
     );
-  }, [content, visibility, post]);
+  };
+  
+  // Move Image Up
+  const moveImageUp = (index: number) => {
+    if (index === 0) return;
+    
+    console.log('⬆️ [EditPost] Moving image up from index:', index);
+    const newUrls = [...mediaUrls];
+    [newUrls[index - 1], newUrls[index]] = [newUrls[index], newUrls[index - 1]];
+    setMediaUrls(newUrls);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+  
+  // Move Image Down
+  const moveImageDown = (index: number) => {
+    if (index === mediaUrls.length - 1) return;
+    
+    console.log('⬇️ [EditPost] Moving image down from index:', index);
+    const newUrls = [...mediaUrls];
+    [newUrls[index], newUrls[index + 1]] = [newUrls[index + 1], newUrls[index]];
+    setMediaUrls(newUrls);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
   
   const handleSave = async () => {
     console.log('🧪 [EditPost] ========== SAVE STARTED ==========');
@@ -74,11 +157,14 @@ export default function EditPostScreen() {
     console.log('🧪 [EditPost] New content:', content.substring(0, 50) + '...');
     console.log('🧪 [EditPost] Original visibility:', post.visibility || 'PUBLIC');
     console.log('🧪 [EditPost] New visibility:', visibility);
+    console.log('🧪 [EditPost] Original media count:', post.mediaUrls?.length || 0);
+    console.log('🧪 [EditPost] New media count:', mediaUrls.length);
+    console.log('🧪 [EditPost] New images added:', newMediaUrls.length);
     console.log('🧪 [EditPost] Has changes:', hasChanges);
     console.log('🧪 [EditPost] Data being sent:', JSON.stringify({
       content: content.trim(),
       visibility,
-      mediaUrls: post.mediaUrls || [],
+      mediaUrls,
       mediaDisplayMode: post.mediaDisplayMode || 'AUTO',
     }, null, 2));
     
@@ -101,7 +187,7 @@ export default function EditPostScreen() {
       const success = await updatePost(post.id, {
         content: content.trim(),
         visibility,
-        mediaUrls: post.mediaUrls || [],
+        mediaUrls,
         mediaDisplayMode: post.mediaDisplayMode || 'AUTO',
       });
       
@@ -203,7 +289,8 @@ export default function EditPostScreen() {
           <Text style={styles.debugText}>Has Changes: {hasChanges ? 'Yes' : 'No'}</Text>
           <Text style={styles.debugText}>Is Submitting: {isSubmitting ? 'Yes' : 'No'}</Text>
           <Text style={styles.debugText}>Character Count: {content.length}</Text>
-          <Text style={styles.debugText}>Media Count: {post.mediaUrls?.length || 0}</Text>
+          <Text style={styles.debugText}>Media Count: {mediaUrls.length}</Text>
+          <Text style={styles.debugText}>New Images: {newMediaUrls.length}</Text>
         </View>
         
         {/* Content Input */}
@@ -230,29 +317,91 @@ export default function EditPostScreen() {
           </View>
         </View>
         
-        {/* Media Display (Read-only for now) */}
-        {post.mediaUrls && post.mediaUrls.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Media ({post.mediaUrls.length})</Text>
-            <View style={styles.mediaGrid}>
-              {post.mediaUrls.map((url, index) => (
-                <View key={index} style={styles.mediaItem}>
-                  <Image
-                    source={{ uri: url }}
-                    style={styles.mediaImage}
-                    resizeMode="cover"
-                  />
-                  <View style={styles.mediaOverlay}>
-                    <Text style={styles.mediaIndex}>{index + 1}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-            <Text style={styles.mediaNote}>
-              ℹ️ Image editing coming in next update
-            </Text>
+        {/* Media Management */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionLabel}>Images ({mediaUrls.length}/10)</Text>
+            <TouchableOpacity
+              onPress={pickImage}
+              disabled={isSubmitting || mediaUrls.length >= 10}
+              style={[
+                styles.addButton,
+                (isSubmitting || mediaUrls.length >= 10) && styles.addButtonDisabled,
+              ]}
+            >
+              <Ionicons name="add" size={20} color="#FFFFFF" />
+              <Text style={styles.addButtonText}>Add</Text>
+            </TouchableOpacity>
           </View>
-        )}
+          
+          {mediaUrls.length > 0 ? (
+            <View style={styles.mediaGrid}>
+              {mediaUrls.map((url, index) => {
+                const isNew = newMediaUrls.includes(url);
+                return (
+                  <View key={`${url}-${index}`} style={styles.mediaItemContainer}>
+                    <Image
+                      source={{ uri: url }}
+                      style={styles.mediaImage}
+                      resizeMode="cover"
+                    />
+                    
+                    {/* Order Number */}
+                    <View style={styles.mediaOrderBadge}>
+                      <Text style={styles.mediaOrderText}>{index + 1}</Text>
+                    </View>
+                    
+                    {/* NEW Badge */}
+                    {isNew && (
+                      <View style={styles.newBadge}>
+                        <Text style={styles.newBadgeText}>NEW</Text>
+                      </View>
+                    )}
+                    
+                    {/* Delete Button */}
+                    <TouchableOpacity
+                      onPress={() => deleteImage(index)}
+                      disabled={isSubmitting}
+                      style={styles.deleteButton}
+                    >
+                      <Ionicons name="close-circle" size={24} color="#FF3B30" />
+                    </TouchableOpacity>
+                    
+                    {/* Reorder Buttons */}
+                    {mediaUrls.length > 1 && (
+                      <View style={styles.reorderButtons}>
+                        {index > 0 && (
+                          <TouchableOpacity
+                            onPress={() => moveImageUp(index)}
+                            disabled={isSubmitting}
+                            style={styles.reorderButton}
+                          >
+                            <Ionicons name="chevron-back" size={16} color="#FFFFFF" />
+                          </TouchableOpacity>
+                        )}
+                        {index < mediaUrls.length - 1 && (
+                          <TouchableOpacity
+                            onPress={() => moveImageDown(index)}
+                            disabled={isSubmitting}
+                            style={styles.reorderButton}
+                          >
+                            <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <View style={styles.emptyMedia}>
+              <Ionicons name="images-outline" size={48} color="#D1D5DB" />
+              <Text style={styles.emptyMediaText}>No images</Text>
+              <Text style={styles.emptyMediaHint}>Tap "Add" to include images</Text>
+            </View>
+          )}
+        </View>
         
         {/* Visibility Selection */}
         <View style={styles.section}>
@@ -503,40 +652,113 @@ const styles = StyleSheet.create({
   },
   
   // Media Display
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#0066FF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  addButtonDisabled: {
+    backgroundColor: '#D1D5DB',
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   mediaGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  mediaItem: {
-    width: 100,
-    height: 100,
-    borderRadius: 8,
+  mediaItemContainer: {
+    width: IMAGE_SIZE,
+    height: IMAGE_SIZE,
+    borderRadius: 12,
     overflow: 'hidden',
     position: 'relative',
+    backgroundColor: '#F3F4F6',
   },
   mediaImage: {
     width: '100%',
     height: '100%',
   },
-  mediaOverlay: {
+  mediaOrderBadge: {
     position: 'absolute',
-    bottom: 4,
-    left: 4,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    bottom: 8,
+    left: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     borderRadius: 12,
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 4,
   },
-  mediaIndex: {
+  mediaOrderText: {
     color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  mediaNote: {
-    fontSize: 13,
-    color: '#666',
-    marginTop: 8,
-    fontStyle: 'italic',
+  newBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: '#10B981',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  newBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reorderButtons: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  reorderButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyMedia: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+  },
+  emptyMediaText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: 12,
+  },
+  emptyMediaHint: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    marginTop: 4,
   },
 });
