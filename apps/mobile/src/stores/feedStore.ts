@@ -956,17 +956,53 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         return false;
       }
       
-      // Refetch the updated post to get full data
-      console.log('🔄 [feedStore] Refetching updated post...');
-      const updatedPostResponse = await feedApi.get(`/posts/${postId}`);
-      const updatedPost = updatedPostResponse.data;
+      // Get updated post data from response
+      const rawPost = response.data.data || response.data;
       
-      console.log('📥 [feedStore] Updated post:', JSON.stringify(updatedPost, null, 2));
+      console.log('🔄 [feedStore] Transforming updated post data...');
+      
+      // Transform to match Post type (same as fetchPosts)
+      const transformedPost: Post = {
+        id: rawPost.id,
+        author: {
+          id: rawPost.author?.id,
+          firstName: rawPost.author?.firstName,
+          lastName: rawPost.author?.lastName,
+          name: `${rawPost.author?.firstName || ''} ${rawPost.author?.lastName || ''}`.trim(),
+          profilePictureUrl: rawPost.author?.profilePictureUrl,
+          role: rawPost.author?.role,
+          isVerified: rawPost.author?.isVerified,
+        },
+        content: rawPost.content,
+        postType: rawPost.postType || 'ARTICLE',
+        visibility: rawPost.visibility || 'PUBLIC',
+        mediaUrls: rawPost.mediaUrls || [],
+        mediaDisplayMode: rawPost.mediaDisplayMode || 'AUTO',
+        likes: rawPost.likesCount || rawPost._count?.likes || 0,
+        comments: rawPost.commentsCount || rawPost._count?.comments || 0,
+        shares: rawPost.sharesCount || 0,
+        isLiked: rawPost.isLikedByMe || false,
+        isBookmarked: rawPost.isBookmarked || false,
+        createdAt: rawPost.createdAt,
+        updatedAt: rawPost.updatedAt,
+        topicTags: rawPost.topicTags || rawPost.tags || [],
+        tags: rawPost.tags || rawPost.topicTags || [],
+        pollOptions: rawPost.pollOptions?.map((opt: any) => ({
+          id: opt.id,
+          text: opt.text,
+          votes: opt.votes || opt._count?.votes || 0,
+        })),
+        userVotedOptionId: rawPost.userVotedOptionId,
+        learningMeta: rawPost.learningMeta,
+      };
+      
+      console.log('📥 [feedStore] Transformed post:', JSON.stringify(transformedPost, null, 2));
+      console.log('📥 [feedStore] Media URLs after transform:', transformedPost.mediaUrls);
       
       // Update post in state
       set((state) => ({
         posts: state.posts.map((post) =>
-          post.id === postId ? { ...post, ...updatedPost } : post
+          post.id === postId ? transformedPost : post
         ),
       }));
       
