@@ -31,6 +31,9 @@ import { Avatar } from '@/components/common';
 import { useAuthStore, useFeedStore } from '@/stores';
 import { PostType } from '@/types';
 import { QuizForm } from './create-post/forms/QuizForm';
+import { QuestionForm } from './create-post/forms/QuestionForm';
+import { PollForm } from './create-post/forms/PollForm';
+import { AnnouncementForm } from './create-post/forms/AnnouncementForm';
 
 // Post type options
 const POST_TYPES: { type: PostType; icon: string; label: string; color: string }[] = [
@@ -55,9 +58,16 @@ export default function CreatePostScreen() {
   
   // Poll state
   const [pollOptions, setPollOptions] = useState<string[]>(['', '']);
+  const [pollData, setPollData] = useState<any>(null);
   
   // Quiz state
   const [quizData, setQuizData] = useState<any>(null);
+  
+  // Question state
+  const [questionData, setQuestionData] = useState<any>(null);
+  
+  // Announcement state
+  const [announcementData, setAnnouncementData] = useState<any>(null);
   
   // Add poll option with animation
   const addPollOption = () => {
@@ -302,45 +312,27 @@ export default function CreatePostScreen() {
             autoFocus
           />
           
-          {/* Poll Options (only for POLL type) */}
+          {/* Question Form (only for QUESTION type) */}
+          {postType === 'QUESTION' && (
+            <Animated.View 
+              entering={FadeIn.duration(300)}
+              exiting={FadeOut.duration(200)}
+            >
+              <QuestionForm onDataChange={setQuestionData} />
+            </Animated.View>
+          )}
+          
+          {/* Poll Form (only for POLL type) */}
           {postType === 'POLL' && (
             <Animated.View 
               entering={FadeIn.duration(300)}
               exiting={FadeOut.duration(200)}
-              style={styles.pollSection}
             >
-              <Text style={styles.pollLabel}>Poll Options</Text>
-              {pollOptions.map((option, index) => (
-                <Animated.View 
-                  key={index} 
-                  style={styles.pollOption}
-                  entering={ZoomIn.duration(200)}
-                  exiting={ZoomOut.duration(200)}
-                  layout={Layout.springify()}
-                >
-                  <TextInput
-                    style={styles.pollInput}
-                    placeholder={`Option ${index + 1}`}
-                    placeholderTextColor="#9CA3AF"
-                    value={option}
-                    onChangeText={(text) => updatePollOption(index, text)}
-                  />
-                  {pollOptions.length > 2 && (
-                    <TouchableOpacity
-                      onPress={() => removePollOption(index)}
-                      style={styles.removePollButton}
-                    >
-                      <Ionicons name="close-circle" size={20} color="#EF4444" />
-                    </TouchableOpacity>
-                  )}
-                </Animated.View>
-              ))}
-              {pollOptions.length < 6 && (
-                <TouchableOpacity onPress={addPollOption} style={styles.addPollButton}>
-                  <Ionicons name="add-circle" size={20} color="#6366F1" />
-                  <Text style={styles.addPollText}>Add Option</Text>
-                </TouchableOpacity>
-              )}
+              <PollForm 
+                options={pollOptions}
+                onOptionsChange={setPollOptions}
+                onDataChange={setPollData}
+              />
             </Animated.View>
           )}
           
@@ -351,6 +343,16 @@ export default function CreatePostScreen() {
               exiting={FadeOut.duration(200)}
             >
               <QuizForm onDataChange={setQuizData} />
+            </Animated.View>
+          )}
+          
+          {/* Announcement Form (only for ANNOUNCEMENT type) */}
+          {postType === 'ANNOUNCEMENT' && (
+            <Animated.View 
+              entering={FadeIn.duration(300)}
+              exiting={FadeOut.duration(200)}
+            >
+              <AnnouncementForm onDataChange={setAnnouncementData} />
             </Animated.View>
           )}
 
