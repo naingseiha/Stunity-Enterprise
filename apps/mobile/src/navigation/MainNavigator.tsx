@@ -29,7 +29,13 @@ import { LearnScreen, CourseDetailScreen } from '@/screens/learn';
 import { ProfileScreen, EditProfileScreen } from '@/screens/profile';
 import { ConversationsScreen, ChatScreen } from '@/screens/messages';
 import { ClubsScreen, ClubDetailsScreen } from '@/screens/clubs';
-import { AssignmentsListScreen, AssignmentDetailScreen, SubmissionFormScreen } from '@/screens/assignments';
+import { 
+  AssignmentsListScreen, 
+  AssignmentDetailScreen, 
+  SubmissionFormScreen,
+  SubmissionsListScreen,
+  GradeSubmissionScreen,
+} from '@/screens/assignments';
 
 // Placeholder screens (will be implemented)
 const PlaceholderScreen = ({ title }: { title: string }) => (
@@ -76,6 +82,8 @@ const ClubsStackNavigator: React.FC = () => (
     <ClubsStack.Screen name="AssignmentsList" component={AssignmentsListScreen} />
     <ClubsStack.Screen name="AssignmentDetail" component={AssignmentDetailScreen} />
     <ClubsStack.Screen name="SubmissionForm" component={SubmissionFormScreen} />
+    <ClubsStack.Screen name="SubmissionsList" component={SubmissionsListScreen} />
+    <ClubsStack.Screen name="GradeSubmission" component={GradeSubmissionScreen} />
   </ClubsStack.Navigator>
 );
 

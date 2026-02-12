@@ -25,11 +25,13 @@ import { Colors } from '@/config';
 import { assignmentsApi } from '@/api';
 import type { ClubAssignment } from '@/api/assignments';
 import type { ClubsStackScreenProps } from '@/navigation/types';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function AssignmentDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute<ClubsStackScreenProps<'AssignmentDetail'>['route']>();
   const { assignmentId, clubId } = route.params;
+  const { user } = useAuthStore();
 
   const [assignment, setAssignment] = useState<ClubAssignment | null>(null);
   const [loading, setLoading] = useState(true);
@@ -116,6 +118,7 @@ export default function AssignmentDetailScreen() {
   const isSubmitted = assignment.userSubmission != null;
   const isGraded = assignment.userSubmission?.status === 'GRADED';
   const isLateSubmission = assignment.userSubmission?.isLate || false;
+  const isInstructor = assignment.createdById === user?.id;
   
   const daysUntilDue = differenceInDays(dueDate, now);
   const hoursUntilDue = differenceInHours(dueDate, now);
@@ -342,7 +345,21 @@ export default function AssignmentDetailScreen() {
 
       {/* Bottom Actions */}
       <View style={styles.bottomActions}>
-        {!isSubmitted && (isOverdue ? isLateAllowed : true) && (
+        {/* Instructor View */}
+        {isInstructor && (
+          <TouchableOpacity
+            style={styles.instructorButton}
+            onPress={handleViewSubmissions}
+          >
+            <Ionicons name="documents-outline" size={20} color="white" />
+            <Text style={styles.instructorButtonText}>
+              View Submissions {assignment.submissionCount ? `(${assignment.submissionCount})` : ''}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Student View */}
+        {!isInstructor && !isSubmitted && (isOverdue ? isLateAllowed : true) && (
           <TouchableOpacity
             style={[styles.submitButton, isOverdue && styles.submitButtonLate]}
             onPress={handleSubmit}
@@ -354,7 +371,7 @@ export default function AssignmentDetailScreen() {
           </TouchableOpacity>
         )}
         
-        {isSubmitted && !isGraded && (
+        {!isInstructor && isSubmitted && !isGraded && (
           <TouchableOpacity style={styles.viewSubmissionButton} onPress={handleSubmit}>
             <Ionicons name="eye-outline" size={20} color={Colors.primary} />
             <Text style={styles.viewSubmissionButtonText}>View My Submission</Text>
@@ -695,6 +712,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#F59E0B',
   },
   submitButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  instructorButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F59E0B',
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
+    shadowColor: '#F59E0B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  instructorButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
