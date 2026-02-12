@@ -18,6 +18,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -58,11 +59,19 @@ export default function EditPostScreen() {
   }, [content, visibility, post]);
   
   const handleSave = async () => {
-    console.log('🧪 [EditPost] Save button pressed');
+    console.log('🧪 [EditPost] ========== SAVE STARTED ==========');
     console.log('🧪 [EditPost] Post ID:', post.id);
-    console.log('🧪 [EditPost] Content:', content.substring(0, 50) + '...');
-    console.log('🧪 [EditPost] Visibility:', visibility);
+    console.log('🧪 [EditPost] Original content:', post.content.substring(0, 50) + '...');
+    console.log('🧪 [EditPost] New content:', content.substring(0, 50) + '...');
+    console.log('🧪 [EditPost] Original visibility:', post.visibility || 'PUBLIC');
+    console.log('🧪 [EditPost] New visibility:', visibility);
     console.log('🧪 [EditPost] Has changes:', hasChanges);
+    console.log('🧪 [EditPost] Data being sent:', JSON.stringify({
+      content: content.trim(),
+      visibility,
+      mediaUrls: post.mediaUrls || [],
+      mediaDisplayMode: post.mediaDisplayMode || 'AUTO',
+    }, null, 2));
     
     if (!content.trim()) {
       Alert.alert('Empty Post', 'Please add some content to your post.');
@@ -79,7 +88,7 @@ export default function EditPostScreen() {
     setIsSubmitting(true);
     
     try {
-      console.log('🧪 [EditPost] Calling updatePost...');
+      console.log('🧪 [EditPost] Calling updatePost API...');
       const success = await updatePost(post.id, {
         content: content.trim(),
         visibility,
@@ -180,9 +189,12 @@ export default function EditPostScreen() {
           <Text style={styles.debugTitle}>🧪 Debug Info:</Text>
           <Text style={styles.debugText}>Post ID: {post.id}</Text>
           <Text style={styles.debugText}>Post Type: {post.postType}</Text>
+          <Text style={styles.debugText}>Original Visibility: {post.visibility || 'PUBLIC'}</Text>
+          <Text style={styles.debugText}>Current Visibility: {visibility}</Text>
           <Text style={styles.debugText}>Has Changes: {hasChanges ? 'Yes' : 'No'}</Text>
           <Text style={styles.debugText}>Is Submitting: {isSubmitting ? 'Yes' : 'No'}</Text>
           <Text style={styles.debugText}>Character Count: {content.length}</Text>
+          <Text style={styles.debugText}>Media Count: {post.mediaUrls?.length || 0}</Text>
         </View>
         
         {/* Content Input */}
@@ -208,6 +220,30 @@ export default function EditPostScreen() {
             </Text>
           </View>
         </View>
+        
+        {/* Media Display (Read-only for now) */}
+        {post.mediaUrls && post.mediaUrls.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Media ({post.mediaUrls.length})</Text>
+            <View style={styles.mediaGrid}>
+              {post.mediaUrls.map((url, index) => (
+                <View key={index} style={styles.mediaItem}>
+                  <Image
+                    source={{ uri: url }}
+                    style={styles.mediaImage}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.mediaOverlay}>
+                    <Text style={styles.mediaIndex}>{index + 1}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+            <Text style={styles.mediaNote}>
+              ℹ️ Image editing coming in next update
+            </Text>
+          </View>
+        )}
         
         {/* Visibility Selection */}
         <View style={styles.section}>
@@ -455,5 +491,43 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666',
     lineHeight: 18,
+  },
+  
+  // Media Display
+  mediaGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  mediaItem: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  mediaImage: {
+    width: '100%',
+    height: '100%',
+  },
+  mediaOverlay: {
+    position: 'absolute',
+    bottom: 4,
+    left: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  mediaIndex: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  mediaNote: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
 });

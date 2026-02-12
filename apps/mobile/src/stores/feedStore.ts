@@ -940,16 +940,25 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   // Update/edit a post
   updatePost: async (postId, data) => {
     try {
+      console.log('📤 [feedStore] Sending PUT request to /posts/' + postId);
+      console.log('📤 [feedStore] Request data:', JSON.stringify(data, null, 2));
+      
       const response = await feedApi.put(`/posts/${postId}`, data);
       
+      console.log('📥 [feedStore] Response status:', response.status);
+      console.log('📥 [feedStore] Response data:', JSON.stringify(response.data, null, 2));
+      
       if (response.data.error) {
-        console.error('Failed to update post:', response.data.error);
+        console.error('❌ [feedStore] Failed to update post:', response.data.error);
         return false;
       }
       
       // Refetch the updated post to get full data
+      console.log('🔄 [feedStore] Refetching updated post...');
       const updatedPostResponse = await feedApi.get(`/posts/${postId}`);
       const updatedPost = updatedPostResponse.data;
+      
+      console.log('📥 [feedStore] Updated post:', JSON.stringify(updatedPost, null, 2));
       
       // Update post in state
       set((state) => ({
@@ -958,9 +967,10 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         ),
       }));
       
+      console.log('✅ [feedStore] Post updated successfully in store');
       return true;
     } catch (error) {
-      console.error('Failed to update post:', error);
+      console.error('❌ [feedStore] Failed to update post:', error);
       return false;
     }
   },

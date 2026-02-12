@@ -141,7 +141,7 @@ export interface Post {
   shares: number;
   isLiked: boolean;
   isBookmarked: boolean;
-  visibility: 'PUBLIC' | 'CONNECTIONS' | 'PRIVATE';
+  visibility: 'PUBLIC' | 'SCHOOL' | 'CLASS' | 'PRIVATE';
   tags: string[];
   // E-Learning enhancements
   learningMeta?: PostLearningMeta;
