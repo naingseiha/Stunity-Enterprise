@@ -416,6 +416,8 @@ app.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) =>
   try {
     const { content, title, postType = 'ARTICLE', visibility = 'SCHOOL', mediaUrls = [], mediaDisplayMode = 'AUTO', pollOptions, quizData } = req.body;
 
+    console.log('📝 Creating post:', { postType, hasQuizData: !!quizData, quizDataKeys: quizData ? Object.keys(quizData) : [] });
+
     if (!content || content.trim().length === 0) {
       return res.status(400).json({ success: false, error: 'Content is required' });
     }
@@ -496,6 +498,8 @@ app.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) =>
     });
   } catch (error: any) {
     console.error('Create post error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Request body:', JSON.stringify(req.body, null, 2));
     res.status(500).json({ success: false, error: 'Failed to create post', details: error.message });
   }
 });

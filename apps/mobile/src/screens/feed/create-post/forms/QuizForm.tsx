@@ -16,9 +16,11 @@ interface QuizFormProps {
 }
 
 export interface QuizData {
+  title?: string;
   questions: QuizQuestion[];
   timeLimit: number | null;
   passingScore: number;
+  totalPoints: number;
   resultsVisibility: 'IMMEDIATE' | 'AFTER_SUBMISSION' | 'MANUAL';
 }
 
@@ -48,10 +50,12 @@ export function QuizForm({ onDataChange }: QuizFormProps) {
   const [passingScore, setPassingScore] = useState(70);
 
   useEffect(() => {
+    const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
     onDataChange({ 
       questions, 
       timeLimit, 
-      passingScore, 
+      passingScore,
+      totalPoints,
       resultsVisibility: 'AFTER_SUBMISSION' 
     });
   }, [questions, timeLimit, passingScore]);
