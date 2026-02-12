@@ -36,6 +36,7 @@ import {
   SubmissionsListScreen,
   GradeSubmissionScreen,
 } from '@/screens/assignments';
+import { TakeQuizScreen, QuizResultsScreen } from '@/screens/quiz';
 
 // Placeholder screens (will be implemented)
 const PlaceholderScreen = ({ title }: { title: string }) => (
@@ -102,6 +103,8 @@ const FeedStackNavigator: React.FC = () => (
     <FeedStack.Screen name="Hashtag" component={HashtagScreen} />
     <FeedStack.Screen name="Events" component={EventsScreen} />
     <FeedStack.Screen name="EventDetail" component={EventDetailScreen} />
+    <FeedStack.Screen name="TakeQuiz" component={TakeQuizScreen} />
+    <FeedStack.Screen name="QuizResults" component={QuizResultsScreen} />
   </FeedStack.Navigator>
 );
 

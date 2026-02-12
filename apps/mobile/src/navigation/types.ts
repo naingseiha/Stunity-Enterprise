@@ -66,6 +66,8 @@ export type FeedStackParamList = {
   ClubDetail: { clubId: string };
   Events: undefined;
   EventDetail: { eventId: string };
+  TakeQuiz: { quiz: any };
+  QuizResults: { quiz: any; score: number; passed: boolean; pointsEarned: number; results: any[] };
 };
 
 // Learn Stack
