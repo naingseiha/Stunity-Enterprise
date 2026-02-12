@@ -339,6 +339,27 @@ export const PostCard: React.FC<PostCardProps> = ({
             </View>
             <View style={styles.metaRow}>
               <Text style={styles.timeText}>{formatRelativeTime(post.createdAt)}</Text>
+              
+              {/* Visibility Icon */}
+              <Text style={styles.metaDot}>•</Text>
+              <View style={styles.visibilityIndicator}>
+                <Ionicons 
+                  name={
+                    post.visibility === 'PUBLIC' ? 'earth' :
+                    post.visibility === 'SCHOOL' ? 'school' :
+                    post.visibility === 'CLASS' ? 'people' :
+                    'lock-closed'
+                  } 
+                  size={10} 
+                  color={
+                    post.visibility === 'PUBLIC' ? '#10B981' :
+                    post.visibility === 'SCHOOL' ? '#3B82F6' :
+                    post.visibility === 'CLASS' ? '#8B5CF6' :
+                    '#6B7280'
+                  } 
+                />
+              </View>
+              
               {/* Study Group Tag */}
               {learningMeta?.studyGroupName && (
                 <>
@@ -773,6 +794,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#9CA3AF',
     marginHorizontal: 6,
+  },
+  visibilityIndicator: {
+    marginLeft: 2,
   },
   // Study Group Tag
   studyGroupTag: {
