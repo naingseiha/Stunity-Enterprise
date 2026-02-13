@@ -69,7 +69,10 @@ export function TakeQuizScreen() {
     quiz?.timeLimit ? quiz.timeLimit * 60 : null
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedAnswerAnim] = useState(new RNAnimated.Value(0));
   const progressAnim = useRef(new RNAnimated.Value(0)).current;
+  const questionSlideAnim = useRef(new RNAnimated.Value(0)).current;
+  const celebrationAnim = useRef(new RNAnimated.Value(0)).current;
 
   // Timer countdown
   useEffect(() => {
@@ -107,7 +110,22 @@ export function TakeQuizScreen() {
   const currentAnswer = answers.find((a) => a.questionId === currentQuestion.id)?.answer || '';
 
   const handleAnswerChange = (answer: string) => {
-    Haptics.selectionAsync();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    
+    // Animate answer selection
+    RNAnimated.sequence([
+      RNAnimated.timing(selectedAnswerAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      RNAnimated.timing(selectedAnswerAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
     const newAnswers = answers.filter((a) => a.questionId !== currentQuestion.id);
     newAnswers.push({ questionId: currentQuestion.id, answer });
     setAnswers(newAnswers);
@@ -116,6 +134,12 @@ export function TakeQuizScreen() {
   const handleNext = () => {
     if (currentQuestionIndex < quiz.questions.length - 1) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      
+      // Celebrate progress milestone
+      if ((currentQuestionIndex + 1) % 5 === 0) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
   };
@@ -171,15 +195,26 @@ export function TakeQuizScreen() {
   const submitQuiz = async () => {
     try {
       setIsSubmitting(true);
+      
+      // Celebration animation
+      RNAnimated.spring(celebrationAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }).start();
+      
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       // Submit to API
       const response = await quizService.submitQuiz(quiz.id, answers);
 
+      // Small delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       // Navigate to results screen with API response
-      navigation.navigate('QuizResults', {
+      (navigation as any).navigate('QuizResults', {
         quiz,
-        answers,
         score: response.score,
         passed: response.passed,
         pointsEarned: response.pointsEarned,
@@ -191,6 +226,7 @@ export function TakeQuizScreen() {
       Alert.alert('Error', error.message || 'Failed to submit quiz. Please try again.');
     } finally {
       setIsSubmitting(false);
+      celebrationAnim.setValue(0);
     }
   };
 
@@ -594,6 +630,42 @@ export function TakeQuizScreen() {
           </TouchableOpacity>
         )}
       </View>
+      
+      {/* Submission Loading Overlay */}
+      {isSubmitting && (
+        <RNAnimated.View 
+          style={[
+            styles.loadingOverlay,
+            {
+              opacity: celebrationAnim,
+              transform: [{
+                scale: celebrationAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.8, 1],
+                })
+              }]
+            }
+          ]}
+        >
+          <LinearGradient
+            colors={['#6366F1', '#8B5CF6', '#EC4899']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.loadingGradient}
+          >
+            <RNAnimated.View style={styles.loadingContent}>
+              <Ionicons name="rocket" size={48} color="#FFFFFF" />
+              <Text style={styles.loadingTitle}>Submitting Quiz...</Text>
+              <Text style={styles.loadingSubtitle}>Calculating your score</Text>
+              <View style={styles.loadingDots}>
+                <View style={[styles.loadingDot, { animationDelay: '0ms' }]} />
+                <View style={[styles.loadingDot, { animationDelay: '150ms' }]} />
+                <View style={[styles.loadingDot, { animationDelay: '300ms' }]} />
+              </View>
+            </RNAnimated.View>
+          </LinearGradient>
+        </RNAnimated.View>
+      )}
       </View>
     </SafeAreaView>
   );
@@ -1088,5 +1160,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  // Loading Overlay Styles
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  loadingGradient: {
+    width: width - 64,
+    borderRadius: 24,
+    padding: 40,
+    alignItems: 'center',
+  },
+  loadingContent: {
+    alignItems: 'center',
+    gap: 16,
+  },
+  loadingTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  loadingSubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    opacity: 0.9,
+    textAlign: 'center',
+  },
+  loadingDots: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  loadingDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#FFFFFF',
   },
 });
