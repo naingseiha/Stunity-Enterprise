@@ -1234,7 +1234,19 @@ app.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, res:
       
       // Check answer based on question type
       if (question.type === 'MULTIPLE_CHOICE') {
-        isCorrect = parseInt(userAnswer.answer) === question.correctAnswer;
+        // Both need to be numbers for comparison
+        const userAnswerNum = parseInt(userAnswer.answer);
+        const correctAnswerNum = parseInt(question.correctAnswer);
+        isCorrect = userAnswerNum === correctAnswerNum;
+        
+        console.log('🔍 [QUIZ] MC Question:', {
+          questionId: question.id,
+          userAnswer: userAnswer.answer,
+          userAnswerNum,
+          correctAnswer: question.correctAnswer,
+          correctAnswerNum,
+          isCorrect
+        });
       } else if (question.type === 'TRUE_FALSE') {
         isCorrect = userAnswer.answer === question.correctAnswer.toString();
       } else if (question.type === 'SHORT_ANSWER') {

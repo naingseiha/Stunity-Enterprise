@@ -10,6 +10,8 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
@@ -125,11 +127,17 @@ export function QuizResultsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color="#111827" />
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()} 
+          style={styles.closeButton}
+          hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="close" size={28} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Quiz Results</Text>
         <View style={styles.placeholder} />
@@ -299,7 +307,7 @@ export function QuizResultsScreen() {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
