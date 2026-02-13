@@ -7,25 +7,93 @@
  * - Challenges & competition
  */
 
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import { Config } from '@/config';
+import { tokenService } from '@/services/token';
+import { networkService } from '@/services/network';
+import { APP_CONFIG } from '@/config';
 
-const analyticsApi = axios.create({
-  baseURL: Config.analyticsUrl || `http://${Config.apiHost}:3014`,
-  timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+// Create axios instance with the same configuration as the main API client
+const createAnalyticsApi = (): AxiosInstance => {
+  const client = axios.create({
+    baseURL: Config.analyticsUrl,
+    timeout: APP_CONFIG.API_TIMEOUT,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Client-Version': APP_CONFIG.APP_VERSION,
+      'X-Platform': 'mobile',
+    },
+  });
 
-// Add auth token to requests
-analyticsApi.interceptors.request.use(async (config) => {
-  const token = await import('@/services/token').then(m => m.tokenService.getAccessToken());
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+  // Request interceptor - Same as main API client
+  client.interceptors.request.use(
+    async (config) => {
+      // Add auth token
+      const token = await tokenService.getAccessToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+
+      // Add request ID for tracing
+      config.headers['X-Request-ID'] = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+      if (__DEV__) {
+        console.log(`🚀 [ANALYTICS] ${config.method?.toUpperCase()} ${config.url}`);
+      }
+
+      return config;
+    },
+    (error) => {
+      return Promise.reject(error);
+    }
+  );
+
+  // Response interceptor - Handle 401 token expiry
+  client.interceptors.response.use(
+    (response) => {
+      if (__DEV__) {
+        console.log(`✅ [ANALYTICS] ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
+      }
+      return response;
+    },
+    async (error) => {
+      const originalRequest = error.config;
+
+      // Handle 401 - Token expired, try refreshing
+      if (error.response?.status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true;
+
+        try {
+          const newToken = await tokenService.refreshAccessToken();
+          if (newToken) {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            return client(originalRequest);
+          }
+        } catch (refreshError) {
+          console.error('❌ [ANALYTICS] Token refresh failed:', refreshError);
+          return Promise.reject(refreshError);
+        }
+      }
+
+      // Handle network errors
+      if (error.code === 'ERR_NETWORK' && networkService.getStatus() === false) {
+        if (__DEV__) {
+          console.log(`📥 [ANALYTICS] Network error - request queued`);
+        }
+      }
+
+      if (__DEV__) {
+        console.error(`❌ [ANALYTICS] ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${error.response?.status || error.code}`);
+      }
+
+      return Promise.reject(error);
+    }
+  );
+
+  return client;
+};
+
+const analyticsApi = createAnalyticsApi();
 
 export interface UserStats {
   id: string;

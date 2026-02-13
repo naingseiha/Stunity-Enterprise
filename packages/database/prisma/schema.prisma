@@ -800,16 +800,16 @@ model QuizQuestion {
 }
 
 model Quiz {
-  id                String         @id @default(cuid())
-  postId            String         @unique
+  id                String              @id @default(cuid())
+  postId            String              @unique
   questions         Json // Store questions as JSON array
   timeLimit         Int // Time limit in minutes
   passingScore      Int // Minimum score to pass (percentage)
   totalPoints       Int // Total possible points
-  resultsVisibility String         @default("AFTER_SUBMISSION") // AFTER_SUBMISSION, IMMEDIATE, NEVER
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  post              Post           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  resultsVisibility String              @default("AFTER_SUBMISSION") // AFTER_SUBMISSION, IMMEDIATE, NEVER
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  post              Post                @relation(fields: [postId], references: [id], onDelete: Cascade)
   attempts          QuizAttempt[]
   // Analytics relations
   attemptRecords    QuizAttemptRecord[]
@@ -2920,9 +2920,9 @@ model UserStats {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  attempts   QuizAttemptRecord[]
-  challenges ChallengeParticipant[]
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievements UserGameAchievement[]
+  streaks      LearningStreak[]
 
   @@index([xp])
   @@index([level])
@@ -2937,16 +2937,15 @@ model QuizAttemptRecord {
   score       Int
   totalPoints Int
   accuracy    Float
-  timeSpent   Int      // seconds
-  rank        Int?     // if multiplayer
+  timeSpent   Int // seconds
+  rank        Int? // if multiplayer
   xpEarned    Int
-  type        String   // 'solo' | 'live' | 'challenge'
-  sessionCode String?  // if live quiz
+  type        String // 'solo' | 'live' | 'challenge'
+  sessionCode String? // if live quiz
   createdAt   DateTime @default(now())
 
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quiz      Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  userStats UserStats @relation(fields: [userId], references: [userId], onDelete: Cascade, map: "QuizAttemptRecord_userStats_fkey")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([quizId])
@@ -2955,15 +2954,15 @@ model QuizAttemptRecord {
 
 // Challenge System
 model QuizChallenge {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   challengerId    String
   opponentId      String
   quizId          String
-  status          String   // 'pending', 'active', 'completed', 'expired'
+  status          String // 'pending', 'active', 'completed', 'expired'
   challengerScore Int?
   opponentScore   Int?
   winnerId        String?
-  createdAt       DateTime @default(now())
+  createdAt       DateTime  @default(now())
   expiresAt       DateTime
   completedAt     DateTime?
 
@@ -2978,7 +2977,7 @@ model QuizChallenge {
 }
 
 model ChallengeParticipant {
-  id          String  @id @default(cuid())
+  id          String    @id @default(cuid())
   challengeId String
   userId      String
   score       Int?
@@ -2986,7 +2985,6 @@ model ChallengeParticipant {
 
   challenge QuizChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userStats UserStats     @relation(fields: [userId], references: [userId], onDelete: Cascade, map: "ChallengeParticipant_userStats_fkey")
 
   @@unique([challengeId, userId])
   @@index([userId])
@@ -3000,24 +2998,26 @@ model GameAchievement {
   description String
   icon        String
   xpReward    Int
-  category    String   // 'quiz', 'streak', 'competition', 'social'
-  tier        String   // 'bronze', 'silver', 'gold', 'platinum'
+  category    String // 'quiz', 'streak', 'competition', 'social'
+  tier        String // 'bronze', 'silver', 'gold', 'platinum'
   createdAt   DateTime @default(now())
 
   userAchievements UserGameAchievement[]
 }
 
 model UserGameAchievement {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   userId        String
   achievementId String
-  progress      Int      @default(0) // for progressive achievements
-  completed     Boolean  @default(false)
+  progress      Int       @default(0) // for progressive achievements
+  completed     Boolean   @default(false)
   unlockedAt    DateTime?
-  createdAt     DateTime @default(now())
+  createdAt     DateTime  @default(now())
 
   user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   achievement GameAchievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  UserStats   UserStats?      @relation(fields: [userStatsId], references: [id])
+  userStatsId String?
 
   @@unique([userId, achievementId])
   @@index([userId])
@@ -3026,17 +3026,19 @@ model UserGameAchievement {
 
 // Learning Streaks
 model LearningStreak {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  currentStreak Int      @default(0)
-  longestStreak Int      @default(0)
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  currentStreak Int       @default(0)
+  longestStreak Int       @default(0)
   lastQuizDate  DateTime?
-  freezesUsed   Int      @default(0)
-  freezesTotal  Int      @default(3)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  freezesUsed   Int       @default(0)
+  freezesTotal  Int       @default(3)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  UserStats   UserStats? @relation(fields: [userStatsId], references: [id])
+  userStatsId String?
 
   @@index([userId])
   @@index([currentStreak])

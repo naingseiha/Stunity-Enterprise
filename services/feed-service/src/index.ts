@@ -114,10 +114,16 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
+      console.log('❌ [AUTH] No token provided');
       return res.status(401).json({ success: false, error: 'Access token required' });
     }
 
+    console.log('🔐 [AUTH] Verifying token for:', req.method, req.path);
+    console.log('🔑 [AUTH] Token preview:', token.substring(0, 20) + '...');
+    
     const decoded = jwt.verify(token, JWT_SECRET) as any;
+    console.log('✅ [AUTH] Token verified for user:', decoded.userId);
+    
     req.user = {
       id: decoded.userId,
       email: decoded.email,
@@ -125,7 +131,9 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
       schoolId: decoded.schoolId,
     };
     next();
-  } catch (error) {
+  } catch (error: any) {
+    console.error('❌ [AUTH] Token verification failed:', error.message);
+    console.error('🔍 [AUTH] Error name:', error.name);
     return res.status(403).json({ success: false, error: 'Invalid token' });
   }
 };
@@ -255,13 +263,22 @@ app.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => 
     const { page = 1, limit = 20, type, subject } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
-    const where: any = {
-      // For now, show all posts from user's school + public posts
-      OR: [
+    const where: any = {};
+    
+    // Visibility filtering
+    if (req.user!.schoolId) {
+      // User has a school - show school posts + public posts
+      where.OR = [
         { author: { schoolId: req.user!.schoolId } },
         { visibility: 'PUBLIC' },
-      ],
-    };
+      ];
+    } else {
+      // User has no school - show their own posts + public posts
+      where.OR = [
+        { authorId: req.user!.id },
+        { visibility: 'PUBLIC' },
+      ];
+    }
 
     console.log('📋 [GET /posts] Query filters:', {
       userId: req.user!.id,
