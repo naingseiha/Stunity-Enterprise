@@ -215,6 +215,7 @@ export function TakeQuizScreen() {
       // Navigate to results screen with API response
       (navigation as any).navigate('QuizResults', {
         quiz,
+        answers,  // ✅ Pass user's answers for display
         score: response.score,
         passed: response.passed,
         pointsEarned: response.pointsEarned,
