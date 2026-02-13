@@ -1,11 +1,6 @@
 /**
- * Take Quiz Screen - Enterprise Edition
- * Professional quiz-taking interface with advanced features
- * - Answer labels (A, B, C, D)
- * - Mark for review
- * - Review screen before submission
- * - Enhanced visual design
- * - Better progress tracking
+ * Take Quiz Screen - Student Interface
+ * Clean, focused UI for quiz taking experience
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -18,17 +13,12 @@ import {
   StyleSheet,
   Alert,
   Animated as RNAnimated,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeOut, Layout, SlideInRight, SlideOutLeft } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { quizService } from '@/services';
-
-const { width } = Dimensions.get('window');
-const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
 interface QuizQuestion {
   id: string;
@@ -61,8 +51,6 @@ export function TakeQuizScreen() {
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<UserAnswer[]>([]);
-  const [markedForReview, setMarkedForReview] = useState<Set<string>>(new Set());
-  const [showReviewScreen, setShowReviewScreen] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(
     quiz?.timeLimit ? quiz.timeLimit * 60 : null
   );
@@ -125,22 +113,6 @@ export function TakeQuizScreen() {
     }
   };
 
-  const toggleMarkForReview = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const newMarked = new Set(markedForReview);
-    if (newMarked.has(currentQuestion.id)) {
-      newMarked.delete(currentQuestion.id);
-    } else {
-      newMarked.add(currentQuestion.id);
-    }
-    setMarkedForReview(newMarked);
-  };
-
-  const handleReviewClick = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setShowReviewScreen(true);
-  };
-
   const handleAutoSubmit = () => {
     Alert.alert(
       'Time\'s Up!',
@@ -201,126 +173,6 @@ export function TakeQuizScreen() {
   const isLastQuestion = currentQuestionIndex === quiz.questions.length - 1;
   const answeredCount = answers.length;
   const progressPercent = (answeredCount / quiz.questions.length) * 100;
-  const isMarkedForReview = markedForReview.has(currentQuestion.id);
-
-  // Render Review Screen
-  if (showReviewScreen) {
-    return (
-      <View style={styles.container}>
-        {/* Review Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => setShowReviewScreen(false)} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#111827" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Review Your Answers</Text>
-        </View>
-
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Summary Card */}
-          <View style={styles.reviewSummary}>
-            <Text style={styles.reviewTitle}>Submission Summary</Text>
-            <View style={styles.summaryGrid}>
-              <View style={styles.summaryItem}>
-                <Ionicons name="checkmark-circle" size={32} color="#10B981" />
-                <Text style={styles.summaryNumber}>{answeredCount}</Text>
-                <Text style={styles.summaryLabel}>Answered</Text>
-              </View>
-              <View style={styles.summaryItem}>
-                <Ionicons name="alert-circle" size={32} color="#EF4444" />
-                <Text style={styles.summaryNumber}>{quiz.questions.length - answeredCount}</Text>
-                <Text style={styles.summaryLabel}>Unanswered</Text>
-              </View>
-              <View style={styles.summaryItem}>
-                <Ionicons name="flag" size={32} color="#F59E0B" />
-                <Text style={styles.summaryNumber}>{markedForReview.size}</Text>
-                <Text style={styles.summaryLabel}>Flagged</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Questions Review List */}
-          <View style={styles.reviewList}>
-            {quiz.questions.map((q, index) => {
-              const answer = answers.find(a => a.questionId === q.id);
-              const isAnswered = !!answer;
-              const isFlagged = markedForReview.has(q.id);
-              
-              return (
-                <TouchableOpacity
-                  key={q.id}
-                  onPress={() => {
-                    setShowReviewScreen(false);
-                    setCurrentQuestionIndex(index);
-                  }}
-                  style={styles.reviewItem}
-                >
-                  <View style={styles.reviewItemLeft}>
-                    <View style={[
-                      styles.reviewNumber,
-                      isAnswered ? styles.reviewNumberAnswered : styles.reviewNumberUnanswered
-                    ]}>
-                      <Text style={[
-                        styles.reviewNumberText,
-                        isAnswered && styles.reviewNumberTextAnswered
-                      ]}>
-                        {index + 1}
-                      </Text>
-                    </View>
-                    <View style={styles.reviewInfo}>
-                      <Text style={styles.reviewQuestionText} numberOfLines={2}>
-                        {q.text}
-                      </Text>
-                      {answer && q.type === 'MULTIPLE_CHOICE' && (
-                        <Text style={styles.reviewAnswerText}>
-                          Answer: {OPTION_LETTERS[parseInt(answer.answer)]}
-                        </Text>
-                      )}
-                      {answer && q.type === 'TRUE_FALSE' && (
-                        <Text style={styles.reviewAnswerText}>
-                          Answer: {answer.answer === 'true' ? 'True' : 'False'}
-                        </Text>
-                      )}
-                      {answer && q.type === 'SHORT_ANSWER' && (
-                        <Text style={styles.reviewAnswerText} numberOfLines={1}>
-                          Answer: {answer.answer}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-                  <View style={styles.reviewItemRight}>
-                    {isFlagged && <Ionicons name="flag" size={18} color="#F59E0B" />}
-                    {!isAnswered && <Ionicons name="alert-circle" size={18} color="#EF4444" />}
-                    <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </ScrollView>
-
-        {/* Review Footer */}
-        <View style={styles.footer}>
-          <TouchableOpacity
-            onPress={() => setShowReviewScreen(false)}
-            style={styles.navButton}
-          >
-            <Ionicons name="create-outline" size={20} color="#6366F1" />
-            <Text style={styles.navButtonText}>Continue Editing</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleSubmit}
-            disabled={isSubmitting}
-            style={styles.submitButton}
-          >
-            <Text style={styles.submitButtonText}>
-              {isSubmitting ? 'Submitting...' : 'Submit Quiz'}
-            </Text>
-            <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
@@ -377,22 +229,13 @@ export function TakeQuizScreen() {
         >
           {/* Question Header */}
           <View style={styles.questionHeader}>
-            <View style={styles.questionHeaderLeft}>
-              <View style={styles.questionNumber}>
-                <Text style={styles.questionNumberText}>Q{currentQuestionIndex + 1}</Text>
-              </View>
-              <View style={styles.questionPoints}>
-                <Ionicons name="star" size={16} color="#F59E0B" />
-                <Text style={styles.pointsText}>{currentQuestion.points} pts</Text>
-              </View>
+            <View style={styles.questionNumber}>
+              <Text style={styles.questionNumberText}>Q{currentQuestionIndex + 1}</Text>
             </View>
-            <TouchableOpacity onPress={toggleMarkForReview} style={styles.flagButton}>
-              <Ionicons 
-                name={isMarkedForReview ? "flag" : "flag-outline"} 
-                size={22} 
-                color={isMarkedForReview ? "#F59E0B" : "#9CA3AF"} 
-              />
-            </TouchableOpacity>
+            <View style={styles.questionPoints}>
+              <Ionicons name="star" size={16} color="#F59E0B" />
+              <Text style={styles.pointsText}>{currentQuestion.points} pts</Text>
+            </View>
           </View>
 
           {/* Question Text */}
@@ -411,17 +254,12 @@ export function TakeQuizScreen() {
                       style={[styles.optionButton, isSelected && styles.optionButtonSelected]}
                       activeOpacity={0.7}
                     >
-                      <View style={[styles.optionLetter, isSelected && styles.optionLetterSelected]}>
-                        <Text style={[styles.optionLetterText, isSelected && styles.optionLetterTextSelected]}>
-                          {OPTION_LETTERS[index]}
-                        </Text>
+                      <View style={[styles.radioCircle, isSelected && styles.radioCircleSelected]}>
+                        {isSelected && <View style={styles.radioInner} />}
                       </View>
                       <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
                         {option}
                       </Text>
-                      {isSelected && (
-                        <Ionicons name="checkmark-circle" size={24} color="#6366F1" />
-                      )}
                     </TouchableOpacity>
                   );
                 })}
@@ -534,41 +372,29 @@ export function TakeQuizScreen() {
 
       {/* Navigation Footer */}
       <View style={styles.footer}>
-        <View style={styles.footerLeft}>
-          <TouchableOpacity
-            onPress={handlePrevious}
-            disabled={currentQuestionIndex === 0}
-            style={[styles.navButtonSmall, currentQuestionIndex === 0 && styles.navButtonDisabled]}
-          >
-            <Ionicons
-              name="chevron-back"
-              size={24}
-              color={currentQuestionIndex === 0 ? '#D1D5DB' : '#6366F1'}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={handleReviewClick}
-            style={styles.reviewButton}
-          >
-            <Ionicons name="list-outline" size={20} color="#6366F1" />
-            <Text style={styles.reviewButtonText}>Review</Text>
-            {markedForReview.size > 0 && (
-              <View style={styles.reviewBadge}>
-                <Text style={styles.reviewBadgeText}>{markedForReview.size}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={handlePrevious}
+          disabled={currentQuestionIndex === 0}
+          style={[styles.navButton, currentQuestionIndex === 0 && styles.navButtonDisabled]}
+        >
+          <Ionicons
+            name="chevron-back"
+            size={20}
+            color={currentQuestionIndex === 0 ? '#D1D5DB' : '#6366F1'}
+          />
+          <Text style={[styles.navButtonText, currentQuestionIndex === 0 && styles.navButtonTextDisabled]}>
+            Previous
+          </Text>
+        </TouchableOpacity>
 
         {isLastQuestion ? (
           <TouchableOpacity
-            onPress={handleReviewClick}
+            onPress={handleSubmit}
             disabled={isSubmitting}
             style={styles.submitButton}
           >
             <Text style={styles.submitButtonText}>
-              {isSubmitting ? 'Submitting...' : 'Review & Submit'}
+              {isSubmitting ? 'Submitting...' : 'Submit Quiz'}
             </Text>
             <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
           </TouchableOpacity>
@@ -674,16 +500,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
   },
-  questionHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  flagButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#F9FAFB',
-  },
   questionNumber: {
     backgroundColor: '#EEF2FF',
     paddingHorizontal: 12,
@@ -721,54 +537,43 @@ const styles = StyleSheet.create({
   optionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 18,
+    padding: 16,
     backgroundColor: '#F9FAFB',
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: '#E5E7EB',
-    gap: 14,
-    minHeight: 64,
   },
   optionButtonSelected: {
     backgroundColor: '#EEF2FF',
     borderColor: '#6366F1',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
   },
-  optionLetter: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
+  radioCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
     borderColor: '#D1D5DB',
+    marginRight: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  optionLetterSelected: {
-    backgroundColor: '#6366F1',
+  radioCircleSelected: {
     borderColor: '#6366F1',
   },
-  optionLetterText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#6B7280',
-  },
-  optionLetterTextSelected: {
-    color: '#FFFFFF',
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#6366F1',
   },
   optionText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
     color: '#374151',
     flex: 1,
-    lineHeight: 22,
   },
   optionTextSelected: {
-    color: '#1F2937',
+    color: '#6366F1',
     fontWeight: '600',
   },
   trueFalseContainer: {
@@ -881,17 +686,6 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E7EB',
     gap: 12,
   },
-  footerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  navButtonSmall: {
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#6366F1',
-  },
   navButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -912,34 +706,6 @@ const styles = StyleSheet.create({
   },
   navButtonTextDisabled: {
     color: '#D1D5DB',
-  },
-  reviewButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#6366F1',
-    gap: 6,
-  },
-  reviewButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#6366F1',
-  },
-  reviewBadge: {
-    backgroundColor: '#EF4444',
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    minWidth: 20,
-    alignItems: 'center',
-  },
-  reviewBadgeText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#FFFFFF',
   },
   nextButton: {
     flex: 1,
@@ -970,100 +736,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#FFFFFF',
-  },
-  // Review Screen Styles
-  reviewSummary: {
-    backgroundColor: '#FFFFFF',
-    margin: 16,
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  reviewTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 16,
-  },
-  summaryGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  summaryItem: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  summaryNumber: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#111827',
-  },
-  summaryLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  reviewList: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  reviewItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginBottom: 12,
-  },
-  reviewItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 12,
-    marginRight: 12,
-  },
-  reviewNumber: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  reviewNumberAnswered: {
-    backgroundColor: '#D1FAE5',
-  },
-  reviewNumberUnanswered: {
-    backgroundColor: '#FEE2E2',
-  },
-  reviewNumberText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#6B7280',
-  },
-  reviewNumberTextAnswered: {
-    color: '#10B981',
-  },
-  reviewInfo: {
-    flex: 1,
-  },
-  reviewQuestionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  reviewAnswerText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  reviewItemRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
   },
 });
