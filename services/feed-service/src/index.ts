@@ -1188,15 +1188,24 @@ app.delete('/comments/:id', authenticateToken, async (req: AuthRequest, res: Res
 
 // POST /quizzes/:id/submit - Submit quiz answers
 app.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, res: Response) => {
+  console.log('🎯 [QUIZ SUBMIT] Endpoint hit!', {
+    quizId: req.params.id,
+    userId: req.user?.id,
+    answersCount: req.body.answers?.length,
+  });
+  
   try {
     const quizId = req.params.id;
     const userId = req.user!.id;
     const { answers } = req.body;
 
     if (!answers || !Array.isArray(answers)) {
+      console.log('❌ [QUIZ SUBMIT] No answers provided');
       return res.status(400).json({ success: false, error: 'Answers array is required' });
     }
 
+    console.log('🔍 [QUIZ SUBMIT] Looking up quiz:', quizId);
+    
     // Fetch quiz with questions
     const quiz = await prisma.quiz.findUnique({
       where: { id: quizId },
@@ -1204,8 +1213,11 @@ app.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, res:
     });
 
     if (!quiz) {
+      console.log('❌ [QUIZ SUBMIT] Quiz not found:', quizId);
       return res.status(404).json({ success: false, error: 'Quiz not found' });
     }
+    
+    console.log('✅ [QUIZ SUBMIT] Quiz found:', { id: quiz.id, postId: quiz.postId });
 
     // Parse questions from JSON
     const questions = quiz.questions as any[];

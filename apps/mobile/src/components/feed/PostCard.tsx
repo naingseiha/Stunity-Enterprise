@@ -587,7 +587,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 navigation.navigate('TakeQuiz', { 
                   quiz: {
-                    id: post.id,
+                    id: post.quizData.id,  // ✅ Use quiz ID, not post ID
                     title: post.title || 'Quiz',
                     description: post.content,
                     questions: post.quizData.questions,
