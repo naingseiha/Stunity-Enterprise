@@ -4,7 +4,7 @@
  * Handles quiz submission and results fetching
  */
 
-import { feedApi } from './network';
+import { feedApi } from '@/api/client';
 
 export interface QuizAnswer {
   questionId: string;
