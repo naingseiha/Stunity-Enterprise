@@ -138,9 +138,17 @@ class LiveQuizService {
   }
 
   /**
+   * Get session status (includes current question, participants, state)
+   */
+  async getSessionStatus(sessionCode: string): Promise<any> {
+    const response = await analyticsApi.get(`/live/${sessionCode}/status`);
+    return response.data.data;
+  }
+
+  /**
    * Start the quiz (Host only)
    */
-  async startQuiz(sessionCode: string): Promise<QuestionData> {
+  async startSession(sessionCode: string): Promise<any> {
     const response = await analyticsApi.post(`/live/${sessionCode}/start`);
     return response.data.data;
   }
@@ -148,17 +156,15 @@ class LiveQuizService {
   /**
    * Submit answer for current question
    */
-  async submitAnswer(sessionCode: string, answer: string): Promise<SubmitResult> {
-    const response = await analyticsApi.post(`/live/${sessionCode}/submit`, {
-      answer,
-    });
+  async submitAnswer(sessionCode: string, participantId: string, data: { questionId: string; answer: string; timeSpent: number }): Promise<any> {
+    const response = await analyticsApi.post(`/live/${sessionCode}/answer`, data);
     return response.data.data;
   }
 
   /**
    * Move to next question (Host only)
    */
-  async nextQuestion(sessionCode: string): Promise<QuestionData> {
+  async nextQuestion(sessionCode: string): Promise<any> {
     const response = await analyticsApi.post(`/live/${sessionCode}/next`);
     return response.data.data;
   }
@@ -166,18 +172,19 @@ class LiveQuizService {
   /**
    * Get current leaderboard
    */
-  async getLeaderboard(sessionCode: string): Promise<LeaderboardData> {
+  async getLeaderboard(sessionCode: string): Promise<any[]> {
     const response = await analyticsApi.get(`/live/${sessionCode}/leaderboard`);
     return response.data.data;
   }
 
   /**
-   * Get final results
+   * End session (Host only)
    */
-  async getResults(sessionCode: string): Promise<FinalResults> {
-    const response = await analyticsApi.get(`/live/${sessionCode}/results`);
+  async endSession(sessionCode: string): Promise<any> {
+    const response = await analyticsApi.post(`/live/${sessionCode}/end`);
     return response.data.data;
   }
 }
 
 export const liveQuizService = new LiveQuizService();
+export const liveQuizAPI = liveQuizService; // Alias for convenience

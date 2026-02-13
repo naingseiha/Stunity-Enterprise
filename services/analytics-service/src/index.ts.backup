@@ -20,7 +20,7 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3014;
-const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Middleware
 app.use(cors());
@@ -481,7 +481,7 @@ app.get('/live/:code/leaderboard', authenticateToken, async (req: AuthRequest, r
         leaderboard,
         totalParticipants: session.participants.size,
         currentQuestion: session.currentQuestionIndex + 1,
-        totalPoints: (session.quiz?.questions as any[]).length,
+        totalQuestions: (session.quiz?.questions as any[]).length,
       },
     });
   } catch (error: any) {
@@ -901,7 +901,7 @@ app.post('/challenge/:id/submit', authenticateToken, async (req: AuthRequest, re
     }
 
     // Update participant score
-    await prisma.challengeParticipant.updateMany({
+    await prisma.quizChallengeParticipant.updateMany({
       where: {
         challengeId: id,
         userId,
@@ -931,7 +931,7 @@ app.post('/challenge/:id/submit', authenticateToken, async (req: AuthRequest, re
       include: { participants: true },
     });
 
-    if (updated && updated.challengerScore !== null && updated.opponentScore !== null) {
+    if (updated?.challengerScore !== null && updated?.opponentScore !== null) {
       // Determine winner
       const winnerId = updated.challengerScore > updated.opponentScore 
         ? updated.challengerId 
@@ -1023,7 +1023,7 @@ app.get('/streak/:userId', authenticateToken, async (req: AuthRequest, res: Resp
           currentStreak: 0,
           longestStreak: 0,
           lastQuizDate: null,
-          freezesTotal: 1, // Start with 1 freeze
+          freezesAvailable: 1, // Start with 1 freeze
         },
       });
     }
@@ -1052,7 +1052,7 @@ app.post('/streak/update', authenticateToken, async (req: AuthRequest, res: Resp
           currentStreak: 1,
           longestStreak: 1,
           lastQuizDate: new Date(),
-          freezesTotal: 1,
+          freezesAvailable: 1,
         },
       });
 
@@ -1135,7 +1135,7 @@ app.post('/streak/freeze', authenticateToken, async (req: AuthRequest, res: Resp
       where: { userId },
     });
 
-    if (!streak || streak.freezesTotal <= 0) {
+    if (!streak || streak.freezesAvailable <= 0) {
       return res.status(400).json({ 
         success: false, 
         error: 'No freezes available' 
@@ -1145,7 +1145,7 @@ app.post('/streak/freeze', authenticateToken, async (req: AuthRequest, res: Resp
     const updatedStreak = await prisma.learningStreak.update({
       where: { userId },
       data: {
-        freezesTotal: streak.freezesTotal - 1,
+        freezesAvailable: streak.freezesAvailable - 1,
         lastQuizDate: new Date(), // Extend last quiz date
       },
     });
@@ -1268,11 +1268,11 @@ app.post('/achievements/check', authenticateToken, async (req: AuthRequest, res:
       }
     };
 
-    // First perfect score (100% accuracy)
-    await checkAndUnlock('FIRST_PERFECT', attempts.some(a => a.accuracy === 100));
+    // First perfect score
+    await checkAndUnlock('FIRST_PERFECT', attempts.some(a => a.score === a.totalQuestions));
 
-    // Speed demon (quiz completed in under 50% of time limit) - disabled for now
-    // await checkAndUnlock('SPEED_DEMON', attempts.some(a => a.timeSpent && a.timeSpent < timeLimit / 2));
+    // Speed demon (quiz completed in under 50% of time limit)
+    await checkAndUnlock('SPEED_DEMON', attempts.some(a => a.timeSpent && a.timeSpent < (0 / 2));
 
     // Knowledge master (100 quizzes)
     await checkAndUnlock('KNOWLEDGE_MASTER', userStats.totalQuizzes >= 100);

@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import {
+  MainStackParamList,
   MainTabParamList,
   FeedStackParamList,
   LearnStackParamList,
@@ -37,6 +38,21 @@ import {
   GradeSubmissionScreen,
 } from '@/screens/assignments';
 import { TakeQuizScreen, QuizResultsScreen } from '@/screens/quiz';
+import { 
+  LiveQuizJoinScreen,
+  LiveQuizHostScreen,
+  LiveQuizLobbyScreen,
+  LiveQuizPlayScreen,
+  LiveQuizLeaderboardScreen,
+  LiveQuizPodiumScreen,
+} from '@/screens/live-quiz';
+import {
+  StatsScreen,
+  LeaderboardScreen,
+  ChallengeScreen,
+  ChallengeResultScreen,
+} from '@/screens/stats';
+import { AchievementsScreen } from '@/screens/achievements';
 
 // Placeholder screens (will be implemented)
 const PlaceholderScreen = ({ title }: { title: string }) => (
@@ -68,6 +84,7 @@ const ConnectionsScreen = () => <PlaceholderScreen title="Connections" />;
 const SettingsScreen = () => <PlaceholderScreen title="Settings" />;
 
 // Create Stack Navigators
+const MainStack = createNativeStackNavigator<MainStackParamList>();
 const FeedStack = createNativeStackNavigator<FeedStackParamList>();
 const LearnStack = createNativeStackNavigator<LearnStackParamList>();
 const MessagesStack = createNativeStackNavigator<MessagesStackParamList>();
@@ -103,8 +120,6 @@ const FeedStackNavigator: React.FC = () => (
     <FeedStack.Screen name="Hashtag" component={HashtagScreen} />
     <FeedStack.Screen name="Events" component={EventsScreen} />
     <FeedStack.Screen name="EventDetail" component={EventDetailScreen} />
-    <FeedStack.Screen name="TakeQuiz" component={TakeQuizScreen} />
-    <FeedStack.Screen name="QuizResults" component={QuizResultsScreen} />
   </FeedStack.Navigator>
 );
 
@@ -272,7 +287,22 @@ const MainNavigatorContent: React.FC = () => {
 const MainNavigator: React.FC = () => {
   return (
     <NavigationProvider>
-      <MainNavigatorContent />
+      <MainStack.Navigator screenOptions={{ headerShown: false }}>
+        <MainStack.Screen name="MainTabs" component={MainNavigatorContent} />
+        <MainStack.Screen name="TakeQuiz" component={TakeQuizScreen} />
+        <MainStack.Screen name="QuizResults" component={QuizResultsScreen} />
+        <MainStack.Screen name="LiveQuizJoin" component={LiveQuizJoinScreen} />
+        <MainStack.Screen name="LiveQuizHost" component={LiveQuizHostScreen} />
+        <MainStack.Screen name="LiveQuizLobby" component={LiveQuizLobbyScreen} />
+        <MainStack.Screen name="LiveQuizPlay" component={LiveQuizPlayScreen} />
+        <MainStack.Screen name="LiveQuizLeaderboard" component={LiveQuizLeaderboardScreen} />
+        <MainStack.Screen name="LiveQuizPodium" component={LiveQuizPodiumScreen} />
+        <MainStack.Screen name="Stats" component={StatsScreen} />
+        <MainStack.Screen name="Leaderboard" component={LeaderboardScreen} />
+        <MainStack.Screen name="Challenges" component={ChallengeScreen} />
+        <MainStack.Screen name="ChallengeResult" component={ChallengeResultScreen} />
+        <MainStack.Screen name="Achievements" component={AchievementsScreen} />
+      </MainStack.Navigator>
     </NavigationProvider>
   );
 };

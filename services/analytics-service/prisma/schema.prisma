@@ -1,0 +1,155 @@
+// Analytics Service Database Schema
+// For leaderboards, stats, challenges, and achievements
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Statistics
+model UserStats {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  xp             Int      @default(0)
+  level          Int      @default(1)
+  totalQuizzes   Int      @default(0)
+  totalPoints    Int      @default(0)
+  correctAnswers Int      @default(0)
+  totalAnswers   Int      @default(0)
+  winStreak      Int      @default(0)
+  bestStreak     Int      @default(0)
+  liveQuizWins   Int      @default(0)
+  liveQuizTotal  Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  attempts   QuizAttempt[]
+  challenges ChallengeParticipant[]
+
+  @@index([xp])
+  @@index([level])
+  @@index([userId])
+}
+
+// Quiz Attempt Record
+model QuizAttempt {
+  id          String   @id @default(cuid())
+  userId      String
+  quizId      String
+  score       Int
+  totalPoints Int
+  accuracy    Float
+  timeSpent   Int      // seconds
+  rank        Int?     // if multiplayer
+  xpEarned    Int
+  type        String   // 'solo' | 'live' | 'challenge'
+  sessionCode String?  // if live quiz
+  createdAt   DateTime @default(now())
+
+  userStats UserStats @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([quizId])
+  @@index([createdAt])
+}
+
+// Challenge System
+model Challenge {
+  id              String   @id @default(cuid())
+  challengerId    String
+  opponentId      String
+  quizId          String
+  status          String   // 'pending', 'active', 'completed', 'expired'
+  challengerScore Int?
+  opponentScore   Int?
+  winnerId        String?
+  createdAt       DateTime @default(now())
+  expiresAt       DateTime
+  completedAt     DateTime?
+
+  participants ChallengeParticipant[]
+
+  @@index([challengerId])
+  @@index([opponentId])
+  @@index([status])
+}
+
+model ChallengeParticipant {
+  id          String  @id @default(cuid())
+  challengeId String
+  userId      String
+  score       Int?
+  completedAt DateTime?
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  userStats UserStats @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([challengeId, userId])
+  @@index([userId])
+}
+
+// Achievements
+model Achievement {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String
+  icon        String
+  xpReward    Int
+  category    String   // 'quiz', 'streak', 'competition', 'social'
+  tier        String   // 'bronze', 'silver', 'gold', 'platinum'
+  createdAt   DateTime @default(now())
+
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  progress      Int      @default(0) // for progressive achievements
+  completed     Boolean  @default(false)
+  unlockedAt    DateTime?
+  createdAt     DateTime @default(now())
+
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@index([completed])
+}
+
+// Learning Streaks
+model Streak {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  currentStreak Int      @default(0)
+  longestStreak Int      @default(0)
+  lastQuizDate  DateTime?
+  freezesUsed   Int      @default(0)
+  freezesTotal  Int      @default(3)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([currentStreak])
+}
+
+// Weekly Leaderboard Snapshot (for historical data)
+model WeeklyLeaderboard {
+  id        String   @id @default(cuid())
+  userId    String
+  weekStart DateTime
+  weekEnd   DateTime
+  xpEarned  Int
+  rank      Int
+  createdAt DateTime @default(now())
+
+  @@unique([userId, weekStart])
+  @@index([weekStart])
+  @@index([rank])
+}

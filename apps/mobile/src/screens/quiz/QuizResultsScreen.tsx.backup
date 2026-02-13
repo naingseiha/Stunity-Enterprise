@@ -1,10 +1,9 @@
 /**
  * Quiz Results Screen - Show Quiz Performance
  * Display score, correct/incorrect answers, and performance summary
- * Integrated with XP, streaks, and achievements
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,17 +12,12 @@ import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import ConfettiCannon from 'react-native-confetti-cannon';
-import { statsAPI } from '@/services/stats';
-import { AchievementUnlockModal } from '@/components/achievements';
-import { XPGainAnimation, LevelUpModal, PerformanceBreakdown } from '@/components/quiz';
 
 interface QuizQuestion {
   id: string;
@@ -65,17 +59,6 @@ export function QuizResultsScreen() {
     pointsEarned?: number;
     results?: any[];
   };
-
-  // State for XP/Achievement/Streak features
-  const [xpGained, setXpGained] = useState(0);
-  const [leveledUp, setLeveledUp] = useState(false);
-  const [newLevel, setNewLevel] = useState(0);
-  const [achievementModal, setAchievementModal] = useState(false);
-  const [unlockedAchievement, setUnlockedAchievement] = useState<any>(null);
-  const [streakIncreased, setStreakIncreased] = useState(false);
-  const [currentStreak, setCurrentStreak] = useState(0);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const confettiRef = React.useRef<any>(null);
 
   // Use API results if available, otherwise calculate locally
   let scorePercentage: number;
@@ -130,68 +113,7 @@ export function QuizResultsScreen() {
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     }
-
-    // Record quiz attempt and update stats
-    recordQuizAttempt();
   }, []);
-
-  const recordQuizAttempt = async () => {
-    try {
-      // 1. Record attempt (awards XP)
-      const attemptResult = await statsAPI.recordAttempt({
-        quizId: quiz.id,
-        score: correctCount,
-        totalQuestions: quiz.questions.length,
-        timeSpent: 0, // TODO: Track time in TakeQuizScreen
-        type: 'solo',
-      });
-
-      setXpGained(attemptResult.xpGained);
-
-      // Check if leveled up
-      if (attemptResult.leveledUp) {
-        setLeveledUp(true);
-        setNewLevel(attemptResult.newLevel);
-      }
-
-      // 2. Update streak
-      const streakResult = await statsAPI.updateStreak();
-      
-      if (streakResult.streakIncreased) {
-        setStreakIncreased(true);
-        setCurrentStreak(streakResult.streak.currentStreak);
-      }
-
-      // Check for streak achievement
-      if (streakResult.achievementUnlocked) {
-        const achievements = await statsAPI.getAchievements();
-        const unlocked = achievements.find(a => a.id === streakResult.achievementUnlocked);
-        if (unlocked) {
-          setUnlockedAchievement(unlocked);
-          setAchievementModal(true);
-        }
-      }
-
-      // 3. Check for other achievements
-      const newAchievements = await statsAPI.checkAchievements();
-      
-      if (newAchievements.length > 0 && !streakResult.achievementUnlocked) {
-        setUnlockedAchievement(newAchievements[0].achievement);
-        setAchievementModal(true);
-      }
-
-      // 4. Show confetti for perfect score
-      if (scorePercentage === 100) {
-        setShowConfetti(true);
-        setTimeout(() => {
-          confettiRef.current?.start();
-        }, 500);
-      }
-    } catch (error) {
-      console.error('Failed to record quiz attempt:', error);
-      // Don't show error to user, let them see results anyway
-    }
-  };
 
   const getAnswerDisplay = (question: QuizQuestion, answerIndex: string) => {
     if (question.type === 'MULTIPLE_CHOICE') {
@@ -275,93 +197,6 @@ export function QuizResultsScreen() {
               <Text style={styles.statLabel}>Skipped</Text>
             </View>
           </View>
-        </Animated.View>
-
-        {/* XP Gain Animation */}
-        {xpGained > 0 && (
-          <Animated.View entering={FadeInDown.duration(500).delay(500)}>
-            <XPGainAnimation xpGained={xpGained} delay={500} />
-          </Animated.View>
-        )}
-
-        {/* Streak Notification */}
-        {streakIncreased && (
-          <Animated.View entering={FadeInDown.duration(500).delay(700)} style={styles.streakCard}>
-            <LinearGradient
-              colors={['#ef4444', '#dc2626']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.streakGradient}
-            >
-              <Text style={styles.streakEmoji}>🔥</Text>
-              <View style={styles.streakContent}>
-                <Text style={styles.streakTitle}>{currentStreak}-Day Streak!</Text>
-                <Text style={styles.streakSubtitle}>Keep it up! Complete a quiz every day.</Text>
-              </View>
-            </LinearGradient>
-          </Animated.View>
-        )}
-
-        {/* Performance Breakdown */}
-        <Animated.View entering={FadeInDown.duration(500).delay(900)}>
-          <PerformanceBreakdown
-            correctCount={correctCount}
-            totalQuestions={quiz.questions.length}
-            accuracy={scorePercentage}
-          />
-        </Animated.View>
-
-        {/* Action Buttons */}
-        <Animated.View entering={FadeInDown.duration(500).delay(1100)} style={styles.actionsCard}>
-          <Text style={styles.actionsTitle}>What's Next?</Text>
-          
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => navigation.navigate('Leaderboard' as never)}
-          >
-            <LinearGradient
-              colors={['#667eea', '#764ba2']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.actionGradient}
-            >
-              <Ionicons name="trophy" size={24} color="#fff" />
-              <Text style={styles.actionButtonText}>View Leaderboard</Text>
-              <Ionicons name="chevron-forward" size={20} color="#fff" />
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => navigation.navigate('Stats' as never)}
-          >
-            <LinearGradient
-              colors={['#10b981', '#059669']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.actionGradient}
-            >
-              <Ionicons name="stats-chart" size={24} color="#fff" />
-              <Text style={styles.actionButtonText}>My Stats</Text>
-              <Ionicons name="chevron-forward" size={20} color="#fff" />
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => navigation.navigate('Achievements' as never)}
-          >
-            <LinearGradient
-              colors={['#f59e0b', '#d97706']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.actionGradient}
-            >
-              <Ionicons name="medal" size={24} color="#fff" />
-              <Text style={styles.actionButtonText}>Achievements</Text>
-              <Ionicons name="chevron-forward" size={20} color="#fff" />
-            </LinearGradient>
-          </TouchableOpacity>
         </Animated.View>
 
         {/* Questions Review */}
@@ -472,40 +307,6 @@ export function QuizResultsScreen() {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-
-      {/* Confetti for Perfect Score */}
-      {showConfetti && (
-        <ConfettiCannon
-          ref={confettiRef}
-          count={200}
-          origin={{ x: -10, y: 0 }}
-          autoStart={false}
-          fadeOut
-        />
-      )}
-
-      {/* Level Up Modal */}
-      <LevelUpModal
-        visible={leveledUp}
-        newLevel={newLevel}
-        onClose={() => {
-          setLeveledUp(false);
-          // Show achievement modal if there is one
-          if (unlockedAchievement && !achievementModal) {
-            setAchievementModal(true);
-          }
-        }}
-      />
-
-      {/* Achievement Unlock Modal */}
-      <AchievementUnlockModal
-        visible={achievementModal}
-        achievement={unlockedAchievement}
-        onClose={() => {
-          setAchievementModal(false);
-          setUnlockedAchievement(null);
-        }}
-      />
     </SafeAreaView>
   );
 }
@@ -768,75 +569,5 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 40,
-  },
-  streakCard: {
-    marginHorizontal: 20,
-    marginVertical: 16,
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#ef4444',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  streakGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    gap: 16,
-  },
-  streakEmoji: {
-    fontSize: 48,
-  },
-  streakContent: {
-    flex: 1,
-  },
-  streakTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  streakSubtitle: {
-    fontSize: 14,
-    color: '#fff',
-    opacity: 0.9,
-  },
-  actionsCard: {
-    marginHorizontal: 20,
-    marginTop: 16,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  actionsTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 16,
-  },
-  actionButton: {
-    marginBottom: 12,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  actionGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    gap: 12,
-  },
-  actionButtonText: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
   },
 });

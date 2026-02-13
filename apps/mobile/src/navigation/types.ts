@@ -32,6 +32,24 @@ export type RootStackParamList = {
   ImageViewer: { images: string[]; initialIndex?: number };
 };
 
+// Main Stack (for screens outside tabs)
+export type MainStackParamList = {
+  MainTabs: NavigatorScreenParams<MainTabParamList>;
+  TakeQuiz: { quiz: any };
+  QuizResults: { quiz: any; score: number; passed: boolean; pointsEarned: number; results: any; answers: any[] };
+  LiveQuizJoin: undefined;
+  LiveQuizHost: { quizId: string };
+  LiveQuizLobby: { sessionCode: string; participantId: string; isHost: boolean };
+  LiveQuizPlay: { sessionCode: string; participantId: string; isHost: boolean };
+  LiveQuizLeaderboard: { sessionCode: string; participantId: string; isHost: boolean };
+  LiveQuizPodium: { sessionCode: string };
+  Stats: undefined;
+  Leaderboard: undefined;
+  Challenges: undefined;
+  ChallengeResult: { challenge: any };
+  Achievements: undefined;
+};
+
 // Auth Stack
 export type AuthStackParamList = {
   Welcome: undefined;
@@ -66,8 +84,6 @@ export type FeedStackParamList = {
   ClubDetail: { clubId: string };
   Events: undefined;
   EventDetail: { eventId: string };
-  TakeQuiz: { quiz: any };
-  QuizResults: { quiz: any; score: number; passed: boolean; pointsEarned: number; results: any[] };
 };
 
 // Learn Stack
