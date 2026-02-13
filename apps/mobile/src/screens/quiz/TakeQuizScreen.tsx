@@ -19,6 +19,8 @@ import {
   Alert,
   Animated as RNAnimated,
   Dimensions,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -206,16 +208,22 @@ export function TakeQuizScreen() {
   // Render Review Screen
   if (showReviewScreen) {
     return (
-      <View style={styles.container}>
-        {/* Review Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => setShowReviewScreen(false)} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#111827" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Review Your Answers</Text>
-        </View>
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="dark-content" />
+        <View style={styles.container}>
+          {/* Review Header */}
+          <View style={styles.header}>
+            <TouchableOpacity 
+              onPress={() => setShowReviewScreen(false)} 
+              style={styles.backButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="arrow-back" size={28} color="#111827" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Review Your Answers</Text>
+          </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Summary Card */}
           <View style={styles.reviewSummary}>
             <Text style={styles.reviewTitle}>Submission Summary</Text>
@@ -318,44 +326,51 @@ export function TakeQuizScreen() {
             <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
-      </View>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#111827" />
-        </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>{quiz.title}</Text>
-          {timeRemaining !== null && (
-            <View style={[styles.timer, timeRemaining < 60 && styles.timerWarning]}>
-              <Ionicons 
-                name="time-outline" 
-                size={16} 
-                color={timeRemaining < 60 ? '#EF4444' : '#6366F1'} 
-              />
-              <Text style={[styles.timerText, timeRemaining < 60 && styles.timerTextWarning]}>
-                {formatTime(timeRemaining)}
-              </Text>
-            </View>
-          )}
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" />
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            onPress={() => navigation.goBack()} 
+            style={styles.backButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="arrow-back" size={28} color="#111827" />
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle} numberOfLines={1}>{quiz.title}</Text>
+            {timeRemaining !== null && (
+              <View style={[styles.timer, timeRemaining < 60 && styles.timerWarning]}>
+                <Ionicons 
+                  name="time-outline" 
+                  size={18} 
+                  color={timeRemaining < 60 ? '#EF4444' : '#6366F1'} 
+                />
+                <Text style={[styles.timerText, timeRemaining < 60 && styles.timerTextWarning]}>
+                  {formatTime(timeRemaining)}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
-      </View>
 
-      {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBarBg}>
-          <RNAnimated.View
-            style={[
-              styles.progressBarFill,
-              {
-                flex: progressAnim.interpolate({
-                  inputRange: [0, 100],
-                  outputRange: [0, 1],
+        {/* Progress Bar */}
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBarBg}>
+            <RNAnimated.View
+              style={[
+                styles.progressBarFill,
+                {
+                  flex: progressAnim.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: [0, 1],
                   extrapolate: 'clamp',
                 }),
               },
@@ -579,11 +594,16 @@ export function TakeQuizScreen() {
           </TouchableOpacity>
         )}
       </View>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
@@ -591,22 +611,25 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
   backButton: {
     marginRight: 12,
+    padding: 4,
   },
   headerContent: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 12,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: '#111827',
     flex: 1,
@@ -615,17 +638,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#EEF2FF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 20,
-    gap: 4,
+    gap: 6,
   },
   timerWarning: {
     backgroundColor: '#FEE2E2',
   },
   timerText: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
     color: '#6366F1',
   },
   timerTextWarning: {
