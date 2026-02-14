@@ -138,7 +138,7 @@ export const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
 const styles = StyleSheet.create({
   container: {
     marginVertical: 16,
-    marginHorizontal: 20,
+    marginHorizontal: 0,
   },
   title: {
     fontSize: 20,
