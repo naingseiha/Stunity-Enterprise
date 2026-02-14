@@ -581,51 +581,106 @@ export const PostCard: React.FC<PostCardProps> = ({
               </View>
             </View>
 
-            {/* Take Quiz Button */}
-            <TouchableOpacity
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                navigation.navigate('TakeQuiz', { 
-                  quiz: {
-                    id: post.quizData.id,  // ✅ Use quiz ID, not post ID
-                    title: post.title || 'Quiz',
-                    description: post.content,
-                    questions: post.quizData.questions,
-                    timeLimit: post.quizData.timeLimit,
-                    passingScore: post.quizData.passingScore,
-                    totalPoints: post.quizData.totalPoints,
-                  }
-                });
-              }}
-              style={styles.takeQuizButton}
-            >
-              <Ionicons name="play-circle" size={22} color="#EC4899" />
-              <Text style={styles.takeQuizButtonText}>Take Quiz Now</Text>
-              <Ionicons name="arrow-forward" size={18} color="#EC4899" />
-            </TouchableOpacity>
-
-            {/* Previous Attempt (if exists) */}
-            {post.quizData.userAttempt && (
-              <View style={styles.previousAttempt}>
-                <View style={styles.attemptIconBg}>
-                  <Ionicons 
-                    name={post.quizData.userAttempt.passed ? 'checkmark-circle' : 'close-circle'} 
-                    size={16} 
-                    color={post.quizData.userAttempt.passed ? '#10B981' : '#EF4444'} 
-                  />
-                </View>
-                <Text style={styles.attemptText}>
-                  Previous: {post.quizData.userAttempt.score}%
-                </Text>
-                <View style={[
-                  styles.attemptBadge,
-                  post.quizData.userAttempt.passed ? styles.passedBadge : styles.failedBadge
-                ]}>
-                  <Text style={styles.attemptBadgeText}>
-                    {post.quizData.userAttempt.passed ? 'Passed' : 'Try Again'}
+            {/* Action Buttons - Show different buttons based on attempt status */}
+            {post.quizData.userAttempt ? (
+              // User has attempted - show View Results + Retake
+              <View style={styles.quizActionButtons}>
+                {/* Previous Attempt Info */}
+                <View style={styles.attemptInfoBar}>
+                  <View style={styles.attemptIconBg}>
+                    <Ionicons 
+                      name={post.quizData.userAttempt.passed ? 'checkmark-circle' : 'close-circle'} 
+                      size={16} 
+                      color={post.quizData.userAttempt.passed ? '#10B981' : '#EF4444'} 
+                    />
+                  </View>
+                  <Text style={styles.attemptText}>
+                    Previous: {post.quizData.userAttempt.score}%
                   </Text>
+                  <View style={[
+                    styles.attemptBadge,
+                    post.quizData.userAttempt.passed ? styles.passedBadge : styles.failedBadge
+                  ]}>
+                    <Text style={styles.attemptBadgeText}>
+                      {post.quizData.userAttempt.passed ? 'Passed' : 'Not Passed'}
+                    </Text>
+                  </View>
                 </View>
+
+                {/* View Results Button */}
+                <TouchableOpacity
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    navigation.navigate('QuizResults', {
+                      quiz: {
+                        id: post.quizData.id,
+                        title: post.title || 'Quiz',
+                        description: post.content,
+                        questions: post.quizData.questions,
+                        timeLimit: post.quizData.timeLimit,
+                        passingScore: post.quizData.passingScore,
+                        totalPoints: post.quizData.totalPoints,
+                      },
+                      answers: post.quizData.userAttempt.answers || [],
+                      score: post.quizData.userAttempt.score,
+                      passed: post.quizData.userAttempt.passed,
+                      pointsEarned: post.quizData.userAttempt.pointsEarned || 0,
+                      results: post.quizData.userAttempt.results || [],
+                      viewMode: true,
+                      attemptId: post.quizData.userAttempt.id,
+                    });
+                  }}
+                  style={styles.viewResultsButton}
+                >
+                  <Ionicons name="eye-outline" size={20} color="#6366F1" />
+                  <Text style={styles.viewResultsButtonText}>View Results</Text>
+                </TouchableOpacity>
+
+                {/* Retake Quiz Button */}
+                <TouchableOpacity
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    navigation.navigate('TakeQuiz', { 
+                      quiz: {
+                        id: post.quizData.id,
+                        title: post.title || 'Quiz',
+                        description: post.content,
+                        questions: post.quizData.questions,
+                        timeLimit: post.quizData.timeLimit,
+                        passingScore: post.quizData.passingScore,
+                        totalPoints: post.quizData.totalPoints,
+                      }
+                    });
+                  }}
+                  style={styles.retakeQuizButton}
+                >
+                  <Ionicons name="refresh" size={20} color="#EC4899" />
+                  <Text style={styles.retakeQuizButtonText}>Retake Quiz</Text>
+                </TouchableOpacity>
               </View>
+            ) : (
+              // No attempt yet - show Take Quiz button
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  navigation.navigate('TakeQuiz', { 
+                    quiz: {
+                      id: post.quizData.id,
+                      title: post.title || 'Quiz',
+                      description: post.content,
+                      questions: post.quizData.questions,
+                      timeLimit: post.quizData.timeLimit,
+                      passingScore: post.quizData.passingScore,
+                      totalPoints: post.quizData.totalPoints,
+                    }
+                  });
+                }}
+                style={styles.takeQuizButton}
+              >
+                <Ionicons name="play-circle" size={22} color="#EC4899" />
+                <Text style={styles.takeQuizButtonText}>Take Quiz Now</Text>
+                <Ionicons name="arrow-forward" size={18} color="#EC4899" />
+              </TouchableOpacity>
             )}
           </LinearGradient>
         </View>
@@ -1376,6 +1431,48 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  quizActionButtons: {
+    gap: 10,
+  },
+  attemptInfoBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  viewResultsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EEF2FF',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  viewResultsButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#6366F1',
+  },
+  retakeQuizButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: '#EC4899',
+  },
+  retakeQuizButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#EC4899',
   },
   // Club announcement banner styles
   clubBanner: {
