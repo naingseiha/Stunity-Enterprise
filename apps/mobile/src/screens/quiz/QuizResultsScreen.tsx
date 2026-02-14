@@ -320,19 +320,16 @@ export function QuizResultsScreen() {
         )}
 
         {/* Performance Breakdown */}
-        {!viewMode && (
-          <Animated.View entering={FadeInDown.duration(500).delay(400)}>
-            <PerformanceBreakdown
-              correctCount={correctCount}
-              totalQuestions={quiz.questions.length}
-              accuracy={scorePercentage}
-            />
-          </Animated.View>
-        )}
+        <Animated.View entering={FadeInDown.duration(500).delay(400)}>
+          <PerformanceBreakdown
+            correctCount={correctCount}
+            totalQuestions={quiz.questions.length}
+            accuracy={scorePercentage}
+          />
+        </Animated.View>
 
         {/* Analytics Navigation - Colorful Flat Cards */}
-        {!viewMode && (
-          <Animated.View entering={FadeInDown.duration(500).delay(500)} style={styles.analyticsSection}>
+        <Animated.View entering={FadeInDown.duration(500).delay(500)} style={styles.analyticsSection}>
             <Text style={styles.analyticsSectionTitle}>Explore More</Text>
             
             <TouchableOpacity 
@@ -386,7 +383,6 @@ export function QuizResultsScreen() {
               <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
             </TouchableOpacity>
           </Animated.View>
-        )}
 
         {/* Action Buttons */}
         <Animated.View entering={FadeInUp.duration(500).delay(600)} style={styles.actionsSection}>
