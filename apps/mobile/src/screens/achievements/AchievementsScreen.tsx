@@ -15,15 +15,20 @@ import {
   Dimensions,
   TouchableOpacity,
   Animated,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { statsAPI, Achievement, UserAchievement } from '@/services/stats';
+import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
 
 export const AchievementsScreen: React.FC = () => {
+  const navigation = useNavigation();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -155,7 +160,7 @@ export const AchievementsScreen: React.FC = () => {
           end={{ x: 1, y: 1 }}
           style={styles.headerGradient}
         >
-          <Text style={styles.headerTitle}>🏆 Achievements</Text>
+          <Text style={styles.headerIcon}>🏆</Text>
           <Text style={styles.headerSubtitle}>
             {unlockedCount} of {totalCount} unlocked
           </Text>
@@ -193,16 +198,35 @@ export const AchievementsScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" />
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Loading achievements...</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      
+      {/* Fixed Header with Back Button */}
+      <View style={styles.topHeader}>
+        <TouchableOpacity 
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.goBack();
+          }}
+          style={styles.backButton}
+          hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+        >
+          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+        <Text style={styles.topHeaderTitle}>Achievements</Text>
+        <View style={styles.placeholder} />
+      </View>
+
       <FlatList
         data={achievements}
         renderItem={renderAchievement}
@@ -215,14 +239,39 @@ export const AchievementsScreen: React.FC = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#667eea" />
         }
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#667eea',
+  },
+  // Top Fixed Header
+  topHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: 'transparent',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  topHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  placeholder: {
+    width: 40,
   },
   loadingContainer: {
     flex: 1,
@@ -231,7 +280,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#FFFFFF',
   },
   listContent: {
     paddingBottom: 24,
@@ -241,13 +290,13 @@ const styles = StyleSheet.create({
   },
   headerGradient: {
     padding: 24,
+    paddingTop: 12,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
   },
-  headerTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
+  headerIcon: {
+    fontSize: 48,
+    textAlign: 'center',
     marginBottom: 8,
   },
   headerSubtitle: {
@@ -255,6 +304,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     opacity: 0.9,
     marginBottom: 16,
+    textAlign: 'center',
   },
   progressContainer: {
     flexDirection: 'row',
