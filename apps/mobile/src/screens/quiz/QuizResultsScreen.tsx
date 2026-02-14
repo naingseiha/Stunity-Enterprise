@@ -319,8 +319,77 @@ export function QuizResultsScreen() {
           </Animated.View>
         )}
 
+        {/* Performance Breakdown */}
+        {!viewMode && (
+          <Animated.View entering={FadeInDown.duration(500).delay(400)}>
+            <PerformanceBreakdown
+              correctCount={correctCount}
+              totalQuestions={quiz.questions.length}
+              accuracy={scorePercentage}
+            />
+          </Animated.View>
+        )}
+
+        {/* Analytics Navigation - Colorful Flat Cards */}
+        {!viewMode && (
+          <Animated.View entering={FadeInDown.duration(500).delay(500)} style={styles.analyticsSection}>
+            <Text style={styles.analyticsSectionTitle}>Explore More</Text>
+            
+            <TouchableOpacity 
+              style={styles.analyticsCard}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                navigation.navigate('Leaderboard' as never);
+              }}
+            >
+              <View style={[styles.analyticsIconBg, { backgroundColor: '#EDE9FE' }]}>
+                <Ionicons name="trophy" size={24} color="#8B5CF6" />
+              </View>
+              <View style={styles.analyticsInfo}>
+                <Text style={styles.analyticsTitle}>Leaderboard</Text>
+                <Text style={styles.analyticsSubtitle}>See how you rank</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.analyticsCard}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                navigation.navigate('Stats' as never);
+              }}
+            >
+              <View style={[styles.analyticsIconBg, { backgroundColor: '#D1FAE5' }]}>
+                <Ionicons name="stats-chart" size={24} color="#10B981" />
+              </View>
+              <View style={styles.analyticsInfo}>
+                <Text style={styles.analyticsTitle}>My Stats</Text>
+                <Text style={styles.analyticsSubtitle}>Track your progress</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.analyticsCard}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                navigation.navigate('Achievements' as never);
+              }}
+            >
+              <View style={[styles.analyticsIconBg, { backgroundColor: '#FEF3C7' }]}>
+                <Ionicons name="medal" size={24} color="#F59E0B" />
+              </View>
+              <View style={styles.analyticsInfo}>
+                <Text style={styles.analyticsTitle}>Achievements</Text>
+                <Text style={styles.analyticsSubtitle}>Unlock rewards</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            </TouchableOpacity>
+          </Animated.View>
+        )}
+
         {/* Action Buttons */}
-        <Animated.View entering={FadeInUp.duration(500).delay(500)} style={styles.actionsSection}>
+        <Animated.View entering={FadeInUp.duration(500).delay(600)} style={styles.actionsSection}>
           {!viewMode && (
             <TouchableOpacity 
               style={[styles.actionButton, styles.primaryButton]}
@@ -631,6 +700,51 @@ const styles = StyleSheet.create({
   rewardLabel: {
     fontSize: 13,
     fontWeight: '600',
+    color: '#6B7280',
+  },
+  // Analytics Section - Colorful Flat Cards
+  analyticsSection: {
+    gap: 12,
+    marginBottom: 24,
+  },
+  analyticsSectionTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  analyticsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 16,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  analyticsIconBg: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  analyticsInfo: {
+    flex: 1,
+  },
+  analyticsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  analyticsSubtitle: {
+    fontSize: 13,
+    fontWeight: '500',
     color: '#6B7280',
   },
   // Actions
