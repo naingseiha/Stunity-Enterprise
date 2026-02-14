@@ -75,10 +75,11 @@ const createAnalyticsApi = (): AxiosInstance => {
         }
       }
 
-      // Handle network errors
-      if (error.code === 'ERR_NETWORK' && networkService.getStatus() === false) {
+      // Handle network errors - silently fail for analytics
+      if (error.code === 'ERR_NETWORK') {
         if (__DEV__) {
-          console.log(`📥 [ANALYTICS] Network error - request queued`);
+          console.error(`❌ [ANALYTICS] ${error.config?.method?.toUpperCase()} ${error.config?.url} - ERR_NETWORK`);
+          console.warn('⚠️  [ANALYTICS] Service not available - features disabled');
         }
       }
 

@@ -55,9 +55,13 @@ export const submitQuiz = async (
   answers: QuizAnswer[]
 ): Promise<QuizSubmissionResult> => {
   try {
+    console.log('📤 [QUIZ] Submitting quiz:', { quizId, answersCount: answers.length, answers });
+    
     const response = await feedApi.post(`/quizzes/${quizId}/submit`, {
       answers,
     });
+
+    console.log('📥 [QUIZ] Response received:', response.data);
 
     if (response.data.success) {
       return response.data.data;
@@ -65,7 +69,8 @@ export const submitQuiz = async (
     
     throw new Error(response.data.error || 'Failed to submit quiz');
   } catch (error: any) {
-    console.error('Submit quiz error:', error);
+    console.error('❌ [QUIZ] Submit quiz error:', error);
+    console.error('❌ [QUIZ] Error details:', error.response?.data);
     throw error;
   }
 };

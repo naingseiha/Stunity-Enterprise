@@ -140,8 +140,8 @@ export function QuizResultsScreen() {
       // 1. Record attempt (awards XP)
       const attemptResult = await statsAPI.recordAttempt({
         quizId: quiz.id,
-        score: correctCount,
-        totalQuestions: quiz.questions.length,
+        score: pointsEarned || 0, // Use actual points earned
+        totalPoints: quiz.totalPoints || quiz.questions.reduce((sum, q) => sum + (q.points || 10), 0), // Calculate total points
         timeSpent: 0, // TODO: Track time in TakeQuizScreen
         type: 'solo',
       });
@@ -187,9 +187,19 @@ export function QuizResultsScreen() {
           confettiRef.current?.start();
         }, 500);
       }
-    } catch (error) {
-      console.error('Failed to record quiz attempt:', error);
+    } catch (error: any) {
+      // Analytics service not available - this is OK, just log it
+      if (__DEV__) {
+        console.warn('⚠️  Analytics service unavailable - XP/achievements disabled');
+      }
       // Don't show error to user, let them see results anyway
+      // Still show confetti for perfect score
+      if (scorePercentage === 100) {
+        setShowConfetti(true);
+        setTimeout(() => {
+          confettiRef.current?.start();
+        }, 500);
+      }
     }
   };
 

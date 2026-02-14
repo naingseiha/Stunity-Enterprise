@@ -206,8 +206,12 @@ export function TakeQuizScreen() {
       
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
+      console.log('📤 [QUIZ] Submitting quiz with answers:', answers);
+
       // Submit to API
       const response = await quizService.submitQuiz(quiz.id, answers);
+
+      console.log('✅ [QUIZ] Submission successful:', response);
 
       // Small delay for better UX
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -223,8 +227,14 @@ export function TakeQuizScreen() {
         attemptId: response.attemptId,
       });
     } catch (error: any) {
-      console.error('Quiz submission error:', error);
-      Alert.alert('Error', error.message || 'Failed to submit quiz. Please try again.');
+      console.error('❌ [QUIZ] Quiz submission error:', error);
+      console.error('❌ [QUIZ] Error response:', error.response?.data);
+      
+      const errorMessage = error.response?.data?.error 
+        || error.message 
+        || 'Failed to submit quiz. Please try again.';
+      
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsSubmitting(false);
       celebrationAnim.setValue(0);

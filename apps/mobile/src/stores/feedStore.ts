@@ -1092,7 +1092,10 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     }));
     
     try {
+      console.log('📊 [ANALYTICS] Fetching analytics for post:', postId);
       const response = await feedApi.get(`/posts/${postId}/analytics`);
+      
+      console.log('📊 [ANALYTICS] Response received:', response.data);
       
       if (response.data.success && response.data.analytics) {
         const analytics = response.data.analytics as PostAnalytics;
@@ -1110,8 +1113,9 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       }));
       
       return null;
-    } catch (error) {
-      console.error('Failed to fetch analytics:', error);
+    } catch (error: any) {
+      console.error('❌ [ANALYTICS] Failed to fetch analytics:', error);
+      console.error('❌ [ANALYTICS] Error details:', error.response?.data);
       
       set((state) => ({
         isLoadingAnalytics: { ...state.isLoadingAnalytics, [postId]: false },
