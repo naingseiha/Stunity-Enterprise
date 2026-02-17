@@ -1,0 +1,139 @@
+
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { Platform, Alert } from 'react-native';
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
+import { registerDeviceToken } from '@/api/notifications';
+import { useAuthStore } from '@/stores';
+
+// Configure how notifications behave when the app is in foreground
+Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+    }),
+});
+
+interface NotificationContextType {
+    expoPushToken: string | undefined;
+    notification: Notifications.Notification | undefined;
+    requestPermissions: () => Promise<boolean>;
+}
+
+const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+
+export const useNotifications = () => {
+    const context = useContext(NotificationContext);
+    if (!context) {
+        throw new Error('useNotifications must be used within a NotificationProvider');
+    }
+    return context;
+};
+
+export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [expoPushToken, setExpoPushToken] = useState<string | undefined>(undefined);
+    const [notification, setNotification] = useState<Notifications.Notification | undefined>(undefined);
+    const notificationListener = useRef<Notifications.Subscription>();
+    const responseListener = useRef<Notifications.Subscription>();
+
+    const { user, isAuthenticated } = useAuthStore();
+
+    const registerForPushNotificationsAsync = async () => {
+        let token;
+
+        if (Platform.OS === 'android') {
+            await Notifications.setNotificationChannelAsync('default', {
+                name: 'default',
+                importance: Notifications.AndroidImportance.MAX,
+                vibrationPattern: [0, 250, 250, 250],
+                lightColor: '#FF231F7C',
+            });
+        }
+
+        if (Device.isDevice) {
+            const { status: existingStatus } = await Notifications.getPermissionsAsync();
+            let finalStatus = existingStatus;
+
+            if (existingStatus !== 'granted') {
+                const { status } = await Notifications.requestPermissionsAsync();
+                finalStatus = status;
+            }
+
+            if (finalStatus !== 'granted') {
+                console.log('Failed to get push token for push notification!');
+                return;
+            }
+
+            try {
+                const projectId = Constants.expoConfig?.extra?.eas?.projectId || Constants.easConfig?.projectId;
+                token = (await Notifications.getExpoPushTokenAsync({
+                    projectId,
+                })).data;
+                console.log('Expo Push Token:', token);
+            } catch (e) {
+                console.error('Error getting expo push token:', e);
+            }
+        } else {
+            console.log('Must use physical device for Push Notifications');
+        }
+
+        return token;
+    };
+
+    const requestPermissions = async () => {
+        const token = await registerForPushNotificationsAsync();
+        setExpoPushToken(token);
+        return !!token;
+    };
+
+    useEffect(() => {
+        notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+            setNotification(notification);
+        });
+
+        responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+            console.log('Notification response received:', response);
+        });
+
+        return () => {
+            if (notificationListener.current) {
+                notificationListener.current.remove();
+            }
+            if (responseListener.current) {
+                responseListener.current.remove();
+            }
+        };
+    }, []);
+
+    // Register token with backend when user logs in and we have a token
+    useEffect(() => {
+        const registerToken = async () => {
+            if (isAuthenticated && user?.id && expoPushToken) {
+                try {
+                    console.log('Registering device token with backend...');
+                    await registerDeviceToken(user.id, expoPushToken, Platform.OS);
+                    console.log('Device token registered successfully');
+                } catch (error) {
+                    console.error('Failed to register device token:', error);
+                }
+            }
+        };
+
+        registerToken();
+    }, [isAuthenticated, user?.id, expoPushToken]);
+
+    // Initial permission request
+    useEffect(() => {
+        registerForPushNotificationsAsync().then(token => setExpoPushToken(token));
+    }, []);
+
+    return (
+        <NotificationContext.Provider value={{ expoPushToken, notification, requestPermissions }}>
+            {children}
+        </NotificationContext.Provider>
+    );
+};

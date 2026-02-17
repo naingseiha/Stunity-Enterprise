@@ -17,10 +17,12 @@ import clubsRouter, { initClubsRoutes } from './clubs';
 import calendarRouter from './calendar';
 import coursesRouter from './courses';
 import storiesRouter from './stories';
+import mediaRouter from './routes/media.routes';
+import { authenticateToken, AuthRequest } from './middleware/auth';
 
 const app = express();
 const PORT = 3010; // Feed service always uses port 3010
-const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
+
 
 // ✅ Prisma with Neon-optimized settings
 const prisma = new PrismaClient({
@@ -97,46 +99,9 @@ const upload = multer({
   },
 });
 
-// Types
-interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    role: string;
-    schoolId: string;
-  };
-}
 
-// Auth Middleware
-const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
 
-    if (!token) {
-      console.log('❌ [AUTH] No token provided');
-      return res.status(401).json({ success: false, error: 'Access token required' });
-    }
 
-    console.log('🔐 [AUTH] Verifying token for:', req.method, req.path);
-    console.log('🔑 [AUTH] Token preview:', token.substring(0, 20) + '...');
-    
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    console.log('✅ [AUTH] Token verified for user:', decoded.userId);
-    
-    req.user = {
-      id: decoded.userId,
-      email: decoded.email,
-      role: decoded.role,
-      schoolId: decoded.schoolId,
-    };
-    next();
-  } catch (error: any) {
-    console.error('❌ [AUTH] Token verification failed:', error.message);
-    console.error('🔍 [AUTH] Error name:', error.name);
-    return res.status(403).json({ success: false, error: 'Invalid token' });
-  }
-};
 
 // ========================================
 // Health Check
@@ -156,11 +121,17 @@ app.get('/health', (req: Request, res: Response) => {
 // MEDIA UPLOAD ENDPOINTS
 // ========================================
 
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Media routes
+app.use('/', mediaRouter);
+
 // POST /upload - Upload media files to R2
 app.post('/upload', authenticateToken, upload.array('files', 10), async (req: AuthRequest, res: Response) => {
   try {
     const files = req.files as Express.Multer.File[];
-    
+
     if (!files || files.length === 0) {
       return res.status(400).json({ success: false, error: 'No files provided' });
     }
@@ -174,7 +145,7 @@ app.post('/upload', authenticateToken, upload.array('files', 10), async (req: Au
         size: file.size,
         type: file.mimetype,
       }));
-      
+
       return res.json({
         success: true,
         data: results,
@@ -211,13 +182,13 @@ app.post('/upload', authenticateToken, upload.array('files', 10), async (req: Au
 app.delete('/upload/:key(*)', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { key } = req.params;
-    
+
     if (!isR2Configured()) {
       return res.json({ success: true, message: 'R2 not configured' });
     }
 
     await deleteFromR2(key);
-    
+
     res.json({ success: true, message: 'File deleted successfully' });
   } catch (error: any) {
     console.error('Delete error:', error);
@@ -230,7 +201,7 @@ app.delete('/upload/:key(*)', authenticateToken, async (req: AuthRequest, res: R
 app.get('/media/*', async (req: Request, res: Response) => {
   try {
     const key = req.params[0]; // Everything after /media/
-    
+
     if (!key) {
       return res.status(400).json({ success: false, error: 'Missing media key' });
     }
@@ -242,8 +213,8 @@ app.get('/media/*', async (req: Request, res: Response) => {
     }
 
     // Otherwise return error - R2 not configured
-    res.status(503).json({ 
-      success: false, 
+    res.status(503).json({
+      success: false,
       error: 'Media storage not configured',
       message: 'Please configure R2_PUBLIC_URL environment variable'
     });
@@ -264,7 +235,7 @@ app.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => 
     const skip = (Number(page) - 1) * Number(limit);
 
     const where: any = {};
-    
+
     // Visibility filtering
     if (req.user!.schoolId) {
       // User has a school - show school posts + public posts
@@ -447,13 +418,13 @@ app.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) =>
   try {
     const { content, title, postType = 'ARTICLE', visibility = 'SCHOOL', mediaUrls = [], mediaDisplayMode = 'AUTO', pollOptions, quizData } = req.body;
 
-    console.log('📝 Creating post:', { 
-      postType, 
+    console.log('📝 Creating post:', {
+      postType,
       visibility,
       authorId: req.user!.id,
       authorSchoolId: req.user!.schoolId,
-      hasQuizData: !!quizData, 
-      quizDataKeys: quizData ? Object.keys(quizData) : [] 
+      hasQuizData: !!quizData,
+      quizDataKeys: quizData ? Object.keys(quizData) : []
     });
 
     if (!content || content.trim().length === 0) {
@@ -695,9 +666,9 @@ app.post('/posts/:id/value', authenticateToken, async (req: AuthRequest, res: Re
 
     // Validate ratings
     if (!accuracy || !helpfulness || !clarity || !depth) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'All rating dimensions required (accuracy, helpfulness, clarity, depth)' 
+      return res.status(400).json({
+        success: false,
+        error: 'All rating dimensions required (accuracy, helpfulness, clarity, depth)'
       });
     }
 
@@ -727,9 +698,9 @@ app.post('/posts/:id/value', authenticateToken, async (req: AuthRequest, res: Re
 
     // TODO: Store in EducationalValue table when schema is updated
     // For now, we just acknowledge the submission
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       message: 'Educational value rating submitted',
       averageRating: averageRating.toFixed(2),
     });
@@ -906,7 +877,7 @@ app.post('/posts/:id/vote', authenticateToken, async (req: AuthRequest, res: Res
         // Same option - no change needed
         return res.json({ success: true, message: 'Already voted for this option', userVotedOptionId: optionId });
       }
-      
+
       if (!post.pollAllowMultiple) {
         // Change vote - delete old vote and create new one
         await prisma.pollVote.delete({
@@ -1210,7 +1181,7 @@ app.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, res:
     userId: req.user?.id,
     answersCount: req.body.answers?.length,
   });
-  
+
   try {
     const quizId = req.params.id;
     const userId = req.user!.id;
@@ -1222,7 +1193,7 @@ app.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, res:
     }
 
     console.log('🔍 [QUIZ SUBMIT] Looking up quiz:', quizId);
-    
+
     // Fetch quiz with questions
     const quiz = await prisma.quiz.findUnique({
       where: { id: quizId },
@@ -1233,12 +1204,12 @@ app.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, res:
       console.log('❌ [QUIZ SUBMIT] Quiz not found:', quizId);
       return res.status(404).json({ success: false, error: 'Quiz not found' });
     }
-    
+
     console.log('✅ [QUIZ SUBMIT] Quiz found:', { id: quiz.id, postId: quiz.postId });
 
     // Parse questions from JSON
     const questions = quiz.questions as any[];
-    
+
     // Calculate score
     let pointsEarned = 0;
     const answerResults = answers.map((userAnswer: any) => {
@@ -1248,14 +1219,14 @@ app.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, res:
       }
 
       let isCorrect = false;
-      
+
       // Check answer based on question type
       if (question.type === 'MULTIPLE_CHOICE') {
         // Handle both string and number formats
         const userAnswerStr = String(userAnswer.answer);
         const correctAnswerStr = String(question.correctAnswer);
         isCorrect = userAnswerStr === correctAnswerStr;
-        
+
         console.log('🔍 [QUIZ] MC Question:', {
           questionId: question.id,
           userAnswer: userAnswer.answer,
@@ -1334,7 +1305,7 @@ app.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, res:
 app.get('/quizzes/:id/attempts', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const quizId = req.params.id;
-    
+
     // Get quiz and check if user is the author
     const quiz = await prisma.quiz.findUnique({
       where: { id: quizId },
@@ -1369,8 +1340,8 @@ app.get('/quizzes/:id/attempts', authenticateToken, async (req: AuthRequest, res
     // Calculate statistics
     const totalAttempts = attempts.length;
     const passedAttempts = attempts.filter(a => a.passed).length;
-    const avgScore = totalAttempts > 0 
-      ? attempts.reduce((sum, a) => sum + a.score, 0) / totalAttempts 
+    const avgScore = totalAttempts > 0
+      ? attempts.reduce((sum, a) => sum + a.score, 0) / totalAttempts
       : 0;
 
     res.json({
@@ -1544,7 +1515,7 @@ app.get('/posts/:id/analytics', authenticateToken, async (req: AuthRequest, res:
     const totalViews = post.views.length;
     const uniqueViewers = new Set(post.views.filter(v => v.userId).map(v => v.userId)).size;
     const avgDuration = post.views.filter(v => v.duration).reduce((sum, v) => sum + (v.duration || 0), 0) / (post.views.filter(v => v.duration).length || 1);
-    
+
     const views24h = post.views.filter(v => new Date(v.viewedAt) >= last24h).length;
     const views7d = post.views.filter(v => new Date(v.viewedAt) >= last7d).length;
     const views30d = post.views.filter(v => new Date(v.viewedAt) >= last30d).length;
@@ -1553,7 +1524,7 @@ app.get('/posts/:id/analytics', authenticateToken, async (req: AuthRequest, res:
     const comments24h = post.comments.filter(c => new Date(c.createdAt) >= last24h).length;
 
     // Engagement rate: (likes + comments + bookmarks) / views * 100
-    const engagementRate = totalViews > 0 
+    const engagementRate = totalViews > 0
       ? ((post.likes.length + post.comments.length + post.bookmarks.length) / totalViews * 100).toFixed(2)
       : 0;
 
@@ -1644,7 +1615,7 @@ app.get('/analytics/my-insights', authenticateToken, async (req: AuthRequest, re
         views: p.views.length,
         likes: p.likes.length,
         comments: p.comments.length,
-        engagement: p.views.length > 0 
+        engagement: p.views.length > 0
           ? ((p.likes.length + p.comments.length) / p.views.length * 100).toFixed(1)
           : 0,
         createdAt: p.createdAt,
@@ -1659,7 +1630,7 @@ app.get('/analytics/my-insights', authenticateToken, async (req: AuthRequest, re
     });
 
     // Average engagement rate
-    const avgEngagement = totalViews > 0 
+    const avgEngagement = totalViews > 0
       ? ((totalLikes + totalComments) / totalViews * 100).toFixed(2)
       : 0;
 
@@ -1822,7 +1793,7 @@ app.get('/users/search', authenticateToken, async (req: AuthRequest, res: Respon
   try {
     const { q, limit = 20 } = req.query;
     const currentUserId = req.user?.id;
-    
+
     if (!q || typeof q !== 'string') {
       return res.json({ success: true, users: [] });
     }
@@ -1860,7 +1831,7 @@ app.get('/users/:id/profile', authenticateToken, async (req: AuthRequest, res: R
   try {
     const { id } = req.params;
     const currentUserId = req.user?.id;
-    
+
     // Handle 'me' alias
     const userId = id === 'me' ? currentUserId : id;
     const isOwnProfile = userId === currentUserId;
@@ -1901,9 +1872,9 @@ app.get('/users/:id/profile', authenticateToken, async (req: AuthRequest, res: R
           select: { id: true, name: true, logo: true },
         },
         teacher: {
-          select: { 
-            id: true, 
-            position: true, 
+          select: {
+            id: true,
+            position: true,
             degree: true,
             hireDate: true,
             major1: true,
@@ -2106,7 +2077,7 @@ app.post('/users/me/profile-photo', authenticateToken, upload.single('file'), as
 
       // Delete old photo from R2
       if (oldUser?.profilePictureKey) {
-        await deleteFromR2(oldUser.profilePictureKey).catch(() => {});
+        await deleteFromR2(oldUser.profilePictureKey).catch(() => { });
       }
     } else {
       photoUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
@@ -2115,8 +2086,8 @@ app.post('/users/me/profile-photo', authenticateToken, upload.single('file'), as
 
     const updated = await prisma.user.update({
       where: { id: userId },
-      data: { 
-        profilePictureUrl: photoUrl, 
+      data: {
+        profilePictureUrl: photoUrl,
         profilePictureKey: photoKey,
         profileUpdatedAt: new Date(),
       },
@@ -2159,7 +2130,7 @@ app.post('/users/me/cover-photo', authenticateToken, upload.single('file'), asyn
 
       // Delete old cover from R2
       if (oldUser?.coverPhotoKey) {
-        await deleteFromR2(oldUser.coverPhotoKey).catch(() => {});
+        await deleteFromR2(oldUser.coverPhotoKey).catch(() => { });
       }
     } else {
       coverUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
@@ -2168,8 +2139,8 @@ app.post('/users/me/cover-photo', authenticateToken, upload.single('file'), asyn
 
     const updated = await prisma.user.update({
       where: { id: userId },
-      data: { 
-        coverPhotoUrl: coverUrl, 
+      data: {
+        coverPhotoUrl: coverUrl,
         coverPhotoKey: coverKey,
         profileUpdatedAt: new Date(),
       },
@@ -2195,7 +2166,7 @@ app.delete('/users/me/cover-photo', authenticateToken, async (req: AuthRequest, 
     });
 
     if (user?.coverPhotoKey && isR2Configured()) {
-      await deleteFromR2(user.coverPhotoKey).catch(() => {});
+      await deleteFromR2(user.coverPhotoKey).catch(() => { });
     }
 
     await prisma.user.update({
@@ -2885,7 +2856,7 @@ app.delete('/users/me/projects/:projectId', authenticateToken, async (req: AuthR
 
     // Delete media from R2 if exists
     if (project.mediaKeys && project.mediaKeys.length > 0 && isR2Configured()) {
-      await Promise.all(project.mediaKeys.map(key => deleteFromR2(key).catch(() => {})));
+      await Promise.all(project.mediaKeys.map(key => deleteFromR2(key).catch(() => { })));
     }
 
     await prisma.project.delete({ where: { id: projectId } });

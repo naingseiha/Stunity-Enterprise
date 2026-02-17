@@ -143,7 +143,7 @@ app.post('/live/create', authenticateToken, async (req: AuthRequest, res: Respon
     // TODO: Fetch quiz details from feed service via API call
     // For now, we'll create the session without quiz validation
     const quiz = { id: quizId }; // Stub for now
-    
+
     // Comment out quiz lookup since quiz model doesn't exist in analytics schema
     // const quiz = await prisma.quiz.findUnique({
     //   where: { id: quizId },
@@ -220,7 +220,7 @@ app.post('/live/:code/join', authenticateToken, async (req: AuthRequest, res: Re
       lastName: '',
       email: req.user!.email,
     };
-    
+
     // Comment out user lookup since user model doesn't exist in analytics schema
     // const user = await prisma.user.findUnique({
     //   where: { id: userId },
@@ -370,7 +370,7 @@ app.post('/live/:code/submit', authenticateToken, async (req: AuthRequest, res: 
 
     // Calculate time spent
     const timeSpent = (Date.now() - session.questionStartTime) / 1000;
-    
+
     // Check if answer is correct
     let isCorrect = false;
     if (currentQuestion.type === 'MULTIPLE_CHOICE') {
@@ -437,7 +437,7 @@ app.post('/live/:code/next', authenticateToken, async (req: AuthRequest, res: Re
     }
 
     const questions = session.quiz?.questions as any[];
-    
+
     // Check if quiz is complete
     if (session.currentQuestionIndex >= questions.length - 1) {
       session.status = 'completed';
@@ -537,7 +537,7 @@ app.get('/live/:code/results', authenticateToken, async (req: AuthRequest, res: 
         score: p.score,
         correctAnswers: p.answers.filter(a => a.correct).length,
         totalAnswers: p.answers.length,
-        accuracy: p.answers.length > 0 
+        accuracy: p.answers.length > 0
           ? Math.round((p.answers.filter(a => a.correct).length / p.answers.length) * 100)
           : 0,
       }))
@@ -561,7 +561,7 @@ app.get('/live/:code/results', authenticateToken, async (req: AuthRequest, res: 
           totalParticipants: session.participants.size,
           totalAnswers,
           correctAnswers,
-          averageAccuracy: totalAnswers > 0 
+          averageAccuracy: totalAnswers > 0
             ? Math.round((correctAnswers / totalAnswers) * 100)
             : 0,
         },
@@ -629,10 +629,10 @@ app.get('/stats/:userId', authenticateToken, async (req: AuthRequest, res: Respo
     }
 
     // Calculate additional metrics
-    const avgScore = stats.totalAnswers > 0 
-      ? (stats.correctAnswers / stats.totalAnswers) * 100 
+    const avgScore = stats.totalAnswers > 0
+      ? (stats.correctAnswers / stats.totalAnswers) * 100
       : 0;
-    
+
     const winRate = stats.liveQuizTotal > 0
       ? (stats.liveQuizWins / stats.liveQuizTotal) * 100
       : 0;
@@ -697,7 +697,7 @@ app.post('/stats/record-attempt', authenticateToken, async (req: AuthRequest, re
     });
 
     // Record attempt
-    await prisma.quizAttempt.create({
+    await prisma.quizAttemptRecord.create({
       data: {
         userId,
         quizId,
@@ -709,6 +709,7 @@ app.post('/stats/record-attempt', authenticateToken, async (req: AuthRequest, re
         xpEarned,
         type,
         sessionCode,
+        userStatsId: stats.id,
       },
     });
 
@@ -772,7 +773,7 @@ app.get('/leaderboard/weekly', authenticateToken, async (req: AuthRequest, res: 
     weekStart.setHours(0, 0, 0, 0);
 
     // Get attempts this week
-    const weeklyAttempts = await prisma.quizAttempt.groupBy({
+    const weeklyAttempts = await prisma.quizAttemptRecord.groupBy({
       by: ['userId'],
       where: {
         createdAt: { gte: weekStart },
@@ -818,7 +819,7 @@ app.post('/challenge/create', authenticateToken, async (req: AuthRequest, res: R
     // Create challenge (expires in 24 hours)
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    const challenge = await prisma.challenge.create({
+    const challenge = await prisma.quizChallenge.create({
       data: {
         challengerId,
         opponentId,
@@ -853,7 +854,7 @@ app.post('/challenge/:id/accept', authenticateToken, async (req: AuthRequest, re
     const userId = req.user!.id;
     const { id } = req.params;
 
-    const challenge = await prisma.challenge.findUnique({
+    const challenge = await prisma.quizChallenge.findUnique({
       where: { id },
     });
 
@@ -869,7 +870,7 @@ app.post('/challenge/:id/accept', authenticateToken, async (req: AuthRequest, re
       return res.status(400).json({ success: false, error: 'Challenge already accepted/completed' });
     }
 
-    const updated = await prisma.challenge.update({
+    const updated = await prisma.quizChallenge.update({
       where: { id },
       data: { status: 'active' },
     });
@@ -889,7 +890,7 @@ app.get('/challenge/my-challenges', authenticateToken, async (req: AuthRequest, 
   try {
     const userId = req.user!.id;
 
-    const challenges = await prisma.challenge.findMany({
+    const challenges = await prisma.quizChallenge.findMany({
       where: {
         OR: [
           { challengerId: userId },
@@ -919,7 +920,7 @@ app.post('/challenge/:id/submit', authenticateToken, async (req: AuthRequest, re
     const { id } = req.params;
     const { score } = req.body;
 
-    const challenge = await prisma.challenge.findUnique({
+    const challenge = await prisma.quizChallenge.findUnique({
       where: { id },
       include: { participants: true },
     });
@@ -942,30 +943,30 @@ app.post('/challenge/:id/submit', authenticateToken, async (req: AuthRequest, re
 
     // Update challenge scores
     if (challenge.challengerId === userId) {
-      await prisma.challenge.update({
+      await prisma.quizChallenge.update({
         where: { id },
         data: { challengerScore: score },
       });
     } else {
-      await prisma.challenge.update({
+      await prisma.quizChallenge.update({
         where: { id },
         data: { opponentScore: score },
       });
     }
 
     // Check if both completed
-    const updated = await prisma.challenge.findUnique({
+    const updated = await prisma.quizChallenge.findUnique({
       where: { id },
       include: { participants: true },
     });
 
     if (updated && updated.challengerScore !== null && updated.opponentScore !== null) {
       // Determine winner
-      const winnerId = updated.challengerScore > updated.opponentScore 
-        ? updated.challengerId 
+      const winnerId = updated.challengerScore > updated.opponentScore
+        ? updated.challengerId
         : updated.opponentId;
 
-      await prisma.challenge.update({
+      await prisma.quizChallenge.update({
         where: { id },
         data: {
           status: 'completed',
@@ -1039,13 +1040,13 @@ app.get('/streak/:userId', authenticateToken, async (req: AuthRequest, res: Resp
   try {
     const { userId } = req.params;
 
-    let streak = await prisma.streak.findUnique({
+    let streak = await prisma.learningStreak.findUnique({
       where: { userId },
     });
 
     // Create streak if doesn't exist
     if (!streak) {
-      streak = await prisma.streak.create({
+      streak = await prisma.learningStreak.create({
         data: {
           userId,
           currentStreak: 0,
@@ -1068,13 +1069,13 @@ app.post('/streak/update', authenticateToken, async (req: AuthRequest, res: Resp
   try {
     const userId = req.user!.id;
 
-    const streak = await prisma.streak.findUnique({
+    const streak = await prisma.learningStreak.findUnique({
       where: { userId },
     });
 
     if (!streak) {
       // Create new streak
-      const newStreak = await prisma.streak.create({
+      const newStreak = await prisma.learningStreak.create({
         data: {
           userId,
           currentStreak: 1,
@@ -1084,9 +1085,9 @@ app.post('/streak/update', authenticateToken, async (req: AuthRequest, res: Resp
         },
       });
 
-      return res.json({ 
-        success: true, 
-        streak: newStreak, 
+      return res.json({
+        success: true,
+        streak: newStreak,
         streakIncreased: true,
         achievementUnlocked: null,
       });
@@ -1094,7 +1095,7 @@ app.post('/streak/update', authenticateToken, async (req: AuthRequest, res: Resp
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const lastQuiz = streak.lastQuizDate ? new Date(streak.lastQuizDate) : null;
     if (lastQuiz) lastQuiz.setHours(0, 0, 0, 0);
 
@@ -1133,7 +1134,7 @@ app.post('/streak/update', authenticateToken, async (req: AuthRequest, res: Resp
     const newLongestStreak = Math.max(streak.longestStreak, newCurrentStreak);
 
     // Update streak
-    const updatedStreak = await prisma.streak.update({
+    const updatedStreak = await prisma.learningStreak.update({
       where: { userId },
       data: {
         currentStreak: newCurrentStreak,
@@ -1142,9 +1143,9 @@ app.post('/streak/update', authenticateToken, async (req: AuthRequest, res: Resp
       },
     });
 
-    res.json({ 
-      success: true, 
-      streak: updatedStreak, 
+    res.json({
+      success: true,
+      streak: updatedStreak,
       streakIncreased,
       achievementUnlocked,
     });
@@ -1159,18 +1160,18 @@ app.post('/streak/freeze', authenticateToken, async (req: AuthRequest, res: Resp
   try {
     const userId = req.user!.id;
 
-    const streak = await prisma.streak.findUnique({
+    const streak = await prisma.learningStreak.findUnique({
       where: { userId },
     });
 
     if (!streak || streak.freezesTotal <= 0) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'No freezes available' 
+      return res.status(400).json({
+        success: false,
+        error: 'No freezes available'
       });
     }
 
-    const updatedStreak = await prisma.streak.update({
+    const updatedStreak = await prisma.learningStreak.update({
       where: { userId },
       data: {
         freezesTotal: streak.freezesTotal - 1,
@@ -1189,7 +1190,7 @@ app.post('/streak/freeze', authenticateToken, async (req: AuthRequest, res: Resp
 app.get('/achievements', authenticateToken, async (_req: AuthRequest, res: Response) => {
   try {
     const achievements = await prisma.achievement.findMany({
-      orderBy: { category: 'asc' },
+      orderBy: { type: 'asc' },
     });
 
     res.json({ success: true, achievements });
@@ -1204,7 +1205,7 @@ app.get('/achievements/:userId', authenticateToken, async (req: AuthRequest, res
   try {
     const { userId } = req.params;
 
-    const userAchievements = await prisma.userAchievement.findMany({
+    const userAchievements = await prisma.userGameAchievement.findMany({
       where: { userId },
       include: { achievement: true },
       orderBy: { unlockedAt: 'desc' },
@@ -1224,7 +1225,7 @@ app.post('/achievements/unlock', authenticateToken, async (req: AuthRequest, res
     const { achievementId } = req.body;
 
     // Check if already unlocked
-    const existing = await prisma.userAchievement.findUnique({
+    const existing = await prisma.userGameAchievement.findUnique({
       where: {
         userId_achievementId: {
           userId,
@@ -1238,7 +1239,7 @@ app.post('/achievements/unlock', authenticateToken, async (req: AuthRequest, res
     }
 
     // Unlock achievement
-    const userAchievement = await prisma.userAchievement.create({
+    const userAchievement = await prisma.userGameAchievement.create({
       data: {
         userId,
         achievementId,
@@ -1277,7 +1278,7 @@ app.post('/achievements/check', authenticateToken, async (req: AuthRequest, res:
     const checkAndUnlock = async (achievementId: string, condition: boolean) => {
       if (!condition) return;
 
-      const existing = await prisma.userAchievement.findUnique({
+      const existing = await prisma.userGameAchievement.findUnique({
         where: { userId_achievementId: { userId, achievementId } },
       });
 
@@ -1287,7 +1288,7 @@ app.post('/achievements/check', authenticateToken, async (req: AuthRequest, res:
         });
 
         if (achievement) {
-          const unlocked = await prisma.userAchievement.create({
+          const unlocked = await prisma.userGameAchievement.create({
             data: { userId, achievementId },
             include: { achievement: true },
           });

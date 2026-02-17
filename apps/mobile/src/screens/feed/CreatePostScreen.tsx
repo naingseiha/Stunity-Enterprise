@@ -26,6 +26,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeOut, Layout, ZoomIn, ZoomOut } from 'react-native-reanimated';
+import { ResizeMode } from 'expo-av';
 
 import { Avatar } from '@/components/common';
 import { useAuthStore, useFeedStore } from '@/stores';
@@ -34,6 +35,7 @@ import { QuizForm } from './create-post/forms/QuizForm';
 import { QuestionForm } from './create-post/forms/QuestionForm';
 import { PollForm } from './create-post/forms/PollForm';
 import { AnnouncementForm } from './create-post/forms/AnnouncementForm';
+import { VideoPlayer } from '@/components/common/VideoPlayer';
 
 // Post type options
 const POST_TYPES: { type: PostType; icon: string; label: string; color: string }[] = [
@@ -46,6 +48,12 @@ const POST_TYPES: { type: PostType; icon: string; label: string; color: string }
   { type: 'PROJECT', icon: 'folder', label: 'Project', color: '#F97316' },
 ];
 
+// Helper to check if URI is video
+const isVideo = (uri: string) => {
+  const ext = uri.split('.').pop()?.toLowerCase();
+  return ext === 'mp4' || ext === 'mov' || ext === 'avi' || ext === 'mkv';
+};
+
 export default function CreatePostScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
@@ -55,20 +63,20 @@ export default function CreatePostScreen() {
   const [postType, setPostType] = useState<PostType>('ARTICLE');
   const [mediaUris, setMediaUris] = useState<string[]>([]);
   const [isPosting, setIsPosting] = useState(false);
-  
+
   // Poll state
   const [pollOptions, setPollOptions] = useState<string[]>(['', '']);
   const [pollData, setPollData] = useState<any>(null);
-  
+
   // Quiz state
   const [quizData, setQuizData] = useState<any>(null);
-  
+
   // Question state
   const [questionData, setQuestionData] = useState<any>(null);
-  
+
   // Announcement state
   const [announcementData, setAnnouncementData] = useState<any>(null);
-  
+
   // Add poll option with animation
   const addPollOption = () => {
     if (pollOptions.length < 6) {
@@ -77,7 +85,7 @@ export default function CreatePostScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   };
-  
+
   // Remove poll option with animation
   const removePollOption = (index: number) => {
     if (pollOptions.length > 2) {
@@ -86,7 +94,7 @@ export default function CreatePostScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
   };
-  
+
   // Update poll option
   const updatePollOption = (index: number, value: string) => {
     const updated = [...pollOptions];
@@ -130,6 +138,27 @@ export default function CreatePostScreen() {
     }
   }, [mediaUris]);
 
+  const handlePickVideo = useCallback(async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please grant access to your photos to add videos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      allowsMultipleSelection: true,
+      quality: 0.8,
+      selectionLimit: 4 - mediaUris.length,
+    });
+
+    if (!result.canceled && result.assets) {
+      const newUris = result.assets.map(asset => asset.uri);
+      setMediaUris(prev => [...prev, ...newUris].slice(0, 4));
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, [mediaUris]);
+
   const handleTakePhoto = useCallback(async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
@@ -158,7 +187,7 @@ export default function CreatePostScreen() {
       Alert.alert('Empty Post', 'Please write something before posting.');
       return;
     }
-    
+
     // Validate poll if it's a poll post
     if (postType === 'POLL') {
       const validOptions = pollOptions.filter(opt => opt.trim().length > 0);
@@ -167,7 +196,7 @@ export default function CreatePostScreen() {
         return;
       }
     }
-    
+
     // Validate quiz if it's a quiz post
     if (postType === 'QUIZ') {
       if (!quizData || !quizData.questions || quizData.questions.length === 0) {
@@ -181,27 +210,27 @@ export default function CreatePostScreen() {
 
     try {
       // Prepare poll options if it's a poll
-      const validPollOptions = postType === 'POLL' 
+      const validPollOptions = postType === 'POLL'
         ? pollOptions.filter(opt => opt.trim().length > 0)
         : [];
-      
+
       // Prepare quiz data if it's a quiz
       const quizPayload = postType === 'QUIZ' && quizData ? quizData : undefined;
-      
+
       // Extract title from quiz data for QUIZ posts
       const postTitle = postType === 'QUIZ' && quizData?.title ? quizData.title : undefined;
-      
+
       // Upload images and create post
       // The createPost function will handle uploading local file:// URIs to R2
       const success = await createPost(content, mediaUris, postType, validPollOptions, quizPayload, postTitle);
-      
+
       if (success) {
         // Success animation sequence
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        
+
         // Small delay for haptic feedback to register
         await new Promise(resolve => setTimeout(resolve, 100));
-        
+
         navigation.goBack();
       } else {
         Alert.alert('Error', 'Failed to create post. Please try again.');
@@ -325,44 +354,44 @@ export default function CreatePostScreen() {
             onChangeText={setContent}
             autoFocus
           />
-          
+
           {/* Question Form (only for QUESTION type) */}
           {postType === 'QUESTION' && (
-            <Animated.View 
+            <Animated.View
               entering={FadeIn.duration(300)}
               exiting={FadeOut.duration(200)}
             >
               <QuestionForm onDataChange={setQuestionData} />
             </Animated.View>
           )}
-          
+
           {/* Poll Form (only for POLL type) */}
           {postType === 'POLL' && (
-            <Animated.View 
+            <Animated.View
               entering={FadeIn.duration(300)}
               exiting={FadeOut.duration(200)}
             >
-              <PollForm 
+              <PollForm
                 options={pollOptions}
                 onOptionsChange={setPollOptions}
                 onDataChange={setPollData}
               />
             </Animated.View>
           )}
-          
+
           {/* Quiz Form (only for QUIZ type) */}
           {postType === 'QUIZ' && (
-            <Animated.View 
+            <Animated.View
               entering={FadeIn.duration(300)}
               exiting={FadeOut.duration(200)}
             >
               <QuizForm onDataChange={setQuizData} />
             </Animated.View>
           )}
-          
+
           {/* Announcement Form (only for ANNOUNCEMENT type) */}
           {postType === 'ANNOUNCEMENT' && (
-            <Animated.View 
+            <Animated.View
               entering={FadeIn.duration(300)}
               exiting={FadeOut.duration(200)}
             >
@@ -372,26 +401,40 @@ export default function CreatePostScreen() {
 
           {/* Media Preview */}
           {mediaUris.length > 0 && (
-            <Animated.View 
+            <Animated.View
               entering={FadeIn.duration(300)}
               exiting={FadeOut.duration(200)}
               style={styles.mediaPreview}
             >
               {mediaUris.map((uri, index) => (
-                <Animated.View 
-                  key={uri} 
+                <Animated.View
+                  key={uri}
                   style={styles.mediaItem}
                   entering={ZoomIn.duration(300).delay(index * 50)}
                   exiting={ZoomOut.duration(200)}
                   layout={Layout.springify()}
                 >
-                  <Image source={{ uri }} style={styles.mediaImage} contentFit="cover" />
+                  {isVideo(uri) ? (
+                    <VideoPlayer
+                      uri={uri}
+                      style={styles.mediaImage}
+                      resizeMode={ResizeMode.COVER}
+                      shouldPlay={false}
+                    />
+                  ) : (
+                    <Image source={{ uri }} style={styles.mediaImage} contentFit="cover" />
+                  )}
                   <TouchableOpacity
                     onPress={() => handleRemoveImage(index)}
                     style={styles.removeMediaButton}
                   >
                     <Ionicons name="close" size={16} color="#fff" />
                   </TouchableOpacity>
+                  {isVideo(uri) && (
+                    <View style={styles.videoIndicator}>
+                      <Ionicons name="videocam" size={12} color="#fff" />
+                    </View>
+                  )}
                 </Animated.View>
               ))}
             </Animated.View>
@@ -435,11 +478,21 @@ export default function CreatePostScreen() {
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.mediaButton}>
+            <TouchableOpacity
+              onPress={handlePickVideo}
+              style={styles.mediaButton}
+              disabled={mediaUris.length >= 4}
+            >
               <View style={[styles.mediaButtonIcon, { backgroundColor: '#8B5CF620' }]}>
-                <Ionicons name="videocam" size={20} color="#8B5CF6" />
+                <Ionicons
+                  name="videocam"
+                  size={20}
+                  color={mediaUris.length >= 4 ? '#9CA3AF' : '#8B5CF6'}
+                />
               </View>
-              <Text style={styles.mediaButtonText}>Video</Text>
+              <Text style={[styles.mediaButtonText, mediaUris.length >= 4 && { color: '#9CA3AF' }]}>
+                Video
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.mediaButton}>
@@ -452,7 +505,7 @@ export default function CreatePostScreen() {
 
           {mediaUris.length > 0 && (
             <Text style={styles.mediaCount}>
-              {mediaUris.length}/4 photos
+              {mediaUris.length}/4 items
             </Text>
           )}
         </View>
@@ -576,6 +629,7 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: 12,
     overflow: 'hidden',
+    backgroundColor: '#000',
   },
   mediaImage: {
     width: '100%',
@@ -585,6 +639,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  videoIndicator: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
     width: 24,
     height: 24,
     borderRadius: 12,

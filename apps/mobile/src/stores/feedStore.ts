@@ -42,35 +42,35 @@ interface FeedState {
   isLoadingPosts: boolean;
   hasMorePosts: boolean;
   postsPage: number;
-  
+
   // My Posts
   myPosts: Post[];
   isLoadingMyPosts: boolean;
-  
+
   // Bookmarks
   bookmarkedPosts: Post[];
   isLoadingBookmarks: boolean;
-  
+
   // Trending
   trendingPosts: TrendingPost[];
   isLoadingTrending: boolean;
   trendingPeriod: TrendingPeriod;
-  
+
   // Stories
   storyGroups: StoryGroup[];
   isLoadingStories: boolean;
   activeStoryGroupIndex: number | null;
   activeStoryIndex: number;
-  
+
   // Comments
   comments: Record<string, Comment[]>;
   isLoadingComments: Record<string, boolean>;
   isSubmittingComment: Record<string, boolean>;
-  
+
   // Analytics
   postAnalytics: Record<string, PostAnalytics>;
   isLoadingAnalytics: Record<string, boolean>;
-  
+
   // Actions
   fetchPosts: (refresh?: boolean) => Promise<void>;
   fetchStories: () => Promise<void>;
@@ -80,36 +80,36 @@ interface FeedState {
   unlikePost: (postId: string) => Promise<void>;
   bookmarkPost: (postId: string) => Promise<void>;
   deletePost: (postId: string) => Promise<void>;
-  
+
   // Comments actions
   fetchComments: (postId: string) => Promise<void>;
   addComment: (postId: string, content: string) => Promise<boolean>;
   deleteComment: (commentId: string, postId: string) => Promise<void>;
-  
+
   // Engagement actions
   voteOnPoll: (postId: string, optionId: string) => Promise<void>;
   sharePost: (postId: string) => Promise<void>;
   trackPostView: (postId: string) => Promise<void>;
-  
+
   // Analytics actions
   fetchPostAnalytics: (postId: string) => Promise<PostAnalytics | null>;
-  
+
   // Discovery actions
   fetchMyPosts: () => Promise<void>;
   fetchBookmarks: () => Promise<void>;
   fetchTrending: (period?: TrendingPeriod) => Promise<void>;
-  
+
   // Story actions
   viewStory: (storyId: string) => Promise<void>;
   createStory: (data: Partial<Story>) => Promise<boolean>;
   setActiveStoryGroup: (index: number | null) => void;
   nextStory: () => void;
   previousStory: () => void;
-  
+
   // Optimistic updates
   addOptimisticPost: (post: Post) => void;
   removeOptimisticPost: (tempId: string) => void;
-  
+
   // Reset
   reset: () => void;
 }
@@ -143,24 +143,24 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   // Fetch posts with pagination
   fetchPosts: async (refresh = false, subject?: string) => {
     const { isLoadingPosts, postsPage, posts, hasMorePosts } = get();
-    
+
     if (isLoadingPosts || (!refresh && !hasMorePosts)) return;
 
     const page = refresh ? 1 : postsPage;
-    
+
     set({ isLoadingPosts: true });
 
     try {
       // Performance optimization: Use smaller page size for initial load (faster perceived speed)
       const limit = page === 1 ? 10 : 20;
-      
+
       const params: any = { page, limit };
-      
+
       // Add subject filter if provided
       if (subject && subject !== 'ALL') {
         params.subject = subject;
       }
-      
+
       const response = await feedApi.get('/posts', {
         params,
         timeout: 10000, // Reduced timeout for faster feedback
@@ -198,105 +198,105 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
               console.log('  - Has quiz object:', !!post.quiz);
               console.log('  - Quiz data:', post.quiz ? JSON.stringify(post.quiz, null, 2) : 'NULL');
             }
-            
+
             return {
-          id: post.id,
-          author: {
-            id: post.author?.id,
-            firstName: post.author?.firstName,
-            lastName: post.author?.lastName,
-            name: `${post.author?.firstName || ''} ${post.author?.lastName || ''}`.trim(),
-            profilePictureUrl: post.author?.profilePictureUrl,
-            role: post.author?.role,
-            isVerified: post.author?.isVerified,
-          },
-          content: post.content,
-          title: post.title, // For quiz, course, etc.
-          postType: post.postType || 'ARTICLE',
-          visibility: post.visibility || 'PUBLIC', // FIXED: Include visibility field
-          mediaUrls: post.mediaUrls || [],
-          mediaDisplayMode: post.mediaDisplayMode || 'AUTO', // FIXED: Include mediaDisplayMode
-          likes: post.likesCount || post._count?.likes || 0,
-          comments: post.commentsCount || post._count?.comments || 0,
-          shares: post.sharesCount || 0,
-          isLiked: post.isLikedByMe || false,
-          isBookmarked: post.isBookmarked || false,
-          createdAt: post.createdAt,
-          updatedAt: post.updatedAt,
-          // E-Learning metadata
-          topicTags: post.topicTags || post.tags || [],
-          tags: post.tags || post.topicTags || [], // FIXED: Include tags field
-          // Poll fields
-          pollOptions: post.pollOptions?.map((opt: any) => ({
-            id: opt.id,
-            text: opt.text,
-            votes: opt.votes || opt._count?.votes || 0,
-          })),
-          userVotedOptionId: post.userVotedOptionId,
-          // Quiz fields
-          quizData: post.postType === 'QUIZ' && post.quiz ? {
-            id: post.quiz.id,
-            questions: post.quiz.questions || [],
-            timeLimit: post.quiz.timeLimit,
-            passingScore: post.quiz.passingScore,
-            totalPoints: post.quiz.totalPoints || post.quiz.questions?.reduce((sum: number, q: any) => sum + (q.points || 0), 0) || 0,
-            resultsVisibility: post.quiz.resultsVisibility,
-            userAttempt: post.quiz.userAttempt ? {
-              id: post.quiz.userAttempt.id,
-              score: post.quiz.userAttempt.score,
-              passed: post.quiz.userAttempt.passed,
-              pointsEarned: post.quiz.userAttempt.pointsEarned,
-              submittedAt: post.quiz.userAttempt.submittedAt,
-            } : undefined,
-          } : undefined,
-          
-          // Debug poll data
-          ...(post.postType === 'POLL' && __DEV__ && {
-            _debug: {
-              hasPollOptions: !!post.pollOptions,
-              optionCount: post.pollOptions?.length || 0,
+              id: post.id,
+              author: {
+                id: post.author?.id,
+                firstName: post.author?.firstName,
+                lastName: post.author?.lastName,
+                name: `${post.author?.firstName || ''} ${post.author?.lastName || ''}`.trim(),
+                profilePictureUrl: post.author?.profilePictureUrl,
+                role: post.author?.role,
+                isVerified: post.author?.isVerified,
+              },
+              content: post.content,
+              title: post.title, // For quiz, course, etc.
+              postType: post.postType || 'ARTICLE',
+              visibility: post.visibility || 'PUBLIC', // FIXED: Include visibility field
+              mediaUrls: post.mediaUrls || [],
+              mediaDisplayMode: post.mediaDisplayMode || 'AUTO', // FIXED: Include mediaDisplayMode
+              likes: post.likesCount || post._count?.likes || 0,
+              comments: post.commentsCount || post._count?.comments || 0,
+              shares: post.sharesCount || 0,
+              isLiked: post.isLikedByMe || false,
+              isBookmarked: post.isBookmarked || false,
+              createdAt: post.createdAt,
+              updatedAt: post.updatedAt,
+              // E-Learning metadata
+              topicTags: post.topicTags || post.tags || [],
+              tags: post.tags || post.topicTags || [], // FIXED: Include tags field
+              // Poll fields
+              pollOptions: post.pollOptions?.map((opt: any) => ({
+                id: opt.id,
+                text: opt.text,
+                votes: opt.votes || opt._count?.votes || 0,
+              })),
               userVotedOptionId: post.userVotedOptionId,
-            }
-          }),
-          
-          learningMeta: post.learningMeta || {
-            progress: post.progress,
-            totalSteps: post.totalSteps,
-            completedSteps: post.completedSteps,
-            difficulty: post.difficulty,
-            isLive: post.isLive,
-            liveViewers: post.liveViewers,
-            deadline: post.deadline,
-            isUrgent: post.isUrgent,
-            answerCount: post.answerCount,
-            isAnswered: post.isAnswered,
-            studyGroupId: post.studyGroupId,
-            studyGroupName: post.studyGroupName,
-            xpReward: post.xpReward,
-            estimatedMinutes: post.estimatedMinutes,
-            participantCount: post.participantCount,
-            hasCode: post.hasCode,
-            hasPdf: post.hasPdf,
-            hasFormula: post.hasFormula,
-            // NEW: Enhanced learning features
-            isPartOfPath: post.isPartOfPath,
-            pathName: post.pathName,
-            pathStep: post.pathStep,
-            pathTotalSteps: post.pathTotalSteps,
-            prerequisiteIds: post.prerequisiteIds,
-            nextContentId: post.nextContentId,
-            activeStudyingCount: post.activeStudyingCount,
-            classmateEnrollments: post.classmateEnrollments,
-            peerHelpRequests: post.peerHelpRequests,
-            studySessionActive: post.studySessionActive,
-            hasAiExplanation: post.hasAiExplanation,
-            aiSuggested: post.aiSuggested,
-            relatedTopics: post.relatedTopics,
-            prerequisiteTopics: post.prerequisiteTopics,
-            enrolledToday: post.enrolledToday,
-            completionRate: post.completionRate,
-          },
-        };
+              // Quiz fields
+              quizData: post.postType === 'QUIZ' && post.quiz ? {
+                id: post.quiz.id,
+                questions: post.quiz.questions || [],
+                timeLimit: post.quiz.timeLimit,
+                passingScore: post.quiz.passingScore,
+                totalPoints: post.quiz.totalPoints || post.quiz.questions?.reduce((sum: number, q: any) => sum + (q.points || 0), 0) || 0,
+                resultsVisibility: post.quiz.resultsVisibility,
+                userAttempt: post.quiz.userAttempt ? {
+                  id: post.quiz.userAttempt.id,
+                  score: post.quiz.userAttempt.score,
+                  passed: post.quiz.userAttempt.passed,
+                  pointsEarned: post.quiz.userAttempt.pointsEarned,
+                  submittedAt: post.quiz.userAttempt.submittedAt,
+                } : undefined,
+              } : undefined,
+
+              // Debug poll data
+              ...(post.postType === 'POLL' && __DEV__ && {
+                _debug: {
+                  hasPollOptions: !!post.pollOptions,
+                  optionCount: post.pollOptions?.length || 0,
+                  userVotedOptionId: post.userVotedOptionId,
+                }
+              }),
+
+              learningMeta: post.learningMeta || {
+                progress: post.progress,
+                totalSteps: post.totalSteps,
+                completedSteps: post.completedSteps,
+                difficulty: post.difficulty,
+                isLive: post.isLive,
+                liveViewers: post.liveViewers,
+                deadline: post.deadline,
+                isUrgent: post.isUrgent,
+                answerCount: post.answerCount,
+                isAnswered: post.isAnswered,
+                studyGroupId: post.studyGroupId,
+                studyGroupName: post.studyGroupName,
+                xpReward: post.xpReward,
+                estimatedMinutes: post.estimatedMinutes,
+                participantCount: post.participantCount,
+                hasCode: post.hasCode,
+                hasPdf: post.hasPdf,
+                hasFormula: post.hasFormula,
+                // NEW: Enhanced learning features
+                isPartOfPath: post.isPartOfPath,
+                pathName: post.pathName,
+                pathStep: post.pathStep,
+                pathTotalSteps: post.pathTotalSteps,
+                prerequisiteIds: post.prerequisiteIds,
+                nextContentId: post.nextContentId,
+                activeStudyingCount: post.activeStudyingCount,
+                classmateEnrollments: post.classmateEnrollments,
+                peerHelpRequests: post.peerHelpRequests,
+                studySessionActive: post.studySessionActive,
+                hasAiExplanation: post.hasAiExplanation,
+                aiSuggested: post.aiSuggested,
+                relatedTopics: post.relatedTopics,
+                prerequisiteTopics: post.prerequisiteTopics,
+                enrolledToday: post.enrolledToday,
+                completionRate: post.completionRate,
+              },
+            };
           } catch (error: any) {
             console.error('❌ [FeedStore] Error transforming post:', post.id, error);
             console.error('Post data:', JSON.stringify(post, null, 2));
@@ -337,7 +337,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       }
     } catch (error: any) {
       console.error('Failed to fetch posts:', error);
-      
+
       // Use mock data if API fails in development
       if (__DEV__ && error.code === 'TIMEOUT_ERROR') {
         console.log('📦 Using mock data for offline development');
@@ -364,7 +364,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
       // Backend returns { stories: [...] } or { success, storyGroups }
       const groups = response.data.stories || response.data.storyGroups || [];
-      
+
       // Transform to mobile app format
       const storyGroups: StoryGroup[] = groups.map((group: any) => ({
         user: {
@@ -397,13 +397,13 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       });
     } catch (error: any) {
       console.error('Failed to fetch stories:', error);
-      
+
       // Use mock data if API fails in development
       if (__DEV__ && error.code === 'TIMEOUT_ERROR') {
         console.log('📦 Using mock stories for offline development');
-        set({ 
-          storyGroups: mockStories, 
-          isLoadingStories: false 
+        set({
+          storyGroups: mockStories,
+          isLoadingStories: false
         });
       } else {
         set({ isLoadingStories: false, storyGroups: [] });
@@ -416,28 +416,37 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     try {
       // Upload local images to R2 before creating post
       let uploadedMediaUrls = mediaUrls;
-      
+
       if (mediaUrls.length > 0 && mediaUrls.some(url => url.startsWith('file://'))) {
         console.log('📤 [FeedStore] Uploading images to R2...');
-        
+
         try {
           // Create FormData with images
           const formData = new FormData();
-          
+
           for (const uri of mediaUrls) {
             if (uri.startsWith('file://')) {
-              // Extract filename from URI
-              const filename = uri.split('/').pop() || `image-${Date.now()}.jpg`;
-              
+              // Extract file extension and determine mime type
+              const filename = uri.split('/').pop() || `file-${Date.now()}`;
+              const match = /\.(\w+)$/.exec(filename);
+              const ext = match ? match[1].toLowerCase() : 'jpg';
+
+              let type = 'image/jpeg';
+              if (ext === 'png') type = 'image/png';
+              else if (ext === 'gif') type = 'image/gif';
+              else if (ext === 'mp4') type = 'video/mp4';
+              else if (ext === 'mov') type = 'video/quicktime';
+              else if (ext === 'avi') type = 'video/x-msvideo';
+
               // Append file to form data
               formData.append('files', {
                 uri,
-                type: 'image/jpeg', // Could be detected from extension
+                type,
                 name: filename,
               } as any);
             }
           }
-          
+
           // Upload to backend
           const uploadResponse = await feedApi.post('/upload', formData, {
             headers: {
@@ -445,7 +454,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             },
             timeout: 60000, // 60s for file uploads
           });
-          
+
           if (uploadResponse.data.success && uploadResponse.data.data) {
             uploadedMediaUrls = uploadResponse.data.data.map((file: any) => file.url);
             console.log('✅ [FeedStore] Images uploaded successfully:', uploadedMediaUrls);
@@ -458,7 +467,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           throw new Error('Failed to upload images. Please check your connection.');
         }
       }
-      
+
       // Now create post with uploaded URLs
       const response = await feedApi.post('/posts', {
         content,
@@ -473,7 +482,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
       if (response.data.success) {
         const newPostData = response.data.data || response.data.post;
-        
+
         // Transform to match mobile app Post type
         const newPost: Post = {
           id: newPostData.id,
@@ -521,12 +530,12 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             },
           }),
         };
-        
+
         // Add to top of feed with optimistic update
         set((state) => ({
           posts: [newPost, ...state.posts],
         }));
-        
+
         return true;
       }
       return false;
@@ -618,7 +627,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   // Delete a post
   deletePost: async (postId) => {
     const post = get().posts.find((p) => p.id === postId);
-    
+
     // Optimistic update
     set((state) => ({
       posts: state.posts.filter((p) => p.id !== postId),
@@ -640,7 +649,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   viewStory: async (storyId) => {
     try {
       await feedApi.post(`/stories/${storyId}/view`);
-      
+
       // Update local state
       set((state) => ({
         storyGroups: state.storyGroups.map((group) => ({
@@ -661,7 +670,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   createStory: async (data) => {
     try {
       const response = await feedApi.post('/stories', data);
-      
+
       if (response.data.success) {
         // Refresh stories
         get().fetchStories();
@@ -682,11 +691,11 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   // Navigate to next story
   nextStory: () => {
     const { storyGroups, activeStoryGroupIndex, activeStoryIndex } = get();
-    
+
     if (activeStoryGroupIndex === null) return;
-    
+
     const currentGroup = storyGroups[activeStoryGroupIndex];
-    
+
     if (activeStoryIndex < currentGroup.stories.length - 1) {
       // Next story in same group
       set({ activeStoryIndex: activeStoryIndex + 1 });
@@ -702,9 +711,9 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   // Navigate to previous story
   previousStory: () => {
     const { storyGroups, activeStoryGroupIndex, activeStoryIndex } = get();
-    
+
     if (activeStoryGroupIndex === null) return;
-    
+
     if (activeStoryIndex > 0) {
       // Previous story in same group
       set({ activeStoryIndex: activeStoryIndex - 1 });
@@ -726,10 +735,10 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
     try {
       const response = await feedApi.get(`/posts/${postId}/comments`);
-      
+
       if (response.data.success) {
         const commentsData = response.data.data || [];
-        
+
         // Transform comments to match mobile app Comment type
         const transformedComments: Comment[] = commentsData.map((comment: any) => ({
           id: comment.id,
@@ -778,10 +787,10 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
     try {
       const response = await feedApi.post(`/posts/${postId}/comments`, { content });
-      
+
       if (response.data.success) {
         const newComment = response.data.data;
-        
+
         // Transform comment
         const transformedComment: Comment = {
           id: newComment.id,
@@ -823,7 +832,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
         return true;
       }
-      
+
       set((state) => ({
         isSubmittingComment: { ...state.isSubmittingComment, [postId]: false },
       }));
@@ -841,7 +850,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   deleteComment: async (commentId, postId) => {
     try {
       await feedApi.delete(`/comments/${commentId}`);
-      
+
       // Update comments list
       set((state) => ({
         comments: {
@@ -862,12 +871,12 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   voteOnPoll: async (postId, optionId) => {
     const state = get();
     const post = state.posts.find(p => p.id === postId);
-    
+
     if (!post || !post.pollOptions) {
       console.error('❌ Cannot vote: Post or poll options not found');
       return;
     }
-    
+
     // Debug logging
     if (__DEV__) {
       console.log('🗳️ Voting on poll:', {
@@ -878,7 +887,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         allOptions: post.pollOptions.map(o => ({ id: o.id, text: o.text, votes: o.votes })),
         isChangingVote: !!post.userVotedOptionId,
       });
-      
+
       // Check if user already voted
       if (post.userVotedOptionId) {
         console.log('⚠️ User already voted on this poll!', {
@@ -888,74 +897,74 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         });
       }
     }
-    
+
     // Store previous state for rollback
     const previousVote = post.userVotedOptionId;
     const previousOptions = post.pollOptions;
-    
+
     // Optimistic update - calculate new vote counts
     const updatedOptions = post.pollOptions.map(opt => {
       let votes = opt.votes || 0;
-      
+
       // Remove vote from previous option
       if (previousVote === opt.id) {
         votes = Math.max(0, votes - 1);
       }
-      
+
       // Add vote to new option
       if (opt.id === optionId) {
         votes += 1;
       }
-      
+
       return { ...opt, votes };
     });
-    
+
     // Apply optimistic update immediately
     set((state) => ({
       posts: state.posts.map((p) =>
         p.id === postId
           ? {
-              ...p,
-              pollOptions: updatedOptions,
-              userVotedOptionId: optionId,
-            }
+            ...p,
+            pollOptions: updatedOptions,
+            userVotedOptionId: optionId,
+          }
           : p
       ),
     }));
-    
+
     try {
       if (__DEV__) {
         console.log('📤 Sending vote request:', { optionId });
       }
-      
+
       const response = await feedApi.post(`/posts/${postId}/vote`, { optionId });
-      
+
       if (__DEV__) {
         console.log('✅ Vote response:', response.data);
       }
-      
+
       // Update with server response
       if (response.data.success) {
         const serverUserVotedOptionId = response.data.userVotedOptionId || response.data.data?.userVotedOptionId || optionId;
-        
+
         set((state) => ({
           posts: state.posts.map((p) =>
             p.id === postId
               ? {
-                  ...p,
-                  userVotedOptionId: serverUserVotedOptionId,
-                }
+                ...p,
+                userVotedOptionId: serverUserVotedOptionId,
+              }
               : p
           ),
         }));
-        
+
         if (__DEV__) {
           console.log('✅ Vote updated successfully, userVotedOptionId:', serverUserVotedOptionId);
         }
       }
     } catch (error: any) {
       console.error('❌ Failed to vote on poll:', error);
-      
+
       if (__DEV__) {
         console.log('📋 Error details:', {
           message: error?.message,
@@ -963,20 +972,20 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           response: error?.response?.data,
         });
       }
-      
+
       // Rollback on error
       set((state) => ({
         posts: state.posts.map((p) =>
           p.id === postId
             ? {
-                ...p,
-                pollOptions: previousOptions,
-                userVotedOptionId: previousVote,
-              }
+              ...p,
+              pollOptions: previousOptions,
+              userVotedOptionId: previousVote,
+            }
             : p
         ),
       }));
-      
+
       if (__DEV__) {
         console.log('❌ Vote failed, rolled back to previous state');
       }
@@ -987,7 +996,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   sharePost: async (postId) => {
     try {
       await feedApi.post(`/posts/${postId}/share`);
-      
+
       // Update share count locally
       set((state) => ({
         posts: state.posts.map((post) =>
@@ -1016,22 +1025,22 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     try {
       console.log('📤 [feedStore] Sending PUT request to /posts/' + postId);
       console.log('📤 [feedStore] Request data:', JSON.stringify(data, null, 2));
-      
+
       const response = await feedApi.put(`/posts/${postId}`, data);
-      
+
       console.log('📥 [feedStore] Response status:', response.status);
       console.log('📥 [feedStore] Response data:', JSON.stringify(response.data, null, 2));
-      
+
       if (response.data.error) {
         console.error('❌ [feedStore] Failed to update post:', response.data.error);
         return false;
       }
-      
+
       // Get updated post data from response
       const rawPost = response.data.data || response.data;
-      
+
       console.log('🔄 [feedStore] Transforming updated post data...');
-      
+
       // Transform to match Post type (same as fetchPosts)
       const transformedPost: Post = {
         id: rawPost.id,
@@ -1040,10 +1049,18 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           firstName: rawPost.author?.firstName,
           lastName: rawPost.author?.lastName,
           name: `${rawPost.author?.firstName || ''} ${rawPost.author?.lastName || ''}`.trim(),
+          email: rawPost.author?.email || '',
           profilePictureUrl: rawPost.author?.profilePictureUrl,
           role: rawPost.author?.role,
+          bio: rawPost.author?.bio || '',
           isVerified: rawPost.author?.isVerified,
+          isOnline: false,
+          languages: rawPost.author?.languages || [],
+          interests: rawPost.author?.interests || [],
+          createdAt: rawPost.author?.createdAt || new Date().toISOString(),
+          updatedAt: rawPost.author?.updatedAt || new Date().toISOString(),
         },
+        authorId: rawPost.authorId || rawPost.author?.id,
         content: rawPost.content,
         postType: rawPost.postType || 'ARTICLE',
         visibility: rawPost.visibility || 'PUBLIC',
@@ -1066,17 +1083,17 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         userVotedOptionId: rawPost.userVotedOptionId,
         learningMeta: rawPost.learningMeta,
       };
-      
+
       console.log('📥 [feedStore] Transformed post:', JSON.stringify(transformedPost, null, 2));
       console.log('📥 [feedStore] Media URLs after transform:', transformedPost.mediaUrls);
-      
+
       // Update post in state
       set((state) => ({
         posts: state.posts.map((post) =>
           post.id === postId ? transformedPost : post
         ),
       }));
-      
+
       console.log('✅ [feedStore] Post updated successfully in store');
       return true;
     } catch (error) {
@@ -1090,37 +1107,37 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     set((state) => ({
       isLoadingAnalytics: { ...state.isLoadingAnalytics, [postId]: true },
     }));
-    
+
     try {
       console.log('📊 [ANALYTICS] Fetching analytics for post:', postId);
       const response = await feedApi.get(`/posts/${postId}/analytics`);
-      
+
       console.log('📊 [ANALYTICS] Response received:', response.data);
-      
+
       if (response.data.success && response.data.analytics) {
         const analytics = response.data.analytics as PostAnalytics;
-        
+
         set((state) => ({
           postAnalytics: { ...state.postAnalytics, [postId]: analytics },
           isLoadingAnalytics: { ...state.isLoadingAnalytics, [postId]: false },
         }));
-        
+
         return analytics;
       }
-      
+
       set((state) => ({
         isLoadingAnalytics: { ...state.isLoadingAnalytics, [postId]: false },
       }));
-      
+
       return null;
     } catch (error: any) {
       console.error('❌ [ANALYTICS] Failed to fetch analytics:', error);
       console.error('❌ [ANALYTICS] Error details:', error.response?.data);
-      
+
       set((state) => ({
         isLoadingAnalytics: { ...state.isLoadingAnalytics, [postId]: false },
       }));
-      
+
       return null;
     }
   },
@@ -1128,15 +1145,15 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   // Fetch user's own posts
   fetchMyPosts: async () => {
     set({ isLoadingMyPosts: true });
-    
+
     try {
       const response = await feedApi.get('/my-posts', {
         params: { limit: 50 },
       });
-      
+
       if (response.data.success && response.data.data) {
         const posts = response.data.data;
-        
+
         // Transform posts
         const transformedPosts: Post[] = posts.map((post: any) => ({
           id: post.id,
@@ -1168,7 +1185,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           userVotedOptionId: post.userVotedOptionId,
           learningMeta: post.learningMeta,
         }));
-        
+
         set({ myPosts: transformedPosts, isLoadingMyPosts: false });
       } else {
         set({ isLoadingMyPosts: false });
@@ -1182,15 +1199,15 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   // Fetch bookmarked posts
   fetchBookmarks: async () => {
     set({ isLoadingBookmarks: true });
-    
+
     try {
       const response = await feedApi.get('/bookmarks', {
         params: { limit: 50 },
       });
-      
+
       if (response.data.success && response.data.data) {
         const posts = response.data.data;
-        
+
         // Transform posts (same as myPosts)
         const transformedPosts: Post[] = posts.map((post: any) => ({
           id: post.id,
@@ -1222,7 +1239,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           userVotedOptionId: post.userVotedOptionId,
           learningMeta: post.learningMeta,
         }));
-        
+
         set({ bookmarkedPosts: transformedPosts, isLoadingBookmarks: false });
       } else {
         set({ isLoadingBookmarks: false });
@@ -1236,15 +1253,15 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   // Fetch trending posts
   fetchTrending: async (period: TrendingPeriod = '7d') => {
     set({ isLoadingTrending: true, trendingPeriod: period });
-    
+
     try {
       const response = await feedApi.get('/analytics/trending', {
         params: { period, limit: 5 },
       });
-      
+
       if (response.data.success && response.data.trending) {
         const trendingData = response.data.trending;
-        
+
         // Transform trending posts
         const transformedTrending: TrendingPost[] = trendingData.map((item: any) => ({
           id: item.id,
@@ -1278,7 +1295,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           trendScore: item.trendScore || 0,
           growthRate: item.growthRate || 0,
         }));
-        
+
         set({ trendingPosts: transformedTrending, isLoadingTrending: false });
       } else {
         set({ isLoadingTrending: false });

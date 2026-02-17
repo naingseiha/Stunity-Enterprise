@@ -16,6 +16,7 @@ interface EnvironmentConfig {
   feedUrl: string;
   mediaUrl: string;
   clubUrl: string;
+  notificationUrl: string;
   analyticsUrl: string;
   wsUrl: string;
   sentryDsn: string;
@@ -49,7 +50,7 @@ const getApiHost = (): string => {
     console.log('📡 [ENV] Using manual API host:', envHost);
     return envHost;
   }
-  
+
   // In development, use Expo's auto-detected debugger host
   // This automatically adapts when WiFi changes!
   if (__DEV__ && Constants.expoConfig?.hostUri) {
@@ -59,7 +60,7 @@ const getApiHost = (): string => {
       return debuggerHost;
     }
   }
-  
+
   // Fallback: localhost (works for iOS simulator on same machine)
   console.log('📡 [ENV] Using localhost fallback');
   return 'localhost';
@@ -73,6 +74,7 @@ const development: EnvironmentConfig = {
   feedUrl: `http://${API_HOST}:3010`,
   mediaUrl: `http://${API_HOST}:3010`,
   clubUrl: `http://${API_HOST}:3012`,
+  notificationUrl: `http://${API_HOST}:3013`,
   analyticsUrl: `http://${API_HOST}:3014`,
   wsUrl: `ws://${API_HOST}:3011`,
   sentryDsn: '',
@@ -89,6 +91,7 @@ const staging: EnvironmentConfig = {
   feedUrl: 'https://staging-feed.stunity.com',
   mediaUrl: 'https://staging-media.stunity.com',
   clubUrl: 'https://staging-clubs.stunity.com',
+  notificationUrl: 'https://staging-notifications.stunity.com',
   analyticsUrl: 'https://staging-analytics.stunity.com',
   wsUrl: 'wss://staging-ws.stunity.com',
   sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN || '',
@@ -105,6 +108,7 @@ const production: EnvironmentConfig = {
   feedUrl: 'https://feed.stunity.com',
   mediaUrl: 'https://media.stunity.com',
   clubUrl: 'https://clubs.stunity.com',
+  notificationUrl: 'https://notifications.stunity.com',
   analyticsUrl: 'https://analytics.stunity.com',
   wsUrl: 'wss://ws.stunity.com',
   sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN || '',
@@ -137,32 +141,32 @@ export const APP_CONFIG = {
   APP_NAME: 'Stunity',
   APP_VERSION: '1.0.0',
   BUILD_NUMBER: '1',
-  
+
   // API Settings
   API_TIMEOUT: 60000, // 60 seconds (increased for WiFi switching scenarios)
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 2000, // 2 seconds between retries
-  
+
   // Cache Settings
   CACHE_TTL: 5 * 60 * 1000, // 5 minutes
   MAX_CACHE_SIZE: 50 * 1024 * 1024, // 50MB
-  
+
   // Pagination
   DEFAULT_PAGE_SIZE: 20,
   MAX_PAGE_SIZE: 100,
-  
+
   // Media
   MAX_IMAGE_SIZE: 10 * 1024 * 1024, // 10MB
   MAX_VIDEO_SIZE: 100 * 1024 * 1024, // 100MB
   SUPPORTED_IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
   SUPPORTED_VIDEO_TYPES: ['video/mp4', 'video/quicktime'],
-  
+
   // Security
   TOKEN_REFRESH_THRESHOLD: 5 * 60 * 1000, // 5 minutes before expiry
   SESSION_TIMEOUT: 30 * 60 * 1000, // 30 minutes of inactivity
   MAX_LOGIN_ATTEMPTS: 5,
   LOCKOUT_DURATION: 15 * 60 * 1000, // 15 minutes
-  
+
   // Features
   ENABLE_BIOMETRICS: true,
   ENABLE_PUSH_NOTIFICATIONS: true,

@@ -27,6 +27,8 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { normalizeMediaUrls } from '@/utils';
 import ImageViewerModal from './ImageViewerModal';
+import { VideoPlayer } from './VideoPlayer';
+import { ResizeMode } from 'expo-av';
 
 type AspectRatioMode = 'auto' | 'landscape' | 'portrait' | 'square';
 
@@ -38,8 +40,14 @@ interface ImageCarouselProps {
   mode?: AspectRatioMode; // Layout mode: auto detects from image, or use fixed mode
 }
 
-export default function ImageCarousel({ 
-  images, 
+// Helper to check if URI is video
+const isVideo = (uri: string) => {
+  const ext = uri.split('.').pop()?.toLowerCase();
+  return ext === 'mp4' || ext === 'mov' || ext === 'avi' || ext === 'mkv';
+};
+
+export default function ImageCarousel({
+  images,
   onImagePress,
   borderRadius = 12,
   aspectRatio,
@@ -51,7 +59,7 @@ export default function ImageCarousel({
     // Otherwise, account for the 14px margins on each side from PostCard mediaWrapper
     return borderRadius === 0 ? SCREEN_WIDTH : SCREEN_WIDTH - 28;
   }, [SCREEN_WIDTH, borderRadius]);
-  
+
   const [activeIndex, setActiveIndex] = useState(0);
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
   const [isCropped, setIsCropped] = useState(false); // Track if image is height-limited
@@ -62,98 +70,64 @@ export default function ImageCarousel({
   // Normalize image URLs (handle R2 keys and relative paths)
   const normalizedImages = useMemo(() => {
     const normalized = normalizeMediaUrls(images);
-    
-    // Log URL normalization in development
-    if (__DEV__ && images.length > 0) {
-      const hasChanges = images.some((img, i) => img !== normalized[i]);
-      if (hasChanges) {
-        console.log('📸 [ImageCarousel] Normalized URLs:');
-        images.forEach((original, i) => {
-          if (original !== normalized[i]) {
-            console.log(`  ${i}: ${original} → ${normalized[i]}`);
-          }
-        });
-      }
-    }
-    
     return normalized;
   }, [images]);
 
-  // Load first image dimensions for auto mode
+  // Load first image/video dimensions for auto mode
   useEffect(() => {
     if (mode === 'auto' && normalizedImages.length > 0) {
-      if (__DEV__) {
-        console.log('📐 [ImageCarousel] Fetching dimensions for:', normalizedImages[0]);
-      }
-      
-      RNImage.getSize(
-        normalizedImages[0],
-        (width: number, height: number) => {
-          if (__DEV__) {
-            console.log(`✅ [ImageCarousel] Got dimensions: ${width}x${height}`);
+      const firstUri = normalizedImages[0];
+
+      if (isVideo(firstUri)) {
+        // For video, default to 16:9 landscape if auto
+        // We could try to get size from video metadata but 16:9 is safe default
+        setImageDimensions({ width: 16, height: 9 });
+        setIsCropped(false);
+      } else {
+        RNImage.getSize(
+          firstUri,
+          (width: number, height: number) => {
+            setImageDimensions({ width, height });
+
+            // Check if image will be cropped (height limited to 1.4x width)
+            const imageAspectRatio = height / width;
+            const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
+            const maxHeight = IMAGE_WIDTH * 1.4;
+            setIsCropped(calculatedHeight > maxHeight);
+          },
+          (error: any) => {
+            console.warn('⚠️  [ImageCarousel] Failed to get image size:', firstUri);
+            // Fallback to landscape
+            setImageDimensions({ width: 16, height: 9 });
+            setIsCropped(false);
           }
-          setImageDimensions({ width, height });
-          
-          // Check if image will be cropped (height limited to 1.4x width)
-          const imageAspectRatio = height / width;
-          const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
-          const maxHeight = IMAGE_WIDTH * 1.4;
-          setIsCropped(calculatedHeight > maxHeight);
-        },
-        (error: any) => {
-          console.warn('⚠️  [ImageCarousel] Failed to get image size:', normalizedImages[0]);
-          console.warn('   Error:', error);
-          // Fallback to landscape
-          setImageDimensions({ width: 16, height: 9 });
-          setIsCropped(false);
-        }
-      );
+        );
+      }
     }
   }, [normalizedImages, mode, IMAGE_WIDTH]);
 
   // Calculate image height based on mode and dimensions
-  // Following Facebook/LinkedIn/Instagram approach for scannable feeds
   const IMAGE_HEIGHT = useMemo(() => {
-    // If fixed aspectRatio is provided, use it
     if (aspectRatio !== undefined) {
       return IMAGE_WIDTH * aspectRatio;
     }
 
-    // Auto mode - use actual image dimensions with smart limits
     if (mode === 'auto' && imageDimensions) {
       const imageAspectRatio = imageDimensions.height / imageDimensions.width;
       const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
-      
-      // Facebook/LinkedIn style limits for scannable feed
-      // Landscape images: min 240px (very wide panoramas)
-      // Portrait images: max 1.4x width (like Facebook) for feed scannability
-      // Very tall images get cropped, user clicks to see full
-      
-      const minHeight = 240;              // Minimum for very wide images
-      const maxHeight = IMAGE_WIDTH * 1.4; // Facebook/LinkedIn standard (1.4:1 max)
-      
+
+      const minHeight = 240;
+      const maxHeight = IMAGE_WIDTH * 1.4;
+
       const finalHeight = Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
-      
-      // Log for debugging
-      if (__DEV__) {
-        const ratio = imageAspectRatio.toFixed(2);
-        const limited = calculatedHeight > maxHeight;
-        console.log(`📐 Image ratio: ${ratio} | Calculated: ${calculatedHeight.toFixed(0)}px | Final: ${finalHeight.toFixed(0)}px${limited ? ' (LIMITED)' : ''}`);
-      }
-      
       return finalHeight;
     }
 
-    // Preset modes
     switch (mode) {
-      case 'landscape':
-        return IMAGE_WIDTH * 0.5625; // 16:9 (standard landscape)
-      case 'portrait':
-        return IMAGE_WIDTH * 1.25;   // 4:5 (Instagram portrait standard)
-      case 'square':
-        return IMAGE_WIDTH;          // 1:1 (Instagram square)
-      default:
-        return IMAGE_WIDTH * 0.75;   // 4:3 (classic photo ratio)
+      case 'landscape': return IMAGE_WIDTH * 0.5625;
+      case 'portrait': return IMAGE_WIDTH * 1.25;
+      case 'square': return IMAGE_WIDTH;
+      default: return IMAGE_WIDTH * 0.75;
     }
   }, [IMAGE_WIDTH, aspectRatio, mode, imageDimensions, SCREEN_WIDTH]);
 
@@ -174,17 +148,18 @@ export default function ImageCarousel({
   };
 
   const handleImagePress = (index: number) => {
-    // Open modal viewer for full image viewing
+    if (isVideo(normalizedImages[index])) {
+      // For video, do nothing (VideoPlayer handles controls)
+      // Or maybe toggle fullscreen?
+      return;
+    }
     setModalInitialIndex(index);
     setModalVisible(true);
-    
-    // Also call parent's onImagePress if provided (for analytics, etc.)
     onImagePress?.(index);
   };
 
   if (normalizedImages.length === 0) return null;
 
-  // Show loading state while dimensions are being fetched for auto mode
   if (mode === 'auto' && !imageDimensions && normalizedImages.length > 0) {
     return (
       <View style={[styles.loadingContainer, { width: IMAGE_WIDTH, height: IMAGE_WIDTH * 0.75 }]}>
@@ -193,40 +168,47 @@ export default function ImageCarousel({
     );
   }
 
-  // Single image - no carousel needed
-  if (normalizedImages.length === 1) {
+  // Render Item Helper
+  const renderItem = (uri: string, index: number) => {
+    const isVid = isVideo(uri);
+
     return (
-      <>
-        <TouchableOpacity 
-          activeOpacity={0.95} 
-          onPress={() => handleImagePress(0)}
-          style={[styles.singleImageContainer, { 
-            width: IMAGE_WIDTH,
-            height: IMAGE_HEIGHT
-          }]}
-        >
+      <TouchableOpacity
+        key={`${uri}-${index}`}
+        activeOpacity={isVid ? 1 : 0.95}
+        onPress={() => handleImagePress(index)}
+        style={[styles.imageContainer, {
+          width: IMAGE_WIDTH,
+          height: IMAGE_HEIGHT
+        }]}
+      >
+        {isVid ? (
+          <VideoPlayer
+            uri={uri}
+            style={{ width: '100%', height: '100%', borderRadius }}
+            resizeMode={ResizeMode.CONTAIN}
+            shouldPlay={index === activeIndex} // Only play if active slide
+            useNativeControls
+          />
+        ) : (
           <Image
-            source={{ uri: normalizedImages[0] }}
+            source={{ uri }}
             style={[styles.image, { borderRadius }]}
             contentFit="cover"
             transition={300}
             placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
             placeholderContentFit="cover"
-            onError={(error) => {
-              if (__DEV__) {
-                console.error('❌ [ImageCarousel] Failed to load image:', normalizedImages[0]);
-                console.error('   Error:', error);
-              }
-            }}
-            onLoad={() => {
-              if (__DEV__) {
-                console.log('✅ [ImageCarousel] Image loaded successfully:', normalizedImages[0]);
-              }
-            }}
           />
-        </TouchableOpacity>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
-        {/* Image Viewer Modal */}
+  // Single item
+  if (normalizedImages.length === 1) {
+    return (
+      <>
+        {renderItem(normalizedImages[0], 0)}
         <ImageViewerModal
           visible={modalVisible}
           images={normalizedImages}
@@ -237,7 +219,7 @@ export default function ImageCarousel({
     );
   }
 
-  // Multiple images - show carousel
+  // Carousel
   return (
     <View style={[styles.container, { height: IMAGE_HEIGHT }]}>
       <ScrollView
@@ -252,40 +234,10 @@ export default function ImageCarousel({
         snapToAlignment="start"
         style={styles.scrollView}
       >
-        {normalizedImages.map((uri, index) => (
-          <TouchableOpacity
-            key={`${uri}-${index}`}
-            activeOpacity={0.95}
-            onPress={() => handleImagePress(index)}
-            style={[styles.imageContainer, { 
-              width: IMAGE_WIDTH,
-              height: IMAGE_HEIGHT
-            }]}
-          >
-            <Image
-              source={{ uri }}
-              style={[styles.image, { borderRadius }]}
-              contentFit="cover"
-              transition={300}
-              placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
-              placeholderContentFit="cover"
-              onError={(error) => {
-                if (__DEV__) {
-                  console.error(`❌ [ImageCarousel] Failed to load image ${index}:`, uri);
-                  console.error('   Error:', error);
-                }
-              }}
-              onLoad={() => {
-                if (__DEV__) {
-                  console.log(`✅ [ImageCarousel] Image ${index} loaded:`, uri);
-                }
-              }}
-            />
-          </TouchableOpacity>
-        ))}
+        {normalizedImages.map((uri, index) => renderItem(uri, index))}
       </ScrollView>
 
-      {/* Dot Indicators - Instagram style */}
+      {/* Dot Indicators */}
       <View style={styles.indicatorContainer}>
         {normalizedImages.map((_, index) => (
           <TouchableOpacity
@@ -299,18 +251,18 @@ export default function ImageCarousel({
         ))}
       </View>
 
-      {/* Image Counter - Top Right */}
+      {/* Counter */}
       <View style={styles.counterContainer}>
         <View style={styles.counterBadge}>
-          <Ionicons name="images" size={12} color="#fff" />
+          <Ionicons name={isVideo(normalizedImages[activeIndex]) ? "videocam" : "images"} size={12} color="#fff" />
           <Text style={styles.counterText}>
             {activeIndex + 1}/{images.length}
           </Text>
         </View>
       </View>
 
-      {/* "See Full Image" indicator for cropped images - Facebook style */}
-      {isCropped && (
+      {/* Expand Indicator (only for cropped images) */}
+      {isCropped && !isVideo(normalizedImages[activeIndex]) && (
         <View style={styles.expandIndicator}>
           <View style={styles.expandBadge}>
             <Ionicons name="expand-outline" size={14} color="#fff" />
@@ -319,29 +271,6 @@ export default function ImageCarousel({
         </View>
       )}
 
-      {/* Navigation Arrows (optional - for desktop/tablet) */}
-      {images.length > 1 && activeIndex > 0 && (
-        <TouchableOpacity
-          style={[styles.arrow, styles.leftArrow]}
-          onPress={() => scrollToIndex(activeIndex - 1)}
-        >
-          <View style={styles.arrowButton}>
-            <Ionicons name="chevron-back" size={20} color="#fff" />
-          </View>
-        </TouchableOpacity>
-      )}
-      {images.length > 1 && activeIndex < images.length - 1 && (
-        <TouchableOpacity
-          style={[styles.arrow, styles.rightArrow]}
-          onPress={() => scrollToIndex(activeIndex + 1)}
-        >
-          <View style={styles.arrowButton}>
-            <Ionicons name="chevron-forward" size={20} color="#fff" />
-          </View>
-        </TouchableOpacity>
-      )}
-
-      {/* Image Viewer Modal */}
       <ImageViewerModal
         visible={modalVisible}
         images={normalizedImages}
@@ -374,17 +303,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   imageContainer: {
-    // width and height set dynamically inline
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#000', // Black background for video/images
   },
   image: {
     width: '100%',
     height: '100%',
     backgroundColor: '#F3F4F6',
   },
-  
-  // Dot Indicators
   indicatorContainer: {
     position: 'absolute',
     bottom: 12,
@@ -405,8 +332,6 @@ const styles = StyleSheet.create({
     width: 20,
     backgroundColor: '#fff',
   },
-  
-  // Image Counter
   counterContainer: {
     position: 'absolute',
     top: 12,
@@ -426,8 +351,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginLeft: 4,
   },
-  
-  // Expand Indicator - Facebook style "See Full Image"
   expandIndicator: {
     position: 'absolute',
     bottom: 12,
@@ -447,8 +370,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
-  
-  // Navigation Arrows
   arrow: {
     position: 'absolute',
     top: '50%',

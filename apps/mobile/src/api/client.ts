@@ -61,8 +61,8 @@ const createApiClient = (baseURL: string): AxiosInstance => {
       return response;
     },
     async (error: AxiosError<ApiResponse<unknown>>) => {
-      const originalRequest = error.config as InternalAxiosRequestConfig & { 
-        _retry?: boolean; 
+      const originalRequest = error.config as InternalAxiosRequestConfig & {
+        _retry?: boolean;
         _retryCount?: number;
         _queuedForRetry?: boolean;
       };
@@ -70,11 +70,11 @@ const createApiClient = (baseURL: string): AxiosInstance => {
       // Handle network errors - Queue for retry when network reconnects
       if (error.code === 'ERR_NETWORK' && !originalRequest._queuedForRetry) {
         const isOnline = networkService.getStatus();
-        
+
         if (!isOnline) {
           // Queue this request for automatic retry when network reconnects
           originalRequest._queuedForRetry = true;
-          
+
           networkService.queueRequest({
             id: `${Date.now()}-${Math.random()}`,
             url: originalRequest.url || '',
@@ -101,22 +101,22 @@ const createApiClient = (baseURL: string): AxiosInstance => {
       // Handle timeout errors with retry
       if (error.code === 'ECONNABORTED' && !originalRequest._retry) {
         const retryCount = (originalRequest._retryCount || 0) + 1;
-        
+
         if (retryCount <= 3) { // Retry up to 3 times for timeouts
           originalRequest._retryCount = retryCount;
           originalRequest._retry = true;
-          
+
           // Exponential backoff: 2s, 4s, 6s
           const delay = 2000 * retryCount;
           if (__DEV__) {
             console.log(`⏳ [API] Retrying ${originalRequest.url} (attempt ${retryCount}/3) after ${delay}ms...`);
           }
-          
+
           await new Promise(resolve => setTimeout(resolve, delay));
-          
+
           // Significantly increase timeout for retry (WiFi switching needs more time)
           originalRequest.timeout = 60000; // 60s for retries
-          
+
           return client(originalRequest);
         } else {
           // After 3 retries, give a helpful error message
@@ -128,10 +128,10 @@ const createApiClient = (baseURL: string): AxiosInstance => {
 
       // Handle 401 - Token expired
       // Skip token refresh for auth endpoints (login, register, refresh)
-      const isAuthEndpoint = originalRequest.url?.includes('/auth/login') || 
-                            originalRequest.url?.includes('/auth/register') ||
-                            originalRequest.url?.includes('/auth/refresh');
-      
+      const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||
+        originalRequest.url?.includes('/auth/register') ||
+        originalRequest.url?.includes('/auth/refresh');
+
       if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
         originalRequest._retry = true;
 
@@ -169,6 +169,7 @@ export const authApi = createApiClient(Config.authUrl);
 export const feedApi = createApiClient(Config.feedUrl);
 export const mediaApi = createApiClient(Config.mediaUrl);
 export const clubsApi = createApiClient(Config.clubUrl);
+export const notificationApi = createApiClient(Config.notificationUrl);
 
 // Helper functions
 const generateRequestId = (): string => {
@@ -177,7 +178,7 @@ const generateRequestId = (): string => {
 
 const transformError = (error: AxiosError<ApiResponse<unknown>>): ApiError => {
   const response = error.response;
-  
+
   if (!response) {
     // Network error - check if it's a timeout or connection issue
     if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
@@ -186,14 +187,14 @@ const transformError = (error: AxiosError<ApiResponse<unknown>>): ApiError => {
         message: 'Connection timeout. If you changed WiFi, the app will reconnect automatically.',
       };
     }
-    
+
     if (error.code === 'ERR_NETWORK' || !navigator.onLine) {
       return {
         code: 'NETWORK_ERROR',
         message: 'Network unavailable. Checking connection...',
       };
     }
-    
+
     return {
       code: 'NETWORK_ERROR',
       message: 'Connection issue. Retrying...',
@@ -212,7 +213,7 @@ const transformError = (error: AxiosError<ApiResponse<unknown>>): ApiError => {
     case 401:
       return {
         code: 'UNAUTHORIZED',
-        message: data?.message || data?.error || 'Session expired. Please log in again.',
+        message: data?.message || 'Session expired. Please log in again.',
       };
     case 403:
       return {

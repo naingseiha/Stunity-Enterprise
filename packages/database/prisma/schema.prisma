@@ -573,6 +573,7 @@ model User {
   bookmarks               Bookmark[]                 @relation("UserBookmarks")
   sentNotifications       Notification[]             @relation("NotificationActor")
   notifications           Notification[]             @relation("NotificationRecipient")
+  deviceTokens            DeviceToken[]
   pollVotes               PollVote[]                 @relation("PollVotes")
   reportedPosts           PostReport[]               @relation("PostReporter")
   reviewedReports         PostReport[]               @relation("ReportReviewer")
@@ -885,6 +886,19 @@ model Notification {
   @@index([recipientId, isRead, createdAt(sort: Desc)])
   @@index([actorId])
   @@map("notifications")
+}
+
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  platform  String   @default("unknown")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("device_tokens")
 }
 
 model UserSkill {
@@ -2923,6 +2937,7 @@ model UserStats {
   user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   achievements UserGameAchievement[]
   streaks      LearningStreak[]
+  attempts     QuizAttemptRecord[]
 
   @@index([xp])
   @@index([level])
@@ -2946,9 +2961,12 @@ model QuizAttemptRecord {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  userStatsId String?
+  userStats   UserStats? @relation(fields: [userStatsId], references: [id])
 
   @@index([userId])
   @@index([quizId])
+  @@index([userStatsId])
   @@index([createdAt])
 }
 

@@ -15,6 +15,7 @@ import { LogBox } from 'react-native';
 import { RootNavigator } from '@/navigation';
 import { useAuthStore } from '@/stores';
 import { SplashScreen } from '@/components/common';
+import { NotificationProvider } from '@/contexts';
 
 // Ignore specific warnings in development
 if (__DEV__) {
@@ -25,7 +26,7 @@ if (__DEV__) {
 }
 
 // Prevent auto-hide expo splash screen
-ExpoSplashScreen.preventAutoHideAsync().catch(() => {});
+ExpoSplashScreen.preventAutoHideAsync().catch(() => { });
 
 export default function App() {
   const [appIsReady, setAppIsReady] = useState(false);
@@ -39,14 +40,14 @@ export default function App() {
         await initialize();
       } catch (e) {
         console.warn('App init error:', e);
-        useAuthStore.setState({ 
-          isInitialized: true, 
-          isLoading: false 
+        useAuthStore.setState({
+          isInitialized: true,
+          isLoading: false
         });
       } finally {
         setAppIsReady(true);
         // Hide expo's native splash screen
-        ExpoSplashScreen.hideAsync().catch(() => {});
+        ExpoSplashScreen.hideAsync().catch(() => { });
       }
     }
 
@@ -60,14 +61,16 @@ export default function App() {
   return (
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
-        <StatusBar style="dark" />
-        {appIsReady && <RootNavigator />}
-        {showSplash && (
-          <SplashScreen 
-            onComplete={handleSplashComplete}
-            duration={2500}
-          />
-        )}
+        <NotificationProvider>
+          <StatusBar style="dark" />
+          {appIsReady && <RootNavigator />}
+          {showSplash && (
+            <SplashScreen
+              onComplete={handleSplashComplete}
+              duration={2500}
+            />
+          )}
+        </NotificationProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
