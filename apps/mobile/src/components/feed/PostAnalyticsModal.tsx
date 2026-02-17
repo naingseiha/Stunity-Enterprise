@@ -27,6 +27,8 @@ import * as Haptics from 'expo-haptics';
 import { useFeedStore, PostAnalytics } from '@/stores/feedStore';
 import { Colors, Shadows } from '@/config';
 import { formatNumber } from '@/utils';
+import { recommendationEngine } from '@/services/recommendation';
+import { Post } from '@/types';
 
 interface PostAnalyticsModalProps {
   isOpen: boolean;
@@ -41,9 +43,19 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
   onClose,
   postId,
 }) => {
-  const { fetchPostAnalytics, postAnalytics, isLoadingAnalytics } = useFeedStore();
+  const { fetchPostAnalytics, postAnalytics, isLoadingAnalytics, posts } = useFeedStore();
   const [analytics, setAnalytics] = useState<PostAnalytics | null>(null);
-  
+  const [algoScore, setAlgoScore] = useState<any>(null);
+
+  const post = posts.find(p => p.id === postId);
+
+  useEffect(() => {
+    if (post) {
+      const score = recommendationEngine.calculateScore(post);
+      setAlgoScore(score);
+    }
+  }, [post]);
+
   useEffect(() => {
     if (isOpen && postId) {
       // Check if we already have analytics cached
@@ -57,16 +69,16 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
       }
     }
   }, [isOpen, postId]);
-  
+
   const isLoading = isLoadingAnalytics[postId] || false;
-  
+
   const handleClose = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onClose();
   };
-  
+
   if (!isOpen) return null;
-  
+
   return (
     <Modal
       visible={isOpen}
@@ -82,7 +94,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
             <Ionicons name="close" size={24} color="#262626" />
           </TouchableOpacity>
         </View>
-        
+
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#0066FF" />
@@ -106,7 +118,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                   <Text style={styles.statValue}>{formatNumber(analytics.totalViews)}</Text>
                   <Text style={styles.statLabel}>Total Views</Text>
                 </View>
-                
+
                 <View style={[styles.statCard, Shadows.md]}>
                   <View style={styles.statIconContainer}>
                     <LinearGradient
@@ -119,7 +131,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                   <Text style={styles.statValue}>{formatNumber(analytics.uniqueViewers)}</Text>
                   <Text style={styles.statLabel}>Unique Viewers</Text>
                 </View>
-                
+
                 <View style={[styles.statCard, Shadows.md]}>
                   <View style={styles.statIconContainer}>
                     <LinearGradient
@@ -132,7 +144,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                   <Text style={styles.statValue}>{analytics.engagementRate.toFixed(1)}%</Text>
                   <Text style={styles.statLabel}>Engagement Rate</Text>
                 </View>
-                
+
                 <View style={[styles.statCard, Shadows.md]}>
                   <View style={styles.statIconContainer}>
                     <LinearGradient
@@ -147,7 +159,80 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                 </View>
               </View>
             </View>
-            
+
+            {/* Algorithm Insights */}
+            {algoScore && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Algorithm Insights</Text>
+                <View style={[styles.algoCard, Shadows.sm]}>
+                  <View style={styles.algoHeader}>
+                    <View style={styles.algoScoreCircle}>
+                      <Text style={styles.algoScoreValue}>{Math.round(algoScore.total)}</Text>
+                      <Text style={styles.algoScoreLabel}>Score</Text>
+                    </View>
+                    <View style={styles.algoInfo}>
+                      <Text style={styles.algoTitle}>Stunity Relevance Score</Text>
+                      <Text style={styles.algoSubtitle}>How this post ranks for you</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.algoBreakdown}>
+                    <View style={styles.algoBarContainer}>
+                      <View style={styles.algoBarLabelRow}>
+                        <Text style={styles.algoBarLabel}>Engagement</Text>
+                        <Text style={styles.algoBarValue}>{Math.round(algoScore.breakdown.engagement)}/100</Text>
+                      </View>
+                      <View style={styles.algoProgressBarBg}>
+                        <LinearGradient
+                          colors={['#8B5CF6', '#7C3AED']}
+                          style={[styles.algoProgressBar, { width: `${Math.round(algoScore.breakdown.engagement)}%` }]}
+                        />
+                      </View>
+                    </View>
+
+                    <View style={styles.algoBarContainer}>
+                      <View style={styles.algoBarLabelRow}>
+                        <Text style={styles.algoBarLabel}>Relevance</Text>
+                        <Text style={styles.algoBarValue}>{Math.round(algoScore.breakdown.relevance)}/100</Text>
+                      </View>
+                      <View style={styles.algoProgressBarBg}>
+                        <LinearGradient
+                          colors={['#10B981', '#059669']}
+                          style={[styles.algoProgressBar, { width: `${Math.round(algoScore.breakdown.relevance)}%` }]}
+                        />
+                      </View>
+                    </View>
+
+                    <View style={styles.algoBarContainer}>
+                      <View style={styles.algoBarLabelRow}>
+                        <Text style={styles.algoBarLabel}>Quality</Text>
+                        <Text style={styles.algoBarValue}>{Math.round(algoScore.breakdown.quality)}/100</Text>
+                      </View>
+                      <View style={styles.algoProgressBarBg}>
+                        <LinearGradient
+                          colors={['#F59E0B', '#D97706']}
+                          style={[styles.algoProgressBar, { width: `${Math.round(algoScore.breakdown.quality)}%` }]}
+                        />
+                      </View>
+                    </View>
+
+                    <View style={styles.algoBarContainer}>
+                      <View style={styles.algoBarLabelRow}>
+                        <Text style={styles.algoBarLabel}>Recency</Text>
+                        <Text style={styles.algoBarValue}>{Math.round(algoScore.breakdown.recency)}/90</Text>
+                      </View>
+                      <View style={styles.algoProgressBarBg}>
+                        <LinearGradient
+                          colors={['#3B82F6', '#2563EB']}
+                          style={[styles.algoProgressBar, { width: `${Math.round(algoScore.breakdown.recency)}%` }]}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            )}
+
             {/* Time Period Breakdown */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Views by Period</Text>
@@ -166,7 +251,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                 </View>
               </View>
             </View>
-            
+
             {/* Engagement Metrics */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Engagement</Text>
@@ -183,7 +268,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                   </View>
                   <Text style={styles.engagementBadge}>+{analytics.likes24h} today</Text>
                 </View>
-                
+
                 <View style={[styles.engagementItem, Shadows.sm]}>
                   <View style={styles.engagementLeft}>
                     <View style={[styles.engagementIcon, { backgroundColor: '#DBEAFE' }]}>
@@ -196,7 +281,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                   </View>
                   <Text style={styles.engagementBadge}>+{analytics.comments24h} today</Text>
                 </View>
-                
+
                 <View style={[styles.engagementItem, Shadows.sm]}>
                   <View style={styles.engagementLeft}>
                     <View style={[styles.engagementIcon, { backgroundColor: '#D1FAE5' }]}>
@@ -208,7 +293,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                     </View>
                   </View>
                 </View>
-                
+
                 <View style={[styles.engagementItem, Shadows.sm]}>
                   <View style={styles.engagementLeft}>
                     <View style={[styles.engagementIcon, { backgroundColor: '#FEF3C7' }]}>
@@ -222,7 +307,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                 </View>
               </View>
             </View>
-            
+
             {/* Daily Trend (Simple Bar Chart) */}
             {analytics.dailyViews && analytics.dailyViews.length > 0 && (
               <View style={styles.section}>
@@ -231,7 +316,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                   {analytics.dailyViews.slice(-7).map((day, index) => {
                     const maxViews = Math.max(...analytics.dailyViews.map(d => d.views));
                     const heightPercent = maxViews > 0 ? (day.views / maxViews) * 100 : 0;
-                    
+
                     return (
                       <View key={index} style={styles.chartBar}>
                         <View style={styles.barWrapper}>
@@ -250,7 +335,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                 </View>
               </View>
             )}
-            
+
             {/* Traffic Sources */}
             {analytics.viewsBySource && Object.keys(analytics.viewsBySource).length > 0 && (
               <View style={styles.section}>
@@ -258,7 +343,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                 <View style={styles.sourcesList}>
                   {Object.entries(analytics.viewsBySource).map(([source, views]) => {
                     const percentage = ((views / analytics.totalViews) * 100).toFixed(1);
-                    
+
                     return (
                       <View key={source} style={[styles.sourceItem, Shadows.sm]}>
                         <Text style={styles.sourceName}>{source}</Text>
@@ -272,7 +357,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                 </View>
               </View>
             )}
-            
+
             {/* Footer spacing */}
             <View style={{ height: 40 }} />
           </ScrollView>
@@ -295,7 +380,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  
+
   // Header
   header: {
     flexDirection: 'row',
@@ -321,7 +406,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 20,
   },
-  
+
   // Loading
   loadingContainer: {
     flex: 1,
@@ -333,7 +418,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#8E8E93',
   },
-  
+
   // Content
   content: {
     flex: 1,
@@ -347,7 +432,7 @@ const styles = StyleSheet.create({
     color: '#262626',
     marginBottom: 16,
   },
-  
+
   // Overview Grid
   overviewGrid: {
     flexDirection: 'row',
@@ -385,7 +470,7 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     textAlign: 'center',
   },
-  
+
   // Period Grid
   periodGrid: {
     gap: 12,
@@ -407,7 +492,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#8E8E93',
   },
-  
+
   // Engagement List
   engagementList: {
     gap: 12,
@@ -452,7 +537,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
   },
-  
+
   // Chart
   chartContainer: {
     flexDirection: 'row',
@@ -490,7 +575,7 @@ const styles = StyleSheet.create({
     color: '#262626',
     fontWeight: '700',
   },
-  
+
   // Sources List
   sourcesList: {
     gap: 12,
@@ -525,7 +610,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8E8E93',
   },
-  
+
   // Error State
   errorContainer: {
     flex: 1,
@@ -549,5 +634,86 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+
+
+  // Algorithm Styles
+  algoCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#EEF2FF',
+  },
+  algoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 16,
+  },
+  algoScoreCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 4,
+    borderColor: '#6366F1',
+  },
+  algoScoreValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#4338CA',
+  },
+  algoScoreLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: -2,
+  },
+  algoInfo: {
+    flex: 1,
+  },
+  algoTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  algoSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  algoBreakdown: {
+    gap: 12,
+  },
+  algoBarContainer: {
+    gap: 6,
+  },
+  algoBarLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  algoBarLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4B5563',
+  },
+  algoBarValue: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  algoProgressBarBg: {
+    height: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  algoProgressBar: {
+    height: '100%',
+    borderRadius: 4,
   },
 });

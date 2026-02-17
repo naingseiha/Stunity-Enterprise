@@ -8,6 +8,7 @@ import { create } from 'zustand';
 import { Post, Story, StoryGroup, PaginationParams, Comment } from '@/types';
 import { feedApi } from '@/api/client';
 import { mockPosts, mockStories } from '@/api/mockData';
+import { recommendationEngine, UserInterestProfile } from '@/services/recommendation';
 
 // Analytics types
 export interface PostAnalytics {
@@ -38,10 +39,13 @@ export type TrendingPeriod = '24h' | '7d' | '30d';
 
 interface FeedState {
   // Posts
+
   posts: Post[];
   isLoadingPosts: boolean;
   hasMorePosts: boolean;
   postsPage: number;
+  feedMode: 'FOR_YOU' | 'FOLLOWING' | 'RECENT';
+  userInterestProfile: UserInterestProfile | null;
 
   // My Posts
   myPosts: Post[];
@@ -97,7 +101,10 @@ interface FeedState {
   // Discovery actions
   fetchMyPosts: () => Promise<void>;
   fetchBookmarks: () => Promise<void>;
+
   fetchTrending: (period?: TrendingPeriod) => Promise<void>;
+  toggleFeedMode: (mode: 'FOR_YOU' | 'FOLLOWING' | 'RECENT') => void;
+  initializeRecommendations: () => void;
 
   // Story actions
   viewStory: (storyId: string) => Promise<void>;
@@ -115,10 +122,10 @@ interface FeedState {
 }
 
 const initialState = {
-  posts: [],
   isLoadingPosts: false,
   hasMorePosts: true,
   postsPage: 1,
+  feedMode: 'FOR_YOU' as const,
   myPosts: [],
   isLoadingMyPosts: false,
   bookmarkedPosts: [],
@@ -316,8 +323,16 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           }
         }
 
+        // Apply recommendations if in FOR_YOU mode
+        let finalPosts = refresh ? transformedPosts : [...posts, ...transformedPosts];
+
+        if (get().feedMode === 'FOR_YOU') {
+          // In a real app we'd do this server-side, but simulating it client-side
+          finalPosts = recommendationEngine.generateFeed(finalPosts);
+        }
+
         // Performance optimization: Limit total posts in memory
-        const allPosts = refresh ? transformedPosts : [...posts, ...transformedPosts];
+        const allPosts = finalPosts;
         const maxPostsInMemory = 100;
         const optimizedPosts = allPosts.slice(0, maxPostsInMemory);
 
@@ -567,6 +582,13 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       ),
     }));
 
+    // Track for recommendation engine
+    const post = get().posts.find(p => p.id === postId);
+    if (post) {
+      recommendationEngine.trackAction('LIKE', post);
+      set({ userInterestProfile: recommendationEngine.getUserProfile() });
+    }
+
     try {
       await feedApi.post(`/posts/${postId}/like`);
     } catch (error) {
@@ -620,6 +642,12 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         p.id === postId ? { ...p, isBookmarked: !wasBookmarked } : p
       ),
     }));
+
+    // Track for recommendation engine
+    if (!wasBookmarked) {
+      recommendationEngine.trackAction('BOOKMARK', post);
+      set({ userInterestProfile: recommendationEngine.getUserProfile() });
+    }
 
     try {
       // Backend uses POST for toggle (handles both bookmark and unbookmark)
@@ -794,6 +822,13 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     set((state) => ({
       isSubmittingComment: { ...state.isSubmittingComment, [postId]: true },
     }));
+
+    // Track for recommendation engine
+    const post = get().posts.find(p => p.id === postId);
+    if (post) {
+      recommendationEngine.trackAction('COMMENT', post);
+      set({ userInterestProfile: recommendationEngine.getUserProfile() });
+    }
 
     try {
       const response = await feedApi.post(`/posts/${postId}/comments`, { content });

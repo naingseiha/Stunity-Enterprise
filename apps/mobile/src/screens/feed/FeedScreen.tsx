@@ -31,9 +31,9 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 // Import actual Stunity logo
 const StunityLogo = require('../../../../../Stunity.png');
 
-import { 
-  PostCard, 
-  StoryCircles, 
+import {
+  PostCard,
+  StoryCircles,
   PostAnalyticsModal,
   SubjectFilters,
   FloatingActionButton,
@@ -55,6 +55,8 @@ export default function FeedScreen() {
   const { user } = useAuthStore();
   const { openSidebar } = useNavigationContext();
   const {
+    feedMode,
+    toggleFeedMode,
     posts,
     storyGroups,
     isLoadingPosts,
@@ -69,6 +71,7 @@ export default function FeedScreen() {
     voteOnPoll,
     sharePost,
     trackPostView,
+    initializeRecommendations,
   } = useFeedStore();
 
   const [refreshing, setRefreshing] = useState(false);
@@ -80,6 +83,7 @@ export default function FeedScreen() {
   useEffect(() => {
     fetchPosts();
     fetchStories();
+    initializeRecommendations();
   }, []);
 
   // Refresh posts when screen comes into focus (e.g., after creating a post)
@@ -119,14 +123,14 @@ export default function FeedScreen() {
     try {
       // Use native share if available
       if (Platform.OS === 'ios' || Platform.OS === 'android') {
-        const { default: Share } = await import('react-native');
+        const { Share } = await import('react-native');
         await Share.share({
           message: `Check out this ${post.postType.toLowerCase()} on Stunity:\n\n${post.content}\n\n#Stunity #Education`,
           title: `${post.author.firstName}'s ${post.postType}`,
           url: `https://stunity.com/posts/${postId}`, // Future: deep link
         });
       }
-      
+
       // Track share
       await sharePost(postId);
     } catch (error) {
@@ -155,7 +159,7 @@ export default function FeedScreen() {
         difficulty: value.difficulty,
         wouldRecommend: value.wouldRecommend,
       });
-      
+
       console.log('✅ Educational Value submitted:', {
         postId: valuePostId,
         averageRating: response.data.averageRating,
@@ -219,18 +223,38 @@ export default function FeedScreen() {
 
   const handleSubjectFilterChange = useCallback(async (filterKey: string) => {
     setActiveSubjectFilter(filterKey);
-    
+
     // Refresh feed with subject filter
     await fetchPosts(true, filterKey);
   }, [fetchPosts]);
 
   const renderHeader = () => (
     <View style={styles.headerSection}>
+      {/* Feed Tabs */}
+      <View style={styles.feedTabsContainer}>
+        <View style={styles.feedTabs}>
+          <TouchableOpacity
+            style={[styles.feedTab, feedMode === 'FOR_YOU' && styles.feedTabActive]}
+            onPress={() => toggleFeedMode('FOR_YOU')}
+          >
+            <Text style={[styles.feedTabText, feedMode === 'FOR_YOU' && styles.feedTabTextActive]}>For You</Text>
+            {feedMode === 'FOR_YOU' && <View style={styles.activeIndicator} />}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.feedTab, feedMode === 'FOLLOWING' && styles.feedTabActive]}
+            onPress={() => toggleFeedMode('FOLLOWING')}
+          >
+            <Text style={[styles.feedTabText, feedMode === 'FOLLOWING' && styles.feedTabTextActive]}>Following</Text>
+            {feedMode === 'FOLLOWING' && <View style={styles.activeIndicator} />}
+          </TouchableOpacity>
+        </View>
+      </View>
+
       {/* Create Post Card with integrated Stories */}
       <View style={styles.createPostCard}>
         {/* Top row: Create post input */}
-        <TouchableOpacity 
-          onPress={handleCreatePost} 
+        <TouchableOpacity
+          onPress={handleCreatePost}
           activeOpacity={0.8}
           style={styles.createPostRow}
         >
@@ -247,10 +271,10 @@ export default function FeedScreen() {
             <Ionicons name="images-outline" size={22} color="#6366F1" />
           </View>
         </TouchableOpacity>
-        
+
         {/* Divider */}
         <View style={styles.storyDivider} />
-        
+
         {/* Quick Action Bar - Integrated in Create Post Card */}
         <View style={styles.quickActionsInCard}>
           <TouchableOpacity
@@ -261,9 +285,9 @@ export default function FeedScreen() {
             <Ionicons name="help-circle" size={24} color="#6366F1" />
             <Text style={styles.inCardActionText}>Ask Question</Text>
           </TouchableOpacity>
-          
+
           <View style={styles.actionDivider} />
-          
+
           <TouchableOpacity
             onPress={handleFindStudyBuddy}
             activeOpacity={0.7}
@@ -272,9 +296,9 @@ export default function FeedScreen() {
             <Ionicons name="people" size={24} color="#EC4899" />
             <Text style={styles.inCardActionText}>Study Buddy</Text>
           </TouchableOpacity>
-          
+
           <View style={styles.actionDivider} />
-          
+
           <TouchableOpacity
             onPress={handleDailyChallenge}
             activeOpacity={0.7}
@@ -289,7 +313,7 @@ export default function FeedScreen() {
   );
 
   const renderPost = ({ item, index }: { item: Post; index: number }) => (
-    <Animated.View 
+    <Animated.View
       entering={FadeInDown.delay(50 * Math.min(index, 3)).duration(300)}
       style={styles.postWrapper}
     >
@@ -297,7 +321,7 @@ export default function FeedScreen() {
         post={item}
         onLike={() => handleLikePost(item)}
         onComment={() => navigation.navigate('Comments', { postId: item.id })}
-        onRepost={() => {}}
+        onRepost={() => { }}
         onShare={() => handleSharePost(item.id)}
         onBookmark={() => bookmarkPost(item.id)}
         onValue={() => handleValuePost(item)}
@@ -343,10 +367,10 @@ export default function FeedScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
+
       {/* Network Status Banner */}
       <NetworkStatus onRetry={handleRefresh} />
-      
+
       {/* V1 Header - Profile left, Logo center, Actions right */}
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.header}>
@@ -364,14 +388,14 @@ export default function FeedScreen() {
 
           {/* Actions - Right */}
           <View style={styles.headerActions}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.headerButton}
               onPress={() => navigation.navigate('Notifications' as any)}
             >
               <Ionicons name="notifications-outline" size={24} color="#374151" />
               <View style={styles.notificationBadge} />
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.headerButton}
               onPress={() => navigation.navigate('Search' as any)}
             >
@@ -411,7 +435,7 @@ export default function FeedScreen() {
         contentContainerStyle={styles.listContent}
         style={styles.list}
       />
-      
+
       {/* Post Analytics Modal */}
       <PostAnalyticsModal
         isOpen={!!analyticsPostId}
@@ -612,5 +636,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#fff',
+  },
+  // Feed Tabs
+  feedTabsContainer: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+    marginBottom: 12,
+  },
+  feedTabs: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 32,
+  },
+  feedTab: {
+    paddingVertical: 12,
+    position: 'relative',
+    alignItems: 'center',
+  },
+  feedTabActive: {
+    // 
+  },
+  feedTabText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  feedTabTextActive: {
+    color: '#111827',
+  },
+  activeIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    width: 20,
+    height: 3,
+    backgroundColor: '#6366F1',
+    borderRadius: 1.5,
   },
 });
