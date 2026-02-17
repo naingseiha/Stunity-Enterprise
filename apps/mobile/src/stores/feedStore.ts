@@ -74,8 +74,8 @@ interface FeedState {
   // Actions
   fetchPosts: (refresh?: boolean) => Promise<void>;
   fetchStories: () => Promise<void>;
-  createPost: (content: string, mediaUrls?: string[], postType?: string, pollOptions?: string[], quizData?: any, title?: string) => Promise<boolean>;
-  updatePost: (postId: string, data: { content: string; visibility?: string; mediaUrls?: string[]; mediaDisplayMode?: string; pollOptions?: string[]; quizData?: any }) => Promise<boolean>;
+  createPost: (content: string, mediaUrls?: string[], postType?: string, pollOptions?: string[], quizData?: any, title?: string, visibility?: string, pollSettings?: any) => Promise<boolean>;
+  updatePost: (postId: string, data: { content: string; visibility?: string; mediaUrls?: string[]; mediaDisplayMode?: string; pollOptions?: string[]; quizData?: any; pollSettings?: any; deadline?: string }) => Promise<boolean>;
   likePost: (postId: string) => Promise<void>;
   unlikePost: (postId: string) => Promise<void>;
   bookmarkPost: (postId: string) => Promise<void>;
@@ -412,7 +412,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   },
 
   // Create a new post
-  createPost: async (content, mediaUrls = [], postType = 'ARTICLE', pollOptions = [], quizData, title) => {
+  createPost: async (content, mediaUrls = [], postType = 'ARTICLE', pollOptions = [], quizData, title, visibility = 'PUBLIC', pollSettings) => {
     try {
       // Upload local images to R2 before creating post
       let uploadedMediaUrls = mediaUrls;
@@ -468,15 +468,25 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         }
       }
 
+      // Calculate poll deadline if duration provided
+      let deadline = undefined;
+      if (postType === 'POLL' && pollSettings?.duration) {
+        const now = new Date();
+        now.setHours(now.getHours() + pollSettings.duration);
+        deadline = now.toISOString();
+      }
+
       // Now create post with uploaded URLs
       const response = await feedApi.post('/posts', {
         content,
         title,
         mediaUrls: uploadedMediaUrls,
         postType,
-        visibility: 'SCHOOL',
+        visibility,
         mediaDisplayMode: 'AUTO',
         pollOptions: postType === 'POLL' ? pollOptions : undefined,
+        pollSettings: postType === 'POLL' ? pollSettings : undefined, // Send full settings
+        deadline, // Send deadline for backend to handle
         quizData: postType === 'QUIZ' ? quizData : undefined,
       });
 

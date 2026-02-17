@@ -49,7 +49,7 @@ export default function CommentsScreen() {
   const route = useRoute<CommentsScreenRouteProp>();
   const { postId } = route.params;
   const { user } = useAuthStore();
-  
+
   const {
     posts,
     comments,
@@ -74,7 +74,7 @@ export default function CommentsScreen() {
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
-    
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const success = await addComment(postId, newComment.trim());
     if (success) {
@@ -105,9 +105,9 @@ export default function CommentsScreen() {
             uri={comment.author.profilePictureUrl || undefined}
             name={`${comment.author.firstName} ${comment.author.lastName}`}
             size="md"
-            gradientBorder="blue"
+            variant="post"
           />
-          
+
           <View style={styles.commentBubbleContainer}>
             <View style={[styles.commentBubble, isOwnComment && styles.ownCommentBubble]}>
               <View style={styles.commentHeader}>
@@ -125,9 +125,9 @@ export default function CommentsScreen() {
                   </View>
                 )}
               </View>
-              
+
               <Text style={styles.commentText}>{comment.content}</Text>
-              
+
               <View style={styles.commentFooter}>
                 <Text style={styles.commentTime}>{formatRelativeTime(comment.createdAt)}</Text>
                 {isOwnComment && (
@@ -191,16 +191,16 @@ export default function CommentsScreen() {
       <View style={styles.headerWrapper}>
         <View style={styles.headerGradient}>
           <View style={styles.headerContent}>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 navigation.goBack();
-              }} 
+              }}
               style={styles.backButton}
             >
               <Ionicons name="arrow-back" size={22} color="#262626" />
             </TouchableOpacity>
-            
+
             <View style={styles.headerTitleContainer}>
               <Text style={styles.headerTitle}>Comments</Text>
               {postComments.length > 0 && (
@@ -209,7 +209,7 @@ export default function CommentsScreen() {
                 </View>
               )}
             </View>
-            
+
             <View style={styles.headerRight} />
           </View>
         </View>
@@ -223,7 +223,7 @@ export default function CommentsScreen() {
               uri={post.author.profilePictureUrl || undefined}
               name={`${post.author.firstName} ${post.author.lastName}`}
               size="sm"
-              gradientBorder="blue"
+              variant="post"
             />
             <View style={styles.postAuthorInfo}>
               <Text style={styles.postAuthor}>
@@ -267,7 +267,7 @@ export default function CommentsScreen() {
               size="sm"
               gradientBorder="blue"
             />
-            
+
             <View style={styles.inputField}>
               <TextInput
                 style={styles.input}
@@ -280,7 +280,7 @@ export default function CommentsScreen() {
                 editable={!isSubmitting}
               />
             </View>
-            
+
             <TouchableOpacity
               onPress={handleAddComment}
               disabled={!newComment.trim() || isSubmitting}
@@ -296,10 +296,10 @@ export default function CommentsScreen() {
                   colors={newComment.trim() ? ['#0066FF', '#0052CC'] : ['#E8E8E8', '#D4D4D4']}
                   style={styles.sendButtonGradient}
                 >
-                  <Ionicons 
-                    name="send" 
-                    size={16} 
-                    color={newComment.trim() ? '#fff' : '#A3A3A3'} 
+                  <Ionicons
+                    name="send"
+                    size={16}
+                    color={newComment.trim() ? '#fff' : '#A3A3A3'}
                   />
                 </LinearGradient>
               )}
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  
+
   // Header Styles - Clean and Professional
   headerWrapper: {
     backgroundColor: '#FFFFFF',

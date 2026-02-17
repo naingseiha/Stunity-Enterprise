@@ -85,7 +85,8 @@ export type PostType =
   | 'TUTORIAL'
   | 'RESEARCH'
   | 'REFLECTION'
-  | 'COLLABORATION';
+  | 'COLLABORATION'
+  | 'CLUB_ANNOUNCEMENT';
 
 // E-Learning specific metadata for posts
 export type DifficultyLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
@@ -182,6 +183,8 @@ export interface Post {
       passed: boolean;
       pointsEarned: number;
       submittedAt: string;
+      answers?: any[]; // Array of user answers
+      results?: any[]; // Array of result details
     };
   };
   createdAt: string;

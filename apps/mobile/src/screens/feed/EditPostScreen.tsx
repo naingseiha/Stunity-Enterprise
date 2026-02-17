@@ -28,6 +28,7 @@ import { useFeedStore } from '@/stores';
 import { Post } from '@/types';
 import { feedApi } from '@/api/client';
 import { QuizForm, QuizData } from './create-post/forms/QuizForm';
+import { PollForm, PollData } from './create-post/forms/PollForm';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 // Upload helper
@@ -88,6 +89,32 @@ export default function EditPostScreen() {
   const [visibility, setVisibility] = useState(post.visibility || 'PUBLIC');
   const [mediaUrls, setMediaUrls] = useState<string[]>(post.mediaUrls || []);
   const [quizData, setQuizData] = useState<QuizData | undefined>(post.quizData as QuizData | undefined);
+
+  // Initialize poll data
+  const [pollData, setPollData] = useState<PollData | null>(() => {
+    if (post.postType === 'POLL') {
+      let duration = null;
+      if (post.learningMeta?.deadline) {
+        const diff = new Date(post.learningMeta.deadline).getTime() - new Date().getTime();
+        // If deadline is in future, calculate remaining hours. 
+        // Note: For editing, we might want to show original duration or remaining. 
+        // Let's show remaining rounded to nearest standard option or just raw hours.
+        if (diff > 0) {
+          duration = Math.ceil(diff / (1000 * 60 * 60));
+        }
+      }
+
+      return {
+        options: post.pollOptions?.map(o => o.text) || ['', ''],
+        duration,
+        resultsVisibility: 'AFTER_VOTING', // Default, ideally fetch from backend if available in Post type
+        allowMultipleSelections: false,
+        anonymousVoting: false,
+      };
+    }
+    return null;
+  });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Helpers
@@ -161,6 +188,15 @@ export default function EditPostScreen() {
       }
     }
 
+    // Validate poll
+    if (post.postType === 'POLL' && pollData) {
+      const validOptions = pollData.options.filter(opt => opt.trim().length > 0);
+      if (validOptions.length < 2) {
+        Alert.alert('Invalid Poll', 'Please add at least 2 poll options.');
+        return;
+      }
+    }
+
     if (!hasChanges) {
       navigation.goBack();
       return;
@@ -192,6 +228,14 @@ export default function EditPostScreen() {
         }
       }
 
+      // Calculate poll deadline if duration provided
+      let deadline = undefined;
+      if (post.postType === 'POLL' && pollData?.duration) {
+        const now = new Date();
+        now.setHours(now.getHours() + pollData.duration);
+        deadline = now.toISOString();
+      }
+
       // Update post
       const success = await updatePost(post.id, {
         content: content.trim(),
@@ -199,6 +243,9 @@ export default function EditPostScreen() {
         mediaUrls: finalMediaUrls,
         mediaDisplayMode: post.mediaDisplayMode || 'AUTO',
         quizData: post.postType === 'QUIZ' ? quizData : undefined,
+        pollOptions: post.postType === 'POLL' && pollData ? pollData.options.filter(o => o.trim()) : undefined,
+        pollSettings: post.postType === 'POLL' ? pollData : undefined,
+        deadline,
       });
 
       setIsSubmitting(false);
@@ -269,6 +316,17 @@ export default function EditPostScreen() {
                 onDataChange={(data) => {
                   setQuizData(data);
                 }}
+              />
+            </View>
+          )}
+
+          {/* Poll Form */}
+          {post.postType === 'POLL' && pollData && (
+            <View style={{ borderTopWidth: 1, borderTopColor: '#F3F4F6' }}>
+              <PollForm
+                options={pollData.options}
+                onOptionsChange={(opts) => setPollData(prev => prev ? { ...prev, options: opts } : null)}
+                onDataChange={setPollData}
               />
             </View>
           )}

@@ -54,6 +54,14 @@ const isVideo = (uri: string) => {
   return ext === 'mp4' || ext === 'mov' || ext === 'avi' || ext === 'mkv';
 };
 
+// Visibility options
+const VISIBILITY_OPTIONS = [
+  { value: 'PUBLIC', label: 'Public', icon: 'earth', desc: 'Anyone', color: '#10B981' },
+  { value: 'SCHOOL', label: 'School', icon: 'school', desc: 'School members', color: '#3B82F6' },
+  { value: 'CLASS', label: 'Class', icon: 'people', desc: 'Class members', color: '#8B5CF6' },
+  { value: 'PRIVATE', label: 'Private', icon: 'lock-closed', desc: 'Only you', color: '#6B7280' },
+];
+
 export default function CreatePostScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
@@ -61,6 +69,7 @@ export default function CreatePostScreen() {
 
   const [content, setContent] = useState('');
   const [postType, setPostType] = useState<PostType>('ARTICLE');
+  const [visibility, setVisibility] = useState('PUBLIC');
   const [mediaUris, setMediaUris] = useState<string[]>([]);
   const [isPosting, setIsPosting] = useState(false);
 
@@ -222,7 +231,16 @@ export default function CreatePostScreen() {
 
       // Upload images and create post
       // The createPost function will handle uploading local file:// URIs to R2
-      const success = await createPost(content, mediaUris, postType, validPollOptions, quizPayload, postTitle);
+      const success = await createPost(
+        content,
+        mediaUris,
+        postType,
+        validPollOptions,
+        quizPayload,
+        postTitle,
+        visibility,
+        postType === 'POLL' ? pollData : undefined
+      );
 
       if (success) {
         // Success animation sequence
@@ -243,7 +261,7 @@ export default function CreatePostScreen() {
     } finally {
       setIsPosting(false);
     }
-  }, [content, postType, mediaUris, pollOptions, quizData, navigation, createPost]);
+  }, [content, postType, mediaUris, pollOptions, quizData, navigation, createPost, visibility]);
 
   const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
   const canPost = content.trim().length > 0;
@@ -398,6 +416,43 @@ export default function CreatePostScreen() {
               <AnnouncementForm onDataChange={setAnnouncementData} />
             </Animated.View>
           )}
+
+          {/* Visibility Selector */}
+          <View style={styles.visibilitySection}>
+            <Text style={styles.sectionLabel}>Visibility</Text>
+            <View style={styles.visibilityGrid}>
+              {VISIBILITY_OPTIONS.map((option) => {
+                const isSelected = visibility === option.value;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    onPress={() => {
+                      setVisibility(option.value);
+                      Haptics.selectionAsync();
+                    }}
+                    disabled={isPosting}
+                    style={[
+                      styles.visibilityOption,
+                      isSelected && { backgroundColor: option.color + '15', borderColor: option.color },
+                    ]}
+                  >
+                    <Ionicons
+                      name={option.icon as any}
+                      size={20}
+                      color={isSelected ? option.color : '#6B7280'}
+                    />
+                    <Text style={[
+                      styles.visibilityLabel,
+                      isSelected && { color: option.color },
+                    ]}>
+                      {option.label}
+                    </Text>
+                    <Text style={styles.visibilityDesc}>{option.desc}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
 
           {/* Media Preview */}
           {mediaUris.length > 0 && (
@@ -734,5 +789,47 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#6366F1',
+  },
+  // Visibility styles
+  visibilitySection: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 12,
+  },
+  visibilityGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  visibilityOption: {
+    width: '48%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 8,
+  },
+  visibilityLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B7280',
+    flex: 1,
+  },
+  visibilityDesc: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    position: 'absolute',
+    bottom: 4,
+    left: 44,
   },
 });

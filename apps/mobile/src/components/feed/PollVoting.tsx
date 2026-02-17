@@ -3,8 +3,8 @@
  * 
  * X/Twitter-style poll design with:
  * - Fully rounded pill buttons
- * - Pastel colors (green for selected, purple/gray for others)
- * - Vote avatars and percentages
+ * - Progress bars behind text
+ * - Sky Blue for selected/winning option
  * - Clean, minimal design
  */
 
@@ -14,6 +14,9 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -23,7 +26,13 @@ import Animated, {
   withSpring,
   withTiming,
   Easing,
+  FadeIn,
 } from 'react-native-reanimated';
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 interface PollOption {
   id: string;
@@ -37,6 +46,7 @@ interface PollVotingProps {
   userVotedOptionId?: string;
   onVote: (optionId: string) => void;
   disabled?: boolean;
+  endsAt?: string; // ISO Date string
 }
 
 export const PollVoting: React.FC<PollVotingProps> = ({
@@ -44,10 +54,11 @@ export const PollVoting: React.FC<PollVotingProps> = ({
   userVotedOptionId,
   onVote,
   disabled = false,
+  endsAt,
 }) => {
   const [localVote, setLocalVote] = useState(userVotedOptionId);
   const hasVoted = !!localVote;
-  
+
   // Update local vote when prop changes
   useEffect(() => {
     setLocalVote(userVotedOptionId);
@@ -55,103 +66,136 @@ export const PollVoting: React.FC<PollVotingProps> = ({
 
   // Calculate total votes and percentages
   const totalVotes = options.reduce((sum, opt) => sum + (opt.votes || opt._count?.votes || 0), 0);
+
   const getPercentage = (option: PollOption) => {
     const votes = option.votes || option._count?.votes || 0;
-    return totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
+    if (totalVotes === 0) return 0;
+    return Math.round((votes / totalVotes) * 100);
   };
 
+  // Find the winning option (most votes)
+  const winningOptionId = options.reduce((prev, current) => {
+    const prevVotes = prev.votes || prev._count?.votes || 0;
+    const currentVotes = current.votes || current._count?.votes || 0;
+    return (prevVotes > currentVotes) ? prev : current;
+  }, options[0]).id;
+
   const handleVote = (optionId: string) => {
-    if (disabled) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (disabled || hasVoted) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setLocalVote(optionId);
     onVote(optionId);
   };
 
-  // Get background color based on selection and vote count
-  const getBackgroundColor = (option: PollOption, isSelected: boolean) => {
-    if (!hasVoted) return '#F7F9FC';
-    if (isSelected) return '#D4F4DD'; // Light green for selected
-    
-    const percentage = getPercentage(option);
-    if (percentage >= 30) return '#E5DEFF'; // Light purple for high votes
-    if (percentage >= 15) return '#F0F0F0'; // Light gray for medium
-    return '#FAFAFA'; // Very light gray for low votes
+  // Calculate time remaining string
+  const getTimeRemaining = () => {
+    if (!endsAt) return 'Open voting';
+    const now = new Date();
+    const end = new Date(endsAt);
+    const diff = end.getTime() - now.getTime();
+
+    if (diff <= 0) return 'Final results';
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (days > 0) return `${days} ${days === 1 ? 'day' : 'days'} left`;
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    if (hours > 0) return `${hours} ${hours === 1 ? 'hour' : 'hours'} left`;
+
+    const minutes = Math.floor(diff / (1000 * 60));
+    return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} left`;
   };
 
-  const renderOption = (option: PollOption, index: number) => {
-    const votes = option.votes || option._count?.votes || 0;
+  const timeText = getTimeRemaining();
+  const isFinal = timeText === 'Final results';
+
+  const renderOption = (option: PollOption) => {
     const percentage = getPercentage(option);
     const isSelected = localVote === option.id;
-    const backgroundColor = getBackgroundColor(option, isSelected);
-    
-    // Animation
-    const scale = useSharedValue(1);
-    const animatedScale = useAnimatedStyle(() => ({
-      transform: [{ scale: scale.value }],
-    }));
+    const isWinner = isFinal && option.id === winningOptionId;
+
+    // Check if this option should be highlighted (selected or winner)
+    const isHighlighted = isSelected || isWinner;
+
+    // Progress Bar Style
+    const progressBarStyle = {
+      width: `${percentage}%`,
+      backgroundColor: isHighlighted ? 'rgba(14, 165, 233, 0.2)' : 'rgba(243, 244, 246, 1)', // Sky blue tint or Gray
+    } as any;
+
+    // Text & Checkmark Color
+    const textColor = '#1F2937'; // Dark gray
+    const iconColor = isHighlighted ? '#0EA5E9' : '#1F2937';
+    const fontWeight = isSelected ? '700' : '500';
 
     return (
       <TouchableOpacity
         key={option.id}
-        activeOpacity={0.8}
-        disabled={disabled}
-        onPressIn={() => {
-          scale.value = withSpring(0.98, { damping: 15 });
-        }}
-        onPressOut={() => {
-          scale.value = withSpring(1, { damping: 15 });
-        }}
+        activeOpacity={0.9} // Less fade on press
+        disabled={disabled || hasVoted || isFinal}
         onPress={() => handleVote(option.id)}
-        style={styles.optionWrapper}
+        style={styles.optionContainer}
       >
-        <Animated.View style={[styles.option, { backgroundColor }, animatedScale]}>
-          {/* Left side: Checkmark + Text */}
-          <View style={styles.optionLeft}>
-            {isSelected && hasVoted && (
-              <Ionicons name="checkmark" size={20} color="#34C759" style={styles.checkmark} />
-            )}
-            <Text style={[styles.optionText, isSelected && hasVoted && styles.optionTextSelected]}>
-              {option.text}
-            </Text>
-          </View>
-
-          {/* Right side: Percentage (+ avatars placeholder) */}
+        <View style={[styles.optionContent, !hasVoted && styles.optionContentOutline]}>
+          {/* Progress Bar Background (Only show if voted) */}
           {hasVoted && (
-            <View style={styles.optionRight}>
-              <Text style={[styles.percentage, isSelected && styles.percentageSelected]}>
-                {percentage}%
+            <Animated.View
+              entering={FadeIn.duration(300)}
+              style={[
+                styles.progressBar,
+                progressBarStyle,
+                // If 100%, round right corners too
+                percentage === 100 && { borderTopRightRadius: 12, borderBottomRightRadius: 12 }
+              ]}
+            />
+          )}
+
+          {/* Text Content */}
+          <View style={styles.textContent}>
+            <View style={styles.leftGroup}>
+              {/* Checkmark for winner or selected */}
+              {hasVoted && isHighlighted && (
+                <Ionicons
+                  name="checkmark-circle"
+                  size={18}
+                  color="#0EA5E9"
+                  style={{ marginRight: 6 }}
+                />
+              )}
+              <Text style={[styles.optionText, { color: textColor, fontWeight }]}>
+                {option.text}
               </Text>
             </View>
-          )}
-        </Animated.View>
+
+            {/* Percentage (Only show if voted) */}
+            {hasVoted && (
+              <Text style={[styles.percentageText, { fontWeight: isHighlighted ? '700' : '500' }]}>
+                {percentage}%
+              </Text>
+            )}
+          </View>
+        </View>
       </TouchableOpacity>
     );
   };
 
   return (
     <View style={styles.container}>
-      {/* Vote count and hint */}
-      <View style={styles.header}>
+      {/* Options List */}
+      <View style={styles.optionsList}>
+        {options.map((option) => renderOption(option))}
+      </View>
+
+      {/* Footer Info */}
+      <View style={styles.footer}>
         <Text style={styles.voteCount}>
-          {totalVotes} {totalVotes === 1 ? 'vote' : 'votes'}
+          {totalVotes.toLocaleString()} {totalVotes === 1 ? 'vote' : 'votes'}
         </Text>
         <Text style={styles.dot}>•</Text>
-        <Text style={styles.hint}>
-          {hasVoted ? 'Tap to change your vote' : 'Vote to see results'}
+        <Text style={[styles.timeRemaining, isFinal && styles.finalText]}>
+          {timeText}
         </Text>
-      </View>
-
-      {/* Options */}
-      <View style={styles.optionsContainer}>
-        {options.map((option, index) => renderOption(option, index))}
-      </View>
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <View style={styles.footerItem}>
-          <Ionicons name="eye-outline" size={16} color="#8E8E93" />
-          <Text style={styles.footerText}>Open Voting</Text>
-        </View>
       </View>
     </View>
   );
@@ -159,107 +203,80 @@ export const PollVoting: React.FC<PollVotingProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 12,
+    marginVertical: 8,
   },
-
-  // Header with vote count
-  header: {
+  optionsList: {
+    gap: 8,
+  },
+  optionContainer: {
+    height: 44, // Clean height
+    borderRadius: 12, // Rounded corners (not full pill for progress bar look)
+    overflow: 'hidden',
+  },
+  optionContent: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 2,
+    position: 'relative',
+    borderRadius: 12,
   },
-  voteCount: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: '#8E8E93',
+  optionContentOutline: {
+    borderWidth: 1.5, // Thicker border for better visibility
+    borderColor: '#0EA5E9', // Sky Blue border to indicate interactivity
+    backgroundColor: '#FFFFFF',
   },
-  dot: {
-    fontSize: 14,
-    color: '#8E8E93',
-    marginHorizontal: 6,
+  progressBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
   },
-  hint: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: '#8E8E93',
-  },
-
-  // Options Container
-  optionsContainer: {
-    gap: 12,
-  },
-
-  // Option Wrapper
-  optionWrapper: {
-    marginBottom: 0,
-  },
-
-  // Option - Fully Rounded Pill (like X/Twitter)
-  option: {
+  textContent: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 50, // Fully rounded!
-    minHeight: 56,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
+    paddingHorizontal: 16,
+    zIndex: 1, // Ensure text is above progress bar
   },
-
-  // Left side - Checkmark + Text
-  optionLeft: {
-    flex: 1,
+  leftGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-  },
-  checkmark: {
-    marginRight: 4,
+    flex: 1,
   },
   optionText: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#000000',
-    lineHeight: 22,
+    fontSize: 15,
+    color: '#1F2937',
   },
-  optionTextSelected: {
-    fontWeight: '600',
-    color: '#000000',
+  percentageText: {
+    fontSize: 15,
+    color: '#1F2937',
   },
-
-  // Right side - Percentage
-  optionRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 12,
-  },
-  percentage: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#000000',
-  },
-  percentageSelected: {
-    fontWeight: '700',
-  },
-
-  // Footer
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
-    paddingHorizontal: 2,
+    marginTop: 10,
+    paddingHorizontal: 4,
   },
-  footerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  footerText: {
-    fontSize: 14,
+  voteCount: {
+    fontSize: 13,
+    color: '#6B7280',
     fontWeight: '400',
-    color: '#8E8E93',
+  },
+  dot: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    marginHorizontal: 6,
+  },
+  timeRemaining: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '400',
+  },
+  finalText: {
+    fontWeight: '600',
+    color: '#1F2937',
   },
 });

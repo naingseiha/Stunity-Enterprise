@@ -56,10 +56,10 @@ interface PostCardProps {
 }
 
 // Post type configurations - V1 style with gradients
-const POST_TYPE_CONFIG: Record<string, { 
-  icon: string; 
-  label: string; 
-  color: string; 
+const POST_TYPE_CONFIG: Record<string, {
+  icon: string;
+  label: string;
+  color: string;
   bgColor: string;
   ctaLabel: string;
   gradient: [string, string];
@@ -90,17 +90,38 @@ const DIFFICULTY_CONFIG: Record<DifficultyLevel, { label: string; labelKh: strin
   ADVANCED: { label: 'Advanced', labelKh: 'កម្រិតខ្ពស់', color: '#EF4444', bgColor: '#FEE2E2', icon: 'rocket' },
 };
 
+// Vibrant gradients for Quiz cards to make them pop
+const QUIZ_GRADIENTS: [string, string][] = [
+  ['#EC4899', '#DB2777'], // Pink (Default)
+  ['#8B5CF6', '#7C3AED'], // Violet
+  ['#3B82F6', '#2563EB'], // Blue
+  ['#10B981', '#059669'], // Emerald
+  ['#F59E0B', '#D97706'], // Amber
+  ['#6366F1', '#4F46E5'], // Indigo
+  ['#06B6D4', '#0891B2'], // Cyan
+  ['#F97316', '#EA580C'], // Orange
+];
+
+const getQuizGradient = (id: string): [string, string] => {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % QUIZ_GRADIENTS.length;
+  return QUIZ_GRADIENTS[index];
+};
+
 // Helper to calculate time remaining
 const getTimeRemaining = (deadline: string): { text: string; isUrgent: boolean } => {
   const now = new Date();
   const deadlineDate = new Date(deadline);
   const diffMs = deadlineDate.getTime() - now.getTime();
-  
+
   if (diffMs <= 0) return { text: 'Expired', isUrgent: true };
-  
+
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffHours / 24);
-  
+
   if (diffHours < 24) {
     return { text: `${diffHours}h left`, isUrgent: true };
   } else if (diffDays < 7) {
@@ -125,11 +146,11 @@ export const PostCard: React.FC<PostCardProps> = ({
   currentUserId,
 }) => {
   const navigation = useNavigation<any>();
-  
+
   // Get current user from auth store for blue tick experiment
   const { user: currentUser } = useAuthStore();
   const isCurrentUser = currentUserId ? post.author.id === currentUserId : post.author.id === currentUser?.id;
-  
+
   const [liked, setLiked] = useState(post.isLiked);
   const [bookmarked, setBookmarked] = useState(post.isBookmarked);
   const [likeCount, setLikeCount] = useState(post.likes);
@@ -260,7 +281,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const typeConfig = POST_TYPE_CONFIG[post.postType] || POST_TYPE_CONFIG.ARTICLE;
   const authorName = post.author.name || `${post.author.firstName} ${post.author.lastName}`;
   const learningMeta = post.learningMeta;
-  
+
   // Calculate deadline info if present
   const deadlineInfo = useMemo(() => {
     if (learningMeta?.deadline) {
@@ -270,7 +291,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   }, [learningMeta?.deadline]);
 
   // Check if post shows progress (courses, quizzes, assignments)
-  const showProgress = ['COURSE', 'QUIZ', 'ASSIGNMENT', 'TUTORIAL'].includes(post.postType) && 
+  const showProgress = ['COURSE', 'QUIZ', 'ASSIGNMENT', 'TUTORIAL'].includes(post.postType) &&
     learningMeta?.progress !== undefined;
 
   // Check if this is a Q&A post
@@ -286,8 +307,9 @@ export const PostCard: React.FC<PostCardProps> = ({
     }
     return null;
   };
-  
+
   const roleBadge = getRoleBadge();
+  const quizThemeColor = post.postType === 'QUIZ' ? getQuizGradient(post.id)[0] : '#EC4899';
 
   return (
     <View style={styles.container}>
@@ -339,27 +361,27 @@ export const PostCard: React.FC<PostCardProps> = ({
             </View>
             <View style={styles.metaRow}>
               <Text style={styles.timeText}>{formatRelativeTime(post.createdAt)}</Text>
-              
+
               {/* Visibility Icon */}
               <Text style={styles.metaDot}>•</Text>
               <View style={styles.visibilityIndicator}>
-                <Ionicons 
+                <Ionicons
                   name={
                     post.visibility === 'PUBLIC' ? 'earth' :
-                    post.visibility === 'SCHOOL' ? 'school' :
-                    post.visibility === 'CLASS' ? 'people' :
-                    'lock-closed'
-                  } 
-                  size={10} 
+                      post.visibility === 'SCHOOL' ? 'school' :
+                        post.visibility === 'CLASS' ? 'people' :
+                          'lock-closed'
+                  }
+                  size={10}
                   color={
                     post.visibility === 'PUBLIC' ? '#10B981' :
-                    post.visibility === 'SCHOOL' ? '#3B82F6' :
-                    post.visibility === 'CLASS' ? '#8B5CF6' :
-                    '#6B7280'
-                  } 
+                      post.visibility === 'SCHOOL' ? '#3B82F6' :
+                        post.visibility === 'CLASS' ? '#8B5CF6' :
+                          '#6B7280'
+                  }
                 />
               </View>
-              
+
               {/* Study Group Tag */}
               {learningMeta?.studyGroupName && (
                 <>
@@ -373,13 +395,13 @@ export const PostCard: React.FC<PostCardProps> = ({
             </View>
           </View>
         </TouchableOpacity>
-        
+
         {/* Vertical More Menu */}
         <View style={styles.menuContainer}>
           <TouchableOpacity style={styles.moreButton} onPress={handleMenuToggle}>
             <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
           </TouchableOpacity>
-          
+
           {/* Dropdown Menu */}
           {showMenu && (
             <View style={styles.dropdownMenu}>
@@ -400,10 +422,10 @@ export const PostCard: React.FC<PostCardProps> = ({
                 </>
               )}
               <TouchableOpacity style={styles.menuItem} onPress={handleBookmark}>
-                <Ionicons 
-                  name={bookmarked ? 'bookmark' : 'bookmark-outline'} 
-                  size={18} 
-                  color={bookmarked ? '#6366F1' : '#374151'} 
+                <Ionicons
+                  name={bookmarked ? 'bookmark' : 'bookmark-outline'}
+                  size={18}
+                  color={bookmarked ? '#6366F1' : '#374151'}
                 />
                 <Text style={[styles.menuItemText, bookmarked && styles.menuItemTextActive]}>
                   {bookmarked ? 'Saved' : 'Save'}
@@ -429,10 +451,10 @@ export const PostCard: React.FC<PostCardProps> = ({
       {/* Deadline Alert Banner */}
       {deadlineInfo && (
         <View style={[styles.deadlineBanner, deadlineInfo.isUrgent && styles.deadlineBannerUrgent]}>
-          <Ionicons 
-            name={deadlineInfo.isUrgent ? 'warning' : 'time-outline'} 
-            size={16} 
-            color={deadlineInfo.isUrgent ? '#EF4444' : '#F59E0B'} 
+          <Ionicons
+            name={deadlineInfo.isUrgent ? 'warning' : 'time-outline'}
+            size={16}
+            color={deadlineInfo.isUrgent ? '#EF4444' : '#F59E0B'}
           />
           <Text style={[styles.deadlineText, deadlineInfo.isUrgent && styles.deadlineTextUrgent]}>
             {deadlineInfo.isUrgent ? '⚡ Due soon: ' : 'Due: '}{deadlineInfo.text}
@@ -464,7 +486,7 @@ export const PostCard: React.FC<PostCardProps> = ({
               </Text>
             </View>
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.clubJoinButton, { backgroundColor: typeConfig.color }]}
             onPress={onPress}
           >
@@ -477,7 +499,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       {/* Media - Full Width (Instagram-style) */}
       {post.mediaUrls && post.mediaUrls.length > 0 && (
         <View style={styles.mediaWrapper}>
-          <ImageCarousel 
+          <ImageCarousel
             images={post.mediaUrls}
             onImagePress={onPress}
             borderRadius={0}
@@ -519,7 +541,8 @@ export const PostCard: React.FC<PostCardProps> = ({
           <PollVoting
             options={post.pollOptions}
             userVotedOptionId={post.userVotedOptionId}
-            onVote={onVote || (() => {})}
+            onVote={onVote || (() => { })}
+            endsAt={post.learningMeta?.deadline}
           />
         </View>
       )}
@@ -528,7 +551,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       {post.postType === 'QUIZ' && post.quizData && (
         <View style={styles.quizSection}>
           <LinearGradient
-            colors={['#EC4899', '#DB2777']}
+            colors={getQuizGradient(post.id)}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.quizGradientCard}
@@ -536,7 +559,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             {/* Quiz Header */}
             <View style={styles.quizHeader}>
               <View style={styles.quizIconCircle}>
-                <Ionicons name="rocket" size={24} color="#EC4899" />
+                <Ionicons name="rocket" size={24} color={quizThemeColor} />
               </View>
               <View style={styles.quizHeaderText}>
                 <Text style={styles.quizHeaderTitle}>Test Your Knowledge</Text>
@@ -548,7 +571,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             <View style={styles.quizStatsGrid}>
               <View style={styles.quizStatItem}>
                 <View style={styles.quizStatIconBg}>
-                  <Ionicons name="document-text-outline" size={20} color="#EC4899" />
+                  <Ionicons name="document-text-outline" size={20} color={quizThemeColor} />
                 </View>
                 <Text style={styles.quizStatValue}>{post.quizData.questions?.length || 0}</Text>
                 <Text style={styles.quizStatLabel}>Questions</Text>
@@ -556,7 +579,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
               <View style={styles.quizStatItem}>
                 <View style={styles.quizStatIconBg}>
-                  <Ionicons name="time-outline" size={20} color="#EC4899" />
+                  <Ionicons name="time-outline" size={20} color={quizThemeColor} />
                 </View>
                 <Text style={styles.quizStatValue}>
                   {post.quizData.timeLimit ? `${post.quizData.timeLimit}m` : 'No limit'}
@@ -588,10 +611,10 @@ export const PostCard: React.FC<PostCardProps> = ({
                 {/* Previous Attempt Info */}
                 <View style={styles.attemptInfoBar}>
                   <View style={styles.attemptIconBg}>
-                    <Ionicons 
-                      name={post.quizData.userAttempt.passed ? 'checkmark-circle' : 'close-circle'} 
-                      size={16} 
-                      color={post.quizData.userAttempt.passed ? '#10B981' : '#EF4444'} 
+                    <Ionicons
+                      name={post.quizData.userAttempt.passed ? 'checkmark-circle' : 'close-circle'}
+                      size={16}
+                      color={post.quizData.userAttempt.passed ? '#10B981' : '#EF4444'}
                     />
                   </View>
                   <Text style={styles.attemptText}>
@@ -610,6 +633,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                 {/* View Results Button */}
                 <TouchableOpacity
                   onPress={() => {
+                    if (!post.quizData?.userAttempt) return;
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     navigation.navigate('QuizResults', {
                       quiz: {
@@ -639,8 +663,9 @@ export const PostCard: React.FC<PostCardProps> = ({
                 {/* Retake Quiz Button */}
                 <TouchableOpacity
                   onPress={() => {
+                    if (!post.quizData) return;
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    navigation.navigate('TakeQuiz', { 
+                    navigation.navigate('TakeQuiz', {
                       quiz: {
                         id: post.quizData.id,
                         title: post.title || 'Quiz',
@@ -654,16 +679,17 @@ export const PostCard: React.FC<PostCardProps> = ({
                   }}
                   style={styles.retakeQuizButton}
                 >
-                  <Ionicons name="refresh" size={20} color="#EC4899" />
-                  <Text style={styles.retakeQuizButtonText}>Retake Quiz</Text>
+                  <Ionicons name="refresh" size={20} color={quizThemeColor} />
+                  <Text style={[styles.retakeQuizButtonText, { color: quizThemeColor }]}>Retake Quiz</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               // No attempt yet - show Take Quiz button
               <TouchableOpacity
                 onPress={() => {
+                  if (!post.quizData) return;
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  navigation.navigate('TakeQuiz', { 
+                  navigation.navigate('TakeQuiz', {
                     quiz: {
                       id: post.quizData.id,
                       title: post.title || 'Quiz',
@@ -677,9 +703,9 @@ export const PostCard: React.FC<PostCardProps> = ({
                 }}
                 style={styles.takeQuizButton}
               >
-                <Ionicons name="play-circle" size={22} color="#EC4899" />
-                <Text style={styles.takeQuizButtonText}>Take Quiz Now</Text>
-                <Ionicons name="arrow-forward" size={18} color="#EC4899" />
+                <Ionicons name="play-circle" size={22} color={quizThemeColor} />
+                <Text style={[styles.takeQuizButtonText, { color: quizThemeColor }]}>Take Quiz Now</Text>
+                <Ionicons name="arrow-forward" size={18} color={quizThemeColor} />
               </TouchableOpacity>
             )}
           </LinearGradient>
@@ -704,10 +730,10 @@ export const PostCard: React.FC<PostCardProps> = ({
       {isQuestion && (
         <View style={styles.qaSection}>
           <View style={[styles.qaBadge, learningMeta?.isAnswered && styles.qaBadgeAnswered]}>
-            <Ionicons 
-              name={learningMeta?.isAnswered ? 'checkmark-circle' : 'help-circle'} 
-              size={16} 
-              color={learningMeta?.isAnswered ? '#10B981' : '#F59E0B'} 
+            <Ionicons
+              name={learningMeta?.isAnswered ? 'checkmark-circle' : 'help-circle'}
+              size={16}
+              color={learningMeta?.isAnswered ? '#10B981' : '#F59E0B'}
             />
             <Text style={[styles.qaBadgeText, learningMeta?.isAnswered && styles.qaBadgeTextAnswered]}>
               {learningMeta?.isAnswered ? 'Answered' : 'Awaiting Answer'}
@@ -756,10 +782,10 @@ export const PostCard: React.FC<PostCardProps> = ({
         {/* Difficulty Badge */}
         {learningMeta?.difficulty && (
           <View style={[styles.difficultyBadge, { backgroundColor: DIFFICULTY_CONFIG[learningMeta.difficulty].bgColor }]}>
-            <Ionicons 
-              name={DIFFICULTY_CONFIG[learningMeta.difficulty].icon as any} 
-              size={12} 
-              color={DIFFICULTY_CONFIG[learningMeta.difficulty].color} 
+            <Ionicons
+              name={DIFFICULTY_CONFIG[learningMeta.difficulty].icon as any}
+              size={12}
+              color={DIFFICULTY_CONFIG[learningMeta.difficulty].color}
             />
             <Text style={[styles.difficultyText, { color: DIFFICULTY_CONFIG[learningMeta.difficulty].color }]}>
               {DIFFICULTY_CONFIG[learningMeta.difficulty].label}
@@ -834,10 +860,10 @@ export const PostCard: React.FC<PostCardProps> = ({
         {/* Value - Right side (like Instagram bookmark) */}
         <Animated.View style={[valueAnimatedStyle, styles.actionButton]}>
           <TouchableOpacity onPress={handleValue} style={styles.actionButtonInner}>
-            <Ionicons 
-              name={valued ? 'diamond' : 'diamond-outline'} 
-              size={24} 
-              color={valued ? '#8B5CF6' : '#262626'} 
+            <Ionicons
+              name={valued ? 'diamond' : 'diamond-outline'}
+              size={24}
+              color={valued ? '#8B5CF6' : '#262626'}
             />
           </TouchableOpacity>
         </Animated.View>

@@ -39,6 +39,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Avatar, ImageCarousel } from '@/components/common';
+import { PollVoting } from '@/components/feed'; // Added PollVoting import
 import { useAuthStore, useFeedStore } from '@/stores';
 import { Post, Comment, DifficultyLevel } from '@/types';
 import { formatRelativeTime, formatNumber } from '@/utils';
@@ -55,16 +56,48 @@ const DIFFICULTY_CONFIG: Record<DifficultyLevel, { label: string; color: string;
   ADVANCED: { label: 'Advanced', color: '#EF4444', bgColor: '#FEE2E2', icon: 'rocket' },
 };
 
-// Post type configurations
-const POST_TYPE_CONFIG: Record<string, { icon: string; label: string; color: string; bgColor: string }> = {
-  ARTICLE: { icon: 'document-text', label: 'Article', color: '#10B981', bgColor: '#D1FAE5' },
-  QUESTION: { icon: 'help-circle', label: 'Question', color: '#14B8A6', bgColor: '#CCFBF1' },
-  COURSE: { icon: 'book', label: 'Course', color: '#3B82F6', bgColor: '#DBEAFE' },
-  QUIZ: { icon: 'bulb', label: 'Quiz', color: '#10B981', bgColor: '#D1FAE5' },
-  EXAM: { icon: 'clipboard', label: 'Exam', color: '#EF4444', bgColor: '#FEE2E2' },
-  PROJECT: { icon: 'folder', label: 'Project', color: '#F97316', bgColor: '#FFEDD5' },
-  TUTORIAL: { icon: 'play-circle', label: 'Tutorial', color: '#06B6D4', bgColor: '#CFFAFE' },
-  ANNOUNCEMENT: { icon: 'megaphone', label: 'Announcement', color: '#F97316', bgColor: '#FFEDD5' },
+// Post type configurations - Enhanced with gradients
+const POST_TYPE_CONFIG: Record<string, {
+  icon: string;
+  label: string;
+  color: string;
+  bgColor: string;
+  ctaLabel?: string;
+  gradient?: [string, string];
+}> = {
+  ARTICLE: { icon: 'document-text', label: 'Article', color: '#10B981', bgColor: '#D1FAE5', ctaLabel: 'Read Article', gradient: ['#10B981', '#059669'] },
+  QUESTION: { icon: 'help-circle', label: 'Question', color: '#14B8A6', bgColor: '#CCFBF1', ctaLabel: 'Answer', gradient: ['#14B8A6', '#0D9488'] },
+  ANNOUNCEMENT: { icon: 'megaphone', label: 'Announcement', color: '#F97316', bgColor: '#FFEDD5', ctaLabel: 'View Details', gradient: ['#F97316', '#EA580C'] },
+  POLL: { icon: 'stats-chart', label: 'Poll', color: '#8B5CF6', bgColor: '#EDE9FE', ctaLabel: 'Vote Now', gradient: ['#8B5CF6', '#7C3AED'] },
+  ACHIEVEMENT: { icon: 'trophy', label: 'Achievement', color: '#F59E0B', bgColor: '#FEF3C7', ctaLabel: 'Celebrate', gradient: ['#F59E0B', '#D97706'] },
+  PROJECT: { icon: 'folder', label: 'Project', color: '#F97316', bgColor: '#FFEDD5', ctaLabel: 'View Project', gradient: ['#F97316', '#EA580C'] },
+  COURSE: { icon: 'book', label: 'Course', color: '#3B82F6', bgColor: '#DBEAFE', ctaLabel: 'Enroll Now', gradient: ['#3B82F6', '#2563EB'] },
+  EVENT: { icon: 'calendar', label: 'Event', color: '#EC4899', bgColor: '#FCE7F3', ctaLabel: 'Join Event', gradient: ['#EC4899', '#DB2777'] },
+  QUIZ: { icon: 'bulb', label: 'Quiz', color: '#10B981', bgColor: '#D1FAE5', ctaLabel: 'Take Quiz', gradient: ['#10B981', '#059669'] },
+  EXAM: { icon: 'clipboard', label: 'Exam', color: '#EF4444', bgColor: '#FEE2E2', ctaLabel: 'View Exam', gradient: ['#EF4444', '#DC2626'] },
+  ASSIGNMENT: { icon: 'book-outline', label: 'Assignment', color: '#3B82F6', bgColor: '#DBEAFE', ctaLabel: 'Start Assignment', gradient: ['#3B82F6', '#2563EB'] },
+  RESOURCE: { icon: 'folder-open', label: 'Resource', color: '#6366F1', bgColor: '#EEF2FF', ctaLabel: 'Download', gradient: ['#6366F1', '#4F46E5'] },
+  TUTORIAL: { icon: 'play-circle', label: 'Tutorial', color: '#06B6D4', bgColor: '#CFFAFE', ctaLabel: 'Watch', gradient: ['#06B6D4', '#0891B2'] },
+  RESEARCH: { icon: 'flask', label: 'Research', color: '#8B5CF6', bgColor: '#EDE9FE', ctaLabel: 'View', gradient: ['#8B5CF6', '#7C3AED'] },
+  CLUB_ANNOUNCEMENT: { icon: 'people', label: 'Study Club', color: '#6366F1', bgColor: '#EEF2FF', ctaLabel: 'View Club', gradient: ['#6366F1', '#4F46E5'] },
+  REFLECTION: { icon: 'bulb', label: 'Reflection', color: '#84CC16', bgColor: '#ECFCCB', ctaLabel: 'Read', gradient: ['#84CC16', '#65A30D'] },
+  COLLABORATION: { icon: 'people', label: 'Collaboration', color: '#EC4899', bgColor: '#FCE7F3', ctaLabel: 'Join', gradient: ['#EC4899', '#DB2777'] },
+};
+
+// Vibrant gradients for Quiz cards
+const QUIZ_GRADIENTS: [string, string][] = [
+  ['#EC4899', '#DB2777'], // Pink
+  ['#8B5CF6', '#7C3AED'], // Violet
+  ['#3B82F6', '#2563EB'], // Blue
+  ['#10B981', '#059669'], // Emerald
+  ['#F59E0B', '#D97706'], // Amber
+  ['#6366F1', '#4F46E5'], // Indigo
+];
+
+const getQuizGradient = (id: string) => {
+  if (!id) return QUIZ_GRADIENTS[0];
+  const charCode = id.charCodeAt(id.length - 1);
+  return QUIZ_GRADIENTS[charCode % QUIZ_GRADIENTS.length];
 };
 
 // Mock comments for demo
@@ -138,7 +171,7 @@ const CommentItem: React.FC<{ comment: Comment; onReply: (id: string) => void }>
         uri={comment.author.profilePictureUrl}
         name={authorName}
         size="sm"
-        gradientBorder="blue"
+        variant="post"
       />
       <View style={styles.commentContent}>
         <View style={styles.commentBubble}>
@@ -160,10 +193,10 @@ const CommentItem: React.FC<{ comment: Comment; onReply: (id: string) => void }>
         <View style={styles.commentActions}>
           <Text style={styles.commentTime}>{formatRelativeTime(comment.createdAt)}</Text>
           <TouchableOpacity onPress={handleLike} style={styles.commentAction}>
-            <Ionicons 
-              name={liked ? 'heart' : 'heart-outline'} 
-              size={14} 
-              color={liked ? '#EF4444' : '#6B7280'} 
+            <Ionicons
+              name={liked ? 'heart' : 'heart-outline'}
+              size={14}
+              color={liked ? '#EF4444' : '#6B7280'}
             />
             {likeCount > 0 && (
               <Text style={[styles.commentActionText, liked && { color: '#EF4444' }]}>
@@ -184,28 +217,43 @@ export default function PostDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute<PostDetailRouteProp>();
   const { postId } = route.params;
-  
+
   const { user } = useAuthStore();
-  const { posts, likePost, unlikePost, bookmarkPost, trackPostView } = useFeedStore();
-  
+  const {
+    posts,
+    likePost,
+    unlikePost,
+    bookmarkPost,
+    trackPostView,
+    comments: storeComments,
+    fetchComments,
+    addComment,
+    voteOnPoll,
+    isSubmittingComment
+  } = useFeedStore();
+
   // Find the post (in real app, fetch from API)
   const post = posts.find(p => p.id === postId) || posts[0];
 
-  // Track view when post detail opens
+  const postComments = storeComments[postId] || [];
+  const isSubmitting = isSubmittingComment[postId] || false;
+
+  // Track view and fetch comments when post detail opens
   useEffect(() => {
     if (post) {
       trackPostView(post.id);
     }
-  }, [post?.id, trackPostView]);
-  
+    fetchComments(postId);
+  }, [post?.id, postId, trackPostView, fetchComments]);
+
   const [liked, setLiked] = useState(post?.isLiked || false);
   const [bookmarked, setBookmarked] = useState(post?.isBookmarked || false);
   const [likeCount, setLikeCount] = useState(post?.likes || 0);
   const [valued, setValued] = useState(false);
   const [commentText, setCommentText] = useState('');
-  const [comments, setComments] = useState<Comment[]>(MOCK_COMMENTS);
+  // Removed local comments state, using store data now
   const [showMenu, setShowMenu] = useState(false);
-  
+
   const scrollViewRef = useRef<ScrollView>(null);
   const likeScale = useSharedValue(1);
   const valueScale = useSharedValue(1);
@@ -224,7 +272,7 @@ export default function PostDetailScreen() {
       withSpring(1.3, { damping: 10 }),
       withSpring(1, { damping: 15 })
     );
-    
+
     if (liked) {
       setLikeCount(prev => prev - 1);
       unlikePost(postId);
@@ -251,24 +299,17 @@ export default function PostDetailScreen() {
     bookmarkPost(postId);
   };
 
-  const handleSendComment = () => {
+  const handleSendComment = async () => {
     if (!commentText.trim()) return;
-    
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    const newComment: Comment = {
-      id: Date.now().toString(),
-      content: commentText.trim(),
-      author: user as any,
-      postId,
-      likes: 0,
-      isLiked: false,
-      replies: [],
-      createdAt: new Date().toISOString(),
-    };
-    
-    setComments(prev => [newComment, ...prev]);
-    setCommentText('');
+
+    // Use store action
+    const success = await addComment(postId, commentText.trim());
+
+    if (success) {
+      setCommentText('');
+    }
   };
 
   const handleReply = (commentId: string) => {
@@ -289,6 +330,13 @@ export default function PostDetailScreen() {
   const learningMeta = post.learningMeta;
   const isCurrentUser = post.author.id === user?.id;
 
+  // Deadline info
+  const deadlineInfo = learningMeta?.deadline ? {
+    text: formatRelativeTime(learningMeta.deadline),
+    isUrgent: new Date(learningMeta.deadline).getTime() - Date.now() < 24 * 60 * 60 * 1000
+  } : null;
+  const quizThemeColor = typeConfig.color;
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -304,15 +352,15 @@ export default function PostDetailScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        
+
         {/* Dropdown Menu */}
         {showMenu && (
           <Animated.View entering={FadeIn.duration(200)} style={styles.dropdownMenu}>
             <TouchableOpacity style={styles.menuItem} onPress={handleBookmark}>
-              <Ionicons 
-                name={bookmarked ? 'bookmark' : 'bookmark-outline'} 
-                size={18} 
-                color={bookmarked ? '#6366F1' : '#374151'} 
+              <Ionicons
+                name={bookmarked ? 'bookmark' : 'bookmark-outline'}
+                size={18}
+                color={bookmarked ? '#6366F1' : '#374151'}
               />
               <Text style={[styles.menuItemText, bookmarked && { color: '#6366F1' }]}>
                 {bookmarked ? 'Saved' : 'Save'}
@@ -330,12 +378,12 @@ export default function PostDetailScreen() {
         )}
       </SafeAreaView>
 
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
         keyboardVerticalOffset={0}
       >
-        <ScrollView 
+        <ScrollView
           ref={scrollViewRef}
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
@@ -343,7 +391,7 @@ export default function PostDetailScreen() {
         >
           {/* Author Header - Above image like Instagram */}
           <Animated.View entering={FadeInDown.duration(300)} style={styles.authorHeaderCard}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.authorInfo}
               onPress={() => navigation.navigate('UserProfile' as any, { userId: post.author.id })}
             >
@@ -351,7 +399,7 @@ export default function PostDetailScreen() {
                 uri={post.author.profilePictureUrl}
                 name={authorName}
                 size="lg"
-                gradientBorder="orange"
+                variant="post"
               />
               <View style={styles.authorDetails}>
                 <View style={styles.authorNameRow}>
@@ -384,10 +432,57 @@ export default function PostDetailScreen() {
             </TouchableOpacity>
           </Animated.View>
 
+          {/* Deadline Alert Banner */}
+          {deadlineInfo && (
+            <View style={[styles.deadlineBanner, deadlineInfo.isUrgent && styles.deadlineBannerUrgent]}>
+              <Ionicons
+                name={deadlineInfo.isUrgent ? 'warning' : 'time-outline'}
+                size={16}
+                color={deadlineInfo.isUrgent ? '#EF4444' : '#F59E0B'}
+              />
+              <Text style={[styles.deadlineText, deadlineInfo.isUrgent && styles.deadlineTextUrgent]}>
+                {deadlineInfo.isUrgent ? '⚡ Due soon: ' : 'Due: '}{deadlineInfo.text}
+              </Text>
+            </View>
+          )}
+
+          {/* Club Announcement Banner */}
+          {post.postType === 'CLUB_ANNOUNCEMENT' && (
+            <LinearGradient
+              colors={[typeConfig.bgColor, '#FFFFFF']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.clubBanner}
+            >
+              <View style={styles.clubBannerContent}>
+                <View style={[styles.clubIconCircle, { backgroundColor: typeConfig.color + '20' }]}>
+                  <Ionicons name="people" size={24} color={typeConfig.color} />
+                </View>
+                <View style={styles.clubBannerText}>
+                  <View style={styles.clubBannerHeader}>
+                    <Ionicons name="sparkles" size={14} color={typeConfig.color} />
+                    <Text style={[styles.clubBannerTitle, { color: typeConfig.color }]}>
+                      New Study Club Available
+                    </Text>
+                  </View>
+                  <Text style={styles.clubBannerSubtitle}>
+                    Join this community and start learning together!
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={[styles.clubJoinButton, { backgroundColor: typeConfig.color }]}
+              >
+                <Ionicons name="add" size={18} color="#fff" />
+                <Text style={styles.clubJoinButtonText}>View Club</Text>
+              </TouchableOpacity>
+            </LinearGradient>
+          )}
+
           {/* Media - Full width hero image */}
           {post.mediaUrls && post.mediaUrls.length > 0 && (
             <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.mediaContainer}>
-              <ImageCarousel 
+              <ImageCarousel
                 images={post.mediaUrls}
                 borderRadius={0}
                 mode="auto"
@@ -401,6 +496,75 @@ export default function PostDetailScreen() {
             <View style={styles.contentSection}>
               <Text style={styles.contentText}>{post.content}</Text>
             </View>
+
+            {/* Poll Voting */}
+            {post.postType === 'POLL' && post.pollOptions && post.pollOptions.length > 0 && (
+              <View style={styles.pollSection}>
+                <PollVoting
+                  options={post.pollOptions}
+                  userVotedOptionId={post.userVotedOptionId}
+                  onVote={(optionId) => voteOnPoll(post.id, optionId)}
+                  endsAt={post.learningMeta?.deadline}
+                />
+              </View>
+            )}
+
+            {/* Quiz Card */}
+            {post.postType === 'QUIZ' && post.quizData && (
+              <View style={styles.quizSection}>
+                <LinearGradient
+                  colors={getQuizGradient(post.id)}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.quizGradientCard}
+                >
+                  {/* Quiz Header */}
+                  <View style={styles.quizHeader}>
+                    <View style={styles.quizIconCircle}>
+                      <Ionicons name="rocket" size={24} color={quizThemeColor} />
+                    </View>
+                    <View style={styles.quizHeaderText}>
+                      <Text style={styles.quizHeaderTitle}>Test Your Knowledge</Text>
+                      <Text style={styles.quizHeaderSubtitle}>Complete this quiz to earn points!</Text>
+                    </View>
+                  </View>
+
+                  {/* Quiz Stats Grid */}
+                  <View style={styles.quizStatsGrid}>
+                    <View style={styles.quizStatItem}>
+                      <View style={styles.quizStatIconBg}>
+                        <Ionicons name="document-text-outline" size={20} color={quizThemeColor} />
+                      </View>
+                      <Text style={styles.quizStatValue}>{post.quizData.questions?.length || 0}</Text>
+                      <Text style={styles.quizStatLabel}>Questions</Text>
+                    </View>
+
+                    <View style={styles.quizStatItem}>
+                      <View style={styles.quizStatIconBg}>
+                        <Ionicons name="time-outline" size={20} color={quizThemeColor} />
+                      </View>
+                      <Text style={styles.quizStatValue}>
+                        {post.quizData.timeLimit ? `${post.quizData.timeLimit}m` : 'No limit'}
+                      </Text>
+                      <Text style={styles.quizStatLabel}>Time</Text>
+                    </View>
+
+                    <View style={styles.quizStatItem}>
+                      <View style={styles.quizStatIconBg}>
+                        <Ionicons name="star" size={20} color="#F59E0B" />
+                      </View>
+                      <Text style={styles.quizStatValue}>{post.quizData.totalPoints || 100}</Text>
+                      <Text style={styles.quizStatLabel}>Points</Text>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity style={styles.quizStartButton}>
+                    <Text style={styles.quizStartButtonText}>Start Quiz</Text>
+                    <Ionicons name="arrow-forward" size={20} color={quizThemeColor} />
+                  </TouchableOpacity>
+                </LinearGradient>
+              </View>
+            )}
 
             {/* Topic Tags */}
             {post.topicTags && post.topicTags.length > 0 && (
@@ -422,10 +586,10 @@ export default function PostDetailScreen() {
 
               {learningMeta?.difficulty && (
                 <View style={[styles.difficultyBadge, { backgroundColor: DIFFICULTY_CONFIG[learningMeta.difficulty].bgColor }]}>
-                  <Ionicons 
-                    name={DIFFICULTY_CONFIG[learningMeta.difficulty].icon as any} 
-                    size={12} 
-                    color={DIFFICULTY_CONFIG[learningMeta.difficulty].color} 
+                  <Ionicons
+                    name={DIFFICULTY_CONFIG[learningMeta.difficulty].icon as any}
+                    size={12}
+                    color={DIFFICULTY_CONFIG[learningMeta.difficulty].color}
                   />
                   <Text style={[styles.difficultyText, { color: DIFFICULTY_CONFIG[learningMeta.difficulty].color }]}>
                     {DIFFICULTY_CONFIG[learningMeta.difficulty].label}
@@ -474,7 +638,7 @@ export default function PostDetailScreen() {
               </View>
               <View style={styles.statItem}>
                 <Ionicons name="chatbubble" size={18} color="#6B7280" />
-                <Text style={styles.statText}>{comments.length} comments</Text>
+                <Text style={styles.statText}>{postComments.length} comments</Text>
               </View>
               <View style={styles.statItem}>
                 <Ionicons name="arrow-redo" size={18} color="#6B7280" />
@@ -497,10 +661,10 @@ export default function PostDetailScreen() {
 
               <Animated.View style={[valueAnimatedStyle, styles.actionButton]}>
                 <TouchableOpacity onPress={handleValue} style={styles.actionButtonInner}>
-                  <Ionicons 
-                    name={valued ? 'diamond' : 'diamond-outline'} 
-                    size={26} 
-                    color={valued ? '#8B5CF6' : '#374151'} 
+                  <Ionicons
+                    name={valued ? 'diamond' : 'diamond-outline'}
+                    size={26}
+                    color={valued ? '#8B5CF6' : '#374151'}
                   />
                   <Text style={[styles.actionText, valued && styles.actionTextValued]}>Value</Text>
                 </TouchableOpacity>
@@ -524,13 +688,13 @@ export default function PostDetailScreen() {
 
           {/* Comments Section */}
           <View style={styles.commentsSection}>
-            <Text style={styles.commentsTitle}>Comments ({comments.length})</Text>
-            
-            {comments.map(comment => (
+            <Text style={styles.commentsTitle}>Comments ({postComments.length})</Text>
+
+            {postComments.map(comment => (
               <CommentItem key={comment.id} comment={comment} onReply={handleReply} />
             ))}
 
-            {comments.length === 0 && (
+            {postComments.length === 0 && (
               <View style={styles.noComments}>
                 <Ionicons name="chatbubble-outline" size={40} color="#D1D5DB" />
                 <Text style={styles.noCommentsText}>No comments yet</Text>
@@ -546,7 +710,7 @@ export default function PostDetailScreen() {
             uri={user?.profilePictureUrl}
             name={user ? `${user.firstName} ${user.lastName}` : 'User'}
             size="sm"
-            gradientBorder="purple"
+            variant="post"
           />
           <View style={styles.commentInputWrapper}>
             <TextInput
@@ -559,15 +723,15 @@ export default function PostDetailScreen() {
               maxLength={500}
             />
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={handleSendComment}
             disabled={!commentText.trim()}
             style={[styles.sendButton, !commentText.trim() && styles.sendButtonDisabled]}
           >
-            <Ionicons 
-              name="send" 
-              size={20} 
-              color={commentText.trim() ? '#6366F1' : '#D1D5DB'} 
+            <Ionicons
+              name="send"
+              size={20}
+              color={commentText.trim() ? '#6366F1' : '#D1D5DB'}
             />
           </TouchableOpacity>
         </View>
@@ -1038,5 +1202,188 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.5,
+  },
+  // Deadline Banner
+  deadlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 8,
+  },
+  deadlineBannerUrgent: {
+    backgroundColor: '#FEE2E2',
+  },
+  deadlineText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#92400E',
+  },
+  deadlineTextUrgent: {
+    color: '#DC2626',
+  },
+  // Club announcement banner styles
+  clubBanner: {
+    marginHorizontal: 16,
+    marginTop: 0,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#EEF2FF',
+  },
+  clubBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  clubIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clubBannerText: {
+    flex: 1,
+  },
+  clubBannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  clubBannerTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  clubBannerSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    lineHeight: 18,
+  },
+  clubJoinButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  clubJoinButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.3,
+  },
+  // Poll Section
+  pollSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  // Quiz Section
+  quizSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  quizGradientCard: {
+    padding: 20,
+    borderRadius: 20,
+    gap: 16,
+  },
+  quizHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  quizIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  quizHeaderText: {
+    flex: 1,
+  },
+  quizHeaderTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 2,
+  },
+  quizHeaderSubtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    opacity: 0.9,
+  },
+  quizStatsGrid: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
+  },
+  quizStatItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+  },
+  quizStatIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FCE7F3',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  quizStatValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  quizStatLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  quizStartButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 16,
+    borderRadius: 14,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  quizStartButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#EC4899',
   },
 });
