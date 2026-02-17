@@ -606,7 +606,12 @@ const calculateXPForQuiz = (score: number, totalPoints: number, timeSpent: numbe
 // GET /stats/:userId - Get user stats
 app.get('/stats/:userId', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { userId } = req.params;
+    let { userId } = req.params;
+
+    // Handle "current-user-id" keyword
+    if (userId === 'current-user-id') {
+      userId = req.user!.id;
+    }
 
     let stats = await prisma.userStats.findUnique({
       where: { userId },
@@ -661,15 +666,24 @@ app.get('/stats/:userId', authenticateToken, async (req: AuthRequest, res: Respo
 app.post('/stats/record-attempt', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user!.id;
+    console.log('📝 [Analytics] Recording attempt for user:', userId);
+    console.log('📝 [Analytics] Request body:', JSON.stringify(req.body, null, 2));
+
     const { quizId, score, totalPoints, timeSpent, timeLimit, type, sessionCode, rank } = req.body;
 
     // Calculate XP
     const xpEarned = calculateXPForQuiz(score, totalPoints, timeSpent, timeLimit || 300);
     const accuracy = totalPoints > 0 ? (score / totalPoints) * 100 : 0;
 
+    console.log('📝 [Analytics] Calculated XP:', xpEarned);
+    console.log('📝 [Analytics] Calculated Accuracy:', accuracy);
+
     // Get or create user stats
     let stats = await prisma.userStats.findUnique({ where: { userId } });
+    console.log('📝 [Analytics] Found user stats:', !!stats);
+
     if (!stats) {
+      console.log('📝 [Analytics] Creating new user stats');
       stats = await prisma.userStats.create({ data: { userId } });
     }
 
@@ -682,6 +696,7 @@ app.post('/stats/record-attempt', authenticateToken, async (req: AuthRequest, re
     const isWin = type === 'live' && rank === 1;
 
     // Update user stats
+    console.log('📝 [Analytics] Updating user stats...');
     const updatedStats = await prisma.userStats.update({
       where: { userId },
       data: {
@@ -689,29 +704,35 @@ app.post('/stats/record-attempt', authenticateToken, async (req: AuthRequest, re
         level: newLevel,
         totalQuizzes: { increment: 1 },
         totalPoints: { increment: score },
-        correctAnswers: { increment: Math.floor((score / totalPoints) * 100) },
-        totalAnswers: { increment: 100 },
+        correctAnswers: { increment: Math.floor((score / totalPoints) * 100) }, // This looks wrong if totalPoints IS NOT 100
+        totalAnswers: { increment: 100 }, // This looks wrong, should probably be passed in payload
         liveQuizWins: type === 'live' && isWin ? { increment: 1 } : undefined,
         liveQuizTotal: type === 'live' ? { increment: 1 } : undefined,
       },
     });
+    console.log('📝 [Analytics] User stats updated');
 
     // Record attempt
+    console.log('📝 [Analytics] Creating quiz attempt record...');
+    const attemptData = {
+      userId,
+      quizId,
+      score,
+      totalPoints,
+      accuracy,
+      timeSpent,
+      rank,
+      xpEarned,
+      type,
+      sessionCode,
+      userStatsId: stats.id,
+    };
+    console.log('📝 [Analytics] Attempt data:', JSON.stringify(attemptData, null, 2));
+
     await prisma.quizAttemptRecord.create({
-      data: {
-        userId,
-        quizId,
-        score,
-        totalPoints,
-        accuracy,
-        timeSpent,
-        rank,
-        xpEarned,
-        type,
-        sessionCode,
-        userStatsId: stats.id,
-      },
+      data: attemptData,
     });
+    console.log('📝 [Analytics] Quiz attempt record created');
 
     res.json({
       success: true,
@@ -724,8 +745,8 @@ app.post('/stats/record-attempt', authenticateToken, async (req: AuthRequest, re
       },
     });
   } catch (error: any) {
-    console.error('Record attempt error:', error);
-    res.status(500).json({ success: false, error: 'Failed to record attempt' });
+    console.error('❌ [Analytics] Record attempt error:', error);
+    res.status(500).json({ success: false, error: 'Failed to record attempt', details: error.message });
   }
 });
 

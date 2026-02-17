@@ -13,6 +13,7 @@ import { QuizQuestionInput, QuizQuestion, QuestionType } from '../components/Qui
 
 interface QuizFormProps {
   onDataChange: (data: QuizData) => void;
+  initialData?: QuizData;
 }
 
 export interface QuizData {
@@ -35,8 +36,8 @@ const TIME_LIMITS = [
 
 const PASSING_SCORES = [50, 60, 70, 75, 80, 85, 90];
 
-export function QuizForm({ onDataChange }: QuizFormProps) {
-  const [questions, setQuestions] = useState<QuizQuestion[]>([
+export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
+  const [questions, setQuestions] = useState<QuizQuestion[]>(initialData?.questions || [
     {
       id: Date.now().toString(),
       text: '',
@@ -46,17 +47,17 @@ export function QuizForm({ onDataChange }: QuizFormProps) {
       points: 1,
     },
   ]);
-  const [timeLimit, setTimeLimit] = useState<number | null>(null);
-  const [passingScore, setPassingScore] = useState(70);
+  const [timeLimit, setTimeLimit] = useState<number | null>(initialData?.timeLimit ?? null);
+  const [passingScore, setPassingScore] = useState(initialData?.passingScore ?? 70);
 
   useEffect(() => {
     const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
-    onDataChange({ 
-      questions, 
-      timeLimit, 
+    onDataChange({
+      questions,
+      timeLimit,
       passingScore,
       totalPoints,
-      resultsVisibility: 'AFTER_SUBMISSION' 
+      resultsVisibility: initialData?.resultsVisibility || 'AFTER_SUBMISSION'
     });
   }, [questions, timeLimit, passingScore]);
 
@@ -93,7 +94,7 @@ export function QuizForm({ onDataChange }: QuizFormProps) {
           <Ionicons name="settings-outline" size={20} color="#6366F1" />
           <Text style={styles.cardTitle}>Quiz Settings</Text>
         </View>
-        
+
         {/* Time Limit */}
         <View style={styles.settingRow}>
           <View style={styles.settingInfo}>
@@ -102,8 +103,8 @@ export function QuizForm({ onDataChange }: QuizFormProps) {
               {timeLimit ? `${timeLimit} min` : 'No limit'}
             </Text>
           </View>
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.chipsScroll}
           >
@@ -136,8 +137,8 @@ export function QuizForm({ onDataChange }: QuizFormProps) {
             <Text style={styles.settingLabel}>Passing Score</Text>
             <Text style={styles.settingValue}>{passingScore}%</Text>
           </View>
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.chipsScroll}
           >
@@ -183,7 +184,7 @@ export function QuizForm({ onDataChange }: QuizFormProps) {
 
         {/* Questions List */}
         {questions.map((question, index) => (
-          <Animated.View 
+          <Animated.View
             key={question.id}
             entering={FadeIn.duration(300)}
             exiting={FadeOut.duration(200)}

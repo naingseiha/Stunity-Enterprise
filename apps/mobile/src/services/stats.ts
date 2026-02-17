@@ -217,6 +217,7 @@ class StatsService {
     leveledUp: boolean;
     stats: UserStats;
   }> {
+    console.log('🚀 [Mobile Analytics] Sending recordAttempt payload:', JSON.stringify(data, null, 2));
     const response = await analyticsApi.post('/stats/record-attempt', data);
     return response.data.data;
   }

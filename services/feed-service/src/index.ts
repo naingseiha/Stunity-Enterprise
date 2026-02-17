@@ -946,6 +946,45 @@ app.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Response)
       // If votes exist, silently ignore poll option changes
     }
 
+    // Update quiz data if it's a QUIZ post and quizData is provided
+    // Update quiz data if it's a QUIZ post and quizData is provided
+    const { quizData } = req.body;
+    console.log('📝 [PUT /posts/:id] Post ID:', postId);
+    console.log('📝 [PUT /posts/:id] PostType:', post.postType);
+    console.log('📝 [PUT /posts/:id] Has quizData:', !!quizData);
+    if (quizData) {
+      console.log('📝 [PUT /posts/:id] quizData questions count:', quizData.questions?.length);
+    }
+
+    if (post.postType === 'QUIZ' && quizData) {
+      // Check if quiz exists for this post
+      const existingQuiz = await prisma.quiz.findUnique({
+        where: { postId },
+        include: { _count: { select: { attempts: true } } } // Check for attempts
+      });
+      console.log('📝 [PUT /posts/:id] Existing quiz found:', !!existingQuiz);
+
+      if (existingQuiz) {
+        console.log('📝 [PUT /posts/:id] Quiz ID:', existingQuiz.id);
+        console.log('📝 [PUT /posts/:id] Attempts count:', existingQuiz._count.attempts);
+
+        // Allow updating questions even if attempts exist
+        // Note: This might cause inconsistencies with old attempts, but is required for full editing capability
+
+        // Update quiz settings and questions (stored as JSON)
+        await prisma.quiz.update({
+          where: { id: existingQuiz.id },
+          data: {
+            questions: quizData.questions || [],
+            timeLimit: quizData.timeLimit,
+            passingScore: quizData.passingScore,
+            totalPoints: quizData.totalPoints,
+            resultsVisibility: quizData.resultsVisibility,
+          }
+        });
+      }
+    }
+
     const updated = await prisma.post.update({
       where: { id: postId },
       data: {
@@ -971,6 +1010,8 @@ app.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Response)
             _count: { select: { votes: true } },
           },
         },
+        // Include updated quiz data in response
+        quiz: true
       },
     });
 

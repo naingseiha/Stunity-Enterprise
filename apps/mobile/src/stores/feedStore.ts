@@ -75,7 +75,7 @@ interface FeedState {
   fetchPosts: (refresh?: boolean) => Promise<void>;
   fetchStories: () => Promise<void>;
   createPost: (content: string, mediaUrls?: string[], postType?: string, pollOptions?: string[], quizData?: any, title?: string) => Promise<boolean>;
-  updatePost: (postId: string, data: { content: string; visibility?: string; mediaUrls?: string[]; mediaDisplayMode?: string; pollOptions?: string[] }) => Promise<boolean>;
+  updatePost: (postId: string, data: { content: string; visibility?: string; mediaUrls?: string[]; mediaDisplayMode?: string; pollOptions?: string[]; quizData?: any }) => Promise<boolean>;
   likePost: (postId: string) => Promise<void>;
   unlikePost: (postId: string) => Promise<void>;
   bookmarkPost: (postId: string) => Promise<void>;
@@ -1082,6 +1082,22 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         })),
         userVotedOptionId: rawPost.userVotedOptionId,
         learningMeta: rawPost.learningMeta,
+        // Quiz fields
+        quizData: rawPost.postType === 'QUIZ' && rawPost.quiz ? {
+          id: rawPost.quiz.id,
+          questions: rawPost.quiz.questions || [],
+          timeLimit: rawPost.quiz.timeLimit,
+          passingScore: rawPost.quiz.passingScore,
+          totalPoints: rawPost.quiz.totalPoints || rawPost.quiz.questions?.reduce((sum: number, q: any) => sum + (q.points || 0), 0) || 0,
+          resultsVisibility: rawPost.quiz.resultsVisibility,
+          userAttempt: rawPost.quiz.userAttempt ? {
+            id: rawPost.quiz.userAttempt.id,
+            score: rawPost.quiz.userAttempt.score,
+            passed: rawPost.quiz.userAttempt.passed,
+            pointsEarned: rawPost.quiz.userAttempt.pointsEarned,
+            submittedAt: rawPost.quiz.userAttempt.submittedAt,
+          } : undefined,
+        } : undefined,
       };
 
       console.log('📥 [feedStore] Transformed post:', JSON.stringify(transformedPost, null, 2));

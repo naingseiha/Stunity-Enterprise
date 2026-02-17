@@ -27,37 +27,39 @@ import * as ImagePicker from 'expo-image-picker';
 import { useFeedStore } from '@/stores';
 import { Post } from '@/types';
 import { feedApi } from '@/api/client';
+import { QuizForm, QuizData } from './create-post/forms/QuizForm';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 // Upload helper
 const uploadImages = async (localUris: string[]): Promise<string[]> => {
   if (localUris.length === 0) return [];
-  
+
   try {
     console.log('📤 [EditPost] Uploading', localUris.length, 'images...');
-    
+
     const formData = new FormData();
-    
+
     for (const uri of localUris) {
       const filename = uri.split('/').pop() || 'image.jpg';
-      
+
       formData.append('files', {
         uri,
         type: 'image/jpeg',
         name: filename,
       } as any);
     }
-    
+
     const response = await feedApi.post('/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 60000,
     });
-    
+
     if (response.data.success && response.data.data) {
       const uploadedUrls = response.data.data.map((file: any) => file.url);
       console.log('✅ [EditPost] Upload successful:', uploadedUrls.length, 'images');
       return uploadedUrls;
     }
-    
+
     throw new Error('Upload response invalid');
   } catch (error) {
     console.error('❌ [EditPost] Upload failed:', error);
@@ -79,22 +81,24 @@ export default function EditPostScreen() {
   const navigation = useNavigation();
   const route = useRoute<EditPostScreenRouteProp>();
   const { post } = route.params;
-  
+
   const { updatePost } = useFeedStore();
-  
+
   const [content, setContent] = useState(post.content);
   const [visibility, setVisibility] = useState(post.visibility || 'PUBLIC');
   const [mediaUrls, setMediaUrls] = useState<string[]>(post.mediaUrls || []);
+  const [quizData, setQuizData] = useState<QuizData | undefined>(post.quizData as QuizData | undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Helpers
   const isLocalUri = (uri: string) => uri.startsWith('file://');
   const getLocalUris = () => mediaUrls.filter(isLocalUri);
-  const hasChanges = 
+  const hasChanges =
     content.trim() !== post.content.trim() ||
     visibility !== (post.visibility || 'PUBLIC') ||
-    JSON.stringify(mediaUrls) !== JSON.stringify(post.mediaUrls || []);
-  
+    JSON.stringify(mediaUrls) !== JSON.stringify(post.mediaUrls || []) ||
+    (post.postType === 'QUIZ' && JSON.stringify(quizData) !== JSON.stringify(post.quizData));
+
   // Handle close
   const handleClose = () => {
     if (hasChanges) {
@@ -110,14 +114,14 @@ export default function EditPostScreen() {
       navigation.goBack();
     }
   };
-  
+
   // Pick images
   const handlePickImage = async () => {
     if (mediaUrls.length >= 10) {
       Alert.alert('Limit Reached', 'Maximum 10 images per post.');
       return;
     }
-    
+
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -125,7 +129,7 @@ export default function EditPostScreen() {
         quality: 0.8,
         selectionLimit: 10 - mediaUrls.length,
       });
-      
+
       if (!result.canceled && result.assets) {
         const newUrls = result.assets.map(asset => asset.uri);
         setMediaUrls(prev => [...prev, ...newUrls]);
@@ -135,37 +139,45 @@ export default function EditPostScreen() {
       Alert.alert('Error', 'Failed to pick image');
     }
   };
-  
+
   // Remove image
   const handleRemoveImage = (index: number) => {
     Haptics.selectionAsync();
     setMediaUrls(prev => prev.filter((_, i) => i !== index));
   };
-  
+
   // Save
   const handleSave = async () => {
     if (!content.trim()) {
       Alert.alert('Empty Post', 'Please add some content.');
       return;
     }
-    
+
+    // Validate quiz if it's a quiz post
+    if (post.postType === 'QUIZ') {
+      if (!quizData || !quizData.questions || quizData.questions.length === 0) {
+        Alert.alert('Invalid Quiz', 'Please keep at least one question in your quiz.');
+        return;
+      }
+    }
+
     if (!hasChanges) {
       navigation.goBack();
       return;
     }
-    
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsSubmitting(true);
-    
+
     try {
       // Upload local URIs
       let finalMediaUrls = [...mediaUrls];
       const localUris = getLocalUris();
-      
+
       if (localUris.length > 0) {
         try {
           const uploadedUrls = await uploadImages(localUris);
-          
+
           finalMediaUrls = mediaUrls.map(url => {
             if (isLocalUri(url)) {
               const localIndex = localUris.indexOf(url);
@@ -179,17 +191,18 @@ export default function EditPostScreen() {
           return;
         }
       }
-      
+
       // Update post
       const success = await updatePost(post.id, {
         content: content.trim(),
         visibility,
         mediaUrls: finalMediaUrls,
         mediaDisplayMode: post.mediaDisplayMode || 'AUTO',
+        quizData: post.postType === 'QUIZ' ? quizData : undefined,
       });
-      
+
       setIsSubmitting(false);
-      
+
       if (success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         navigation.goBack();
@@ -201,9 +214,9 @@ export default function EditPostScreen() {
       Alert.alert('Error', 'An error occurred. Please try again.');
     }
   };
-  
+
   const canSave = hasChanges && content.trim().length > 0;
-  
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header - matching CreatePost */}
@@ -247,7 +260,19 @@ export default function EditPostScreen() {
             maxLength={5000}
             editable={!isSubmitting}
           />
-          
+
+          {/* Quiz Form */}
+          {post.postType === 'QUIZ' && (
+            <View style={{ borderTopWidth: 1, borderTopColor: '#F3F4F6' }}>
+              <QuizForm
+                initialData={post.quizData as QuizData | undefined}
+                onDataChange={(data) => {
+                  setQuizData(data);
+                }}
+              />
+            </View>
+          )}
+
           {/* Visibility Selector */}
           <View style={styles.visibilitySection}>
             <Text style={styles.sectionLabel}>Visibility</Text>
@@ -258,7 +283,7 @@ export default function EditPostScreen() {
                   <TouchableOpacity
                     key={option.value}
                     onPress={() => {
-                      setVisibility(option.value);
+                      setVisibility(option.value as any);
                       Haptics.selectionAsync();
                     }}
                     disabled={isSubmitting}
