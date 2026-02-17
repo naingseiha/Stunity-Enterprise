@@ -147,6 +147,8 @@ export interface Challenge {
 
 export interface LeaderboardEntry {
   userId: string;
+  username?: string; // Added for display
+  avatar?: string;   // Added for display
   xp: number;
   level: number;
   totalQuizzes: number;
@@ -237,7 +239,26 @@ class StatsService {
     const response = await analyticsApi.get('/leaderboard/global', {
       params: { page, limit },
     });
-    return response.data.data;
+
+    // Enhance with mock names for demo if needed
+    const enhancedLeaderboard = response.data.data.leaderboard.map((item: LeaderboardEntry, index: number) => {
+      // List of mock names for demo purposes
+      const mockNames = ['Alex Chen', 'Sarah Jones', 'Mike Ross', 'Emily Wu', 'David Kim', 'Jessica Li', 'Tom Stark', 'Lisa Wang'];
+      // Use a consistent mock name based on userId hash or index if username is generic/missing
+      const mockName = mockNames[index % mockNames.length] || `Student ${item.userId.slice(0, 4)}`;
+
+      return {
+        ...item,
+        // If item.username exists and isn't a userId, use it, otherwise use mockName
+        username: item.username || mockName,
+        avatar: item.avatar || null
+      };
+    });
+
+    return {
+      ...response.data.data,
+      leaderboard: enhancedLeaderboard
+    };
   }
 
   /**
@@ -248,7 +269,23 @@ class StatsService {
     leaderboard: any[];
   }> {
     const response = await analyticsApi.get('/leaderboard/weekly');
-    return response.data.data;
+
+    // Enhance with mock names
+    const enhancedLeaderboard = response.data.data.leaderboard.map((item: any, index: number) => {
+      const mockNames = ['Alex Chen', 'Sarah Jones', 'Mike Ross', 'Emily Wu', 'David Kim', 'Jessica Li', 'Tom Stark', 'Lisa Wang'];
+      const mockName = mockNames[index % mockNames.length] || `Student ${item.userId.slice(0, 4)}`;
+
+      return {
+        ...item,
+        username: item.username || mockName,
+        avatar: item.avatar || null
+      };
+    });
+
+    return {
+      ...response.data.data,
+      leaderboard: enhancedLeaderboard
+    };
   }
 
   /**

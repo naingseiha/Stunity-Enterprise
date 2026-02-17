@@ -671,6 +671,27 @@ app.post('/stats/record-attempt', authenticateToken, async (req: AuthRequest, re
 
     const { quizId, score, totalPoints, timeSpent, timeLimit, type, sessionCode, rank } = req.body;
 
+    // Check max attempts
+    if (quizId) {
+      const quiz = await prisma.quiz.findUnique({
+        where: { id: quizId },
+        select: { maxAttempts: true }
+      });
+
+      if (quiz?.maxAttempts) {
+        const attemptsCount = await prisma.quizAttemptRecord.count({
+          where: {
+            quizId,
+            userId
+          }
+        });
+
+        if (attemptsCount >= quiz.maxAttempts) {
+          return res.status(403).json({ success: false, error: 'Max attempts reached' });
+        }
+      }
+    }
+
     // Calculate XP
     const xpEarned = calculateXPForQuiz(score, totalPoints, timeSpent, timeLimit || 300);
     const accuracy = totalPoints > 0 ? (score / totalPoints) * 100 : 0;

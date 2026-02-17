@@ -1090,6 +1090,11 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           passingScore: rawPost.quiz.passingScore,
           totalPoints: rawPost.quiz.totalPoints || rawPost.quiz.questions?.reduce((sum: number, q: any) => sum + (q.points || 0), 0) || 0,
           resultsVisibility: rawPost.quiz.resultsVisibility,
+          shuffleQuestions: rawPost.quiz.shuffleQuestions,
+          shuffleAnswers: rawPost.quiz.shuffleAnswers,
+          maxAttempts: rawPost.quiz.maxAttempts,
+          showReview: rawPost.quiz.showReview,
+          showExplanations: rawPost.quiz.showExplanations,
           userAttempt: rawPost.quiz.userAttempt ? {
             id: rawPost.quiz.userAttempt.id,
             score: rawPost.quiz.userAttempt.score,

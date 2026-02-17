@@ -458,6 +458,11 @@ app.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) =>
             passingScore: quizData.passingScore,
             totalPoints: quizData.totalPoints,
             resultsVisibility: quizData.resultsVisibility || 'AFTER_SUBMISSION',
+            shuffleQuestions: quizData.shuffleQuestions || false,
+            shuffleAnswers: quizData.shuffleAnswers || false,
+            maxAttempts: quizData.maxAttempts,
+            showReview: quizData.showReview !== undefined ? quizData.showReview : true,
+            showExplanations: quizData.showExplanations !== undefined ? quizData.showExplanations : true,
           },
         } : undefined,
       },
@@ -980,6 +985,11 @@ app.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Response)
             passingScore: quizData.passingScore,
             totalPoints: quizData.totalPoints,
             resultsVisibility: quizData.resultsVisibility,
+            shuffleQuestions: quizData.shuffleQuestions,
+            shuffleAnswers: quizData.shuffleAnswers,
+            maxAttempts: quizData.maxAttempts,
+            showReview: quizData.showReview,
+            showExplanations: quizData.showExplanations,
           }
         });
       }
@@ -1281,11 +1291,53 @@ app.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, res:
         const userAnswerStr = String(userAnswer.answer).toLowerCase();
         const correctAnswerStr = String(question.correctAnswer).toLowerCase();
         isCorrect = userAnswerStr === correctAnswerStr;
-      } else if (question.type === 'SHORT_ANSWER') {
+      } else if (question.type === 'SHORT_ANSWER' || question.type === 'FILL_IN_BLANK') {
         // Case-insensitive comparison, trimmed
         const userAns = String(userAnswer.answer || '').toLowerCase().trim();
         const correctAns = String(question.correctAnswer || '').toLowerCase().trim();
         isCorrect = userAns === correctAns;
+      } else if (question.type === 'ORDERING') {
+        try {
+          // Parse user answer if string provided
+          const userOrder = typeof userAnswer.answer === 'string' ? JSON.parse(userAnswer.answer) : userAnswer.answer;
+          const correctOrder = question.options;
+
+          if (Array.isArray(userOrder) && Array.isArray(correctOrder)) {
+            isCorrect = JSON.stringify(userOrder) === JSON.stringify(correctOrder);
+          } else {
+            isCorrect = false;
+          }
+        } catch (e) {
+          isCorrect = false;
+        }
+      } else if (question.type === 'MATCHING') {
+        try {
+          const userMatches = typeof userAnswer.answer === 'string' ? JSON.parse(userAnswer.answer) : userAnswer.answer;
+          const correctMatches: Record<string, string> = {};
+          if (Array.isArray(question.options)) {
+            question.options.forEach((opt: string) => {
+              const parts = opt.split(':::');
+              if (parts.length === 2) {
+                correctMatches[parts[0]] = parts[1];
+              }
+            });
+          }
+
+          if (userMatches && typeof userMatches === 'object') {
+            const userKeys = Object.keys(userMatches);
+            const correctKeys = Object.keys(correctMatches);
+
+            if (userKeys.length !== correctKeys.length) {
+              isCorrect = false;
+            } else {
+              isCorrect = userKeys.every(key => userMatches[key] === correctMatches[key]);
+            }
+          } else {
+            isCorrect = false;
+          }
+        } catch (e) {
+          isCorrect = false;
+        }
       }
 
       const points = isCorrect ? (question.points || 10) : 0;

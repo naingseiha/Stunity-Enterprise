@@ -1,21 +1,23 @@
-/**
- * StreakWidget
- * 
- * Compact widget showing current streak
- * Can be displayed in Profile, Feed, or other screens
- */
-
 import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Animated,
+  Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { statsAPI, Streak } from '@/services/stats';
+import Animated, {
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  useSharedValue,
+  withSpring,
+  Easing
+} from 'react-native-reanimated';
 
 interface StreakWidgetProps {
   userId: string;
@@ -30,12 +32,36 @@ export const StreakWidget: React.FC<StreakWidgetProps> = ({
 }) => {
   const [streak, setStreak] = useState<Streak | null>(null);
   const [loading, setLoading] = useState(true);
-  const flameAnim = new Animated.Value(1);
+
+  // Animation values
+  const flameScale = useSharedValue(1);
+  const glowOpacity = useSharedValue(0.5);
 
   useEffect(() => {
     loadStreak();
-    startFlameAnimation();
   }, [userId]);
+
+  useEffect(() => {
+    // Pulsing Flame Animation
+    flameScale.value = withRepeat(
+      withSequence(
+        withTiming(1.1, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      true
+    );
+
+    // Glow pulsing
+    glowOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0.8, { duration: 1500 }),
+        withTiming(0.4, { duration: 1500 })
+      ),
+      -1,
+      true
+    );
+  }, []);
 
   const loadStreak = async () => {
     try {
@@ -43,97 +69,116 @@ export const StreakWidget: React.FC<StreakWidgetProps> = ({
       setStreak(data);
     } catch (error) {
       console.error('Failed to load streak:', error);
+      // Mock data for demo if API fails
+      /*
+      setStreak({
+        id: '1',
+        userId: userId,
+        currentStreak: 5,
+        longestStreak: 12,
+        lastQuizDate: new Date().toISOString(),
+        freezesAvailable: 2,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      */
     } finally {
       setLoading(false);
     }
   };
 
-  const startFlameAnimation = () => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(flameAnim, {
-          toValue: 1.2,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(flameAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  };
-
   if (loading || !streak) {
     return null;
+    // Or return a skeleton loader if preferred
   }
 
   const isActive = streak.currentStreak > 0;
-  const isOnFire = streak.currentStreak >= 7;
+  const isOnFire = streak.currentStreak >= 3; // "On Fire" threshold
+
+  const flameAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: flameScale.value }],
+    };
+  });
+
+  const glowAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: glowOpacity.value,
+    };
+  });
 
   if (compact) {
     return (
       <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.compactContainer}>
-        <Animated.Text style={[styles.compactFlame, { transform: [{ scale: isOnFire ? flameAnim : 1 }] }]}>
+        <Animated.Text style={[styles.compactFlame, flameAnimatedStyle]}>
           🔥
         </Animated.Text>
-        <Text style={styles.compactNumber}>{streak.currentStreak}</Text>
+        <Text style={[styles.compactNumber, { color: isActive ? '#EF4444' : '#6B7280' }]}>
+          {streak.currentStreak}
+        </Text>
       </TouchableOpacity>
     );
   }
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
       <LinearGradient
-        colors={isActive ? ['#ef4444', '#dc2626', '#b91c1c'] : ['#6b7280', '#4b5563']}
+        colors={isActive ? ['#FF4B1F', '#FF9068'] : ['#374151', '#1F2937']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.container}
       >
-        <View style={styles.content}>
-          {/* Flame Icon */}
-          <Animated.View style={{ transform: [{ scale: isOnFire ? flameAnim : 1 }] }}>
-            <Text style={styles.flame}>🔥</Text>
+        {/* Background Glow for active streak */}
+        {isActive && (
+          <Animated.View style={[styles.glowContainer, glowAnimatedStyle]}>
+            <LinearGradient
+              colors={['rgba(255, 200, 50, 0.3)', 'transparent']}
+              style={styles.glow}
+            />
           </Animated.View>
+        )}
 
-          {/* Streak Info */}
-          <View style={styles.info}>
-            <View style={styles.row}>
-              <Text style={styles.number}>{streak.currentStreak}</Text>
-              <Text style={styles.label}>Day Streak</Text>
+        <View style={styles.content}>
+          <View style={styles.leftSection}>
+            <Animated.View style={[styles.flameContainer, flameAnimatedStyle]}>
+              <Text style={styles.flameEmoji}>{isActive ? '🔥' : '🧊'}</Text>
+            </Animated.View>
+
+            <View>
+              <Text style={styles.streakLabel}>Current Streak</Text>
+              <View style={styles.streakCountRow}>
+                <Text style={styles.streakNumber}>{streak.currentStreak}</Text>
+                <Text style={styles.streakDays}>days</Text>
+              </View>
             </View>
+          </View>
+
+          <View style={styles.rightSection}>
+            {/* Freeze Status */}
+            {streak.freezesAvailable > 0 && (
+              <View style={styles.freezeBadge}>
+                <Ionicons name="snow" size={12} color="#60A5FA" />
+                <Text style={styles.freezeText}>{streak.freezesAvailable} Freezes</Text>
+              </View>
+            )}
 
             {/* Best Streak */}
-            <View style={styles.bestStreakContainer}>
-              <Ionicons name="trophy" size={12} color="#fbbf24" />
-              <Text style={styles.bestStreakText}>
-                Best: {streak.longestStreak} days
-              </Text>
+            <View style={styles.bestContainer}>
+              <Ionicons name="trophy" size={12} color="rgba(255,255,255,0.6)" />
+              <Text style={styles.bestText}>Best: {streak.longestStreak}</Text>
             </View>
           </View>
-
-          {/* Freeze Badge */}
-          {streak.freezesAvailable > 0 && (
-            <View style={styles.freezeBadge}>
-              <Ionicons name="snow" size={16} color="#60a5fa" />
-              <Text style={styles.freezeText}>{streak.freezesAvailable}</Text>
-            </View>
-          )}
         </View>
 
-        {/* Status Message */}
-        {isOnFire && (
-          <View style={styles.statusContainer}>
-            <Text style={styles.statusText}>🔥 You're on fire!</Text>
-          </View>
-        )}
+        {/* Motivation Text */}
+        <View style={styles.footer}>
+          <Text style={styles.motivationText}>
+            {isActive
+              ? (isOnFire ? "You're on fire! Keep it up! 🚀" : "Great start! Don't break the chain!")
+              : "Play a quiz to start your streak!"}
+          </Text>
+        </View>
 
-        {!isActive && (
-          <View style={styles.statusContainer}>
-            <Text style={styles.statusText}>Take a quiz to start your streak!</Text>
-          </View>
-        )}
       </LinearGradient>
     </TouchableOpacity>
   );
@@ -143,90 +188,130 @@ const styles = StyleSheet.create({
   compactContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fef2f2',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 20,
     gap: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   compactFlame: {
     fontSize: 16,
   },
   compactNumber: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#dc2626',
+    fontWeight: '800',
   },
   container: {
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    overflow: 'hidden',
+    position: 'relative',
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  glowContainer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
+  },
+  glow: {
+    flex: 1,
+    borderRadius: 20,
   },
   content: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 16,
+    zIndex: 1,
   },
-  flame: {
-    fontSize: 48,
+  leftSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
-  info: {
-    flex: 1,
+  flameContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
-  row: {
+  flameEmoji: {
+    fontSize: 28,
+  },
+  streakLabel: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  streakCountRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: 8,
-    marginBottom: 4,
-  },
-  number: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  label: {
-    fontSize: 16,
-    color: '#fff',
-    opacity: 0.9,
-  },
-  bestStreakContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 4,
   },
-  bestStreakText: {
-    fontSize: 12,
-    color: '#fff',
-    opacity: 0.8,
+  streakNumber: {
+    color: '#FFF',
+    fontSize: 24,
+    fontWeight: '800',
+    lineHeight: 24,
+  },
+  streakDays: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  rightSection: {
+    alignItems: 'flex-end',
+    gap: 6,
   },
   freezeBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
     gap: 4,
   },
   freezeText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#fff',
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
-  statusContainer: {
+  bestContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  bestText: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  footer: {
     marginTop: 12,
-    paddingTop: 12,
+    paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+    borderTopColor: 'rgba(255,255,255,0.1)',
   },
-  statusText: {
+  motivationText: {
+    color: 'rgba(255,255,255,0.9)',
     fontSize: 12,
-    color: '#fff',
+    fontWeight: '600',
     textAlign: 'center',
-    opacity: 0.9,
+    fontStyle: 'italic',
   },
 });

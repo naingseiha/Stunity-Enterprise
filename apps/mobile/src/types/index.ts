@@ -171,6 +171,11 @@ export interface Post {
     passingScore: number; // percentage (0-100)
     totalPoints: number;
     resultsVisibility?: 'IMMEDIATE' | 'AFTER_SUBMISSION' | 'MANUAL';
+    shuffleQuestions?: boolean;
+    shuffleAnswers?: boolean;
+    maxAttempts?: number | null;
+    showReview?: boolean;
+    showExplanations?: boolean;
     userAttempt?: {
       id: string;
       score: number; // percentage

@@ -35,7 +35,7 @@ const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 interface QuizQuestion {
   id: string;
   text: string;
-  type: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER';
+  type: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER' | 'FILL_IN_BLANK' | 'ORDERING' | 'MATCHING';
   options?: string[];
   correctAnswer: string;
   points: number;
@@ -49,6 +49,7 @@ interface Quiz {
   timeLimit: number | null; // in minutes
   passingScore: number;
   totalPoints: number;
+  shuffleQuestions?: boolean;
 }
 
 interface UserAnswer {
@@ -61,6 +62,7 @@ export function TakeQuizScreen() {
   const route = useRoute();
   const quiz = route.params?.quiz as Quiz;
 
+  const [questions, setQuestions] = useState<QuizQuestion[]>(quiz.questions || []);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<UserAnswer[]>([]);
   const [markedForReview, setMarkedForReview] = useState<Set<string>>(new Set());
@@ -73,6 +75,13 @@ export function TakeQuizScreen() {
   const progressAnim = useRef(new RNAnimated.Value(0)).current;
   const questionSlideAnim = useRef(new RNAnimated.Value(0)).current;
   const celebrationAnim = useRef(new RNAnimated.Value(0)).current;
+
+  // Initialize questions (handle shuffling)
+  useEffect(() => {
+    if (quiz.questions && quiz.shuffleQuestions) {
+      setQuestions([...quiz.questions].sort(() => Math.random() - 0.5));
+    }
+  }, [quiz]);
 
   // Timer countdown
   useEffect(() => {
@@ -111,7 +120,7 @@ export function TakeQuizScreen() {
 
   const handleAnswerChange = (answer: string) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    
+
     // Animate answer selection
     RNAnimated.sequence([
       RNAnimated.timing(selectedAnswerAnim, {
@@ -125,7 +134,7 @@ export function TakeQuizScreen() {
         useNativeDriver: true,
       }),
     ]).start();
-    
+
     const newAnswers = answers.filter((a) => a.questionId !== currentQuestion.id);
     newAnswers.push({ questionId: currentQuestion.id, answer });
     setAnswers(newAnswers);
@@ -134,12 +143,12 @@ export function TakeQuizScreen() {
   const handleNext = () => {
     if (currentQuestionIndex < quiz.questions.length - 1) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      
+
       // Celebrate progress milestone
       if ((currentQuestionIndex + 1) % 5 === 0) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-      
+
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
   };
@@ -177,7 +186,7 @@ export function TakeQuizScreen() {
 
   const handleSubmit = async () => {
     const unansweredCount = quiz.questions.length - answers.length;
-    
+
     if (unansweredCount > 0) {
       Alert.alert(
         'Incomplete Quiz',
@@ -195,7 +204,7 @@ export function TakeQuizScreen() {
   const submitQuiz = async () => {
     try {
       setIsSubmitting(true);
-      
+
       // Celebration animation
       RNAnimated.spring(celebrationAnim, {
         toValue: 1,
@@ -203,7 +212,7 @@ export function TakeQuizScreen() {
         friction: 7,
         useNativeDriver: true,
       }).start();
-      
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       console.log('📤 [QUIZ] Submitting quiz with answers:', answers);
@@ -229,11 +238,11 @@ export function TakeQuizScreen() {
     } catch (error: any) {
       console.error('❌ [QUIZ] Quiz submission error:', error);
       console.error('❌ [QUIZ] Error response:', error.response?.data);
-      
-      const errorMessage = error.response?.data?.error 
-        || error.message 
+
+      const errorMessage = error.response?.data?.error
+        || error.message
         || 'Failed to submit quiz. Please try again.';
-      
+
       Alert.alert('Error', errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -260,8 +269,8 @@ export function TakeQuizScreen() {
         <View style={styles.container}>
           {/* Review Header */}
           <View style={styles.header}>
-            <TouchableOpacity 
-              onPress={() => setShowReviewScreen(false)} 
+            <TouchableOpacity
+              onPress={() => setShowReviewScreen(false)}
               style={styles.backButton}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
@@ -271,108 +280,108 @@ export function TakeQuizScreen() {
           </View>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Summary Card */}
-          <View style={styles.reviewSummary}>
-            <Text style={styles.reviewTitle}>Submission Summary</Text>
-            <View style={styles.summaryGrid}>
-              <View style={styles.summaryItem}>
-                <Ionicons name="checkmark-circle" size={32} color="#10B981" />
-                <Text style={styles.summaryNumber}>{answeredCount}</Text>
-                <Text style={styles.summaryLabel}>Answered</Text>
-              </View>
-              <View style={styles.summaryItem}>
-                <Ionicons name="alert-circle" size={32} color="#EF4444" />
-                <Text style={styles.summaryNumber}>{quiz.questions.length - answeredCount}</Text>
-                <Text style={styles.summaryLabel}>Unanswered</Text>
-              </View>
-              <View style={styles.summaryItem}>
-                <Ionicons name="flag" size={32} color="#F59E0B" />
-                <Text style={styles.summaryNumber}>{markedForReview.size}</Text>
-                <Text style={styles.summaryLabel}>Flagged</Text>
+            {/* Summary Card */}
+            <View style={styles.reviewSummary}>
+              <Text style={styles.reviewTitle}>Submission Summary</Text>
+              <View style={styles.summaryGrid}>
+                <View style={styles.summaryItem}>
+                  <Ionicons name="checkmark-circle" size={32} color="#10B981" />
+                  <Text style={styles.summaryNumber}>{answeredCount}</Text>
+                  <Text style={styles.summaryLabel}>Answered</Text>
+                </View>
+                <View style={styles.summaryItem}>
+                  <Ionicons name="alert-circle" size={32} color="#EF4444" />
+                  <Text style={styles.summaryNumber}>{quiz.questions.length - answeredCount}</Text>
+                  <Text style={styles.summaryLabel}>Unanswered</Text>
+                </View>
+                <View style={styles.summaryItem}>
+                  <Ionicons name="flag" size={32} color="#F59E0B" />
+                  <Text style={styles.summaryNumber}>{markedForReview.size}</Text>
+                  <Text style={styles.summaryLabel}>Flagged</Text>
+                </View>
               </View>
             </View>
-          </View>
 
-          {/* Questions Review List */}
-          <View style={styles.reviewList}>
-            {quiz.questions.map((q, index) => {
-              const answer = answers.find(a => a.questionId === q.id);
-              const isAnswered = !!answer;
-              const isFlagged = markedForReview.has(q.id);
-              
-              return (
-                <TouchableOpacity
-                  key={q.id}
-                  onPress={() => {
-                    setShowReviewScreen(false);
-                    setCurrentQuestionIndex(index);
-                  }}
-                  style={styles.reviewItem}
-                >
-                  <View style={styles.reviewItemLeft}>
-                    <View style={[
-                      styles.reviewNumber,
-                      isAnswered ? styles.reviewNumberAnswered : styles.reviewNumberUnanswered
-                    ]}>
-                      <Text style={[
-                        styles.reviewNumberText,
-                        isAnswered && styles.reviewNumberTextAnswered
+            {/* Questions Review List */}
+            <View style={styles.reviewList}>
+              {quiz.questions.map((q, index) => {
+                const answer = answers.find(a => a.questionId === q.id);
+                const isAnswered = !!answer;
+                const isFlagged = markedForReview.has(q.id);
+
+                return (
+                  <TouchableOpacity
+                    key={q.id}
+                    onPress={() => {
+                      setShowReviewScreen(false);
+                      setCurrentQuestionIndex(index);
+                    }}
+                    style={styles.reviewItem}
+                  >
+                    <View style={styles.reviewItemLeft}>
+                      <View style={[
+                        styles.reviewNumber,
+                        isAnswered ? styles.reviewNumberAnswered : styles.reviewNumberUnanswered
                       ]}>
-                        {index + 1}
-                      </Text>
+                        <Text style={[
+                          styles.reviewNumberText,
+                          isAnswered && styles.reviewNumberTextAnswered
+                        ]}>
+                          {index + 1}
+                        </Text>
+                      </View>
+                      <View style={styles.reviewInfo}>
+                        <Text style={styles.reviewQuestionText} numberOfLines={2}>
+                          {q.text}
+                        </Text>
+                        {answer && q.type === 'MULTIPLE_CHOICE' && (
+                          <Text style={styles.reviewAnswerText}>
+                            Answer: {OPTION_LETTERS[parseInt(answer.answer)]}
+                          </Text>
+                        )}
+                        {answer && q.type === 'TRUE_FALSE' && (
+                          <Text style={styles.reviewAnswerText}>
+                            Answer: {answer.answer === 'true' ? 'True' : 'False'}
+                          </Text>
+                        )}
+                        {answer && q.type === 'SHORT_ANSWER' && (
+                          <Text style={styles.reviewAnswerText} numberOfLines={1}>
+                            Answer: {answer.answer}
+                          </Text>
+                        )}
+                      </View>
                     </View>
-                    <View style={styles.reviewInfo}>
-                      <Text style={styles.reviewQuestionText} numberOfLines={2}>
-                        {q.text}
-                      </Text>
-                      {answer && q.type === 'MULTIPLE_CHOICE' && (
-                        <Text style={styles.reviewAnswerText}>
-                          Answer: {OPTION_LETTERS[parseInt(answer.answer)]}
-                        </Text>
-                      )}
-                      {answer && q.type === 'TRUE_FALSE' && (
-                        <Text style={styles.reviewAnswerText}>
-                          Answer: {answer.answer === 'true' ? 'True' : 'False'}
-                        </Text>
-                      )}
-                      {answer && q.type === 'SHORT_ANSWER' && (
-                        <Text style={styles.reviewAnswerText} numberOfLines={1}>
-                          Answer: {answer.answer}
-                        </Text>
-                      )}
+                    <View style={styles.reviewItemRight}>
+                      {isFlagged && <Ionicons name="flag" size={18} color="#F59E0B" />}
+                      {!isAnswered && <Ionicons name="alert-circle" size={18} color="#EF4444" />}
+                      <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
                     </View>
-                  </View>
-                  <View style={styles.reviewItemRight}>
-                    {isFlagged && <Ionicons name="flag" size={18} color="#F59E0B" />}
-                    {!isAnswered && <Ionicons name="alert-circle" size={18} color="#EF4444" />}
-                    <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </ScrollView>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </ScrollView>
 
-        {/* Review Footer */}
-        <View style={styles.footer}>
-          <TouchableOpacity
-            onPress={() => setShowReviewScreen(false)}
-            style={styles.navButton}
-          >
-            <Ionicons name="create-outline" size={20} color="#6366F1" />
-            <Text style={styles.navButtonText}>Continue Editing</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleSubmit}
-            disabled={isSubmitting}
-            style={styles.submitButton}
-          >
-            <Text style={styles.submitButtonText}>
-              {isSubmitting ? 'Submitting...' : 'Submit Quiz'}
-            </Text>
-            <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
+          {/* Review Footer */}
+          <View style={styles.footer}>
+            <TouchableOpacity
+              onPress={() => setShowReviewScreen(false)}
+              style={styles.navButton}
+            >
+              <Ionicons name="create-outline" size={20} color="#6366F1" />
+              <Text style={styles.navButtonText}>Continue Editing</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleSubmit}
+              disabled={isSubmitting}
+              style={styles.submitButton}
+            >
+              <Text style={styles.submitButtonText}>
+                {isSubmitting ? 'Submitting...' : 'Submit Quiz'}
+              </Text>
+              <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -384,8 +393,8 @@ export function TakeQuizScreen() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity 
-            onPress={() => navigation.goBack()} 
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
             style={styles.backButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
@@ -395,10 +404,10 @@ export function TakeQuizScreen() {
             <Text style={styles.headerTitle} numberOfLines={1}>{quiz.title}</Text>
             {timeRemaining !== null && (
               <View style={[styles.timer, timeRemaining < 60 && styles.timerWarning]}>
-                <Ionicons 
-                  name="time-outline" 
-                  size={18} 
-                  color={timeRemaining < 60 ? '#EF4444' : '#6366F1'} 
+                <Ionicons
+                  name="time-outline"
+                  size={18}
+                  color={timeRemaining < 60 ? '#EF4444' : '#6366F1'}
                 />
                 <Text style={[styles.timerText, timeRemaining < 60 && styles.timerTextWarning]}>
                   {formatTime(timeRemaining)}
@@ -418,265 +427,380 @@ export function TakeQuizScreen() {
                   flex: progressAnim.interpolate({
                     inputRange: [0, 100],
                     outputRange: [0, 1],
-                  extrapolate: 'clamp',
-                }),
-              },
-            ]}
-          />
+                    extrapolate: 'clamp',
+                  }),
+                },
+              ]}
+            />
+          </View>
+          <Text style={styles.progressText}>
+            Question {currentQuestionIndex + 1} of {quiz.questions.length}
+          </Text>
         </View>
-        <Text style={styles.progressText}>
-          Question {currentQuestionIndex + 1} of {quiz.questions.length}
-        </Text>
-      </View>
 
-      {/* Question Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <Animated.View
-          key={currentQuestion.id}
-          entering={SlideInRight.duration(300)}
-          exiting={SlideOutLeft.duration(300)}
-          style={styles.questionCard}
-        >
-          {/* Question Header */}
-          <View style={styles.questionHeader}>
-            <View style={styles.questionHeaderLeft}>
-              <View style={styles.questionNumber}>
-                <Text style={styles.questionNumberText}>Q{currentQuestionIndex + 1}</Text>
+        {/* Question Content */}
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <Animated.View
+            key={currentQuestion.id}
+            entering={SlideInRight.duration(300)}
+            exiting={SlideOutLeft.duration(300)}
+            style={styles.questionCard}
+          >
+            {/* Question Header */}
+            <View style={styles.questionHeader}>
+              <View style={styles.questionHeaderLeft}>
+                <View style={styles.questionNumber}>
+                  <Text style={styles.questionNumberText}>Q{currentQuestionIndex + 1}</Text>
+                </View>
+                <View style={styles.questionPoints}>
+                  <Ionicons name="star" size={16} color="#F59E0B" />
+                  <Text style={styles.pointsText}>{currentQuestion.points} pts</Text>
+                </View>
               </View>
-              <View style={styles.questionPoints}>
-                <Ionicons name="star" size={16} color="#F59E0B" />
-                <Text style={styles.pointsText}>{currentQuestion.points} pts</Text>
-              </View>
+              <TouchableOpacity onPress={toggleMarkForReview} style={styles.flagButton}>
+                <Ionicons
+                  name={isMarkedForReview ? "flag" : "flag-outline"}
+                  size={22}
+                  color={isMarkedForReview ? "#F59E0B" : "#9CA3AF"}
+                />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={toggleMarkForReview} style={styles.flagButton}>
-              <Ionicons 
-                name={isMarkedForReview ? "flag" : "flag-outline"} 
-                size={22} 
-                color={isMarkedForReview ? "#F59E0B" : "#9CA3AF"} 
+
+            {/* Question Text */}
+            <Text style={styles.questionText}>{currentQuestion.text}</Text>
+
+            {/* Answer Input */}
+            <View style={styles.answerSection}>
+              {currentQuestion.type === 'MULTIPLE_CHOICE' && (
+                <View style={styles.optionsContainer}>
+                  {currentQuestion.options?.map((option, index) => {
+                    const isSelected = currentAnswer === index.toString();
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        onPress={() => handleAnswerChange(index.toString())}
+                        style={[styles.optionButton, isSelected && styles.optionButtonSelected]}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[styles.optionLetter, isSelected && styles.optionLetterSelected]}>
+                          <Text style={[styles.optionLetterText, isSelected && styles.optionLetterTextSelected]}>
+                            {OPTION_LETTERS[index]}
+                          </Text>
+                        </View>
+                        <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                          {option}
+                        </Text>
+                        {isSelected && (
+                          <Ionicons name="checkmark-circle" size={24} color="#6366F1" />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+
+              {currentQuestion.type === 'TRUE_FALSE' && (
+                <View style={styles.trueFalseContainer}>
+                  <TouchableOpacity
+                    onPress={() => handleAnswerChange('true')}
+                    style={[
+                      styles.trueFalseButton,
+                      currentAnswer === 'true' && styles.trueButtonSelected,
+                    ]}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={currentAnswer === 'true' ? 'checkmark-circle' : 'checkmark-circle-outline'}
+                      size={24}
+                      color={currentAnswer === 'true' ? '#FFFFFF' : '#10B981'}
+                    />
+                    <Text
+                      style={[
+                        styles.trueFalseText,
+                        currentAnswer === 'true' && styles.trueFalseTextSelected,
+                      ]}
+                    >
+                      True
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => handleAnswerChange('false')}
+                    style={[
+                      styles.trueFalseButton,
+                      currentAnswer === 'false' && styles.falseButtonSelected,
+                    ]}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={currentAnswer === 'false' ? 'close-circle' : 'close-circle-outline'}
+                      size={24}
+                      color={currentAnswer === 'false' ? '#FFFFFF' : '#EF4444'}
+                    />
+                    <Text
+                      style={[
+                        styles.trueFalseText,
+                        currentAnswer === 'false' && styles.trueFalseTextSelected,
+                      ]}
+                    >
+                      False
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {currentQuestion.type === 'SHORT_ANSWER' && (
+                <TextInput
+                  value={currentAnswer}
+                  onChangeText={handleAnswerChange}
+                  placeholder="Type your answer here..."
+                  placeholderTextColor="#9CA3AF"
+                  style={styles.textInput}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+              )}
+
+              {currentQuestion.type === 'FILL_IN_BLANK' && (
+                <View>
+                  <Text style={styles.instructionText}>Type the missing word(s):</Text>
+                  <TextInput
+                    value={currentAnswer}
+                    onChangeText={handleAnswerChange}
+                    placeholder="Type your answer here..."
+                    placeholderTextColor="#9CA3AF"
+                    style={styles.textInput}
+                    autoCapitalize="none"
+                  />
+                </View>
+              )}
+
+              {currentQuestion.type === 'ORDERING' && (
+                <View style={styles.orderingContainer}>
+                  <Text style={styles.instructionText}>Arrange in correct order:</Text>
+                  {(() => {
+                    const items: string[] = currentAnswer
+                      ? JSON.parse(currentAnswer)
+                      : currentQuestion.options || [];
+
+                    const moveItem = (from: number, to: number) => {
+                      const newItems = [...items];
+                      const [moved] = newItems.splice(from, 1);
+                      newItems.splice(to, 0, moved);
+                      handleAnswerChange(JSON.stringify(newItems));
+                    };
+
+                    return items.map((item, index) => (
+                      <View key={index} style={styles.orderingItem}>
+                        <View style={styles.orderingNumber}>
+                          <Text style={styles.orderingNumberText}>{index + 1}</Text>
+                        </View>
+                        <Text style={styles.orderingText}>{item}</Text>
+                        <View style={styles.orderingControls}>
+                          <TouchableOpacity
+                            disabled={index === 0}
+                            onPress={() => moveItem(index, index - 1)}
+                            style={[styles.orderBtn, index === 0 && styles.orderBtnDisabled]}
+                          >
+                            <Ionicons name="chevron-up" size={20} color={index === 0 ? "#D1D5DB" : "#6366F1"} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            disabled={index === items.length - 1}
+                            onPress={() => moveItem(index, index + 1)}
+                            style={[styles.orderBtn, index === items.length - 1 && styles.orderBtnDisabled]}
+                          >
+                            <Ionicons name="chevron-down" size={20} color={index === items.length - 1 ? "#D1D5DB" : "#6366F1"} />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ));
+                  })()}
+                </View>
+              )}
+
+              {currentQuestion.type === 'MATCHING' && (
+                <View style={styles.matchingContainer}>
+                  <Text style={styles.instructionText}>Pair the items:</Text>
+                  {(() => {
+                    // Options are "Left:::Right"
+                    // We need to parse them.
+                    // But wait, user answer should be { left: right }
+                    // We need to display Left items and allow selecting Right items.
+                    // Right items are the values.
+
+                    const pairs = currentQuestion.options?.map(o => {
+                      const parts = o.split(':::');
+                      return { left: parts[0], right: parts[1] || '' };
+                    }) || [];
+
+                    const leftItems = pairs.map(p => p.left);
+                    const rightItems = pairs.map(p => p.right).sort(); // Shuffle/Sort right items for display?
+                    // Ideally check if already shuffled in state? 
+                    // For simplicity, just sort them so they aren't in correct order by default?
+                    // Or keep them as is (creator might have mixed them?). Creator entered pairs.
+                    // We definitely need to shuffle right items for display.
+
+                    const currentMatches: Record<string, string> = currentAnswer ? JSON.parse(currentAnswer) : {};
+
+                    return leftItems.map((left, idx) => (
+                      <View key={idx} style={styles.matchRow}>
+                        <View style={styles.matchLeft}>
+                          <Text style={styles.matchText}>{left}</Text>
+                        </View>
+                        <Ionicons name="arrow-forward" size={16} color="#9CA3AF" />
+                        <View style={styles.matchRight}>
+                          {/* Simple Selector: Toggle through options? Or Modal? */}
+                          {/* Let's use specific Cycle/Selector to keep it simple inline */}
+                          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                            {rightItems.map((right, rIdx) => {
+                              const isSelected = currentMatches[left] === right;
+                              return (
+                                <TouchableOpacity
+                                  key={rIdx}
+                                  onPress={() => {
+                                    const newMatches = { ...currentMatches, [left]: right };
+                                    handleAnswerChange(JSON.stringify(newMatches));
+                                  }}
+                                  style={[styles.matchChip, isSelected && styles.matchChipSelected]}
+                                >
+                                  <Text style={[styles.matchChipText, isSelected && styles.matchChipTextSelected]}>{right}</Text>
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </ScrollView>
+                        </View>
+                      </View>
+                    ));
+                  })()}
+                </View>
+              )}
+
+            </View>
+          </Animated.View>
+
+          {/* Answer Status Grid */}
+          <View style={styles.answerGrid}>
+            <Text style={styles.answerGridTitle}>Answer Status</Text>
+            <View style={styles.gridContainer}>
+              {quiz.questions.map((q, index) => {
+                const isAnswered = answers.some((a) => a.questionId === q.id);
+                const isCurrent = index === currentQuestionIndex;
+                return (
+                  <TouchableOpacity
+                    key={q.id}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setCurrentQuestionIndex(index);
+                    }}
+                    style={[
+                      styles.gridItem,
+                      isAnswered && styles.gridItemAnswered,
+                      isCurrent && styles.gridItemCurrent,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.gridItemText,
+                        isAnswered && styles.gridItemTextAnswered,
+                        isCurrent && styles.gridItemTextCurrent,
+                      ]}
+                    >
+                      {index + 1}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <Text style={styles.answeredCount}>
+              {answeredCount} of {quiz.questions.length} answered ({Math.round(progressPercent)}%)
+            </Text>
+          </View>
+        </ScrollView>
+
+        {/* Navigation Footer */}
+        <View style={styles.footer}>
+          <View style={styles.footerLeft}>
+            <TouchableOpacity
+              onPress={handlePrevious}
+              disabled={currentQuestionIndex === 0}
+              style={[styles.navButtonSmall, currentQuestionIndex === 0 && styles.navButtonDisabled]}
+            >
+              <Ionicons
+                name="chevron-back"
+                size={24}
+                color={currentQuestionIndex === 0 ? '#D1D5DB' : '#6366F1'}
               />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleReviewClick}
+              style={styles.reviewButton}
+            >
+              <Ionicons name="list-outline" size={20} color="#6366F1" />
+              <Text style={styles.reviewButtonText}>Review</Text>
+              {markedForReview.size > 0 && (
+                <View style={styles.reviewBadge}>
+                  <Text style={styles.reviewBadgeText}>{markedForReview.size}</Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
 
-          {/* Question Text */}
-          <Text style={styles.questionText}>{currentQuestion.text}</Text>
-
-          {/* Answer Input */}
-          <View style={styles.answerSection}>
-            {currentQuestion.type === 'MULTIPLE_CHOICE' && (
-              <View style={styles.optionsContainer}>
-                {currentQuestion.options?.map((option, index) => {
-                  const isSelected = currentAnswer === index.toString();
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      onPress={() => handleAnswerChange(index.toString())}
-                      style={[styles.optionButton, isSelected && styles.optionButtonSelected]}
-                      activeOpacity={0.7}
-                    >
-                      <View style={[styles.optionLetter, isSelected && styles.optionLetterSelected]}>
-                        <Text style={[styles.optionLetterText, isSelected && styles.optionLetterTextSelected]}>
-                          {OPTION_LETTERS[index]}
-                        </Text>
-                      </View>
-                      <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
-                        {option}
-                      </Text>
-                      {isSelected && (
-                        <Ionicons name="checkmark-circle" size={24} color="#6366F1" />
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
-
-            {currentQuestion.type === 'TRUE_FALSE' && (
-              <View style={styles.trueFalseContainer}>
-                <TouchableOpacity
-                  onPress={() => handleAnswerChange('true')}
-                  style={[
-                    styles.trueFalseButton,
-                    currentAnswer === 'true' && styles.trueButtonSelected,
-                  ]}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name={currentAnswer === 'true' ? 'checkmark-circle' : 'checkmark-circle-outline'}
-                    size={24}
-                    color={currentAnswer === 'true' ? '#FFFFFF' : '#10B981'}
-                  />
-                  <Text
-                    style={[
-                      styles.trueFalseText,
-                      currentAnswer === 'true' && styles.trueFalseTextSelected,
-                    ]}
-                  >
-                    True
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => handleAnswerChange('false')}
-                  style={[
-                    styles.trueFalseButton,
-                    currentAnswer === 'false' && styles.falseButtonSelected,
-                  ]}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name={currentAnswer === 'false' ? 'close-circle' : 'close-circle-outline'}
-                    size={24}
-                    color={currentAnswer === 'false' ? '#FFFFFF' : '#EF4444'}
-                  />
-                  <Text
-                    style={[
-                      styles.trueFalseText,
-                      currentAnswer === 'false' && styles.trueFalseTextSelected,
-                    ]}
-                  >
-                    False
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {currentQuestion.type === 'SHORT_ANSWER' && (
-              <TextInput
-                value={currentAnswer}
-                onChangeText={handleAnswerChange}
-                placeholder="Type your answer here..."
-                placeholderTextColor="#9CA3AF"
-                style={styles.textInput}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
-            )}
-          </View>
-        </Animated.View>
-
-        {/* Answer Status Grid */}
-        <View style={styles.answerGrid}>
-          <Text style={styles.answerGridTitle}>Answer Status</Text>
-          <View style={styles.gridContainer}>
-            {quiz.questions.map((q, index) => {
-              const isAnswered = answers.some((a) => a.questionId === q.id);
-              const isCurrent = index === currentQuestionIndex;
-              return (
-                <TouchableOpacity
-                  key={q.id}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setCurrentQuestionIndex(index);
-                  }}
-                  style={[
-                    styles.gridItem,
-                    isAnswered && styles.gridItemAnswered,
-                    isCurrent && styles.gridItemCurrent,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.gridItemText,
-                      isAnswered && styles.gridItemTextAnswered,
-                      isCurrent && styles.gridItemTextCurrent,
-                    ]}
-                  >
-                    {index + 1}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <Text style={styles.answeredCount}>
-            {answeredCount} of {quiz.questions.length} answered ({Math.round(progressPercent)}%)
-          </Text>
-        </View>
-      </ScrollView>
-
-      {/* Navigation Footer */}
-      <View style={styles.footer}>
-        <View style={styles.footerLeft}>
-          <TouchableOpacity
-            onPress={handlePrevious}
-            disabled={currentQuestionIndex === 0}
-            style={[styles.navButtonSmall, currentQuestionIndex === 0 && styles.navButtonDisabled]}
-          >
-            <Ionicons
-              name="chevron-back"
-              size={24}
-              color={currentQuestionIndex === 0 ? '#D1D5DB' : '#6366F1'}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={handleReviewClick}
-            style={styles.reviewButton}
-          >
-            <Ionicons name="list-outline" size={20} color="#6366F1" />
-            <Text style={styles.reviewButtonText}>Review</Text>
-            {markedForReview.size > 0 && (
-              <View style={styles.reviewBadge}>
-                <Text style={styles.reviewBadgeText}>{markedForReview.size}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          {isLastQuestion ? (
+            <TouchableOpacity
+              onPress={handleReviewClick}
+              disabled={isSubmitting}
+              style={styles.submitButton}
+            >
+              <Text style={styles.submitButtonText}>
+                {isSubmitting ? 'Submitting...' : 'Review & Submit'}
+              </Text>
+              <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
+              <Text style={styles.nextButtonText}>Next</Text>
+              <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          )}
         </View>
 
-        {isLastQuestion ? (
-          <TouchableOpacity
-            onPress={handleReviewClick}
-            disabled={isSubmitting}
-            style={styles.submitButton}
+        {/* Submission Loading Overlay */}
+        {isSubmitting && (
+          <RNAnimated.View
+            style={[
+              styles.loadingOverlay,
+              {
+                opacity: celebrationAnim,
+                transform: [{
+                  scale: celebrationAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.8, 1],
+                  })
+                }]
+              }
+            ]}
           >
-            <Text style={styles.submitButtonText}>
-              {isSubmitting ? 'Submitting...' : 'Review & Submit'}
-            </Text>
-            <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
-            <Text style={styles.nextButtonText}>Next</Text>
-            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
+            <LinearGradient
+              colors={['#6366F1', '#8B5CF6', '#EC4899']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.loadingGradient}
+            >
+              <RNAnimated.View style={styles.loadingContent}>
+                <Ionicons name="rocket" size={48} color="#FFFFFF" />
+                <Text style={styles.loadingTitle}>Submitting Quiz...</Text>
+                <Text style={styles.loadingSubtitle}>Calculating your score</Text>
+                <View style={styles.loadingDots}>
+                  <View style={[styles.loadingDot, { animationDelay: '0ms' }]} />
+                  <View style={[styles.loadingDot, { animationDelay: '150ms' }]} />
+                  <View style={[styles.loadingDot, { animationDelay: '300ms' }]} />
+                </View>
+              </RNAnimated.View>
+            </LinearGradient>
+          </RNAnimated.View>
         )}
-      </View>
-      
-      {/* Submission Loading Overlay */}
-      {isSubmitting && (
-        <RNAnimated.View 
-          style={[
-            styles.loadingOverlay,
-            {
-              opacity: celebrationAnim,
-              transform: [{
-                scale: celebrationAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.8, 1],
-                })
-              }]
-            }
-          ]}
-        >
-          <LinearGradient
-            colors={['#6366F1', '#8B5CF6', '#EC4899']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.loadingGradient}
-          >
-            <RNAnimated.View style={styles.loadingContent}>
-              <Ionicons name="rocket" size={48} color="#FFFFFF" />
-              <Text style={styles.loadingTitle}>Submitting Quiz...</Text>
-              <Text style={styles.loadingSubtitle}>Calculating your score</Text>
-              <View style={styles.loadingDots}>
-                <View style={[styles.loadingDot, { animationDelay: '0ms' }]} />
-                <View style={[styles.loadingDot, { animationDelay: '150ms' }]} />
-                <View style={[styles.loadingDot, { animationDelay: '300ms' }]} />
-              </View>
-            </RNAnimated.View>
-          </LinearGradient>
-        </RNAnimated.View>
-      )}
       </View>
     </SafeAreaView>
   );
@@ -1213,5 +1337,106 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     backgroundColor: '#FFFFFF',
+  },
+
+  // New Question Type Styles
+  instructionText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 12,
+  },
+
+  // Ordering
+  orderingContainer: {
+    gap: 12,
+  },
+  orderingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 12,
+  },
+  orderingNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  orderingNumberText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6366F1',
+  },
+  orderingText: {
+    flex: 1,
+    fontSize: 15,
+    color: '#111827',
+  },
+  orderingControls: {
+    flexDirection: 'column',
+    gap: 4,
+  },
+  orderBtn: {
+    padding: 4,
+    borderRadius: 4,
+    backgroundColor: '#F3F4F6',
+  },
+  orderBtnDisabled: {
+    opacity: 0.5,
+  },
+
+  // Matching
+  matchingContainer: {
+    gap: 16,
+  },
+  matchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  matchLeft: {
+    flex: 1,
+  },
+  matchText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  matchRight: {
+    flex: 1.5,
+  },
+  matchChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginRight: 8,
+  },
+  matchChipSelected: {
+    backgroundColor: '#6366F1',
+    borderColor: '#6366F1',
+  },
+  matchChipText: {
+    fontSize: 13,
+    color: '#4B5563',
+    fontWeight: '500',
+  },
+  matchChipTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
 });

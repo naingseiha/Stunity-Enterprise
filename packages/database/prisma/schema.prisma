@@ -808,6 +808,11 @@ model Quiz {
   passingScore      Int // Minimum score to pass (percentage)
   totalPoints       Int // Total possible points
   resultsVisibility String              @default("AFTER_SUBMISSION") // AFTER_SUBMISSION, IMMEDIATE, NEVER
+  shuffleQuestions  Boolean             @default(false)
+  shuffleAnswers    Boolean             @default(false)
+  maxAttempts       Int?                // Null means unlimited
+  showReview        Boolean             @default(true) // Allow reviewing answers after submission
+  showExplanations  Boolean             @default(true) // Show explanations during review
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   post              Post                @relation(fields: [postId], references: [id], onDelete: Cascade)

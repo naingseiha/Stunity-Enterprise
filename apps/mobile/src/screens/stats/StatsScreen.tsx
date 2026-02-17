@@ -5,8 +5,8 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Animated,
   RefreshControl,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -15,22 +15,75 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { statsAPI, type UserStats } from '@/services/stats';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '@/navigation/types';
+import Animated, {
+  FadeInDown,
+  ZoomIn,
+  useAnimatedStyle,
+  withTiming,
+  useSharedValue,
+  withSpring
+} from 'react-native-reanimated';
+import Svg, { Path, Circle, Line, Text as SvgText } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Stats'>;
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Simple Line Chart Component
+const SimpleLineChart = ({ data, width, height }: { data: number[], width: number, height: number }) => {
+  if (data.length < 2) return null;
+
+  const padding = 20;
+  const chartWidth = width - padding * 2;
+  const chartHeight = height - padding * 2;
+
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+
+  const points = data.map((val, i) => {
+    const x = padding + (i / (data.length - 1)) * chartWidth;
+    const y = padding + chartHeight - ((val - min) / range) * chartHeight;
+    return `${x},${y}`;
+  }).join(' ');
+
+  return (
+    <Svg width={width} height={height}>
+      {/* Grid Lines */}
+      <Line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+      <Line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+
+      {/* Chart Line */}
+      <Path
+        d={`M ${points}`}
+        fill="none"
+        stroke="#FBBF24"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+
+      {/* Data Points */}
+      {data.map((val, i) => {
+        const x = padding + (i / (data.length - 1)) * chartWidth;
+        const y = padding + chartHeight - ((val - min) / range) * chartHeight;
+        return (
+          <Circle key={i} cx={x} cy={y} r="4" fill="#FFF" />
+        );
+      })}
+    </Svg>
+  );
+};
 
 export const StatsScreen: React.FC<Props> = ({ navigation }) => {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [userId, setUserId] = useState('current-user-id'); // Get from auth context
-  
-  const progressAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnims = useRef([
-    new Animated.Value(0.8),
-    new Animated.Value(0.8),
-    new Animated.Value(0.8),
-    new Animated.Value(0.8),
-  ]).current;
+  const [userId, setUserId] = useState('current-user-id');
+
+  // Animation values
+  const progressValue = useSharedValue(0);
 
   useEffect(() => {
     loadStats();
@@ -38,23 +91,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
 
   useEffect(() => {
     if (stats) {
-      // Animate XP progress bar
-      Animated.spring(progressAnim, {
-        toValue: stats.xpProgress / stats.xpToNextLevel,
-        friction: 6,
-        useNativeDriver: false,
-      }).start();
-
-      // Animate stat cards
-      scaleAnims.forEach((anim, index) => {
-        setTimeout(() => {
-          Animated.spring(anim, {
-            toValue: 1,
-            friction: 6,
-            useNativeDriver: true,
-          }).start();
-        }, index * 100);
-      });
+      progressValue.value = withTiming(stats.xpProgress / stats.xpToNextLevel, { duration: 1000 });
     }
   }, [stats]);
 
@@ -64,6 +101,8 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
       setStats(data);
     } catch (error: any) {
       console.error('Load stats error:', error);
+      // Fallback for demo if API fails
+      // setStats(MOCK_STATS); 
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -71,431 +110,421 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const onRefresh = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
     loadStats();
   };
 
+  const progressStyle = useAnimatedStyle(() => {
+    return {
+      width: `${progressValue.value * 100}%`,
+    };
+  });
+
   if (loading || !stats) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <StatusBar style="light" />
-        <LinearGradient colors={['#667eea', '#764ba2']} style={styles.gradient}>
-          <View style={styles.loadingContainer}>
-            <Ionicons name="stats-chart" size={48} color="#FFF" />
-            <Text style={styles.loadingText}>Loading stats...</Text>
-          </View>
-        </LinearGradient>
-      </SafeAreaView>
+        <LinearGradient
+          colors={['#4c1d95', '#2e1065', '#0f172a']}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.loadingContainer}>
+          <Ionicons name="stats-chart" size={48} color="rgba(255,255,255,0.5)" />
+          <Text style={styles.loadingText}>Loading Stats...</Text>
+        </View>
+      </View>
     );
   }
 
-  const progressWidth = progressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-  });
+  // Extract scores for chart (reverse order to show oldest to newest)
+  const scoreHistory = stats.recentAttempts?.map(a => a.score).reverse() || [0, 0];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <StatusBar style="light" />
-      
-      <LinearGradient colors={['#667eea', '#764ba2', '#f093fb']} style={styles.gradient}>
+      <LinearGradient
+        colors={['#4c1d95', '#2e1065', '#0f172a']}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
+
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="chevron-back" size={24} color="#FFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>My Stats</Text>
+          <TouchableOpacity
+            style={styles.shareButton}
+            onPress={() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)}
+          >
+            <Ionicons name="share-outline" size={20} color="#FFF" />
+          </TouchableOpacity>
+        </View>
+
         <ScrollView
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFF" />
           }
+          contentContainerStyle={styles.scrollContent}
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons name="arrow-back" size={24} color="#FFF" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Your Stats</Text>
-            <View style={styles.placeholder} />
-          </View>
-
-          {/* Level Badge */}
-          <View style={styles.levelContainer}>
+          {/* Main Level Card */}
+          <Animated.View entering={FadeInDown.delay(100)} style={styles.levelCard}>
             <LinearGradient
-              colors={['#fbbf24', '#f59e0b']}
-              style={styles.levelBadge}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+              colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
+              style={styles.levelCardGradient}
             >
-              <Ionicons name="trophy" size={32} color="#FFF" />
-              <Text style={styles.levelNumber}>{stats.level}</Text>
+              <View style={styles.levelHeader}>
+                <View>
+                  <Text style={styles.levelLabel}>Current Level</Text>
+                  <Text style={styles.levelValue}>{stats.level}</Text>
+                </View>
+                <View style={styles.trophyContainer}>
+                  <Ionicons name="trophy" size={32} color="#FBBF24" />
+                </View>
+              </View>
+
+              <View style={styles.progressContainer}>
+                <View style={styles.progressTextRow}>
+                  <Text style={styles.xpText}>{stats.xpProgress} XP</Text>
+                  <Text style={styles.xpText}>{stats.xpToNextLevel} XP</Text>
+                </View>
+                <View style={styles.progressBarBg}>
+                  <Animated.View style={[styles.progressBarFill, progressStyle]} />
+                </View>
+                <Text style={styles.xpNextLevel}>
+                  {stats.xpToNextLevel - stats.xpProgress} XP to Level {stats.level + 1}
+                </Text>
+              </View>
             </LinearGradient>
-            <Text style={styles.levelLabel}>Level {stats.level}</Text>
+          </Animated.View>
+
+          {/* Grid Stats */}
+          <View style={styles.gridContainer}>
+            {/* Quizzes Taken */}
+            <Animated.View entering={ZoomIn.delay(200)} style={styles.gridItem}>
+              <LinearGradient
+                colors={['rgba(59, 130, 246, 0.2)', 'rgba(59, 130, 246, 0.1)']}
+                style={styles.gridGradient}
+              >
+                <Ionicons name="receipt-outline" size={24} color="#60A5FA" />
+                <Text style={styles.gridValue}>{stats.totalQuizzes}</Text>
+                <Text style={styles.gridLabel}>Quizzes</Text>
+              </LinearGradient>
+            </Animated.View>
+
+            {/* Avg Score */}
+            <Animated.View entering={ZoomIn.delay(300)} style={styles.gridItem}>
+              <LinearGradient
+                colors={['rgba(16, 185, 129, 0.2)', 'rgba(16, 185, 129, 0.1)']}
+                style={styles.gridGradient}
+              >
+                <Ionicons name="locate-outline" size={24} color="#34D399" />
+                <Text style={styles.gridValue}>{stats.avgScore.toFixed(0)}%</Text>
+                <Text style={styles.gridLabel}>Avg Score</Text>
+              </LinearGradient>
+            </Animated.View>
+
+            {/* Streak */}
+            <Animated.View entering={ZoomIn.delay(400)} style={styles.gridItem}>
+              <LinearGradient
+                colors={['rgba(249, 115, 22, 0.2)', 'rgba(249, 115, 22, 0.1)']}
+                style={styles.gridGradient}
+              >
+                <Ionicons name="flame-outline" size={24} color="#FB923C" />
+                <Text style={styles.gridValue}>{stats.winStreak}</Text>
+                <Text style={styles.gridLabel}>Streak</Text>
+              </LinearGradient>
+            </Animated.View>
+
+            {/* Win Rate */}
+            <Animated.View entering={ZoomIn.delay(500)} style={styles.gridItem}>
+              <LinearGradient
+                colors={['rgba(139, 92, 246, 0.2)', 'rgba(139, 92, 246, 0.1)']}
+                style={styles.gridGradient}
+              >
+                <Ionicons name="star-outline" size={24} color="#A78BFA" />
+                <Text style={styles.gridValue}>{stats.winRate.toFixed(0)}%</Text>
+                <Text style={styles.gridLabel}>Pass Rate</Text>
+              </LinearGradient>
+            </Animated.View>
           </View>
 
-          {/* XP Progress */}
-          <View style={styles.xpContainer}>
-            <View style={styles.xpHeader}>
-              <Text style={styles.xpLabel}>XP Progress</Text>
-              <Text style={styles.xpValue}>
-                {stats.xpProgress} / {stats.xpToNextLevel}
-              </Text>
-            </View>
-            <View style={styles.progressBarContainer}>
-              <Animated.View
-                style={[
-                  styles.progressBar,
-                  {
-                    width: progressWidth,
-                    backgroundColor: '#10b981',
-                  },
-                ]}
+          {/* Performance Chart */}
+          <Animated.View entering={FadeInDown.delay(600)} style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Recent Performance</Text>
+            <View style={styles.chartCard}>
+              <SimpleLineChart
+                data={scoreHistory.length > 0 ? scoreHistory : [0, 0]}
+                width={SCREEN_WIDTH - 60}
+                height={150}
               />
+              <Text style={styles.chartSubtitle}>Last {scoreHistory.length} Quizzes Scores</Text>
             </View>
-            <Text style={styles.xpHint}>
-              {stats.xpToNextLevel - stats.xpProgress} XP to Level {stats.level + 1}
-            </Text>
-          </View>
+          </Animated.View>
 
-          {/* Stats Grid */}
-          <View style={styles.statsGrid}>
-            <Animated.View
-              style={[
-                styles.statCard,
-                { transform: [{ scale: scaleAnims[0] }] },
-              ]}
-            >
-              <LinearGradient
-                colors={['rgba(255, 255, 255, 0.25)', 'rgba(255, 255, 255, 0.15)']}
-                style={styles.statCardGradient}
-              >
-                <Ionicons name="clipboard" size={28} color="#10b981" />
-                <Text style={styles.statValue}>{stats.totalQuizzes}</Text>
-                <Text style={styles.statLabel}>Quizzes</Text>
-              </LinearGradient>
-            </Animated.View>
-
-            <Animated.View
-              style={[
-                styles.statCard,
-                { transform: [{ scale: scaleAnims[1] }] },
-              ]}
-            >
-              <LinearGradient
-                colors={['rgba(255, 255, 255, 0.25)', 'rgba(255, 255, 255, 0.15)']}
-                style={styles.statCardGradient}
-              >
-                <Ionicons name="checkmark-circle" size={28} color="#fbbf24" />
-                <Text style={styles.statValue}>{stats.avgScore.toFixed(1)}%</Text>
-                <Text style={styles.statLabel}>Avg Score</Text>
-              </LinearGradient>
-            </Animated.View>
-
-            <Animated.View
-              style={[
-                styles.statCard,
-                { transform: [{ scale: scaleAnims[2] }] },
-              ]}
-            >
-              <LinearGradient
-                colors={['rgba(255, 255, 255, 0.25)', 'rgba(255, 255, 255, 0.15)']}
-                style={styles.statCardGradient}
-              >
-                <Ionicons name="flame" size={28} color="#f97316" />
-                <Text style={styles.statValue}>{stats.winStreak}</Text>
-                <Text style={styles.statLabel}>Streak</Text>
-              </LinearGradient>
-            </Animated.View>
-
-            <Animated.View
-              style={[
-                styles.statCard,
-                { transform: [{ scale: scaleAnims[3] }] },
-              ]}
-            >
-              <LinearGradient
-                colors={['rgba(255, 255, 255, 0.25)', 'rgba(255, 255, 255, 0.15)']}
-                style={styles.statCardGradient}
-              >
-                <Ionicons name="star" size={28} color="#8b5cf6" />
-                <Text style={styles.statValue}>{stats.winRate.toFixed(0)}%</Text>
-                <Text style={styles.statLabel}>Win Rate</Text>
-              </LinearGradient>
-            </Animated.View>
-          </View>
-
-          {/* Performance Section */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Performance</Text>
-            <View style={styles.performanceCard}>
-              <View style={styles.performanceRow}>
-                <Text style={styles.performanceLabel}>Total Points</Text>
-                <Text style={styles.performanceValue}>{stats.totalPoints.toLocaleString()}</Text>
+          {/* Detailed Performance */}
+          <Animated.View entering={FadeInDown.delay(700)} style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Detailed Breakdown</Text>
+            <View style={styles.detailCard}>
+              <View style={styles.detailRow}>
+                <View style={styles.detailIconBg}>
+                  <Ionicons name="medal-outline" size={20} color="#FBBF24" />
+                </View>
+                <Text style={styles.detailLabel}>Total Points</Text>
+                <Text style={styles.detailValue}>{stats.totalPoints.toLocaleString()}</Text>
               </View>
-              <View style={styles.performanceRow}>
-                <Text style={styles.performanceLabel}>Accuracy</Text>
-                <Text style={styles.performanceValue}>
-                  {((stats.correctAnswers / stats.totalAnswers) * 100).toFixed(1)}%
-                </Text>
+              <View style={styles.detailDivider} />
+
+              <View style={styles.detailRow}>
+                <View style={styles.detailIconBg}>
+                  <Ionicons name="checkmark-circle-outline" size={20} color="#34D399" />
+                </View>
+                <Text style={styles.detailLabel}>Correct Answers</Text>
+                <Text style={styles.detailValue}>{stats.correctAnswers}/{stats.totalAnswers}</Text>
               </View>
-              <View style={styles.performanceRow}>
-                <Text style={styles.performanceLabel}>Live Quiz Wins</Text>
-                <Text style={styles.performanceValue}>
-                  {stats.liveQuizWins} / {stats.liveQuizTotal}
-                </Text>
-              </View>
-              <View style={[styles.performanceRow, { borderBottomWidth: 0 }]}>
-                <Text style={styles.performanceLabel}>Best Streak</Text>
-                <Text style={styles.performanceValue}>{stats.bestStreak}</Text>
+              <View style={styles.detailDivider} />
+
+              <View style={styles.detailRow}>
+                <View style={styles.detailIconBg}>
+                  <Ionicons name="flash-outline" size={20} color="#F472B6" />
+                </View>
+                <Text style={styles.detailLabel}>Best Streak</Text>
+                <Text style={styles.detailValue}>{stats.bestStreak}</Text>
               </View>
             </View>
-          </View>
-
-          {/* Recent Activity */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
-            {stats.recentAttempts.slice(0, 5).map((attempt) => (
-              <View key={attempt.id} style={styles.activityCard}>
-                <View style={styles.activityIcon}>
-                  <Ionicons
-                    name={attempt.type === 'live' ? 'people' : 'clipboard'}
-                    size={20}
-                    color="#8b5cf6"
-                  />
-                </View>
-                <View style={styles.activityInfo}>
-                  <Text style={styles.activityTitle}>
-                    {attempt.type === 'live' ? 'Live Quiz' : attempt.type === 'challenge' ? 'Challenge' : 'Solo Quiz'}
-                  </Text>
-                  <Text style={styles.activityTime}>
-                    {new Date(attempt.createdAt).toLocaleDateString()}
-                  </Text>
-                </View>
-                <View style={styles.activityStats}>
-                  <Text style={styles.activityScore}>{attempt.accuracy.toFixed(0)}%</Text>
-                  <Text style={styles.activityXP}>+{attempt.xpEarned} XP</Text>
-                </View>
-              </View>
-            ))}
-          </View>
+          </Animated.View>
 
           <View style={{ height: 40 }} />
         </ScrollView>
-      </LinearGradient>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#667eea',
   },
-  gradient: {
+  safeArea: {
     flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 18,
-    color: '#FFF',
-    fontWeight: '600',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 24,
+    paddingVertical: 10,
+    marginBottom: 10,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: '#FFF',
+    letterSpacing: 0.5,
   },
-  placeholder: {
+  shareButton: {
     width: 40,
-  },
-  levelContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  levelBadge: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 4,
-    borderColor: '#FFF',
-    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  levelNumber: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#FFF',
-    marginTop: 4,
-  },
-  levelLabel: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFF',
-  },
-  xpContainer: {
+  scrollContent: {
     paddingHorizontal: 20,
-    marginBottom: 32,
+    paddingBottom: 20,
   },
-  xpHeader: {
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    color: 'rgba(255,255,255,0.5)',
+    marginTop: 10,
+    fontSize: 16,
+  },
+  // Level Card
+  levelCard: {
+    marginBottom: 20,
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  levelCardGradient: {
+    padding: 24,
+  },
+  levelHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    alignItems: 'flex-start',
+    marginBottom: 20,
   },
-  xpLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.9)',
-  },
-  xpValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFF',
-  },
-  progressBarContainer: {
-    height: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 6,
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: '100%',
-    borderRadius: 6,
-  },
-  xpHint: {
+  levelLabel: {
+    color: 'rgba(255,255,255,0.6)',
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.7)',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 14,
-    gap: 12,
-    marginBottom: 32,
-  },
-  statCard: {
-    width: '47%',
-  },
-  statCardGradient: {
-    padding: 20,
-    borderRadius: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  statValue: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#FFF',
-    marginTop: 8,
+    fontWeight: '600',
     marginBottom: 4,
   },
-  statLabel: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
+  levelValue: {
+    color: '#FFF',
+    fontSize: 48,
+    fontWeight: '800',
+    lineHeight: 48,
+  },
+  trophyContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
+  },
+  progressContainer: {
+    gap: 8,
+  },
+  progressTextRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  xpText: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 13,
     fontWeight: '600',
+  },
+  progressBarBg: {
+    height: 8,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#34D399',
+    borderRadius: 4,
+  },
+  xpNextLevel: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 12,
     textAlign: 'center',
   },
+  // Grid
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 24,
+  },
+  gridItem: {
+    width: (SCREEN_WIDTH - 52) / 2, // 20 padding * 2 + 12 gap = 52
+    height: 100,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  gridGradient: {
+    flex: 1,
+    padding: 16,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  gridValue: {
+    color: '#FFF',
+    fontSize: 24,
+    fontWeight: '700',
+    marginTop: 8,
+    marginBottom: 2,
+  },
+  gridLabel: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  // Section
   sectionContainer: {
-    paddingHorizontal: 20,
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
     color: '#FFF',
-    marginBottom: 16,
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 12,
+    marginLeft: 4,
   },
-  performanceCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 16,
+  chartCard: {
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderRadius: 20,
     padding: 20,
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'rgba(255,255,255,0.05)',
   },
-  performanceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  chartSubtitle: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 12,
+    marginTop: 10,
   },
-  performanceLabel: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontWeight: '500',
+  // Detail Card
+  detailCard: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
-  performanceValue: {
-    fontSize: 16,
-    color: '#FFF',
-    fontWeight: '700',
-  },
-  activityCard: {
+  detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    paddingVertical: 16,
   },
-  activityIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  detailIconBg: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
-  activityInfo: {
+  detailLabel: {
     flex: 1,
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 15,
+    fontWeight: '500',
   },
-  activityTitle: {
+  detailValue: {
+    color: '#FFF',
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFF',
-    marginBottom: 4,
-  },
-  activityTime: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.7)',
-  },
-  activityStats: {
-    alignItems: 'flex-end',
-  },
-  activityScore: {
-    fontSize: 18,
     fontWeight: '700',
-    color: '#FFF',
-    marginBottom: 2,
   },
-  activityXP: {
-    fontSize: 14,
-    color: '#10b981',
-    fontWeight: '600',
+  detailDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.05)',
   },
 });

@@ -1,46 +1,44 @@
 /**
- * Quiz Results Screen - Colorful Flat Modern Design
- * Inspired by modern learning apps with soft pastels and rounded elements
+ * Quiz Results Screen - Enterprise Dark Glassmorphism Design
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
-  Alert,
   Dimensions,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { 
-  FadeIn, 
-  FadeInDown, 
-  ZoomIn, 
+import Animated, {
+  FadeInDown,
+  ZoomIn,
   FadeInUp,
   useSharedValue,
-  useAnimatedStyle,
   withSpring,
-  withDelay,
+  useAnimatedStyle,
   withTiming,
+  withSequence,
+  withRepeat,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { statsAPI } from '@/services/stats';
-import { AchievementUnlockModal } from '@/components/achievements';
-import { XPGainAnimation, LevelUpModal, PerformanceBreakdown } from '@/components/quiz';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
+// Interface Definitions
 interface QuizQuestion {
   id: string;
   text: string;
-  type: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER';
+  type: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER' | 'FILL_IN_BLANK' | 'ORDERING' | 'MATCHING';
   options?: string[];
   correctAnswer: string;
   points: number;
@@ -62,153 +60,57 @@ interface UserAnswer {
 export function QuizResultsScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { 
-    quiz, 
-    answers, 
-    score, 
-    passed, 
-    pointsEarned, 
+  const {
+    quiz,
+    answers,
+    score,
+    passed,
+    pointsEarned,
     results: apiResults,
     viewMode = false,
-    attemptId,
-  } = route.params as { 
-    quiz: Quiz; 
+  } = route.params as {
+    quiz: Quiz;
     answers: UserAnswer[];
     score?: number;
     passed?: boolean;
     pointsEarned?: number;
     results?: any[];
     viewMode?: boolean;
-    attemptId?: string;
   };
 
   // State
-  const [xpGained, setXpGained] = useState(0);
-  const [leveledUp, setLeveledUp] = useState(false);
-  const [newLevel, setNewLevel] = useState(0);
-  const [achievementModal, setAchievementModal] = useState(false);
-  const [unlockedAchievement, setUnlockedAchievement] = useState<any>(null);
-  const [streakIncreased, setStreakIncreased] = useState(false);
-  const [currentStreak, setCurrentStreak] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
-  const confettiRef = React.useRef<any>(null);
+  const confettiRef = useRef<any>(null);
 
-  // Calculate results
-  let scorePercentage: number;
-  let isPassed: boolean;
-  let totalPointsEarned: number;
-  let results: any[];
+  // Computed Values
+  const totalPoints = pointsEarned || 0;
+  const scorePercentage = score || 0;
+  const isPassed = passed !== undefined ? passed : scorePercentage >= quiz.passingScore;
 
-  if (score !== undefined && passed !== undefined && pointsEarned !== undefined) {
-    scorePercentage = score;
-    isPassed = passed;
-    totalPointsEarned = pointsEarned;
-    
-    results = quiz.questions.map((question) => {
-      const apiResult = apiResults?.find((r) => r.questionId === question.id);
-      const userAnswer = answers.find((a) => a.questionId === question.id);
-      
-      return {
-        question,
-        userAnswer: userAnswer?.answer || '',
-        isCorrect: apiResult?.correct || false,
-        pointsEarned: apiResult?.pointsEarned || 0,
-      };
-    });
-  } else {
-    results = quiz.questions.map((question) => {
-      const userAnswer = answers.find((a) => a.questionId === question.id);
-      const isCorrect = userAnswer?.answer === question.correctAnswer;
-      return {
-        question,
-        userAnswer: userAnswer?.answer || '',
-        isCorrect,
-        pointsEarned: isCorrect ? question.points : 0,
-      };
-    });
+  // Manual calculation for display if API results aren't full
+  const calculatedResults = quiz.questions.map((question) => {
+    const userAnswer = answers.find((a) => a.questionId === question.id)?.answer;
+    const isCorrect = userAnswer === question.correctAnswer;
+    // Note: This is a simple check, complex types might need more logic or rely on API result
+    return {
+      question,
+      userAnswer,
+      isCorrect,
+      points: isCorrect ? question.points : 0
+    };
+  });
 
-    totalPointsEarned = results.reduce((sum, r) => sum + r.pointsEarned, 0);
-    scorePercentage = Math.round((totalPointsEarned / quiz.totalPoints) * 100);
-    isPassed = scorePercentage >= quiz.passingScore;
-  }
-
-  const totalPossiblePoints = quiz.totalPoints;
-  const correctCount = results.filter((r) => r.isCorrect).length;
-  const incorrectCount = results.filter((r) => !r.isCorrect && r.userAnswer).length;
-  const unansweredCount = results.filter((r) => !r.userAnswer).length;
+  const correctCount = calculatedResults.filter(r => r.isCorrect).length;
+  const incorrectCount = calculatedResults.length - correctCount;
 
   useEffect(() => {
-    if (isPassed) {
+    if (isPassed && !viewMode) {
+      setShowConfetti(true);
+      setTimeout(() => confettiRef.current?.start(), 500);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } else {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    }
-
-    // Only record attempt if NOT in view mode
-    if (!viewMode) {
-      recordQuizAttempt();
     }
   }, []);
-
-  const recordQuizAttempt = async () => {
-    try {
-      const attemptResult = await statsAPI.recordAttempt({
-        quizId: quiz.id,
-        score: pointsEarned || 0,
-        totalPoints: quiz.totalPoints || quiz.questions.reduce((sum, q) => sum + (q.points || 10), 0),
-        timeSpent: 0,
-        type: 'solo',
-      });
-
-      setXpGained(attemptResult.xpGained);
-
-      if (attemptResult.leveledUp) {
-        setLeveledUp(true);
-        setNewLevel(attemptResult.newLevel);
-      }
-
-      if (attemptResult.achievement) {
-        setUnlockedAchievement(attemptResult.achievement);
-        setAchievementModal(true);
-      }
-
-      if (attemptResult.streakIncreased) {
-        setStreakIncreased(true);
-        setCurrentStreak(attemptResult.currentStreak);
-      }
-
-      if (isPassed && scorePercentage >= 80) {
-        setShowConfetti(true);
-        setTimeout(() => {
-          confettiRef.current?.start();
-        }, 500);
-      }
-    } catch (error) {
-      if (__DEV__) {
-        console.error('Failed to record quiz attempt:', error);
-      }
-    }
-  };
-
-  const getAnswerDisplay = (question: QuizQuestion, answerIndex: string) => {
-    if (question.type === 'MULTIPLE_CHOICE') {
-      const index = parseInt(answerIndex);
-      return question.options?.[index] || 'No answer';
-    } else if (question.type === 'TRUE_FALSE') {
-      return answerIndex === 'true' ? 'True' : answerIndex === 'false' ? 'False' : 'No answer';
-    } else {
-      return answerIndex || 'No answer';
-    }
-  };
-
-  const getPerformanceMessage = () => {
-    if (scorePercentage >= 90) return "Outstanding! 🌟";
-    if (scorePercentage >= 80) return "Excellent work! 🎯";
-    if (scorePercentage >= 70) return "Great job! 👍";
-    if (scorePercentage >= 60) return "Good effort! 💪";
-    return "Keep practicing! 📚";
-  };
 
   const getPerformanceColor = () => {
     if (scorePercentage >= 80) return '#10B981'; // Green
@@ -216,648 +118,384 @@ export function QuizResultsScreen() {
     return '#EF4444'; // Red
   };
 
+  const ringAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: withRepeat(withSequence(withTiming(1.05, { duration: 1000 }), withTiming(1, { duration: 1000 })), -1, true) }]
+    };
+  });
+
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={() => navigation.goBack()} 
-          style={styles.backButton}
-          hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-        >
-          <Ionicons name="arrow-back" size={24} color="#1F2937" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Quiz Results</Text>
-        <View style={styles.placeholder} />
-      </View>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient
+        colors={['#4c1d95', '#2e1065', '#0f172a']}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
 
-      {/* View Mode Banner */}
-      {viewMode && (
-        <Animated.View entering={FadeInDown.duration(400)} style={styles.viewModeBanner}>
-          <Ionicons name="eye-outline" size={18} color="#6B7280" />
-          <Text style={styles.viewModeText}>Viewing Past Result</Text>
-        </Animated.View>
-      )}
-
-      <ScrollView 
-        style={styles.scrollContent} 
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Main Score Circle - Big Colorful */}
-        <Animated.View entering={ZoomIn.duration(600).delay(100)} style={styles.scoreSection}>
-          <View style={[styles.scoreCircle, { borderColor: getPerformanceColor() }]}>
-            <Text style={[styles.scoreNumber, { color: getPerformanceColor() }]}>{scorePercentage}%</Text>
-            <Text style={styles.scoreLabel}>{isPassed ? 'Passed! 🎉' : 'Try Again'}</Text>
-          </View>
-          <Text style={styles.performanceMessage}>{getPerformanceMessage()}</Text>
-        </Animated.View>
-
-        {/* Stats Pills - Colorful Badges */}
-        <Animated.View entering={FadeInDown.duration(500).delay(200)} style={styles.statsRow}>
-          <View style={[styles.statPill, { backgroundColor: '#D1FAE5' }]}>
-            <Ionicons name="checkmark-circle" size={20} color="#10B981" />
-            <Text style={[styles.statPillText, { color: '#065F46' }]}>{correctCount} Correct</Text>
-          </View>
-          
-          <View style={[styles.statPill, { backgroundColor: '#FEE2E2' }]}>
-            <Ionicons name="close-circle" size={20} color="#EF4444" />
-            <Text style={[styles.statPillText, { color: '#991B1B' }]}>{incorrectCount} Wrong</Text>
-          </View>
-          
-          {unansweredCount > 0 && (
-            <View style={[styles.statPill, { backgroundColor: '#FEF3C7' }]}>
-              <Ionicons name="help-circle" size={20} color="#F59E0B" />
-              <Text style={[styles.statPillText, { color: '#92400E' }]}>{unansweredCount} Skipped</Text>
-            </View>
-          )}
-        </Animated.View>
-
-        {/* Points Card */}
-        <Animated.View entering={FadeInDown.duration(500).delay(300)} style={styles.pointsCard}>
-          <View style={styles.pointsRow}>
-            <View style={styles.pointsItem}>
-              <Text style={styles.pointsValue}>{totalPointsEarned}</Text>
-              <Text style={styles.pointsLabel}>Points Earned</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.pointsItem}>
-              <Text style={styles.pointsValue}>{totalPossiblePoints}</Text>
-              <Text style={styles.pointsLabel}>Total Points</Text>
-            </View>
-          </View>
-        </Animated.View>
-
-        {/* XP & Streak Cards - Only show if NOT view mode */}
-        {!viewMode && xpGained > 0 && (
-          <Animated.View entering={FadeInDown.duration(500).delay(400)} style={styles.rewardsSection}>
-            {/* XP Card */}
-            <View style={[styles.rewardCard, { backgroundColor: '#E0E7FF' }]}>
-              <View style={styles.rewardIconBg}>
-                <Ionicons name="flash" size={24} color="#6366F1" />
-              </View>
-              <View style={styles.rewardInfo}>
-                <Text style={styles.rewardValue}>+{xpGained} XP</Text>
-                <Text style={styles.rewardLabel}>Experience Gained</Text>
-              </View>
-            </View>
-
-            {/* Streak Card */}
-            {streakIncreased && (
-              <View style={[styles.rewardCard, { backgroundColor: '#FFEDD5' }]}>
-                <View style={styles.rewardIconBg}>
-                  <Text style={styles.rewardEmoji}>🔥</Text>
-                </View>
-                <View style={styles.rewardInfo}>
-                  <Text style={styles.rewardValue}>{currentStreak} Day Streak!</Text>
-                  <Text style={styles.rewardLabel}>Keep it going!</Text>
-                </View>
-              </View>
-            )}
-          </Animated.View>
-        )}
-
-        {/* Performance Breakdown */}
-        <Animated.View entering={FadeInDown.duration(500).delay(400)}>
-          <PerformanceBreakdown
-            correctCount={correctCount}
-            totalQuestions={quiz.questions.length}
-            accuracy={scorePercentage}
-          />
-        </Animated.View>
-
-        {/* Analytics Navigation - Colorful Flat Cards */}
-        <Animated.View entering={FadeInDown.duration(500).delay(500)} style={styles.analyticsSection}>
-            <Text style={styles.analyticsSectionTitle}>Explore More</Text>
-            
-            <TouchableOpacity 
-              style={styles.analyticsCard}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                navigation.navigate('Leaderboard' as never);
-              }}
-            >
-              <View style={[styles.analyticsIconBg, { backgroundColor: '#EDE9FE' }]}>
-                <Ionicons name="trophy" size={24} color="#8B5CF6" />
-              </View>
-              <View style={styles.analyticsInfo}>
-                <Text style={styles.analyticsTitle}>Leaderboard</Text>
-                <Text style={styles.analyticsSubtitle}>See how you rank</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.analyticsCard}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                navigation.navigate('Stats' as never);
-              }}
-            >
-              <View style={[styles.analyticsIconBg, { backgroundColor: '#D1FAE5' }]}>
-                <Ionicons name="stats-chart" size={24} color="#10B981" />
-              </View>
-              <View style={styles.analyticsInfo}>
-                <Text style={styles.analyticsTitle}>My Stats</Text>
-                <Text style={styles.analyticsSubtitle}>Track your progress</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.analyticsCard}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                navigation.navigate('Achievements' as never);
-              }}
-            >
-              <View style={[styles.analyticsIconBg, { backgroundColor: '#FEF3C7' }]}>
-                <Ionicons name="medal" size={24} color="#F59E0B" />
-              </View>
-              <View style={styles.analyticsInfo}>
-                <Text style={styles.analyticsTitle}>Achievements</Text>
-                <Text style={styles.analyticsSubtitle}>Unlock rewards</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
-          </Animated.View>
-
-        {/* Action Buttons */}
-        <Animated.View entering={FadeInUp.duration(500).delay(600)} style={styles.actionsSection}>
-          {!viewMode && (
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.primaryButton]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                navigation.replace('TakeQuiz', { quiz });
-              }}
-            >
-              <Ionicons name="refresh" size={22} color="#FFFFFF" />
-              <Text style={styles.primaryButtonText}>Retake Quiz</Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.secondaryButton]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setShowDetails(!showDetails);
-            }}
+      <SafeAreaView style={styles.safeArea}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
           >
-            <Ionicons name={showDetails ? "chevron-up" : "chevron-down"} size={22} color="#6366F1" />
-            <Text style={styles.secondaryButtonText}>
-              {showDetails ? 'Hide' : 'Review'} Answers
-            </Text>
+            <Ionicons name="close" size={24} color="#FFF" />
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>Quiz Results</Text>
+          <View style={{ width: 40 }} />
+        </View>
 
-          {viewMode && (
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.primaryButton]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                navigation.goBack();
-              }}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Score Circle */}
+          <View style={styles.scoreContainer}>
+            <Animated.View style={[styles.scoreRing, { borderColor: getPerformanceColor() }, ringAnimatedStyle]}>
+              <View style={styles.scoreInner}>
+                <Text style={[styles.scoreText, { color: getPerformanceColor() }]}>
+                  {scorePercentage}%
+                </Text>
+                <Text style={styles.scoreLabel}>
+                  {isPassed ? 'PASSED' : 'FAILED'}
+                </Text>
+              </View>
+            </Animated.View>
+          </View>
+
+          {/* Message */}
+          <Animated.Text entering={FadeInDown.delay(300)} style={styles.messageText}>
+            {isPassed ? "Outstanding Performance! 🎉" : "Keep Practicing! 📚"}
+          </Animated.Text>
+
+          {/* Stats Grid */}
+          <View style={styles.statsGrid}>
+            <Animated.View entering={ZoomIn.delay(400)} style={styles.statCard}>
+              <LinearGradient colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']} style={styles.statGradient}>
+                <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                <Text style={styles.statValue}>{correctCount}</Text>
+                <Text style={styles.statLabel}>Correct</Text>
+              </LinearGradient>
+            </Animated.View>
+            <Animated.View entering={ZoomIn.delay(500)} style={styles.statCard}>
+              <LinearGradient colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']} style={styles.statGradient}>
+                <Ionicons name="close-circle" size={24} color="#EF4444" />
+                <Text style={styles.statValue}>{incorrectCount}</Text>
+                <Text style={styles.statLabel}>Incorrect</Text>
+              </LinearGradient>
+            </Animated.View>
+            <Animated.View entering={ZoomIn.delay(600)} style={styles.statCard}>
+              <LinearGradient colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']} style={styles.statGradient}>
+                <Ionicons name="trophy" size={24} color="#FBBF24" />
+                <Text style={styles.statValue}>{pointsEarned}</Text>
+                <Text style={styles.statLabel}>XP Earned</Text>
+              </LinearGradient>
+            </Animated.View>
+          </View>
+
+          {/* Explore & Compare Grid */}
+          <View style={styles.exploreContainer}>
+            <Text style={styles.sectionHeader}>What's Next?</Text>
+            <View style={styles.exploreGrid}>
+              <TouchableOpacity
+                style={styles.exploreCard}
+                onPress={() => navigation.navigate('Leaderboard' as any)}
+              >
+                <LinearGradient colors={['rgba(245, 158, 11, 0.2)', 'rgba(245, 158, 11, 0.1)']} style={styles.exploreGradient}>
+                  <Ionicons name="podium" size={24} color="#FBBF24" />
+                  <Text style={styles.exploreLabel}>Rankings</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.exploreCard}
+                onPress={() => navigation.navigate('Stats' as any)}
+              >
+                <LinearGradient colors={['rgba(59, 130, 246, 0.2)', 'rgba(59, 130, 246, 0.1)']} style={styles.exploreGradient}>
+                  <Ionicons name="stats-chart" size={24} color="#60A5FA" />
+                  <Text style={styles.exploreLabel}>My Stats</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.exploreCard}
+                onPress={() => navigation.navigate('Achievements' as any)}
+              >
+                <LinearGradient colors={['rgba(139, 92, 246, 0.2)', 'rgba(139, 92, 246, 0.1)']} style={styles.exploreGradient}>
+                  <Ionicons name="trophy" size={24} color="#A78BFA" />
+                  <Text style={styles.exploreLabel}>Badges</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Action Buttons */}
+          <Animated.View entering={FadeInUp.delay(800)} style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={() => setShowDetails(!showDetails)}
             >
-              <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
-              <Text style={styles.primaryButtonText}>Back to Feed</Text>
+              <Text style={styles.primaryButtonText}>
+                {showDetails ? 'Hide Details' : 'Review Answers'}
+              </Text>
             </TouchableOpacity>
-          )}
-        </Animated.View>
 
-        {/* Question Details - Expandable */}
-        {showDetails && (
-          <Animated.View entering={FadeInDown.duration(400)} style={styles.detailsSection}>
-            <Text style={styles.detailsTitle}>Question Breakdown</Text>
-            {results.map((result, index) => (
-              <View key={index} style={styles.questionCard}>
-                <View style={styles.questionHeader}>
-                  <Text style={styles.questionNumber}>Q{index + 1}</Text>
-                  <View style={[
-                    styles.questionStatusBadge,
-                    { backgroundColor: result.isCorrect ? '#D1FAE5' : '#FEE2E2' }
-                  ]}>
-                    <Ionicons 
-                      name={result.isCorrect ? "checkmark" : "close"} 
-                      size={14} 
-                      color={result.isCorrect ? '#10B981' : '#EF4444'} 
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.secondaryButtonText}>Back to Home</Text>
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* Details Section */}
+          {showDetails && (
+            <Animated.View entering={FadeInDown} style={styles.detailsContainer}>
+              {calculatedResults.map((result, index) => (
+                <View key={index} style={styles.questionCard}>
+                  <View style={styles.questionHeader}>
+                    <Text style={styles.questionNumber}>Q{index + 1}</Text>
+                    <Ionicons
+                      name={result.isCorrect ? "checkmark-circle" : "close-circle"}
+                      size={20}
+                      color={result.isCorrect ? "#10B981" : "#EF4444"}
                     />
-                    <Text style={[
-                      styles.questionStatusText,
-                      { color: result.isCorrect ? '#065F46' : '#991B1B' }
-                    ]}>
-                      {result.isCorrect ? 'Correct' : 'Incorrect'}
-                    </Text>
                   </View>
-                </View>
-
-                <Text style={styles.questionText}>{result.question.text}</Text>
-
-                <View style={styles.answerSection}>
-                  <View style={styles.answerRow}>
-                    <Text style={styles.answerLabel}>Your Answer:</Text>
-                    <Text style={[
-                      styles.answerText,
-                      !result.isCorrect && styles.wrongAnswer
-                    ]}>
-                      {getAnswerDisplay(result.question, result.userAnswer)}
-                    </Text>
-                  </View>
-
+                  <Text style={styles.questionText}>{result.question.text}</Text>
+                  <Text style={[
+                    styles.answerText,
+                    { color: result.isCorrect ? '#10B981' : '#EF4444' }
+                  ]}>
+                    Your Answer: {result.userAnswer || 'Skipped'}
+                  </Text>
                   {!result.isCorrect && (
-                    <View style={styles.answerRow}>
-                      <Text style={styles.answerLabel}>Correct Answer:</Text>
-                      <Text style={[styles.answerText, styles.correctAnswer]}>
-                        {getAnswerDisplay(result.question, result.question.correctAnswer)}
-                      </Text>
-                    </View>
+                    <Text style={styles.correctAnswerText}>
+                      Correct Answer: {result.question.correctAnswer}
+                    </Text>
                   )}
                 </View>
+              ))}
+            </Animated.View>
+          )}
 
-                <View style={styles.pointsRow}>
-                  <Text style={styles.pointsEarnedText}>
-                    {result.pointsEarned} / {result.question.points} points
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </Animated.View>
+          <View style={{ height: 40 }} />
+        </ScrollView>
+
+        {showConfetti && (
+          <ConfettiCannon
+            ref={confettiRef}
+            count={200}
+            origin={{ x: SCREEN_WIDTH / 2, y: -20 }}
+            autoStart={false}
+            fadeOut={true}
+          />
         )}
-
-        {/* Bottom Spacing */}
-        <View style={{ height: 40 }} />
-      </ScrollView>
-
-      {/* Confetti */}
-      {showConfetti && (
-        <ConfettiCannon
-          ref={confettiRef}
-          count={150}
-          origin={{ x: SCREEN_WIDTH / 2, y: -10 }}
-          autoStart={false}
-          fadeOut
-        />
-      )}
-
-      {/* Modals */}
-      {achievementModal && unlockedAchievement && (
-        <AchievementUnlockModal
-          achievement={unlockedAchievement}
-          visible={achievementModal}
-          onClose={() => setAchievementModal(false)}
-        />
-      )}
-
-      {leveledUp && (
-        <LevelUpModal
-          visible={leveledUp}
-          newLevel={newLevel}
-          onClose={() => setLeveledUp(false)}
-        />
-      )}
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#0f172a',
+  },
+  safeArea: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    paddingVertical: 10,
   },
   backButton: {
     width: 40,
     height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1F2937',
-  },
-  placeholder: {
-    width: 40,
-  },
-  viewModeBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#F3F4F6',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  viewModeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6B7280',
+    color: '#FFF',
   },
   scrollContent: {
-    flex: 1,
-  },
-  scrollContainer: {
     paddingHorizontal: 20,
-    paddingTop: 24,
-  },
-  // Score Section
-  scoreSection: {
     alignItems: 'center',
+    paddingTop: 20,
+  },
+  scoreContainer: {
     marginBottom: 24,
   },
-  scoreCircle: {
+  scoreRing: {
     width: 180,
     height: 180,
     borderRadius: 90,
-    borderWidth: 12,
+    borderWidth: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
+    backgroundColor: 'rgba(255,255,255,0.05)',
   },
-  scoreNumber: {
-    fontSize: 52,
+  scoreInner: {
+    alignItems: 'center',
+  },
+  scoreText: {
+    fontSize: 48,
     fontWeight: '800',
-    marginBottom: 4,
   },
   scoreLabel: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  performanceMessage: {
-    fontSize: 20,
     fontWeight: '700',
-    color: '#1F2937',
-    marginTop: 16,
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: 4,
+    letterSpacing: 1,
   },
-  // Stats Pills
-  statsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 20,
-    justifyContent: 'center',
-  },
-  statPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  statPillText: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  // Points Card
-  pointsCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  pointsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  pointsItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  pointsValue: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#1F2937',
-    marginBottom: 4,
-  },
-  pointsLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#9CA3AF',
-  },
-  divider: {
-    width: 1,
-    height: 40,
-    backgroundColor: '#E5E7EB',
-  },
-  // Rewards Section
-  rewardsSection: {
-    gap: 12,
-    marginBottom: 20,
-  },
-  rewardCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 16,
-    gap: 12,
-  },
-  rewardIconBg: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rewardEmoji: {
+  messageText: {
     fontSize: 24,
-  },
-  rewardInfo: {
-    flex: 1,
-  },
-  rewardValue: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1F2937',
-    marginBottom: 2,
-  },
-  rewardLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  // Analytics Section - Colorful Flat Cards
-  analyticsSection: {
-    gap: 12,
-    marginBottom: 24,
-  },
-  analyticsSectionTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  analyticsCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 16,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  analyticsIconBg: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  analyticsInfo: {
-    flex: 1,
-  },
-  analyticsTitle: {
-    fontSize: 16,
     fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 2,
+    color: '#FFF',
+    marginBottom: 32,
+    textAlign: 'center',
   },
-  analyticsSubtitle: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  // Actions
-  actionsSection: {
-    gap: 12,
-    marginBottom: 24,
-  },
-  actionButton: {
+  statsGrid: {
     flexDirection: 'row',
+    gap: 12,
+    marginBottom: 40,
+    width: '100%',
+    justifyContent: 'center',
+  },
+  statCard: {
+    flex: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+    height: 100,
+  },
+  statGradient: {
+    flex: 1,
+    padding: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFF',
+    marginVertical: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.6)',
+  },
+  exploreContainer: {
+    width: '100%',
+    marginBottom: 32,
+  },
+  sectionHeader: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+    marginBottom: 16,
+    marginLeft: 4,
+  },
+  exploreGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  exploreCard: {
+    flex: 1,
+    height: 90,
     borderRadius: 16,
+    overflow: 'hidden',
+  },
+  exploreGradient: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  exploreLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFF',
+    marginTop: 8,
+  },
+  buttonContainer: {
+    width: '100%',
+    gap: 16,
+    marginBottom: 32,
   },
   primaryButton: {
-    backgroundColor: '#F97316',
-    shadowColor: '#F97316',
+    backgroundColor: '#8B5CF6',
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#8B5CF6',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
   primaryButtonText: {
-    fontSize: 17,
+    color: '#FFF',
+    fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
   },
   secondaryButton: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   secondaryButtonText: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#6366F1',
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
-  // Details Section
-  detailsSection: {
-    gap: 12,
-  },
-  detailsTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#1F2937',
-    marginBottom: 8,
+  detailsContainer: {
+    width: '100%',
+    gap: 16,
   },
   questionCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 16,
     padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
   questionHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   questionNumber: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#6366F1',
-  },
-  questionStatusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  questionStatusText: {
+    color: 'rgba(255,255,255,0.5)',
     fontSize: 12,
     fontWeight: '700',
   },
   questionText: {
-    fontSize: 15,
+    color: '#FFF',
+    fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
     marginBottom: 12,
-    lineHeight: 22,
-  },
-  answerSection: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  answerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  answerLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#9CA3AF',
-    minWidth: 100,
   },
   answerText: {
-    flex: 1,
     fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: '500',
+    marginBottom: 4,
   },
-  wrongAnswer: {
-    color: '#EF4444',
-  },
-  correctAnswer: {
-    color: '#10B981',
-  },
-  pointsEarnedText: {
+  correctAnswerText: {
+    color: 'rgba(255,255,255,0.6)',
     fontSize: 13,
-    fontWeight: '700',
-    color: '#6B7280',
   },
 });

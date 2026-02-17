@@ -1,443 +1,347 @@
-/**
- * AchievementsScreen
- * 
- * Display all achievements (locked & unlocked)
- * Beautiful grid layout with unlock animations
- */
-
 import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
-  RefreshControl,
-  Dimensions,
+  ScrollView,
   TouchableOpacity,
-  Animated,
-  SafeAreaView,
-  StatusBar,
+  Image,
+  Dimensions,
+  RefreshControl,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { statsAPI, Achievement, UserAchievement } from '@/services/stats';
+import { LinearGradient } from 'expo-linear-gradient';
+import { statsAPI, type Achievement, type UserAchievement } from '@/services/stats';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { MainStackParamList } from '@/navigation/types';
+import Animated, {
+  FadeInDown,
+  ZoomIn,
+  useAnimatedStyle,
+  withTiming,
+  useSharedValue,
+  withSpring
+} from 'react-native-reanimated';
+import Svg, { Polygon } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2;
+type Props = NativeStackScreenProps<MainStackParamList, 'Achievements'>;
 
-export const AchievementsScreen: React.FC = () => {
-  const navigation = useNavigation();
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Hexagon Badge Component
+const HexagonBadge = ({ icon, locked, color }: { icon: string, locked: boolean, color: string }) => {
+  return (
+    <View style={styles.hexagonContainer}>
+      <Svg height="80" width="80" viewBox="0 0 100 100">
+        <Polygon
+          points="50 5, 95 27.5, 95 72.5, 50 95, 5 72.5, 5 27.5"
+          fill={locked ? 'rgba(255,255,255,0.1)' : color}
+          stroke={locked ? 'rgba(255,255,255,0.2)' : 'white'}
+          strokeWidth="2"
+          opacity={locked ? 0.5 : 0.9}
+        />
+      </Svg>
+      <View style={styles.iconContainer}>
+        <Text style={{ fontSize: 32, opacity: locked ? 0.3 : 1 }}>{icon}</Text>
+      </View>
+      {locked && (
+        <View style={styles.lockOverlay}>
+          <Ionicons name="lock-closed" size={16} color="rgba(255,255,255,0.6)" />
+        </View>
+      )}
+    </View>
+  );
+};
+
+export const AchievementsScreen: React.FC<Props> = ({ navigation }) => {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [userId, setUserId] = useState('current-user-id');
 
   useEffect(() => {
-    loadAchievements();
+    loadData();
   }, []);
 
-  const loadAchievements = async () => {
+  const loadData = async () => {
     try {
-      const [allAchievements, userAch] = await Promise.all([
+      const [allData, userData] = await Promise.all([
         statsAPI.getAchievements(),
-        statsAPI.getUserAchievements('current-user-id'), // TODO: Get from auth context
+        statsAPI.getUserAchievements(userId)
       ]);
-
-      setAchievements(allAchievements);
-      setUserAchievements(userAch);
+      setAchievements(allData);
+      setUserAchievements(userData);
     } catch (error) {
       console.error('Failed to load achievements:', error);
+      // Fallback mock data if API fails
+      // setAchievements(MOCK_ACHIEVEMENTS);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const onRefresh = async () => {
+  const onRefresh = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
-    await loadAchievements();
-    setRefreshing(false);
+    loadData();
   };
 
-  const isUnlocked = (achievementId: string) => {
-    return userAchievements.some(ua => ua.achievementId === achievementId);
+  const isUnlocked = (id: string) => {
+    return userAchievements.some(ua => ua.achievementId === id);
   };
 
-  const getUnlockedDate = (achievementId: string) => {
-    const ua = userAchievements.find(ua => ua.achievementId === achievementId);
-    return ua ? new Date(ua.unlockedAt).toLocaleDateString() : null;
-  };
-
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'streak': return '#ef4444';
-      case 'performance': return '#f59e0b';
-      case 'milestone': return '#8b5cf6';
-      case 'competition': return '#10b981';
-      default: return '#6b7280';
-    }
-  };
-
-  const renderAchievement = ({ item, index }: { item: Achievement; index: number }) => {
-    const unlocked = isUnlocked(item.id);
-    const unlockedDate = getUnlockedDate(item.id);
-    const scaleAnim = new Animated.Value(1);
-
-    const handlePress = () => {
-      Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 0.95,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    };
-
-    return (
-      <Animated.View style={[styles.achievementCard, { transform: [{ scale: scaleAnim }] }]}>
-        <TouchableOpacity
-          onPress={handlePress}
-          activeOpacity={0.7}
-          style={[
-            styles.achievementContent,
-            !unlocked && styles.achievementLocked,
-          ]}
-        >
-          {/* Category Badge */}
-          <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(item.category) }]}>
-            <Text style={styles.categoryText}>{item.category}</Text>
-          </View>
-
-          {/* Icon */}
-          <Text style={[styles.achievementIcon, !unlocked && styles.lockedIcon]}>
-            {unlocked ? item.icon : '🔒'}
-          </Text>
-
-          {/* Name */}
-          <Text style={[styles.achievementName, !unlocked && styles.lockedText]}>
-            {item.name}
-          </Text>
-
-          {/* Description */}
-          <Text style={[styles.achievementDescription, !unlocked && styles.lockedText]}>
-            {item.description}
-          </Text>
-
-          {/* XP Reward */}
-          <View style={styles.xpBadge}>
-            <Ionicons name="flash" size={14} color="#fbbf24" />
-            <Text style={styles.xpText}>{item.xpReward} XP</Text>
-          </View>
-
-          {/* Unlocked Date */}
-          {unlocked && unlockedDate && (
-            <View style={styles.unlockedBadge}>
-              <Ionicons name="checkmark-circle" size={16} color="#10b981" />
-              <Text style={styles.unlockedText}>Unlocked {unlockedDate}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  };
-
-  const renderHeader = () => {
-    const unlockedCount = userAchievements.length;
-    const totalCount = achievements.length;
-    const progress = totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0;
-
-    return (
-      <View style={styles.header}>
-        <LinearGradient
-          colors={['#667eea', '#764ba2', '#f093fb']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.headerGradient}
-        >
-          <Text style={styles.headerIcon}>🏆</Text>
-          <Text style={styles.headerSubtitle}>
-            {unlockedCount} of {totalCount} unlocked
-          </Text>
-
-          {/* Progress Bar */}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBackground}>
-              <View style={[styles.progressFill, { width: `${progress}%` }]} />
-            </View>
-            <Text style={styles.progressText}>{progress.toFixed(0)}%</Text>
-          </View>
-        </LinearGradient>
-
-        {/* Category Filter */}
-        <View style={styles.filterContainer}>
-          <Text style={styles.filterTitle}>Categories</Text>
-          <View style={styles.filterButtons}>
-            <TouchableOpacity style={[styles.filterButton, { borderColor: '#ef4444' }]}>
-              <Text style={styles.filterButtonText}>🔥 Streaks</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.filterButton, { borderColor: '#f59e0b' }]}>
-              <Text style={styles.filterButtonText}>⚡ Performance</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.filterButton, { borderColor: '#8b5cf6' }]}>
-              <Text style={styles.filterButtonText}>⭐ Milestones</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.filterButton, { borderColor: '#10b981' }]}>
-              <Text style={styles.filterButtonText}>⚔️ Competition</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    );
-  };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" />
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading achievements...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const unlockedCount = userAchievements.length;
+  const totalCount = achievements.length;
+  const progressPercent = totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      
-      {/* Fixed Header with Back Button */}
-      <View style={styles.topHeader}>
-        <TouchableOpacity 
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            navigation.goBack();
-          }}
-          style={styles.backButton}
-          hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-        >
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.topHeaderTitle}>Achievements</Text>
-        <View style={styles.placeholder} />
-      </View>
-
-      <FlatList
-        data={achievements}
-        renderItem={renderAchievement}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        ListHeaderComponent={renderHeader}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#667eea" />
-        }
+    <View style={styles.container}>
+      <StatusBar style="light" />
+      <LinearGradient
+        colors={['#4c1d95', '#2e1065', '#0f172a']}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
       />
-    </SafeAreaView>
+
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="chevron-back" size={24} color="#FFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Achievements</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFF" />
+          }
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* Progress Card */}
+          <LinearGradient
+            colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
+            style={styles.progressCard}
+          >
+            <View style={styles.progressHeader}>
+              <Text style={styles.progressTitle}>Your Progress</Text>
+              <Text style={styles.progressValue}>{unlockedCount}/{totalCount}</Text>
+            </View>
+            <View style={styles.progressBarBg}>
+              <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
+            </View>
+            <Text style={styles.progressSubtitle}>
+              {totalCount - unlockedCount} more to master everything!
+            </Text>
+          </LinearGradient>
+
+          <Text style={styles.sectionTitle}>All Badges</Text>
+
+          <View style={styles.grid}>
+            {achievements.map((item, index) => {
+              const unlocked = isUnlocked(item.id);
+              // Determine category color
+              let color = '#8B5CF6'; // Default purple
+              if (item.category === 'streak') color = '#F97316';
+              if (item.category === 'performance') color = '#10B981';
+              if (item.category === 'competition') color = '#F472B6';
+
+              return (
+                <Animated.View
+                  key={item.id}
+                  entering={ZoomIn.delay(index * 50)}
+                  style={styles.badgeItem}
+                >
+                  <HexagonBadge
+                    icon={item.icon}
+                    locked={!unlocked}
+                    color={color}
+                  />
+                  <Text style={[styles.badgeName, !unlocked && styles.lockedText]} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  <Text style={styles.badgeDesc} numberOfLines={2}>
+                    {item.description}
+                  </Text>
+                  {unlocked && (
+                    <View style={styles.xpBadge}>
+                      <Text style={styles.xpText}>+{item.xpReward} XP</Text>
+                    </View>
+                  )}
+                </Animated.View>
+              );
+            })}
+          </View>
+
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#667eea',
   },
-  // Top Fixed Header
-  topHeader: {
+  safeArea: {
+    flex: 1,
+  },
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: 'transparent',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    marginBottom: 10,
   },
   backButton: {
     width: 40,
     height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  topHeaderTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  placeholder: {
-    width: 40,
-  },
-  loadingContainer: {
-    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  loadingText: {
-    fontSize: 16,
-    color: '#FFFFFF',
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFF',
+    letterSpacing: 0.5,
   },
-  listContent: {
-    paddingBottom: 24,
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
-  header: {
-    marginBottom: 16,
+  // Progress Card
+  progressCard: {
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  headerGradient: {
-    padding: 24,
-    paddingTop: 12,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-  },
-  headerIcon: {
-    fontSize: 48,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#fff',
-    opacity: 0.9,
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  progressContainer: {
+  progressHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
-  progressBackground: {
-    flex: 1,
+  progressTitle: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  progressValue: {
+    color: '#FBBF24',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  progressBarBg: {
     height: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 4,
     overflow: 'hidden',
+    marginBottom: 8,
   },
-  progressFill: {
+  progressBarFill: {
     height: '100%',
-    backgroundColor: '#fff',
+    backgroundColor: '#34D399',
     borderRadius: 4,
   },
-  progressText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-    minWidth: 40,
+  progressSubtitle: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 12,
+    textAlign: 'center',
   },
-  filterContainer: {
-    padding: 16,
+
+  sectionTitle: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+    marginLeft: 4,
   },
-  filterTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 12,
-  },
-  filterButtons: {
+
+  // Grid
+  grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-  },
-  filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 2,
-    backgroundColor: '#fff',
-  },
-  filterButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  row: {
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    gap: 16,
+  },
+  badgeItem: {
+    width: (SCREEN_WIDTH - 60) / 2,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 20,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
     marginBottom: 16,
   },
-  achievementCard: {
-    width: CARD_WIDTH,
+  hexagonContainer: {
+    width: 80,
+    height: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    position: 'relative',
   },
-  achievementContent: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  iconContainer: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  achievementLocked: {
-    opacity: 0.6,
-    backgroundColor: '#f3f4f6',
-  },
-  categoryBadge: {
+  lockOverlay: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    bottom: 0,
+    right: 15,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 10,
+    padding: 2,
   },
-  categoryText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#fff',
-    textTransform: 'uppercase',
-  },
-  achievementIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  lockedIcon: {
-    opacity: 0.5,
-  },
-  achievementName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1f2937',
+  badgeName: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 4,
     textAlign: 'center',
-    marginBottom: 8,
-  },
-  achievementDescription: {
-    fontSize: 12,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginBottom: 12,
   },
   lockedText: {
-    color: '#9ca3af',
+    color: 'rgba(255,255,255,0.5)',
   },
-  xpBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#fef3c7',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+  badgeDesc: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 11,
+    textAlign: 'center',
+    lineHeight: 14,
     marginBottom: 8,
   },
+  xpBadge: {
+    backgroundColor: 'rgba(251, 191, 36, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
   xpText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#92400e',
-  },
-  unlockedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  unlockedText: {
+    color: '#FBBF24',
     fontSize: 10,
-    color: '#10b981',
-    fontWeight: '500',
+    fontWeight: '700',
   },
 });

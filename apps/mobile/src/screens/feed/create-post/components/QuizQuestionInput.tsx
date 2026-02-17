@@ -9,9 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
-console.log('✅ QuizQuestionInput LOADED - Clean Modern Redesign');
-
-export type QuestionType = 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER';
+export type QuestionType = 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER' | 'FILL_IN_BLANK' | 'ORDERING' | 'MATCHING';
 
 export interface QuizQuestion {
   id: string;
@@ -28,12 +26,17 @@ interface QuizQuestionInputProps {
   onUpdate: (updates: Partial<QuizQuestion>) => void;
   onRemove: () => void;
   canRemove: boolean;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
 }
 
 const QUESTION_TYPES: { type: QuestionType; label: string; icon: string; desc: string }[] = [
   { type: 'MULTIPLE_CHOICE', label: 'Multiple Choice', icon: 'list-circle-outline', desc: 'Choose one answer' },
   { type: 'TRUE_FALSE', label: 'True / False', icon: 'toggle-outline', desc: 'Yes or no question' },
   { type: 'SHORT_ANSWER', label: 'Short Answer', icon: 'text-outline', desc: 'Type an answer' },
+  { type: 'FILL_IN_BLANK', label: 'Fill in Blank', icon: 'create-outline', desc: 'Complete sentence' },
+  { type: 'ORDERING', label: 'Ordering', icon: 'reorder-four-outline', desc: 'Arrange items' },
+  { type: 'MATCHING', label: 'Matching', icon: 'git-merge-outline', desc: 'Pair items' },
 ];
 
 const POINTS_OPTIONS = [1, 2, 3, 5, 10];
@@ -44,6 +47,8 @@ export function QuizQuestionInput({
   onUpdate,
   onRemove,
   canRemove,
+  isExpanded,
+  onToggleExpand,
 }: QuizQuestionInputProps) {
   const addOption = () => {
     if (question.options.length < 6) {
@@ -69,7 +74,7 @@ export function QuizQuestionInput({
     if (question.type === 'TRUE_FALSE') {
       return (
         <View style={styles.answerSection}>
-          <Text style={styles.answerLabel}>Correct Answer</Text>
+          <Text style={styles.sectionLabel}>Correct Answer</Text>
           <View style={styles.tfContainer}>
             <TouchableOpacity
               style={[
@@ -81,10 +86,10 @@ export function QuizQuestionInput({
                 onUpdate({ correctAnswer: 'true' });
               }}
             >
-              <Ionicons 
-                name="checkmark-circle" 
-                size={28} 
-                color={question.correctAnswer === 'true' ? '#FFFFFF' : '#10B981'} 
+              <Ionicons
+                name="checkmark-circle"
+                size={24}
+                color={question.correctAnswer === 'true' ? '#FFFFFF' : '#10B981'}
               />
               <Text style={[
                 styles.tfText,
@@ -104,10 +109,10 @@ export function QuizQuestionInput({
                 onUpdate({ correctAnswer: 'false' });
               }}
             >
-              <Ionicons 
-                name="close-circle" 
-                size={28} 
-                color={question.correctAnswer === 'false' ? '#FFFFFF' : '#EF4444'} 
+              <Ionicons
+                name="close-circle"
+                size={24}
+                color={question.correctAnswer === 'false' ? '#FFFFFF' : '#EF4444'}
               />
               <Text style={[
                 styles.tfText,
@@ -124,296 +129,541 @@ export function QuizQuestionInput({
     if (question.type === 'SHORT_ANSWER') {
       return (
         <View style={styles.answerSection}>
-          <View style={styles.infoNote}>
-            <Ionicons name="pencil" size={18} color="#6366F1" />
-            <Text style={styles.infoNoteText}>Students will type their answer</Text>
-          </View>
+          <Text style={styles.sectionLabel}>Correct Answer (Optional)</Text>
+          <TextInput
+            style={styles.inputField}
+            placeholder="Enter the correct answer"
+            placeholderTextColor="#9CA3AF"
+            value={question.correctAnswer}
+            onChangeText={(text) => onUpdate({ correctAnswer: text })}
+          />
+          <Text style={styles.helperText}>
+            Leave blank if you want to grade manually.
+          </Text>
         </View>
       );
     }
 
-    // Multiple Choice
+    if (question.type === 'FILL_IN_BLANK') {
+      return (
+        <View style={styles.answerSection}>
+          <Text style={styles.sectionLabel}>Correct Words</Text>
+          <TextInput
+            style={styles.inputField}
+            placeholder="Exact word(s) missing"
+            placeholderTextColor="#9CA3AF"
+            value={question.correctAnswer}
+            onChangeText={(text) => onUpdate({ correctAnswer: text })}
+          />
+          <Text style={styles.helperText}>
+            Student must type this exact text to get points.
+          </Text>
+        </View>
+      );
+    }
+
+    if (question.type === 'ORDERING') {
+      return (
+        <View style={styles.answerSection}>
+          <Text style={styles.sectionLabel}>Correct Order (Top to Bottom)</Text>
+          {question.options.map((opt, idx) => (
+            <View key={idx} style={styles.optionRow}>
+              <View style={styles.optionNumber}>
+                <Text style={styles.optionNumberText}>{idx + 1}</Text>
+              </View>
+              <TextInput
+                style={styles.optionInput}
+                placeholder={`Item ${idx + 1}`}
+                placeholderTextColor="#D1D5DB"
+                value={opt}
+                onChangeText={(text) => updateOption(idx, text)}
+              />
+              {question.options.length > 2 && (
+                <TouchableOpacity onPress={() => removeOption(idx)} style={styles.removeOptionBtn}>
+                  <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                </TouchableOpacity>
+              )}
+            </View>
+          ))}
+          {question.options.length < 6 && (
+            <TouchableOpacity onPress={addOption} style={styles.addOptionBtn}>
+              <Ionicons name="add" size={18} color="#6366F1" />
+              <Text style={styles.addOptionText}>Add Item</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      );
+    }
+
+    if (question.type === 'MATCHING') {
+      return (
+        <View style={styles.answerSection}>
+          <Text style={styles.sectionLabel}>Matching Pairs (Left : Right)</Text>
+          {question.options.map((opt, idx) => {
+            const parts = opt.split(':::');
+            const left = parts[0] || '';
+            const right = parts[1] || '';
+
+            return (
+              <View key={idx} style={styles.matchRow}>
+                <TextInput
+                  style={[styles.matchInput, { flex: 1 }]}
+                  placeholder="Term"
+                  placeholderTextColor="#D1D5DB"
+                  value={left}
+                  onChangeText={(t) => {
+                    const newOpt = `${t}:::${right}`;
+                    updateOption(idx, newOpt);
+                  }}
+                />
+                <Ionicons name="arrow-forward" size={16} color="#9CA3AF" />
+                <TextInput
+                  style={[styles.matchInput, { flex: 1.5 }]}
+                  placeholder="Definition"
+                  placeholderTextColor="#D1D5DB"
+                  value={right}
+                  onChangeText={(t) => {
+                    const newOpt = `${left}:::${t}`;
+                    updateOption(idx, newOpt);
+                  }}
+                />
+                {question.options.length > 2 && (
+                  <TouchableOpacity onPress={() => removeOption(idx)}>
+                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+          })}
+          {question.options.length < 6 && (
+            <TouchableOpacity onPress={() => onUpdate({ options: [...question.options, ':::'] })} style={styles.addOptionBtn}>
+              <Ionicons name="add" size={18} color="#6366F1" />
+              <Text style={styles.addOptionText}>Add Pair</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      );
+    }
+
+    // Default: Multiple Choice
     return (
       <View style={styles.answerSection}>
-        <Text style={styles.answerLabel}>Answer Choices</Text>
-        {question.options.map((option, optionIndex) => (
-          <Animated.View
-            key={optionIndex}
-            entering={FadeIn.duration(200)}
-            exiting={FadeOut.duration(150)}
-            layout={Layout.springify()}
-            style={styles.choiceRow}
-          >
+        <Text style={styles.sectionLabel}>Options</Text>
+        {question.options.map((option, idx) => (
+          <View key={idx} style={styles.optionRow}>
             <TouchableOpacity
-              onPress={() => {
-                Haptics.selectionAsync();
-                onUpdate({ correctAnswer: optionIndex.toString() });
-              }}
-              style={styles.choiceCheck}
+              style={[
+                styles.checkCircle,
+                String(idx) === question.correctAnswer && styles.checkCircleSelected,
+              ]}
+              onPress={() => onUpdate({ correctAnswer: String(idx) })}
             >
-              <Ionicons
-                name={question.correctAnswer === optionIndex.toString() 
-                  ? 'checkmark-circle' 
-                  : 'ellipse-outline'
-                }
-                size={26}
-                color={question.correctAnswer === optionIndex.toString() ? '#10B981' : '#D1D5DB'}
-              />
+              {String(idx) === question.correctAnswer && (
+                <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+              )}
             </TouchableOpacity>
 
             <TextInput
-              style={styles.choiceInput}
-              placeholder={`Choice ${optionIndex + 1}`}
-              placeholderTextColor="#9CA3AF"
+              style={styles.optionInput}
+              placeholder={`Option ${idx + 1}`}
+              placeholderTextColor="#D1D5DB"
               value={option}
-              onChangeText={(text) => updateOption(optionIndex, text)}
+              onChangeText={(text) => updateOption(idx, text)}
             />
 
             {question.options.length > 2 && (
-              <TouchableOpacity
-                onPress={() => removeOption(optionIndex)}
-                style={styles.choiceDelete}
-              >
-                <Ionicons name="close-circle" size={22} color="#9CA3AF" />
+              <TouchableOpacity onPress={() => removeOption(idx)} style={styles.removeOptionBtn}>
+                <Ionicons name="trash-outline" size={18} color="#EF4444" />
               </TouchableOpacity>
             )}
-          </Animated.View>
+          </View>
         ))}
 
         {question.options.length < 6 && (
-          <TouchableOpacity onPress={addOption} style={styles.addChoice}>
-            <Ionicons name="add" size={20} color="#6366F1" />
-            <Text style={styles.addChoiceText}>Add choice</Text>
+          <TouchableOpacity onPress={addOption} style={styles.addOptionBtn}>
+            <Ionicons name="add" size={18} color="#6366F1" />
+            <Text style={styles.addOptionText}>Add Option</Text>
           </TouchableOpacity>
         )}
       </View>
     );
   };
 
-  return (
-    <Animated.View 
-      entering={FadeIn.duration(300)}
-      layout={Layout.springify()}
-      style={styles.container}
+  // Header/Summary View
+  const renderHeader = () => (
+    <TouchableOpacity
+      style={[styles.header, isExpanded && styles.headerExpanded]}
+      onPress={onToggleExpand}
+      activeOpacity={0.9}
     >
-      {/* Question Header - Simple & Clean */}
-      <View style={styles.header}>
-        <View style={styles.questionBadge}>
-          <Text style={styles.questionBadgeText}>Q{index + 1}</Text>
+      <View style={styles.headerLeft}>
+        <View style={styles.dragHandle}>
+          <Ionicons name="drag" size={20} color="#D1D5DB" />
         </View>
-        <View style={styles.headerContent}>
-          <Text style={styles.questionLabel}>Question {index + 1}</Text>
-          <View style={styles.pointsDisplay}>
-            <Ionicons name="trophy" size={14} color="#F59E0B" />
-            <Text style={styles.pointsText}>{question.points} points</Text>
+        <View style={styles.questionNumberContainer}>
+          <Text style={styles.questionNumber}>Q{index + 1}</Text>
+        </View>
+        <View style={styles.questionSummary}>
+          <Text style={styles.questionSummaryType}>
+            {QUESTION_TYPES.find(t => t.type === question.type)?.label}
+          </Text>
+          {question.text ? (
+            <Text style={styles.questionSummaryText} numberOfLines={1}>
+              {question.text}
+            </Text>
+          ) : (
+            <Text style={[styles.questionSummaryText, styles.placeholderText]} numberOfLines={1}>
+              Tap to edit question...
+            </Text>
+          )}
+        </View>
+      </View>
+
+      <View style={styles.headerRight}>
+        {!isExpanded && (
+          <View style={styles.pointsBadge}>
+            <Text style={styles.pointsBadgeText}>{question.points} pts</Text>
           </View>
-        </View>
-        {canRemove && (
-          <TouchableOpacity onPress={onRemove} style={styles.deleteButton}>
-            <Ionicons name="trash-outline" size={22} color="#EF4444" />
-          </TouchableOpacity>
         )}
+        <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color="#9CA3AF" />
       </View>
+    </TouchableOpacity>
+  );
 
-      {/* Question Type Selector - Horizontal Pills */}
-      <View style={styles.typeSection}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.typeScroll}
-        >
-          {QUESTION_TYPES.map((type) => (
-            <TouchableOpacity
-              key={type.type}
-              onPress={() => {
-                Haptics.selectionAsync();
-                onUpdate({ 
-                  type: type.type,
-                  options: type.type === 'MULTIPLE_CHOICE' ? ['', ''] : [],
-                  correctAnswer: type.type === 'TRUE_FALSE' ? 'true' : '0',
-                });
-              }}
-              style={[
-                styles.typePill,
-                question.type === type.type && styles.typePillSelected
-              ]}
-            >
-              <Ionicons
-                name={type.icon as any}
-                size={20}
-                color={question.type === type.type ? '#FFFFFF' : '#6366F1'}
-              />
-              <Text style={[
-                styles.typePillText,
-                question.type === type.type && styles.typePillTextSelected
-              ]}>
-                {type.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+  return (
+    <Animated.View layout={Layout.springify()} style={[styles.card, isExpanded && styles.cardExpanded]}>
+      {renderHeader()}
 
-      {/* Question Input */}
-      <View style={styles.inputSection}>
-        <TextInput
-          style={styles.questionInput}
-          placeholder="Type your question here..."
-          placeholderTextColor="#9CA3AF"
-          multiline
-          value={question.text}
-          onChangeText={(text) => onUpdate({ text })}
-        />
-      </View>
+      {isExpanded && (
+        <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.content}>
+          {/* Question Text */}
+          <View style={styles.inputGroup}>
+            <TextInput
+              style={styles.questionInput}
+              placeholder="Enter your question here..."
+              placeholderTextColor="#9CA3AF"
+              multiline
+              value={question.text}
+              onChangeText={(text) => onUpdate({ text })}
+            />
+          </View>
 
-      {/* Options/Answers Section */}
-      {renderOptions()}
+          {/* Type Selector */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.sectionLabel}>Question Type</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeScroll}>
+              {QUESTION_TYPES.map((type) => (
+                <TouchableOpacity
+                  key={type.type}
+                  style={[
+                    styles.typeChip,
+                    question.type === type.type && styles.typeChipSelected
+                  ]}
+                  onPress={() => {
+                    // Reset options when changing type
+                    let newOptions = ['', ''];
+                    let newCorrect = '0';
+                    if (type.type === 'TRUE_FALSE') newCorrect = 'true';
+                    if (type.type === 'SHORT_ANSWER' || type.type === 'FILL_IN_BLANK') {
+                      newOptions = [];
+                      newCorrect = '';
+                    }
+                    if (type.type === 'MATCHING') newOptions = [':::'];
 
-      {/* Points Selector - Bottom Bar */}
-      <View style={styles.bottomBar}>
-        <Text style={styles.bottomLabel}>Worth:</Text>
-        <View style={styles.pointsRow}>
-          {POINTS_OPTIONS.map((pts) => (
-            <TouchableOpacity
-              key={pts}
-              onPress={() => {
-                Haptics.selectionAsync();
-                onUpdate({ points: pts });
-              }}
-              style={[
-                styles.pointChip,
-                question.points === pts && styles.pointChipSelected
-              ]}
-            >
-              <Text style={[
-                styles.pointChipText,
-                question.points === pts && styles.pointChipTextSelected
-              ]}>
-                {pts}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
+                    Haptics.selectionAsync();
+                    onUpdate({
+                      type: type.type,
+                      options: newOptions,
+                      correctAnswer: newCorrect
+                    });
+                  }}
+                >
+                  <Ionicons
+                    name={type.icon as any}
+                    size={16}
+                    color={question.type === type.type ? '#FFFFFF' : '#6B7280'}
+                  />
+                  <Text style={[
+                    styles.typeChipText,
+                    question.type === type.type && styles.typeChipTextSelected
+                  ]}>
+                    {type.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Points Selector */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.sectionLabel}>Points</Text>
+            <View style={styles.pointsRow}>
+              {POINTS_OPTIONS.map((points) => (
+                <TouchableOpacity
+                  key={points}
+                  style={[
+                    styles.pointChip,
+                    question.points === points && styles.pointChipSelected
+                  ]}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    onUpdate({ points });
+                  }}
+                >
+                  <Text style={[
+                    styles.pointChipText,
+                    question.points === points && styles.pointChipTextSelected
+                  ]}>{points}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Dynamic Options */}
+          {renderOptions()}
+
+          {/* Footer Actions */}
+          <View style={styles.footer}>
+            {canRemove && (
+              <TouchableOpacity onPress={onRemove} style={styles.deleteButton}>
+                <Ionicons name="trash" size={18} color="#EF4444" />
+                <Text style={styles.deleteButtonText}>Delete Question</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </Animated.View>
+      )}
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 32,
-    paddingBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    overflow: 'hidden',
   },
-  
-  // Header - Clean & Simple
+  cardExpanded: {
+    borderColor: '#C7D2FE',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 20,
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
   },
-  questionBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#6366F1',
+  headerExpanded: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+    backgroundColor: '#FAFAFA',
+  },
+  headerLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  questionBadgeText: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#FFFFFF',
-  },
-  headerContent: {
+    gap: 12,
     flex: 1,
   },
-  questionLabel: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  pointsDisplay: {
-    flexDirection: 'row',
+  dragHandle: {
+    width: 20,
     alignItems: 'center',
-    gap: 4,
   },
-  pointsText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  deleteButton: {
-    width: 44,
-    height: 44,
+  questionNumberContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#EEF2FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  // Type Selector - Horizontal Pills
-  typeSection: {
-    marginBottom: 20,
+  questionNumber: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6366F1',
   },
-  typeScroll: {
-    gap: 10,
-    paddingRight: 16,
+  questionSummary: {
+    flex: 1,
   },
-  typePill: {
+  questionSummaryType: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  questionSummaryText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#111827',
+  },
+  placeholderText: {
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+  },
+  headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+    gap: 12,
+  },
+  pointsBadge: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  pointsBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#4B5563',
+  },
+  content: {
+    padding: 16,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#374151',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  questionInput: {
+    fontSize: 16,
+    color: '#111827',
+    minHeight: 80,
+    textAlignVertical: 'top',
     backgroundColor: '#F9FAFB',
-    borderWidth: 1.5,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  typePillSelected: {
+  typeScroll: {
+    gap: 8,
+  },
+  typeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  typeChipSelected: {
     backgroundColor: '#6366F1',
     borderColor: '#6366F1',
   },
-  typePillText: {
+  typeChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4B5563',
+  },
+  typeChipTextSelected: {
+    color: '#FFFFFF',
+  },
+  pointsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  pointChip: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  pointChipSelected: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#6366F1',
+  },
+  pointChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4B5563',
+  },
+  pointChipTextSelected: {
+    color: '#6366F1',
+    fontWeight: '700',
+  },
+  // Answer Sections
+  answerSection: {
+    backgroundColor: '#F9FAFB',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  checkCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  checkCircleSelected: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  optionInput: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     fontSize: 15,
+    color: '#111827',
+  },
+  removeOptionBtn: {
+    padding: 8,
+  },
+  addOptionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    marginTop: 8,
+    borderStyle: 'dashed',
+  },
+  addOptionText: {
+    fontSize: 14,
     fontWeight: '600',
     color: '#6366F1',
   },
-  typePillTextSelected: {
-    color: '#FFFFFF',
-  },
-
-  // Question Input
-  inputSection: {
-    marginBottom: 20,
-  },
-  questionInput: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: '#111827',
-    minHeight: 100,
-    textAlignVertical: 'top',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    lineHeight: 22,
-  },
-
-  // Answer Section
-  answerSection: {
-    marginBottom: 20,
-  },
-  answerLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginBottom: 12,
-  },
-
-  // True/False Buttons
+  // TF Styles
   tfContainer: {
     flexDirection: 'row',
     gap: 12,
@@ -424,10 +674,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#E5E7EB',
   },
   tfButtonTrue: {
@@ -440,109 +690,74 @@ const styles = StyleSheet.create({
   },
   tfText: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#6B7280',
+    fontWeight: '600',
+    color: '#374151',
   },
   tfTextSelected: {
     color: '#FFFFFF',
   },
-
-  // Info Note
-  infoNote: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 12,
-    backgroundColor: '#EEF2FF',
-    borderRadius: 8,
-  },
-  infoNoteText: {
-    fontSize: 14,
-    color: '#6366F1',
-    fontWeight: '500',
-  },
-
-  // Multiple Choice
-  choiceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 10,
-  },
-  choiceCheck: {
-    padding: 4,
-  },
-  choiceInput: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#111827',
+  // Input Field
+  inputField: {
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 15,
+    color: '#111827',
   },
-  choiceDelete: {
-    padding: 4,
+  helperText: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 6,
   },
-  addChoice: {
-    flexDirection: 'row',
+  // Ordering/Matching Specific
+  optionNumber: {
+    width: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderStyle: 'dashed',
-    marginTop: 4,
   },
-  addChoiceText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6366F1',
+  optionNumberText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#9CA3AF',
   },
-
-  // Bottom Bar - Points
-  bottomBar: {
+  matchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingTop: 16,
+    gap: 8,
+    marginBottom: 12,
+  },
+  matchInput: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: '#111827',
+  },
+  // Footer
+  footer: {
+    marginTop: 20,
+    alignItems: 'flex-end',
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
+    paddingTop: 16,
   },
-  bottomLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  pointsRow: {
+  deleteButton: {
     flexDirection: 'row',
-    gap: 8,
-    flex: 1,
-  },
-  pointChip: {
-    paddingHorizontal: 14,
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    minWidth: 44,
-    alignItems: 'center',
   },
-  pointChipSelected: {
-    backgroundColor: '#6366F1',
-    borderColor: '#6366F1',
-  },
-  pointChipText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#6B7280',
-  },
-  pointChipTextSelected: {
-    color: '#FFFFFF',
+  deleteButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#EF4444',
   },
 });
