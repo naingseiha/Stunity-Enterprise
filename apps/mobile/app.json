@@ -79,9 +79,10 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "b71fa713-5e27-4f79-8f3f-7508834fe005"
       }
-    }
+    },
+    "owner": "naingseiha"
   },
   "main": "index.js"
 }
