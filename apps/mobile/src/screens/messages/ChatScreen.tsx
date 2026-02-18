@@ -1,10 +1,11 @@
 /**
  * Chat Screen
  * 
- * Individual chat conversation
+ * Individual chat conversation with real-time messaging.
+ * Uses messagingStore for API calls + Supabase Realtime for instant updates.
  */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,6 +17,7 @@ import {
   Platform,
   Keyboard,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -25,57 +27,12 @@ import Animated, { FadeIn, FadeInUp, SlideInRight } from 'react-native-reanimate
 import { Avatar } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows, BorderRadius } from '@/config';
 import { formatRelativeTime } from '@/utils';
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useMessagingStore } from '@/stores';
 import { MessagesStackScreenProps } from '@/navigation/types';
+import { DirectMessage } from '@/stores/messagingStore';
 
 type RouteProp = MessagesStackScreenProps<'Chat'>['route'];
 type NavigationProp = MessagesStackScreenProps<'Chat'>['navigation'];
-
-interface Message {
-  id: string;
-  content: string;
-  senderId: string;
-  createdAt: string;
-  isRead: boolean;
-}
-
-const MOCK_MESSAGES: Message[] = [
-  {
-    id: '1',
-    content: 'Hey! How are you doing?',
-    senderId: 'other',
-    createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-    isRead: true,
-  },
-  {
-    id: '2',
-    content: 'I\'m good! Just working on the project.',
-    senderId: 'me',
-    createdAt: new Date(Date.now() - 55 * 60 * 1000).toISOString(),
-    isRead: true,
-  },
-  {
-    id: '3',
-    content: 'Nice! Did you complete the assignment?',
-    senderId: 'other',
-    createdAt: new Date(Date.now() - 50 * 60 * 1000).toISOString(),
-    isRead: true,
-  },
-  {
-    id: '4',
-    content: 'Almost done, just need to review the last section 📚',
-    senderId: 'me',
-    createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-    isRead: true,
-  },
-  {
-    id: '5',
-    content: 'Great! Let me know if you need any help. We could study together tomorrow if you want.',
-    senderId: 'other',
-    createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    isRead: false,
-  },
-];
 
 export default function ChatScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -83,36 +40,72 @@ export default function ChatScreen() {
   const { user } = useAuthStore();
   const flatListRef = useRef<FlatList>(null);
 
-  const [messages, setMessages] = useState<Message[]>(MOCK_MESSAGES);
+  const {
+    messages,
+    isLoadingMessages,
+    typingUsers,
+    fetchMessages,
+    sendMessage,
+    subscribeToMessages,
+    unsubscribeFromMessages,
+    markAsRead,
+    sendTypingIndicator,
+    setActiveConversation,
+  } = useMessagingStore();
+
+  const conversationId = route.params?.conversationId;
   const [inputText, setInputText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const otherUser = {
-    id: route.params?.userId || 'u1',
-    firstName: 'Sarah',
-    lastName: 'Johnson',
-    isOnline: true,
-  };
+  // Find conversation info from the store
+  const conversations = useMessagingStore(state => state.conversations);
+  const conversation = useMemo(
+    () => conversations.find(c => c.id === conversationId),
+    [conversations, conversationId]
+  );
+  const otherParticipant = useMemo(
+    () => conversation?.participants?.[0],
+    [conversation]
+  );
 
+  // Initialize: fetch messages + subscribe
   useEffect(() => {
-    // Scroll to bottom on load
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: false });
-    }, 100);
-  }, []);
+    if (!conversationId) return;
+
+    setActiveConversation(conversationId);
+    fetchMessages(conversationId, true);
+    subscribeToMessages(conversationId);
+    markAsRead(conversationId);
+
+    return () => {
+      unsubscribeFromMessages();
+      setActiveConversation(null);
+    };
+  }, [conversationId]);
+
+  // Auto scroll to bottom on new messages
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [messages.length]);
+
+  // Compute typing indicator text
+  const typingText = useMemo(() => {
+    const typers = Array.from(typingUsers.values()).filter(
+      t => t.userId !== user?.id
+    );
+    if (typers.length === 0) return null;
+    if (typers.length === 1) return `${typers[0].firstName} is typing...`;
+    return `${typers.length} people are typing...`;
+  }, [typingUsers, user?.id]);
 
   const handleSend = useCallback(() => {
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || !conversationId) return;
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      content: inputText.trim(),
-      senderId: 'me',
-      createdAt: new Date().toISOString(),
-      isRead: false,
-    };
-
-    setMessages((prev) => [...prev, newMessage]);
+    sendMessage(conversationId, inputText.trim());
     setInputText('');
     Keyboard.dismiss();
 
@@ -120,14 +113,26 @@ export default function ChatScreen() {
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
-  }, [inputText]);
+  }, [inputText, conversationId, sendMessage]);
 
-  const renderMessage = ({ item, index }: { item: Message; index: number }) => {
-    const isMe = item.senderId === 'me';
+  const handleTextChange = useCallback((text: string) => {
+    setInputText(text);
+
+    // Send typing indicator (throttled)
+    if (conversationId && user?.id && text.length > 0) {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        sendTypingIndicator(conversationId, user.id, user.firstName || 'User');
+      }, 500);
+    }
+  }, [conversationId, user, sendTypingIndicator]);
+
+  const renderMessage = ({ item, index }: { item: DirectMessage; index: number }) => {
+    const isMe = item.senderId === user?.id || item.senderId === 'me';
     const showAvatar = !isMe && (index === 0 || messages[index - 1].senderId !== item.senderId);
 
     return (
-      <Animated.View 
+      <Animated.View
         entering={FadeInUp.delay(50 * Math.min(index, 5)).duration(300)}
         style={[
           styles.messageRow,
@@ -138,8 +143,8 @@ export default function ChatScreen() {
           <View style={styles.messageAvatar}>
             {showAvatar && (
               <Avatar
-                uri={undefined}
-                name={`${otherUser.firstName} ${otherUser.lastName}`}
+                uri={otherParticipant?.profilePictureUrl}
+                name={otherParticipant ? `${otherParticipant.firstName} ${otherParticipant.lastName}` : 'User'}
                 size="sm"
               />
             )}
@@ -149,19 +154,36 @@ export default function ChatScreen() {
         <View style={[
           styles.messageBubble,
           isMe ? styles.myBubble : styles.otherBubble,
+          item._isPending && styles.pendingBubble,
         ]}>
-          <Text style={[
-            styles.messageText,
-            isMe && styles.myMessageText,
-          ]}>
-            {item.content}
-          </Text>
-          <Text style={[
-            styles.messageTime,
-            isMe && styles.myMessageTime,
-          ]}>
-            {formatRelativeTime(item.createdAt)}
-          </Text>
+          {item.isDeleted ? (
+            <Text style={[styles.messageText, styles.deletedText]}>
+              This message was deleted
+            </Text>
+          ) : (
+            <Text style={[
+              styles.messageText,
+              isMe && styles.myMessageText,
+            ]}>
+              {item.content}
+            </Text>
+          )}
+          <View style={styles.messageFooter}>
+            <Text style={[
+              styles.messageTime,
+              isMe && styles.myMessageTime,
+            ]}>
+              {formatRelativeTime(item.createdAt)}
+            </Text>
+            {item.isEdited && (
+              <Text style={[styles.editedLabel, isMe && styles.myMessageTime]}>
+                edited
+              </Text>
+            )}
+            {item._isPending && (
+              <Ionicons name="time-outline" size={12} color="rgba(255,255,255,0.5)" />
+            )}
+          </View>
         </View>
       </Animated.View>
     );
@@ -173,29 +195,33 @@ export default function ChatScreen() {
 
       {/* Header */}
       <Animated.View entering={FadeIn.duration(300)} style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={24} color={Colors.gray[700]} />
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.userInfo}
-          onPress={() => navigation.navigate('UserProfile' as any, { userId: otherUser.id })}
+          onPress={() => {
+            if (otherParticipant?.id) {
+              navigation.navigate('UserProfile' as any, { userId: otherParticipant.id });
+            }
+          }}
         >
           <Avatar
-            uri={undefined}
-            name={`${otherUser.firstName} ${otherUser.lastName}`}
+            uri={otherParticipant?.profilePictureUrl}
+            name={conversation?.displayName || 'Chat'}
             size="md"
-            showOnline={otherUser.isOnline}
+            showOnline={otherParticipant?.isOnline}
           />
           <View style={styles.userDetails}>
             <Text style={styles.userName}>
-              {otherUser.firstName} {otherUser.lastName}
+              {conversation?.displayName || 'Chat'}
             </Text>
             <Text style={styles.userStatus}>
-              {otherUser.isOnline ? 'Online' : 'Offline'}
+              {otherParticipant?.isOnline ? 'Online' : 'Offline'}
             </Text>
           </View>
         </TouchableOpacity>
@@ -216,21 +242,26 @@ export default function ChatScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={0}
       >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.messagesList}
-          showsVerticalScrollIndicator={false}
-        />
+        {isLoadingMessages && messages.length === 0 ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors.primary[500]} />
+            <Text style={styles.loadingText}>Loading messages...</Text>
+          </View>
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.messagesList}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
 
         {/* Typing Indicator */}
-        {isTyping && (
+        {typingText && (
           <Animated.View entering={FadeIn} style={styles.typingIndicator}>
-            <Text style={styles.typingText}>
-              {otherUser.firstName} is typing...
-            </Text>
+            <Text style={styles.typingText}>{typingText}</Text>
           </Animated.View>
         )}
 
@@ -244,7 +275,7 @@ export default function ChatScreen() {
             <TextInput
               style={styles.input}
               value={inputText}
-              onChangeText={setInputText}
+              onChangeText={handleTextChange}
               placeholder="Type a message..."
               placeholderTextColor={Colors.gray[400]}
               multiline
@@ -322,6 +353,16 @@ const styles = StyleSheet.create({
   keyboardAvoid: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.gray[500],
+  },
   messagesList: {
     padding: Spacing[4],
     paddingBottom: Spacing[2],
@@ -353,6 +394,9 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: BorderRadius.sm,
     ...Shadows.sm,
   },
+  pendingBubble: {
+    opacity: 0.7,
+  },
   messageText: {
     fontSize: Typography.fontSize.base,
     color: Colors.gray[800],
@@ -361,14 +405,28 @@ const styles = StyleSheet.create({
   myMessageText: {
     color: Colors.white,
   },
-  messageTime: {
-    fontSize: Typography.fontSize.xs,
+  deletedText: {
+    fontStyle: 'italic',
     color: Colors.gray[400],
+  },
+  messageFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     marginTop: Spacing[1],
     alignSelf: 'flex-end',
   },
+  messageTime: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.gray[400],
+  },
   myMessageTime: {
     color: 'rgba(255,255,255,0.7)',
+  },
+  editedLabel: {
+    fontSize: 10,
+    color: Colors.gray[400],
+    fontStyle: 'italic',
   },
   typingIndicator: {
     paddingHorizontal: Spacing[4],

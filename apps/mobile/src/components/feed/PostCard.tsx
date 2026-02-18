@@ -13,7 +13,7 @@
  * - Rich content indicators (PDF, Code, Formula)
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -156,6 +156,19 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [likeCount, setLikeCount] = useState(post.likes);
   const [showMenu, setShowMenu] = useState(false);
   const [valued, setValued] = useState(false);
+
+  // Sync external prop changes (e.g. from Supabase Realtime) into internal state
+  useEffect(() => {
+    setLikeCount(post.likes);
+  }, [post.likes]);
+
+  useEffect(() => {
+    setLiked(post.isLiked);
+  }, [post.isLiked]);
+
+  useEffect(() => {
+    setBookmarked(post.isBookmarked);
+  }, [post.isBookmarked]);
 
   const likeScale = useSharedValue(1);
   const valueScale = useSharedValue(1);

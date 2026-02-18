@@ -117,23 +117,49 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
         unsubscribeFromNotifications();
 
         const channel = supabase
-            .channel(`public:notifications:to:${userId}`)
+            .channel(`notifications:user:${userId}`)
+            // New notifications
             .on(
                 'postgres_changes',
                 {
                     event: 'INSERT',
                     schema: 'public',
                     table: 'notifications',
-                    filter: `user_id=eq.${userId}`,
+                    filter: `recipientId=eq.${userId}`,
                 },
                 async (payload) => {
-                    console.log('🔔 [NotificationStore] Realtime notification received:', payload);
-                    // Refresh list to get full details (populated data)
-                    // Alternatively, we could manually construct the notification object if payload is enough
+                    console.log('🔔 [NotificationStore] New notification:', payload);
+                    // Refresh to get full populated data (actor details, etc.)
                     await get().fetchNotifications();
                 }
             )
-            .subscribe();
+            // Notification read status updates (sync across devices)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'notifications',
+                    filter: `recipientId=eq.${userId}`,
+                },
+                (payload) => {
+                    const updated = payload.new as any;
+                    if (!updated?.id) return;
+
+                    set(state => {
+                        const notifications = state.notifications.map(n =>
+                            n.id === updated.id
+                                ? { ...n, isRead: updated.isRead ?? n.isRead }
+                                : n
+                        );
+                        const unreadCount = notifications.filter(n => !n.isRead).length;
+                        return { notifications, unreadCount };
+                    });
+                }
+            )
+            .subscribe((status) => {
+                console.log('🔔 [NotificationStore] Subscription:', status);
+            });
 
         set({ realtimeSubscription: channel });
     },
@@ -141,7 +167,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     unsubscribeFromNotifications: () => {
         const { realtimeSubscription } = get();
         if (realtimeSubscription) {
-            realtimeSubscription.unsubscribe();
+            supabase.removeChannel(realtimeSubscription);
             set({ realtimeSubscription: null });
         }
     }

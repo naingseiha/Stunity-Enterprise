@@ -3,9 +3,10 @@
  * 
  * Beautiful, modern messaging interface with Instagram/Telegram inspiration
  * Features: Active now carousel, clean conversation cards, smooth animations
+ * Real-time updates via Supabase Realtime + REST API
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,7 +19,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInDown, FadeInRight } from 'react-native-reanimated';
@@ -30,97 +31,53 @@ import { Colors, Typography, Spacing, Shadows, BorderRadius } from '@/config';
 import { formatRelativeTime } from '@/utils';
 import { MessagesStackScreenProps } from '@/navigation/types';
 import { useNavigationContext } from '@/contexts';
+import { useMessagingStore, useAuthStore } from '@/stores';
+import { DMConversation } from '@/stores/messagingStore';
 
 type NavigationProp = MessagesStackScreenProps<'Conversations'>['navigation'];
-
-interface Conversation {
-  id: string;
-  user: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    profilePictureUrl?: string;
-    isOnline?: boolean;
-  };
-  lastMessage: {
-    content: string;
-    createdAt: string;
-    isRead: boolean;
-    senderId: string;
-  };
-  unreadCount: number;
-}
-
-const MOCK_CONVERSATIONS: Conversation[] = [
-  {
-    id: '1',
-    user: {
-      id: 'u1',
-      firstName: 'Sarah',
-      lastName: 'Johnson',
-      isOnline: true,
-    },
-    lastMessage: {
-      content: 'Hey! Did you complete the assignment?',
-      createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-      isRead: false,
-      senderId: 'u1',
-    },
-    unreadCount: 2,
-  },
-  {
-    id: '2',
-    user: {
-      id: 'u2',
-      firstName: 'Mike',
-      lastName: 'Chen',
-      isOnline: false,
-    },
-    lastMessage: {
-      content: 'Thanks for the help! 🙏',
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      isRead: true,
-      senderId: 'u2',
-    },
-    unreadCount: 0,
-  },
-  {
-    id: '3',
-    user: {
-      id: 'u3',
-      firstName: 'Emily',
-      lastName: 'Davis',
-      isOnline: true,
-    },
-    lastMessage: {
-      content: 'The study group is at 3pm tomorrow',
-      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      isRead: true,
-      senderId: 'me',
-    },
-    unreadCount: 0,
-  },
-];
 
 export default function ConversationsScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { openSidebar } = useNavigationContext();
-  
-  const [conversations, setConversations] = useState<Conversation[]>(MOCK_CONVERSATIONS);
+  const { user } = useAuthStore();
+  const {
+    conversations,
+    isLoadingConversations,
+    fetchConversations,
+    subscribeToConversations,
+    unsubscribeAll,
+  } = useMessagingStore();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
+  // Initial fetch + realtime subscription
+  useEffect(() => {
+    fetchConversations();
+    if (user?.id) {
+      subscribeToConversations(user.id);
+    }
+    return () => unsubscribeAll();
+  }, [user?.id]);
+
+  // Refresh on screen focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchConversations();
+    }, [fetchConversations])
+  );
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    // TODO: Fetch from API
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await fetchConversations();
     setRefreshing(false);
-  }, []);
+  }, [fetchConversations]);
 
-  const handleConversationPress = useCallback((conversation: Conversation) => {
-    navigation.navigate('Chat', { 
+  const handleConversationPress = useCallback((conversation: DMConversation) => {
+    const firstParticipant = conversation.participants[0];
+    navigation.navigate('Chat', {
       conversationId: conversation.id,
-      userId: conversation.user.id,
+      userId: firstParticipant?.id || '',
     });
   }, [navigation]);
 
@@ -129,15 +86,19 @@ export default function ConversationsScreen() {
   }, [navigation]);
 
   const filteredConversations = conversations.filter((conv) => {
-    const fullName = `${conv.user.firstName} ${conv.user.lastName}`.toLowerCase();
-    return fullName.includes(searchQuery.toLowerCase());
+    const name = conv.displayName.toLowerCase();
+    return name.includes(searchQuery.toLowerCase());
   });
 
-  const renderConversation = ({ item, index }: { item: Conversation; index: number }) => {
+  const renderConversation = ({ item, index }: { item: DMConversation; index: number }) => {
     const isUnread = item.unreadCount > 0;
-    
+    const firstParticipant = item.participants[0];
+    const displayName = item.displayName;
+    const displayAvatar = item.displayAvatar || firstParticipant?.profilePictureUrl;
+    const participantOnline = firstParticipant?.isOnline;
+
     return (
-      <Animated.View 
+      <Animated.View
         entering={FadeInDown.delay(30 * Math.min(index, 5)).duration(400)}
         style={styles.conversationWrapper}
       >
@@ -160,8 +121,8 @@ export default function ConversationsScreen() {
               >
                 <View style={styles.avatarInner}>
                   <Avatar
-                    uri={item.user.profilePictureUrl}
-                    name={`${item.user.firstName} ${item.user.lastName}`}
+                    uri={displayAvatar}
+                    name={displayName}
                     size="lg"
                     showBorder={false}
                   />
@@ -169,10 +130,10 @@ export default function ConversationsScreen() {
               </LinearGradient>
             ) : (
               <Avatar
-                uri={item.user.profilePictureUrl}
-                name={`${item.user.firstName} ${item.user.lastName}`}
+                uri={displayAvatar}
+                name={displayName}
                 size="lg"
-                showOnline={item.user.isOnline}
+                showOnline={participantOnline}
               />
             )}
           </View>
@@ -184,15 +145,17 @@ export default function ConversationsScreen() {
                 styles.userName,
                 isUnread && styles.userNameUnread,
               ]}>
-                {item.user.firstName} {item.user.lastName}
+                {displayName}
               </Text>
               <View style={styles.timestampRow}>
-                <Text style={[
-                  styles.timestamp,
-                  isUnread && styles.timestampUnread
-                ]}>
-                  {formatRelativeTime(item.lastMessage.createdAt)}
-                </Text>
+                {item.lastMessage && (
+                  <Text style={[
+                    styles.timestamp,
+                    isUnread && styles.timestampUnread
+                  ]}>
+                    {formatRelativeTime(item.lastMessage.createdAt)}
+                  </Text>
+                )}
                 {isUnread && (
                   <View style={styles.unreadBadge}>
                     <Text style={styles.unreadCount}>{item.unreadCount}</Text>
@@ -202,17 +165,17 @@ export default function ConversationsScreen() {
             </View>
 
             <View style={styles.messageRow}>
-              <Text 
+              <Text
                 style={[
                   styles.lastMessage,
                   isUnread && styles.lastMessageUnread
                 ]}
                 numberOfLines={2}
               >
-                {item.lastMessage.senderId === 'me' && (
+                {item.lastMessage?.senderId === user?.id && (
                   <Text style={styles.youPrefix}>You: </Text>
                 )}
-                {item.lastMessage.content}
+                {item.lastMessage?.content || 'No messages yet'}
               </Text>
             </View>
           </View>
@@ -265,7 +228,7 @@ export default function ConversationsScreen() {
 
           {/* Actions - Right */}
           <View style={styles.headerActions}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.headerButton}
               onPress={handleNewMessage}
             >
@@ -280,49 +243,51 @@ export default function ConversationsScreen() {
       </SafeAreaView>
 
       {/* Active Now Section - Instagram Stories style */}
-      {conversations.filter((c) => c.user.isOnline).length > 0 && (
+      {conversations.filter((c) => c.participants.some(p => p.isOnline)).length > 0 && (
         <View style={styles.onlineSection}>
           <View style={styles.onlineHeader}>
             <Text style={styles.onlineTitle}>Active Now</Text>
             <Text style={styles.onlineCount}>
-              {conversations.filter((c) => c.user.isOnline).length}
+              {conversations.filter((c) => c.participants.some(p => p.isOnline)).length}
             </Text>
           </View>
           <FlatList
             horizontal
-            data={conversations.filter((c) => c.user.isOnline)}
+            data={conversations.filter((c) => c.participants.some(p => p.isOnline))}
             keyExtractor={(item) => item.id}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.onlineList}
-            renderItem={({ item, index }) => (
-              <Animated.View entering={FadeInRight.delay(50 * index).duration(400)}>
-                <TouchableOpacity 
-                  onPress={() => handleConversationPress(item)}
-                  style={styles.onlineUser}
-                  activeOpacity={0.7}
-                >
-                  {/* Gradient border like Instagram stories */}
-                  <LinearGradient
-                    colors={['#10B981', '#06B6D4', '#3B82F6']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.onlineGradientBorder}
+            renderItem={({ item, index }) => {
+              const onlineParticipant = item.participants.find(p => p.isOnline) || item.participants[0];
+              return (
+                <Animated.View entering={FadeInRight.delay(50 * index).duration(400)}>
+                  <TouchableOpacity
+                    onPress={() => handleConversationPress(item)}
+                    style={styles.onlineUser}
+                    activeOpacity={0.7}
                   >
-                    <View style={styles.onlineAvatarInner}>
-                      <Avatar
-                        uri={item.user.profilePictureUrl}
-                        name={`${item.user.firstName} ${item.user.lastName}`}
-                        size="md"
-                        showBorder={false}
-                      />
-                    </View>
-                  </LinearGradient>
-                  <Text style={styles.onlineUserName} numberOfLines={1}>
-                    {item.user.firstName}
-                  </Text>
-                </TouchableOpacity>
-              </Animated.View>
-            )}
+                    <LinearGradient
+                      colors={['#10B981', '#06B6D4', '#3B82F6']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.onlineGradientBorder}
+                    >
+                      <View style={styles.onlineAvatarInner}>
+                        <Avatar
+                          uri={onlineParticipant?.profilePictureUrl}
+                          name={item.displayName}
+                          size="md"
+                          showBorder={false}
+                        />
+                      </View>
+                    </LinearGradient>
+                    <Text style={styles.onlineUserName} numberOfLines={1}>
+                      {onlineParticipant?.firstName || item.displayName.split(' ')[0]}
+                    </Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              );
+            }}
           />
         </View>
       )}
@@ -397,7 +362,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#F9FAFB',
   },
-  
+
   // Active Now Section
   onlineSection: {
     backgroundColor: '#fff',
@@ -450,7 +415,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
-  
+
   // Conversations Header
   conversationsHeader: {
     backgroundColor: '#fff',
@@ -471,7 +436,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#9CA3AF',
   },
-  
+
   // Conversation Cards
   listContent: {
     flexGrow: 1,
@@ -589,7 +554,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
   },
-  
+
   // Empty State
   emptyContainer: {
     flex: 1,

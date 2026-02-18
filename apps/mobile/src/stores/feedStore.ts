@@ -1352,56 +1352,46 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     unsubscribeFromFeed();
 
     const channel = supabase
-      .channel('public:posts')
+      .channel('feed:realtime')
+      // New posts
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'posts',
-        },
+        { event: 'INSERT', schema: 'public', table: 'posts' },
         async (payload) => {
-          console.log('🔔 [FeedStore] Realtime INSERT received:', payload);
-          const newPostId = payload.new.id;
+          console.log('🔔 [FeedStore] New post INSERT:', payload.new?.id);
+          const newPostId = (payload.new as any)?.id;
+          if (!newPostId) return;
 
-          // Fetch full post details
           try {
-            const { data: fullPost, error } = await supabase
-              .from('posts')
-              .select('*, author:profiles(*), _count(comments), _count(likes)')
-              .eq('id', newPostId)
-              .single();
-
-            if (!error && fullPost) {
-              // Transform manually since we don't have a detached transform function
-              // Reuse the transformation logic from fetchPosts essentially
-              // Ideally we should extract transformPost to a helper, but for now inline
-
+            // Fetch full post via API (preserves business logic, author data, etc.)
+            const response = await feedApi.get(`/posts/${newPostId}`);
+            if (response.data.success && response.data.post) {
+              const post = response.data.post;
               const transformedPost: Post = {
-                id: fullPost.id,
+                id: post.id,
                 author: {
-                  id: fullPost.author?.id,
-                  firstName: fullPost.author?.firstName,
-                  lastName: fullPost.author?.lastName,
-                  name: `${fullPost.author?.firstName || ''} ${fullPost.author?.lastName || ''}`.trim(),
-                  profilePictureUrl: fullPost.author?.profilePictureUrl,
-                  role: fullPost.author?.role,
-                  isVerified: fullPost.author?.isVerified,
+                  id: post.author?.id,
+                  firstName: post.author?.firstName,
+                  lastName: post.author?.lastName,
+                  name: `${post.author?.firstName || ''} ${post.author?.lastName || ''}`.trim(),
+                  profilePictureUrl: post.author?.profilePictureUrl,
+                  role: post.author?.role,
+                  isVerified: post.author?.isVerified,
                 },
-                content: fullPost.content,
-                postType: fullPost.postType || 'ARTICLE',
-                visibility: fullPost.visibility || 'PUBLIC',
-                mediaUrls: fullPost.mediaUrls || [],
-                likes: 0,
-                comments: 0,
-                shares: 0,
-                isLiked: false,
-                isBookmarked: false,
-                createdAt: fullPost.createdAt,
-                updatedAt: fullPost.updatedAt,
-                // ... minimal fields for notification
-                learningMeta: fullPost.learningMeta,
-              } as any; // Type assertion for brevity in this patch
+                content: post.content,
+                title: post.title,
+                postType: post.postType || 'ARTICLE',
+                visibility: post.visibility || 'PUBLIC',
+                mediaUrls: post.mediaUrls || [],
+                likes: post.likesCount || post._count?.likes || 0,
+                comments: post.commentsCount || post._count?.comments || 0,
+                shares: post.sharesCount || 0,
+                isLiked: post.isLiked || false,
+                isBookmarked: post.isBookmarked || false,
+                createdAt: post.createdAt,
+                updatedAt: post.updatedAt,
+                learningMeta: post.learningMeta,
+              } as any;
 
               set(state => ({
                 pendingPosts: [transformedPost, ...state.pendingPosts]
@@ -1412,8 +1402,49 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           }
         }
       )
-      .subscribe((status) => {
+      // Post updates (edits, like/comment count changes)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'posts' },
+        (payload) => {
+          const updated = payload.new as any;
+          if (!updated?.id) return;
+
+          console.log('🔔 [FeedStore] Post updated:', updated.id, 'likes:', updated.likesCount);
+
+          set(state => ({
+            posts: state.posts.map(p =>
+              p.id === updated.id
+                ? {
+                  ...p,
+                  content: updated.content ?? p.content,
+                  title: updated.title ?? p.title,
+                  likes: updated.likesCount ?? p.likes,
+                  comments: updated.commentsCount ?? p.comments,
+                  shares: updated.sharesCount ?? p.shares,
+                }
+                : p
+            ),
+          }));
+        }
+      )
+      // Post deletes
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'posts' },
+        (payload) => {
+          const deletedId = (payload.old as any)?.id;
+          if (!deletedId) return;
+
+          set(state => ({
+            posts: state.posts.filter(p => p.id !== deletedId),
+            pendingPosts: state.pendingPosts.filter(p => p.id !== deletedId),
+          }));
+        }
+      )
+      .subscribe((status, err) => {
         console.log('🔌 [FeedStore] Subscription status:', status);
+        if (err) console.error('🔌 [FeedStore] Subscription error:', err);
       });
 
     set({ realtimeSubscription: channel });

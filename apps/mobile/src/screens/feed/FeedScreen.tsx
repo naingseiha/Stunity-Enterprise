@@ -487,6 +487,7 @@ export default function FeedScreen() {
       {/* Feed */}
       <FlatList
         data={posts}
+        extraData={posts}
         renderItem={renderPost}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={renderHeader}
