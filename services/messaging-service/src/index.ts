@@ -12,7 +12,7 @@ const app = express();
 const PORT = 3011; // Messaging service uses port 3011
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 
-// ✅ Prisma with Neon-optimized settings
+// ✅ Prisma with Supabase PostgreSQL
 const prisma = new PrismaClient({
   datasources: {
     db: {
@@ -122,7 +122,7 @@ app.get('/conversations', authenticateToken, async (req: AuthRequest, res: Respo
     const skip = (Number(page) - 1) * Number(limit);
 
     let where: any = {};
-    
+
     // Filter based on user role
     if (role === 'PARENT' && parentId) {
       where.parentId = parentId;
@@ -737,7 +737,7 @@ app.get('/parents', authenticateToken, async (req: AuthRequest, res: Response) =
         select: { classId: true },
       });
       const classIds = teacherClasses.map(tc => tc.classId);
-      
+
       // Also get homeroom class
       const teacher = await prisma.teacher.findUnique({
         where: { id: teacherId },
@@ -811,12 +811,12 @@ app.get('/parents', authenticateToken, async (req: AuthRequest, res: Response) =
     // Apply search filter
     if (search && typeof search === 'string') {
       const searchLower = search.toLowerCase();
-      parents = parents.filter(p => 
+      parents = parents.filter(p =>
         p.firstName.toLowerCase().includes(searchLower) ||
         p.lastName.toLowerCase().includes(searchLower) ||
         p.khmerName?.toLowerCase().includes(searchLower) ||
         p.phone.includes(search) ||
-        p.children.some((c: any) => 
+        p.children.some((c: any) =>
           c.firstName.toLowerCase().includes(searchLower) ||
           c.lastName.toLowerCase().includes(searchLower) ||
           c.studentId?.includes(search)

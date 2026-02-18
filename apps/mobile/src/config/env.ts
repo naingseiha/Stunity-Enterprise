@@ -17,6 +17,7 @@ interface EnvironmentConfig {
   mediaUrl: string;
   clubUrl: string;
   notificationUrl: string;
+  quizUrl: string;
   analyticsUrl: string;
   wsUrl: string;
   sentryDsn: string;
@@ -75,6 +76,7 @@ const development: EnvironmentConfig = {
   mediaUrl: `http://${API_HOST}:3010`,
   clubUrl: `http://${API_HOST}:3012`,
   notificationUrl: `http://${API_HOST}:3013`,
+  quizUrl: `http://${API_HOST}:3015`,
   analyticsUrl: `http://${API_HOST}:3014`,
   wsUrl: `ws://${API_HOST}:3011`,
   sentryDsn: '',
@@ -92,6 +94,7 @@ const staging: EnvironmentConfig = {
   mediaUrl: 'https://staging-media.stunity.com',
   clubUrl: 'https://staging-clubs.stunity.com',
   notificationUrl: 'https://staging-notifications.stunity.com',
+  quizUrl: 'https://staging-quiz.stunity.com',
   analyticsUrl: 'https://staging-analytics.stunity.com',
   wsUrl: 'wss://staging-ws.stunity.com',
   sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN || '',
@@ -109,6 +112,7 @@ const production: EnvironmentConfig = {
   mediaUrl: 'https://media.stunity.com',
   clubUrl: 'https://clubs.stunity.com',
   notificationUrl: 'https://notifications.stunity.com',
+  quizUrl: 'https://quiz.stunity.com',
   analyticsUrl: 'https://analytics.stunity.com',
   wsUrl: 'wss://ws.stunity.com',
   sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN || '',

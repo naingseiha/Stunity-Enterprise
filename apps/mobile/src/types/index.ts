@@ -9,6 +9,7 @@ export interface User {
   id: string;
   firstName: string;
   lastName: string;
+  username: string;
   name?: string; // Full name (optional)
   email: string;
   phone?: string;
@@ -60,6 +61,7 @@ export interface LoginCredentials {
 export interface RegisterData {
   firstName: string;
   lastName: string;
+  username?: string;
   email: string;
   password: string;
   role: UserRole;

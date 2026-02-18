@@ -169,6 +169,7 @@ export const authApi = createApiClient(Config.authUrl);
 export const feedApi = createApiClient(Config.feedUrl);
 export const mediaApi = createApiClient(Config.mediaUrl);
 export const clubsApi = createApiClient(Config.clubUrl);
+export const quizApi = createApiClient(Config.quizUrl);
 export const notificationApi = createApiClient(Config.notificationUrl);
 
 // Helper functions
@@ -280,4 +281,4 @@ const isRetryableError = (error: unknown): boolean => {
   return false;
 };
 
-export default { authApi, feedApi, mediaApi, clubsApi };
+export default { authApi, feedApi, mediaApi, clubsApi, quizApi };

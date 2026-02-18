@@ -32,7 +32,7 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
-// Keep database connection warm to avoid Neon cold starts
+// Keep database connection warm (Supabase Pooler)
 let isDbWarm = false;
 const warmUpDb = async () => {
   if (isDbWarm) return;
@@ -85,7 +85,7 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
     }
 
     const decoded = jwt.verify(token, JWT_SECRET) as any;
-    
+
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       include: { school: true },
@@ -462,7 +462,7 @@ app.post('/auth/logout', async (req: Request, res: Response) => {
     // 1. Get refresh token from request
     // 2. Blacklist/invalidate the refresh token
     // 3. Update lastLogout timestamp
-    
+
     // For now, just return success
     // The client will clear tokens locally
     res.json({
@@ -1398,7 +1398,7 @@ app.post('/auth/claim-codes/link', authenticateToken, async (req: AuthRequest, r
     // Verify data if required
     if (claimCode.verificationData) {
       const expectedData = claimCode.verificationData as any;
-      
+
       if (expectedData.firstName && verificationData?.firstName) {
         if (expectedData.firstName.toLowerCase() !== verificationData.firstName.toLowerCase()) {
           return res.status(400).json({
@@ -1565,7 +1565,7 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
     // Verify data if required
     if (claimCode.verificationData) {
       const expectedData = claimCode.verificationData as any;
-      
+
       if (expectedData.firstName && expectedData.firstName.toLowerCase() !== firstName.toLowerCase()) {
         return res.status(400).json({
           success: false,
@@ -1745,7 +1745,7 @@ app.post('/auth/login/claim-code', async (req: Request, res: Response) => {
     // Verify data if required
     if (claimCode.verificationData) {
       const expectedData = claimCode.verificationData as any;
-      
+
       if (expectedData.firstName && verificationData?.firstName) {
         if (expectedData.firstName.toLowerCase() !== verificationData.firstName.toLowerCase()) {
           return res.status(400).json({

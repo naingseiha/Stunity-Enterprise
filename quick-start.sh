@@ -3,26 +3,10 @@
 echo "🚀 Quick Start - Stunity Services"
 echo "=================================="
 
-# Check for architecture mismatch on Apple Silicon
-ARCH=$(uname -m)
-NODE_ARCH=$(node -p "process.arch")
+PROJECT_DIR="/Users/naingseiha/Documents/Stunity-Enterprise"
 
-if [[ "$ARCH" == "arm64" && "$NODE_ARCH" == "x64" ]]; then
-    echo ""
-    echo "⚠️  WARNING: Architecture Mismatch Detected!"
-    echo "Your M1/M2 Mac is running Node.js in Rosetta (x64) mode."
-    echo "This will cause esbuild errors in services."
-    echo ""
-    echo "Run this to fix permanently: ./fix-architecture.sh"
-    echo ""
-    read -p "Continue anyway? (y/N) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
-fi
-
-# Helper function to start service with correct architecture
+# Helper function to start service with tsx (skips type checking)
+# Uses a subshell to avoid cd side-effects
 start_service() {
     local service_path=$1
     local port=$2
@@ -30,19 +14,18 @@ start_service() {
     local name=$4
     
     echo "  ⚙️  Starting $name ($port)..."
-    cd /Users/naingseiha/Documents/Stunity-Enterprise/$service_path
-    
-    if [[ "$ARCH" == "arm64" ]]; then
-        arch -arm64 npm run dev > /tmp/$log_file 2>&1 &
-    else
-        npm run dev > /tmp/$log_file 2>&1 &
-    fi
+    (cd "$PROJECT_DIR/$service_path" && npx tsx src/index.ts > /tmp/$log_file 2>&1) &
+}
+
+start_web() {
+    echo "  ⚙️  Starting Web App (3000)..."
+    (cd "$PROJECT_DIR/apps/web" && npm run dev > /tmp/web.log 2>&1) &
 }
 
 # Kill all existing processes
 echo ""
 echo "🛑 Stopping any running services..."
-for port in 3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3012 3014; do
+for port in 3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014; do
   pid=$(lsof -ti:$port 2>/dev/null)
   if [ ! -z "$pid" ]; then
     kill -9 $pid 2>/dev/null && echo "  Killed process on port $port"
@@ -58,7 +41,7 @@ start_service "services/auth-service" 3001 "auth.log" "Auth Service"
 sleep 3
 
 start_service "services/school-service" 3002 "school.log" "School Service"
-sleep 3
+sleep 2
 
 start_service "services/student-service" 3003 "student.log" "Student Service"
 sleep 2
@@ -84,13 +67,19 @@ sleep 2
 start_service "services/feed-service" 3010 "feed.log" "Feed Service"
 sleep 2
 
+start_service "services/messaging-service" 3011 "messaging.log" "Messaging Service"
+sleep 2
+
 start_service "services/club-service" 3012 "club.log" "Club Service"
+sleep 2
+
+start_service "services/notification-service" 3013 "notification.log" "Notification Service"
 sleep 2
 
 start_service "services/analytics-service" 3014 "analytics.log" "Analytics Service"
 sleep 2
 
-start_service "apps/web" 3000 "web.log" "Web App"
+start_web
 sleep 5
 
 echo ""
@@ -100,7 +89,7 @@ echo "Checking status..."
 sleep 3
 
 # Check which services are running
-for port in 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3012 3014 3000; do
+for port in 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014 3000; do
   if lsof -ti:$port > /dev/null 2>&1; then
     echo "  ✅ Port $port: Running"
   else
@@ -110,8 +99,11 @@ done
 
 echo ""
 echo "🌐 Web App: http://localhost:3000"
+echo "🔐 Auth Service: http://localhost:3001"
 echo "📱 Feed Service: http://localhost:3010"
+echo "💬 Messaging Service: http://localhost:3011"
 echo "🎓 Club Service: http://localhost:3012"
+echo "🔔 Notification Service: http://localhost:3013"
 echo "📊 Analytics Service: http://localhost:3014"
 echo "📝 Logs in: /tmp/*.log"
 echo ""

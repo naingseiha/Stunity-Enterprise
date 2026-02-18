@@ -28,7 +28,8 @@ const StunityLogo = require('../../../../../Stunity.png');
 import { Avatar } from '@/components/common';
 import { Colors } from '@/config';
 import { useNavigationContext } from '@/contexts';
-import { clubsApi, Club } from '@/api';
+import { Club } from '@/api/clubs';
+import { useClubStore } from '@/stores';
 
 const CLUB_TYPES = [
   { id: 'CASUAL_STUDY_GROUP', name: 'Study Groups', icon: 'people', color: '#2563EB', bgColor: '#DBEAFE' },
@@ -38,41 +39,46 @@ const CLUB_TYPES = [
 ];
 
 export default function ClubsScreen() {
-  const navigation = useNavigation();
+  // Cast to any to avoid complex navigation typing issues for now
+  const navigation = useNavigation<any>();
   const { openSidebar } = useNavigationContext();
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'joined' | 'discover'>('all');
   const [selectedType, setSelectedType] = useState('all');
-  const [clubs, setClubs] = useState<Club[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    clubs,
+    isLoading: loading,
+    error,
+    fetchClubs: fetchClubsAction,
+    joinClub,
+    leaveClub,
+    subscribeToClubs,
+    unsubscribeFromClubs
+  } = useClubStore();
+
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Fetch clubs
   const fetchClubs = useCallback(async () => {
     try {
-      setError(null);
       const params: any = {};
-      
+
       if (selectedFilter === 'joined') {
         params.joined = true;
       } else if (selectedFilter === 'discover') {
         params.joined = false;
       }
-      
+
       if (selectedType !== 'all') {
         params.type = selectedType;
       }
 
-      const data = await clubsApi.getClubs(params);
-      setClubs(data);
+      await fetchClubsAction(params);
     } catch (err: any) {
       console.error('Failed to fetch clubs:', err);
-      setError(err.message || 'Failed to load clubs');
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedFilter, selectedType]);
+  }, [selectedFilter, selectedType, fetchClubsAction]);
 
   useEffect(() => {
     fetchClubs();
@@ -86,25 +92,31 @@ export default function ClubsScreen() {
   const handleToggleJoin = useCallback(async (clubId: string, isJoined: boolean) => {
     try {
       if (isJoined) {
-        await clubsApi.leaveClub(clubId);
+        await leaveClub(clubId);
       } else {
-        await clubsApi.joinClub(clubId);
+        await joinClub(clubId);
       }
-      fetchClubs();
+      // Store updates optimistically or refetches automatically
     } catch (err: any) {
       console.error('Failed to toggle club membership:', err);
       alert(err.message || 'Failed to update membership');
     }
-  }, [fetchClubs]);
+  }, [joinClub, leaveClub]);
 
-  const filteredClubs = selectedType === 'all' 
-    ? clubs 
+  // Subscribe to real-time updates
+  useEffect(() => {
+    subscribeToClubs();
+    return () => unsubscribeFromClubs();
+  }, [subscribeToClubs, unsubscribeFromClubs]);
+
+  const filteredClubs = selectedType === 'all'
+    ? clubs
     : clubs.filter(club => club.type === selectedType);
 
   const renderClubCard = ({ item: club, index }: { item: Club; index: number }) => {
     const isJoined = club.memberCount !== undefined && club.memberCount > 0;
     const typeConfig = CLUB_TYPES.find(t => t.id === club.type) || CLUB_TYPES[0];
-    
+
     // Beautiful gradient colors for each type
     const gradients: Record<string, [string, string]> = {
       CASUAL_STUDY_GROUP: ['#667eea', '#764ba2'], // Purple to Dark Purple
@@ -112,7 +124,7 @@ export default function ClubsScreen() {
       PROJECT_GROUP: ['#F2994A', '#F2C94C'], // Orange to Yellow
       EXAM_PREP: ['#C471ED', '#F64F59'], // Purple to Pink
     };
-    
+
     const gradientColors = gradients[club.type] || gradients.CASUAL_STUDY_GROUP;
 
     return (
@@ -122,7 +134,7 @@ export default function ClubsScreen() {
       >
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => navigation.navigate('ClubDetails' as never, { clubId: club.id } as never)}
+          onPress={() => navigation.navigate('ClubDetails', { clubId: club.id })}
         >
           <LinearGradient
             colors={gradientColors}
@@ -136,7 +148,7 @@ export default function ClubsScreen() {
               <View style={styles.iconSquare}>
                 <Ionicons name={typeConfig.icon as any} size={32} color={gradientColors[0]} />
               </View>
-              
+
               {/* Type Badge */}
               <View style={styles.typeBadgeNew}>
                 <Text style={styles.typeBadgeTextNew}>{typeConfig.name}</Text>
@@ -183,7 +195,7 @@ export default function ClubsScreen() {
                   </Text>
                 </View>
               )}
-              
+
               {/* Member Count with Icon */}
               <View style={styles.memberBadgeNew}>
                 <Ionicons name="people" size={14} color="rgba(255,255,255,0.9)" />
@@ -194,10 +206,10 @@ export default function ClubsScreen() {
             {/* Mode Indicator (if not public) */}
             {club.mode !== 'PUBLIC' && (
               <View style={styles.modeIndicatorNew}>
-                <Ionicons 
-                  name={club.mode === 'INVITE_ONLY' ? 'lock-closed' : 'checkmark-circle'} 
-                  size={12} 
-                  color="rgba(255,255,255,0.9)" 
+                <Ionicons
+                  name={club.mode === 'INVITE_ONLY' ? 'lock-closed' : 'checkmark-circle'}
+                  size={12}
+                  color="rgba(255,255,255,0.9)"
                 />
               </View>
             )}
@@ -336,7 +348,7 @@ export default function ClubsScreen() {
       {/* Floating Action Button - Create Club */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => navigation.navigate('CreateClub' as never)}
+        onPress={() => navigation.navigate('CreateClub')}
         activeOpacity={0.9}
       >
         <LinearGradient

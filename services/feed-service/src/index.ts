@@ -24,7 +24,7 @@ const app = express();
 const PORT = 3010; // Feed service always uses port 3010
 
 
-// ✅ Prisma with Neon-optimized settings
+// ✅ Prisma with Supabase PostgreSQL
 const prisma = new PrismaClient({
   datasources: {
     db: {

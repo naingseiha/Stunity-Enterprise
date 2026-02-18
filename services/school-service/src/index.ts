@@ -39,7 +39,7 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
-// Keep database connection warm to avoid Neon cold starts
+// Keep database connection warm (Supabase Pooler)
 let isDbWarm = false;
 const warmUpDb = async () => {
   if (isDbWarm) return;
@@ -69,7 +69,7 @@ app.use(cors({
 app.use(express.json());
 
 // Configure multer for file uploads
-const upload = multer({ 
+const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
@@ -187,12 +187,12 @@ app.post('/schools/register', async (req: Request, res: Response) => {
         gradeRange: schoolType === SchoolType.PRIMARY_SCHOOL
           ? '1-6'
           : schoolType === SchoolType.MIDDLE_SCHOOL
-          ? '7-9'
-          : schoolType === SchoolType.HIGH_SCHOOL
-          ? '10-12'
-          : schoolType === SchoolType.COMPLETE_SCHOOL
-          ? '1-12'
-          : '7-12',
+            ? '7-9'
+            : schoolType === SchoolType.HIGH_SCHOOL
+              ? '10-12'
+              : schoolType === SchoolType.COMPLETE_SCHOOL
+                ? '1-12'
+                : '7-12',
         workingDays: [1, 2, 3, 4, 5], // Monday to Friday
         subscriptionTier: tier,
         subscriptionStart,
@@ -794,7 +794,7 @@ app.get('/schools/:schoolId/academic-years/:yearId/stats', async (req: Request, 
     // Get counts for this academic year
     const [classCount, studentCount, teacherCount] = await Promise.all([
       prisma.class.count({
-        where: { 
+        where: {
           schoolId,
           academicYearId: yearId,
         },
@@ -1269,7 +1269,7 @@ app.post('/schools/:schoolId/academic-years/:yearId/promotion/preview', async (r
     // Build promotion preview
     const promotionPreview = fromClasses.map(fromClass => {
       const nextGrade = getNextGrade(fromClass.grade);
-      const targetClasses = nextGrade 
+      const targetClasses = nextGrade
         ? toClasses.filter(c => c.grade === nextGrade)
         : [];
 
@@ -1482,7 +1482,7 @@ app.post('/schools/:schoolId/academic-years/:yearId/promote-students', async (re
           const studentsForClass = validPromotions
             .filter(p => p.toClassId === toClassId)
             .map(p => p.studentId);
-          
+
           if (studentsForClass.length > 0) {
             await tx.student.updateMany({
               where: { id: { in: studentsForClass } },
@@ -1800,8 +1800,8 @@ app.get('/schools/:schoolId/analytics/year-comparison', async (req: Request, res
 
     // Calculate changes
     const studentChange = stats2.totalStudents - stats1.totalStudents;
-    const studentChangePercent = stats1.totalStudents > 0 
-      ? ((studentChange / stats1.totalStudents) * 100).toFixed(1) 
+    const studentChangePercent = stats1.totalStudents > 0
+      ? ((studentChange / stats1.totalStudents) * 100).toFixed(1)
       : 0;
 
     const classChange = stats2.totalClasses - stats1.totalClasses;
@@ -2440,7 +2440,7 @@ app.get('/schools/:schoolId/academic-years/:yearId/template', async (req: Reques
     let suggestedName = '';
     let suggestedStartDate = new Date(year.startDate);
     let suggestedEndDate = new Date(year.endDate);
-    
+
     if (currentYearMatch) {
       const currentYearNum = parseInt(currentYearMatch[1]);
       if (year.name.includes('-')) {
@@ -2451,7 +2451,7 @@ app.get('/schools/:schoolId/academic-years/:yearId/template', async (req: Reques
         suggestedName = `${currentYearNum + 1}`;
       }
     }
-    
+
     // Move dates forward by 1 year
     suggestedStartDate.setFullYear(suggestedStartDate.getFullYear() + 1);
     suggestedEndDate.setFullYear(suggestedEndDate.getFullYear() + 1);
@@ -2874,7 +2874,7 @@ app.get('/schools/:schoolId/academic-years/comparison', async (req: Request, res
 
       // Student counts by gender
       const enrolledStudentIds = studentClassEntries.map(e => e.studentId);
-      
+
       let studentsByGender: Record<string, number> = {};
       if (enrolledStudentIds.length > 0) {
         const studentGenders = await prisma.student.groupBy({
@@ -2936,7 +2936,7 @@ app.get('/schools/:schoolId/academic-years/comparison', async (req: Request, res
         changes: {
           students: {
             value: current.stats.totalStudents - previous.stats.totalStudents,
-            percentage: previous.stats.totalStudents > 0 
+            percentage: previous.stats.totalStudents > 0
               ? ((current.stats.totalStudents - previous.stats.totalStudents) / previous.stats.totalStudents * 100).toFixed(1)
               : null
           },
@@ -3164,7 +3164,7 @@ app.post('/schools/:id/claim-codes/bulk-upload', upload.single('file'), async (r
     // Parse CSV
     const csvContent = file.buffer.toString('utf-8');
     let records: any[];
-    
+
     try {
       records = parse(csvContent, {
         columns: true,
@@ -3715,9 +3715,9 @@ app.get('/schools/:id/claim-codes/export', async (req: Request, res: Response) =
       const personName = code.student
         ? `${code.student.firstName} ${code.student.lastName}`
         : code.teacher
-        ? `${code.teacher.firstName} ${code.teacher.lastName}`
-        : '';
-      
+          ? `${code.teacher.firstName} ${code.teacher.lastName}`
+          : '';
+
       const now = new Date();
       const isExpired = code.expiresAt && code.expiresAt < now;
       const isClaimed = !!code.claimedAt;

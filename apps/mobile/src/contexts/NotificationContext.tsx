@@ -6,6 +6,7 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { registerDeviceToken } from '@/api/notifications';
 import { useAuthStore } from '@/stores';
+import { useNotificationStore } from '@/stores/notificationStore';
 
 // Configure how notifications behave when the app is in foreground
 Notifications.setNotificationHandler({
@@ -37,10 +38,13 @@ export const useNotifications = () => {
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [expoPushToken, setExpoPushToken] = useState<string | undefined>(undefined);
     const [notification, setNotification] = useState<Notifications.Notification | undefined>(undefined);
-    const notificationListener = useRef<Notifications.Subscription>();
-    const responseListener = useRef<Notifications.Subscription>();
+    const notificationListener = useRef<Notifications.Subscription | undefined>(undefined);
+    const responseListener = useRef<Notifications.Subscription | undefined>(undefined);
 
     const { user, isAuthenticated } = useAuthStore();
+    const fetchNotifications = useNotificationStore(state => state.fetchNotifications);
+    const subscribeToNotifications = useNotificationStore(state => state.subscribeToNotifications);
+    const unsubscribeFromNotifications = useNotificationStore(state => state.unsubscribeFromNotifications);
 
     const registerForPushNotificationsAsync = async () => {
         let token;
@@ -93,6 +97,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     useEffect(() => {
         notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
             setNotification(notification);
+            // Refresh in-app notifications when push received
+            fetchNotifications();
         });
 
         responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
@@ -125,6 +131,21 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         registerToken();
     }, [isAuthenticated, user?.id, expoPushToken]);
+
+    // Initialize notification store (Hybrid: API fetch + Realtime sub)
+    useEffect(() => {
+        if (isAuthenticated && user?.id) {
+            console.log('🔄 [NotificationContext] Initializing notification store for user:', user.id);
+            fetchNotifications();
+            subscribeToNotifications(user.id);
+        } else {
+            unsubscribeFromNotifications();
+        }
+
+        return () => {
+            unsubscribeFromNotifications();
+        };
+    }, [isAuthenticated, user?.id]);
 
     // Initial permission request
     useEffect(() => {

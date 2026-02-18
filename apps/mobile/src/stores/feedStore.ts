@@ -9,6 +9,9 @@ import { Post, Story, StoryGroup, PaginationParams, Comment } from '@/types';
 import { feedApi } from '@/api/client';
 import { mockPosts, mockStories } from '@/api/mockData';
 import { recommendationEngine, UserInterestProfile } from '@/services/recommendation';
+import { supabase } from '@/lib/supabase';
+import { RealtimeChannel } from '@supabase/supabase-js';
+import { seedDatabase } from '@/lib/seed';
 
 // Analytics types
 export interface PostAnalytics {
@@ -46,6 +49,7 @@ interface FeedState {
   postsPage: number;
   feedMode: 'FOR_YOU' | 'FOLLOWING' | 'RECENT';
   userInterestProfile: UserInterestProfile | null;
+  pendingPosts: Post[];
 
   // My Posts
   myPosts: Post[];
@@ -104,7 +108,13 @@ interface FeedState {
 
   fetchTrending: (period?: TrendingPeriod) => Promise<void>;
   toggleFeedMode: (mode: 'FOR_YOU' | 'FOLLOWING' | 'RECENT') => void;
+
   initializeRecommendations: () => void;
+  // Real-time
+  subscribeToFeed: () => void;
+  unsubscribeFromFeed: () => void;
+  applyPendingPosts: () => void;
+  seedFeed: () => Promise<void>;
 
   // Story actions
   viewStory: (storyId: string) => Promise<void>;
@@ -118,13 +128,18 @@ interface FeedState {
   removeOptimisticPost: (tempId: string) => void;
 
   // Reset
+  // Reset
   reset: () => void;
+
+  realtimeSubscription: RealtimeChannel | null;
 }
 
 const initialState = {
   isLoadingPosts: false,
   hasMorePosts: true,
   postsPage: 1,
+  posts: [],
+  userInterestProfile: null,
   feedMode: 'FOR_YOU' as const,
   myPosts: [],
   isLoadingMyPosts: false,
@@ -137,11 +152,13 @@ const initialState = {
   isLoadingStories: false,
   activeStoryGroupIndex: null,
   activeStoryIndex: 0,
+  pendingPosts: [],
   comments: {},
   isLoadingComments: {},
   isSubmittingComment: {},
   postAnalytics: {},
   isLoadingAnalytics: {},
+  realtimeSubscription: null,
 };
 
 export const useFeedStore = create<FeedState>()((set, get) => ({
@@ -845,6 +862,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             firstName: newComment.author?.firstName,
             lastName: newComment.author?.lastName,
             name: `${newComment.author?.firstName || ''} ${newComment.author?.lastName || ''}`.trim(),
+            username: newComment.author?.username || 'user',
             profilePictureUrl: newComment.author?.profilePictureUrl,
             role: newComment.author?.role,
             isVerified: newComment.author?.isVerified || false,
@@ -1053,10 +1071,18 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     }
   },
 
-  // Track post view
+  // Track View (Enhanced)
   trackPostView: async (postId) => {
     try {
+      // Existing analytics tracking
       await feedApi.post(`/posts/${postId}/view`, { source: 'feed' });
+
+      // Recommendation Engine tracking
+      const post = get().posts.find(p => p.id === postId);
+      if (post) {
+        recommendationEngine.trackAction('VIEW', post);
+        // Don't update state immediately to avoid re-renders on scroll
+      }
     } catch (error) {
       // Silent fail - view tracking shouldn't break UX
       if (__DEV__) {
@@ -1094,6 +1120,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           firstName: rawPost.author?.firstName,
           lastName: rawPost.author?.lastName,
           name: `${rawPost.author?.firstName || ''} ${rawPost.author?.lastName || ''}`.trim(),
+          username: rawPost.author?.username || 'user',
           email: rawPost.author?.email || '',
           profilePictureUrl: rawPost.author?.profilePictureUrl,
           role: rawPost.author?.role,
@@ -1316,6 +1343,91 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     }
   },
 
+  // Real-time subscription
+  subscribeToFeed: () => {
+    console.log('🔌 [FeedStore] Subscribing to realtime feed...');
+    const { unsubscribeFromFeed } = get();
+
+    // Unsubscribe existing if any
+    unsubscribeFromFeed();
+
+    const channel = supabase
+      .channel('public:posts')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'posts',
+        },
+        async (payload) => {
+          console.log('🔔 [FeedStore] Realtime INSERT received:', payload);
+          const newPostId = payload.new.id;
+
+          // Fetch full post details
+          try {
+            const { data: fullPost, error } = await supabase
+              .from('posts')
+              .select('*, author:profiles(*), _count(comments), _count(likes)')
+              .eq('id', newPostId)
+              .single();
+
+            if (!error && fullPost) {
+              // Transform manually since we don't have a detached transform function
+              // Reuse the transformation logic from fetchPosts essentially
+              // Ideally we should extract transformPost to a helper, but for now inline
+
+              const transformedPost: Post = {
+                id: fullPost.id,
+                author: {
+                  id: fullPost.author?.id,
+                  firstName: fullPost.author?.firstName,
+                  lastName: fullPost.author?.lastName,
+                  name: `${fullPost.author?.firstName || ''} ${fullPost.author?.lastName || ''}`.trim(),
+                  profilePictureUrl: fullPost.author?.profilePictureUrl,
+                  role: fullPost.author?.role,
+                  isVerified: fullPost.author?.isVerified,
+                },
+                content: fullPost.content,
+                postType: fullPost.postType || 'ARTICLE',
+                visibility: fullPost.visibility || 'PUBLIC',
+                mediaUrls: fullPost.mediaUrls || [],
+                likes: 0,
+                comments: 0,
+                shares: 0,
+                isLiked: false,
+                isBookmarked: false,
+                createdAt: fullPost.createdAt,
+                updatedAt: fullPost.updatedAt,
+                // ... minimal fields for notification
+                learningMeta: fullPost.learningMeta,
+              } as any; // Type assertion for brevity in this patch
+
+              set(state => ({
+                pendingPosts: [transformedPost, ...state.pendingPosts]
+              }));
+            }
+          } catch (e) {
+            console.error('Error fetching realtime post:', e);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('🔌 [FeedStore] Subscription status:', status);
+      });
+
+    set({ realtimeSubscription: channel });
+  },
+
+  unsubscribeFromFeed: () => {
+    const { realtimeSubscription } = get();
+    if (realtimeSubscription) {
+      console.log('🔌 [FeedStore] Unsubscribing...');
+      supabase.removeChannel(realtimeSubscription);
+      set({ realtimeSubscription: null });
+    }
+  },
+
   // Fetch trending posts
   fetchTrending: async (period: TrendingPeriod = '7d') => {
     set({ isLoadingTrending: true, trendingPeriod: period });
@@ -1384,6 +1496,28 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     set((state) => ({
       posts: state.posts.filter((p) => p.id !== tempId),
     }));
+  },
+
+  toggleFeedMode: (mode) => {
+    set({ feedMode: mode });
+    get().fetchPosts(true);
+  },
+
+  initializeRecommendations: () => {
+    const profile = recommendationEngine.getUserProfile();
+    set({ userInterestProfile: profile });
+  },
+
+  applyPendingPosts: () => {
+    set((state) => ({
+      posts: [...state.pendingPosts, ...state.posts],
+      pendingPosts: [],
+    }));
+  },
+
+  seedFeed: async () => {
+    await seedDatabase();
+    await get().fetchPosts(true);
   },
 
   // Reset store

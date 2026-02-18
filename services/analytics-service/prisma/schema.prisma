@@ -2,12 +2,15 @@
 // For leaderboards, stats, challenges, and achievements
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas  = ["analytics"]
 }
 
 // User Statistics
@@ -33,6 +36,7 @@ model UserStats {
   @@index([xp])
   @@index([level])
   @@index([userId])
+  @@schema("analytics")
 }
 
 // Quiz Attempt Record
@@ -55,6 +59,7 @@ model QuizAttempt {
   @@index([userId])
   @@index([quizId])
   @@index([createdAt])
+  @@schema("analytics")
 }
 
 // Challenge System
@@ -76,6 +81,7 @@ model Challenge {
   @@index([challengerId])
   @@index([opponentId])
   @@index([status])
+  @@schema("analytics")
 }
 
 model ChallengeParticipant {
@@ -90,6 +96,7 @@ model ChallengeParticipant {
 
   @@unique([challengeId, userId])
   @@index([userId])
+  @@schema("analytics")
 }
 
 // Achievements
@@ -105,6 +112,8 @@ model Achievement {
   createdAt   DateTime @default(now())
 
   userAchievements UserAchievement[]
+
+  @@schema("analytics")
 }
 
 model UserAchievement {
@@ -121,6 +130,7 @@ model UserAchievement {
   @@unique([userId, achievementId])
   @@index([userId])
   @@index([completed])
+  @@schema("analytics")
 }
 
 // Learning Streaks
@@ -137,6 +147,7 @@ model Streak {
 
   @@index([userId])
   @@index([currentStreak])
+  @@schema("analytics")
 }
 
 // Weekly Leaderboard Snapshot (for historical data)
@@ -152,4 +163,5 @@ model WeeklyLeaderboard {
   @@unique([userId, weekStart])
   @@index([weekStart])
   @@index([rank])
+  @@schema("analytics")
 }

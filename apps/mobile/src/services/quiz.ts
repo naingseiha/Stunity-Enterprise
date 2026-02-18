@@ -1,10 +1,12 @@
 /**
- * Quiz Service
+ * Quiz Service (Hybrid - Cloud Run API)
  * 
- * Handles quiz submission and results fetching
+ * Handles quiz submission and results fetching via the Stunity Backend API.
+ * Real-time score updates are handled via Supabase Realtime (managed in stores).
  */
 
-import { feedApi } from '@/api/client';
+import { quizApi } from '@/api/client';
+import { supabase } from '@/lib/supabase';
 
 export interface QuizAnswer {
   questionId: string;
@@ -49,87 +51,98 @@ export interface QuizStatistics {
 
 /**
  * Submit quiz answers
+ * POST /quizzes/:id/submit
  */
 export const submitQuiz = async (
   quizId: string,
   answers: QuizAnswer[]
 ): Promise<QuizSubmissionResult> => {
   try {
-    console.log('📤 [QUIZ] Submitting quiz:', { quizId, answersCount: answers.length, answers });
-    
-    const response = await feedApi.post(`/quizzes/${quizId}/submit`, {
-      answers,
+    console.log('📤 [QUIZ API] Submitting quiz:', { quizId, answersCount: answers.length });
+
+    const response = await quizApi.post(`/quizzes/${quizId}/submit`, {
+      answers
     });
 
-    console.log('📥 [QUIZ] Response received:', response.data);
-
-    if (response.data.success) {
-      return response.data.data;
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Submission failed');
     }
-    
-    throw new Error(response.data.error || 'Failed to submit quiz');
+
+    return response.data.data;
   } catch (error: any) {
-    console.error('❌ [QUIZ] Submit quiz error:', error);
-    console.error('❌ [QUIZ] Error details:', error.response?.data);
+    console.error('❌ [QUIZ API] Submit error:', error);
     throw error;
   }
 };
 
 /**
  * Get user's attempts for a quiz
+ * GET /quizzes/:id/attempts/me
  */
 export const getMyQuizAttempts = async (quizId: string): Promise<QuizAttempt[]> => {
   try {
-    const response = await feedApi.get(`/quizzes/${quizId}/attempts/my`);
-    
-    if (response.data.success) {
-      return response.data.data;
+    const response = await quizApi.get(`/quizzes/${quizId}/attempts/me`);
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to fetch attempts');
     }
-    
-    throw new Error(response.data.error || 'Failed to get attempts');
+
+    return response.data.data || [];
   } catch (error: any) {
-    console.error('Get my attempts error:', error);
-    throw error;
+    console.error('❌ [QUIZ API] Get my attempts error:', error);
+    // Fallback: Return empty array or throw based on app needs
+    return [];
   }
 };
 
 /**
  * Get all attempts for a quiz (instructor only)
+ * GET /quizzes/:id/attempts
  */
 export const getQuizAttempts = async (
   quizId: string
 ): Promise<{ attempts: QuizAttempt[]; statistics: QuizStatistics }> => {
   try {
-    const response = await feedApi.get(`/quizzes/${quizId}/attempts`);
-    
-    if (response.data.success) {
-      return response.data.data;
+    const response = await quizApi.get(`/quizzes/${quizId}/attempts`);
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to fetch attempts');
     }
-    
-    throw new Error(response.data.error || 'Failed to get attempts');
+
+    return {
+      attempts: response.data.data?.attempts || [],
+      statistics: response.data.data?.statistics || {
+        totalAttempts: 0,
+        passedAttempts: 0,
+        failedAttempts: 0,
+        passRate: 0,
+        averageScore: 0
+      }
+    };
   } catch (error: any) {
-    console.error('Get quiz attempts error:', error);
+    console.error('❌ [QUIZ API] Get quiz attempts error:', error);
     throw error;
   }
 };
 
 /**
  * Get specific attempt details
+ * GET /attempts/:id
  */
 export const getQuizAttemptDetails = async (
-  quizId: string,
+  quizId: string, // Kept for interface compatibility
   attemptId: string
 ): Promise<any> => {
   try {
-    const response = await feedApi.get(`/quizzes/${quizId}/attempts/${attemptId}`);
-    
-    if (response.data.success) {
-      return response.data.data;
+    const response = await quizApi.get(`/attempts/${attemptId}`);
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to fetch details');
     }
-    
-    throw new Error(response.data.error || 'Failed to get attempt details');
+
+    return response.data.data;
   } catch (error: any) {
-    console.error('Get attempt details error:', error);
+    console.error('❌ [QUIZ API] Get attempt details error:', error);
     throw error;
   }
 };

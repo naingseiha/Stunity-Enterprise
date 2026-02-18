@@ -28,7 +28,7 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
-// Keep database connection warm to avoid Neon cold starts
+// Keep database connection warm (Supabase Pooler)
 let isDbWarm = false;
 const warmUpDb = async () => {
   if (isDbWarm) return;
@@ -367,7 +367,7 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
 
         // Get subject to calculate weighted score
         const subject = await prisma.subject.findUnique({ where: { id: subjectId } });
-        
+
         if (!subject) {
           results.errors.push({ studentId, error: 'Subject not found' });
           continue;
@@ -879,10 +879,10 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
     const { studentId } = req.params;
     const { semester = '1', year } = req.query;
     const currentYear = year ? parseInt(year as string) : new Date().getFullYear();
-    
+
     // Define months for each semester (Cambodian school year)
-    const semesterMonths = semester === '1' 
-      ? ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5'] 
+    const semesterMonths = semester === '1'
+      ? ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5']
       : ['Month 6', 'Month 7', 'Month 8', 'Month 9', 'Month 10'];
 
     // Get student info
@@ -932,7 +932,7 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
 
     // Group grades by subject
     const subjectGrades = new Map<string, any>();
-    
+
     grades.forEach((grade) => {
       const subjectId = grade.subjectId;
       if (!subjectGrades.has(subjectId)) {
@@ -963,7 +963,7 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
       const maxScore = data.subject.maxScore || 100;
       const percentage = (average / maxScore) * 100;
       const gradeLevel = calculateGradeLevel(percentage);
-      
+
       return {
         subject: data.subject,
         monthlyGrades: data.grades.sort((a: any, b: any) => a.monthNumber - b.monthNumber),
@@ -978,7 +978,7 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
     // Calculate overall semester average
     let totalWeightedScore = 0;
     let totalCoefficient = 0;
-    
+
     subjectResults.forEach((result) => {
       totalWeightedScore += result.weightedScore;
       totalCoefficient += result.coefficient;
@@ -1023,7 +1023,7 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
     };
 
     console.log(`✅ Generated report card for student ${student.khmerName}`);
-    
+
     res.json(reportCard);
   } catch (error: any) {
     console.error('❌ Error generating report card:', error);
@@ -1046,7 +1046,7 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
 
     // Get all students in the class through StudentClass junction table
     const studentClasses = await prisma.studentClass.findMany({
-      where: { 
+      where: {
         classId,
         status: 'ACTIVE',
       },
@@ -1063,8 +1063,8 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
     const students = studentClasses.map(sc => sc.student);
 
     // Define months for each semester
-    const semesterMonths = semester === '1' 
-      ? ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5'] 
+    const semesterMonths = semester === '1'
+      ? ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5']
       : ['Month 6', 'Month 7', 'Month 8', 'Month 9', 'Month 10'];
 
     // Get all grades for the class in the semester
@@ -1084,10 +1084,10 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
 
     for (const student of students) {
       const studentGrades = grades.filter((g) => g.studentId === student.id);
-      
+
       // Group by subject
       const subjectTotals = new Map<string, { total: number; count: number; coefficient: number }>();
-      
+
       studentGrades.forEach((grade) => {
         if (!subjectTotals.has(grade.subjectId)) {
           subjectTotals.set(grade.subjectId, { total: 0, count: 0, coefficient: grade.subject.coefficient });
@@ -1107,7 +1107,7 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
       });
 
       const average = totalCoef > 0 ? totalWeighted / totalCoef : 0;
-      
+
       studentAverages.push({
         studentId: student.id,
         average,
@@ -1146,15 +1146,15 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
       totalStudents: rankedStudents.length,
       students: rankedStudents,
       statistics: {
-        classAverage: rankedStudents.length > 0 
-          ? Math.round(rankedStudents.reduce((sum, s) => sum + s.average, 0) / rankedStudents.length * 100) / 100 
+        classAverage: rankedStudents.length > 0
+          ? Math.round(rankedStudents.reduce((sum, s) => sum + s.average, 0) / rankedStudents.length * 100) / 100
           : 0,
         highestAverage: rankedStudents.length > 0 ? rankedStudents[0].average : 0,
         lowestAverage: rankedStudents.length > 0 ? rankedStudents[rankedStudents.length - 1].average : 0,
         passingCount: rankedStudents.filter((s) => s.isPassing).length,
         failingCount: rankedStudents.filter((s) => !s.isPassing).length,
-        passRate: rankedStudents.length > 0 
-          ? Math.round((rankedStudents.filter((s) => s.isPassing).length / rankedStudents.length) * 100) 
+        passRate: rankedStudents.length > 0
+          ? Math.round((rankedStudents.filter((s) => s.isPassing).length / rankedStudents.length) * 100)
           : 0,
       },
       generatedAt: new Date().toISOString(),
@@ -1181,8 +1181,8 @@ app.get('/grades/semester-summary/:classId/:semester', authenticateToken, async 
     const { year } = req.query;
     const currentYear = year ? parseInt(year as string) : new Date().getFullYear();
 
-    const semesterMonths = semester === '1' 
-      ? ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5'] 
+    const semesterMonths = semester === '1'
+      ? ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5']
       : ['Month 6', 'Month 7', 'Month 8', 'Month 9', 'Month 10'];
 
     // Get subjects with grades count
@@ -1314,13 +1314,13 @@ async function getAttendanceSummary(studentId: string, semester: string, year: n
 
 // Helper function: Calculate class rank
 async function calculateClassRank(classId: string, studentId: string, semester: string, year: number) {
-  const semesterMonths = semester === '1' 
-    ? ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5'] 
+  const semesterMonths = semester === '1'
+    ? ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5']
     : ['Month 6', 'Month 7', 'Month 8', 'Month 9', 'Month 10'];
 
   // Get students through StudentClass junction table
   const studentClasses = await prisma.studentClass.findMany({
-    where: { 
+    where: {
       classId,
       status: 'ACTIVE',
     },
@@ -1347,9 +1347,9 @@ async function calculateClassRank(classId: string, studentId: string, semester: 
 
   for (const student of students) {
     const studentGrades = grades.filter((g) => g.studentId === student.id);
-    
+
     const subjectTotals = new Map<string, { total: number; count: number; coefficient: number }>();
-    
+
     studentGrades.forEach((grade) => {
       if (!subjectTotals.has(grade.subjectId)) {
         subjectTotals.set(grade.subjectId, { total: 0, count: 0, coefficient: grade.subject.coefficient });

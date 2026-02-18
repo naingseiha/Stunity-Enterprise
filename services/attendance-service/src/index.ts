@@ -2,12 +2,12 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { PrismaClient, AttendanceStatus, AttendanceSession } from '@prisma/client';
 import jwt from 'jsonwebtoken';
-import { 
-  startOfMonth, 
-  endOfMonth, 
-  format, 
-  parseISO, 
-  startOfDay, 
+import {
+  startOfMonth,
+  endOfMonth,
+  format,
+  parseISO,
+  startOfDay,
   endOfDay,
   isWeekend,
   eachDayOfInterval,
@@ -32,7 +32,7 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
-// Keep database connection warm to avoid Neon cold starts
+// Keep database connection warm (Supabase Pooler)
 let isDbWarm = false;
 const warmUpDb = async () => {
   if (isDbWarm) return;
@@ -80,7 +80,7 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'stunity-enterprise-secret-2026') as any;
-    
+
     if (!decoded.userId || !decoded.schoolId) {
       return res.status(401).json({
         success: false,
@@ -191,8 +191,8 @@ const validateAttendanceSession = (session: string): boolean => {
 
 // Health Check
 app.get('/health', (req: Request, res: Response) => {
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     message: 'Attendance Service is running',
     service: 'attendance-service',
     port: process.env.PORT || 3008,
@@ -403,7 +403,7 @@ app.post('/attendance/bulk', authenticateToken, async (req: AuthRequest, res: Re
     // Send notifications to parents for absent/late students
     const alertStatuses = ['ABSENT', 'LATE'];
     const alertRecords = attendance.filter(a => alertStatuses.includes(a.status));
-    
+
     for (const record of alertRecords) {
       const statusText = record.status === 'ABSENT' ? 'absent' : 'late';
       notifyParents(
