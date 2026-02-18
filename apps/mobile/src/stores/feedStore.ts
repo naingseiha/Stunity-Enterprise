@@ -6,6 +6,7 @@
 
 import { create } from 'zustand';
 import { Post, Story, StoryGroup, PaginationParams, Comment } from '@/types';
+import { transformPost, transformPosts } from '@/utils/transformPost';
 import { feedApi } from '@/api/client';
 import { mockPosts, mockStories } from '@/api/mockData';
 import { recommendationEngine, UserInterestProfile } from '@/services/recommendation';
@@ -205,149 +206,12 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         const pagination = response.data.pagination;
         const hasMore = pagination?.hasMore ?? newPosts.length === 20;
 
-        // Debug: Log posts received
         if (__DEV__) {
           console.log('📥 [FeedStore] Received', newPosts.length, 'posts');
-          const quizPosts = newPosts.filter((p: any) => p.postType === 'QUIZ');
-          if (quizPosts.length > 0) {
-            console.log('🎯 [FeedStore] Quiz posts:', quizPosts.length);
-            quizPosts.forEach((qp: any) => {
-              console.log('  - Quiz:', qp.id, 'hasQuiz:', !!qp.quiz, 'title:', qp.title);
-            });
-          }
         }
 
-        // Debug: Log mediaUrls from first post
-        if (__DEV__ && newPosts.length > 0 && newPosts[0].mediaUrls) {
-          console.log('📥 [FeedStore] Sample post mediaUrls:', newPosts[0].mediaUrls);
-        }
-
-        // Transform posts to match mobile app Post type
-        const transformedPosts: Post[] = newPosts.map((post: any) => {
-          try {
-            // Debug: Log quiz post raw data
-            if (__DEV__ && post.postType === 'QUIZ') {
-              console.log('🔍 [FeedStore] Transforming QUIZ post:', post.id);
-              console.log('  - Has quiz object:', !!post.quiz);
-              console.log('  - Quiz data:', post.quiz ? JSON.stringify(post.quiz, null, 2) : 'NULL');
-            }
-
-            return {
-              id: post.id,
-              author: {
-                id: post.author?.id,
-                firstName: post.author?.firstName,
-                lastName: post.author?.lastName,
-                name: `${post.author?.firstName || ''} ${post.author?.lastName || ''}`.trim(),
-                profilePictureUrl: post.author?.profilePictureUrl,
-                role: post.author?.role,
-                isVerified: post.author?.isVerified,
-              },
-              content: post.content,
-              title: post.title, // For quiz, course, etc.
-              postType: post.postType || 'ARTICLE',
-              visibility: post.visibility || 'PUBLIC', // FIXED: Include visibility field
-              mediaUrls: post.mediaUrls || [],
-              mediaDisplayMode: post.mediaDisplayMode || 'AUTO', // FIXED: Include mediaDisplayMode
-              likes: post.likesCount || post._count?.likes || 0,
-              comments: post.commentsCount || post._count?.comments || 0,
-              shares: post.sharesCount || 0,
-              isLiked: post.isLikedByMe || false,
-              isBookmarked: post.isBookmarked || false,
-              createdAt: post.createdAt,
-              updatedAt: post.updatedAt,
-              // E-Learning metadata
-              topicTags: post.topicTags || post.tags || [],
-              tags: post.tags || post.topicTags || [], // FIXED: Include tags field
-              // Poll fields
-              pollOptions: post.pollOptions?.map((opt: any) => ({
-                id: opt.id,
-                text: opt.text,
-                votes: opt.votes || opt._count?.votes || 0,
-              })),
-              userVotedOptionId: post.userVotedOptionId,
-              // Quiz fields
-              quizData: post.postType === 'QUIZ' && post.quiz ? {
-                id: post.quiz.id,
-                questions: post.quiz.questions || [],
-                timeLimit: post.quiz.timeLimit,
-                passingScore: post.quiz.passingScore,
-                totalPoints: post.quiz.totalPoints || post.quiz.questions?.reduce((sum: number, q: any) => sum + (q.points || 0), 0) || 0,
-                resultsVisibility: post.quiz.resultsVisibility,
-                userAttempt: post.quiz.userAttempt ? {
-                  id: post.quiz.userAttempt.id,
-                  score: post.quiz.userAttempt.score,
-                  passed: post.quiz.userAttempt.passed,
-                  pointsEarned: post.quiz.userAttempt.pointsEarned,
-                  submittedAt: post.quiz.userAttempt.submittedAt,
-                } : undefined,
-              } : undefined,
-
-              // Debug poll data
-              ...(post.postType === 'POLL' && __DEV__ && {
-                _debug: {
-                  hasPollOptions: !!post.pollOptions,
-                  optionCount: post.pollOptions?.length || 0,
-                  userVotedOptionId: post.userVotedOptionId,
-                }
-              }),
-
-              learningMeta: post.learningMeta || {
-                progress: post.progress,
-                totalSteps: post.totalSteps,
-                completedSteps: post.completedSteps,
-                difficulty: post.difficulty,
-                isLive: post.isLive,
-                liveViewers: post.liveViewers,
-                deadline: post.deadline,
-                isUrgent: post.isUrgent,
-                answerCount: post.answerCount,
-                isAnswered: post.isAnswered,
-                studyGroupId: post.studyGroupId,
-                studyGroupName: post.studyGroupName,
-                xpReward: post.xpReward,
-                estimatedMinutes: post.estimatedMinutes,
-                participantCount: post.participantCount,
-                hasCode: post.hasCode,
-                hasPdf: post.hasPdf,
-                hasFormula: post.hasFormula,
-                // NEW: Enhanced learning features
-                isPartOfPath: post.isPartOfPath,
-                pathName: post.pathName,
-                pathStep: post.pathStep,
-                pathTotalSteps: post.pathTotalSteps,
-                prerequisiteIds: post.prerequisiteIds,
-                nextContentId: post.nextContentId,
-                activeStudyingCount: post.activeStudyingCount,
-                classmateEnrollments: post.classmateEnrollments,
-                peerHelpRequests: post.peerHelpRequests,
-                studySessionActive: post.studySessionActive,
-                hasAiExplanation: post.hasAiExplanation,
-                aiSuggested: post.aiSuggested,
-                relatedTopics: post.relatedTopics,
-                prerequisiteTopics: post.prerequisiteTopics,
-                enrolledToday: post.enrolledToday,
-                completionRate: post.completionRate,
-              },
-            };
-          } catch (error: any) {
-            console.error('❌ [FeedStore] Error transforming post:', post.id, error);
-            console.error('Post data:', JSON.stringify(post, null, 2));
-            // Return a minimal post object to prevent app crash
-            return null;
-          }
-        }).filter(Boolean) as Post[];
-
-        // Debug: Log transformed quiz posts
-        if (__DEV__) {
-          const transformedQuizzes = transformedPosts.filter(p => p.postType === 'QUIZ');
-          if (transformedQuizzes.length > 0) {
-            console.log('✅ [FeedStore] Transformed quiz posts:', transformedQuizzes.length);
-            transformedQuizzes.forEach((qp) => {
-              console.log(`  - Post ${qp.id}: hasQuizData=${!!qp.quizData}, questions=${qp.quizData?.questions?.length}`);
-            });
-          }
-        }
+        // Transform posts using shared utility
+        const transformedPosts = transformPosts(newPosts);
 
         // Apply recommendations if in FOR_YOU mode (only for /posts fallback)
         let finalPosts = refresh ? transformedPosts : [...posts, ...transformedPosts];
@@ -357,10 +221,9 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           finalPosts = recommendationEngine.generateFeed(finalPosts);
         }
 
-        // Performance optimization: Limit total posts in memory
-        const allPosts = finalPosts;
-        const maxPostsInMemory = 100;
-        const optimizedPosts = allPosts.slice(0, maxPostsInMemory);
+        // Performance optimization: Limit total posts in memory (50 for mobile)
+        const maxPostsInMemory = 50;
+        const optimizedPosts = finalPosts.slice(0, maxPostsInMemory);
 
         set({
           posts: optimizedPosts,
@@ -1268,37 +1131,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       if (response.data.success && response.data.data) {
         const posts = response.data.data;
 
-        // Transform posts
-        const transformedPosts: Post[] = posts.map((post: any) => ({
-          id: post.id,
-          author: {
-            id: post.author?.id,
-            firstName: post.author?.firstName,
-            lastName: post.author?.lastName,
-            name: `${post.author?.firstName || ''} ${post.author?.lastName || ''}`.trim(),
-            profilePictureUrl: post.author?.profilePictureUrl,
-            role: post.author?.role,
-            isVerified: post.author?.isVerified,
-          },
-          content: post.content,
-          postType: post.postType || 'ARTICLE',
-          mediaUrls: post.mediaUrls || [],
-          likes: post.likesCount || post._count?.likes || 0,
-          comments: post.commentsCount || post._count?.comments || 0,
-          shares: post.sharesCount || 0,
-          isLiked: post.isLikedByMe || false,
-          isBookmarked: post.isBookmarked || false,
-          createdAt: post.createdAt,
-          updatedAt: post.updatedAt,
-          topicTags: post.topicTags || post.tags || [],
-          pollOptions: post.pollOptions?.map((opt: any) => ({
-            id: opt.id,
-            text: opt.text,
-            votes: opt.votes || opt._count?.votes || 0,
-          })),
-          userVotedOptionId: post.userVotedOptionId,
-          learningMeta: post.learningMeta,
-        }));
+        // Transform posts using shared utility
+        const transformedPosts = transformPosts(posts);
 
         set({ myPosts: transformedPosts, isLoadingMyPosts: false });
       } else {
@@ -1322,37 +1156,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       if (response.data.success && response.data.data) {
         const posts = response.data.data;
 
-        // Transform posts (same as myPosts)
-        const transformedPosts: Post[] = posts.map((post: any) => ({
-          id: post.id,
-          author: {
-            id: post.author?.id,
-            firstName: post.author?.firstName,
-            lastName: post.author?.lastName,
-            name: `${post.author?.firstName || ''} ${post.author?.lastName || ''}`.trim(),
-            profilePictureUrl: post.author?.profilePictureUrl,
-            role: post.author?.role,
-            isVerified: post.author?.isVerified,
-          },
-          content: post.content,
-          postType: post.postType || 'ARTICLE',
-          mediaUrls: post.mediaUrls || [],
-          likes: post.likesCount || post._count?.likes || 0,
-          comments: post.commentsCount || post._count?.comments || 0,
-          shares: post.sharesCount || 0,
-          isLiked: post.isLikedByMe || false,
-          isBookmarked: true, // Always true for bookmarked posts
-          createdAt: post.createdAt,
-          updatedAt: post.updatedAt,
-          topicTags: post.topicTags || post.tags || [],
-          pollOptions: post.pollOptions?.map((opt: any) => ({
-            id: opt.id,
-            text: opt.text,
-            votes: opt.votes || opt._count?.votes || 0,
-          })),
-          userVotedOptionId: post.userVotedOptionId,
-          learningMeta: post.learningMeta,
-        }));
+        // Transform posts using shared utility (mark all as bookmarked)
+        const transformedPosts = transformPosts(posts).map(p => ({ ...p, isBookmarked: true }));
 
         set({ bookmarkedPosts: transformedPosts, isLoadingBookmarks: false });
       } else {
@@ -1388,36 +1193,12 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             // Fetch full post via API (preserves business logic, author data, etc.)
             const response = await feedApi.get(`/posts/${newPostId}`);
             if (response.data.success && response.data.post) {
-              const post = response.data.post;
-              const transformedPost: Post = {
-                id: post.id,
-                author: {
-                  id: post.author?.id,
-                  firstName: post.author?.firstName,
-                  lastName: post.author?.lastName,
-                  name: `${post.author?.firstName || ''} ${post.author?.lastName || ''}`.trim(),
-                  profilePictureUrl: post.author?.profilePictureUrl,
-                  role: post.author?.role,
-                  isVerified: post.author?.isVerified,
-                },
-                content: post.content,
-                title: post.title,
-                postType: post.postType || 'ARTICLE',
-                visibility: post.visibility || 'PUBLIC',
-                mediaUrls: post.mediaUrls || [],
-                likes: post.likesCount || post._count?.likes || 0,
-                comments: post.commentsCount || post._count?.comments || 0,
-                shares: post.sharesCount || 0,
-                isLiked: post.isLiked || false,
-                isBookmarked: post.isBookmarked || false,
-                createdAt: post.createdAt,
-                updatedAt: post.updatedAt,
-                learningMeta: post.learningMeta,
-              } as any;
-
-              set(state => ({
-                pendingPosts: [transformedPost, ...state.pendingPosts]
-              }));
+              const transformed = transformPost(response.data.post);
+              if (transformed) {
+                set(state => ({
+                  pendingPosts: [transformed, ...state.pendingPosts]
+                }));
+              }
             }
           } catch (e) {
             console.error('Error fetching realtime post:', e);
@@ -1459,37 +1240,13 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             try {
               const response = await feedApi.get(`/posts/${updated.id}`);
               if (response.data.success && response.data.post) {
-                const post = response.data.post;
-                const transformedPost: Post = {
-                  id: post.id,
-                  author: {
-                    id: post.author?.id,
-                    firstName: post.author?.firstName,
-                    lastName: post.author?.lastName,
-                    name: `${post.author?.firstName || ''} ${post.author?.lastName || ''}`.trim(),
-                    profilePictureUrl: post.author?.profilePictureUrl,
-                    role: post.author?.role,
-                    isVerified: post.author?.isVerified,
-                  },
-                  content: post.content,
-                  title: post.title,
-                  postType: post.postType || 'ARTICLE',
-                  visibility: post.visibility || 'PUBLIC',
-                  mediaUrls: post.mediaUrls || [],
-                  likes: post.likesCount || post._count?.likes || 0,
-                  comments: post.commentsCount || post._count?.comments || 0,
-                  shares: post.sharesCount || 0,
-                  isLiked: post.isLiked || false,
-                  isBookmarked: post.isBookmarked || false,
-                  createdAt: post.createdAt,
-                  updatedAt: post.updatedAt,
-                  learningMeta: post.learningMeta,
-                } as any;
-
-                set(state => ({
-                  pendingPosts: [transformedPost, ...state.pendingPosts]
-                }));
-                console.log('🆕 [FeedStore] Added to pendingPosts, count:', get().pendingPosts.length);
+                const transformed = transformPost(response.data.post);
+                if (transformed) {
+                  set(state => ({
+                    pendingPosts: [transformed, ...state.pendingPosts]
+                  }));
+                  console.log('🆕 [FeedStore] Added to pendingPosts, count:', get().pendingPosts.length);
+                }
               }
             } catch (e) {
               console.error('Failed to fetch new post:', e);
@@ -1561,38 +1318,11 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       if (response.data.success && response.data.trending) {
         const trendingData = response.data.trending;
 
-        // Transform trending posts
-        const transformedTrending: TrendingPost[] = trendingData.map((item: any) => ({
-          id: item.id,
-          author: {
-            id: item.author?.id,
-            firstName: item.author?.firstName,
-            lastName: item.author?.lastName,
-            name: `${item.author?.firstName || ''} ${item.author?.lastName || ''}`.trim(),
-            profilePictureUrl: item.author?.profilePictureUrl,
-            role: item.author?.role,
-            isVerified: item.author?.isVerified,
-          },
-          content: item.content,
-          postType: item.postType || 'ARTICLE',
-          mediaUrls: item.mediaUrls || [],
-          likes: item.likesCount || item._count?.likes || 0,
-          comments: item.commentsCount || item._count?.comments || 0,
-          shares: item.sharesCount || 0,
-          isLiked: item.isLikedByMe || false,
-          isBookmarked: item.isBookmarked || false,
-          createdAt: item.createdAt,
-          updatedAt: item.updatedAt,
-          topicTags: item.topicTags || item.tags || [],
-          pollOptions: item.pollOptions?.map((opt: any) => ({
-            id: opt.id,
-            text: opt.text,
-            votes: opt.votes || opt._count?.votes || 0,
-          })),
-          userVotedOptionId: item.userVotedOptionId,
-          learningMeta: item.learningMeta,
-          trendScore: item.trendScore || 0,
-          growthRate: item.growthRate || 0,
+        // Transform trending posts using shared utility + trending-specific fields
+        const transformedTrending: TrendingPost[] = transformPosts(trendingData).map((post, i) => ({
+          ...post,
+          trendScore: trendingData[i]?.trendScore || 0,
+          growthRate: trendingData[i]?.growthRate || 0,
         }));
 
         set({ trendingPosts: transformedTrending, isLoadingTrending: false });

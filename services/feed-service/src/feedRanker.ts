@@ -229,7 +229,7 @@ export class FeedRanker {
                     },
                 },
                 pollOptions: { include: { _count: { select: { votes: true } } } },
-                quiz: { select: { id: true, questions: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
+                quiz: { select: { id: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
                 postScore: true,
                 _count: { select: { likes: true, comments: true, views: true } },
             },
@@ -275,7 +275,7 @@ export class FeedRanker {
                     },
                 },
                 pollOptions: { include: { _count: { select: { votes: true } } } },
-                quiz: { select: { id: true, questions: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
+                quiz: { select: { id: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
                 postScore: true,
                 _count: { select: { likes: true, comments: true, views: true } },
             },
@@ -374,7 +374,7 @@ export class FeedRanker {
                 quiz: {
                     select: {
                         id: true,
-                        questions: true,
+                        // questions omitted — load on detail
                         timeLimit: true,
                         passingScore: true,
                         totalPoints: true,
@@ -391,7 +391,7 @@ export class FeedRanker {
                 { trendingScore: 'desc' },
                 { createdAt: 'desc' },
             ],
-            take: 200, // candidate pool size
+            take: 100, // candidate pool size (reduced from 200 for speed)
         }) as unknown as PostWithRelations[];
 
         return candidates;

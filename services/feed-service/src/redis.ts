@@ -54,7 +54,7 @@ export function initRedis(): Redis | null {
 // Create a subscriber for a specific user
 export function createSubscriber(): Redis | null {
   if (!process.env.REDIS_URL) return null;
-  
+
   try {
     const subscriber = new Redis(REDIS_URL, {
       maxRetriesPerRequest: 3,
@@ -131,7 +131,7 @@ export function inMemorySubscribe(channel: string, callback: EventCallback): () 
     inMemorySubscribers.set(channel, new Set());
   }
   inMemorySubscribers.get(channel)!.add(callback);
-  
+
   // Return unsubscribe function
   return () => {
     inMemorySubscribers.get(channel)?.delete(callback);
@@ -209,6 +209,46 @@ export const EventPublisher = {
       userId: typingUserId
     });
   }
+};
+
+// ========================================
+// Feed Response Cache (reuses publisher client)
+// ========================================
+
+const FEED_CACHE_TTL = 30; // 30 seconds
+
+export const feedCache = {
+  async get(key: string): Promise<any | null> {
+    if (!publisher || !isRedisConnected) return null;
+    try {
+      const cached = await publisher.get(`feed:${key}`);
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  async set(key: string, data: any): Promise<void> {
+    if (!publisher || !isRedisConnected) return;
+    try {
+      await publisher.setex(`feed:${key}`, FEED_CACHE_TTL, JSON.stringify(data));
+    } catch {
+      // Non-critical — just skip caching
+    }
+  },
+
+  async invalidateUser(userId: string): Promise<void> {
+    if (!publisher || !isRedisConnected) return;
+    try {
+      // Delete all feed cache keys for this user
+      const keys = await publisher.keys(`feed:${userId}:*`);
+      if (keys.length > 0) {
+        await publisher.del(...keys);
+      }
+    } catch {
+      // Non-critical
+    }
+  },
 };
 
 export { publisher, isRedisConnected };

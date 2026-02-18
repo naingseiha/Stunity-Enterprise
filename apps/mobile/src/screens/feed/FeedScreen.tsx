@@ -8,32 +8,25 @@
  * - CTA section per post type
  */
 
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useRef, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   RefreshControl,
   TouchableOpacity,
   StatusBar,
-  ScrollView,
   Image,
   Platform,
   Alert,
-  Dimensions,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
 } from 'react-native';
+import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   FadeInDown,
   FadeOutUp,
-  useAnimatedStyle,
-  useSharedValue,
 } from 'react-native-reanimated';
 
 // Import actual Stunity logo
@@ -53,6 +46,7 @@ import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore, useNotificationStore } from '@/stores';
 import { feedApi } from '@/api/client';
 import { Post } from '@/types';
+import { transformPosts } from '@/utils/transformPost';
 import { FeedStackScreenProps } from '@/navigation/types';
 import { useNavigationContext } from '@/contexts';
 
@@ -96,40 +90,26 @@ export default function FeedScreen() {
   const [valuePostId, setValuePostId] = useState<string | null>(null);
   const [valuePostData, setValuePostData] = useState<{ postType: string; authorName: string } | null>(null);
 
-  // Horizontal paging ScrollView for smooth tab swiping
-  const scrollViewRef = React.useRef<ScrollView>(null);
-  const flatListRef = React.useRef<FlatList>(null);
-  const screenWidth = Dimensions.get('window').width;
+  // Refs for stable polling (avoid re-creating interval on every posts change)
+  const flatListRef = React.useRef<FlashListRef<Post>>(null);
+  const postsRef = useRef(posts);
+  const pendingPostsRef = useRef(pendingPosts);
+  postsRef.current = posts;
+  pendingPostsRef.current = pendingPosts;
 
-  // Animated tab indicator driven by scroll position
-  const tabScrollOffset = useSharedValue(0);
+  // Track whether initial load animation has played
+  const hasAnimatedRef = useRef(false);
 
-  const indicatorStyle = useAnimatedStyle(() => {
-    const indicatorWidth = 32;
-    const halfScreen = screenWidth / 2;
-    const baseOffset = (halfScreen - indicatorWidth) / 2;
-    return {
-      transform: [{ translateX: baseOffset + (tabScrollOffset.value * halfScreen) }],
-    };
-  });
+  // Stable key extractor for FlatList
+  const keyExtractor = useCallback((item: Post) => item.id, []);
 
-  const handlePagerScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const offsetX = e.nativeEvent.contentOffset.x;
-    const page = offsetX / screenWidth; // 0 to 1
-    tabScrollOffset.value = page;
-  }, [screenWidth]);
-
-  const handlePagerMomentumEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const page = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
-    const mode = page === 0 ? 'FOR_YOU' : 'FOLLOWING';
+  // Tab mode uses direct toggle instead of horizontal ScrollView pager
+  const handleTabPress = useCallback((mode: 'FOR_YOU' | 'FOLLOWING') => {
     if (feedMode !== mode) {
       toggleFeedMode(mode);
+      fetchPosts(true);
     }
-  }, [feedMode, toggleFeedMode, screenWidth]);
-
-  const switchToPage = useCallback((page: number) => {
-    scrollViewRef.current?.scrollTo({ x: page * screenWidth, animated: true });
-  }, [screenWidth]);
+  }, [feedMode, toggleFeedMode, fetchPosts]);
 
   useEffect(() => {
     fetchPosts();
@@ -137,15 +117,7 @@ export default function FeedScreen() {
     initializeRecommendations();
   }, []);
 
-  // Refresh posts when screen comes into focus (e.g., after creating a post)
-  useFocusEffect(
-    useCallback(() => {
-      // Only refresh if we have posts (screen has been loaded before)
-      if (posts.length > 0) {
-        fetchPosts(true);
-      }
-    }, [posts.length, fetchPosts])
-  );
+  // No useFocusEffect re-fetch — polling + realtime handle freshness
 
   // Real-time subscription
   useEffect(() => {
@@ -153,12 +125,15 @@ export default function FeedScreen() {
     return () => unsubscribeFromFeed();
   }, []);
 
-  // Polling fallback: check for new posts every 30s in case Realtime misses events
+  // Polling fallback: check for new posts every 30s
+  // Uses refs to avoid re-creating interval on every posts/pendingPosts change
   useEffect(() => {
     const pollInterval = setInterval(async () => {
       try {
-        if (posts.length === 0) return;
-        const latestCreatedAt = posts[0]?.createdAt;
+        const currentPosts = postsRef.current;
+        const currentPending = pendingPostsRef.current;
+        if (currentPosts.length === 0) return;
+        const latestCreatedAt = currentPosts[0]?.createdAt;
         if (!latestCreatedAt) return;
 
         const response = await feedApi.get('/posts/feed', {
@@ -168,36 +143,13 @@ export default function FeedScreen() {
         if (response.data?.success && response.data.data) {
           const newPosts = response.data.data.filter(
             (p: any) => new Date(p.createdAt) > new Date(latestCreatedAt) &&
-              !posts.some(existing => existing.id === p.id) &&
-              !pendingPosts.some(pending => pending.id === p.id)
+              !currentPosts.some(existing => existing.id === p.id) &&
+              !currentPending.some(pending => pending.id === p.id)
           );
 
           if (newPosts.length > 0) {
             console.log(`🔄 [FeedScreen] Poll found ${newPosts.length} new post(s)`);
-            const transformed = newPosts.map((post: any) => ({
-              id: post.id,
-              author: {
-                id: post.author?.id,
-                firstName: post.author?.firstName,
-                lastName: post.author?.lastName,
-                name: `${post.author?.firstName || ''} ${post.author?.lastName || ''}`.trim(),
-                profilePictureUrl: post.author?.profilePictureUrl,
-                role: post.author?.role,
-                isVerified: post.author?.isVerified,
-              },
-              content: post.content,
-              title: post.title,
-              postType: post.postType || 'ARTICLE',
-              visibility: post.visibility || 'PUBLIC',
-              mediaUrls: post.mediaUrls || [],
-              likes: post.likesCount || 0,
-              comments: post.commentsCount || 0,
-              shares: post.sharesCount || 0,
-              isLiked: post.isLiked || false,
-              isBookmarked: post.isBookmarked || false,
-              createdAt: post.createdAt,
-              updatedAt: post.updatedAt,
-            }));
+            const transformed = transformPosts(newPosts);
             useFeedStore.setState(state => ({
               pendingPosts: [...transformed, ...state.pendingPosts],
             }));
@@ -206,10 +158,10 @@ export default function FeedScreen() {
       } catch (e) {
         // Silent fail — polling is a fallback
       }
-    }, 30000); // Every 30 seconds
+    }, 30000);
 
     return () => clearInterval(pollInterval);
-  }, [posts, pendingPosts]);
+  }, []); // Empty deps — uses refs
 
   // ── Viewport-based view tracking ──
   // Track which posts are visible and for how long
@@ -381,26 +333,29 @@ export default function FeedScreen() {
     await fetchPosts(true);
   }, [fetchPosts]);
 
-  const renderHeader = () => (
+  const renderHeader = useCallback(() => (
     <View style={styles.headerSection}>
       {/* Feed Mode Tabs */}
       <View style={styles.feedTabsContainer}>
         <TouchableOpacity
           style={[styles.feedTab, feedMode === 'FOR_YOU' && styles.feedTabActive]}
-          onPress={() => switchToPage(0)}
+          onPress={() => handleTabPress('FOR_YOU')}
           activeOpacity={0.7}
         >
           <Text style={[styles.feedTabText, feedMode === 'FOR_YOU' && styles.feedTabTextActive]}>For You</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.feedTab, feedMode === 'FOLLOWING' && styles.feedTabActive]}
-          onPress={() => switchToPage(1)}
+          onPress={() => handleTabPress('FOLLOWING')}
           activeOpacity={0.7}
         >
           <Text style={[styles.feedTabText, feedMode === 'FOLLOWING' && styles.feedTabTextActive]}>Following</Text>
         </TouchableOpacity>
-        {/* Animated underline indicator */}
-        <Animated.View style={[styles.activeIndicator, indicatorStyle]} />
+        {/* Active indicator under selected tab */}
+        <View style={[
+          styles.activeIndicator,
+          { left: feedMode === 'FOR_YOU' ? '12.5%' : '62.5%' }
+        ]} />
       </View>
 
       {/* Create Post Card with integrated Stories */}
@@ -463,13 +418,14 @@ export default function FeedScreen() {
         </View>
       </View>
     </View>
-  );
+  ), [feedMode, handleTabPress, handleCreatePost, user, handleAskQuestion, handleFindStudyBuddy, handleDailyChallenge]);
 
-  const renderPost = ({ item, index }: { item: Post; index: number }) => (
-    <Animated.View
-      entering={FadeInDown.delay(50 * Math.min(index, 3)).duration(300)}
-      style={styles.postWrapper}
-    >
+  const renderPost = useCallback(({ item, index }: { item: Post; index: number }) => {
+    // Only animate the first 3 posts on initial load, never on subsequent scrolls
+    const shouldAnimate = !hasAnimatedRef.current && index < 3;
+    if (index === 2) hasAnimatedRef.current = true;
+
+    const card = (
       <PostCard
         post={item}
         onLike={() => handleLikePost(item)}
@@ -483,8 +439,21 @@ export default function FeedScreen() {
         onVote={(optionId) => handleVoteOnPoll(item.id, optionId)}
         onViewAnalytics={() => setAnalyticsPostId(item.id)}
       />
-    </Animated.View>
-  );
+    );
+
+    if (shouldAnimate) {
+      return (
+        <Animated.View
+          entering={FadeInDown.delay(50 * index).duration(300)}
+          style={styles.postWrapper}
+        >
+          {card}
+        </Animated.View>
+      );
+    }
+
+    return <View style={styles.postWrapper}>{card}</View>;
+  }, [handleLikePost, handleSharePost, handleValuePost, handlePostPress, handleVoteOnPoll, bookmarkPost, navigation]);
 
   const renderFooter = () => {
     if (!isLoadingPosts) return null;
@@ -620,73 +589,32 @@ export default function FeedScreen() {
         </Animated.View>
       )}
 
-      {/* Feed — Horizontal paging ScrollView for smooth native swiping */}
-      <ScrollView
-        ref={scrollViewRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        scrollEventThrottle={16}
-        onScroll={handlePagerScroll}
-        onMomentumScrollEnd={handlePagerMomentumEnd}
-        bounces={false}
-        style={{ flex: 1 }}
-      >
-        {/* Page 0: For You */}
-        <View style={{ width: screenWidth, flex: 1 }}>
-          <FlatList
-            ref={flatListRef}
-            data={posts}
-            extraData={posts}
-            renderItem={renderPost}
-            keyExtractor={(item) => item.id}
-            ListHeaderComponent={renderHeader}
-            ListFooterComponent={renderFooter}
-            ListEmptyComponent={renderEmpty}
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.5}
-            viewabilityConfig={viewabilityConfig}
-            onViewableItemsChanged={onViewableItemsChanged}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                tintColor="#6366F1"
-                colors={['#6366F1']}
-              />
-            }
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
-            style={styles.list}
+      {/* FlashList — cell recycling for smooth 60fps scrolling */}
+      <FlashList
+        ref={flatListRef}
+        data={posts}
+        renderItem={renderPost}
+        keyExtractor={keyExtractor}
+        ListHeaderComponent={renderHeader}
+        ListFooterComponent={renderFooter}
+        ListEmptyComponent={renderEmpty}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.3}
+        viewabilityConfig={viewabilityConfig}
+        onViewableItemsChanged={onViewableItemsChanged}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="#6366F1"
+            colors={['#6366F1']}
           />
-        </View>
-
-        {/* Page 1: Following */}
-        <View style={{ width: screenWidth, flex: 1 }}>
-          <FlatList
-            data={posts}
-            extraData={posts}
-            renderItem={renderPost}
-            keyExtractor={(item) => item.id}
-            ListHeaderComponent={renderHeader}
-            ListFooterComponent={renderFooter}
-            ListEmptyComponent={renderEmpty}
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.5}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                tintColor="#6366F1"
-                colors={['#6366F1']}
-              />
-            }
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
-            style={styles.list}
-          />
-        </View>
-      </ScrollView>
+        }
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
+        // ── FlashList performance props ──
+        drawDistance={250}
+      />
 
       {/* Post Analytics Modal */}
       <PostAnalyticsModal

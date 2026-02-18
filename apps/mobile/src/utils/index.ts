@@ -36,7 +36,7 @@ export function formatRelativeTime(date: string | Date): string {
   if (seconds < 172800) return 'Yesterday';
   if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
   if (seconds < 2592000) return `${Math.floor(seconds / 604800)}w ago`;
-  
+
   return then.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
@@ -147,7 +147,7 @@ export function validatePassword(password: string): {
   errors: string[];
 } {
   const errors: string[] = [];
-  
+
   if (password.length < 8) {
     errors.push('At least 8 characters');
   }
@@ -189,7 +189,7 @@ export function debounce<T extends (...args: any[]) => any>(
   wait: number
 ): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout | null = null;
-  
+
   return (...args: Parameters<T>) => {
     if (timeout) clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
@@ -204,7 +204,7 @@ export function throttle<T extends (...args: any[]) => any>(
   limit: number
 ): (...args: Parameters<T>) => void {
   let inThrottle = false;
-  
+
   return (...args: Parameters<T>) => {
     if (!inThrottle) {
       func(...args);
@@ -240,11 +240,11 @@ export function getFileExtension(filename: string): string {
  */
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes';
-  
+
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
@@ -293,4 +293,6 @@ export {
   isValidMediaUrl,
   getMediaType,
 } from './mediaUtils';
+
+export { transformPost, transformPosts } from './transformPost';
 

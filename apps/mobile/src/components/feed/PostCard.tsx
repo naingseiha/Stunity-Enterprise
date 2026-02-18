@@ -13,12 +13,13 @@
  * - Rich content indicators (PDF, Code, Formula)
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
+  InteractionManager,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -131,7 +132,7 @@ const getTimeRemaining = (deadline: string): { text: string; isUrgent: boolean }
   }
 };
 
-export const PostCard: React.FC<PostCardProps> = ({
+const PostCardInner: React.FC<PostCardProps> = ({
   post,
   onLike,
   onComment,
@@ -147,28 +148,29 @@ export const PostCard: React.FC<PostCardProps> = ({
 }) => {
   const navigation = useNavigation<any>();
 
-  // Get current user from auth store for blue tick experiment
-  const { user: currentUser } = useAuthStore();
-  const isCurrentUser = currentUserId ? post.author.id === currentUserId : post.author.id === currentUser?.id;
+  // Narrow selector — only subscribe to user ID, not entire auth store
+  const currentUserId2 = useAuthStore(s => s.user?.id);
+  const isCurrentUser = currentUserId ? post.author.id === currentUserId : post.author.id === currentUserId2;
 
+  // Derive directly from props — no useEffect sync needed
   const [liked, setLiked] = useState(post.isLiked);
   const [bookmarked, setBookmarked] = useState(post.isBookmarked);
   const [likeCount, setLikeCount] = useState(post.likes);
   const [showMenu, setShowMenu] = useState(false);
   const [valued, setValued] = useState(false);
 
-  // Sync external prop changes (e.g. from Supabase Realtime) into internal state
-  useEffect(() => {
-    setLikeCount(post.likes);
-  }, [post.likes]);
-
-  useEffect(() => {
-    setLiked(post.isLiked);
-  }, [post.isLiked]);
-
-  useEffect(() => {
-    setBookmarked(post.isBookmarked);
-  }, [post.isBookmarked]);
+  // Reset internal state when post identity or key fields change
+  // Using a ref to track previous values avoids redundant re-renders
+  const prevPostRef = React.useRef({ id: post.id, isLiked: post.isLiked, isBookmarked: post.isBookmarked, likes: post.likes });
+  if (prevPostRef.current.id !== post.id ||
+    prevPostRef.current.isLiked !== post.isLiked ||
+    prevPostRef.current.isBookmarked !== post.isBookmarked ||
+    prevPostRef.current.likes !== post.likes) {
+    prevPostRef.current = { id: post.id, isLiked: post.isLiked, isBookmarked: post.isBookmarked, likes: post.likes };
+    if (liked !== post.isLiked) setLiked(post.isLiked);
+    if (bookmarked !== post.isBookmarked) setBookmarked(post.isBookmarked);
+    if (likeCount !== post.likes) setLikeCount(post.likes);
+  }
 
   const likeScale = useSharedValue(1);
   const valueScale = useSharedValue(1);
@@ -216,7 +218,9 @@ export const PostCard: React.FC<PostCardProps> = ({
   }));
 
   const handleLike = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    InteractionManager.runAfterInteractions(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    });
     likeScale.value = withSequence(
       withSpring(1.3, { damping: 10 }),
       withSpring(1, { damping: 15 })
@@ -232,7 +236,9 @@ export const PostCard: React.FC<PostCardProps> = ({
   };
 
   const handleValue = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    InteractionManager.runAfterInteractions(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    });
     valueScale.value = withSequence(
       withSpring(1.4, { damping: 8 }),
       withSpring(1, { damping: 12 })
@@ -241,14 +247,18 @@ export const PostCard: React.FC<PostCardProps> = ({
   };
 
   const handleBookmark = () => {
-    Haptics.selectionAsync();
+    InteractionManager.runAfterInteractions(() => {
+      Haptics.selectionAsync();
+    });
     setBookmarked(!bookmarked);
     setShowMenu(false);
     onBookmark?.();
   };
 
   const handleComment = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    InteractionManager.runAfterInteractions(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    });
     commentScale.value = withSequence(
       withSpring(1.2, { damping: 10 }),
       withSpring(1, { damping: 15 })
@@ -257,7 +267,9 @@ export const PostCard: React.FC<PostCardProps> = ({
   };
 
   const handleRepost = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    InteractionManager.runAfterInteractions(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    });
     repostScale.value = withSequence(
       withSpring(1.3, { damping: 8 }),
       withSpring(1, { damping: 12 })
@@ -266,7 +278,9 @@ export const PostCard: React.FC<PostCardProps> = ({
   };
 
   const handleShare = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    InteractionManager.runAfterInteractions(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    });
     shareScale.value = withSequence(
       withSpring(1.2, { damping: 10 }),
       withSpring(1, { damping: 15 })
@@ -275,18 +289,24 @@ export const PostCard: React.FC<PostCardProps> = ({
   };
 
   const handleMenuToggle = () => {
-    Haptics.selectionAsync();
+    InteractionManager.runAfterInteractions(() => {
+      Haptics.selectionAsync();
+    });
     setShowMenu(!showMenu);
   };
 
   const handleEdit = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    InteractionManager.runAfterInteractions(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    });
     setShowMenu(false);
     navigation.navigate('EditPost', { post });
   };
 
   const handleViewAnalytics = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    InteractionManager.runAfterInteractions(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    });
     setShowMenu(false);
     onViewAnalytics?.();
   };
@@ -884,6 +904,23 @@ export const PostCard: React.FC<PostCardProps> = ({
     </View>
   );
 };
+
+// React.memo with custom comparator — only re-render when meaningful post data changes
+function arePostCardPropsEqual(prev: PostCardProps, next: PostCardProps): boolean {
+  return (
+    prev.post.id === next.post.id &&
+    prev.post.isLiked === next.post.isLiked &&
+    prev.post.likes === next.post.likes &&
+    prev.post.comments === next.post.comments &&
+    prev.post.isBookmarked === next.post.isBookmarked &&
+    prev.post.shares === next.post.shares &&
+    prev.post.userVotedOptionId === next.post.userVotedOptionId &&
+    prev.post.updatedAt === next.post.updatedAt &&
+    prev.post.content === next.post.content
+  );
+}
+
+export const PostCard = React.memo(PostCardInner, arePostCardPropsEqual);
 
 const styles = StyleSheet.create({
   container: {

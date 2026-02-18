@@ -10,7 +10,7 @@ import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from './utils/r2';
-import { initRedis, EventPublisher } from './redis';
+import { initRedis, EventPublisher, feedCache } from './redis';
 import sseRouter from './sse';
 import dmRouter, { initDMRoutes } from './dm';
 import clubsRouter, { initClubsRoutes } from './clubs';
@@ -254,8 +254,9 @@ app.get('/media/*', async (req: Request, res: Response) => {
 // GET /posts - Get feed posts
 app.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { page = 1, limit = 20, type, subject } = req.query;
-    const skip = (Number(page) - 1) * Number(limit);
+    const { page = 1, limit = 20, type, subject, cursor } = req.query;
+    // Cursor-based pagination: use cursor (last post ID) when available
+    const useCursor = cursor && typeof cursor === 'string';
 
     const where: any = {};
 
@@ -306,21 +307,8 @@ app.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => 
               isVerified: true,
               professionalTitle: true,
               level: true,
-              achievements: {
-                where: { isPublic: true },
-                orderBy: [
-                  { rarity: 'desc' },
-                  { issuedDate: 'desc' },
-                ],
-                take: 3,
-                select: {
-                  id: true,
-                  type: true,
-                  title: true,
-                  rarity: true,
-                  badgeUrl: true,
-                },
-              },
+              // Note: achievements removed from feed list for performance
+              // Fetch them on profile/detail pages only
             },
           },
           pollOptions: {
@@ -331,7 +319,7 @@ app.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => 
           quiz: {
             select: {
               id: true,
-              questions: true,
+              // questions omitted from feed list — load on post detail
               timeLimit: true,
               passingScore: true,
               totalPoints: true,
@@ -346,7 +334,13 @@ app.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => 
           { isPinned: 'desc' },
           { createdAt: 'desc' },
         ],
-        skip,
+        // Cursor-based pagination (O(1) vs O(N) for offset)
+        ...(useCursor ? {
+          cursor: { id: cursor as string },
+          skip: 1, // Skip the cursor item itself
+        } : {
+          skip: (Number(page) - 1) * Number(limit),
+        }),
         take: Number(limit),
       }),
       prisma.post.count({ where }),
@@ -427,7 +421,9 @@ app.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => 
         limit: Number(limit),
         total,
         totalPages: Math.ceil(total / Number(limit)),
-        hasMore: skip + posts.length < total,
+        hasMore: posts.length === Number(limit),
+        // Include last post ID for cursor-based pagination
+        ...(posts.length > 0 && { nextCursor: posts[posts.length - 1].id }),
       },
     });
   } catch (error: any) {
@@ -459,6 +455,13 @@ app.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Response
       page,
       subject,
     });
+
+    // Check Redis cache first (30s TTL)
+    const cacheKey = `${userId}:${mode}:${page}:${subject || 'ALL'}`;
+    const cached = await feedCache.get(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
 
     const result = await feedRanker.generateFeed(userId, {
       mode: String(mode) as 'FOR_YOU' | 'FOLLOWING' | 'RECENT',
@@ -571,6 +574,21 @@ app.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Response
         algorithm: 'v1',
       },
     });
+
+    // Cache response in background (don't block response)
+    const responseData = {
+      success: true,
+      data: formattedPosts,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total: result.total,
+        totalPages: Math.ceil(result.total / Number(limit)),
+        hasMore: result.hasMore,
+      },
+      meta: { mode: String(mode), algorithm: 'v1' },
+    };
+    feedCache.set(cacheKey, responseData).catch(() => { });
   } catch (error: any) {
     console.error('Get personalized feed error:', error);
     res.status(500).json({ success: false, error: 'Failed to get personalized feed', details: error.message });
@@ -693,6 +711,11 @@ app.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) =>
           post.id,
           content.slice(0, 100)
         );
+        // Invalidate feed cache for followers + author
+        Promise.all([
+          feedCache.invalidateUser(req.user!.id),
+          ...followerIds.map(id => feedCache.invalidateUser(id)),
+        ]).catch(() => { });
       }
     } catch (sseError) {
       console.error('SSE publish error (non-blocking):', sseError);
