@@ -32,7 +32,7 @@ yarn-error.*
 .env.production.local
 
 # Firebase
-google-services.json
+# google-services.json is tracked (needed for EAS Build / FCM push)
 GoogleService-Info.plist
 
 # Testing
