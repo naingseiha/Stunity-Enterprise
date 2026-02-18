@@ -28,6 +28,7 @@
     },
     "android": {
       "package": "com.stunity.mobile",
+      "googleServicesFile": "./google-services.json",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/Stunity.png",
@@ -73,7 +74,14 @@
           "photosPermission": "Allow Stunity to access your photos."
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/Stunity.png",
+          "color": "#F59E0B"
+        }
+      ]
     ],
     "extra": {
       "eas": {
