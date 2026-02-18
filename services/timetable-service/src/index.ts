@@ -9,7 +9,7 @@ dotenv.config({ path: '../../.env' });
 dotenv.config({ path: '../../packages/database/.env' });
 
 const app = express();
-const PORT = process.env.PORT || 3009;
+const PORT = process.env.TIMETABLE_SERVICE_PORT || 3009;
 
 // Prisma Singleton with connection pooling
 let prisma: PrismaClient;
@@ -1433,8 +1433,8 @@ app.get('/timetable/teacher-availability', authenticate, async (req, res) => {
 
     // Find the period by number/order
     const period = await db.period.findFirst({
-      where: { 
-        schoolId, 
+      where: {
+        schoolId,
         order: parseInt(periodNumber as string),
         isBreak: false,
       },
@@ -1698,10 +1698,10 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
     const secondarySlots = secondaryClasses.length * periods * 6;
     const highSchoolSlots = highSchoolClasses.length * periods * 6;
 
-    const secondaryFilled = entries.filter((e) => 
+    const secondaryFilled = entries.filter((e) =>
       secondaryClasses.some((c) => c.id === e.classId)
     ).length;
-    const highSchoolFilled = entries.filter((e) => 
+    const highSchoolFilled = entries.filter((e) =>
       highSchoolClasses.some((c) => c.id === e.classId)
     ).length;
 
@@ -1725,8 +1725,8 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
         },
         teacherStats: {
           total: Object.keys(entriesByTeacher).length,
-          avgHoursPerTeacher: Object.keys(entriesByTeacher).length > 0 
-            ? Math.round(filledSlots / Object.keys(entriesByTeacher).length) 
+          avgHoursPerTeacher: Object.keys(entriesByTeacher).length > 0
+            ? Math.round(filledSlots / Object.keys(entriesByTeacher).length)
             : 0,
         },
       },

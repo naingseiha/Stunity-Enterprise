@@ -26,7 +26,7 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
   }
 })();
 
-const PORT = process.env.PORT || 3012;
+const PORT = process.env.CLUB_SERVICE_PORT || 3012;
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 
 // CORS configuration
@@ -108,7 +108,7 @@ const optionalAuthMiddleware = async (
         };
       }
     }
-    
+
     next(); // Continue regardless of auth status
   } catch (error: any) {
     // Silently continue without auth

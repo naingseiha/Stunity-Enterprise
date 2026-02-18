@@ -24,7 +24,7 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 // Database warmup
 (async () => { try { await prisma.$queryRaw`SELECT 1`; console.log('✅ Database ready'); } catch (e) { console.error('⚠️ DB warmup failed'); } })();
 
-const PORT = process.env.PORT || 3005;
+const PORT = process.env.CLASS_SERVICE_PORT || 3005;
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 
 // Middleware - CORS configuration
@@ -68,7 +68,7 @@ const authMiddleware = async (
 
     // OPTIMIZED: Use data from JWT token instead of database query
     // This reduces response time from ~200ms to <5ms
-    
+
     // Basic validation
     if (!decoded.userId || !decoded.schoolId) {
       return res.status(401).json({
@@ -265,17 +265,17 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
     const where: any = {
       schoolId: schoolId,
     };
-    
+
     // Add academic year filter if provided
     if (academicYearId) {
       where.academicYearId = academicYearId;
     }
-    
+
     // Add grade filter if provided
     if (grade) {
       where.grade = grade;
     }
-    
+
     // Add search filter if provided
     if (search) {
       where.OR = [
@@ -357,7 +357,7 @@ app.get('/classes', async (req: AuthRequest, res: Response) => {
     const where: any = {
       schoolId: schoolId,
     };
-    
+
     // Add academic year filter if provided
     if (academicYearId) {
       where.academicYearId = academicYearId;
@@ -1310,7 +1310,7 @@ app.post('/classes/:id/students/batch', authMiddleware, async (req: AuthRequest,
     const { id } = req.params;
     const { studentIds, academicYearId } = req.body;
     const schoolId = req.user!.schoolId;
-    
+
     console.log(`⚡ [School ${schoolId}] Batch assigning ${studentIds?.length || 0} students to class: ${id}`);
 
     // Validation
@@ -1388,7 +1388,7 @@ app.post('/classes/:id/students/batch', authMiddleware, async (req: AuthRequest,
     const studentsInOtherClassIds = new Set(studentsInOtherClasses.map(s => s.studentId));
 
     // Filter to only new valid students
-    const newStudentIds = studentIds.filter(sid => 
+    const newStudentIds = studentIds.filter(sid =>
       !existingInThisClassIds.has(sid) && !studentsInOtherClassIds.has(sid)
     );
 
@@ -1527,7 +1527,7 @@ app.post('/classes/:id/students/batch-remove', authMiddleware, async (req: AuthR
     const { id } = req.params;
     const { studentIds } = req.body;
     const schoolId = req.user!.schoolId;
-    
+
     if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
       return res.status(400).json({
         success: false,

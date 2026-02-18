@@ -3,6 +3,7 @@
  * 
  * Global authentication state management with Zustand
  * Handles login, logout, user profile, and session management
+ * Uses backend auth-service API (not Supabase Auth directly)
  */
 
 import { create } from 'zustand';
@@ -12,7 +13,6 @@ import { User, AuthTokens, LoginCredentials, RegisterData } from '@/types';
 import { authApi } from '@/api/client';
 import { eventEmitter } from '@/utils/eventEmitter';
 import { tokenService } from '@/services/token';
-import { supabase } from '@/lib/supabase';
 
 interface AuthState {
   // State
@@ -33,27 +33,25 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
 }
 
-// Helper to map Supabase User + Profile to App User
-// apiUser here will be the merged object of { ...auth.user, ...profile }
-const mapSupabaseUserToUser = (authUser: any, profile: any): User => ({
-  id: authUser.id,
-  email: authUser.email || '',
-  // Profile data
-  firstName: profile?.first_name || '',
-  lastName: profile?.last_name || '',
-  name: profile?.username || `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'User',
-  username: profile?.username || authUser.email?.split('@')[0] || 'user',
-  profilePictureUrl: profile?.avatar_url || null,
-  role: profile?.role || 'student',
-  // Extended fields (if they exist in profile)
-  bio: profile?.bio,
-  headline: profile?.headline,
-  location: profile?.location,
-  interests: profile?.interests || [],
-  isVerified: false,
+// Helper to map backend API user response to app User type
+const mapApiUserToUser = (apiUser: any): User => ({
+  id: apiUser.id,
+  email: apiUser.email || '',
+  firstName: apiUser.firstName || '',
+  lastName: apiUser.lastName || '',
+  name: `${apiUser.firstName || ''} ${apiUser.lastName || ''}`.trim() || 'User',
+  username: apiUser.username || apiUser.email?.split('@')[0] || 'user',
+  profilePictureUrl: apiUser.profilePictureUrl || null,
+  role: apiUser.role || 'STUDENT',
+  bio: apiUser.bio,
+  headline: apiUser.headline,
+  location: apiUser.location,
+  interests: apiUser.interests || [],
+  languages: apiUser.languages || [],
+  isVerified: apiUser.isVerified || false,
   isOnline: true,
-  createdAt: authUser.created_at,
-  updatedAt: authUser.updated_at,
+  createdAt: apiUser.createdAt || new Date().toISOString(),
+  updatedAt: apiUser.updatedAt || new Date().toISOString(),
 });
 
 export const useAuthStore = create<AuthState>()(
@@ -71,10 +69,10 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true });
 
-          // Check for active session
-          const { data: { session }, error } = await supabase.auth.getSession();
+          // Check for stored tokens
+          const hasTokens = await tokenService.initialize();
 
-          if (error || !session?.user) {
+          if (!hasTokens) {
             console.log('Auth: No active session found');
             set({
               user: null,
@@ -85,37 +83,33 @@ export const useAuthStore = create<AuthState>()(
             return;
           }
 
-          console.log('Auth: Session found for', session.user.email);
+          // Verify token with backend
+          try {
+            const response = await authApi.get('/auth/verify');
 
-          // Fetch Profile
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+            if (response.data.success && response.data.data?.user) {
+              const user = mapApiUserToUser(response.data.data.user);
+              console.log('Auth: Session verified for', user.email);
 
-          if (profileError) {
-            console.warn('Auth: Failed to fetch profile', profileError);
+              set({
+                user,
+                isAuthenticated: true,
+                isLoading: false,
+                isInitialized: true,
+              });
+              return;
+            }
+          } catch (verifyError) {
+            console.warn('Auth: Token verification failed, clearing session');
+            await tokenService.clearTokens();
           }
 
-          // Map to User type
-          const user = mapSupabaseUserToUser(session.user, profile || {});
-
           set({
-            user,
-            isAuthenticated: true,
+            user: null,
+            isAuthenticated: false,
             isLoading: false,
             isInitialized: true,
           });
-
-          // Setup listener for auth state changes
-          supabase.auth.onAuthStateChange(async (_event, session) => {
-            if (!session) {
-              set({ user: null, isAuthenticated: false });
-            }
-            // We could update state here for SIGNED_IN actions too
-          });
-
         } catch (error) {
           console.error('Auth initialization error:', error);
           set({
@@ -131,24 +125,26 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true, error: null });
 
-          const { data, error } = await supabase.auth.signInWithPassword({
+          const response = await authApi.post('/auth/login', {
             email: credentials.email,
             password: credentials.password,
           });
 
-          if (error) throw error;
-          if (!data.user) throw new Error('Login succeeded but no user returned');
+          if (!response.data.success) {
+            throw new Error(response.data.error || 'Login failed');
+          }
 
-          // Fetch Profile
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', data.user.id)
-            .single();
+          const { user: apiUser, tokens } = response.data.data;
 
-          const user = mapSupabaseUserToUser(data.user, profile || {});
+          // Store tokens securely
+          await tokenService.setTokens(tokens as AuthTokens);
+          await tokenService.setUserId(apiUser.id);
 
-          // Token handling is automatic with supabase client
+          if (credentials.rememberMe) {
+            await tokenService.setRememberMe(true);
+          }
+
+          const user = mapApiUserToUser(apiUser);
 
           set({
             user,
@@ -159,9 +155,10 @@ export const useAuthStore = create<AuthState>()(
           return true;
         } catch (error: any) {
           console.error('Login error:', error);
+          const message = error?.response?.data?.error || error?.message || 'Login failed';
           set({
             isLoading: false,
-            error: error.message || 'Login failed',
+            error: message,
           });
           return false;
         }
@@ -172,44 +169,40 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true, error: null });
 
-          // Supabase SignUp
-          const { data: authData, error } = await supabase.auth.signUp({
+          const response = await authApi.post('/auth/register', {
             email: data.email,
             password: data.password,
-            options: {
-              data: {
-                first_name: data.firstName,
-                last_name: data.lastName,
-                username: data.username || data.email.split('@')[0],
-              },
-            },
+            firstName: data.firstName,
+            lastName: data.lastName,
+            phone: data.phone,
+            role: data.role || 'STUDENT',
           });
 
-          if (error) throw error;
-          if (!authData.user) throw new Error('Registration succeeded but no user returned');
+          if (!response.data.success) {
+            throw new Error(response.data.error || 'Registration failed');
+          }
 
-          // Profile is created automatically by Trigger (HandleNewUser)
-          // But we might want to wait a split second or fetch it
+          const { user: apiUser, tokens } = response.data.data;
 
-          // Construct initial user object immediately for UI
-          const user = mapSupabaseUserToUser(authData.user, {
-            first_name: data.firstName,
-            last_name: data.lastName,
-            username: data.username,
-          });
+          // Store tokens securely
+          await tokenService.setTokens(tokens as AuthTokens);
+          await tokenService.setUserId(apiUser.id);
+
+          const user = mapApiUserToUser(apiUser);
 
           set({
             user,
-            isAuthenticated: true, // Assuming auto-confirm enabled, otherwise false
+            isAuthenticated: true,
             isLoading: false,
           });
 
           return true;
         } catch (error: any) {
           console.error('Registration error:', error);
+          const message = error?.response?.data?.error || error?.message || 'Registration failed';
           set({
             isLoading: false,
-            error: error.message || 'Registration failed',
+            error: message,
           });
           return false;
         }
@@ -219,8 +212,16 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         try {
           set({ isLoading: true });
-          await supabase.auth.signOut();
-          await tokenService.clearTokens(); // Cleanup legacy tokens just in case
+
+          // Notify backend (best-effort)
+          try {
+            await authApi.post('/auth/logout');
+          } catch (e) {
+            // Ignore logout API errors
+          }
+
+          await tokenService.clearTokens();
+
           set({
             user: null,
             isAuthenticated: false,
@@ -233,25 +234,17 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      // Refresh user profile
+      // Refresh user profile from backend
       refreshUser: async () => {
         try {
           const { user } = get();
           if (!user?.id) return;
 
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
+          const response = await authApi.get('/auth/verify');
 
-          if (profile) {
-            // Merge existing auth user data (email) with new profile data
-            const { data: { user: authUser } } = await supabase.auth.getUser();
-            if (authUser) {
-              const updatedUser = mapSupabaseUserToUser(authUser, profile);
-              set({ user: updatedUser });
-            }
+          if (response.data.success && response.data.data?.user) {
+            const updatedUser = mapApiUserToUser(response.data.data.user);
+            set({ user: updatedUser });
           }
         } catch (error) {
           console.error('Failed to refresh user:', error);

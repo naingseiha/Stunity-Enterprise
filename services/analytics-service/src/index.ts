@@ -20,7 +20,7 @@ dotenv.config({ path: '../../.env' });
 
 const app = express();
 const prisma = new PrismaClient();
-const PORT = process.env.PORT || 3014;
+const PORT = process.env.ANALYTICS_SERVICE_PORT || 3014;
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 
 // Middleware

@@ -35,7 +35,7 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
-const PORT = process.env.PORT || 3004;
+const PORT = process.env.TEACHER_SERVICE_PORT || 3004;
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 
 // Keep database connection warm
@@ -126,7 +126,7 @@ const authMiddleware = async (
 
     // OPTIMIZED: Use data from JWT token instead of database query
     // This reduces response time from ~200ms to <5ms
-    
+
     if (!decoded.userId || !decoded.schoolId) {
       return res.status(401).json({
         success: false,
@@ -310,7 +310,7 @@ app.get('/teachers/lightweight', async (req: AuthRequest, res: Response) => {
     const where: any = {
       schoolId: schoolId,
     };
-    
+
     // Add academic year filter through teacherClasses relationship
     if (academicYearId) {
       where.teacherClasses = {
@@ -442,7 +442,7 @@ async function refreshTeachersCache(schoolId: string, cacheKey: string) {
     });
 
     const teacherIds = teachers.map(t => t.id);
-    
+
     const [teacherClasses, subjectTeachers, users, homeroomClasses] = await Promise.all([
       prisma.teacherClass.findMany({
         where: { teacherId: { in: teacherIds } },
@@ -499,19 +499,19 @@ async function refreshTeachersCache(schoolId: string, cacheKey: string) {
 app.get('/teachers', async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.user!.schoolId;
-    
+
     // ✅ Check cache with stale-while-revalidate
     const cacheKey = `teachers_${schoolId}`;
     const cached = cache.get(cacheKey);
     const now = Date.now();
     const isFresh = cached && (now - cached.timestamp) < CACHE_TTL;
     const isStale = cached && (now - cached.timestamp) < STALE_TTL;
-    
+
     if (isFresh) {
       console.log(`📋 [Cache hit] Teachers for school ${schoolId}`);
       return res.json(cached.data);
     }
-    
+
     // Serve stale data immediately while refreshing in background
     if (isStale) {
       console.log(`⏳ Serving stale teachers cache while refreshing...`);
@@ -544,7 +544,7 @@ app.get('/teachers', async (req: AuthRequest, res: Response) => {
 
     // ✅ Step 2: Batch fetch related data in parallel
     const teacherIds = teachers.map(t => t.id);
-    
+
     const [teacherClasses, subjectTeachers, users, homeroomClasses] = await Promise.all([
       // Teaching classes
       prisma.teacherClass.findMany({
@@ -938,22 +938,22 @@ app.post('/teachers', async (req: AuthRequest, res: Response) => {
         // Connect subjects (many-to-many)
         ...(subjectIds && subjectIds.length > 0
           ? {
-              subjectTeachers: {
-                create: subjectIds.map((subjectId: string) => ({
-                  subjectId,
-                })),
-              },
-            }
+            subjectTeachers: {
+              create: subjectIds.map((subjectId: string) => ({
+                subjectId,
+              })),
+            },
+          }
           : {}),
         // Connect classes (many-to-many)
         ...(classIds && classIds.length > 0
           ? {
-              teacherClasses: {
-                create: classIds.map((classId: string) => ({
-                  classId,
-                })),
-              },
-            }
+            teacherClasses: {
+              create: classIds.map((classId: string) => ({
+                classId,
+              })),
+            },
+          }
           : {}),
       },
       include: {
@@ -1497,7 +1497,7 @@ app.get('/teachers/:id/history', async (req: AuthRequest, res: Response) => {
       }));
 
       // Remove duplicates from subjects
-      const uniqueSubjects = yearSubjects.filter((s, i, arr) => 
+      const uniqueSubjects = yearSubjects.filter((s, i, arr) =>
         arr.findIndex(x => x.id === s.id) === i
       );
 

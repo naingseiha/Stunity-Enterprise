@@ -41,6 +41,7 @@ import { useFeedStore, useAuthStore } from '@/stores';
 import { Comment } from '@/types';
 import { formatRelativeTime } from '@/utils';
 import { Colors, Shadows } from '@/config';
+import { supabase } from '@/lib/supabase';
 
 type CommentsScreenRouteProp = RouteProp<{ Comments: { postId: string } }, 'Comments'>;
 
@@ -68,8 +69,48 @@ export default function CommentsScreen() {
   const isLoading = isLoadingComments[postId] || false;
   const isSubmitting = isSubmittingComment[postId] || false;
 
+  // Fetch comments + subscribe to realtime
   useEffect(() => {
     fetchComments(postId);
+
+    // Subscribe to real-time comment updates for this post
+    const channel = supabase
+      .channel(`comments:post:${postId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'comments',
+          filter: `postId=eq.${postId}`,
+        },
+        (payload) => {
+          console.log('💬 [Comments] New comment received:', payload.new);
+          // Re-fetch to get full populated data (author details)
+          fetchComments(postId);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'comments',
+        },
+        (payload) => {
+          const deletedId = (payload.old as any)?.id;
+          if (deletedId) {
+            fetchComments(postId);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('💬 [Comments] Subscription:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [postId]);
 
   const handleAddComment = async () => {

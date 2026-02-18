@@ -195,7 +195,7 @@ app.get('/health', (req: Request, res: Response) => {
     success: true,
     message: 'Attendance Service is running',
     service: 'attendance-service',
-    port: process.env.PORT || 3008,
+    port: process.env.ATTENDANCE_SERVICE_PORT || 3008,
   });
 });
 
@@ -918,7 +918,7 @@ app.get('/attendance/class/:classId/summary', authenticateToken, async (req: Aut
 });
 
 // Start server
-const PORT = process.env.PORT || 3008;
+const PORT = process.env.ATTENDANCE_SERVICE_PORT || 3008;
 app.listen(PORT, () => {
   console.log(`✅ Attendance Service running on port ${PORT}`);
 });

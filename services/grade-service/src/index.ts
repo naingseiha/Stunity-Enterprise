@@ -9,7 +9,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '../../.env' });
 
 const app = express();
-const PORT = process.env.PORT || 3007;
+const PORT = process.env.GRADE_SERVICE_PORT || 3007;
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 
 // ✅ Singleton pattern to prevent multiple Prisma instances

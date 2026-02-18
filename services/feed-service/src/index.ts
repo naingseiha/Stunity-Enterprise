@@ -69,7 +69,6 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-app.use(express.json());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -644,14 +643,25 @@ app.post('/posts/:id/like', authenticateToken, async (req: AuthRequest, res: Res
         }),
       ]);
 
-      // 🔔 Publish real-time event to post author
-      if (post && liker) {
-        EventPublisher.newLike(
-          post.authorId,
-          userId,
-          `${liker.firstName} ${liker.lastName}`,
-          postId
-        );
+      // 🔔 Create in-app notification + publish SSE event
+      if (post && liker && post.authorId !== userId) {
+        const likerName = `${liker.firstName} ${liker.lastName}`;
+
+        // Create DB notification (triggers Supabase Realtime → bell badge)
+        await prisma.notification.create({
+          data: {
+            recipientId: post.authorId,
+            actorId: userId,
+            type: 'LIKE',
+            title: 'New Like',
+            message: `${likerName} liked your post`,
+            postId: postId,
+            link: `/posts/${postId}`,
+          },
+        }).catch(err => console.error('Failed to create like notification:', err));
+
+        // SSE event (legacy)
+        EventPublisher.newLike(post.authorId, userId, likerName, postId);
       }
 
       res.json({ success: true, liked: true, message: 'Post liked' });
@@ -807,15 +817,29 @@ app.post('/posts/:id/comments', authenticateToken, async (req: AuthRequest, res:
       select: { authorId: true },
     });
 
-    // 🔔 Publish real-time event to post author
-    if (post && newComment.author) {
+    // 🔔 Create in-app notification + publish SSE event
+    if (post && newComment.author && post.authorId !== req.user!.id) {
+      const commenterName = `${newComment.author.firstName} ${newComment.author.lastName}`;
+      const preview = content.trim().slice(0, 80);
+
+      // Create DB notification (triggers Supabase Realtime → bell badge)
+      await prisma.notification.create({
+        data: {
+          recipientId: post.authorId,
+          actorId: req.user!.id,
+          type: 'COMMENT',
+          title: 'New Comment',
+          message: `${commenterName} commented: "${preview}"`,
+          postId: req.params.id,
+          commentId: newComment.id,
+          link: `/posts/${req.params.id}`,
+        },
+      }).catch(err => console.error('Failed to create comment notification:', err));
+
+      // SSE event (legacy)
       EventPublisher.newComment(
-        post.authorId,
-        req.user!.id,
-        `${newComment.author.firstName} ${newComment.author.lastName}`,
-        req.params.id,
-        newComment.id,
-        content.trim()
+        post.authorId, req.user!.id, commenterName,
+        req.params.id, newComment.id, content.trim()
       );
     }
 
@@ -3134,16 +3158,29 @@ app.post('/users/:userId/follow', authenticateToken, async (req: AuthRequest, re
         data: { followerId, followingId },
       });
 
-      // 🔔 Publish real-time event to the followed user
+      // 🔔 Create in-app notification + publish SSE event
       const follower = await prisma.user.findUnique({
         where: { id: followerId },
         select: { firstName: true, lastName: true, profilePictureUrl: true },
       });
       if (follower) {
+        const followerName = `${follower.firstName} ${follower.lastName}`;
+
+        // Create DB notification (triggers Supabase Realtime → bell badge)
+        await prisma.notification.create({
+          data: {
+            recipientId: followingId,
+            actorId: followerId,
+            type: 'FOLLOW',
+            title: 'New Follower',
+            message: `${followerName} started following you`,
+            link: `/profile/${followerId}`,
+          },
+        }).catch(err => console.error('Failed to create follow notification:', err));
+
+        // SSE event (legacy)
         EventPublisher.newFollower(
-          followingId,
-          followerId,
-          `${follower.firstName} ${follower.lastName}`,
+          followingId, followerId, followerName,
           follower.profilePictureUrl || undefined
         );
       }

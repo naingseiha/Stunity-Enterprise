@@ -90,7 +90,7 @@ const upload = multer({
     const allowedTypes = /jpeg|jpg|png|gif|webp/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
-    
+
     if (mimetype && extname) {
       return cb(null, true);
     }
@@ -121,10 +121,10 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'stunity-enterprise-secret-2026') as any;
-    
+
     // OPTIMIZED: Use data from JWT token instead of database query
     // This reduces response time from ~200ms to <5ms
-    
+
     if (!decoded.userId || !decoded.schoolId) {
       return res.status(401).json({
         success: false,
@@ -347,7 +347,7 @@ async function refreshCache(
       data: students,
       pagination: { page, limit, total: totalCount, totalPages, hasMore: page < totalPages },
     };
-    
+
     cache.set(cacheKey, { data: response, timestamp: Date.now() });
     console.log(`🔄 Background cache refreshed for ${cacheKey}`);
   } catch (error) {
@@ -380,18 +380,18 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
 
     // Create cache key
     const cacheKey = `students:${schoolId}:${page}:${limit}:${classId || 'all'}:${gender || 'all'}:${academicYearId || 'all'}`;
-    
+
     // Check cache with stale-while-revalidate pattern
     const cached = cache.get(cacheKey);
     const now = Date.now();
     const isFresh = cached && (now - cached.timestamp) < CACHE_TTL;
     const isStale = cached && (now - cached.timestamp) < STALE_TTL;
-    
+
     if (isFresh) {
       console.log(`✅ Cache hit (${now - startTime}ms)`);
       return res.json(cached.data);
     }
-    
+
     // Serve stale data immediately while refreshing in background
     if (isStale) {
       console.log(`⏳ Serving stale cache while refreshing...`);
@@ -402,7 +402,7 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
 
     // Build simple where clause
     const where: any = { schoolId };
-    
+
     if (classId && classId !== "all") {
       where.classId = classId;
     }
@@ -593,7 +593,7 @@ app.get('/students/:id', async (req: AuthRequest, res: Response) => {
     const schoolId = req.user!.schoolId; // Multi-tenant filter
 
     const student = await prisma.student.findFirst({
-      where: { 
+      where: {
         id,
         schoolId, // Multi-tenant filter
       },
@@ -786,7 +786,7 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
     // Verify class belongs to same school
     if (classId && classId.trim() !== "") {
       const classExists = await prisma.class.findFirst({
-        where: { 
+        where: {
           id: classId,
           schoolId, // Multi-tenant check
         },
@@ -930,7 +930,7 @@ app.post('/students/bulk', async (req: AuthRequest, res: Response) => {
 
     // Verify class belongs to school
     const classExists = await prisma.class.findFirst({
-      where: { 
+      where: {
         id: classId,
         schoolId, // Multi-tenant check
       },
@@ -1093,7 +1093,7 @@ app.put('/students/:id', async (req: AuthRequest, res: Response) => {
 
     // Verify student belongs to school
     const existingStudent = await prisma.student.findFirst({
-      where: { 
+      where: {
         id,
         schoolId, // Multi-tenant check
       },
@@ -1144,7 +1144,7 @@ app.put('/students/:id', async (req: AuthRequest, res: Response) => {
     // Verify new class belongs to same school
     if (classId && classId.trim() !== "") {
       const classExists = await prisma.class.findFirst({
-        where: { 
+        where: {
           id: classId,
           schoolId, // Multi-tenant check
         },
@@ -1233,7 +1233,7 @@ app.delete('/students/:id', async (req: AuthRequest, res: Response) => {
 
     // Verify student belongs to school
     const existingStudent = await prisma.student.findFirst({
-      where: { 
+      where: {
         id,
         schoolId, // Multi-tenant check
       },
@@ -2163,7 +2163,7 @@ app.get('/students/:id/transcript', authenticateToken, async (req: AuthRequest, 
     grades.forEach((grade: any) => {
       const yearId = grade.class?.academicYear?.id || 'unknown';
       const yearName = grade.class?.academicYear?.name || 'Unknown Year';
-      
+
       if (!gradesByYear[yearId]) {
         gradesByYear[yearId] = {
           yearId,
@@ -2202,7 +2202,7 @@ app.get('/students/:id/transcript', authenticateToken, async (req: AuthRequest, 
     Object.keys(gradesByYear).forEach(yearId => {
       const yearData = gradesByYear[yearId];
       const subjects = Object.values(yearData.subjects) as any[];
-      
+
       let totalAvg = 0;
       let subjectCount = 0;
 
@@ -2276,7 +2276,7 @@ app.get('/students/:id/transcript', authenticateToken, async (req: AuthRequest, 
       academicYears: Object.values(gradesByYear).map((year: any) => ({
         ...year,
         subjects: Object.values(year.subjects),
-        attendance: attendanceByClass[student.studentClasses.find((sc) => 
+        attendance: attendanceByClass[student.studentClasses.find((sc) =>
           sc.class?.academicYearId === year.yearId)?.classId || ''] || null,
       })).sort((a: any, b: any) => {
         return new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime();
@@ -2327,7 +2327,7 @@ app.get('/health', (_req, res) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 3003;
+const PORT = process.env.STUDENT_SERVICE_PORT || 3003;
 
 app.listen(PORT, () => {
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");

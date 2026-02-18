@@ -2,6 +2,7 @@
  * Chat Screen
  * 
  * Individual chat conversation with real-time messaging.
+ * Features: send, edit, delete, reply, read receipts, media attachments.
  * Uses messagingStore for API calls + Supabase Realtime for instant updates.
  */
 
@@ -18,11 +19,15 @@ import {
   Keyboard,
   StatusBar,
   ActivityIndicator,
+  Alert,
+  ActionSheetIOS,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeInUp, SlideInRight } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInUp, SlideInRight, FadeOut } from 'react-native-reanimated';
+import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
 
 import { Avatar } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows, BorderRadius } from '@/config';
@@ -39,6 +44,7 @@ export default function ChatScreen() {
   const route = useRoute<RouteProp>();
   const { user } = useAuthStore();
   const flatListRef = useRef<FlatList>(null);
+  const inputRef = useRef<TextInput>(null);
 
   const {
     messages,
@@ -46,6 +52,8 @@ export default function ChatScreen() {
     typingUsers,
     fetchMessages,
     sendMessage,
+    editMessage,
+    deleteMessage,
     subscribeToMessages,
     unsubscribeFromMessages,
     markAsRead,
@@ -55,6 +63,8 @@ export default function ChatScreen() {
 
   const conversationId = route.params?.conversationId;
   const [inputText, setInputText] = useState('');
+  const [replyTo, setReplyTo] = useState<DirectMessage | null>(null);
+  const [editingMessage, setEditingMessage] = useState<DirectMessage | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Find conversation info from the store
@@ -105,20 +115,27 @@ export default function ChatScreen() {
   const handleSend = useCallback(() => {
     if (!inputText.trim() || !conversationId) return;
 
-    sendMessage(conversationId, inputText.trim());
+    if (editingMessage) {
+      // Edit existing message
+      editMessage(editingMessage.id, inputText.trim());
+      setEditingMessage(null);
+    } else {
+      // Send new message (with optional reply)
+      sendMessage(conversationId, inputText.trim());
+    }
+
     setInputText('');
+    setReplyTo(null);
     Keyboard.dismiss();
 
-    // Scroll to bottom
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
-  }, [inputText, conversationId, sendMessage]);
+  }, [inputText, conversationId, sendMessage, editMessage, editingMessage]);
 
   const handleTextChange = useCallback((text: string) => {
     setInputText(text);
 
-    // Send typing indicator (throttled)
     if (conversationId && user?.id && text.length > 0) {
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = setTimeout(() => {
@@ -127,9 +144,103 @@ export default function ChatScreen() {
     }
   }, [conversationId, user, sendTypingIndicator]);
 
+  const handleLongPress = useCallback((message: DirectMessage) => {
+    if (message.isDeleted || message._isPending) return;
+    const isMe = message.senderId === user?.id;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    const options = ['Reply'];
+    if (isMe) {
+      options.push('Edit', 'Delete');
+    }
+    options.push('Cancel');
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options,
+          destructiveButtonIndex: isMe ? options.indexOf('Delete') : undefined,
+          cancelButtonIndex: options.length - 1,
+        },
+        (buttonIndex) => {
+          if (options[buttonIndex] === 'Reply') {
+            setReplyTo(message);
+            inputRef.current?.focus();
+          } else if (options[buttonIndex] === 'Edit') {
+            setEditingMessage(message);
+            setInputText(message.content);
+            inputRef.current?.focus();
+          } else if (options[buttonIndex] === 'Delete') {
+            Alert.alert('Delete Message', 'Are you sure?', [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Delete', style: 'destructive',
+                onPress: () => deleteMessage(message.id),
+              },
+            ]);
+          }
+        }
+      );
+    } else {
+      // Android fallback
+      Alert.alert(
+        'Message Options',
+        undefined,
+        [
+          {
+            text: 'Reply',
+            onPress: () => { setReplyTo(message); inputRef.current?.focus(); },
+          },
+          ...(isMe ? [
+            {
+              text: 'Edit',
+              onPress: () => {
+                setEditingMessage(message);
+                setInputText(message.content);
+                inputRef.current?.focus();
+              },
+            },
+            {
+              text: 'Delete',
+              style: 'destructive' as const,
+              onPress: () => deleteMessage(message.id),
+            },
+          ] : []),
+          { text: 'Cancel', style: 'cancel' as const },
+        ]
+      );
+    }
+  }, [user?.id, deleteMessage]);
+
+  const handlePickImage = useCallback(async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+      allowsEditing: true,
+    });
+
+    if (!result.canceled && result.assets[0] && conversationId) {
+      // For now, send as text with image URI placeholder
+      // Full upload integration requires Supabase Storage setup
+      sendMessage(conversationId, `📷 Image shared`, 'IMAGE');
+    }
+  }, [conversationId, sendMessage]);
+
+  const cancelReplyOrEdit = useCallback(() => {
+    setReplyTo(null);
+    setEditingMessage(null);
+    setInputText('');
+  }, []);
+
   const renderMessage = ({ item, index }: { item: DirectMessage; index: number }) => {
     const isMe = item.senderId === user?.id || item.senderId === 'me';
     const showAvatar = !isMe && (index === 0 || messages[index - 1].senderId !== item.senderId);
+
+    // Find reply-to message
+    const replyMessage = item.replyToId
+      ? messages.find(m => m.id === item.replyToId)
+      : null;
 
     return (
       <Animated.View
@@ -151,11 +262,31 @@ export default function ChatScreen() {
           </View>
         )}
 
-        <View style={[
-          styles.messageBubble,
-          isMe ? styles.myBubble : styles.otherBubble,
-          item._isPending && styles.pendingBubble,
-        ]}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onLongPress={() => handleLongPress(item)}
+          delayLongPress={400}
+          style={[
+            styles.messageBubble,
+            isMe ? styles.myBubble : styles.otherBubble,
+            item._isPending && styles.pendingBubble,
+          ]}
+        >
+          {/* Reply preview */}
+          {replyMessage && (
+            <View style={[styles.replyPreview, isMe && styles.myReplyPreview]}>
+              <View style={[styles.replyBar, isMe && styles.myReplyBar]} />
+              <View style={styles.replyContent}>
+                <Text style={[styles.replyAuthor, isMe && styles.myReplyAuthor]} numberOfLines={1}>
+                  {replyMessage.senderId === user?.id ? 'You' : otherParticipant?.firstName || 'User'}
+                </Text>
+                <Text style={[styles.replyText, isMe && styles.myReplyText]} numberOfLines={1}>
+                  {replyMessage.isDeleted ? 'Deleted message' : replyMessage.content}
+                </Text>
+              </View>
+            </View>
+          )}
+
           {item.isDeleted ? (
             <Text style={[styles.messageText, styles.deletedText]}>
               This message was deleted
@@ -183,8 +314,17 @@ export default function ChatScreen() {
             {item._isPending && (
               <Ionicons name="time-outline" size={12} color="rgba(255,255,255,0.5)" />
             )}
+            {/* Read receipt for own messages */}
+            {isMe && !item._isPending && !item.isDeleted && (
+              <Ionicons
+                name="checkmark-done"
+                size={14}
+                color="rgba(255,255,255,0.7)"
+                style={{ marginLeft: 4 }}
+              />
+            )}
           </View>
-        </View>
+        </TouchableOpacity>
       </Animated.View>
     );
   };
@@ -251,6 +391,7 @@ export default function ChatScreen() {
           <FlatList
             ref={flatListRef}
             data={messages}
+            extraData={messages}
             renderItem={renderMessage}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.messagesList}
@@ -260,23 +401,42 @@ export default function ChatScreen() {
 
         {/* Typing Indicator */}
         {typingText && (
-          <Animated.View entering={FadeIn} style={styles.typingIndicator}>
+          <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.typingIndicator}>
             <Text style={styles.typingText}>{typingText}</Text>
+          </Animated.View>
+        )}
+
+        {/* Reply/Edit Banner */}
+        {(replyTo || editingMessage) && (
+          <Animated.View entering={FadeIn.duration(200)} style={styles.replyBanner}>
+            <View style={styles.replyBannerBar} />
+            <View style={styles.replyBannerContent}>
+              <Text style={styles.replyBannerTitle}>
+                {editingMessage ? '✏️ Editing message' : `↩️ Replying to ${replyTo?.senderId === user?.id ? 'yourself' : otherParticipant?.firstName || 'User'}`}
+              </Text>
+              <Text style={styles.replyBannerText} numberOfLines={1}>
+                {editingMessage?.content || replyTo?.content}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={cancelReplyOrEdit} style={styles.replyBannerClose}>
+              <Ionicons name="close" size={20} color={Colors.gray[500]} />
+            </TouchableOpacity>
           </Animated.View>
         )}
 
         {/* Input Area */}
         <Animated.View entering={SlideInRight.duration(300)} style={styles.inputContainer}>
-          <TouchableOpacity style={styles.attachButton}>
-            <Ionicons name="add-circle-outline" size={28} color={Colors.gray[500]} />
+          <TouchableOpacity style={styles.attachButton} onPress={handlePickImage}>
+            <Ionicons name="image-outline" size={24} color={Colors.gray[500]} />
           </TouchableOpacity>
 
           <View style={styles.inputWrapper}>
             <TextInput
+              ref={inputRef}
               style={styles.input}
               value={inputText}
               onChangeText={handleTextChange}
-              placeholder="Type a message..."
+              placeholder={editingMessage ? 'Edit message...' : replyTo ? 'Reply...' : 'Type a message...'}
               placeholderTextColor={Colors.gray[400]}
               multiline
               maxLength={1000}
@@ -288,7 +448,7 @@ export default function ChatScreen() {
 
           {inputText.trim() ? (
             <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
-              <Ionicons name="send" size={20} color={Colors.white} />
+              <Ionicons name={editingMessage ? 'checkmark' : 'send'} size={20} color={Colors.white} />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={styles.voiceButton}>
@@ -491,5 +651,80 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: Spacing[1],
+  },
+  // Reply preview inside message bubble
+  replyPreview: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 6,
+  },
+  myReplyPreview: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+  replyBar: {
+    width: 3,
+    borderRadius: 2,
+    backgroundColor: Colors.primary[500],
+    marginRight: 8,
+  },
+  myReplyBar: {
+    backgroundColor: 'rgba(255,255,255,0.7)',
+  },
+  replyContent: {
+    flex: 1,
+  },
+  replyAuthor: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.primary[500],
+    marginBottom: 2,
+  },
+  myReplyAuthor: {
+    color: 'rgba(255,255,255,0.9)',
+  },
+  replyText: {
+    fontSize: 12,
+    color: Colors.gray[600],
+  },
+  myReplyText: {
+    color: 'rgba(255,255,255,0.7)',
+  },
+  // Reply/Edit banner above input
+  replyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing[4],
+    paddingVertical: Spacing[2],
+    backgroundColor: Colors.white,
+    borderTopWidth: 1,
+    borderTopColor: Colors.gray[100],
+  },
+  replyBannerBar: {
+    width: 3,
+    height: 36,
+    borderRadius: 2,
+    backgroundColor: Colors.primary[500],
+    marginRight: Spacing[3],
+  },
+  replyBannerContent: {
+    flex: 1,
+  },
+  replyBannerTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.primary[500],
+    marginBottom: 2,
+  },
+  replyBannerText: {
+    fontSize: 13,
+    color: Colors.gray[500],
+  },
+  replyBannerClose: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

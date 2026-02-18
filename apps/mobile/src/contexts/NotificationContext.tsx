@@ -74,12 +74,21 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
             try {
                 const projectId = Constants.expoConfig?.extra?.eas?.projectId || Constants.easConfig?.projectId;
+                if (!projectId || projectId === 'your-project-id') {
+                    console.warn('⚠️ [Notifications] EAS projectId not configured — push tokens disabled. Run `npx eas project:init` to set up.');
+                    return;
+                }
                 token = (await Notifications.getExpoPushTokenAsync({
                     projectId,
                 })).data;
                 console.log('Expo Push Token:', token);
-            } catch (e) {
-                console.error('Error getting expo push token:', e);
+            } catch (e: any) {
+                // Don't spam console in Expo Go where push tokens don't work
+                if (e?.message?.includes('VALIDATION_ERROR') || e?.message?.includes('Invalid uuid')) {
+                    console.warn('⚠️ [Notifications] Push token unavailable (invalid projectId). In-app notifications still work via Supabase Realtime.');
+                } else {
+                    console.error('Error getting expo push token:', e);
+                }
             }
         } else {
             console.log('Must use physical device for Push Notifications');

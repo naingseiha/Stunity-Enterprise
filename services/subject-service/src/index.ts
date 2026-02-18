@@ -22,7 +22,7 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 // Database warmup
 (async () => { try { await prisma.$queryRaw`SELECT 1`; console.log('✅ Database ready'); } catch (e) { console.error('⚠️ DB warmup failed'); } })();
 
-const PORT = process.env.SUBJECT_SERVICE_PORT || process.env.PORT || 3006;
+const PORT = process.env.SUBJECT_SERVICE_PORT || 3006;
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 
 // ========================================
@@ -120,12 +120,12 @@ app.get('/subjects', authenticateToken, async (req: AuthRequest, res: Response) 
     const now = Date.now();
     const isFresh = cached && (now - cached.timestamp) < CACHE_TTL;
     const isStale = cached && (now - cached.timestamp) < STALE_TTL;
-    
+
     if (isFresh) {
       console.log(`📋 [Cache hit] Subjects`);
       return res.json(cached.data);
     }
-    
+
     if (isStale) {
       console.log(`⏳ Serving stale subjects cache...`);
       return res.json(cached.data);
