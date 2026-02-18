@@ -19,6 +19,7 @@ import coursesRouter from './courses';
 import storiesRouter from './stories';
 import mediaRouter from './routes/media.routes';
 import { authenticateToken, AuthRequest } from './middleware/auth';
+import { FeedRanker } from './feedRanker';
 
 const app = express();
 const PORT = 3010; // Feed service always uses port 3010
@@ -58,6 +59,29 @@ const warmUpDb = async () => {
 };
 warmUpDb();
 setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000);
+
+// Initialize Feed Ranker
+const feedRanker = new FeedRanker(prisma);
+
+// Background job: refresh post scores every 5 minutes
+setInterval(async () => {
+  try {
+    const count = await feedRanker.refreshPostScores();
+    console.log(`🧠 [FeedRanker] Refreshed ${count} post scores`);
+  } catch (err) {
+    console.error('❌ [FeedRanker] Score refresh error:', err);
+  }
+}, 5 * 60 * 1000);
+
+// Initial score refresh on startup (after warm up)
+setTimeout(async () => {
+  try {
+    const count = await feedRanker.refreshPostScores();
+    console.log(`🧠 [FeedRanker] Initial score refresh: ${count} posts`);
+  } catch (err) {
+    console.error('❌ [FeedRanker] Initial score refresh error:', err);
+  }
+}, 5000);
 
 // Initialize Redis for PubSub (optional, falls back to in-memory)
 initRedis();
@@ -412,6 +436,171 @@ app.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => 
   }
 });
 
+// ========================================
+// PERSONALIZED FEED (ranked)
+// ========================================
+
+// GET /posts/feed - Personalized ranked feed
+app.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const {
+      mode = 'FOR_YOU',
+      page = 1,
+      limit = 20,
+      subject,
+      excludeIds,
+    } = req.query;
+
+    const userId = req.user!.id;
+
+    console.log('🧠 [Feed] Personalized feed request:', {
+      userId,
+      mode,
+      page,
+      subject,
+    });
+
+    const result = await feedRanker.generateFeed(userId, {
+      mode: String(mode) as 'FOR_YOU' | 'FOLLOWING' | 'RECENT',
+      page: Number(page),
+      limit: Number(limit),
+      subject: subject ? String(subject) : undefined,
+      excludeIds: excludeIds ? String(excludeIds).split(',') : [],
+    });
+
+    // Check which posts the user has liked/bookmarked
+    const postIds = result.posts.map(sp => sp.post.id);
+    const [userLikes, userBookmarks] = await Promise.all([
+      prisma.like.findMany({
+        where: { userId, postId: { in: postIds } },
+        select: { postId: true },
+      }),
+      prisma.bookmark.findMany({
+        where: { userId, postId: { in: postIds } },
+        select: { postId: true },
+      }),
+    ]);
+    const likedSet = new Set(userLikes.map(l => l.postId));
+    const bookmarkedSet = new Set(userBookmarks.map(b => b.postId));
+
+    // Check if current user voted on any polls
+    const pollPostIds = result.posts.filter(sp => sp.post.postType === 'POLL').map(sp => sp.post.id);
+    const userVotes = pollPostIds.length > 0 ? await prisma.pollVote.findMany({
+      where: {
+        postId: { in: pollPostIds },
+        userId,
+      },
+      select: { postId: true, optionId: true },
+    }) : [];
+    const votedOptions = new Map(userVotes.map(v => [v.postId, v.optionId]));
+
+    // Check if current user has taken any quizzes
+    const quizPostIds = result.posts
+      .filter(sp => sp.post.postType === 'QUIZ' && (sp.post as any).quiz)
+      .map(sp => (sp.post as any).quiz?.id)
+      .filter(Boolean);
+    const userQuizAttempts = quizPostIds.length > 0 ? await prisma.quizAttempt.findMany({
+      where: {
+        quizId: { in: quizPostIds as string[] },
+        userId,
+      },
+      orderBy: { submittedAt: 'desc' },
+      distinct: ['quizId'],
+      select: {
+        id: true,
+        quizId: true,
+        score: true,
+        passed: true,
+        pointsEarned: true,
+        submittedAt: true,
+      },
+    }) : [];
+    const quizAttempts = new Map(userQuizAttempts.map(a => [a.quizId, a]));
+
+    // Format response to match existing mobile expectations
+    const formattedPosts = result.posts.map(sp => ({
+      id: sp.post.id,
+      content: sp.post.content,
+      title: sp.post.title,
+      postType: sp.post.postType,
+      visibility: sp.post.visibility,
+      mediaUrls: sp.post.mediaUrls,
+      mediaKeys: sp.post.mediaKeys,
+      mediaDisplayMode: sp.post.mediaDisplayMode,
+      likesCount: sp.post.likesCount,
+      commentsCount: sp.post.commentsCount,
+      sharesCount: sp.post.sharesCount,
+      isPinned: sp.post.isPinned,
+      isEdited: sp.post.isEdited,
+      createdAt: sp.post.createdAt,
+      updatedAt: sp.post.updatedAt,
+      topicTags: (sp.post as any).topicTags || [],
+      author: sp.post.author,
+      _count: sp.post._count,
+      isLikedByMe: likedSet.has(sp.post.id),
+      isBookmarked: bookmarkedSet.has(sp.post.id),
+      // Poll data
+      pollOptions: (sp.post as any).pollOptions,
+      ...(sp.post.postType === 'POLL' && {
+        userVotedOptionId: votedOptions.get(sp.post.id) || null,
+      }),
+      // Quiz data
+      ...((sp.post.postType === 'QUIZ' && (sp.post as any).quiz) && {
+        quiz: {
+          ...(sp.post as any).quiz,
+          userAttempt: quizAttempts.get((sp.post as any).quiz.id) || null,
+        },
+      }),
+      // Score metadata (useful for debugging / transparency)
+      _score: sp.score,
+      _scoreBreakdown: sp.breakdown,
+    }));
+
+    res.json({
+      success: true,
+      data: formattedPosts,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total: result.total,
+        totalPages: Math.ceil(result.total / Number(limit)),
+        hasMore: result.hasMore,
+      },
+      meta: {
+        mode: String(mode),
+        algorithm: 'v1',
+      },
+    });
+  } catch (error: any) {
+    console.error('Get personalized feed error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get personalized feed', details: error.message });
+  }
+});
+
+// POST /feed/track-action - Track user engagement signal
+app.post('/feed/track-action', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { action, postId, duration, source } = req.body;
+    const userId = req.user!.id;
+
+    if (!action || !postId) {
+      return res.status(400).json({ success: false, error: 'action and postId are required' });
+    }
+
+    const validActions = ['VIEW', 'LIKE', 'COMMENT', 'SHARE', 'BOOKMARK'];
+    if (!validActions.includes(action)) {
+      return res.status(400).json({ success: false, error: `Invalid action. Must be one of: ${validActions.join(', ')}` });
+    }
+
+    await feedRanker.trackAction(userId, postId, action, duration, source);
+
+    res.json({ success: true, message: 'Action tracked' });
+  } catch (error: any) {
+    console.error('Track action error:', error);
+    res.status(500).json({ success: false, error: 'Failed to track action' });
+  }
+});
+
 // POST /posts - Create new post
 app.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -453,13 +642,13 @@ app.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) =>
         quiz: postType === 'QUIZ' && quizData ? {
           create: {
             questions: quizData.questions || [],
-            timeLimit: quizData.timeLimit,
-            passingScore: quizData.passingScore,
-            totalPoints: quizData.totalPoints,
+            timeLimit: quizData.timeLimit ?? 0,
+            passingScore: quizData.passingScore ?? 70,
+            totalPoints: quizData.totalPoints ?? 0,
             resultsVisibility: quizData.resultsVisibility || 'AFTER_SUBMISSION',
             shuffleQuestions: quizData.shuffleQuestions || false,
             shuffleAnswers: quizData.shuffleAnswers || false,
-            maxAttempts: quizData.maxAttempts,
+            maxAttempts: quizData.maxAttempts ?? null,
             showReview: quizData.showReview !== undefined ? quizData.showReview : true,
             showExplanations: quizData.showExplanations !== undefined ? quizData.showExplanations : true,
           },
@@ -664,6 +853,9 @@ app.post('/posts/:id/like', authenticateToken, async (req: AuthRequest, res: Res
         EventPublisher.newLike(post.authorId, userId, likerName, postId);
       }
 
+      // Update feed signals for personalization
+      updateUserFeedSignals(userId, postId, 'like');
+
       res.json({ success: true, liked: true, message: 'Post liked' });
     }
   } catch (error: any) {
@@ -842,6 +1034,9 @@ app.post('/posts/:id/comments', authenticateToken, async (req: AuthRequest, res:
         req.params.id, newComment.id, content.trim()
       );
     }
+
+    // Update feed signals for personalization
+    updateUserFeedSignals(req.user!.id, req.params.id, 'comment');
 
     res.status(201).json({ success: true, data: newComment });
   } catch (error: any) {
@@ -1076,6 +1271,10 @@ app.post('/posts/:id/bookmark', authenticateToken, async (req: AuthRequest, res:
       await prisma.bookmark.create({
         data: { postId, userId },
       });
+
+      // Update feed signals for personalization
+      updateUserFeedSignals(userId, postId, 'bookmark');
+
       res.json({ success: true, bookmarked: true, message: 'Post bookmarked' });
     }
   } catch (error: any) {
@@ -1555,6 +1754,81 @@ app.get('/quizzes/:id/attempts/:attemptId', authenticateToken, async (req: AuthR
 });
 
 // ========================================
+// User Feed Signal Tracking (Engagement → Personalization)
+// ========================================
+
+// Score weights per action type
+const SIGNAL_WEIGHTS: Record<string, { score: number; field: string }> = {
+  view: { score: 1, field: 'viewCount' },
+  like: { score: 3, field: 'likeCount' },
+  comment: { score: 5, field: 'commentCount' },
+  share: { score: 7, field: 'shareCount' },
+  bookmark: { score: 4, field: 'bookmarkCount' },
+};
+
+/**
+ * Update user feed signals based on engagement actions.
+ * This builds a per-topic interest profile that FeedRanker uses for personalization.
+ */
+async function updateUserFeedSignals(
+  userId: string,
+  postId: string,
+  action: 'view' | 'like' | 'comment' | 'share' | 'bookmark',
+  duration?: number
+) {
+  try {
+    // Get the post's topics
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { topicTags: true, postType: true },
+    });
+
+    if (!post) return;
+
+    // Build topic list from tags + postType
+    const topics = [
+      ...post.topicTags.map(t => t.toLowerCase()),
+      post.postType.toLowerCase(), // Also track interest in post types
+    ].filter(Boolean);
+
+    if (topics.length === 0) return;
+
+    const weight = SIGNAL_WEIGHTS[action];
+    if (!weight) return;
+
+    // Upsert signal for each topic
+    for (const topic of topics) {
+      await prisma.userFeedSignal.upsert({
+        where: {
+          userId_topicId: { userId, topicId: topic },
+        },
+        create: {
+          userId,
+          topicId: topic,
+          score: weight.score,
+          [weight.field]: 1,
+          avgViewDuration: action === 'view' && duration ? duration : 0,
+          lastInteraction: new Date(),
+        },
+        update: {
+          score: { increment: weight.score },
+          [weight.field]: { increment: 1 },
+          ...(action === 'view' && duration ? {
+            avgViewDuration: duration, // Will be averaged over time
+          } : {}),
+          lastInteraction: new Date(),
+        },
+      });
+    }
+
+    console.log(`📊 [Signals] Updated ${topics.length} topics for user ${userId.slice(-6)} (${action})`);
+  } catch (error) {
+    // Non-critical: log but don't break the main action
+    console.error('Failed to update feed signals:', error);
+  }
+}
+
+// ========================================
 // Analytics Endpoints
 // ========================================
 
@@ -1589,6 +1863,11 @@ app.post('/posts/:id/view', authenticateToken, async (req: AuthRequest, res: Res
         where: { id: recentView.id },
         data: { duration: (recentView.duration || 0) + duration },
       });
+    }
+
+    // Update feed signals for personalization
+    if (userId) {
+      updateUserFeedSignals(userId, postId, 'view', duration);
     }
 
     res.json({ success: true });

@@ -623,6 +623,7 @@ model User {
   gameAchievements        UserGameAchievement[]
   learningStreak          LearningStreak?
   weeklyLeaderboards      WeeklyLeaderboard[]
+  feedSignals             UserFeedSignal[]
   parent                  Parent?                    @relation(fields: [parentId], references: [id], onDelete: Cascade)
   school                  School?                    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   student                 Student?                   @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -704,13 +705,16 @@ model Post {
   projectStatus            String?
   projectDeadline          DateTime?
   projectTeamSize          Int?
+  topicTags                String[]       // Tags for topic matching / personalization
   mediaDisplayMode         String?        @default("AUTO") // AUTO, FIXED_HEIGHT, FULL_HEIGHT
+  trendingScore            Float          @default(0) // Precomputed trending score for fast queries
   studyClubId              String? // If posted in a study club
   comments                 Comment[]
   likes                    Like[]
   bookmarks                Bookmark[]
   pollOptions              PollOption[]
   views                    PostView[]
+  postScore                PostScore?
   author                   User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   quizQuestions            QuizQuestion[]
   quiz                     Quiz?
@@ -719,6 +723,7 @@ model Post {
   @@index([authorId, createdAt(sort: Desc)])
   @@index([postType, createdAt(sort: Desc)])
   @@index([visibility, createdAt(sort: Desc)])
+  @@index([trendingScore(sort: Desc)])
   @@index([pollExpiresAt])
   @@index([studyClubId])
   @@map("posts")
@@ -1159,6 +1164,45 @@ model PostView {
   @@index([userId])
   @@index([viewedAt])
   @@map("post_views")
+}
+
+// User Feed Signals - tracks per-topic interest scores per user
+model UserFeedSignal {
+  id              String   @id @default(cuid())
+  userId          String
+  topicId         String   // normalized topic/tag name
+  score           Float    @default(0) // accumulated interest score
+  viewCount       Int      @default(0)
+  likeCount       Int      @default(0)
+  commentCount    Int      @default(0)
+  shareCount      Int      @default(0)
+  bookmarkCount   Int      @default(0)
+  avgViewDuration Float    @default(0) // seconds
+  lastInteraction DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, topicId])
+  @@index([userId])
+  @@index([score(sort: Desc)])
+  @@map("user_feed_signals")
+}
+
+// Precomputed Post Scores - refreshed periodically for fast feed queries
+model PostScore {
+  id              String   @id @default(cuid())
+  postId          String   @unique
+  engagementScore Float    @default(0) // normalized 0-1
+  qualityScore    Float    @default(0) // normalized 0-1
+  trendingScore   Float    @default(0) // velocity-based
+  decayFactor     Float    @default(1.0) // time decay multiplier
+  computedAt      DateTime @default(now())
+  post            Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([engagementScore(sort: Desc)])
+  @@index([trendingScore(sort: Desc)])
+  @@map("post_scores")
 }
 
 model OnboardingChecklist {

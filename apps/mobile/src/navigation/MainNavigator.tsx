@@ -30,15 +30,15 @@ import { LearnScreen, CourseDetailScreen } from '@/screens/learn';
 import { ProfileScreen, EditProfileScreen } from '@/screens/profile';
 import { ConversationsScreen, ChatScreen } from '@/screens/messages';
 import { ClubsScreen, ClubDetailsScreen, CreateClubScreen } from '@/screens/clubs';
-import { 
-  AssignmentsListScreen, 
-  AssignmentDetailScreen, 
+import {
+  AssignmentsListScreen,
+  AssignmentDetailScreen,
   SubmissionFormScreen,
   SubmissionsListScreen,
   GradeSubmissionScreen,
 } from '@/screens/assignments';
 import { TakeQuizScreen, QuizResultsScreen } from '@/screens/quiz';
-import { 
+import {
   LiveQuizJoinScreen,
   LiveQuizHostScreen,
   LiveQuizLobbyScreen,
@@ -53,6 +53,7 @@ import {
   ChallengeResultScreen,
 } from '@/screens/stats';
 import { AchievementsScreen } from '@/screens/achievements';
+import { NotificationsScreen } from '@/screens/notifications';
 
 // Placeholder screens (will be implemented)
 const PlaceholderScreen = ({ title }: { title: string }) => (
@@ -237,10 +238,10 @@ const MainNavigatorContent: React.FC = () => {
             // Render custom tab bar icons
             return (
               <View style={styles.tabIconContainer}>
-                <Ionicons 
-                  name={iconName} 
-                  size={iconSize} 
-                  color={color} 
+                <Ionicons
+                  name={iconName}
+                  size={iconSize}
+                  color={color}
                 />
               </View>
             );
@@ -302,6 +303,7 @@ const MainNavigator: React.FC = () => {
         <MainStack.Screen name="Challenges" component={ChallengeScreen} />
         <MainStack.Screen name="ChallengeResult" component={ChallengeResultScreen} />
         <MainStack.Screen name="Achievements" component={AchievementsScreen} />
+        <MainStack.Screen name="Notifications" component={NotificationsScreen} />
       </MainStack.Navigator>
     </NavigationProvider>
   );

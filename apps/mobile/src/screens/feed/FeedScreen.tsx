@@ -21,6 +21,9 @@ import {
   Image,
   Platform,
   Alert,
+  Dimensions,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -30,9 +33,7 @@ import Animated, {
   FadeInDown,
   FadeOutUp,
   useAnimatedStyle,
-  withSpring,
   useSharedValue,
-  withTiming
 } from 'react-native-reanimated';
 
 // Import actual Stunity logo
@@ -95,6 +96,41 @@ export default function FeedScreen() {
   const [valuePostId, setValuePostId] = useState<string | null>(null);
   const [valuePostData, setValuePostData] = useState<{ postType: string; authorName: string } | null>(null);
 
+  // Horizontal paging ScrollView for smooth tab swiping
+  const scrollViewRef = React.useRef<ScrollView>(null);
+  const flatListRef = React.useRef<FlatList>(null);
+  const screenWidth = Dimensions.get('window').width;
+
+  // Animated tab indicator driven by scroll position
+  const tabScrollOffset = useSharedValue(0);
+
+  const indicatorStyle = useAnimatedStyle(() => {
+    const indicatorWidth = 32;
+    const halfScreen = screenWidth / 2;
+    const baseOffset = (halfScreen - indicatorWidth) / 2;
+    return {
+      transform: [{ translateX: baseOffset + (tabScrollOffset.value * halfScreen) }],
+    };
+  });
+
+  const handlePagerScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const page = offsetX / screenWidth; // 0 to 1
+    tabScrollOffset.value = page;
+  }, [screenWidth]);
+
+  const handlePagerMomentumEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const page = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+    const mode = page === 0 ? 'FOR_YOU' : 'FOLLOWING';
+    if (feedMode !== mode) {
+      toggleFeedMode(mode);
+    }
+  }, [feedMode, toggleFeedMode, screenWidth]);
+
+  const switchToPage = useCallback((page: number) => {
+    scrollViewRef.current?.scrollTo({ x: page * screenWidth, animated: true });
+  }, [screenWidth]);
+
   useEffect(() => {
     fetchPosts();
     fetchStories();
@@ -116,6 +152,101 @@ export default function FeedScreen() {
     subscribeToFeed();
     return () => unsubscribeFromFeed();
   }, []);
+
+  // Polling fallback: check for new posts every 30s in case Realtime misses events
+  useEffect(() => {
+    const pollInterval = setInterval(async () => {
+      try {
+        if (posts.length === 0) return;
+        const latestCreatedAt = posts[0]?.createdAt;
+        if (!latestCreatedAt) return;
+
+        const response = await feedApi.get('/posts/feed', {
+          params: { mode: 'RECENT', limit: 5, page: 1 },
+        });
+
+        if (response.data?.success && response.data.data) {
+          const newPosts = response.data.data.filter(
+            (p: any) => new Date(p.createdAt) > new Date(latestCreatedAt) &&
+              !posts.some(existing => existing.id === p.id) &&
+              !pendingPosts.some(pending => pending.id === p.id)
+          );
+
+          if (newPosts.length > 0) {
+            console.log(`🔄 [FeedScreen] Poll found ${newPosts.length} new post(s)`);
+            const transformed = newPosts.map((post: any) => ({
+              id: post.id,
+              author: {
+                id: post.author?.id,
+                firstName: post.author?.firstName,
+                lastName: post.author?.lastName,
+                name: `${post.author?.firstName || ''} ${post.author?.lastName || ''}`.trim(),
+                profilePictureUrl: post.author?.profilePictureUrl,
+                role: post.author?.role,
+                isVerified: post.author?.isVerified,
+              },
+              content: post.content,
+              title: post.title,
+              postType: post.postType || 'ARTICLE',
+              visibility: post.visibility || 'PUBLIC',
+              mediaUrls: post.mediaUrls || [],
+              likes: post.likesCount || 0,
+              comments: post.commentsCount || 0,
+              shares: post.sharesCount || 0,
+              isLiked: post.isLiked || false,
+              isBookmarked: post.isBookmarked || false,
+              createdAt: post.createdAt,
+              updatedAt: post.updatedAt,
+            }));
+            useFeedStore.setState(state => ({
+              pendingPosts: [...transformed, ...state.pendingPosts],
+            }));
+          }
+        }
+      } catch (e) {
+        // Silent fail — polling is a fallback
+      }
+    }, 30000); // Every 30 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [posts, pendingPosts]);
+
+  // ── Viewport-based view tracking ──
+  // Track which posts are visible and for how long
+  const visiblePostTimers = React.useRef<Map<string, number>>(new Map());
+  const trackedViews = React.useRef<Set<string>>(new Set()); // Dedup: track each post only once
+
+  const viewabilityConfig = React.useRef({
+    itemVisiblePercentThreshold: 50, // post must be 50% visible
+    minimumViewTime: 1000,           // must be visible for 1+ second
+  }).current;
+
+  const onViewableItemsChanged = React.useRef(
+    ({ viewableItems, changed }: { viewableItems: any[]; changed: any[] }) => {
+      const timers = visiblePostTimers.current;
+      const tracked = trackedViews.current;
+
+      // Posts that became visible → start timer
+      changed.forEach(({ item, isViewable }) => {
+        if (isViewable && item?.id) {
+          if (!timers.has(item.id)) {
+            timers.set(item.id, Date.now());
+          }
+        } else if (!isViewable && item?.id && timers.has(item.id)) {
+          // Post left viewport → send view with duration
+          const startTime = timers.get(item.id)!;
+          const durationSec = Math.round((Date.now() - startTime) / 1000);
+          timers.delete(item.id);
+
+          // Only count views of 2+ seconds AND only once per post per session
+          if (durationSec >= 2 && !tracked.has(item.id)) {
+            tracked.add(item.id);
+            trackPostView(item.id);
+          }
+        }
+      });
+    }
+  ).current;
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -252,24 +383,24 @@ export default function FeedScreen() {
 
   const renderHeader = () => (
     <View style={styles.headerSection}>
-      {/* Feed Tabs */}
+      {/* Feed Mode Tabs */}
       <View style={styles.feedTabsContainer}>
-        <View style={styles.feedTabs}>
-          <TouchableOpacity
-            style={[styles.feedTab, feedMode === 'FOR_YOU' && styles.feedTabActive]}
-            onPress={() => toggleFeedMode('FOR_YOU')}
-          >
-            <Text style={[styles.feedTabText, feedMode === 'FOR_YOU' && styles.feedTabTextActive]}>For You</Text>
-            {feedMode === 'FOR_YOU' && <View style={styles.activeIndicator} />}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.feedTab, feedMode === 'FOLLOWING' && styles.feedTabActive]}
-            onPress={() => toggleFeedMode('FOLLOWING')}
-          >
-            <Text style={[styles.feedTabText, feedMode === 'FOLLOWING' && styles.feedTabTextActive]}>Following</Text>
-            {feedMode === 'FOLLOWING' && <View style={styles.activeIndicator} />}
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={[styles.feedTab, feedMode === 'FOR_YOU' && styles.feedTabActive]}
+          onPress={() => switchToPage(0)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.feedTabText, feedMode === 'FOR_YOU' && styles.feedTabTextActive]}>For You</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.feedTab, feedMode === 'FOLLOWING' && styles.feedTabActive]}
+          onPress={() => switchToPage(1)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.feedTabText, feedMode === 'FOLLOWING' && styles.feedTabTextActive]}>Following</Text>
+        </TouchableOpacity>
+        {/* Animated underline indicator */}
+        <Animated.View style={[styles.activeIndicator, indicatorStyle]} />
       </View>
 
       {/* Create Post Card with integrated Stories */}
@@ -443,7 +574,13 @@ export default function FeedScreen() {
               onPress={() => navigation.navigate('Notifications' as any)}
             >
               <Ionicons name="notifications-outline" size={24} color="#374151" />
-              {unreadNotifications > 0 && <View style={styles.notificationBadge} />}
+              {unreadNotifications > 0 && (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.notificationBadgeText}>
+                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                  </Text>
+                </View>
+              )}
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.headerButton}
@@ -474,8 +611,7 @@ export default function FeedScreen() {
             style={[styles.newPostsPill, Shadows.md]}
             onPress={() => {
               applyPendingPosts();
-              // Scroll to top
-              // flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+              flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
             }}
           >
             <Ionicons name="arrow-up" size={16} color="#fff" />
@@ -484,29 +620,73 @@ export default function FeedScreen() {
         </Animated.View>
       )}
 
-      {/* Feed */}
-      <FlatList
-        data={posts}
-        extraData={posts}
-        renderItem={renderPost}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={renderHeader}
-        ListFooterComponent={renderFooter}
-        ListEmptyComponent={renderEmpty}
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor="#6366F1"
-            colors={['#6366F1']}
+      {/* Feed — Horizontal paging ScrollView for smooth native swiping */}
+      <ScrollView
+        ref={scrollViewRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={handlePagerScroll}
+        onMomentumScrollEnd={handlePagerMomentumEnd}
+        bounces={false}
+        style={{ flex: 1 }}
+      >
+        {/* Page 0: For You */}
+        <View style={{ width: screenWidth, flex: 1 }}>
+          <FlatList
+            ref={flatListRef}
+            data={posts}
+            extraData={posts}
+            renderItem={renderPost}
+            keyExtractor={(item) => item.id}
+            ListHeaderComponent={renderHeader}
+            ListFooterComponent={renderFooter}
+            ListEmptyComponent={renderEmpty}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            viewabilityConfig={viewabilityConfig}
+            onViewableItemsChanged={onViewableItemsChanged}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor="#6366F1"
+                colors={['#6366F1']}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContent}
+            style={styles.list}
           />
-        }
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
-        style={styles.list}
-      />
+        </View>
+
+        {/* Page 1: Following */}
+        <View style={{ width: screenWidth, flex: 1 }}>
+          <FlatList
+            data={posts}
+            extraData={posts}
+            renderItem={renderPost}
+            keyExtractor={(item) => item.id}
+            ListHeaderComponent={renderHeader}
+            ListFooterComponent={renderFooter}
+            ListEmptyComponent={renderEmpty}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor="#6366F1"
+                colors={['#6366F1']}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContent}
+            style={styles.list}
+          />
+        </View>
+      </ScrollView>
 
       {/* Post Analytics Modal */}
       <PostAnalyticsModal
@@ -576,14 +756,23 @@ const styles = StyleSheet.create({
   },
   notificationBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    top: 4,
+    right: 2,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: '#EF4444',
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  notificationBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+    lineHeight: 13,
   },
   list: {
     flex: 1,
@@ -709,41 +898,39 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
-  // Feed Tabs
+  // Feed Tabs — Clean Underline Style
   feedTabsContainer: {
+    flexDirection: 'row',
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
     marginBottom: 12,
   },
-  feedTabs: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 32,
-  },
   feedTab: {
-    paddingVertical: 12,
-    position: 'relative',
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
   },
-  feedTabActive: {
-    // 
-  },
+  feedTabActive: {},
   feedTabText: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#6B7280',
+    fontWeight: '500',
+    color: '#9CA3AF',
+    letterSpacing: 0.1,
   },
   feedTabTextActive: {
     color: '#111827',
+    fontWeight: '700',
   },
   activeIndicator: {
     position: 'absolute',
     bottom: 0,
-    width: 20,
+    left: 0,
+    width: 32,
     height: 3,
     backgroundColor: '#6366F1',
-    borderRadius: 1.5,
+    borderRadius: 3,
   },
 
   // New Posts Pill

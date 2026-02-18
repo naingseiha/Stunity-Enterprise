@@ -48,6 +48,7 @@ export type MainStackParamList = {
   Challenges: undefined;
   ChallengeResult: { challenge: any };
   Achievements: undefined;
+  Notifications: undefined;
 };
 
 // Auth Stack
@@ -177,6 +178,6 @@ export type ClubsStackScreenProps<T extends keyof ClubsStackParamList> =
 // Declare global types for useNavigation
 declare global {
   namespace ReactNavigation {
-    interface RootParamList extends RootStackParamList {}
+    interface RootParamList extends RootStackParamList { }
   }
 }

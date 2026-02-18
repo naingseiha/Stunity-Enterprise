@@ -76,7 +76,7 @@ const development: EnvironmentConfig = {
   mediaUrl: `http://${API_HOST}:3010`,
   clubUrl: `http://${API_HOST}:3012`,
   notificationUrl: `http://${API_HOST}:3013`,
-  quizUrl: `http://${API_HOST}:3015`,
+  quizUrl: `http://${API_HOST}:3010`,
   analyticsUrl: `http://${API_HOST}:3014`,
   wsUrl: `ws://${API_HOST}:3011`,
   sentryDsn: '',

@@ -185,7 +185,16 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         params.subject = subject;
       }
 
-      const response = await feedApi.get('/posts', {
+      // Use personalized feed endpoint for FOR_YOU and FOLLOWING modes
+      const feedMode = get().feedMode;
+      const usePersonalizedFeed = feedMode === 'FOR_YOU' || feedMode === 'FOLLOWING';
+      const endpoint = usePersonalizedFeed ? '/posts/feed' : '/posts';
+
+      if (usePersonalizedFeed) {
+        params.mode = feedMode;
+      }
+
+      const response = await feedApi.get(endpoint, {
         params,
         timeout: 10000, // Reduced timeout for faster feedback
       });
@@ -340,11 +349,11 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           }
         }
 
-        // Apply recommendations if in FOR_YOU mode
+        // Apply recommendations if in FOR_YOU mode (only for /posts fallback)
         let finalPosts = refresh ? transformedPosts : [...posts, ...transformedPosts];
 
-        if (get().feedMode === 'FOR_YOU') {
-          // In a real app we'd do this server-side, but simulating it client-side
+        if (get().feedMode === 'FOR_YOU' && !usePersonalizedFeed) {
+          // Fallback: client-side ranking only if server endpoint was not used
           finalPosts = recommendationEngine.generateFeed(finalPosts);
         }
 
@@ -599,7 +608,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       ),
     }));
 
-    // Track for recommendation engine
+    // Track for recommendation engine (local)
     const post = get().posts.find(p => p.id === postId);
     if (post) {
       recommendationEngine.trackAction('LIKE', post);
@@ -608,6 +617,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
     try {
       await feedApi.post(`/posts/${postId}/like`);
+      // Track for server-side feed algorithm (fire-and-forget)
+      feedApi.post('/feed/track-action', { action: 'LIKE', postId, source: 'feed' }).catch(() => { });
     } catch (error) {
       // Revert on error
       set((state) => ({
@@ -660,7 +671,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       ),
     }));
 
-    // Track for recommendation engine
+    // Track for recommendation engine (local)
     if (!wasBookmarked) {
       recommendationEngine.trackAction('BOOKMARK', post);
       set({ userInterestProfile: recommendationEngine.getUserProfile() });
@@ -669,6 +680,10 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     try {
       // Backend uses POST for toggle (handles both bookmark and unbookmark)
       await feedApi.post(`/posts/${postId}/bookmark`);
+      // Track for server-side feed algorithm (only on bookmark, not unbookmark)
+      if (!wasBookmarked) {
+        feedApi.post('/feed/track-action', { action: 'BOOKMARK', postId, source: 'feed' }).catch(() => { });
+      }
     } catch (error) {
       // Revert on error
       set((state) => ({
@@ -1066,6 +1081,9 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           post.id === postId ? { ...post, shares: post.shares + 1 } : post
         ),
       }));
+
+      // Track for server-side feed algorithm (fire-and-forget)
+      feedApi.post('/feed/track-action', { action: 'SHARE', postId, source: 'feed' }).catch(() => { });
     } catch (error) {
       console.error('Failed to track share:', error);
     }
@@ -1077,7 +1095,10 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       // Existing analytics tracking
       await feedApi.post(`/posts/${postId}/view`, { source: 'feed' });
 
-      // Recommendation Engine tracking
+      // Track for server-side feed algorithm (with source context)
+      feedApi.post('/feed/track-action', { action: 'VIEW', postId, duration: 3, source: 'feed' }).catch(() => { });
+
+      // Recommendation Engine tracking (local)
       const post = get().posts.find(p => p.id === postId);
       if (post) {
         recommendationEngine.trackAction('VIEW', post);
@@ -1351,14 +1372,15 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     // Unsubscribe existing if any
     unsubscribeFromFeed();
 
+    const channelName = `feed:realtime:${Date.now()}`; // Unique per subscription
     const channel = supabase
-      .channel('feed:realtime')
+      .channel(channelName)
       // New posts
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'posts' },
         async (payload) => {
-          console.log('🔔 [FeedStore] New post INSERT:', payload.new?.id);
+          console.log('🔔 [FeedStore] New post INSERT:', payload.new?.id, JSON.stringify(payload.eventType));
           const newPostId = (payload.new as any)?.id;
           if (!newPostId) return;
 
@@ -1406,26 +1428,73 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'posts' },
-        (payload) => {
+        async (payload) => {
           const updated = payload.new as any;
           if (!updated?.id) return;
 
-          console.log('🔔 [FeedStore] Post updated:', updated.id, 'likes:', updated.likesCount);
+          const { posts, pendingPosts } = get();
+          const isKnownPost = posts.some(p => p.id === updated.id) ||
+            pendingPosts.some(p => p.id === updated.id);
 
-          set(state => ({
-            posts: state.posts.map(p =>
-              p.id === updated.id
-                ? {
-                  ...p,
-                  content: updated.content ?? p.content,
-                  title: updated.title ?? p.title,
-                  likes: updated.likesCount ?? p.likes,
-                  comments: updated.commentsCount ?? p.comments,
-                  shares: updated.sharesCount ?? p.shares,
-                }
-                : p
-            ),
-          }));
+          if (isKnownPost) {
+            // Known post → just update counts
+            console.log('🔔 [FeedStore] Post updated:', updated.id, 'likes:', updated.likesCount);
+            set(state => ({
+              posts: state.posts.map(p =>
+                p.id === updated.id
+                  ? {
+                    ...p,
+                    content: updated.content ?? p.content,
+                    title: updated.title ?? p.title,
+                    likes: updated.likesCount ?? p.likes,
+                    comments: updated.commentsCount ?? p.comments,
+                    shares: updated.sharesCount ?? p.shares,
+                  }
+                  : p
+              ),
+            }));
+          } else {
+            // Unknown post → treat as new post (Supabase often sends UPDATE instead of INSERT)
+            console.log('🆕 [FeedStore] New post detected via UPDATE:', updated.id);
+            try {
+              const response = await feedApi.get(`/posts/${updated.id}`);
+              if (response.data.success && response.data.post) {
+                const post = response.data.post;
+                const transformedPost: Post = {
+                  id: post.id,
+                  author: {
+                    id: post.author?.id,
+                    firstName: post.author?.firstName,
+                    lastName: post.author?.lastName,
+                    name: `${post.author?.firstName || ''} ${post.author?.lastName || ''}`.trim(),
+                    profilePictureUrl: post.author?.profilePictureUrl,
+                    role: post.author?.role,
+                    isVerified: post.author?.isVerified,
+                  },
+                  content: post.content,
+                  title: post.title,
+                  postType: post.postType || 'ARTICLE',
+                  visibility: post.visibility || 'PUBLIC',
+                  mediaUrls: post.mediaUrls || [],
+                  likes: post.likesCount || post._count?.likes || 0,
+                  comments: post.commentsCount || post._count?.comments || 0,
+                  shares: post.sharesCount || 0,
+                  isLiked: post.isLiked || false,
+                  isBookmarked: post.isBookmarked || false,
+                  createdAt: post.createdAt,
+                  updatedAt: post.updatedAt,
+                  learningMeta: post.learningMeta,
+                } as any;
+
+                set(state => ({
+                  pendingPosts: [transformedPost, ...state.pendingPosts]
+                }));
+                console.log('🆕 [FeedStore] Added to pendingPosts, count:', get().pendingPosts.length);
+              }
+            } catch (e) {
+              console.error('Failed to fetch new post:', e);
+            }
+          }
         }
       )
       // Post deletes
@@ -1445,6 +1514,27 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       .subscribe((status, err) => {
         console.log('🔌 [FeedStore] Subscription status:', status);
         if (err) console.error('🔌 [FeedStore] Subscription error:', err);
+
+        // Auto-reconnect on error with exponential backoff
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          const currentRetries = (get() as any)._realtimeRetries || 0;
+          if (currentRetries < 5) {
+            const delay = Math.min(2000 * Math.pow(2, currentRetries), 32000);
+            console.log(`🔄 [FeedStore] Reconnecting in ${delay / 1000}s (attempt ${currentRetries + 1}/5)...`);
+            set({ ...(get() as any), _realtimeRetries: currentRetries + 1 } as any);
+            setTimeout(() => {
+              console.log('🔄 [FeedStore] Attempting reconnect...');
+              const { unsubscribeFromFeed, subscribeToFeed } = get();
+              unsubscribeFromFeed();
+              subscribeToFeed();
+            }, delay);
+          } else {
+            console.warn('🔌 [FeedStore] Max retries reached, giving up on realtime');
+          }
+        } else if (status === 'SUBSCRIBED') {
+          // Reset retry counter on successful connection
+          set({ ...(get() as any), _realtimeRetries: 0 } as any);
+        }
       });
 
     set({ realtimeSubscription: channel });

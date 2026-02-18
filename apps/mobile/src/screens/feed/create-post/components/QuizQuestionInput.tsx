@@ -298,7 +298,7 @@ export function QuizQuestionInput({
     >
       <View style={styles.headerLeft}>
         <View style={styles.dragHandle}>
-          <Ionicons name="drag" size={20} color="#D1D5DB" />
+          <Ionicons name="reorder-three" size={20} color="#D1D5DB" />
         </View>
         <View style={styles.questionNumberContainer}>
           <Text style={styles.questionNumber}>Q{index + 1}</Text>
