@@ -8,11 +8,39 @@ import { create } from 'zustand';
 import { Post, Story, StoryGroup, PaginationParams, Comment } from '@/types';
 import { transformPost, transformPosts } from '@/utils/transformPost';
 import { feedApi } from '@/api/client';
+import { Image } from 'react-native';
 import { mockPosts, mockStories } from '@/api/mockData';
 import { recommendationEngine, UserInterestProfile } from '@/services/recommendation';
 import { supabase } from '@/lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { seedDatabase } from '@/lib/seed';
+import { cacheFeedPosts, loadCachedFeed, isCacheStale } from '@/services/feedCache';
+
+// ── Batched view tracking ──
+// Buffer post views and flush in one HTTP request every 10 seconds.
+// At 10K users × 20 posts = 400K individual requests → ~40K batched requests.
+const VIEW_FLUSH_INTERVAL = 10_000; // 10 seconds
+let viewFlushTimer: ReturnType<typeof setTimeout> | null = null;
+const viewBuffer = new Map<string, { postId: string; duration: number; source: string; timestamp: number }>();
+
+async function flushViewBuffer() {
+  viewFlushTimer = null;
+  if (viewBuffer.size === 0) return;
+
+  const views = Array.from(viewBuffer.values());
+  viewBuffer.clear();
+
+  try {
+    // Bulk endpoint — single request for all buffered views
+    await feedApi.post('/feed/track-views', { views });
+  } catch {
+    // Fallback: fire individual requests if bulk endpoint not available
+    for (const view of views) {
+      feedApi.post(`/posts/${view.postId}/view`, { source: view.source }).catch(() => { });
+      feedApi.post('/feed/track-action', { action: 'VIEW', postId: view.postId, duration: view.duration, source: view.source }).catch(() => { });
+    }
+  }
+}
 
 // Analytics types
 export interface PostAnalytics {
@@ -48,6 +76,7 @@ interface FeedState {
   isLoadingPosts: boolean;
   hasMorePosts: boolean;
   postsPage: number;
+  nextCursor: string | null;
   feedMode: 'FOR_YOU' | 'FOLLOWING' | 'RECENT';
   userInterestProfile: UserInterestProfile | null;
   pendingPosts: Post[];
@@ -139,6 +168,7 @@ const initialState = {
   isLoadingPosts: false,
   hasMorePosts: true,
   postsPage: 1,
+  nextCursor: null,
   posts: [],
   userInterestProfile: null,
   feedMode: 'FOR_YOU' as const,
@@ -175,11 +205,28 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
     set({ isLoadingPosts: true });
 
+    // Stale-while-revalidate: show cached feed instantly on cold-start
+    if (page === 1 && posts.length === 0) {
+      const cached = await loadCachedFeed();
+      if (cached && cached.length > 0) {
+        set({ posts: cached });
+      }
+    }
+
     try {
       // Performance optimization: Use smaller page size for initial load (faster perceived speed)
       const limit = page === 1 ? 10 : 20;
 
       const params: any = { page, limit };
+
+      // Use cursor-based pagination when available (O(1) vs O(N) for offset)
+      const cursor = refresh ? null : get().nextCursor;
+      if (cursor) {
+        params.cursor = cursor;
+      }
+
+      // Send fields=minimal to reduce payload by ~76%
+      params.fields = 'minimal';
 
       // Add subject filter if provided
       if (subject && subject !== 'ALL') {
@@ -205,6 +252,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         const newPosts = response.data.data || response.data.posts || [];
         const pagination = response.data.pagination;
         const hasMore = pagination?.hasMore ?? newPosts.length === 20;
+        const newCursor = pagination?.nextCursor || null;
 
         if (__DEV__) {
           console.log('📥 [FeedStore] Received', newPosts.length, 'posts');
@@ -228,14 +276,22 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         set({
           posts: optimizedPosts,
           postsPage: page + 1,
+          nextCursor: newCursor,
           hasMorePosts: hasMore,
           isLoadingPosts: false,
         });
 
-        // Background: Prefetch images for smooth scrolling
-        if (__DEV__) {
-          console.log('📸 [FeedStore] Loaded', transformedPosts.length, 'posts');
+        // Write to offline cache on page 1 (most recent posts)
+        if (page === 1) {
+          cacheFeedPosts(optimizedPosts).catch(() => { });
         }
+
+        // Background: Prefetch first media URL for smooth scrolling
+        const urlsToPrefetch = transformedPosts
+          .flatMap(p => p.mediaUrls?.slice(0, 1) || [])
+          .filter(Boolean)
+          .slice(0, 10); // Max 10 images to avoid flooding
+        urlsToPrefetch.forEach(url => Image.prefetch(url).catch(() => { }));
       } else {
         set({ isLoadingPosts: false });
       }
@@ -952,25 +1008,23 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     }
   },
 
-  // Track View (Enhanced)
+  // Track View (Batched for performance)
+  // Instead of firing 2 HTTP requests per post view, we buffer them
+  // and flush to a single bulk endpoint every 10 seconds.
   trackPostView: async (postId) => {
-    try {
-      // Existing analytics tracking
-      await feedApi.post(`/posts/${postId}/view`, { source: 'feed' });
+    // Recommendation Engine tracking (local, synchronous)
+    const post = get().posts.find(p => p.id === postId);
+    if (post) {
+      recommendationEngine.trackAction('VIEW', post);
+    }
 
-      // Track for server-side feed algorithm (with source context)
-      feedApi.post('/feed/track-action', { action: 'VIEW', postId, duration: 3, source: 'feed' }).catch(() => { });
+    // Add to view buffer for batched flush
+    if (!viewBuffer.has(postId)) {
+      viewBuffer.set(postId, { postId, duration: 3, source: 'feed', timestamp: Date.now() });
 
-      // Recommendation Engine tracking (local)
-      const post = get().posts.find(p => p.id === postId);
-      if (post) {
-        recommendationEngine.trackAction('VIEW', post);
-        // Don't update state immediately to avoid re-renders on scroll
-      }
-    } catch (error) {
-      // Silent fail - view tracking shouldn't break UX
-      if (__DEV__) {
-        console.log('View tracking failed:', error);
+      // Start flush timer on first buffered view
+      if (viewBuffer.size === 1) {
+        viewFlushTimer = setTimeout(flushViewBuffer, VIEW_FLUSH_INTERVAL);
       }
     }
   },

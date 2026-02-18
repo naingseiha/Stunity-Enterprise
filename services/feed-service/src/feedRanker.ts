@@ -632,7 +632,7 @@ export class FeedRanker {
         };
     }
 
-    // ─── Track User Action ────────────────────────────────────────
+    // ─── Track User Action (Batched) ──────────────────────────────
     async trackAction(
         userId: string,
         postId: string,
@@ -641,22 +641,21 @@ export class FeedRanker {
         source?: string
     ): Promise<void> {
         try {
-            // Get post topics
             const post = await this.prisma.post.findUnique({
                 where: { id: postId },
+                select: { topicTags: true },
             });
 
             if (!post) return;
 
             const topics = ((post as any).topicTags as string[]) || [];
             const weight = ACTION_WEIGHTS[action] || 1;
+            const actionField = `${action.toLowerCase()}Count` as any;
 
-            // Update signal for each topic
-            for (const topic of topics) {
+            // Batch all signal upserts + optional postView into a single transaction
+            const ops = topics.map(topic => {
                 const key = topic.toLowerCase();
-                const actionField = `${action.toLowerCase()}Count` as any;
-
-                await this.prisma.userFeedSignal.upsert({
+                return this.prisma.userFeedSignal.upsert({
                     where: {
                         userId_topicId: { userId, topicId: key },
                     },
@@ -672,31 +671,33 @@ export class FeedRanker {
                         [actionField]: { increment: 1 },
                         lastInteraction: new Date(),
                         ...(action === 'VIEW' && duration ? {
-                            // Running average for view duration
-                            avgViewDuration: { increment: duration * 0.1 }, // weighted running avg
+                            avgViewDuration: { increment: duration * 0.1 },
                         } : {}),
                     },
                 });
-            }
+            });
 
-            // Track post view in PostView table for VIEW action
+            // Include postView create in the same transaction for VIEW
             if (action === 'VIEW') {
-                await this.prisma.postView.create({
+                ops.push(this.prisma.postView.create({
                     data: {
                         postId,
                         userId,
                         duration: duration ? Math.round(duration) : null,
                         source: source || 'feed',
                     },
-                });
+                }) as any);
+            }
+
+            if (ops.length > 0) {
+                await this.prisma.$transaction(ops);
             }
         } catch (error) {
             console.error('❌ [FeedRanker] trackAction error:', error);
             // Non-critical — don't crash the request
         }
     }
-
-    // ─── Refresh Post Scores (background job) ──────────────────────
+    // ─── Refresh Post Scores (background job — batched) ────────────
     async refreshPostScores(): Promise<number> {
         const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
 
@@ -710,9 +711,10 @@ export class FeedRanker {
             },
         });
 
-        let updated = 0;
+        if (posts.length === 0) return 0;
 
-        for (const post of posts) {
+        // Pre-compute all scores in memory (zero DB cost)
+        const scored = posts.map(post => {
             const likes = post._count.likes;
             const comments = post._count.comments;
             const views = post._count.views;
@@ -720,42 +722,45 @@ export class FeedRanker {
 
             const engagementRaw = (likes * 3) + (comments * 5) + (shares * 7) + (views * 0.5);
             const engagementScore = engagementRaw / (engagementRaw + 50);
-
             const qualityScore = POST_TYPE_QUALITY[post.postType] || 0.40;
-
             const ageHours = (Date.now() - new Date(post.createdAt).getTime()) / (1000 * 60 * 60);
             const decayFactor = Math.exp(-0.029 * ageHours);
-
-            // Trending: engagement velocity (recent vs older)
             const trendingScore = engagementScore * decayFactor;
 
-            await this.prisma.postScore.upsert({
-                where: { postId: post.id },
-                create: {
-                    postId: post.id,
-                    engagementScore,
-                    qualityScore,
-                    trendingScore,
-                    decayFactor,
-                },
-                update: {
-                    engagementScore,
-                    qualityScore,
-                    trendingScore,
-                    decayFactor,
-                    computedAt: new Date(),
-                },
-            });
+            return { id: post.id, engagementScore, qualityScore, trendingScore, decayFactor };
+        });
 
-            // Also update the denormalized trendingScore on the post
-            await this.prisma.post.update({
-                where: { id: post.id },
-                data: { trendingScore },
-            });
-
-            updated++;
+        // Batch all DB writes into a single transaction (2N queries → 1 transaction)
+        const BATCH_SIZE = 100;
+        for (let i = 0; i < scored.length; i += BATCH_SIZE) {
+            const batch = scored.slice(i, i + BATCH_SIZE);
+            await this.prisma.$transaction(
+                batch.flatMap(s => [
+                    this.prisma.postScore.upsert({
+                        where: { postId: s.id },
+                        create: {
+                            postId: s.id,
+                            engagementScore: s.engagementScore,
+                            qualityScore: s.qualityScore,
+                            trendingScore: s.trendingScore,
+                            decayFactor: s.decayFactor,
+                        },
+                        update: {
+                            engagementScore: s.engagementScore,
+                            qualityScore: s.qualityScore,
+                            trendingScore: s.trendingScore,
+                            decayFactor: s.decayFactor,
+                            computedAt: new Date(),
+                        },
+                    }),
+                    this.prisma.post.update({
+                        where: { id: s.id },
+                        data: { trendingScore: s.trendingScore },
+                    }),
+                ])
+            );
         }
 
-        return updated;
+        return scored.length;
     }
 }

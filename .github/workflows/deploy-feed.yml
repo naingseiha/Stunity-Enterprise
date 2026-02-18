@@ -1,0 +1,94 @@
+name: Deploy Feed Service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/feed-service/**'
+      - 'packages/database/prisma/schema.prisma'
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  SERVICE_NAME: feed-service
+  REGION: asia-southeast1
+  IMAGE: gcr.io/${{ secrets.GCP_PROJECT_ID }}/feed-service
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: services/feed-service
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+        working-directory: packages/database
+
+      - name: TypeScript check
+        run: npx tsc --noEmit
+        working-directory: services/feed-service
+
+      - name: Build
+        run: npm run build
+        working-directory: services/feed-service
+
+  deploy:
+    needs: lint-and-build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ${{ env.IMAGE }}:${{ github.sha }} \
+            -t ${{ env.IMAGE }}:latest \
+            -f services/feed-service/Dockerfile \
+            .
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.IMAGE }}:${{ github.sha }}
+          docker push ${{ env.IMAGE }}:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image ${{ env.IMAGE }}:${{ github.sha }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --port 3010 \
+            --memory 512Mi \
+            --cpu 1 \
+            --min-instances 1 \
+            --max-instances 10 \
+            --concurrency 80 \
+            --timeout 30s \
+            --set-env-vars "NODE_ENV=production" \
+            --allow-unauthenticated

@@ -19,6 +19,8 @@ import {
   Image,
   Platform,
   Alert,
+  AppState,
+  Dimensions,
 } from 'react-native';
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -125,43 +127,60 @@ export default function FeedScreen() {
     return () => unsubscribeFromFeed();
   }, []);
 
-  // Polling fallback: check for new posts every 30s
-  // Uses refs to avoid re-creating interval on every posts/pendingPosts change
+  // Foreground refresh: check for new posts when app returns from background
+  // Replaces the old 30s polling — at scale, polling wastes 333+ req/s
   useEffect(() => {
-    const pollInterval = setInterval(async () => {
-      try {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        // App came to foreground — check for new posts
         const currentPosts = postsRef.current;
-        const currentPending = pendingPostsRef.current;
         if (currentPosts.length === 0) return;
         const latestCreatedAt = currentPosts[0]?.createdAt;
         if (!latestCreatedAt) return;
 
-        const response = await feedApi.get('/posts/feed', {
+        feedApi.get('/posts/feed', {
           params: { mode: 'RECENT', limit: 5, page: 1 },
-        });
+        }).then((response) => {
+          if (response.data?.success && response.data.data) {
+            const currentPending = pendingPostsRef.current;
+            const newPosts = response.data.data.filter(
+              (p: any) => new Date(p.createdAt) > new Date(latestCreatedAt) &&
+                !currentPosts.some(existing => existing.id === p.id) &&
+                !currentPending.some(pending => pending.id === p.id)
+            );
 
-        if (response.data?.success && response.data.data) {
-          const newPosts = response.data.data.filter(
-            (p: any) => new Date(p.createdAt) > new Date(latestCreatedAt) &&
-              !currentPosts.some(existing => existing.id === p.id) &&
-              !currentPending.some(pending => pending.id === p.id)
-          );
-
-          if (newPosts.length > 0) {
-            console.log(`🔄 [FeedScreen] Poll found ${newPosts.length} new post(s)`);
-            const transformed = transformPosts(newPosts);
-            useFeedStore.setState(state => ({
-              pendingPosts: [...transformed, ...state.pendingPosts],
-            }));
+            if (newPosts.length > 0) {
+              const transformed = transformPosts(newPosts);
+              useFeedStore.setState(state => ({
+                pendingPosts: [...transformed, ...state.pendingPosts],
+              }));
+            }
           }
-        }
-      } catch (e) {
-        // Silent fail — polling is a fallback
+        }).catch(() => {
+          // Silent fail — foreground refresh is a convenience, not critical
+        });
       }
-    }, 30000);
+    });
 
-    return () => clearInterval(pollInterval);
-  }, []); // Empty deps — uses refs
+    return () => subscription.remove();
+  }, []);
+
+  // Memory pressure: reduce in-memory posts when iOS warns about low memory
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+
+    const memSub = AppState.addEventListener('memoryWarning', () => {
+      const currentPosts = postsRef.current;
+      if (currentPosts.length > 20) {
+        useFeedStore.setState({ posts: currentPosts.slice(0, 20) });
+        if (__DEV__) {
+          console.log('⚠️ [FeedScreen] Memory pressure — trimmed posts to 20');
+        }
+      }
+    });
+
+    return () => memSub.remove();
+  }, []);
 
   // ── Viewport-based view tracking ──
   // Track which posts are visible and for how long
@@ -220,27 +239,21 @@ export default function FeedScreen() {
     }
   }, [likePost, unlikePost]);
 
-  const handleSharePost = useCallback(async (postId: string) => {
-    const post = posts.find(p => p.id === postId);
-    if (!post) return;
-
+  const handleSharePost = useCallback(async (post: Post) => {
     try {
-      // Use native share if available
       if (Platform.OS === 'ios' || Platform.OS === 'android') {
         const { Share } = await import('react-native');
         await Share.share({
           message: `Check out this ${post.postType.toLowerCase()} on Stunity:\n\n${post.content}\n\n#Stunity #Education`,
           title: `${post.author.firstName}'s ${post.postType}`,
-          url: `https://stunity.com/posts/${postId}`, // Future: deep link
+          url: `https://stunity.com/posts/${post.id}`,
         });
       }
-
-      // Track share
-      await sharePost(postId);
+      await sharePost(post.id);
     } catch (error) {
       console.error('Share failed:', error);
     }
-  }, [posts, sharePost]);
+  }, [sharePost]);
 
   const handleValuePost = useCallback((post: Post) => {
     setValuePostId(post.id);
@@ -431,7 +444,7 @@ export default function FeedScreen() {
         onLike={() => handleLikePost(item)}
         onComment={() => navigation.navigate('Comments', { postId: item.id })}
         onRepost={() => { }}
-        onShare={() => handleSharePost(item.id)}
+        onShare={() => handleSharePost(item)}
         onBookmark={() => bookmarkPost(item.id)}
         onValue={() => handleValuePost(item)}
         onUserPress={() => navigation.navigate('UserProfile', { userId: item.author.id })}
@@ -614,6 +627,13 @@ export default function FeedScreen() {
         contentContainerStyle={styles.listContent}
         // ── FlashList performance props ──
         drawDistance={250}
+        getItemType={(item) => {
+          // Type-bucketed recycling — cells of similar height are reused together
+          if (item.postType === 'QUIZ') return 'quiz';
+          if (item.postType === 'POLL') return 'poll';
+          if (item.mediaUrls && item.mediaUrls.length > 0) return 'media';
+          return 'text';
+        }}
       />
 
       {/* Post Analytics Modal */}

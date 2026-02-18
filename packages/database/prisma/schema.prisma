@@ -726,6 +726,8 @@ model Post {
   @@index([trendingScore(sort: Desc)])
   @@index([pollExpiresAt])
   @@index([studyClubId])
+  @@index([isPinned, createdAt(sort: Desc)]) // Feed sorts by isPinned DESC, createdAt DESC
+  @@index([createdAt(sort: Desc)])            // Standalone for RECENT mode queries
   @@map("posts")
 }
 
@@ -1163,6 +1165,7 @@ model PostView {
   @@index([postId])
   @@index([userId])
   @@index([viewedAt])
+  @@index([postId, userId]) // Compound index for view deduplication checks
   @@map("post_views")
 }
 
@@ -1186,6 +1189,7 @@ model UserFeedSignal {
   @@unique([userId, topicId])
   @@index([userId])
   @@index([score(sort: Desc)])
+  @@index([userId, score(sort: Desc)]) // Feed ranker queries signals by user + top scores
   @@map("user_feed_signals")
 }
 

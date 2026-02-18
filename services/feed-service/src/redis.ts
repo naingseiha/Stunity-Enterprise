@@ -215,7 +215,7 @@ export const EventPublisher = {
 // Feed Response Cache (reuses publisher client)
 // ========================================
 
-const FEED_CACHE_TTL = 30; // 30 seconds
+const FEED_CACHE_TTL = 300; // 5 minutes (invalidated on write)
 
 export const feedCache = {
   async get(key: string): Promise<any | null> {

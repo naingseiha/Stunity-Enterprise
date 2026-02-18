@@ -36,7 +36,10 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Avatar, ImageCarousel } from '@/components/common';
-import { PollVoting } from '@/components/feed';
+import {
+  PollVoting,
+} from '@/components/feed';
+import { DeadlineBanner, ClubAnnouncement, QuizSection } from './PostCardSections';
 import { Post, DifficultyLevel } from '@/types';
 import { useAuthStore } from '@/stores';
 import { formatRelativeTime, formatNumber } from '@/utils';
@@ -483,50 +486,12 @@ const PostCardInner: React.FC<PostCardProps> = ({
 
       {/* Deadline Alert Banner */}
       {deadlineInfo && (
-        <View style={[styles.deadlineBanner, deadlineInfo.isUrgent && styles.deadlineBannerUrgent]}>
-          <Ionicons
-            name={deadlineInfo.isUrgent ? 'warning' : 'time-outline'}
-            size={16}
-            color={deadlineInfo.isUrgent ? '#EF4444' : '#F59E0B'}
-          />
-          <Text style={[styles.deadlineText, deadlineInfo.isUrgent && styles.deadlineTextUrgent]}>
-            {deadlineInfo.isUrgent ? '⚡ Due soon: ' : 'Due: '}{deadlineInfo.text}
-          </Text>
-        </View>
+        <DeadlineBanner deadlineInfo={deadlineInfo} />
       )}
 
-      {/* Club Announcement Banner - Special design for club posts */}
+      {/* Club Announcement Banner */}
       {post.postType === 'CLUB_ANNOUNCEMENT' && (
-        <LinearGradient
-          colors={[typeConfig.bgColor, '#FFFFFF']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={styles.clubBanner}
-        >
-          <View style={styles.clubBannerContent}>
-            <View style={[styles.clubIconCircle, { backgroundColor: typeConfig.color + '20' }]}>
-              <Ionicons name="people" size={24} color={typeConfig.color} />
-            </View>
-            <View style={styles.clubBannerText}>
-              <View style={styles.clubBannerHeader}>
-                <Ionicons name="sparkles" size={14} color={typeConfig.color} />
-                <Text style={[styles.clubBannerTitle, { color: typeConfig.color }]}>
-                  New Study Club Available
-                </Text>
-              </View>
-              <Text style={styles.clubBannerSubtitle}>
-                Join this community and start learning together!
-              </Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            style={[styles.clubJoinButton, { backgroundColor: typeConfig.color }]}
-            onPress={onPress}
-          >
-            <Ionicons name="add" size={18} color="#fff" />
-            <Text style={styles.clubJoinButtonText}>View Club</Text>
-          </TouchableOpacity>
-        </LinearGradient>
+        <ClubAnnouncement typeConfig={typeConfig} onPress={onPress} />
       )}
 
       {/* Media - Full Width (Instagram-style) */}
@@ -580,169 +545,16 @@ const PostCardInner: React.FC<PostCardProps> = ({
         </View>
       )}
 
-      {/* Quiz Card - Special Design */}
+      {/* Quiz Card - Extracted memoized section */}
       {post.postType === 'QUIZ' && post.quizData && (
-        <View style={styles.quizSection}>
-          <LinearGradient
-            colors={getQuizGradient(post.id)}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.quizGradientCard}
-          >
-            {/* Quiz Header */}
-            <View style={styles.quizHeader}>
-              <View style={styles.quizIconCircle}>
-                <Ionicons name="rocket" size={24} color={quizThemeColor} />
-              </View>
-              <View style={styles.quizHeaderText}>
-                <Text style={styles.quizHeaderTitle}>Test Your Knowledge</Text>
-                <Text style={styles.quizHeaderSubtitle}>Complete this quiz to earn points!</Text>
-              </View>
-            </View>
-
-            {/* Quiz Stats Grid */}
-            <View style={styles.quizStatsGrid}>
-              <View style={styles.quizStatItem}>
-                <View style={styles.quizStatIconBg}>
-                  <Ionicons name="document-text-outline" size={20} color={quizThemeColor} />
-                </View>
-                <Text style={styles.quizStatValue}>{post.quizData.questions?.length || 0}</Text>
-                <Text style={styles.quizStatLabel}>Questions</Text>
-              </View>
-
-              <View style={styles.quizStatItem}>
-                <View style={styles.quizStatIconBg}>
-                  <Ionicons name="time-outline" size={20} color={quizThemeColor} />
-                </View>
-                <Text style={styles.quizStatValue}>
-                  {post.quizData.timeLimit ? `${post.quizData.timeLimit}m` : 'No limit'}
-                </Text>
-                <Text style={styles.quizStatLabel}>Time</Text>
-              </View>
-
-              <View style={styles.quizStatItem}>
-                <View style={styles.quizStatIconBg}>
-                  <Ionicons name="star" size={20} color="#F59E0B" />
-                </View>
-                <Text style={styles.quizStatValue}>{post.quizData.totalPoints || 100}</Text>
-                <Text style={styles.quizStatLabel}>Points</Text>
-              </View>
-
-              <View style={styles.quizStatItem}>
-                <View style={styles.quizStatIconBg}>
-                  <Ionicons name="checkmark-circle-outline" size={20} color="#10B981" />
-                </View>
-                <Text style={styles.quizStatValue}>{post.quizData.passingScore || 70}%</Text>
-                <Text style={styles.quizStatLabel}>Pass</Text>
-              </View>
-            </View>
-
-            {/* Action Buttons - Show different buttons based on attempt status */}
-            {post.quizData.userAttempt ? (
-              // User has attempted - show View Results + Retake
-              <View style={styles.quizActionButtons}>
-                {/* Previous Attempt Info */}
-                <View style={styles.attemptInfoBar}>
-                  <View style={styles.attemptIconBg}>
-                    <Ionicons
-                      name={post.quizData.userAttempt.passed ? 'checkmark-circle' : 'close-circle'}
-                      size={16}
-                      color={post.quizData.userAttempt.passed ? '#10B981' : '#EF4444'}
-                    />
-                  </View>
-                  <Text style={styles.attemptText}>
-                    Previous: {post.quizData.userAttempt.score}%
-                  </Text>
-                  <View style={[
-                    styles.attemptBadge,
-                    post.quizData.userAttempt.passed ? styles.passedBadge : styles.failedBadge
-                  ]}>
-                    <Text style={styles.attemptBadgeText}>
-                      {post.quizData.userAttempt.passed ? 'Passed' : 'Not Passed'}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* View Results Button */}
-                <TouchableOpacity
-                  onPress={() => {
-                    if (!post.quizData?.userAttempt) return;
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    navigation.navigate('QuizResults', {
-                      quiz: {
-                        id: post.quizData.id,
-                        title: post.title || 'Quiz',
-                        description: post.content,
-                        questions: post.quizData.questions,
-                        timeLimit: post.quizData.timeLimit,
-                        passingScore: post.quizData.passingScore,
-                        totalPoints: post.quizData.totalPoints,
-                      },
-                      answers: post.quizData.userAttempt.answers || [],
-                      score: post.quizData.userAttempt.score,
-                      passed: post.quizData.userAttempt.passed,
-                      pointsEarned: post.quizData.userAttempt.pointsEarned || 0,
-                      results: post.quizData.userAttempt.results || [],
-                      viewMode: true,
-                      attemptId: post.quizData.userAttempt.id,
-                    });
-                  }}
-                  style={styles.viewResultsButton}
-                >
-                  <Ionicons name="eye-outline" size={20} color="#6366F1" />
-                  <Text style={styles.viewResultsButtonText}>View Results</Text>
-                </TouchableOpacity>
-
-                {/* Retake Quiz Button */}
-                <TouchableOpacity
-                  onPress={() => {
-                    if (!post.quizData) return;
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    navigation.navigate('TakeQuiz', {
-                      quiz: {
-                        id: post.quizData.id,
-                        title: post.title || 'Quiz',
-                        description: post.content,
-                        questions: post.quizData.questions,
-                        timeLimit: post.quizData.timeLimit,
-                        passingScore: post.quizData.passingScore,
-                        totalPoints: post.quizData.totalPoints,
-                      }
-                    });
-                  }}
-                  style={styles.retakeQuizButton}
-                >
-                  <Ionicons name="refresh" size={20} color={quizThemeColor} />
-                  <Text style={[styles.retakeQuizButtonText, { color: quizThemeColor }]}>Retake Quiz</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              // No attempt yet - show Take Quiz button
-              <TouchableOpacity
-                onPress={() => {
-                  if (!post.quizData) return;
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  navigation.navigate('TakeQuiz', {
-                    quiz: {
-                      id: post.quizData.id,
-                      title: post.title || 'Quiz',
-                      description: post.content,
-                      questions: post.quizData.questions,
-                      timeLimit: post.quizData.timeLimit,
-                      passingScore: post.quizData.passingScore,
-                      totalPoints: post.quizData.totalPoints,
-                    }
-                  });
-                }}
-                style={styles.takeQuizButton}
-              >
-                <Ionicons name="play-circle" size={22} color={quizThemeColor} />
-                <Text style={[styles.takeQuizButtonText, { color: quizThemeColor }]}>Take Quiz Now</Text>
-                <Ionicons name="arrow-forward" size={18} color={quizThemeColor} />
-              </TouchableOpacity>
-            )}
-          </LinearGradient>
-        </View>
+        <QuizSection
+          quizData={post.quizData}
+          postTitle={post.title}
+          postContent={post.content}
+          postId={post.id}
+          quizThemeColor={quizThemeColor}
+          quizGradient={getQuizGradient(post.id)}
+        />
       )}
 
       {/* Topic Tags */}
