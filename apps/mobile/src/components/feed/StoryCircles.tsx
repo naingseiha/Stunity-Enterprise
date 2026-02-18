@@ -129,7 +129,7 @@ export const StoryCircles: React.FC<StoryCirclesProps> = ({
           if (group.user.id === currentUserId) return null;
 
           const fullName = `${group.user.firstName} ${group.user.lastName}`;
-          
+
           return (
             <TouchableOpacity
               key={group.user.id}
@@ -168,15 +168,15 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
     paddingVertical: 14,
-    marginHorizontal: 12,
-    marginTop: 4,
+    marginHorizontal: 14,
+    marginTop: 10,
     marginBottom: 0,
-    borderRadius: 16,
+    borderRadius: 18,
     shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
   },
   scrollContent: {
     paddingHorizontal: 16,

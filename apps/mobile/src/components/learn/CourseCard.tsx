@@ -1,7 +1,8 @@
 /**
  * Course Card Component
  * 
- * Card displaying course preview in learn screens
+ * Premium card design matching the feed's indigo design language
+ * Clean shadows, indigo accents, gradient badges
  */
 
 import React from 'react';
@@ -9,21 +10,28 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { Avatar, Card } from '@/components/common';
-import { Colors, Typography, Spacing, Shadows, BorderRadius } from '@/config';
+import { Avatar } from '@/components/common';
 import { Course } from '@/types';
 import { formatNumber } from '@/utils';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - Spacing[4] * 3) / 2;
+const CARD_WIDTH = (width - 48) / 2;
+
+// Level badge colors
+const LEVEL_COLORS: Record<string, { bg: string; text: string }> = {
+  BEGINNER: { bg: '#D1FAE5', text: '#059669' },
+  INTERMEDIATE: { bg: '#DBEAFE', text: '#2563EB' },
+  ADVANCED: { bg: '#FEE2E2', text: '#DC2626' },
+  ALL_LEVELS: { bg: '#EEF2FF', text: '#6366F1' },
+};
 
 interface CourseCardProps {
   course: Course;
@@ -37,47 +45,42 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   variant = 'full',
 }) => {
   const isCompact = variant === 'compact';
-
-  const progress = course.enrollmentCount || 0 > 0 
-    ? Math.floor(Math.random() * 100) // Demo: would come from enrollment
-    : 0;
+  const levelStyle = LEVEL_COLORS[course.level] || LEVEL_COLORS.ALL_LEVELS;
 
   return (
     <Animated.View entering={FadeIn.duration(300)}>
-      <TouchableOpacity 
-        onPress={onPress} 
+      <TouchableOpacity
+        onPress={onPress}
         activeOpacity={0.7}
-        style={[
-          styles.container,
-          isCompact && styles.compactContainer,
-        ]}
+        style={[styles.container, isCompact && styles.compactContainer]}
       >
         {/* Thumbnail */}
         <View style={[styles.thumbnailContainer, isCompact && styles.compactThumbnail]}>
           {course.thumbnailUrl ? (
-            <Image 
-              source={{ uri: course.thumbnailUrl }} 
+            <Image
+              source={{ uri: course.thumbnailUrl }}
               style={styles.thumbnail}
-              resizeMode="cover"
+              contentFit="cover"
+              transition={300}
             />
           ) : (
             <LinearGradient
-              colors={['#F3F4F6', '#E5E7EB']}
+              colors={['#EEF2FF', '#E0E7FF']}
               style={styles.thumbnailPlaceholder}
             >
-              <Ionicons name="book" size={isCompact ? 24 : 40} color="#6B7280" />
+              <Ionicons name="book" size={isCompact ? 24 : 36} color="#6366F1" />
             </LinearGradient>
           )}
 
           {/* Level Badge */}
-          <View style={styles.levelBadge}>
-            <Text style={styles.levelText}>{course.level}</Text>
+          <View style={[styles.levelBadge, { backgroundColor: levelStyle.bg }]}>
+            <Text style={[styles.levelText, { color: levelStyle.text }]}>{course.level}</Text>
           </View>
 
           {/* Duration */}
           {course.duration && (
             <View style={styles.durationBadge}>
-              <Ionicons name="time-outline" size={12} color={Colors.white} />
+              <Ionicons name="time-outline" size={11} color="#fff" />
               <Text style={styles.durationText}>
                 {Math.floor(course.duration / 60)}h {course.duration % 60}m
               </Text>
@@ -87,17 +90,12 @@ export const CourseCard: React.FC<CourseCardProps> = ({
 
         {/* Content */}
         <View style={[styles.content, isCompact && styles.compactContent]}>
-          <Text 
-            style={[styles.title, isCompact && styles.compactTitle]} 
-            numberOfLines={2}
-          >
+          <Text style={[styles.title, isCompact && styles.compactTitle]} numberOfLines={2}>
             {course.title}
           </Text>
 
           {!isCompact && course.description && (
-            <Text style={styles.description} numberOfLines={2}>
-              {course.description}
-            </Text>
+            <Text style={styles.description} numberOfLines={2}>{course.description}</Text>
           )}
 
           {/* Instructor */}
@@ -107,50 +105,37 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                 uri={course.instructor.profilePictureUrl}
                 name={`${course.instructor.firstName} ${course.instructor.lastName}`}
                 size="xs"
+                showBorder={false}
+                gradientBorder="none"
               />
               <Text style={styles.instructorName} numberOfLines={1}>
                 {course.instructor.firstName} {course.instructor.lastName}
               </Text>
+              {course.instructor.isVerified && (
+                <View style={styles.verifiedTick}>
+                  <Ionicons name="checkmark" size={8} color="#fff" />
+                </View>
+              )}
             </View>
           )}
 
-          {/* Stats */}
+          {/* Stats Row */}
           <View style={styles.statsRow}>
             <View style={styles.stat}>
-              <Ionicons name="people-outline" size={14} color={Colors.gray[400]} />
-              <Text style={styles.statText}>
-                {formatNumber(course.enrollmentCount || 0)}
-              </Text>
+              <Ionicons name="people" size={13} color="#6366F1" />
+              <Text style={styles.statText}>{formatNumber(course.enrollmentCount || 0)}</Text>
             </View>
-
             {course.rating && (
               <View style={styles.stat}>
-                <Ionicons name="star" size={14} color={Colors.warning.main} />
-                <Text style={styles.statText}>
-                  {course.rating.toFixed(1)}
-                </Text>
+                <Ionicons name="star" size={13} color="#F59E0B" />
+                <Text style={styles.statText}>{course.rating.toFixed(1)}</Text>
               </View>
             )}
-
             <View style={styles.stat}>
-              <Ionicons name="documents-outline" size={14} color={Colors.gray[400]} />
-              <Text style={styles.statText}>
-                {course.totalLessons || 0} lessons
-              </Text>
+              <Ionicons name="play-circle" size={13} color="#10B981" />
+              <Text style={styles.statText}>{course.totalLessons || 0} lessons</Text>
             </View>
           </View>
-
-          {/* Progress Bar (if enrolled) */}
-          {progress > 0 && (
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBar}>
-                <View 
-                  style={[styles.progressFill, { width: `${progress}%` }]} 
-                />
-              </View>
-              <Text style={styles.progressText}>{progress}%</Text>
-            </View>
-          )}
 
           {/* Price / Free */}
           <View style={styles.priceRow}>
@@ -171,26 +156,25 @@ export const CourseCard: React.FC<CourseCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: 'hidden',
-    marginBottom: 16,
-    // Match Feed card shadow
-    shadowColor: '#000000',
+    marginBottom: 14,
+    shadowColor: '#6366F1',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
-    elevation: 6,
+    elevation: 4,
   },
   compactContainer: {
     width: CARD_WIDTH,
     marginBottom: 0,
   },
   thumbnailContainer: {
-    height: 180,
+    height: 170,
     position: 'relative',
   },
   compactThumbnail: {
-    height: 120,
+    height: 110,
   },
   thumbnail: {
     width: '100%',
@@ -206,72 +190,79 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     left: 12,
-    backgroundColor: 'rgba(0,0,0,0.7)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
   },
   levelText: {
-    fontSize: 11,
-    color: Colors.white,
+    fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   durationBadge: {
     position: 'absolute',
     bottom: 12,
     right: 12,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 8,
-    gap: 4,
+    gap: 3,
   },
   durationText: {
     fontSize: 11,
-    color: Colors.white,
+    color: '#fff',
     fontWeight: '600',
   },
   content: {
-    padding: 16,
+    padding: 14,
   },
   compactContent: {
-    padding: 12,
+    padding: 10,
   },
   title: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
-    color: '#1a1a1a',
-    lineHeight: 24,
+    color: '#1F2937',
+    lineHeight: 22,
   },
   compactTitle: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 14,
+    lineHeight: 19,
   },
   description: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6B7280',
-    marginTop: 8,
-    lineHeight: 20,
+    marginTop: 6,
+    lineHeight: 18,
   },
   instructorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
-    gap: 8,
+    marginTop: 10,
+    gap: 7,
   },
   instructorName: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 12,
     color: '#6B7280',
     fontWeight: '500',
   },
+  verifiedTick: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#6366F1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   statsRow: {
     flexDirection: 'row',
-    marginTop: 12,
-    gap: 16,
+    marginTop: 10,
+    gap: 14,
   },
   stat: {
     flexDirection: 'row',
@@ -283,50 +274,28 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontWeight: '500',
   },
-  progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    gap: 8,
-  },
-  progressBar: {
-    flex: 1,
-    height: 6,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#FFA500',
-    borderRadius: 3,
-  },
-  progressText: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '700',
-    width: 35,
-    textAlign: 'right',
-  },
   priceRow: {
     marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   price: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FFA500',
+    fontSize: 19,
+    fontWeight: '800',
+    color: '#6366F1',
   },
   freeBadge: {
     backgroundColor: '#D1FAE5',
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 8,
   },
   freeText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: '#059669',
+    letterSpacing: 0.5,
   },
 });
 

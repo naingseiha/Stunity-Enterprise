@@ -349,6 +349,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
 
   return (
     <View style={styles.container}>
+
       {/* LIVE Badge - Top Corner */}
       {learningMeta?.isLive && (
         <Animated.View style={[styles.liveBadge, liveAnimatedStyle]}>
@@ -638,19 +639,17 @@ const PostCardInner: React.FC<PostCardProps> = ({
           </View>
         )}
 
-        {/* Metrics - Inline */}
+        {/* Metrics — Analytics-style stats */}
         <View style={styles.inlineMetrics}>
+          {learningMeta?.xpReward != null && (
+            <View style={styles.inlineMetric}>
+              <Ionicons name="flash" size={13} color="#F59E0B" />
+              <Text style={styles.inlineMetricText}>+{learningMeta.xpReward} XP</Text>
+            </View>
+          )}
           <View style={styles.inlineMetric}>
-            <Ionicons name="time-outline" size={14} color="#6B7280" />
-            <Text style={styles.inlineMetricText}>{learningMeta?.estimatedMinutes || Math.floor(Math.random() * 8) + 3} min</Text>
-          </View>
-          <View style={styles.inlineMetric}>
-            <Ionicons name="people-outline" size={14} color="#6B7280" />
-            <Text style={styles.inlineMetricText}>{learningMeta?.participantCount || Math.floor(Math.random() * 200) + 50}</Text>
-          </View>
-          <View style={styles.inlineMetric}>
-            <Ionicons name="star" size={14} color="#F59E0B" />
-            <Text style={styles.inlineMetricText}>+{learningMeta?.xpReward || Math.floor(Math.random() * 30) + 10} XP</Text>
+            <Ionicons name="stats-chart" size={13} color="#6366F1" />
+            <Text style={styles.inlineMetricText}>{formatNumber(post.likes + post.comments)}</Text>
           </View>
         </View>
       </View>
@@ -738,21 +737,20 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 14,
-    marginBottom: 16,
-    borderRadius: 16,
-    overflow: 'visible',
+    marginBottom: 14,
+    borderRadius: 18,
+    overflow: 'hidden',
     position: 'relative',
-    // Subtle card elevation with shadow
-    shadowColor: '#000',
+    paddingTop: 14,
+    // Premium card shadow with indigo tint
+    shadowColor: '#6366F1',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-    // Add padding inside for content
-    paddingTop: 16,
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
   },
   // LIVE Badge styles
   liveBadge: {
@@ -790,7 +788,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16, // Consistent 16px padding
+    paddingHorizontal: 16,
     paddingBottom: 12,
   },
   authorSection: {
@@ -1149,6 +1147,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: '#6B7280',
+  },
+  valueStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  valueStatText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#9CA3AF',
   },
   actionBar: {
     flexDirection: 'row',

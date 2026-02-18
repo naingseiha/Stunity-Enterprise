@@ -1,11 +1,9 @@
 /**
- * FloatingActionButton (FAB) Component
+ * FloatingActionButton (FAB) Component — V2 Premium Design
  * 
- * Material Design FAB for quick post creation:
- * - Fixed position bottom-right
- * - Purple gradient background
- * - Always visible (no auto-hide)
- * - Elevation/shadow for prominence
+ * - Purple gradient background with indigo shadow glow
+ * - Always visible, bottom-right position
+ * - Premium shadow with color-matched glow
  */
 
 import React from 'react';
@@ -13,11 +11,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   Platform,
-  View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Shadows } from '@/config';
 
 interface FABProps {
   onPress: () => void;
@@ -28,16 +24,16 @@ interface FABProps {
 export default function FloatingActionButton({
   onPress,
   icon = 'add',
-  size = 56,
+  size = 58,
 }: FABProps) {
   return (
     <TouchableOpacity
-      activeOpacity={0.8}
+      activeOpacity={0.85}
       onPress={onPress}
-      style={[styles.container, { width: size, height: size }]}
+      style={[styles.container, { width: size, height: size, borderRadius: size / 2 }]}
     >
       <LinearGradient
-        colors={['#6366F1', '#8B5CF6']}
+        colors={['#818CF8', '#6366F1', '#4F46E5']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.gradient, { borderRadius: size / 2 }]}
@@ -51,12 +47,14 @@ export default function FloatingActionButton({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    right: 24,
+    right: 20,
     bottom: 24,
-    ...Shadows.lg,
-    // Additional elevation for Android
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
     ...(Platform.OS === 'android' && {
-      elevation: 6,
+      elevation: 8,
     }),
   },
   gradient: {

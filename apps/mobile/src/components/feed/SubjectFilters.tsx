@@ -1,10 +1,11 @@
 /**
- * SubjectFilters Component
+ * SubjectFilters Component — Featured Categories Grid
  * 
- * Horizontal scrollable subject filter chips for feed:
- * - All, Math, Physics, Chemistry, Biology, Computer Science, English, History
- * - Active state with purple gradient
- * - Replaces post-type filters
+ * Screenshot-inspired circular icon containers:
+ * - Round pastel-tinted icon circles with subject icons
+ * - Label underneath each circle
+ * - Scrollable horizontal row
+ * - Active state with colored ring + subtle scale
  */
 
 import React from 'react';
@@ -16,98 +17,28 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing } from '@/config';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export interface SubjectFilter {
   key: string;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
-  bgColor: string;
-  textColor: string;
-  iconColor: string;
+  color: string;       // Main accent color
+  bgColor: string;     // Light circle background
+  gradient: [string, string]; // Gradient for active ring
 }
 
 const SUBJECTS: SubjectFilter[] = [
-  { 
-    key: 'ALL', 
-    label: 'All', 
-    icon: 'grid-outline',
-    bgColor: '#EEF2FF', // Light indigo
-    textColor: '#4F46E5', // Indigo
-    iconColor: '#4F46E5',
-  },
-  { 
-    key: 'MATH', 
-    label: 'Math', 
-    icon: 'calculator-outline',
-    bgColor: '#DBEAFE', // Light blue
-    textColor: '#1D4ED8', // Blue
-    iconColor: '#1D4ED8',
-  },
-  { 
-    key: 'PHYSICS', 
-    label: 'Physics', 
-    icon: 'planet-outline',
-    bgColor: '#FEE2E2', // Light red
-    textColor: '#DC2626', // Red
-    iconColor: '#DC2626',
-  },
-  { 
-    key: 'CHEMISTRY', 
-    label: 'Chemistry', 
-    icon: 'flask-outline',
-    bgColor: '#D1FAE5', // Light green
-    textColor: '#059669', // Green
-    iconColor: '#059669',
-  },
-  { 
-    key: 'BIOLOGY', 
-    label: 'Biology', 
-    icon: 'leaf-outline',
-    bgColor: '#DCFCE7', // Light lime
-    textColor: '#16A34A', // Lime green
-    iconColor: '#16A34A',
-  },
-  { 
-    key: 'CS', 
-    label: 'Computer Sci', 
-    icon: 'code-slash-outline',
-    bgColor: '#E0E7FF', // Light indigo blue
-    textColor: '#4338CA', // Indigo blue
-    iconColor: '#4338CA',
-  },
-  { 
-    key: 'ENGLISH', 
-    label: 'English', 
-    icon: 'book-outline',
-    bgColor: '#FCE7F3', // Light pink
-    textColor: '#DB2777', // Pink
-    iconColor: '#DB2777',
-  },
-  { 
-    key: 'HISTORY', 
-    label: 'History', 
-    icon: 'time-outline',
-    bgColor: '#FEF3C7', // Light yellow
-    textColor: '#D97706', // Orange
-    iconColor: '#D97706',
-  },
-  { 
-    key: 'ECONOMICS', 
-    label: 'Economics', 
-    icon: 'trending-up-outline',
-    bgColor: '#FAE8FF', // Light purple
-    textColor: '#A21CAF', // Purple
-    iconColor: '#A21CAF',
-  },
-  { 
-    key: 'ARTS', 
-    label: 'Arts', 
-    icon: 'color-palette-outline',
-    bgColor: '#FFE4E6', // Light rose
-    textColor: '#E11D48', // Rose
-    iconColor: '#E11D48',
-  },
+  { key: 'ALL', label: 'All', icon: 'apps', color: '#6366F1', bgColor: '#EEF2FF', gradient: ['#818CF8', '#6366F1'] },
+  { key: 'MATH', label: 'Math', icon: 'calculator', color: '#2563EB', bgColor: '#DBEAFE', gradient: ['#60A5FA', '#2563EB'] },
+  { key: 'PHYSICS', label: 'Physics', icon: 'planet', color: '#DC2626', bgColor: '#FEE2E2', gradient: ['#F87171', '#DC2626'] },
+  { key: 'CHEMISTRY', label: 'Chemistry', icon: 'flask', color: '#059669', bgColor: '#D1FAE5', gradient: ['#34D399', '#059669'] },
+  { key: 'BIOLOGY', label: 'Biology', icon: 'leaf', color: '#16A34A', bgColor: '#DCFCE7', gradient: ['#4ADE80', '#16A34A'] },
+  { key: 'CS', label: 'CS', icon: 'code-slash', color: '#4338CA', bgColor: '#E0E7FF', gradient: ['#818CF8', '#4338CA'] },
+  { key: 'ENGLISH', label: 'English', icon: 'book', color: '#DB2777', bgColor: '#FCE7F3', gradient: ['#F472B6', '#DB2777'] },
+  { key: 'HISTORY', label: 'History', icon: 'time', color: '#D97706', bgColor: '#FEF3C7', gradient: ['#FBBF24', '#D97706'] },
+  { key: 'GEOGRAPHY', label: 'Geography', icon: 'globe', color: '#0891B2', bgColor: '#CFFAFE', gradient: ['#22D3EE', '#0891B2'] },
+  { key: 'ARTS', label: 'Arts', icon: 'color-palette', color: '#E11D48', bgColor: '#FFE4E6', gradient: ['#FB7185', '#E11D48'] },
 ];
 
 interface SubjectFiltersProps {
@@ -132,20 +63,41 @@ export default function SubjectFilters({
             <TouchableOpacity
               key={subject.key}
               onPress={() => onFilterChange(subject.key)}
-              style={styles.filterChip}
               activeOpacity={0.7}
+              style={styles.categoryItem}
             >
-              <View 
+              {/* Outer ring for active state */}
+              {isActive ? (
+                <LinearGradient
+                  colors={subject.gradient}
+                  style={styles.activeRing}
+                >
+                  <View style={styles.iconCircle}>
+                    <Ionicons
+                      name={subject.icon}
+                      size={24}
+                      color={subject.color}
+                    />
+                  </View>
+                </LinearGradient>
+              ) : (
+                <View style={[styles.iconCircleOuter, { backgroundColor: subject.bgColor }]}>
+                  <Ionicons
+                    name={subject.icon}
+                    size={24}
+                    color={subject.color}
+                  />
+                </View>
+              )}
+              <Text
                 style={[
-                  styles.filterChipInner,
-                  { backgroundColor: subject.bgColor }
+                  styles.categoryLabel,
+                  isActive && { color: subject.color, fontWeight: '700' },
                 ]}
+                numberOfLines={1}
               >
-                <Ionicons name={subject.icon} size={16} color={subject.iconColor} />
-                <Text style={[styles.filterChipText, { color: subject.textColor }]}>
-                  {subject.label}
-                </Text>
-              </View>
+                {subject.label}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -156,29 +108,46 @@ export default function SubjectFilters({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    backgroundColor: 'transparent',
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 10,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 4,
+    gap: 4,
   },
-  filterChip: {
-    marginRight: 0, // gap handles spacing
-  },
-  filterChipInner: {
-    flexDirection: 'row',
+  categoryItem: {
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 24,
-    gap: 6,
+    width: 72,
   },
-  filterChipText: {
-    fontSize: 13,
+  activeRing: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 3,
+  },
+  iconCircle: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconCircleOuter: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryLabel: {
+    fontSize: 11,
     fontWeight: '600',
-    fontFamily: Typography.fontFamily.semibold,
+    color: '#6B7280',
+    marginTop: 6,
+    textAlign: 'center',
   },
 });

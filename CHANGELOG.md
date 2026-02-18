@@ -2,6 +2,62 @@
 
 All notable changes to Stunity Enterprise will be documented in this file.
 
+## [2.7.0] - 2026-02-19
+
+### Added - Mobile UI/UX Redesign (Indigo Design System)
+
+#### Feed Screen Redesign
+- **Performance Card** — Indigo gradient card replacing greeting bar with streak, XP, and completion stats
+- **User Avatar** — Profile picture on the performance card (xl size, white ring border)
+- **Featured Categories** — Circular icon grid replacing horizontal chip filters
+- **Story Circles removal** — Removed stories feature and all related API calls
+- **PostCard accent bar removal** — Cleaner card design without top colored bar
+- **Post type badge** — Analytics-style metrics (⚡ XP + 📊 engagement) on right side
+
+#### Poll Voting Redesign
+- **Fully rounded pill buttons** (borderRadius: 24) with unique vibrant colors per option
+- 6-color palette: indigo, pink, green, amber, blue, purple
+- Gradient progress fill for voted results with highlighted borders
+- Smooth fade-in animations for result transitions
+
+#### Quick Action Buttons
+- Replaced dead buttons (Study Buddy → **Quiz**, Challenge → **Poll**)
+- All 4 buttons functional: Ask (QUESTION), Quiz (QUIZ), Poll (POLL), Resource (RESOURCE)
+- Each navigates to CreatePost with pre-selected post type
+
+#### Sidebar Menu Redesign
+- **Gradient profile card** matching feed performance card (indigo gradient, centered avatar)
+- Role badge pill (Student/Teacher/Admin) with icon
+- **Colored icon circles** per menu item (amber, pink, indigo, emerald, gray, blue)
+- **Clean logout** with confirmation Alert dialog
+- App version text footer
+
+#### Course Page Redesign
+- **LearnScreen** — Indigo pill tabs, colored category circles, gradient learning path cards
+- **CourseCard** — Indigo shadow tint, semantic level badges, colored stat icons, verified tick
+- Learning paths rendered as vibrant gradient cards (indigo/pink/emerald) with CTA buttons
+
+### Changed
+- **FeedScreen.tsx** — Performance card, quick actions, stories removal, avatar integration
+- **PostCard.tsx** — Type badge row with analytics metrics
+- **PollVoting.tsx** — Complete pill redesign with per-option colors
+- **SubjectFilters.tsx** — Circular icon grid
+- **Sidebar.tsx** — Premium gradient profile card redesign
+- **LearnScreen.tsx** — Full indigo design system
+- **CourseCard.tsx** — Updated shadows, badges, stats, price colors
+
+### Removed
+- StoryCircles component and all story API calls from feed
+- `handleFindStudyBuddy` and `handleDailyChallenge` dead handlers
+- Random fake progress bar from CourseCard
+
+### Technical Details
+- Files modified: 9
+- TypeScript compilation: ✅ No errors
+- Design system: Indigo (#6366F1) primary, consistent across all screens
+
+---
+
 ## [2.6.0] - 2026-02-19
 
 ### Added - Feed Architecture Optimization (33 changes, 6 phases)
@@ -291,6 +347,7 @@ See: `ENHANCED_AUTH_DESIGN.md`, `DESIGN_CONSISTENCY_UPDATE.md`
 
 ## Version History Summary
 
+- **v2.7.0** (2026-02-19): Mobile UI/UX Redesign — Indigo Design System ✅
 - **v2.6.0** (2026-02-19): Feed Architecture Optimization (6 phases, 33 changes) ✅
 - **v2.5.0** (2026-02-10): Professional Mobile UI/UX ✅
 - **v2.4.0** (2026-02-10): Claim Code & ID Generation System ✅

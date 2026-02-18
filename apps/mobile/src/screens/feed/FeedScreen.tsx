@@ -1,11 +1,11 @@
 /**
- * Feed Screen
+ * Feed Screen — Enterprise E-Learning Social Feed
  * 
- * V1 App Design:
- * - Header: Profile left, Stunity logo center, bell/search right
- * - Horizontal filter tabs with purple active
- * - Clean cards with proper shadows
- * - CTA section per post type
+ * V2 Premium Design:
+ * - Performance card with streak + XP stats
+ * - Featured categories with icon grid
+ * - E-learning focused create post card
+ * - Subject filter chips with clear active states
  */
 
 import React, { useEffect, useCallback, useState, useRef, useMemo } from 'react';
@@ -26,9 +26,14 @@ import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   FadeInDown,
   FadeOutUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  Easing,
 } from 'react-native-reanimated';
 
 // Import actual Stunity logo
@@ -36,7 +41,6 @@ const StunityLogo = require('../../../../../Stunity.png');
 
 import {
   PostCard,
-  StoryCircles,
   PostAnalyticsModal,
   SubjectFilters,
   FloatingActionButton,
@@ -52,22 +56,35 @@ import { transformPosts } from '@/utils/transformPost';
 import { FeedStackScreenProps } from '@/navigation/types';
 import { useNavigationContext } from '@/contexts';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Time-based greeting
+const getGreeting = (): string => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+};
+
 type NavigationProp = FeedStackScreenProps<'Feed'>['navigation'];
 
 export default function FeedScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
   const { openSidebar } = useNavigationContext();
+
+  // Animated tab indicator
+  const tabIndicatorX = useSharedValue(0);
+  const tabIndicatorStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: tabIndicatorX.value }],
+  }));
   const {
     feedMode,
     toggleFeedMode,
     posts,
-    storyGroups,
     isLoadingPosts,
-    isLoadingStories,
     hasMorePosts,
     fetchPosts,
-    fetchStories,
     // Real-time
     subscribeToFeed,
     unsubscribeFromFeed,
@@ -77,7 +94,6 @@ export default function FeedScreen() {
     likePost,
     unlikePost,
     bookmarkPost,
-    setActiveStoryGroup,
     voteOnPoll,
     sharePost,
     trackPostView,
@@ -106,16 +122,25 @@ export default function FeedScreen() {
   const keyExtractor = useCallback((item: Post) => item.id, []);
 
   // Tab mode uses direct toggle instead of horizontal ScrollView pager
+  const TAB_WIDTH = (SCREEN_WIDTH - 32) / 2; // Each tab half of container minus padding
   const handleTabPress = useCallback((mode: 'FOR_YOU' | 'FOLLOWING') => {
     if (feedMode !== mode) {
       toggleFeedMode(mode);
       fetchPosts(true);
     }
-  }, [feedMode, toggleFeedMode, fetchPosts]);
+    tabIndicatorX.value = withTiming(
+      mode === 'FOR_YOU' ? 0 : TAB_WIDTH,
+      { duration: 250, easing: Easing.bezier(0.4, 0, 0.2, 1) }
+    );
+  }, [feedMode, toggleFeedMode, fetchPosts, tabIndicatorX]);
+
+  // Set initial indicator position based on current feedMode
+  useEffect(() => {
+    tabIndicatorX.value = feedMode === 'FOR_YOU' ? 0 : TAB_WIDTH;
+  }, []);
 
   useEffect(() => {
     fetchPosts();
-    fetchStories();
     initializeRecommendations();
   }, []);
 
@@ -221,9 +246,9 @@ export default function FeedScreen() {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([fetchPosts(true), fetchStories()]);
+    await fetchPosts(true);
     setRefreshing(false);
-  }, [fetchPosts, fetchStories]);
+  }, [fetchPosts]);
 
   const handleLoadMore = useCallback(() => {
     if (!isLoadingPosts && hasMorePosts) {
@@ -309,14 +334,7 @@ export default function FeedScreen() {
     navigation.navigate('PostDetail', { postId: post.id });
   }, [trackPostView, navigation]);
 
-  const handleStoryPress = useCallback((index: number) => {
-    setActiveStoryGroup(index);
-    navigation.navigate('StoryViewer' as any, { groupIndex: index });
-  }, [setActiveStoryGroup, navigation]);
 
-  const handleCreateStory = useCallback(() => {
-    navigation.navigate('CreateStory' as any);
-  }, [navigation]);
 
   const handleCreatePost = useCallback(() => {
     navigation.navigate('CreatePost' as any);
@@ -328,15 +346,17 @@ export default function FeedScreen() {
     navigation.navigate('CreatePost' as any, { postType: 'QUESTION' });
   }, [navigation]);
 
-  const handleFindStudyBuddy = useCallback(() => {
-    // TODO: Navigate to Study Buddy finder screen when implemented
-    console.log('Find Study Buddy pressed');
-  }, []);
+  const handleCreateQuiz = useCallback(() => {
+    navigation.navigate('CreatePost' as any, { postType: 'QUIZ' });
+  }, [navigation]);
 
-  const handleDailyChallenge = useCallback(() => {
-    // TODO: Navigate to Daily Challenge screen when implemented
-    console.log('Daily Challenge pressed');
-  }, []);
+  const handleCreatePoll = useCallback(() => {
+    navigation.navigate('CreatePost' as any, { postType: 'POLL' });
+  }, [navigation]);
+
+  const handleCreateResource = useCallback(() => {
+    navigation.navigate('CreatePost' as any, { postType: 'RESOURCE' });
+  }, [navigation]);
 
   const handleSubjectFilterChange = useCallback(async (filterKey: string) => {
     setActiveSubjectFilter(filterKey);
@@ -348,30 +368,73 @@ export default function FeedScreen() {
 
   const renderHeader = useCallback(() => (
     <View style={styles.headerSection}>
-      {/* Feed Mode Tabs */}
-      <View style={styles.feedTabsContainer}>
-        <TouchableOpacity
-          style={[styles.feedTab, feedMode === 'FOR_YOU' && styles.feedTabActive]}
-          onPress={() => handleTabPress('FOR_YOU')}
-          activeOpacity={0.7}
+      {/* Performance / Trophy Card — E-Learning focus */}
+      <TouchableOpacity activeOpacity={0.9} style={styles.performanceCardWrapper}>
+        <LinearGradient
+          colors={['#818CF8', '#6366F1', '#4F46E5']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.performanceCard}
         >
-          <Text style={[styles.feedTabText, feedMode === 'FOR_YOU' && styles.feedTabTextActive]}>For You</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.feedTab, feedMode === 'FOLLOWING' && styles.feedTabActive]}
-          onPress={() => handleTabPress('FOLLOWING')}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.feedTabText, feedMode === 'FOLLOWING' && styles.feedTabTextActive]}>Following</Text>
-        </TouchableOpacity>
-        {/* Active indicator under selected tab */}
-        <View style={[
-          styles.activeIndicator,
-          { left: feedMode === 'FOR_YOU' ? '12.5%' : '62.5%' }
-        ]} />
+          {/* Left side: Text info */}
+          <View style={styles.performanceLeft}>
+            <Text style={styles.performanceGreeting}>{getGreeting()}, {user?.firstName || 'Learner'}!</Text>
+            <Text style={styles.performanceTitle}>Keep up your streak! 🔥</Text>
+
+            {/* Stats row */}
+            <View style={styles.performanceStats}>
+              <View style={styles.performanceStat}>
+                <Text style={styles.performanceStatValue}>7</Text>
+                <Text style={styles.performanceStatLabel}>Day Streak</Text>
+              </View>
+              <View style={styles.performanceStatDivider} />
+              <View style={styles.performanceStat}>
+                <Text style={styles.performanceStatValue}>1,240</Text>
+                <Text style={styles.performanceStatLabel}>Total XP</Text>
+              </View>
+              <View style={styles.performanceStatDivider} />
+              <View style={styles.performanceStat}>
+                <Text style={styles.performanceStatValue}>12</Text>
+                <Text style={styles.performanceStatLabel}>Completed</Text>
+              </View>
+            </View>
+
+            {/* CTA */}
+            <TouchableOpacity style={styles.performanceCTA} activeOpacity={0.8}>
+              <Text style={styles.performanceCTAText}>View Progress</Text>
+              <Ionicons name="arrow-forward" size={14} color="#6366F1" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Right side: User Avatar */}
+          <View style={styles.performanceRight}>
+            <View style={styles.performanceAvatarLarge}>
+              <Avatar
+                uri={user?.profilePictureUrl}
+                name={user ? `${user.firstName} ${user.lastName}` : 'User'}
+                size="xl"
+                showBorder={false}
+                gradientBorder="none"
+              />
+            </View>
+          </View>
+
+          {/* Decorative circles */}
+          <View style={[styles.decorCircle, styles.decorCircle1]} />
+          <View style={[styles.decorCircle, styles.decorCircle2]} />
+        </LinearGradient>
+      </TouchableOpacity>
+
+      {/* Featured Categories */}
+      <View style={styles.categoriesSection}>
+        <SubjectFilters
+          activeFilter={activeSubjectFilter}
+          onFilterChange={handleSubjectFilterChange}
+        />
       </View>
 
-      {/* Create Post Card with integrated Stories */}
+
+      {/* Create Post Card — E-Learning Focused */}
       <View style={styles.createPostCard}>
         {/* Top row: Create post input */}
         <TouchableOpacity
@@ -385,53 +448,73 @@ export default function FeedScreen() {
             size="md"
             variant="post"
           />
-          <Text style={styles.createPostPlaceholder}>
-            តើអ្នកកំពុងគិតអ្វី {user?.firstName || ''}?
-          </Text>
-          <View style={styles.createPostMediaButton}>
-            <Ionicons name="images-outline" size={22} color="#6366F1" />
+          <View style={styles.createPostInputFake}>
+            <Text style={styles.createPostPlaceholder}>
+              Share your learning...
+            </Text>
           </View>
+          <TouchableOpacity onPress={handleCreatePost} style={styles.createPostMediaButton}>
+            <Ionicons name="images-outline" size={20} color="#6366F1" />
+          </TouchableOpacity>
         </TouchableOpacity>
 
-        {/* Divider */}
-        <View style={styles.storyDivider} />
+        {/* Gradient Divider */}
+        <LinearGradient
+          colors={['transparent', '#E5E7EB', 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.storyDivider}
+        />
 
-        {/* Quick Action Bar - Integrated in Create Post Card */}
+        {/* Quick Action Bar */}
         <View style={styles.quickActionsInCard}>
           <TouchableOpacity
             onPress={handleAskQuestion}
             activeOpacity={0.7}
             style={styles.inCardAction}
           >
-            <Ionicons name="help-circle" size={24} color="#6366F1" />
-            <Text style={styles.inCardActionText}>Ask Question</Text>
+            <LinearGradient colors={['#818CF8', '#6366F1']} style={styles.quickActionIcon}>
+              <Ionicons name="help-circle" size={18} color="#fff" />
+            </LinearGradient>
+            <Text style={styles.inCardActionText}>Ask</Text>
           </TouchableOpacity>
 
-          <View style={styles.actionDivider} />
-
           <TouchableOpacity
-            onPress={handleFindStudyBuddy}
+            onPress={handleCreateQuiz}
             activeOpacity={0.7}
             style={styles.inCardAction}
           >
-            <Ionicons name="people" size={24} color="#EC4899" />
-            <Text style={styles.inCardActionText}>Study Buddy</Text>
+            <LinearGradient colors={['#34D399', '#10B981']} style={styles.quickActionIcon}>
+              <Ionicons name="bulb" size={18} color="#fff" />
+            </LinearGradient>
+            <Text style={styles.inCardActionText}>Quiz</Text>
           </TouchableOpacity>
 
-          <View style={styles.actionDivider} />
-
           <TouchableOpacity
-            onPress={handleDailyChallenge}
+            onPress={handleCreatePoll}
             activeOpacity={0.7}
             style={styles.inCardAction}
           >
-            <Ionicons name="trophy" size={24} color="#F59E0B" />
-            <Text style={styles.inCardActionText}>Daily Challenge</Text>
+            <LinearGradient colors={['#FBBF24', '#F59E0B']} style={styles.quickActionIcon}>
+              <Ionicons name="bar-chart" size={18} color="#fff" />
+            </LinearGradient>
+            <Text style={styles.inCardActionText}>Poll</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={handleCreateResource}
+            activeOpacity={0.7}
+            style={styles.inCardAction}
+          >
+            <LinearGradient colors={['#F472B6', '#EC4899']} style={styles.quickActionIcon}>
+              <Ionicons name="book" size={18} color="#fff" />
+            </LinearGradient>
+            <Text style={styles.inCardActionText}>Resource</Text>
           </TouchableOpacity>
         </View>
       </View>
     </View>
-  ), [feedMode, handleTabPress, handleCreatePost, user, handleAskQuestion, handleFindStudyBuddy, handleDailyChallenge]);
+  ), [handleCreatePost, user, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, activeSubjectFilter, handleSubjectFilterChange]);
 
   const renderPost = useCallback(({ item, index }: { item: Post; index: number }) => {
     // Only animate the first 3 posts on initial load, never on subsequent scrolls
@@ -576,12 +659,6 @@ export default function FeedScreen() {
         <View style={styles.headerDivider} />
       </SafeAreaView>
 
-      {/* Subject Filters - Fixed under app bar */}
-      <SubjectFilters
-        activeFilter={activeSubjectFilter}
-        onFilterChange={handleSubjectFilterChange}
-      />
-
       {/* New Posts Pill */}
       {pendingPosts.length > 0 && (
         <Animated.View
@@ -664,54 +741,56 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F7FC', // Light purple background for card separation
+    backgroundColor: '#F5F3FF', // Soft purple-tinted background
   },
   headerSafe: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
   },
   headerDivider: {
     height: 1,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#EDE9FE',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   headerLogo: {
-    height: 32,
-    width: 120,
+    height: 30,
+    width: 110,
   },
   menuButton: {
     width: 42,
     height: 42,
-    borderRadius: 12,
+    borderRadius: 21,
+    backgroundColor: '#F5F3FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerActions: {
     flexDirection: 'row',
-    gap: 4,
+    gap: 6,
   },
   headerButton: {
     width: 42,
     height: 42,
-    borderRadius: 12,
+    borderRadius: 21,
+    backgroundColor: '#F5F3FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   notificationBadge: {
     position: 'absolute',
-    top: 4,
-    right: 2,
+    top: 2,
+    right: 0,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
     backgroundColor: '#EF4444',
-    borderWidth: 1.5,
-    borderColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#F5F3FF',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
@@ -720,7 +799,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 10,
     fontWeight: '700',
-    lineHeight: 13,
+    lineHeight: 12,
   },
   list: {
     flex: 1,
@@ -729,25 +808,151 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   headerSection: {
-    paddingTop: 12,
+    paddingTop: 4,
     paddingBottom: 0,
   },
   postWrapper: {
     marginBottom: 0,
   },
+
+  // ── Performance / Trophy Card ──
+  performanceCardWrapper: {
+    marginHorizontal: 14,
+    marginTop: 10,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  performanceCard: {
+    flexDirection: 'row',
+    padding: 20,
+    paddingBottom: 22,
+    borderRadius: 20,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  performanceLeft: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  performanceGreeting: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.85)',
+    marginBottom: 2,
+  },
+  performanceTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 14,
+    letterSpacing: 0.3,
+  },
+  performanceStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  performanceStat: {
+    alignItems: 'center',
+  },
+  performanceStatValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  performanceStatLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  performanceStatDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    marginHorizontal: 14,
+  },
+  performanceCTA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 5,
+  },
+  performanceCTAText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6366F1',
+  },
+  performanceRight: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  performanceAvatarLarge: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  decorCircle: {
+    position: 'absolute',
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  decorCircle1: {
+    width: 120,
+    height: 120,
+    top: -30,
+    right: -20,
+  },
+  decorCircle2: {
+    width: 80,
+    height: 80,
+    bottom: -20,
+    left: -15,
+  },
+
+  // ── Featured Categories Section ──
+  categoriesSection: {
+    marginTop: 16,
+  },
+  categoriesSectionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1F2937',
+    paddingHorizontal: 16,
+    marginBottom: 4,
+  },
+
+  // ── Create Post Card ──
   createPostCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 14,
+    marginTop: 10,
     marginBottom: 12,
-    paddingTop: 14,
-    paddingBottom: 12,
-    borderRadius: 16,
-    // Subtle shadow matching PostCard
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    paddingTop: 16,
+    paddingBottom: 8,
+    borderRadius: 18,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
   },
   createPostRow: {
     flexDirection: 'row',
@@ -755,49 +960,61 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 12,
   },
-  createPostPlaceholder: {
+  createPostInputFake: {
     flex: 1,
-    fontSize: 15,
+    backgroundColor: '#F5F3FF',
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#EDE9FE',
+  },
+  createPostPlaceholder: {
+    fontSize: 14,
     color: '#9CA3AF',
+    fontWeight: '500',
   },
   createPostMediaButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: '#EEF2FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   storyDivider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
     marginHorizontal: 16,
     marginTop: 14,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   quickActionsInCard: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-    gap: 8,
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+    gap: 4,
   },
   inCardAction: {
     flex: 1,
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
     gap: 6,
+    borderRadius: 12,
+  },
+  quickActionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   inCardActionText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#374151',
-  },
-  actionDivider: {
-    width: 1,
-    height: '100%',
-    backgroundColor: '#E5E7EB',
+    color: '#4B5563',
+    letterSpacing: 0.1,
   },
   footer: {
     paddingHorizontal: 16,
@@ -816,7 +1033,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#EEF2FF',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -846,45 +1063,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
-  // Feed Tabs — Clean Underline Style
-  feedTabsContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-    marginBottom: 12,
-  },
-  feedTab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 13,
-  },
-  feedTabActive: {},
-  feedTabText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#9CA3AF',
-    letterSpacing: 0.1,
-  },
-  feedTabTextActive: {
-    color: '#111827',
-    fontWeight: '700',
-  },
-  activeIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: 32,
-    height: 3,
-    backgroundColor: '#6366F1',
-    borderRadius: 3,
-  },
 
-  // New Posts Pill
+  // ── New Posts Pill ──
   newPostsPillContainer: {
     position: 'absolute',
-    top: 110, // Below header
+    top: 110,
     left: 0,
     right: 0,
     zIndex: 100,
@@ -893,15 +1076,21 @@ const styles = StyleSheet.create({
   newPostsPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#3B82F6', // Brand Blue
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    backgroundColor: '#6366F1',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 24,
     gap: 6,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   newPostsText: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '700',
     fontSize: 14,
+    letterSpacing: 0.2,
   },
 });
