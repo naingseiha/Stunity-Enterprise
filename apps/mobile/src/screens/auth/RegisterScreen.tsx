@@ -254,7 +254,7 @@ export default function RegisterScreen() {
         <Text style={s.stepSubtitle}>Let's start with your name</Text>
       </View>
 
-      <View style={s.glassCard}>
+      <View style={s.formSection}>
         <Input
           label="First Name"
           placeholder="Enter your first name"
@@ -325,7 +325,7 @@ export default function RegisterScreen() {
         <Ionicons name="ticket-outline" size={16} color={useClaimCode ? '#0EA5E9' : Colors.gray[400]} />
       </TouchableOpacity>
 
-      <View style={s.glassCard}>
+      <View style={s.formSection}>
         {useClaimCode ? (
           <>
             <Input
@@ -497,7 +497,7 @@ export default function RegisterScreen() {
         <Text style={s.stepSubtitle}>Create your login credentials</Text>
       </View>
 
-      <View style={s.glassCard}>
+      <View style={s.formSection}>
         <Input
           ref={emailRef}
           label="Email Address"
@@ -790,17 +790,7 @@ const s = StyleSheet.create({
   },
 
   // ── Glass Card ────────────────────────────────────────
-  glassCard: {
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
+  formSection: {
     marginBottom: 8,
   },
 
@@ -988,13 +978,8 @@ const s = StyleSheet.create({
 
   // ── Compliance ────────────────────────────────────────
   complianceCard: {
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    borderRadius: 16,
-    padding: 16,
     gap: 14,
     marginTop: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
   },
   checkRow: {
     flexDirection: 'row',

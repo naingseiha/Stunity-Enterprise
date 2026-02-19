@@ -163,7 +163,7 @@ export default function LoginScreen() {
             {/* Glass Card */}
             <Animated.View
               entering={FadeInUp.delay(300).duration(600)}
-              style={styles.glassCard}
+              style={styles.formSection}
             >
               {error && (
                 <Animated.View
@@ -471,17 +471,8 @@ const styles = StyleSheet.create({
   },
 
   // ── Glass Card ────────────────────────────────────────
-  glassCard: {
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    borderRadius: 24,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
+  formSection: {
+    marginBottom: 4,
   },
 
   // ── Inputs ────────────────────────────────────────────
