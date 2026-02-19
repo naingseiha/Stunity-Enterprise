@@ -1,7 +1,8 @@
 /**
- * Register Screen
+ * Register Screen — Premium Enterprise Design
  * 
- * Soft, modern design matching reference style
+ * 4-step registration with gradient progress, glass cards, enhanced role selection
+ * Matches the premium sky-blue design language
  */
 
 import React, { useState, useRef } from 'react';
@@ -15,15 +16,17 @@ import {
   Platform,
   ScrollView,
   Alert,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { 
-  FadeInDown, 
+import Animated, {
+  FadeInDown,
   FadeInUp,
   FadeIn,
+  ZoomIn,
 } from 'react-native-reanimated';
 
 import { Button, Input } from '@/components/common';
@@ -34,18 +37,23 @@ import { UserRole } from '@/types';
 import { validatePassword } from '@/utils';
 import { authApi } from '@/api/client';
 
+const { width } = Dimensions.get('window');
+
 type NavigationProp = AuthStackScreenProps<'Register'>['navigation'];
 
-const ROLES: { value: UserRole; label: string; icon: keyof typeof Ionicons.glyphMap; description: string }[] = [
-  { value: 'STUDENT', label: 'Student', icon: 'school-outline', description: 'I want to learn' },
-  { value: 'TEACHER', label: 'Educator', icon: 'easel-outline', description: 'I want to teach' },
-  { value: 'PARENT', label: 'Parent', icon: 'people-outline', description: 'I\'m a parent' },
+const ROLES: { value: UserRole; label: string; icon: keyof typeof Ionicons.glyphMap; description: string; color: string; bg: string }[] = [
+  { value: 'STUDENT', label: 'Student', icon: 'school-outline', description: 'I want to learn', color: '#0EA5E9', bg: '#E0F2FE' },
+  { value: 'TEACHER', label: 'Educator', icon: 'easel-outline', description: 'I want to teach', color: '#8B5CF6', bg: '#F3E8FF' },
+  { value: 'PARENT', label: 'Parent', icon: 'people-outline', description: "I'm a parent", color: '#F59E0B', bg: '#FEF3C7' },
 ];
+
+const STEP_ICONS: (keyof typeof Ionicons.glyphMap)[] = ['person', 'business', 'people', 'lock-closed'];
+const STEP_LABELS = ['Info', 'Org', 'Role', 'Account'];
 
 export default function RegisterScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { register, login, isLoading, error, clearError } = useAuthStore();
-  
+
   const [step, setStep] = useState(1);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -58,14 +66,14 @@ export default function RegisterScreen() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptPrivacy, setAcceptPrivacy] = useState(false);
   const [acceptCompliance, setAcceptCompliance] = useState(false);
-  
+
   // Claim code states
   const [useClaimCode, setUseClaimCode] = useState(false);
   const [claimCode, setClaimCode] = useState('');
   const [claimCodeValidated, setClaimCodeValidated] = useState(false);
   const [validatingCode, setValidatingCode] = useState(false);
   const [claimCodeData, setClaimCodeData] = useState<any>(null);
-  
+
   const lastNameRef = useRef<TextInput>(null);
   const organizationRef = useRef<TextInput>(null);
   const emailRef = useRef<TextInput>(null);
@@ -90,11 +98,8 @@ export default function RegisterScreen() {
         const data = response.data.data;
         setClaimCodeValidated(true);
         setClaimCodeData(data);
-        
-        // Auto-fill organization details
         setOrganization(data.school.name);
-        
-        // Map school type to organization type
+
         const schoolTypeMap: Record<string, any> = {
           'PRIMARY_SCHOOL': 'school',
           'SECONDARY_SCHOOL': 'school',
@@ -103,27 +108,18 @@ export default function RegisterScreen() {
           'INTERNATIONAL': 'school',
         };
         setOrganizationType(schoolTypeMap[data.school.schoolType] || 'school');
-        
-        // Auto-set role based on claim code type
-        if (data.type === 'STUDENT') {
-          setRole('STUDENT');
-        } else if (data.type === 'TEACHER') {
-          setRole('TEACHER');
-        }
-        
-        Alert.alert(
-          'Claim Code Validated',
-          `Successfully linked to ${data.school.name}`,
-          [{ text: 'Continue', style: 'default' }]
-        );
+
+        if (data.type === 'STUDENT') setRole('STUDENT');
+        else if (data.type === 'TEACHER') setRole('TEACHER');
+
+        Alert.alert('Claim Code Validated', `Successfully linked to ${data.school.name}`);
       } else {
-        Alert.alert('Invalid Claim Code', response.data.error || response.data.message || 'Please check your code and try again');
+        Alert.alert('Invalid', response.data.error || 'Please check your code');
         setClaimCodeValidated(false);
         setClaimCodeData(null);
       }
     } catch (error: any) {
-      const message = error?.message || 'Unable to validate claim code. Please check your connection.';
-      Alert.alert('Connection Error', message);
+      Alert.alert('Error', error?.message || 'Unable to validate claim code.');
       setClaimCodeValidated(false);
       setClaimCodeData(null);
     } finally {
@@ -141,12 +137,12 @@ export default function RegisterScreen() {
     } else if (step === 2) {
       if (useClaimCode) {
         if (!claimCodeValidated) {
-          Alert.alert('Claim Code Required', 'Please validate your claim code first');
+          Alert.alert('Required', 'Please validate your claim code first');
           return;
         }
       } else {
         if (!organization.trim()) {
-          Alert.alert('Required', 'Please enter your organization or institution name');
+          Alert.alert('Required', 'Please enter your organization');
           return;
         }
       }
@@ -170,13 +166,12 @@ export default function RegisterScreen() {
       return;
     }
     if (!acceptTerms || !acceptPrivacy || !acceptCompliance) {
-      Alert.alert('Required', 'Please accept all terms and policies to continue');
+      Alert.alert('Required', 'Please accept all terms and policies');
       return;
     }
 
     clearError();
-    
-    // If using claim code, call the special register endpoint
+
     if (useClaimCode && claimCodeValidated && claimCodeData) {
       try {
         const response = await authApi.post('/auth/register/with-claim-code', {
@@ -191,33 +186,24 @@ export default function RegisterScreen() {
         });
 
         if (response.data.success) {
-          const { user, tokens } = response.data.data || response.data;
-          
-          // Store tokens using token service (via authStore)
           const loginSuccess = await login({
             email: email.trim(),
             password,
             rememberMe: true,
           });
-          
+
           if (loginSuccess) {
-            Alert.alert(
-              'Account Created',
-              `Welcome to ${claimCodeData.school.name}! Your account has been linked successfully.`,
-              [{ text: 'Get Started' }]
-            );
+            Alert.alert('Account Created', `Welcome to ${claimCodeData.school.name}!`);
           }
         } else {
-          Alert.alert('Registration Failed', response.data.error || response.data.message || 'Unable to create account with claim code');
+          Alert.alert('Failed', response.data.error || 'Unable to create account');
         }
       } catch (error: any) {
-        const message = error?.message || 'Unable to complete registration. Please try again.';
-        Alert.alert('Connection Error', message);
+        Alert.alert('Error', error?.message || 'Unable to complete registration.');
       }
       return;
     }
-    
-    // Regular registration without claim code
+
     const success = await register({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
@@ -225,44 +211,50 @@ export default function RegisterScreen() {
       password,
       role,
       organization: organization.trim() || undefined,
-      organizationType: organizationType,
+      organizationType,
     });
 
     if (success) {
-      Alert.alert(
-        'Account Created', 
-        'Your account has been created successfully.',
-        [{ text: 'Get Started' }]
-      );
+      Alert.alert('Account Created', 'Your account has been created successfully.');
     } else if (error) {
       Alert.alert('Registration Failed', error);
     }
   };
 
+  // ── Progress Bar ────────────────────────────────────────
+  const renderProgress = () => (
+    <View style={s.progressContainer}>
+      {[1, 2, 3, 4].map((n, i) => (
+        <React.Fragment key={n}>
+          {i > 0 && (
+            <View style={[s.progressLine, n <= step && s.progressLineActive]} />
+          )}
+          <View style={[s.progressStep, n <= step && s.progressStepActive, n < step && s.progressStepComplete]}>
+            {n < step ? (
+              <Ionicons name="checkmark" size={12} color="#fff" />
+            ) : (
+              <Ionicons name={STEP_ICONS[i]} size={12} color={n <= step ? '#fff' : Colors.gray[400]} />
+            )}
+          </View>
+        </React.Fragment>
+      ))}
+    </View>
+  );
+
+  // ── Step 1: Personal Info ────────────────────────────────
   const renderStep1 = () => (
-    <Animated.View 
-      entering={FadeIn.duration(400)} 
-      style={styles.stepContent}
-    >
-      <View style={styles.headerProgress}>
-        <View style={styles.progressBar}>
-          {[1, 2, 3, 4].map((s) => (
-            <View 
-              key={s} 
-              style={[
-                styles.progressDot, 
-                s <= step && styles.progressDotActive,
-                s < step && styles.progressDotComplete
-              ]} 
-            />
-          ))}
+    <Animated.View entering={FadeIn.duration(400)} style={s.stepContent}>
+      {renderProgress()}
+
+      <View style={s.stepHeader}>
+        <View style={[s.stepIconBg, { backgroundColor: '#E0F2FE' }]}>
+          <Ionicons name="person" size={22} color="#0EA5E9" />
         </View>
+        <Text style={s.stepTitle}>Personal Information</Text>
+        <Text style={s.stepSubtitle}>Let's start with your name</Text>
       </View>
 
-      <Text style={styles.stepTitle}>Personal Information</Text>
-      <Text style={styles.stepSubtitle}>Please provide your name</Text>
-      
-      <View style={styles.formContainer}>
+      <View style={s.glassCard}>
         <Input
           label="First Name"
           placeholder="Enter your first name"
@@ -273,7 +265,7 @@ export default function RegisterScreen() {
           returnKeyType="next"
           onSubmitEditing={() => lastNameRef.current?.focus()}
         />
-        
+
         <Input
           ref={lastNameRef}
           label="Last Name"
@@ -287,50 +279,31 @@ export default function RegisterScreen() {
         />
       </View>
 
-      <TouchableOpacity
-        onPress={handleNextStep}
-        activeOpacity={0.8}
-        accessibilityLabel="Continue to next step"
-        accessibilityRole="button"
-      >
-        <LinearGradient
-          colors={['#0EA5E9', '#0284C7']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.continueButton}
-        >
-          <Text style={styles.continueButtonText}>Continue</Text>
+      <TouchableOpacity onPress={handleNextStep} activeOpacity={0.85} style={s.ctaShadow}>
+        <LinearGradient colors={['#0EA5E9', '#0284C7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.ctaButton}>
+          <Text style={s.ctaText}>Continue</Text>
+          <Ionicons name="arrow-forward" size={18} color="#fff" />
         </LinearGradient>
       </TouchableOpacity>
     </Animated.View>
   );
 
+  // ── Step 2: Organization ────────────────────────────────
   const renderStep2 = () => (
-    <Animated.View 
-      entering={FadeIn.duration(400)} 
-      style={styles.stepContent}
-    >
-      <View style={styles.headerProgress}>
-        <View style={styles.progressBar}>
-          {[1, 2, 3, 4].map((s) => (
-            <View 
-              key={s} 
-              style={[
-                styles.progressDot, 
-                s <= step && styles.progressDotActive,
-                s < step && styles.progressDotComplete
-              ]} 
-            />
-          ))}
+    <Animated.View entering={FadeIn.duration(400)} style={s.stepContent}>
+      {renderProgress()}
+
+      <View style={s.stepHeader}>
+        <View style={[s.stepIconBg, { backgroundColor: '#F3E8FF' }]}>
+          <Ionicons name="business" size={22} color="#8B5CF6" />
         </View>
+        <Text style={s.stepTitle}>Organization</Text>
+        <Text style={s.stepSubtitle}>Your institution or use a claim code</Text>
       </View>
 
-      <Text style={styles.stepTitle}>Organization</Text>
-      <Text style={styles.stepSubtitle}>Specify your institution or use a claim code</Text>
-      
       {/* Claim Code Toggle */}
       <TouchableOpacity
-        style={styles.claimCodeToggle}
+        style={[s.claimToggle, useClaimCode && s.claimToggleActive]}
         onPress={() => {
           setUseClaimCode(!useClaimCode);
           setClaimCodeValidated(false);
@@ -339,22 +312,21 @@ export default function RegisterScreen() {
         }}
         activeOpacity={0.7}
       >
-        <View style={styles.claimCodeToggleContent}>
-          <Ionicons 
-            name={useClaimCode ? "checkmark-circle" : "radio-button-off-outline"} 
-            size={22} 
-            color={useClaimCode ? "#0EA5E9" : Colors.gray[400]} 
+        <View style={s.claimToggleRow}>
+          <Ionicons
+            name={useClaimCode ? "checkmark-circle" : "radio-button-off-outline"}
+            size={20}
+            color={useClaimCode ? "#0EA5E9" : Colors.gray[400]}
           />
-          <Text style={[styles.claimCodeToggleText, useClaimCode && styles.claimCodeToggleTextActive]}>
+          <Text style={[s.claimToggleText, useClaimCode && { color: '#0EA5E9' }]}>
             I have a school claim code
           </Text>
         </View>
-        <Ionicons name="information-circle-outline" size={18} color={Colors.gray[400]} />
+        <Ionicons name="ticket-outline" size={16} color={useClaimCode ? '#0EA5E9' : Colors.gray[400]} />
       </TouchableOpacity>
-      
-      <View style={styles.formContainer}>
+
+      <View style={s.glassCard}>
         {useClaimCode ? (
-          // Claim Code Input
           <>
             <Input
               label="Claim Code"
@@ -367,56 +339,49 @@ export default function RegisterScreen() {
               leftIcon="ticket-outline"
               autoCapitalize="characters"
               editable={!claimCodeValidated}
-              style={claimCodeValidated ? styles.inputDisabled : undefined}
+              style={claimCodeValidated ? s.inputDisabled : undefined}
             />
-            
+
             {claimCodeValidated && claimCodeData && (
-              <Animated.View 
-                entering={FadeIn.duration(300)}
-                style={styles.validatedCard}
-              >
-                <View style={styles.validatedHeader}>
-                  <Ionicons name="checkmark-circle" size={24} color="#10B981" />
-                  <Text style={styles.validatedTitle}>Validated Successfully</Text>
+              <Animated.View entering={FadeIn.duration(300)} style={s.validatedCard}>
+                <View style={s.validatedHeader}>
+                  <Ionicons name="checkmark-circle" size={22} color="#10B981" />
+                  <Text style={s.validatedTitle}>Validated Successfully</Text>
                 </View>
-                <View style={styles.validatedInfo}>
-                  <Text style={styles.validatedLabel}>School:</Text>
-                  <Text style={styles.validatedValue}>{claimCodeData.school.name}</Text>
+                <View style={s.validatedInfo}>
+                  <Text style={s.validatedLabel}>School:</Text>
+                  <Text style={s.validatedValue}>{claimCodeData.school.name}</Text>
                 </View>
                 {claimCodeData.student && (
-                  <View style={styles.validatedInfo}>
-                    <Text style={styles.validatedLabel}>Student:</Text>
-                    <Text style={styles.validatedValue}>
-                      {claimCodeData.student.firstName} {claimCodeData.student.lastName}
-                    </Text>
+                  <View style={s.validatedInfo}>
+                    <Text style={s.validatedLabel}>Student:</Text>
+                    <Text style={s.validatedValue}>{claimCodeData.student.firstName} {claimCodeData.student.lastName}</Text>
                   </View>
                 )}
                 {claimCodeData.teacher && (
-                  <View style={styles.validatedInfo}>
-                    <Text style={styles.validatedLabel}>Teacher:</Text>
-                    <Text style={styles.validatedValue}>
-                      {claimCodeData.teacher.firstName} {claimCodeData.teacher.lastName}
-                    </Text>
+                  <View style={s.validatedInfo}>
+                    <Text style={s.validatedLabel}>Teacher:</Text>
+                    <Text style={s.validatedValue}>{claimCodeData.teacher.firstName} {claimCodeData.teacher.lastName}</Text>
                   </View>
                 )}
               </Animated.View>
             )}
-            
+
             {!claimCodeValidated && (
               <TouchableOpacity
-                style={[styles.validateButton, validatingCode && styles.validateButtonDisabled]}
+                style={[s.validateBtn, validatingCode && { opacity: 0.5 }]}
                 onPress={handleValidateClaimCode}
                 disabled={validatingCode || !claimCode.trim()}
                 activeOpacity={0.8}
               >
-                <Text style={styles.validateButtonText}>
-                  {validatingCode ? 'Validating...' : 'Validate Claim Code'}
+                <Ionicons name="shield-checkmark" size={16} color="#fff" />
+                <Text style={s.validateBtnText}>
+                  {validatingCode ? 'Validating...' : 'Validate Code'}
                 </Text>
               </TouchableOpacity>
             )}
           </>
         ) : (
-          // Manual Organization Input
           <>
             <Input
               ref={organizationRef}
@@ -428,35 +393,29 @@ export default function RegisterScreen() {
               returnKeyType="done"
               onSubmitEditing={handleNextStep}
             />
-            
-            <Text style={styles.label}>Organization Type</Text>
-            <View style={styles.typeContainer}>
+
+            <Text style={s.orgTypeLabel}>Organization Type</Text>
+            <View style={s.orgTypeGrid}>
               {[
-                { value: 'university', label: 'University', icon: 'school-outline' },
-                { value: 'school', label: 'School', icon: 'book-outline' },
-                { value: 'corporate', label: 'Corporate', icon: 'briefcase-outline' },
-                { value: 'other', label: 'Other', icon: 'ellipsis-horizontal-outline' },
+                { value: 'university', label: 'University', icon: 'school-outline' as const, color: '#8B5CF6' },
+                { value: 'school', label: 'School', icon: 'book-outline' as const, color: '#0EA5E9' },
+                { value: 'corporate', label: 'Corporate', icon: 'briefcase-outline' as const, color: '#10B981' },
+                { value: 'other', label: 'Other', icon: 'ellipsis-horizontal-outline' as const, color: '#F59E0B' },
               ].map((type) => (
                 <TouchableOpacity
                   key={type.value}
-                  style={[styles.typeCard, organizationType === type.value && styles.typeCardSelected]}
+                  style={[s.orgTypeCard, organizationType === type.value && { borderColor: type.color, backgroundColor: type.color + '10' }]}
                   onPress={() => setOrganizationType(type.value as any)}
                   activeOpacity={0.8}
-                  accessibilityLabel={`Select ${type.label}`}
-                  accessibilityRole="button"
                 >
-                  <View style={[styles.typeIconContainer, organizationType === type.value && styles.typeIconContainerSelected]}>
-                    <Ionicons
-                      name={type.icon as any}
-                      size={22}
-                      color={organizationType === type.value ? '#0EA5E9' : Colors.gray[600]}
-                    />
+                  <View style={[s.orgTypeIcon, { backgroundColor: type.color + '15' }]}>
+                    <Ionicons name={type.icon} size={20} color={type.color} />
                   </View>
-                  <Text style={[styles.typeLabel, organizationType === type.value && styles.typeLabelSelected]}>
+                  <Text style={[s.orgTypeName, organizationType === type.value && { color: type.color, fontWeight: '700' }]}>
                     {type.label}
                   </Text>
                   {organizationType === type.value && (
-                    <Ionicons name="checkmark-circle" size={18} color="#0EA5E9" style={styles.checkIcon} />
+                    <Ionicons name="checkmark-circle" size={16} color={type.color} style={{ position: 'absolute', top: 6, right: 6 }} />
                   )}
                 </TouchableOpacity>
               ))}
@@ -465,123 +424,80 @@ export default function RegisterScreen() {
         )}
       </View>
 
-      <TouchableOpacity
-        onPress={handleNextStep}
-        activeOpacity={0.8}
-        accessibilityLabel="Continue to next step"
-        accessibilityRole="button"
-      >
-        <LinearGradient
-          colors={['#0EA5E9', '#0284C7']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.continueButton}
-        >
-          <Text style={styles.continueButtonText}>Continue</Text>
+      <TouchableOpacity onPress={handleNextStep} activeOpacity={0.85} style={s.ctaShadow}>
+        <LinearGradient colors={['#0EA5E9', '#0284C7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.ctaButton}>
+          <Text style={s.ctaText}>Continue</Text>
+          <Ionicons name="arrow-forward" size={18} color="#fff" />
         </LinearGradient>
       </TouchableOpacity>
     </Animated.View>
   );
 
+  // ── Step 3: Role Selection ──────────────────────────────
   const renderStep3 = () => (
-    <Animated.View 
-      entering={FadeIn.duration(400)} 
-      style={styles.stepContent}
-    >
-      <View style={styles.headerProgress}>
-        <View style={styles.progressBar}>
-          {[1, 2, 3, 4].map((s) => (
-            <View 
-              key={s} 
-              style={[
-                styles.progressDot, 
-                s <= step && styles.progressDotActive,
-                s < step && styles.progressDotComplete
-              ]} 
-            />
-          ))}
+    <Animated.View entering={FadeIn.duration(400)} style={s.stepContent}>
+      {renderProgress()}
+
+      <View style={s.stepHeader}>
+        <View style={[s.stepIconBg, { backgroundColor: '#FEF3C7' }]}>
+          <Ionicons name="people" size={22} color="#F59E0B" />
         </View>
+        <Text style={s.stepTitle}>Choose Your Role</Text>
+        <Text style={s.stepSubtitle}>Select your primary role</Text>
       </View>
 
-      <Text style={styles.stepTitle}>Role Selection</Text>
-      <Text style={styles.stepSubtitle}>Choose your primary role</Text>
-      
-      <View style={styles.rolesContainer}>
-        {ROLES.map((r) => (
-          <TouchableOpacity
-            key={r.value}
-            style={[styles.roleCard, role === r.value && styles.roleCardSelected]}
-            onPress={() => setRole(r.value)}
-            activeOpacity={0.8}
-            accessibilityLabel={`Select role: ${r.label}`}
-            accessibilityRole="button"
-          >
-            <View style={[styles.roleIcon, role === r.value && styles.roleIconSelected]}>
-              <Ionicons
-                name={r.icon}
-                size={26}
-                color={role === r.value ? Colors.white : '#0EA5E9'}
-              />
-            </View>
-            <View style={styles.roleInfo}>
-              <Text style={[styles.roleLabel, role === r.value && styles.roleLabelSelected]}>
-                {r.label}
-              </Text>
-              <Text style={styles.roleDescription}>
-                {r.description}
-              </Text>
-            </View>
-            {role === r.value && (
-              <View style={styles.roleCheckContainer}>
-                <Ionicons name="checkmark-circle" size={26} color="#0EA5E9" />
+      <View style={s.rolesContainer}>
+        {ROLES.map((r, i) => (
+          <Animated.View key={r.value} entering={FadeInDown.delay(i * 100).duration(400)}>
+            <TouchableOpacity
+              style={[s.roleCard, role === r.value && { borderColor: r.color, backgroundColor: r.bg }]}
+              onPress={() => setRole(r.value)}
+              activeOpacity={0.8}
+            >
+              <View style={[s.roleIcon, { backgroundColor: role === r.value ? r.color : r.bg }]}>
+                <Ionicons
+                  name={r.icon}
+                  size={24}
+                  color={role === r.value ? '#fff' : r.color}
+                />
               </View>
-            )}
-          </TouchableOpacity>
+              <View style={s.roleInfo}>
+                <Text style={[s.roleLabel, role === r.value && { color: r.color }]}>{r.label}</Text>
+                <Text style={s.roleDescription}>{r.description}</Text>
+              </View>
+              {role === r.value && (
+                <Animated.View entering={ZoomIn.duration(300)}>
+                  <Ionicons name="checkmark-circle" size={24} color={r.color} />
+                </Animated.View>
+              )}
+            </TouchableOpacity>
+          </Animated.View>
         ))}
       </View>
 
-      <TouchableOpacity
-        onPress={handleNextStep}
-        activeOpacity={0.8}
-        accessibilityLabel="Continue to next step"
-        accessibilityRole="button"
-      >
-        <LinearGradient
-          colors={['#0EA5E9', '#0284C7']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.continueButton}
-        >
-          <Text style={styles.continueButtonText}>Continue</Text>
+      <TouchableOpacity onPress={handleNextStep} activeOpacity={0.85} style={s.ctaShadow}>
+        <LinearGradient colors={['#0EA5E9', '#0284C7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.ctaButton}>
+          <Text style={s.ctaText}>Continue</Text>
+          <Ionicons name="arrow-forward" size={18} color="#fff" />
         </LinearGradient>
       </TouchableOpacity>
     </Animated.View>
   );
 
+  // ── Step 4: Credentials ─────────────────────────────────
   const renderStep4 = () => (
-    <Animated.View 
-      entering={FadeIn.duration(400)} 
-      style={styles.stepContent}
-    >
-      <View style={styles.headerProgress}>
-        <View style={styles.progressBar}>
-          {[1, 2, 3, 4].map((s) => (
-            <View 
-              key={s} 
-              style={[
-                styles.progressDot, 
-                s <= step && styles.progressDotActive,
-                s < step && styles.progressDotComplete
-              ]} 
-            />
-          ))}
+    <Animated.View entering={FadeIn.duration(400)} style={s.stepContent}>
+      {renderProgress()}
+
+      <View style={s.stepHeader}>
+        <View style={[s.stepIconBg, { backgroundColor: '#ECFDF5' }]}>
+          <Ionicons name="lock-closed" size={22} color="#10B981" />
         </View>
+        <Text style={s.stepTitle}>Account Credentials</Text>
+        <Text style={s.stepSubtitle}>Create your login credentials</Text>
       </View>
 
-      <Text style={styles.stepTitle}>Account Credentials</Text>
-      <Text style={styles.stepSubtitle}>Create your login credentials</Text>
-      
-      <View style={styles.formContainer}>
+      <View style={s.glassCard}>
         <Input
           ref={emailRef}
           label="Email Address"
@@ -594,7 +510,7 @@ export default function RegisterScreen() {
           returnKeyType="next"
           onSubmitEditing={() => passwordRef.current?.focus()}
         />
-        
+
         <Input
           ref={passwordRef}
           label="Password"
@@ -608,7 +524,7 @@ export default function RegisterScreen() {
           returnKeyType="next"
           onSubmitEditing={() => confirmPasswordRef.current?.focus()}
         />
-        
+
         <Input
           ref={confirmPasswordRef}
           label="Confirm Password"
@@ -624,152 +540,120 @@ export default function RegisterScreen() {
         />
       </View>
 
-      {/* Compliance Checkboxes */}
-      <View style={styles.complianceContainer}>
-        <TouchableOpacity
-          onPress={() => setAcceptTerms(!acceptTerms)}
-          style={styles.termsRow}
-          activeOpacity={0.7}
-          accessibilityLabel="Accept Terms of Service"
-          accessibilityRole="checkbox"
-        >
-          <View style={[styles.checkbox, acceptTerms && styles.checkboxChecked]}>
-            {acceptTerms && (
-              <Ionicons name="checkmark" size={14} color={Colors.white} />
-            )}
-          </View>
-          <Text style={styles.termsText}>
-            I agree to the{' '}
-            <Text style={styles.termsLink}>Terms of Service</Text>
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => setAcceptPrivacy(!acceptPrivacy)}
-          style={styles.termsRow}
-          activeOpacity={0.7}
-          accessibilityLabel="Accept Privacy Policy"
-          accessibilityRole="checkbox"
-        >
-          <View style={[styles.checkbox, acceptPrivacy && styles.checkboxChecked]}>
-            {acceptPrivacy && (
-              <Ionicons name="checkmark" size={14} color={Colors.white} />
-            )}
-          </View>
-          <Text style={styles.termsText}>
-            I agree to the{' '}
-            <Text style={styles.termsLink}>Privacy Policy</Text>
-          </Text>
-        </TouchableOpacity>
-
+      {/* Compliance */}
+      <View style={s.complianceCard}>
+        {[
+          { state: acceptTerms, set: setAcceptTerms, label: 'Terms of Service' },
+          { state: acceptPrivacy, set: setAcceptPrivacy, label: 'Privacy Policy' },
+        ].map((item) => (
+          <TouchableOpacity
+            key={item.label}
+            onPress={() => item.set(!item.state)}
+            style={s.checkRow}
+            activeOpacity={0.7}
+          >
+            <View style={[s.checkbox, item.state && s.checkboxChecked]}>
+              {item.state && <Ionicons name="checkmark" size={12} color="#fff" />}
+            </View>
+            <Text style={s.checkText}>
+              I agree to the <Text style={s.checkLink}>{item.label}</Text>
+            </Text>
+          </TouchableOpacity>
+        ))}
         <TouchableOpacity
           onPress={() => setAcceptCompliance(!acceptCompliance)}
-          style={styles.termsRow}
+          style={s.checkRow}
           activeOpacity={0.7}
-          accessibilityLabel="Accept Data Compliance"
-          accessibilityRole="checkbox"
         >
-          <View style={[styles.checkbox, acceptCompliance && styles.checkboxChecked]}>
-            {acceptCompliance && (
-              <Ionicons name="checkmark" size={14} color={Colors.white} />
-            )}
+          <View style={[s.checkbox, acceptCompliance && s.checkboxChecked]}>
+            {acceptCompliance && <Ionicons name="checkmark" size={12} color="#fff" />}
           </View>
-          <Text style={styles.termsText}>
-            I acknowledge the processing of my educational data in compliance with{' '}
-            <Text style={styles.termsLink}>FERPA</Text> and{' '}
-            <Text style={styles.termsLink}>GDPR</Text>
+          <Text style={s.checkText}>
+            I acknowledge data processing per <Text style={s.checkLink}>FERPA</Text> and <Text style={s.checkLink}>GDPR</Text>
           </Text>
         </TouchableOpacity>
       </View>
 
       {error && (
-        <Animated.View 
-          entering={FadeInDown.duration(300)}
-          style={styles.errorContainer}
-        >
-          <Ionicons name="alert-circle" size={20} color="#DC2626" />
-          <Text style={styles.errorText}>{error}</Text>
+        <Animated.View entering={FadeInDown.duration(300)} style={s.errorContainer}>
+          <Ionicons name="alert-circle" size={18} color="#DC2626" />
+          <Text style={s.errorText}>{error}</Text>
         </Animated.View>
       )}
 
       <TouchableOpacity
         onPress={handleRegister}
         disabled={isLoading}
-        activeOpacity={0.8}
-        accessibilityLabel="Create account"
-        accessibilityRole="button"
-        style={styles.continueButtonShadow}
+        activeOpacity={0.85}
+        style={s.ctaShadow}
       >
         <LinearGradient
           colors={isLoading ? ['#9CA3AF', '#6B7280'] : ['#10B981', '#059669']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={styles.continueButton}
+          style={s.ctaButton}
         >
           {isLoading ? (
-            <Text style={styles.continueButtonText}>Creating Account...</Text>
+            <Text style={s.ctaText}>Creating Account...</Text>
           ) : (
             <>
-              <Ionicons name="checkmark-circle" size={20} color={Colors.white} style={styles.arrowIcon} />
-              <Text style={styles.continueButtonText}>Create Account</Text>
+              <Ionicons name="checkmark-circle" size={18} color="#fff" />
+              <Text style={[s.ctaText, { marginLeft: 8 }]}>Create Account</Text>
             </>
           )}
         </LinearGradient>
       </TouchableOpacity>
 
-      <View style={styles.verificationContainer}>
-        <Ionicons name="mail" size={16} color={Colors.gray[500]} />
-        <Text style={styles.verificationNote}>
-          You will receive an email to verify your account after registration
+      <View style={s.verifyNote}>
+        <Ionicons name="mail-outline" size={14} color={Colors.gray[500]} />
+        <Text style={s.verifyText}>
+          You'll receive a verification email after registration
         </Text>
       </View>
     </Animated.View>
   );
 
   return (
-    <View style={styles.container}>
-      {/* Light Yellow to White Gradient Background */}
+    <View style={s.container}>
+      {/* Premium Background */}
       <LinearGradient
-        colors={['#E0F2FE', '#FFFFFF']}
-        style={styles.background}
+        colors={['#E0F2FE', '#F0F9FF', '#FFFFFF']}
+        style={StyleSheet.absoluteFill}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
       />
-      
-      <SafeAreaView style={styles.safeArea}>
+
+      {/* Decorative Blobs */}
+      <View style={s.blob1} />
+      <View style={s.blob2} />
+
+      <SafeAreaView style={s.safeArea}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}
+          style={{ flex: 1 }}
         >
           <ScrollView
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={s.scrollContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
             {/* Header */}
-            <Animated.View 
-              entering={FadeInDown.delay(100).duration(500)}
-              style={styles.header}
-            >
+            <Animated.View entering={FadeInDown.delay(100).duration(500)} style={s.header}>
               <TouchableOpacity
                 onPress={() => step > 1 ? setStep(step - 1) : navigation.goBack()}
-                style={styles.backButton}
-                accessibilityLabel="Go back"
-                accessibilityRole="button"
+                style={s.backButton}
               >
-                <Ionicons name="arrow-back" size={22} color={Colors.gray[700]} />
+                <Ionicons name="chevron-back" size={22} color={Colors.gray[700]} />
               </TouchableOpacity>
-              
-              <Text style={styles.headerTitle}>Account Setup</Text>
-              <Text style={styles.stepIndicator}>0{step} of 04</Text>
+
+              <Text style={s.headerTitle}>Account Setup</Text>
+              <View style={s.stepBadge}>
+                <Text style={s.stepBadgeText}>{step}/4</Text>
+              </View>
             </Animated.View>
 
-            {/* Content */}
-            <Animated.View 
-              entering={FadeInUp.delay(200).duration(500)}
-              style={styles.content}
-            >
-              {/* Step Content */}
+            {/* Step Content */}
+            <Animated.View entering={FadeInUp.delay(200).duration(500)} style={s.content}>
               {step === 1 && renderStep1()}
               {step === 2 && renderStep2()}
               {step === 3 && renderStep3()}
@@ -782,398 +666,399 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  background: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  keyboardView: {
-    flex: 1,
-  },
+const s = StyleSheet.create({
+  container: { flex: 1 },
+  safeArea: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: Spacing[6],
-    paddingTop: Spacing[6],
-    paddingBottom: Spacing[8],
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 32,
   },
+
+  // ── Decorative ────────────────────────────────────────
+  blob1: {
+    position: 'absolute', top: -50, right: -40,
+    width: 180, height: 180, borderRadius: 90,
+    backgroundColor: 'rgba(14,165,233,0.08)',
+  },
+  blob2: {
+    position: 'absolute', bottom: 80, left: -60,
+    width: 140, height: 140, borderRadius: 70,
+    backgroundColor: 'rgba(139,92,246,0.05)',
+  },
+
+  // ── Header ────────────────────────────────────────────
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing[6],
-    justifyContent: 'space-between',
+    marginBottom: 16,
   },
   backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.white,
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: '700',
-    color: Colors.gray[900],
-    flex: 1,
-    textAlign: 'center',
-    letterSpacing: 0.5,
-  },
-  stepIndicator: {
-    fontSize: Typography.fontSize.sm,
-    color: '#0EA5E9',
-    fontWeight: '700',
-  },
-  content: {
-    paddingTop: Spacing[4],
-  },
-  stepContent: {
-    flex: 1,
-  },
-  headerProgress: {
-    alignItems: 'center',
-    marginBottom: Spacing[8],
-  },
-  progressBar: {
-    flexDirection: 'row',
-    gap: Spacing[2],
-  },
-  progressDot: {
-    width: 40,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.gray[200],
-  },
-  progressDotActive: {
-    backgroundColor: '#BAE6FD',
-  },
-  progressDotComplete: {
-    backgroundColor: '#0EA5E9',
-  },
-  stepTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.gray[900],
-    marginBottom: Spacing[2],
-    letterSpacing: -0.5,
-  },
-  stepSubtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.gray[600],
-    marginBottom: Spacing[6],
-    lineHeight: 22,
-  },
-  inputGroup: {
-    marginBottom: Spacing[5],
-  },
-  label: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.gray[700],
-    marginBottom: Spacing[2],
-    fontWeight: '500',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 16,
-    paddingHorizontal: Spacing[4],
-    height: 56,
-  },
-  input: {
-    flex: 1,
-    fontSize: Typography.fontSize.base,
-    color: Colors.gray[900],
-  },
-  inputIcon: {
-    marginLeft: Spacing[2],
-  },
-  formContainer: {
-    marginBottom: Spacing[6],
-  },
-  continueButton: {
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    marginTop: Spacing[6],
-  },
-  continueButtonShadow: {
-    shadowColor: '#0EA5E9',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-    borderRadius: 30,
-  },
-  continueButtonText: {
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: Typography.fontSize.lg,
-    letterSpacing: 0.5,
-  },
-  arrowIcon: {
-    marginLeft: Spacing[2],
-  },
-  rolesContainer: {
-    gap: Spacing[4],
-    marginBottom: Spacing[6],
-  },
-  roleCard: {
-    padding: Spacing[5],
-    borderRadius: 28,
-    borderWidth: 2,
-    borderColor: Colors.gray[200],
-    backgroundColor: Colors.white,
-    flexDirection: 'row',
-    alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  roleCardSelected: {
-    borderColor: '#0EA5E9',
-    backgroundColor: '#E0F2FE',
-    shadowColor: '#0EA5E9',
-    shadowOpacity: 0.2,
-  },
-  roleIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#E0F2FE',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing[4],
-  },
-  roleIconSelected: {
-    backgroundColor: '#0EA5E9',
-  },
-  roleInfo: {
-    flex: 1,
-  },
-  roleLabel: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: '700',
-    color: Colors.gray[900],
-    marginBottom: 4,
-  },
-  roleLabelSelected: {
-    color: Colors.gray[900],
-  },
-  roleDescription: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.gray[600],
-  },
-  roleCheckContainer: {
-    marginLeft: Spacing[2],
-  },
-  termsRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: Spacing[6],
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: Colors.gray[300],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing[3],
-    marginTop: 2,
-  },
-  checkboxChecked: {
-    backgroundColor: '#0EA5E9',
-    borderColor: '#0EA5E9',
-  },
-  termsText: {
-    flex: 1,
-    fontSize: Typography.fontSize.sm,
-    color: Colors.gray[600],
-    lineHeight: 20,
-  },
-  termsLink: {
-    color: '#0EA5E9',
-    fontWeight: '600',
-  },
-  typeContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing[3],
-    marginBottom: Spacing[4],
-  },
-  typeCard: {
-    flex: 1,
-    minWidth: '45%',
-    padding: Spacing[4],
-    borderRadius: 28,
-    borderWidth: 2,
-    borderColor: Colors.gray[200],
-    backgroundColor: Colors.white,
-    alignItems: 'center',
-    gap: Spacing[2],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
-  typeCardSelected: {
-    borderColor: '#0EA5E9',
-    backgroundColor: '#E0F2FE',
-    shadowColor: '#0EA5E9',
-    shadowOpacity: 0.15,
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.gray[900],
+    flex: 1,
+    textAlign: 'center',
   },
-  typeIconContainer: {
+  stepBadge: {
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  stepBadgeText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0EA5E9',
+  },
+  content: { flex: 1 },
+  stepContent: { flex: 1 },
+
+  // ── Progress ──────────────────────────────────────────
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 20,
+  },
+  progressStep: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+  },
+  progressStepActive: {
+    backgroundColor: '#0EA5E9',
+    borderColor: '#0EA5E9',
+  },
+  progressStepComplete: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  progressLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: '#E2E8F0',
+    marginHorizontal: 4,
+  },
+  progressLineActive: {
+    backgroundColor: '#0EA5E9',
+  },
+
+  // ── Step Header ───────────────────────────────────────
+  stepHeader: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  stepIconBg: {
     width: 48,
     height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.gray[100],
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 12,
   },
-  typeIconContainerSelected: {
-    backgroundColor: Colors.white,
+  stepTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: Colors.gray[900],
+    letterSpacing: -0.5,
   },
-  typeLabel: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: '600',
-    color: Colors.gray[700],
+  stepSubtitle: {
+    fontSize: 14,
+    color: Colors.gray[500],
+    marginTop: 4,
   },
-  typeLabelSelected: {
-    color: '#0EA5E9',
+
+  // ── Glass Card ────────────────────────────────────────
+  glassCard: {
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.9)',
+    marginBottom: 8,
+  },
+
+  // ── CTA Button ────────────────────────────────────────
+  ctaShadow: {
+    shadowColor: '#0EA5E9',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 14,
+    elevation: 6,
+    borderRadius: 16,
+    marginTop: 16,
+  },
+  ctaButton: {
+    height: 52,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  ctaText: {
+    color: '#fff',
     fontWeight: '700',
+    fontSize: 16,
+    letterSpacing: 0.3,
   },
-  checkIcon: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
+
+  // ── Roles ─────────────────────────────────────────────
+  rolesContainer: {
+    gap: 12,
+    marginBottom: 8,
   },
-  complianceContainer: {
-    gap: Spacing[3],
-    marginBottom: Spacing[5],
-  },
-  errorContainer: {
+  roleCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEE2E2',
-    padding: Spacing[4],
-    borderRadius: 28,
-    marginBottom: Spacing[4],
-    gap: Spacing[3],
-    borderLeftWidth: 4,
-    borderLeftColor: '#DC2626',
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  errorText: {
-    flex: 1,
-    fontSize: Typography.fontSize.sm,
-    color: '#DC2626',
-    fontWeight: '500',
-  },
-  verificationContainer: {
-    flexDirection: 'row',
+  roleIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing[2],
-    marginTop: Spacing[4],
-    padding: Spacing[3],
-    backgroundColor: Colors.gray[50],
-    borderRadius: 28,
+    marginRight: 14,
   },
-  verificationNote: {
-    flex: 1,
-    fontSize: Typography.fontSize.xs,
+  roleInfo: { flex: 1 },
+  roleLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.gray[900],
+    marginBottom: 2,
+  },
+  roleDescription: {
+    fontSize: 13,
+    color: Colors.gray[500],
+  },
+
+  // ── Org Type Grid ─────────────────────────────────────
+  orgTypeLabel: {
+    fontSize: 13,
+    color: Colors.gray[700],
+    fontWeight: '600',
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  orgTypeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  orgTypeCard: {
+    width: '47%' as any,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    gap: 6,
+  },
+  orgTypeIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  orgTypeName: {
+    fontSize: 13,
+    fontWeight: '600',
     color: Colors.gray[600],
-    lineHeight: 18,
-    fontWeight: '500',
   },
-  // Claim Code Styles
-  claimCodeToggle: {
+
+  // ── Claim Code ────────────────────────────────────────
+  claimToggle: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: Spacing[4],
-    backgroundColor: '#E0F2FE',
-    borderRadius: 16,
-    marginBottom: Spacing[4],
+    padding: 14,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  claimCodeToggleContent: {
+  claimToggleActive: {
+    backgroundColor: '#E0F2FE',
+    borderColor: '#BAE6FD',
+  },
+  claimToggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing[3],
+    gap: 10,
   },
-  claimCodeToggleText: {
-    fontSize: Typography.fontSize.sm,
+  claimToggleText: {
+    fontSize: 14,
     color: Colors.gray[600],
     fontWeight: '600',
   },
-  claimCodeToggleTextActive: {
-    color: '#0EA5E9',
-  },
-  validateButton: {
-    backgroundColor: '#3B82F6',
-    paddingVertical: Spacing[4],
-    borderRadius: 28,
+  validateBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: Spacing[3],
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#3B82F6',
+    paddingVertical: 14,
+    borderRadius: 14,
+    marginTop: 10,
     shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 4,
   },
-  validateButtonDisabled: {
-    opacity: 0.5,
-  },
-  validateButtonText: {
-    fontSize: Typography.fontSize.base,
+  validateBtnText: {
+    fontSize: 15,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#fff',
   },
   validatedCard: {
     backgroundColor: '#F0FDF4',
-    borderRadius: 16,
-    padding: Spacing[4],
-    marginTop: Spacing[3],
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 10,
     borderWidth: 1,
     borderColor: '#86EFAC',
   },
   validatedHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing[2],
-    marginBottom: Spacing[3],
+    gap: 8,
+    marginBottom: 10,
   },
   validatedTitle: {
-    fontSize: Typography.fontSize.base,
+    fontSize: 15,
     fontWeight: '700',
     color: '#10B981',
   },
-  validatedInfo: {
-    marginTop: Spacing[2],
-  },
+  validatedInfo: { marginTop: 6 },
   validatedLabel: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.gray[600],
+    fontSize: 11,
+    color: Colors.gray[500],
     fontWeight: '600',
-    marginBottom: Spacing[1],
+    marginBottom: 2,
   },
   validatedValue: {
-    fontSize: Typography.fontSize.sm,
+    fontSize: 14,
     color: Colors.gray[900],
     fontWeight: '600',
   },
   inputDisabled: {
     backgroundColor: Colors.gray[100],
     opacity: 0.7,
+  },
+
+  // ── Compliance ────────────────────────────────────────
+  complianceCard: {
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    borderRadius: 16,
+    padding: 16,
+    gap: 14,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.9)',
+  },
+  checkRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: Colors.gray[300],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    marginTop: 1,
+  },
+  checkboxChecked: {
+    backgroundColor: '#0EA5E9',
+    borderColor: '#0EA5E9',
+  },
+  checkText: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.gray[600],
+    lineHeight: 20,
+  },
+  checkLink: {
+    color: '#0EA5E9',
+    fontWeight: '600',
+  },
+
+  // ── Error ─────────────────────────────────────────────
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF1F2',
+    padding: 12,
+    borderRadius: 14,
+    marginTop: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#FECDD3',
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#DC2626',
+    fontWeight: '500',
+  },
+
+  // ── Verify Note ───────────────────────────────────────
+  verifyNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+  },
+  verifyText: {
+    fontSize: 12,
+    color: Colors.gray[500],
+    fontWeight: '500',
   },
 });

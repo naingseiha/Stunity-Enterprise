@@ -38,11 +38,11 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const logoScale = useRef(new Animated.Value(0.85)).current;
   const dotsOpacity = useRef(new Animated.Value(0)).current;
-  
+
   // Floating bubbles
   const bubble1Anim = useRef(new Animated.Value(0)).current;
   const bubble2Anim = useRef(new Animated.Value(0)).current;
-  
+
   // Bouncing dots
   const dot1Anim = useRef(new Animated.Value(0)).current;
   const dot2Anim = useRef(new Animated.Value(0)).current;
@@ -193,7 +193,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
       ]}
     >
       <LinearGradient
-        colors={['#fff7ed', '#ffedd5', '#fef3c7']}
+        colors={['#E0F2FE', '#F0F9FF', '#FFFFFF']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradient}
@@ -284,7 +284,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
                 ]}
               >
                 <LinearGradient
-                  colors={['#fb923c', '#ea580c']}
+                  colors={['#38BDF8', '#0EA5E9']}
                   style={styles.dotGradient}
                 />
               </Animated.View>
@@ -315,21 +315,21 @@ const styles = StyleSheet.create({
     left: '8%',
     width: 100,
     height: 100,
-    backgroundColor: 'rgba(251, 146, 60, 0.15)',
+    backgroundColor: 'rgba(14, 165, 233, 0.12)',
   },
   bubble2: {
     top: '25%',
     right: '12%',
     width: 120,
     height: 120,
-    backgroundColor: 'rgba(249, 115, 22, 0.12)',
+    backgroundColor: 'rgba(56, 189, 248, 0.10)',
   },
   bubble3: {
     bottom: '25%',
     left: '15%',
     width: 90,
     height: 90,
-    backgroundColor: 'rgba(253, 186, 116, 0.15)',
+    backgroundColor: 'rgba(14, 165, 233, 0.08)',
   },
   content: {
     alignItems: 'center',
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     overflow: 'hidden',
-    shadowColor: '#fb923c',
+    shadowColor: '#0EA5E9',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
