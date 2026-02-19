@@ -27,7 +27,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Circle as SvgCircle } from 'react-native-svg';
+import Svg, { Circle as SvgCircle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 import Animated, {
   FadeInDown,
   FadeOutUp,
@@ -389,26 +389,52 @@ export default function FeedScreen() {
       <TouchableOpacity activeOpacity={0.9} style={styles.perfCard} onPress={() => navigation.getParent()?.navigate('ProfileTab')}>
         <LinearGradient colors={['#ffffff', '#F0F9FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.perfCardInner}>
           <View style={styles.perfTopRow}>
-            {/* Mini Level Ring */}
+            {/* Apple Watch Activity Rings */}
             {(() => {
-              const ringSize = 90;
-              const sw = 7;
-              const r = (ringSize - sw) / 2;
-              const circ = 2 * Math.PI * r;
+              const size = 100;
               const xpToNext = 250;
               const xpProgress = learningStats.totalPoints % xpToNext;
-              const pct = xpToNext > 0 ? Math.min(xpProgress / xpToNext, 1) : 0;
+              const xpPct = xpToNext > 0 ? Math.min(xpProgress / xpToNext, 1) : 0;
+              const lessonsPct = Math.min(learningStats.completedLessons / Math.max(learningStats.completedLessons + 5, 10), 1);
+              const streakPct = Math.min(learningStats.currentStreak / 7, 1);
+
+              const rings = [
+                { r: 42, sw: 8, pct: xpPct, id: 'xp', c1: '#38BDF8', c2: '#0284C7' },
+                { r: 32, sw: 7, pct: lessonsPct, id: 'lesson', c1: '#34D399', c2: '#059669' },
+                { r: 22, sw: 6, pct: streakPct, id: 'streak', c1: '#FB923C', c2: '#DC2626' },
+              ];
+
               return (
                 <View style={styles.perfRingWrap}>
-                  <Svg width={ringSize} height={ringSize}>
-                    <SvgCircle cx={ringSize / 2} cy={ringSize / 2} r={r} stroke="rgba(14,165,233,0.12)" strokeWidth={sw} fill="none" />
-                    <SvgCircle cx={ringSize / 2} cy={ringSize / 2} r={r} stroke="#0EA5E9" strokeWidth={sw} fill="none"
-                      strokeDasharray={`${circ}`} strokeDashoffset={circ * (1 - pct)} strokeLinecap="round"
-                      transform={`rotate(-90, ${ringSize / 2}, ${ringSize / 2})`} />
+                  <View style={styles.perfRingGlow} />
+                  <Svg width={size} height={size}>
+                    <Defs>
+                      {rings.map(ring => (
+                        <SvgLinearGradient key={ring.id} id={`grad_${ring.id}`} x1="0" y1="0" x2="1" y2="1">
+                          <Stop offset="0" stopColor={ring.c1} />
+                          <Stop offset="1" stopColor={ring.c2} />
+                        </SvgLinearGradient>
+                      ))}
+                    </Defs>
+                    {rings.map(ring => {
+                      const circ = 2 * Math.PI * ring.r;
+                      return (
+                        <React.Fragment key={ring.id}>
+                          <SvgCircle cx={size / 2} cy={size / 2} r={ring.r}
+                            stroke={`${ring.c1}18`} strokeWidth={ring.sw} fill="none" />
+                          <SvgCircle cx={size / 2} cy={size / 2} r={ring.r}
+                            stroke={`url(#grad_${ring.id})`} strokeWidth={ring.sw} fill="none"
+                            strokeDasharray={`${circ}`}
+                            strokeDashoffset={circ * (1 - ring.pct)}
+                            strokeLinecap="round"
+                            transform={`rotate(-90, ${size / 2}, ${size / 2})`} />
+                        </React.Fragment>
+                      );
+                    })}
                   </Svg>
                   <View style={styles.perfRingInner}>
-                    <Text style={styles.perfRingLabel}>LVL</Text>
                     <Text style={styles.perfRingValue}>{learningStats.level}</Text>
+                    <Text style={styles.perfRingLabel}>LEVEL</Text>
                   </View>
                 </View>
               );
@@ -420,22 +446,25 @@ export default function FeedScreen() {
                 <View style={[styles.perfStatIcon, { backgroundColor: '#EFF6FF' }]}>
                   <Ionicons name="diamond" size={13} color="#3B82F6" />
                 </View>
-                <Text style={styles.perfStatVal}>{learningStats.totalPoints.toLocaleString()}</Text>
-                <Text style={styles.perfStatLbl}>XP</Text>
+                <View>
+                  <Text style={styles.perfStatVal}>{learningStats.totalPoints.toLocaleString()} <Text style={styles.perfStatLbl}>XP</Text></Text>
+                </View>
               </View>
               <View style={styles.perfStatRow}>
                 <View style={[styles.perfStatIcon, { backgroundColor: '#ECFDF5' }]}>
                   <Ionicons name="checkmark-circle" size={13} color="#10B981" />
                 </View>
-                <Text style={styles.perfStatVal}>{learningStats.completedLessons}</Text>
-                <Text style={styles.perfStatLbl}>Lessons</Text>
+                <View>
+                  <Text style={styles.perfStatVal}>{learningStats.completedLessons} <Text style={styles.perfStatLbl}>Lessons</Text></Text>
+                </View>
               </View>
               <View style={styles.perfStatRow}>
                 <View style={[styles.perfStatIcon, { backgroundColor: '#FFF7ED' }]}>
                   <Ionicons name="flame" size={13} color="#F97316" />
                 </View>
-                <Text style={styles.perfStatVal}>{learningStats.currentStreak}</Text>
-                <Text style={styles.perfStatLbl}>Streak</Text>
+                <View>
+                  <Text style={styles.perfStatVal}>{learningStats.currentStreak} <Text style={styles.perfStatLbl}>Day Streak</Text></Text>
+                </View>
               </View>
             </View>
 
@@ -459,21 +488,21 @@ export default function FeedScreen() {
             const xpToNext = 250;
             const xpProgress = learningStats.totalPoints % xpToNext;
             const nextLevel = learningStats.level + 1;
+            const pct = Math.min((xpProgress / xpToNext) * 100, 100);
             return (
               <View style={styles.perfBarSection}>
                 <View style={styles.perfBarLabels}>
-                  <Text style={styles.perfBarLeft}>{xpProgress} XP</Text>
-                  <Text style={styles.perfBarRight}>{xpToNext} XP</Text>
+                  <Text style={styles.perfBarLeft}>{xpProgress} / {xpToNext} XP</Text>
+                  <Text style={styles.perfBarRight}>Level {nextLevel}</Text>
                 </View>
                 <View style={styles.perfBarBg}>
                   <LinearGradient
                     colors={['#38BDF8', '#0EA5E9', '#0284C7'] as any}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    style={[styles.perfBarFill, { width: `${Math.min((xpProgress / xpToNext) * 100, 100)}%` } as any]}
+                    style={[styles.perfBarFill, { width: `${pct}%` } as any]}
                   />
                 </View>
-                <Text style={styles.perfBarHint}>{Math.max(xpToNext - xpProgress, 0)} XP to Level {nextLevel}</Text>
               </View>
             );
           })()}
@@ -917,19 +946,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
   },
+  perfRingGlow: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(14,165,233,0.08)',
+  },
   perfRingInner: {
     position: 'absolute',
     alignItems: 'center',
   },
   perfRingLabel: {
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: '700',
     color: '#9CA3AF',
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
   perfRingValue: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 26,
+    fontWeight: '900',
     color: '#1F2937',
     letterSpacing: -1,
   },
@@ -999,13 +1035,14 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
   },
   perfBarBg: {
-    height: 6,
+    height: 10,
     backgroundColor: '#F1F5F9',
-    borderRadius: 3,
+    borderRadius: 5,
     overflow: 'hidden',
   },
   perfBarFill: {
     height: '100%',
+    borderRadius: 5,
   },
   perfBarHint: {
     fontSize: 10,
