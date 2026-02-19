@@ -1,12 +1,19 @@
 /**
  * Feed Ranker — Server-side personalized feed scoring engine
  * 
- * 5-factor scoring model:
- *   1. Engagement (30%) — popularity signals (likes, comments, shares, views)
- *   2. Relevance (30%)  — match between user interests and post topics
- *   3. Quality (15%)    — content quality signals
- *   4. Recency (15%)    — time decay
- *   5. Social Proof (10%) — interactions from followed users
+ * 6-factor scoring model (v2 — Facebook/TikTok/YouTube inspired):
+ *   1. Engagement (variable) — popularity signals (likes, comments, shares, views) + velocity
+ *   2. Relevance (variable)  — match between user interests, enrolled courses, and post topics
+ *   3. Quality (variable)    — content quality signals (type, media, author credibility)
+ *   4. Recency (variable)    — time decay (tuned per post type)
+ *   5. Social Proof (variable) — interactions from followed users + author affinity
+ *   6. Learning Context (10%) — boost for posts matching enrolled courses
+ * 
+ * Weights are dynamic per post type:
+ *   - COURSE/EXAM: high relevance (students searching for specific topics)
+ *   - QUESTION: high recency (need quick answers)
+ *   - QUIZ/ASSIGNMENT: high relevance (match curriculum)
+ *   - ARTICLE/POLL: standard weights
  * 
  * Inspired by Facebook EdgeRank + TikTok's interest-graph approach,
  * tailored for educational / learning content.
@@ -14,13 +21,45 @@
 
 import { PrismaClient, Post, User, PostType } from '@prisma/client';
 
-// ─── Scoring Weights ───────────────────────────────────────────────
-const WEIGHTS = {
-    ENGAGEMENT: 0.30,
-    RELEVANCE: 0.30,
+// ─── Scoring Weights (v2 — dynamic per post type) ──────────────────
+interface ScoringWeights {
+    ENGAGEMENT: number;
+    RELEVANCE: number;
+    QUALITY: number;
+    RECENCY: number;
+    SOCIAL_PROOF: number;
+    LEARNING_CONTEXT: number;
+}
+
+const BASE_WEIGHTS: ScoringWeights = {
+    ENGAGEMENT: 0.25,
+    RELEVANCE: 0.25,
     QUALITY: 0.15,
     RECENCY: 0.15,
     SOCIAL_PROOF: 0.10,
+    LEARNING_CONTEXT: 0.10,
+};
+
+// Per-post-type weight overrides (key insight: different content needs differ)
+const POST_TYPE_WEIGHTS: Partial<Record<PostType, ScoringWeights>> = {
+    // Courses are evergreen, highly intentional — relevance is king
+    COURSE: { ENGAGEMENT: 0.15, RELEVANCE: 0.35, QUALITY: 0.20, RECENCY: 0.05, SOCIAL_PROOF: 0.10, LEARNING_CONTEXT: 0.15 },
+    // Questions need fast answers — recency matters most
+    QUESTION: { ENGAGEMENT: 0.20, RELEVANCE: 0.20, QUALITY: 0.10, RECENCY: 0.30, SOCIAL_PROOF: 0.10, LEARNING_CONTEXT: 0.10 },
+    // Quizzes match curriculum — high relevance + learning context
+    QUIZ: { ENGAGEMENT: 0.20, RELEVANCE: 0.30, QUALITY: 0.15, RECENCY: 0.10, SOCIAL_PROOF: 0.10, LEARNING_CONTEXT: 0.15 },
+    // Exams are deadline-driven, must match student's courses
+    EXAM: { ENGAGEMENT: 0.10, RELEVANCE: 0.35, QUALITY: 0.15, RECENCY: 0.15, SOCIAL_PROOF: 0.05, LEARNING_CONTEXT: 0.20 },
+    // Assignments are curriculum-bound
+    ASSIGNMENT: { ENGAGEMENT: 0.10, RELEVANCE: 0.35, QUALITY: 0.15, RECENCY: 0.15, SOCIAL_PROOF: 0.05, LEARNING_CONTEXT: 0.20 },
+    // Tutorials are evergreen educational content
+    TUTORIAL: { ENGAGEMENT: 0.20, RELEVANCE: 0.30, QUALITY: 0.20, RECENCY: 0.05, SOCIAL_PROOF: 0.10, LEARNING_CONTEXT: 0.15 },
+    // Research papers — quality and relevance matter most  
+    RESEARCH: { ENGAGEMENT: 0.15, RELEVANCE: 0.30, QUALITY: 0.25, RECENCY: 0.05, SOCIAL_PROOF: 0.10, LEARNING_CONTEXT: 0.15 },
+    // Resources — similar to tutorials
+    RESOURCE: { ENGAGEMENT: 0.20, RELEVANCE: 0.30, QUALITY: 0.20, RECENCY: 0.05, SOCIAL_PROOF: 0.10, LEARNING_CONTEXT: 0.15 },
+    // Projects — engagement and quality showcase
+    PROJECT: { ENGAGEMENT: 0.25, RELEVANCE: 0.25, QUALITY: 0.20, RECENCY: 0.10, SOCIAL_PROOF: 0.10, LEARNING_CONTEXT: 0.10 },
 };
 
 // Action weights for signal tracking
@@ -74,8 +113,11 @@ interface PostWithRelations extends Post {
 }
 
 interface UserSignals {
-    topics: Record<string, number>;  // topicId → interest score
+    topics: Record<string, number>;      // topicId → interest score
+    topicDwellTime: Record<string, number>; // topicId → avg view duration (seconds)
     followingIds: string[];
+    authorAffinity: Record<string, number>; // authorId → affinity score (0-100)
+    enrolledCourseTopics: string[];         // topics from enrolled courses
 }
 
 export interface ScoredPost {
@@ -87,6 +129,7 @@ export interface ScoredPost {
         quality: number;
         recency: number;
         socialProof: number;
+        learningContext: number;
     };
 }
 
@@ -289,9 +332,9 @@ export class FeedRanker {
         }) as unknown as PostWithRelations[];
     }
 
-    // ─── Step 1: User Signals ─────────────────────────────────────────
+    // ─── Step 1: User Signals (Enhanced v2) ──────────────────────────
     private async getUserSignals(userId: string): Promise<UserSignals> {
-        const [feedSignals, follows, user] = await Promise.all([
+        const [feedSignals, follows, user, authorInteractions, enrollments] = await Promise.all([
             this.prisma.userFeedSignal.findMany({
                 where: { userId },
                 orderBy: { score: 'desc' },
@@ -305,11 +348,45 @@ export class FeedRanker {
                 where: { id: userId },
                 select: { interests: true, skills: true },
             }),
+            // Author affinity: count interactions per author from likes and comments
+            this.prisma.like.groupBy({
+                by: ['postId'],
+                where: { userId },
+                _count: { postId: true },
+            }).then(async (likes) => {
+                // Get the author IDs for liked posts
+                if (likes.length === 0) return new Map<string, number>();
+                const postIds = likes.map(l => l.postId);
+                const posts = await this.prisma.post.findMany({
+                    where: { id: { in: postIds.slice(0, 200) } },
+                    select: { id: true, authorId: true },
+                });
+                const authorCounts = new Map<string, number>();
+                for (const post of posts) {
+                    authorCounts.set(post.authorId, (authorCounts.get(post.authorId) || 0) + 3);
+                }
+                return authorCounts;
+            }).catch(() => new Map<string, number>()),
+            // Enrolled course topics
+            this.prisma.enrollment.findMany({
+                where: { userId },
+                select: {
+                    course: { select: { tags: true, category: true } },
+                },
+                take: 20,
+            }).catch(() => [] as any[]),
         ]);
 
         // Merge DB signals with profile interests/skills  
         const topics: Record<string, number> = {};
-        feedSignals.forEach(s => { topics[s.topicId] = s.score; });
+        const topicDwellTime: Record<string, number> = {};
+        feedSignals.forEach(s => {
+            topics[s.topicId] = s.score;
+            // Use avgViewDuration from the signal if available
+            if ((s as any).avgViewDuration && (s as any).avgViewDuration > 0) {
+                topicDwellTime[s.topicId] = (s as any).avgViewDuration;
+            }
+        });
 
         // Seed from profile interests (lower weight than learned signals)
         if (user?.interests) {
@@ -325,9 +402,34 @@ export class FeedRanker {
             });
         }
 
+        // Build author affinity map
+        const authorAffinity: Record<string, number> = {};
+        for (const [authorId, score] of authorInteractions) {
+            authorAffinity[authorId] = Math.min(score, 100);
+        }
+
+        // Extract enrolled course topics
+        const enrolledCourseTopics: string[] = [];
+        const courseTopicSet = new Set<string>();
+        for (const enrollment of enrollments) {
+            const course = enrollment.course;
+            if (course?.tags) {
+                for (const tag of course.tags) {
+                    courseTopicSet.add(tag.toLowerCase());
+                }
+            }
+            if (course?.category) {
+                courseTopicSet.add(course.category.toLowerCase());
+            }
+        }
+        enrolledCourseTopics.push(...courseTopicSet);
+
         return {
             topics,
+            topicDwellTime,
             followingIds: follows.map(f => f.followingId),
+            authorAffinity,
+            enrolledCourseTopics,
         };
     }
 
@@ -413,22 +515,31 @@ export class FeedRanker {
         const quality = this.calcQuality(post);
         const recency = this.calcRecency(post);
         const socialProof = this.calcSocialProof(post, signals);
+        const learningContext = this.calcLearningContext(post, signals);
+
+        // Get per-post-type weights (or fall back to base weights)
+        const weights = POST_TYPE_WEIGHTS[post.postType] || BASE_WEIGHTS;
 
         // Pinned posts always come first
         const pinBoost = post.isPinned ? 1000 : 0;
 
+        // Engagement velocity bonus: boost rapidly-rising posts
+        const velocityBonus = this.calcEngagementVelocity(post);
+
         const score =
-            (engagement * WEIGHTS.ENGAGEMENT) +
-            (relevance * WEIGHTS.RELEVANCE) +
-            (quality * WEIGHTS.QUALITY) +
-            (recency * WEIGHTS.RECENCY) +
-            (socialProof * WEIGHTS.SOCIAL_PROOF) +
+            (engagement * weights.ENGAGEMENT) +
+            (relevance * weights.RELEVANCE) +
+            (quality * weights.QUALITY) +
+            (recency * weights.RECENCY) +
+            (socialProof * weights.SOCIAL_PROOF) +
+            (learningContext * weights.LEARNING_CONTEXT) +
+            (velocityBonus * 0.05) + // Small but impactful velocity boost
             pinBoost;
 
         return {
             post,
             score,
-            breakdown: { engagement, relevance, quality, recency, socialProof },
+            breakdown: { engagement, relevance, quality, recency, socialProof, learningContext },
         };
     }
 
@@ -462,7 +573,16 @@ export class FeedRanker {
             for (const tag of postTags) {
                 const key = tag.toLowerCase();
                 if (signals.topics[key]) {
-                    score += signals.topics[key];
+                    let topicWeight = signals.topics[key];
+
+                    // Dwell-time amplification: boost topics where user spends more time
+                    // (TikTok-inspired — completion/dwell time is a strong interest signal)
+                    const dwellTime = signals.topicDwellTime[key] || 0;
+                    if (dwellTime > 10) {
+                        topicWeight *= 1.0 + Math.min(dwellTime / 60, 0.5); // Up to 50% boost for 60s+ avg dwell
+                    }
+
+                    score += topicWeight;
                     matchCount++;
                 }
             }
@@ -471,10 +591,17 @@ export class FeedRanker {
         // Normalize topic score (max user signal score is 100)
         const topicScore = matchCount > 0 ? Math.min(score / (matchCount * 100), 1.0) : 0;
 
-        // Author affinity: boost if author is followed
-        const followBoost = signals.followingIds.includes(post.authorId) ? 0.3 : 0;
+        // Author affinity: graduated score based on interaction history
+        // (Facebook-inspired — affinity replaces binary follow check)
+        const authorId = post.authorId;
+        let authorScore = 0;
+        if (signals.authorAffinity[authorId]) {
+            authorScore = Math.min(signals.authorAffinity[authorId] / 100, 0.4); // Up to 0.4 boost
+        } else if (signals.followingIds.includes(authorId)) {
+            authorScore = 0.2; // Base follow boost if no interaction data
+        }
 
-        return Math.min(topicScore + followBoost, 1.0);
+        return Math.min(topicScore + authorScore, 1.0);
     }
 
     // ─── Quality Score (0-1) ───────────────────────────────────────
@@ -526,6 +653,58 @@ export class FeedRanker {
 
         // Normalize: cap at 5 social interactions
         return Math.min((followedLikes * 2 + followedComments * 3) / 15, 1.0);
+    }
+
+    // ─── Learning Context Score (0-1) — NEW ────────────────────────
+    // Boosts posts that match the user's enrolled course topics
+    // (YouTube-inspired — recommend content within the user's active learning path)
+    private calcLearningContext(post: PostWithRelations, signals: UserSignals): number {
+        if (signals.enrolledCourseTopics.length === 0) return 0;
+
+        const postTags = (post as any).topicTags as string[] | undefined;
+        if (!postTags || postTags.length === 0) return 0;
+
+        // Count how many post tags overlap with enrolled course topics
+        let matchCount = 0;
+        for (const tag of postTags) {
+            if (signals.enrolledCourseTopics.includes(tag.toLowerCase())) {
+                matchCount++;
+            }
+        }
+
+        if (matchCount === 0) return 0;
+
+        // Partial match: 1 tag match = 0.5, 2+ tags = approaching 1.0
+        const matchRatio = matchCount / postTags.length;
+
+        // Post type bonus: educational post types matching courses get extra boost
+        const isEduType = ['COURSE', 'QUIZ', 'EXAM', 'ASSIGNMENT', 'TUTORIAL', 'RESOURCE', 'RESEARCH'].includes(post.postType);
+        const typeMultiplier = isEduType ? 1.3 : 1.0;
+
+        return Math.min(matchRatio * typeMultiplier, 1.0);
+    }
+
+    // ─── Engagement Velocity (0-1) — NEW ───────────────────────────
+    // Detects rapidly-rising content (engagement per hour in first 6 hours)
+    // (TikTok-inspired — fast feedback loop for rising content)
+    private calcEngagementVelocity(post: PostWithRelations): number {
+        const ageHours = (Date.now() - new Date(post.createdAt).getTime()) / (1000 * 60 * 60);
+
+        // Only calculate velocity for posts < 24 hours old
+        if (ageHours > 24) return 0;
+
+        const likes = post._count?.likes || post.likesCount || 0;
+        const comments = post._count?.comments || post.commentsCount || 0;
+        const totalEngagement = likes + comments;
+
+        if (totalEngagement === 0) return 0;
+
+        // Engagement per hour, capped at first 6 hours for velocity signal
+        const effectiveHours = Math.max(ageHours, 0.5); // Avoid division by near-zero
+        const velocity = totalEngagement / effectiveHours;
+
+        // Normalize: velocity of 10 engagement/hour is excellent
+        return Math.min(velocity / 10, 1.0);
     }
 
     // ─── Diversity Enforcement ─────────────────────────────────────
@@ -638,6 +817,7 @@ export class FeedRanker {
                 quality: 0,
                 recency: 1,
                 socialProof: 0,
+                learningContext: 0,
             },
         }));
 

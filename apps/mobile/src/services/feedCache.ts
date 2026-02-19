@@ -1,7 +1,7 @@
 /**
  * Feed Cache — Offline-first feed with stale-while-revalidate
  *
- * Caches the last 20 posts in AsyncStorage for instant cold-start,
+ * Caches the last 50 posts in AsyncStorage for instant cold-start,
  * and serves stale data while fresh data loads in the background.
  */
 
@@ -10,7 +10,7 @@ import { Post } from '@/types';
 
 const CACHE_KEY = 'feed:cached_posts';
 const CACHE_TS_KEY = 'feed:cached_at';
-const MAX_CACHED = 20;
+const MAX_CACHED = 50; // Match in-memory limit
 const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
@@ -53,6 +53,25 @@ export async function isCacheStale(): Promise<boolean> {
         return Date.now() - Number(ts) > STALE_THRESHOLD_MS;
     } catch {
         return true;
+    }
+}
+
+/**
+ * Prepend new posts to the cached feed without full replacement.
+ * Used when applying pending posts to persist them for app reopen.
+ */
+export async function appendToCachedFeed(newPosts: Post[]): Promise<void> {
+    try {
+        const existing = await loadCachedFeed();
+        const existingIds = new Set((existing || []).map(p => p.id));
+        const unique = newPosts.filter(p => !existingIds.has(p.id));
+        const merged = [...unique, ...(existing || [])].slice(0, MAX_CACHED);
+        await AsyncStorage.multiSet([
+            [CACHE_KEY, JSON.stringify(merged)],
+            [CACHE_TS_KEY, String(Date.now())],
+        ]);
+    } catch {
+        // Cache write failure is non-critical
     }
 }
 

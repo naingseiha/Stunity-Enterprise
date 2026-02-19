@@ -160,20 +160,22 @@ export default function FeedScreen() {
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
         // App came to foreground — check for new posts
-        const currentPosts = postsRef.current;
-        if (currentPosts.length === 0) return;
-        const latestCreatedAt = currentPosts[0]?.createdAt;
+        const { lastFeedTimestamp, posts: currentPosts, pendingPosts: currentPending } = useFeedStore.getState();
+        const latestCreatedAt = lastFeedTimestamp || currentPosts[0]?.createdAt;
         if (!latestCreatedAt) return;
 
         feedApi.get('/posts/feed', {
           params: { mode: 'RECENT', limit: 5, page: 1 },
         }).then((response) => {
           if (response.data?.success && response.data.data) {
-            const currentPending = pendingPostsRef.current;
+            const existingIds = new Set([
+              ...currentPosts.map(p => p.id),
+              ...currentPending.map(p => p.id),
+            ]);
+
             const newPosts = response.data.data.filter(
               (p: any) => new Date(p.createdAt) > new Date(latestCreatedAt) &&
-                !currentPosts.some(existing => existing.id === p.id) &&
-                !currentPending.some(pending => pending.id === p.id)
+                !existingIds.has(p.id)
             );
 
             if (newPosts.length > 0) {
@@ -664,12 +666,26 @@ export default function FeedScreen() {
           <TouchableOpacity
             style={[styles.newPostsPill, Shadows.md]}
             onPress={() => {
-              applyPendingPosts();
-              flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+              const newCount = applyPendingPosts();
+              if (newCount > 0) {
+                // Scroll to first data item (index 0) — this is the first new post,
+                // positioned right after the ListHeaderComponent
+                setTimeout(() => {
+                  flatListRef.current?.scrollToIndex({
+                    index: 0,
+                    animated: true,
+                    viewPosition: 0, // Align to top of viewport
+                  });
+                }, 100); // Small delay to let FlashList re-render with new data
+              }
             }}
           >
             <Ionicons name="arrow-up" size={16} color="#fff" />
-            <Text style={styles.newPostsText}>New Posts</Text>
+            <Text style={styles.newPostsText}>
+              {pendingPosts.length === 1
+                ? '1 New Post'
+                : `${pendingPosts.length} New Posts`}
+            </Text>
           </TouchableOpacity>
         </Animated.View>
       )}

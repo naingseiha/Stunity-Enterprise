@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { seedDatabase } from '@/lib/seed';
 import { cacheFeedPosts, loadCachedFeed, isCacheStale } from '@/services/feedCache';
+import { useAuthStore } from './authStore';
 
 // ── Batched view tracking ──
 // Buffer post views and flush in one HTTP request every 10 seconds.
@@ -80,6 +81,7 @@ interface FeedState {
   feedMode: 'FOR_YOU' | 'FOLLOWING' | 'RECENT';
   userInterestProfile: UserInterestProfile | null;
   pendingPosts: Post[];
+  lastFeedTimestamp: string | null; // ISO timestamp of newest post in feed
 
   // My Posts
   myPosts: Post[];
@@ -144,7 +146,7 @@ interface FeedState {
   // Real-time
   subscribeToFeed: () => void;
   unsubscribeFromFeed: () => void;
-  applyPendingPosts: () => void;
+  applyPendingPosts: () => number; // returns count of applied posts
   seedFeed: () => Promise<void>;
 
   // Story actions
@@ -185,6 +187,7 @@ const initialState = {
   activeStoryGroupIndex: null,
   activeStoryIndex: 0,
   pendingPosts: [],
+  lastFeedTimestamp: null,
   comments: {},
   isLoadingComments: {},
   isSubmittingComment: {},
@@ -301,12 +304,23 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         const maxPostsInMemory = 50;
         const optimizedPosts = finalPosts.slice(0, maxPostsInMemory);
 
+        // Track timestamp of newest post for real-time dedup
+        const newestTimestamp = optimizedPosts.length > 0
+          ? optimizedPosts.reduce((latest, p) =>
+            new Date(p.createdAt) > new Date(latest) ? p.createdAt : latest,
+            optimizedPosts[0].createdAt
+          )
+          : get().lastFeedTimestamp;
+
         set({
           posts: optimizedPosts,
           postsPage: page + 1,
           nextCursor: newCursor,
           hasMorePosts: hasMore,
           isLoadingPosts: false,
+          lastFeedTimestamp: newestTimestamp,
+          // Clear pending posts on refresh to avoid stale "New Posts" button
+          ...(refresh ? { pendingPosts: [] } : {}),
         });
 
         // Write to offline cache on page 1 (most recent posts)
@@ -529,6 +543,14 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
               resultsVisibility: newPostData.quiz.resultsVisibility,
               userAttempt: null, // No attempt yet since just created
             },
+          }),
+          // Add poll data if it's a poll post
+          ...(postType === 'POLL' && newPostData.pollOptions && {
+            pollOptions: newPostData.pollOptions.map((opt: any) => ({
+              id: opt.id,
+              text: opt.text,
+              votes: opt._count?.votes || 0,
+            })),
           }),
         };
 
@@ -1262,6 +1284,28 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     // Unsubscribe existing if any
     unsubscribeFromFeed();
 
+    // Helper: check if a post is truly new (not an old post receiving updates)
+    const isActuallyNewPost = (postCreatedAt: string): boolean => {
+      const { lastFeedTimestamp, posts } = get();
+      // Use lastFeedTimestamp if available, else fall back to most recent post
+      const referenceTime = lastFeedTimestamp || posts[0]?.createdAt;
+      if (!referenceTime) return true; // No reference = treat as new
+      return new Date(postCreatedAt) > new Date(referenceTime);
+    };
+
+    // Helper: check if post ID is already known (dedup)
+    const isKnownPostId = (postId: string): boolean => {
+      const { posts, pendingPosts } = get();
+      return posts.some(p => p.id === postId) || pendingPosts.some(p => p.id === postId);
+    };
+
+    // Helper: get current user ID (skip own posts — they're added optimistically)
+    const getCurrentUserId = (): string | undefined => {
+      try {
+        return useAuthStore.getState().user?.id;
+      } catch { return undefined; }
+    };
+
     const channelName = `feed:realtime:${Date.now()}`; // Unique per subscription
     const channel = supabase
       .channel(channelName)
@@ -1270,19 +1314,38 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'posts' },
         async (payload) => {
-          console.log('🔔 [FeedStore] New post INSERT:', payload.new?.id, JSON.stringify(payload.eventType));
-          const newPostId = (payload.new as any)?.id;
+          const newPostRaw = payload.new as any;
+          const newPostId = newPostRaw?.id;
           if (!newPostId) return;
+
+          // Skip own posts (already added via optimistic update in createPost)
+          const currentUserId = getCurrentUserId();
+          if (currentUserId && newPostRaw.authorId === currentUserId) {
+            console.log('🔔 [FeedStore] Skipping own post INSERT:', newPostId);
+            return;
+          }
+
+          // Skip if already known (dedup)
+          if (isKnownPostId(newPostId)) {
+            console.log('🔔 [FeedStore] Skipping duplicate INSERT:', newPostId);
+            return;
+          }
+
+          console.log('🔔 [FeedStore] New post INSERT:', newPostId);
 
           try {
             // Fetch full post via API (preserves business logic, author data, etc.)
             const response = await feedApi.get(`/posts/${newPostId}`);
-            if (response.data.success && response.data.post) {
-              const transformed = transformPost(response.data.post);
+            if (response.data.success && (response.data.data || response.data.post)) {
+              const transformed = transformPost(response.data.data || response.data.post);
               if (transformed) {
-                set(state => ({
-                  pendingPosts: [transformed, ...state.pendingPosts]
-                }));
+                // Final dedup check (race condition guard)
+                if (!isKnownPostId(transformed.id)) {
+                  set(state => ({
+                    pendingPosts: [transformed, ...state.pendingPosts]
+                  }));
+                  console.log('✅ [FeedStore] Added to pendingPosts, count:', get().pendingPosts.length);
+                }
               }
             }
           } catch (e) {
@@ -1298,12 +1361,13 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           const updated = payload.new as any;
           if (!updated?.id) return;
 
+          // Check if we already have this post in our feed or pending
           const { posts, pendingPosts } = get();
-          const isKnownPost = posts.some(p => p.id === updated.id) ||
-            pendingPosts.some(p => p.id === updated.id);
+          const isInFeed = posts.some(p => p.id === updated.id);
+          const isInPending = pendingPosts.some(p => p.id === updated.id);
 
-          if (isKnownPost) {
-            // Known post → just update counts
+          if (isInFeed) {
+            // Known post in feed → just update counts inline (NO "New Posts" button)
             console.log('🔔 [FeedStore] Post updated:', updated.id, 'likes:', updated.likesCount);
             set(state => ({
               posts: state.posts.map(p =>
@@ -1319,22 +1383,49 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
                   : p
               ),
             }));
+          } else if (isInPending) {
+            // Already in pending → update it in place, don't add again
+            console.log('🔔 [FeedStore] Updating pending post:', updated.id);
+            set(state => ({
+              pendingPosts: state.pendingPosts.map(p =>
+                p.id === updated.id
+                  ? {
+                    ...p,
+                    likes: updated.likesCount ?? p.likes,
+                    comments: updated.commentsCount ?? p.comments,
+                  }
+                  : p
+              ),
+            }));
           } else {
-            // Unknown post → treat as new post (Supabase often sends UPDATE instead of INSERT)
-            console.log('🆕 [FeedStore] New post detected via UPDATE:', updated.id);
-            try {
-              const response = await feedApi.get(`/posts/${updated.id}`);
-              if (response.data.success && response.data.post) {
-                const transformed = transformPost(response.data.post);
-                if (transformed) {
-                  set(state => ({
-                    pendingPosts: [transformed, ...state.pendingPosts]
-                  }));
-                  console.log('🆕 [FeedStore] Added to pendingPosts, count:', get().pendingPosts.length);
+            // Unknown post — only treat as new if it was ACTUALLY created recently
+            // This prevents old posts getting a like from triggering "New Posts"
+            const postCreatedAt = updated.createdAt;
+            if (postCreatedAt && isActuallyNewPost(postCreatedAt)) {
+              // Skip own posts
+              const currentUserId = getCurrentUserId();
+              if (currentUserId && updated.authorId === currentUserId) return;
+
+              console.log('🆕 [FeedStore] Genuinely new post via UPDATE:', updated.id);
+              try {
+                const response = await feedApi.get(`/posts/${updated.id}`);
+                if (response.data.success && (response.data.data || response.data.post)) {
+                  const transformed = transformPost(response.data.data || response.data.post);
+                  if (transformed && !isKnownPostId(transformed.id)) {
+                    set(state => ({
+                      pendingPosts: [transformed, ...state.pendingPosts]
+                    }));
+                    console.log('✅ [FeedStore] Added genuinely new post to pendingPosts, count:', get().pendingPosts.length);
+                  }
                 }
+              } catch (e) {
+                console.error('Failed to fetch new post:', e);
               }
-            } catch (e) {
-              console.error('Failed to fetch new post:', e);
+            } else {
+              // Old post received an update (like, comment, etc.) — ignore silently
+              if (__DEV__) {
+                console.log('🔕 [FeedStore] Ignoring UPDATE for old/unknown post:', updated.id);
+              }
             }
           }
         }
@@ -1445,10 +1536,36 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   },
 
   applyPendingPosts: () => {
-    set((state) => ({
-      posts: [...state.pendingPosts, ...state.posts],
+    const { pendingPosts, posts } = get();
+    if (pendingPosts.length === 0) return 0;
+
+    // Dedup: only add pending posts not already in the feed
+    const existingIds = new Set(posts.map(p => p.id));
+    const uniqueNewPosts = pendingPosts.filter(p => !existingIds.has(p.id));
+
+    if (uniqueNewPosts.length === 0) {
+      set({ pendingPosts: [] });
+      return 0;
+    }
+
+    const mergedPosts = [...uniqueNewPosts, ...posts];
+
+    // Update lastFeedTimestamp with the newest timestamp
+    const newestTimestamp = uniqueNewPosts.reduce((latest, p) =>
+      new Date(p.createdAt) > new Date(latest) ? p.createdAt : latest,
+      uniqueNewPosts[0].createdAt
+    );
+
+    set({
+      posts: mergedPosts,
       pendingPosts: [],
-    }));
+      lastFeedTimestamp: newestTimestamp,
+    });
+
+    // Persist to cache so reopening the app shows the latest posts
+    cacheFeedPosts(mergedPosts.slice(0, 50)).catch(() => { });
+
+    return uniqueNewPosts.length;
   },
 
   seedFeed: async () => {
