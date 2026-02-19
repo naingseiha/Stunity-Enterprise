@@ -417,22 +417,22 @@ export default function FeedScreen() {
             {/* Stats Column */}
             <View style={styles.perfStats}>
               <View style={styles.perfStatRow}>
-                <View style={[styles.perfStatIcon, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                  <Ionicons name="diamond" size={12} color="#fff" />
+                <View style={[styles.perfStatIcon, { backgroundColor: 'rgba(59,130,246,0.3)' }]}>
+                  <Ionicons name="diamond" size={12} color="#93C5FD" />
                 </View>
                 <Text style={styles.perfStatVal}>{learningStats.totalPoints.toLocaleString()}</Text>
                 <Text style={styles.perfStatLbl}>XP</Text>
               </View>
               <View style={styles.perfStatRow}>
-                <View style={[styles.perfStatIcon, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                  <Ionicons name="checkmark-circle" size={12} color="#fff" />
+                <View style={[styles.perfStatIcon, { backgroundColor: 'rgba(16,185,129,0.3)' }]}>
+                  <Ionicons name="checkmark-circle" size={12} color="#6EE7B7" />
                 </View>
                 <Text style={styles.perfStatVal}>{learningStats.completedLessons}</Text>
                 <Text style={styles.perfStatLbl}>Lessons</Text>
               </View>
               <View style={styles.perfStatRow}>
-                <View style={[styles.perfStatIcon, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                  <Ionicons name="flame" size={12} color="#fff" />
+                <View style={[styles.perfStatIcon, { backgroundColor: 'rgba(249,115,22,0.3)' }]}>
+                  <Ionicons name="flame" size={12} color="#FDBA74" />
                 </View>
                 <Text style={styles.perfStatVal}>{learningStats.currentStreak}</Text>
                 <Text style={styles.perfStatLbl}>Streak</Text>
