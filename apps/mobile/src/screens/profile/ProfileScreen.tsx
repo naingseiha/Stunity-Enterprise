@@ -45,7 +45,7 @@ import { formatNumber } from '@/utils';
 import { ProfileStackScreenProps } from '@/navigation/types';
 import { fetchProfile as apiFetchProfile, fetchEducation, fetchExperiences, fetchCertifications, followUser, unfollowUser, uploadProfilePhoto, uploadCoverPhoto } from '@/api/profileApi';
 import { statsAPI, type UserStats as QuizUserStats, type Streak, type UserAchievement, type Achievement } from '@/services/stats';
-import { PerformanceTab, ActivityTab, CertificationsSection, SkillsSection } from './components';
+import { PerformanceTab, ActivityTab, CertificationsSection, SkillsSection, ProfileCompletenessCard, CareerGoalsCard, ProjectShowcase } from './components';
 import * as ImagePicker from 'expo-image-picker';
 
 const { width } = Dimensions.get('window');
@@ -423,6 +423,22 @@ export default function ProfileScreen() {
             </View>
 
             <Text style={styles.headline}>{profile.headline || profile.professionalTitle || ''}</Text>
+
+            {/* Open to Opportunities Banner */}
+            {(profile as any).isOpenToOpportunities && (
+              <Animated.View entering={FadeInDown.delay(250).duration(400)} style={styles.openToWorkBanner}>
+                <LinearGradient
+                  colors={['#10B981', '#059669']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.openToWorkGradient}
+                >
+                  <Ionicons name="briefcase" size={14} color="#fff" />
+                  <Text style={styles.openToWorkText}>Open to Opportunities</Text>
+                </LinearGradient>
+              </Animated.View>
+            )}
+
             {profile.bio ? (
               <Text style={styles.bio}>{profile.bio}</Text>
             ) : null}
@@ -649,6 +665,21 @@ export default function ProfileScreen() {
             )}
             {activeTab === 'about' && (
               <View style={styles.aboutSection}>
+                {/* Profile Completeness — own profile only */}
+                {isOwnProfile && (
+                  <ProfileCompletenessCard
+                    profile={profile}
+                    onEdit={handleEditProfile}
+                  />
+                )}
+
+                {/* Career Goals */}
+                <CareerGoalsCard
+                  careerGoals={(profile as any).careerGoals}
+                  isOwnProfile={isOwnProfile}
+                  onEdit={handleEditProfile}
+                />
+
                 {/* Bio */}
                 {profile.bio ? (
                   <View style={styles.aboutCard}>
@@ -734,19 +765,22 @@ export default function ProfileScreen() {
                   </View>
                 )}
 
-                {/* Empty state */}
-                {!profile.bio && education.length === 0 && experiences.length === 0 && certifications.length === 0 && (!profile.skills || profile.skills.length === 0) && profile.interests.length === 0 && (
-                  <View style={styles.contentPlaceholder}>
-                    <Ionicons name="person-outline" size={48} color="#E5E7EB" />
-                    <Text style={styles.placeholderText}>No about information yet</Text>
-                  </View>
-                )}
+                {/* Project Showcase */}
+                <ProjectShowcase stats={profileStats} isOwnProfile={isOwnProfile} />
 
                 {/* Certifications */}
                 <CertificationsSection certifications={certifications} />
 
                 {/* Skills & Interests */}
                 <SkillsSection skills={profile.skills || []} interests={profile.interests || []} />
+
+                {/* Empty state — only if absolutely nothing */}
+                {!profile.bio && education.length === 0 && experiences.length === 0 && certifications.length === 0 && (!profile.skills || profile.skills.length === 0) && profile.interests.length === 0 && (profileStats?.projects ?? 0) === 0 && !(profile as any).careerGoals && (
+                  <View style={styles.contentPlaceholder}>
+                    <Ionicons name="person-outline" size={48} color="#E5E7EB" />
+                    <Text style={styles.placeholderText}>No about information yet</Text>
+                  </View>
+                )}
               </View>
             )}
             {activeTab === 'activity' && (
@@ -847,6 +881,24 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   levelTextInline: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  openToWorkBanner: {
+    marginTop: 8,
+    borderRadius: 20,
+    overflow: 'hidden',
+    alignSelf: 'center',
+  },
+  openToWorkGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  openToWorkText: {
     color: '#fff',
     fontSize: 12,
     fontWeight: '700',
