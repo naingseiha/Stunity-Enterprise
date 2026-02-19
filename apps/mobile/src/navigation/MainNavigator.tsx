@@ -29,7 +29,7 @@ import { NavigationProvider, useNavigationContext } from '@/contexts';
 import { FeedScreen, CreatePostScreen, EditPostScreen, PostDetailScreen, CommentsScreen, BookmarksScreen, MyPostsScreen, SearchScreen } from '@/screens/feed';
 import { LearnScreen, CourseDetailScreen } from '@/screens/learn';
 import { ProfileScreen, EditProfileScreen, SettingsScreen } from '@/screens/profile';
-import { ConversationsScreen, ChatScreen } from '@/screens/messages';
+import { ConversationsScreen, ChatScreen, NewMessageScreen } from '@/screens/messages';
 import { ClubsScreen, ClubDetailsScreen, CreateClubScreen } from '@/screens/clubs';
 import {
   AssignmentsListScreen,
@@ -77,7 +77,6 @@ const MyCoursesScreen = () => <PlaceholderScreen title="My Courses" />;
 const MyCreatedCoursesScreen = () => <PlaceholderScreen title="My Created Courses" />;
 
 // Messages Stack Screens
-const NewMessageScreen = () => <PlaceholderScreen title="New Message" />;
 const GroupInfoScreen = () => <PlaceholderScreen title="Group Info" />;
 
 // Profile Stack Screens
