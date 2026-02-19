@@ -27,6 +27,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle as SvgCircle } from 'react-native-svg';
 import Animated, {
   FadeInDown,
   FadeOutUp,
@@ -384,68 +385,98 @@ export default function FeedScreen() {
 
   const renderHeader = useCallback(() => (
     <View style={styles.headerSection}>
-      {/* Performance / Trophy Card — E-Learning focus */}
-      <TouchableOpacity activeOpacity={0.9} style={styles.performanceCardWrapper} onPress={() => navigation.getParent()?.navigate('ProfileTab')}>
-        <LinearGradient
-          colors={['#7DD3FC', '#0EA5E9', '#0284C7']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.performanceCard}
-        >
-          {/* Left side: Text info */}
-          <View style={styles.performanceLeft}>
-            <Text style={styles.performanceGreeting}>{getGreeting()}, {user?.firstName || 'Learner'}!</Text>
-            <Text style={styles.performanceTitle} numberOfLines={1}>
-              {learningStats.currentStreak > 0
-                ? `${learningStats.currentStreak}-day streak — keep going!`
-                : 'Start your learning journey'}
-            </Text>
+      {/* Performance Card — Compact XP Dashboard */}
+      <TouchableOpacity activeOpacity={0.9} style={styles.perfCard} onPress={() => navigation.getParent()?.navigate('ProfileTab')}>
+        <LinearGradient colors={['#ffffff', '#F8FAFC']} style={styles.perfCardInner}>
+          <View style={styles.perfTopRow}>
+            {/* Mini Level Ring */}
+            {(() => {
+              const ringSize = 72;
+              const sw = 6;
+              const r = (ringSize - sw) / 2;
+              const circ = 2 * Math.PI * r;
+              const xpToNext = 250;
+              const xpProgress = learningStats.totalPoints % xpToNext;
+              const pct = xpToNext > 0 ? Math.min(xpProgress / xpToNext, 1) : 0;
+              return (
+                <View style={styles.perfRingWrap}>
+                  <Svg width={ringSize} height={ringSize}>
+                    <SvgCircle cx={ringSize / 2} cy={ringSize / 2} r={r} stroke="rgba(14,165,233,0.12)" strokeWidth={sw} fill="none" />
+                    <SvgCircle cx={ringSize / 2} cy={ringSize / 2} r={r} stroke="#0EA5E9" strokeWidth={sw} fill="none"
+                      strokeDasharray={`${circ}`} strokeDashoffset={circ * (1 - pct)} strokeLinecap="round"
+                      transform={`rotate(-90, ${ringSize / 2}, ${ringSize / 2})`} />
+                  </Svg>
+                  <View style={styles.perfRingInner}>
+                    <Text style={styles.perfRingLabel}>LVL</Text>
+                    <Text style={styles.perfRingValue}>{learningStats.level}</Text>
+                  </View>
+                </View>
+              );
+            })()}
 
-            {/* Stats row */}
-            <View style={styles.performanceStats}>
-              <View style={styles.performanceStat}>
-                <Text style={styles.performanceStatValue}>🔥 {learningStats.currentStreak}</Text>
-                <Text style={styles.performanceStatLabel}>Streak</Text>
+            {/* Stats Column */}
+            <View style={styles.perfStats}>
+              <View style={styles.perfStatRow}>
+                <View style={[styles.perfStatIcon, { backgroundColor: '#EFF6FF' }]}>
+                  <Ionicons name="diamond" size={12} color="#3B82F6" />
+                </View>
+                <Text style={styles.perfStatVal}>{learningStats.totalPoints.toLocaleString()}</Text>
+                <Text style={styles.perfStatLbl}>XP</Text>
               </View>
-              <View style={styles.performanceStatDivider} />
-              <View style={styles.performanceStat}>
-                <Text style={styles.performanceStatValue}>
-                  ⭐ {learningStats.totalPoints >= 1000
-                    ? `${(learningStats.totalPoints / 1000).toFixed(1)}k`
-                    : learningStats.totalPoints}
-                </Text>
-                <Text style={styles.performanceStatLabel}>XP</Text>
+              <View style={styles.perfStatRow}>
+                <View style={[styles.perfStatIcon, { backgroundColor: '#ECFDF5' }]}>
+                  <Ionicons name="checkmark-circle" size={12} color="#10B981" />
+                </View>
+                <Text style={styles.perfStatVal}>{learningStats.completedLessons}</Text>
+                <Text style={styles.perfStatLbl}>Lessons</Text>
               </View>
-              <View style={styles.performanceStatDivider} />
-              <View style={styles.performanceStat}>
-                <Text style={styles.performanceStatValue}>✅ {learningStats.completedLessons}</Text>
-                <Text style={styles.performanceStatLabel}>Done</Text>
+              <View style={styles.perfStatRow}>
+                <View style={[styles.perfStatIcon, { backgroundColor: '#FFF7ED' }]}>
+                  <Ionicons name="flame" size={12} color="#F97316" />
+                </View>
+                <Text style={styles.perfStatVal}>{learningStats.currentStreak}</Text>
+                <Text style={styles.perfStatLbl}>Streak</Text>
               </View>
             </View>
 
-            {/* CTA */}
-            <TouchableOpacity style={styles.performanceCTA} activeOpacity={0.8} onPress={() => navigation.getParent()?.navigate('ProfileTab')}>
-              <Text style={styles.performanceCTAText}>View Progress</Text>
-              <Ionicons name="arrow-forward" size={14} color="#0284C7" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Right side: User Avatar */}
-          <View style={styles.performanceRight}>
-            <View style={styles.performanceAvatarLarge}>
+            {/* Avatar */}
+            <View style={styles.perfAvatarWrap}>
               <Avatar
                 uri={user?.profilePictureUrl}
                 name={user ? `${user.firstName} ${user.lastName}` : 'User'}
-                size="xl"
+                size="lg"
                 showBorder={false}
                 gradientBorder="none"
               />
+              <View style={styles.perfAvatarBadge}>
+                <Text style={styles.perfAvatarBadgeText}>{learningStats.level}</Text>
+              </View>
             </View>
           </View>
 
-          {/* Decorative circles */}
-          <View style={[styles.decorCircle, styles.decorCircle1]} />
-          <View style={[styles.decorCircle, styles.decorCircle2]} />
+          {/* XP Progress Bar */}
+          {(() => {
+            const xpToNext = 250;
+            const xpProgress = learningStats.totalPoints % xpToNext;
+            const nextLevel = learningStats.level + 1;
+            return (
+              <View style={styles.perfBarSection}>
+                <View style={styles.perfBarLabels}>
+                  <Text style={styles.perfBarLeft}>{xpProgress} XP</Text>
+                  <Text style={styles.perfBarRight}>{xpToNext} XP</Text>
+                </View>
+                <View style={styles.perfBarBg}>
+                  <LinearGradient
+                    colors={['#38BDF8', '#0EA5E9', '#0284C7'] as any}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={[styles.perfBarFill, { width: `${Math.min((xpProgress / xpToNext) * 100, 100)}%` } as any]}
+                  />
+                </View>
+                <Text style={styles.perfBarHint}>{Math.max(xpToNext - xpProgress, 0)} XP to Level {nextLevel}</Text>
+              </View>
+            );
+          })()}
         </LinearGradient>
       </TouchableOpacity>
 
@@ -855,116 +886,129 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
 
-  // ── Performance / Trophy Card ──
-  performanceCardWrapper: {
+  // ── Performance Card (v3 — Profile-matching design) ──
+  perfCard: {
     marginHorizontal: 14,
     marginTop: 10,
     borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 14,
-    elevation: 6,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  performanceCard: {
-    flexDirection: 'row',
-    padding: 20,
-    paddingBottom: 22,
+  perfCardInner: {
+    padding: 16,
     borderRadius: 20,
-    overflow: 'hidden',
+  },
+  perfTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  perfRingWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
     position: 'relative',
   },
-  performanceLeft: {
-    flex: 1,
-    justifyContent: 'center',
+  perfRingInner: {
+    position: 'absolute',
+    alignItems: 'center',
   },
-  performanceGreeting: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.85)',
-    marginBottom: 2,
+  perfRingLabel: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#9CA3AF',
+    letterSpacing: 1,
   },
-  performanceTitle: {
-    fontSize: 20,
+  perfRingValue: {
+    fontSize: 22,
     fontWeight: '800',
-    color: '#FFFFFF',
-    marginBottom: 14,
-    letterSpacing: 0.3,
+    color: '#1F2937',
+    letterSpacing: -1,
   },
-  performanceStats: {
+  perfStats: {
+    flex: 1,
+    gap: 8,
+  },
+  perfStatRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 14,
+    gap: 8,
   },
-  performanceStat: {
+  perfStatIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 7,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  performanceStatValue: {
-    fontSize: 18,
+  perfStatVal: {
+    fontSize: 15,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#1F2937',
   },
-  performanceStatLabel: {
+  perfStatLbl: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '500',
+  },
+  perfAvatarWrap: {
+    position: 'relative',
+  },
+  perfAvatarBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#0EA5E9',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  perfAvatarBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#fff',
+  },
+  perfBarSection: {
+    marginTop: 14,
+  },
+  perfBarLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  perfBarLeft: {
     fontSize: 10,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: 2,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    color: '#0EA5E9',
   },
-  performanceStatDivider: {
-    width: 1,
-    height: 28,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    marginHorizontal: 14,
+  perfBarRight: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#9CA3AF',
   },
-  performanceCTA: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 5,
-  },
-  performanceCTAText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0284C7',
-  },
-  performanceRight: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  performanceAvatarLarge: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  perfBarBg: {
+    height: 6,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 3,
     overflow: 'hidden',
   },
-  decorCircle: {
-    position: 'absolute',
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+  perfBarFill: {
+    height: '100%',
+    borderRadius: 3,
   },
-  decorCircle1: {
-    width: 120,
-    height: 120,
-    top: -30,
-    right: -20,
-  },
-  decorCircle2: {
-    width: 80,
-    height: 80,
-    bottom: -20,
-    left: -15,
+  perfBarHint: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginTop: 4,
   },
 
   // ── Featured Categories Section ──
