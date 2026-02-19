@@ -206,6 +206,7 @@ export default function SettingsScreen() {
 
     const fullName = user ? `${user.firstName} ${user.lastName}` : 'User';
     const initials = user ? `${(user.firstName?.[0] || '').toUpperCase()}${(user.lastName?.[0] || '').toUpperCase()}` : 'U';
+    const memberSince = user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Recently';
 
     // ── Section Definitions ────────────────────────────────────────
 
@@ -455,61 +456,69 @@ export default function SettingsScreen() {
                 {/* ─── Profile Card ─────────────────────────────────── */}
                 <Animated.View entering={FadeInDown.delay(50).duration(500).springify().damping(16)}>
                     <View style={styles.profileCard}>
-                        <LinearGradient
-                            colors={['#E0F2FE', '#BAE6FD', '#7DD3FC']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={styles.profileCardGradient}
-                        >
-                            {/* Decorative circles */}
-                            <View style={[styles.decorCircle, { top: -15, right: -20, width: 70, height: 70, opacity: 0.15 }]} />
-                            <View style={[styles.decorCircle, { bottom: -10, left: 40, width: 50, height: 50, opacity: 0.1 }]} />
-
-                            <View style={styles.profileCardContent}>
-                                <View style={styles.profileAvatarRow}>
-                                    <View style={styles.avatarGlow}>
-                                        <Avatar
-                                            uri={user?.profilePictureUrl}
-                                            name={fullName}
-                                            size="lg"
-                                            showBorder
-                                            gradientBorder="blue"
-                                        />
-                                    </View>
-                                    <View style={styles.profileInfo}>
-                                        <Text style={styles.profileName}>{fullName}</Text>
-                                        <Text style={styles.profileEmail} numberOfLines={1}>{user?.email}</Text>
-                                        <View style={styles.profileRoleBadge}>
-                                            <Ionicons name="shield-checkmark" size={11} color="#0284C7" />
-                                            <Text style={styles.profileRoleText}>{user?.role?.replace('_', ' ') || 'Student'}</Text>
-                                        </View>
+                        {/* Top: Avatar + Info */}
+                        <View style={styles.profileTop}>
+                            <Avatar
+                                uri={user?.profilePictureUrl}
+                                name={fullName}
+                                size="lg"
+                                showBorder
+                                gradientBorder="blue"
+                            />
+                            <View style={styles.profileInfo}>
+                                <View style={styles.nameRow}>
+                                    <Text style={styles.profileName}>{fullName}</Text>
+                                    <View style={styles.verifiedDot}>
+                                        <Ionicons name="checkmark" size={10} color="#fff" />
                                     </View>
                                 </View>
-
-                                {/* Action Buttons in Profile Card */}
-                                <View style={styles.profileActions}>
-                                    <TouchableOpacity
-                                        style={styles.profileActionBtn}
-                                        onPress={handleViewProfile}
-                                        activeOpacity={0.8}
-                                    >
-                                        <Ionicons name="eye-outline" size={16} color="#0284C7" />
-                                        <Text style={styles.profileActionText}>View Profile</Text>
-                                    </TouchableOpacity>
-
-                                    <View style={styles.profileActionDivider} />
-
-                                    <TouchableOpacity
-                                        style={styles.profileActionBtn}
-                                        onPress={() => navigation.navigate('EditProfile')}
-                                        activeOpacity={0.8}
-                                    >
-                                        <Ionicons name="create-outline" size={16} color="#0284C7" />
-                                        <Text style={styles.profileActionText}>Edit Profile</Text>
-                                    </TouchableOpacity>
+                                <Text style={styles.profileEmail} numberOfLines={1}>{user?.email}</Text>
+                                <View style={styles.metaRow}>
+                                    <View style={styles.rolePill}>
+                                        <Text style={styles.roleText}>{user?.role?.replace('_', ' ') || 'Student'}</Text>
+                                    </View>
+                                    <Text style={styles.memberSince}>Member since {memberSince}</Text>
                                 </View>
                             </View>
-                        </LinearGradient>
+                        </View>
+
+                        {/* Mini Stats */}
+                        <View style={styles.miniStats}>
+                            <View style={styles.miniStatItem}>
+                                <Text style={styles.miniStatValue}>—</Text>
+                                <Text style={styles.miniStatLabel}>Posts</Text>
+                            </View>
+                            <View style={styles.miniStatDivider} />
+                            <View style={styles.miniStatItem}>
+                                <Text style={styles.miniStatValue}>—</Text>
+                                <Text style={styles.miniStatLabel}>Courses</Text>
+                            </View>
+                            <View style={styles.miniStatDivider} />
+                            <View style={styles.miniStatItem}>
+                                <Text style={styles.miniStatValue}>—</Text>
+                                <Text style={styles.miniStatLabel}>Level</Text>
+                            </View>
+                        </View>
+
+                        {/* Actions */}
+                        <View style={styles.profileActions}>
+                            <TouchableOpacity
+                                style={styles.profileActionBtn}
+                                onPress={handleViewProfile}
+                                activeOpacity={0.7}
+                            >
+                                <Ionicons name="person-outline" size={16} color="#0EA5E9" />
+                                <Text style={styles.profileActionText}>View Profile</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.profileActionBtn, styles.profileActionBtnPrimary]}
+                                onPress={() => navigation.navigate('EditProfile')}
+                                activeOpacity={0.7}
+                            >
+                                <Ionicons name="create-outline" size={16} color="#fff" />
+                                <Text style={[styles.profileActionText, { color: '#fff' }]}>Edit Profile</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </Animated.View>
 
@@ -636,78 +645,100 @@ const styles = StyleSheet.create({
 
     // ── Profile Card
     profileCard: {
-        borderRadius: 22,
-        overflow: 'hidden',
-        marginBottom: 14,
-        shadowColor: '#0EA5E9',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.12,
-        shadowRadius: 16,
-        elevation: 4,
-    },
-    profileCardGradient: {
-        padding: 0,
-        overflow: 'hidden',
-    },
-    decorCircle: {
-        position: 'absolute',
-        borderRadius: 999,
         backgroundColor: '#fff',
-    },
-    profileCardContent: {
+        borderRadius: 20,
         padding: 18,
+        marginBottom: 14,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 3,
     },
-    profileAvatarRow: {
+    profileTop: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 14,
     },
-    avatarGlow: {
-        borderRadius: 999,
-        shadowColor: '#0EA5E9',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 3,
-    },
     profileInfo: {
         flex: 1,
     },
+    nameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
     profileName: {
-        fontSize: 19,
-        fontWeight: '800',
-        color: '#0C4A6E',
-        letterSpacing: -0.4,
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#1F2937',
+        letterSpacing: -0.3,
+    },
+    verifiedDot: {
+        width: 16,
+        height: 16,
+        borderRadius: 8,
+        backgroundColor: '#0EA5E9',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     profileEmail: {
         fontSize: 13,
-        color: '#075985',
+        color: '#6B7280',
         marginTop: 2,
-        opacity: 0.75,
     },
-    profileRoleBadge: {
+    metaRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
+        gap: 8,
         marginTop: 6,
-        backgroundColor: 'rgba(255,255,255,0.65)',
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        borderRadius: 8,
-        alignSelf: 'flex-start',
     },
-    profileRoleText: {
+    rolePill: {
+        backgroundColor: '#E0F2FE',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 8,
+    },
+    roleText: {
         fontSize: 11,
-        fontWeight: '700',
+        fontWeight: '600',
         color: '#0284C7',
         textTransform: 'capitalize',
     },
+    memberSince: {
+        fontSize: 11,
+        color: '#9CA3AF',
+    },
+    miniStats: {
+        flexDirection: 'row',
+        marginTop: 16,
+        paddingTop: 14,
+        borderTopWidth: 1,
+        borderTopColor: '#F1F5F9',
+    },
+    miniStatItem: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    miniStatValue: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#1F2937',
+    },
+    miniStatLabel: {
+        fontSize: 11,
+        color: '#9CA3AF',
+        marginTop: 2,
+    },
+    miniStatDivider: {
+        width: 1,
+        height: 28,
+        backgroundColor: '#F1F5F9',
+    },
     profileActions: {
         flexDirection: 'row',
+        gap: 10,
         marginTop: 14,
-        backgroundColor: 'rgba(255,255,255,0.55)',
-        borderRadius: 14,
-        overflow: 'hidden',
     },
     profileActionBtn: {
         flex: 1,
@@ -716,16 +747,16 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 6,
         paddingVertical: 10,
+        borderRadius: 12,
+        backgroundColor: '#F0F9FF',
     },
-    profileActionDivider: {
-        width: 1,
-        backgroundColor: 'rgba(2,132,199,0.15)',
-        marginVertical: 8,
+    profileActionBtnPrimary: {
+        backgroundColor: '#0EA5E9',
     },
     profileActionText: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#0369A1',
+        color: '#0EA5E9',
     },
 
     // ── Quick Stats
