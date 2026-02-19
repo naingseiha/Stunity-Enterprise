@@ -387,7 +387,7 @@ export default function FeedScreen() {
     <View style={styles.headerSection}>
       {/* Performance Card — Compact XP Dashboard */}
       <TouchableOpacity activeOpacity={0.9} style={styles.perfCard} onPress={() => navigation.getParent()?.navigate('ProfileTab')}>
-        <LinearGradient colors={['#ffffff', '#F8FAFC']} style={styles.perfCardInner}>
+        <LinearGradient colors={['#7DD3FC', '#0EA5E9', '#0284C7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.perfCardInner}>
           <View style={styles.perfTopRow}>
             {/* Mini Level Ring */}
             {(() => {
@@ -401,8 +401,8 @@ export default function FeedScreen() {
               return (
                 <View style={styles.perfRingWrap}>
                   <Svg width={ringSize} height={ringSize}>
-                    <SvgCircle cx={ringSize / 2} cy={ringSize / 2} r={r} stroke="rgba(14,165,233,0.12)" strokeWidth={sw} fill="none" />
-                    <SvgCircle cx={ringSize / 2} cy={ringSize / 2} r={r} stroke="#0EA5E9" strokeWidth={sw} fill="none"
+                    <SvgCircle cx={ringSize / 2} cy={ringSize / 2} r={r} stroke="rgba(255,255,255,0.2)" strokeWidth={sw} fill="none" />
+                    <SvgCircle cx={ringSize / 2} cy={ringSize / 2} r={r} stroke="#ffffff" strokeWidth={sw} fill="none"
                       strokeDasharray={`${circ}`} strokeDashoffset={circ * (1 - pct)} strokeLinecap="round"
                       transform={`rotate(-90, ${ringSize / 2}, ${ringSize / 2})`} />
                   </Svg>
@@ -417,22 +417,22 @@ export default function FeedScreen() {
             {/* Stats Column */}
             <View style={styles.perfStats}>
               <View style={styles.perfStatRow}>
-                <View style={[styles.perfStatIcon, { backgroundColor: '#EFF6FF' }]}>
-                  <Ionicons name="diamond" size={12} color="#3B82F6" />
+                <View style={[styles.perfStatIcon, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                  <Ionicons name="diamond" size={12} color="#fff" />
                 </View>
                 <Text style={styles.perfStatVal}>{learningStats.totalPoints.toLocaleString()}</Text>
                 <Text style={styles.perfStatLbl}>XP</Text>
               </View>
               <View style={styles.perfStatRow}>
-                <View style={[styles.perfStatIcon, { backgroundColor: '#ECFDF5' }]}>
-                  <Ionicons name="checkmark-circle" size={12} color="#10B981" />
+                <View style={[styles.perfStatIcon, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                  <Ionicons name="checkmark-circle" size={12} color="#fff" />
                 </View>
                 <Text style={styles.perfStatVal}>{learningStats.completedLessons}</Text>
                 <Text style={styles.perfStatLbl}>Lessons</Text>
               </View>
               <View style={styles.perfStatRow}>
-                <View style={[styles.perfStatIcon, { backgroundColor: '#FFF7ED' }]}>
-                  <Ionicons name="flame" size={12} color="#F97316" />
+                <View style={[styles.perfStatIcon, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                  <Ionicons name="flame" size={12} color="#fff" />
                 </View>
                 <Text style={styles.perfStatVal}>{learningStats.currentStreak}</Text>
                 <Text style={styles.perfStatLbl}>Streak</Text>
@@ -444,7 +444,7 @@ export default function FeedScreen() {
               <Avatar
                 uri={user?.profilePictureUrl}
                 name={user ? `${user.firstName} ${user.lastName}` : 'User'}
-                size="lg"
+                size="xl"
                 showBorder={false}
                 gradientBorder="none"
               />
@@ -467,7 +467,7 @@ export default function FeedScreen() {
                 </View>
                 <View style={styles.perfBarBg}>
                   <LinearGradient
-                    colors={['#38BDF8', '#0EA5E9', '#0284C7'] as any}
+                    colors={['rgba(255,255,255,0.5)', 'rgba(255,255,255,0.8)', '#ffffff'] as any}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={[styles.perfBarFill, { width: `${Math.min((xpProgress / xpToNext) * 100, 100)}%` } as any]}
@@ -893,11 +893,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: 'hidden',
     backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 14,
+    elevation: 6,
   },
   perfCardInner: {
     padding: 16,
@@ -920,13 +920,13 @@ const styles = StyleSheet.create({
   perfRingLabel: {
     fontSize: 8,
     fontWeight: '700',
-    color: '#9CA3AF',
+    color: 'rgba(255,255,255,0.7)',
     letterSpacing: 1,
   },
   perfRingValue: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#FFFFFF',
     letterSpacing: -1,
   },
   perfStats: {
@@ -948,11 +948,11 @@ const styles = StyleSheet.create({
   perfStatVal: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#FFFFFF',
   },
   perfStatLbl: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: 'rgba(255,255,255,0.7)',
     fontWeight: '500',
   },
   perfAvatarWrap: {
@@ -987,16 +987,16 @@ const styles = StyleSheet.create({
   perfBarLeft: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#0EA5E9',
+    color: '#FFFFFF',
   },
   perfBarRight: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#9CA3AF',
+    color: 'rgba(255,255,255,0.6)',
   },
   perfBarBg: {
     height: 6,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -1006,7 +1006,7 @@ const styles = StyleSheet.create({
   },
   perfBarHint: {
     fontSize: 10,
-    color: '#9CA3AF',
+    color: 'rgba(255,255,255,0.7)',
     textAlign: 'center',
     marginTop: 4,
   },
