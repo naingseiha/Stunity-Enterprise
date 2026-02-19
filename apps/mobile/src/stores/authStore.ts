@@ -41,7 +41,7 @@ const mapApiUserToUser = (apiUser: any): User => ({
   lastName: apiUser.lastName || '',
   name: `${apiUser.firstName || ''} ${apiUser.lastName || ''}`.trim() || 'User',
   username: apiUser.username || apiUser.email?.split('@')[0] || 'user',
-  profilePictureUrl: apiUser.profilePictureUrl || null,
+  profilePictureUrl: apiUser.profilePictureUrl || apiUser.avatar || null,
   coverPhotoUrl: apiUser.coverPhotoUrl || null,
   role: apiUser.role || 'STUDENT',
   bio: apiUser.bio,
