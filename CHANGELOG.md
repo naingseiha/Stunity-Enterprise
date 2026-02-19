@@ -2,6 +2,59 @@
 
 All notable changes to Stunity Enterprise will be documented in this file.
 
+## [2.8.0] - 2026-02-19
+
+### Added — Brand Color Migration (Sky Blue) & Profile Screen Enhancements
+
+#### Brand Color Migration: Amber → Sky Blue
+- **Primary color system** migrated from amber/orange to sky blue/cyan
+- **Color mapping**: `#F59E0B` → `#0EA5E9`, `#D97706` → `#0284C7`, `#FCD34D` → `#7DD3FC`
+- **Theme config** (`theme.ts`) updated with full Tailwind Sky palette (50–900)
+- **43+ files** updated across all screens and components
+- **Semantic colors preserved**: Gold trophies, leaderboard ranks, and achievement badges kept their natural amber/gold appearance
+
+#### Profile Screen Enhancements
+- **Stats cards redesign** — Three individual mini-cards (Posts=purple, Followers=blue, Following=green) with pastel gradients, icon circles, and individual shadows
+- **Blue hero card** — "Your Progress" card with sky blue gradient (`#38BDF8 → #0EA5E9 → #0284C7`), decorative floating circles, and 3 inline stats (Courses, Avg Grade, Study Time)
+- **6 performance cards** — 2-column grid with light blue backgrounds: Courses, Avg Grade, Study Hours, Day Streak, Achievements, Projects (ready for backend integration)
+- **Edit Profile button** — Compact pill with sky blue border + icon replacing full-width gradient button
+- **Settings & camera icons** — Added to cover photo header for profile owners
+- **Cover gradient** — Updated to sky blue tones (`#BAE6FD → #E0F2FE → #F0F9FF`)
+- **QR code button** — Added to action buttons row
+
+#### SubjectFilters Fix
+- **History category** — Changed from colliding blue to distinct orange (`#FB923C`/`#C2410C`)
+- **All category** — Updated to sky blue primary
+
+### Changed
+- **config/theme.ts** — Primary palette fully sky blue (was amber)
+- **Avatar.tsx** — Gold gradient preset updated; default border color sky blue
+- **Button.tsx** — Brand colors sky blue
+- **Sidebar.tsx** — Menu accent colors sky blue
+- **FeedScreen.tsx** — Quick action gradient, create card shadow, refresh spinner, new posts pill
+- **LearnScreen.tsx** — Tab/category colors, path gradients, create course button
+- **ClubsScreen.tsx** — FAB gradient, join button, filter pills
+- **ClubDetailsScreen.tsx** — Action button shadow
+- **CreateClubScreen.tsx** — Create button gradient
+- **ProfileScreen.tsx** — Complete stats & performance section redesign + cover gradient
+- **PollVoting.tsx** — Option 4 gradient corrected
+- **CourseCard.tsx** — Gradient palette updated
+- **CourseDetailScreen.tsx** — Header gradient updated
+- **PostCard.tsx**, **PostCardSections.tsx**, **StoryCircles.tsx** — Accent colors
+- **All auth screens** (Login, Register, Welcome) — Brand colors sky blue
+- **All assignment screens** — Brand colors sky blue
+- **NotificationsScreen.tsx**, **ConversationsScreen.tsx** — Brand colors sky blue
+- **Create post forms** (Announcement, Question, Course, Quiz) — Brand colors sky blue
+
+### Technical Details
+- Files modified: 43+
+- Brand color references replaced: 100+
+- No new TypeScript errors introduced
+- Design system: Sky Blue (#0EA5E9) primary, consistent across all screens
+- Background: #F5F3FF (soft purple, unchanged)
+
+---
+
 ## [2.7.0] - 2026-02-19
 
 ### Added - Mobile UI/UX Redesign (Indigo Design System)
@@ -347,6 +400,7 @@ See: `ENHANCED_AUTH_DESIGN.md`, `DESIGN_CONSISTENCY_UPDATE.md`
 
 ## Version History Summary
 
+- **v2.8.0** (2026-02-19): Brand Color Migration (Sky Blue) & Profile Enhancements ✅
 - **v2.7.0** (2026-02-19): Mobile UI/UX Redesign — Indigo Design System ✅
 - **v2.6.0** (2026-02-19): Feed Architecture Optimization (6 phases, 33 changes) ✅
 - **v2.5.0** (2026-02-10): Professional Mobile UI/UX ✅

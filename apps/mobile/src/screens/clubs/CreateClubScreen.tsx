@@ -27,31 +27,31 @@ import { Colors } from '@/config';
 import { clubsApi } from '@/api';
 
 const CLUB_TYPES = [
-  { 
-    id: 'CASUAL_STUDY_GROUP', 
-    name: 'Study Group', 
-    icon: 'people', 
+  {
+    id: 'CASUAL_STUDY_GROUP',
+    name: 'Study Group',
+    icon: 'people',
     color: '#2563EB',
     description: 'Casual learning with peers'
   },
-  { 
-    id: 'STRUCTURED_CLASS', 
-    name: 'Class', 
-    icon: 'school', 
+  {
+    id: 'STRUCTURED_CLASS',
+    name: 'Class',
+    icon: 'school',
     color: '#059669',
     description: 'Formal structured course'
   },
-  { 
-    id: 'PROJECT_GROUP', 
-    name: 'Project', 
-    icon: 'rocket', 
+  {
+    id: 'PROJECT_GROUP',
+    name: 'Project',
+    icon: 'rocket',
     color: '#DC2626',
     description: 'Collaborative project team'
   },
-  { 
-    id: 'EXAM_PREP', 
-    name: 'Exam Prep', 
-    icon: 'book', 
+  {
+    id: 'EXAM_PREP',
+    name: 'Exam Prep',
+    icon: 'book',
     color: '#7C3AED',
     description: 'Test preparation group'
   },
@@ -65,7 +65,7 @@ const CLUB_MODES = [
 
 export default function CreateClubScreen() {
   const navigation = useNavigation();
-  
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedType, setSelectedType] = useState<string>('CASUAL_STUDY_GROUP');
@@ -86,7 +86,7 @@ export default function CreateClubScreen() {
 
     try {
       setCreating(true);
-      
+
       const tagArray = tags
         .split(',')
         .map(t => t.trim())
@@ -194,7 +194,7 @@ export default function CreateClubScreen() {
                   key={type.id}
                   style={[
                     styles.typeOption,
-                    selectedType === type.id && { 
+                    selectedType === type.id && {
                       borderColor: type.color,
                       borderWidth: 2,
                       backgroundColor: type.color + '08'
@@ -232,10 +232,10 @@ export default function CreateClubScreen() {
                   onPress={() => setSelectedMode(mode.id)}
                   activeOpacity={0.7}
                 >
-                  <Ionicons 
-                    name={mode.icon as any} 
-                    size={20} 
-                    color={selectedMode === mode.id ? Colors.primary : '#6B7280'} 
+                  <Ionicons
+                    name={mode.icon as any}
+                    size={20}
+                    color={selectedMode === mode.id ? Colors.primary : '#6B7280'}
                   />
                   <View style={styles.modeInfo}>
                     <Text style={[
@@ -312,7 +312,7 @@ export default function CreateClubScreen() {
             disabled={creating}
           >
             <LinearGradient
-              colors={['#6366F1', '#4F46E5']}
+              colors={['#7DD3FC', '#0EA5E9', '#0284C7']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.createButtonGradient}
@@ -336,7 +336,7 @@ export default function CreateClubScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F7FC',
+    backgroundColor: '#F5F3FF',
   },
   keyboardView: {
     flex: 1,
@@ -346,14 +346,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#F5F3FF',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -548,7 +548,7 @@ const styles = StyleSheet.create({
   createButton: {
     borderRadius: 28,
     overflow: 'hidden',
-    shadowColor: '#6366F1',
+    shadowColor: '#0284C7',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,

@@ -135,7 +135,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                 <View style={[styles.statCard, Shadows.md]}>
                   <View style={styles.statIconContainer}>
                     <LinearGradient
-                      colors={['#F59E0B', '#D97706']}
+                      colors={['#0EA5E9', '#0284C7']}
                       style={styles.statIconGradient}
                     >
                       <Ionicons name="flash" size={22} color="#fff" />
@@ -210,7 +210,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                       </View>
                       <View style={styles.algoProgressBarBg}>
                         <LinearGradient
-                          colors={['#F59E0B', '#D97706']}
+                          colors={['#0EA5E9', '#0284C7']}
                           style={[styles.algoProgressBar, { width: `${Math.round(algoScore.breakdown.quality)}%` }]}
                         />
                       </View>
@@ -296,8 +296,8 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
 
                 <View style={[styles.engagementItem, Shadows.sm]}>
                   <View style={styles.engagementLeft}>
-                    <View style={[styles.engagementIcon, { backgroundColor: '#FEF3C7' }]}>
-                      <Ionicons name="bookmark" size={20} color="#F59E0B" />
+                    <View style={[styles.engagementIcon, { backgroundColor: '#E0F2FE' }]}>
+                      <Ionicons name="bookmark" size={20} color="#0EA5E9" />
                     </View>
                     <View>
                       <Text style={styles.engagementValue}>{formatNumber(analytics.bookmarks)}</Text>

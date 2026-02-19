@@ -30,40 +30,40 @@ import { useAuthStore } from '@/stores';
 
 const { width } = Dimensions.get('window');
 
-const CLUB_TYPE_CONFIG: Record<string, { 
-  icon: string; 
-  color: string; 
+const CLUB_TYPE_CONFIG: Record<string, {
+  icon: string;
+  color: string;
   lightColor: string;
   lightColorEnd: string;
   label: string;
 }> = {
-  CASUAL_STUDY_GROUP: { 
-    icon: 'people', 
-    color: '#2563EB', 
+  CASUAL_STUDY_GROUP: {
+    icon: 'people',
+    color: '#2563EB',
     lightColor: '#DBEAFE',
     lightColorEnd: '#BFDBFE',
-    label: 'Study Group' 
+    label: 'Study Group'
   },
-  STRUCTURED_CLASS: { 
-    icon: 'school', 
-    color: '#059669', 
+  STRUCTURED_CLASS: {
+    icon: 'school',
+    color: '#059669',
     lightColor: '#D1FAE5',
     lightColorEnd: '#A7F3D0',
-    label: 'Class' 
+    label: 'Class'
   },
-  PROJECT_GROUP: { 
-    icon: 'rocket', 
-    color: '#DC2626', 
+  PROJECT_GROUP: {
+    icon: 'rocket',
+    color: '#DC2626',
     lightColor: '#FEE2E2',
     lightColorEnd: '#FECACA',
-    label: 'Project' 
+    label: 'Project'
   },
-  EXAM_PREP: { 
-    icon: 'book', 
-    color: '#7C3AED', 
+  EXAM_PREP: {
+    icon: 'book',
+    color: '#7C3AED',
     lightColor: '#EDE9FE',
     lightColorEnd: '#DDD6FE',
-    label: 'Exam Prep' 
+    label: 'Exam Prep'
   },
 };
 
@@ -92,7 +92,7 @@ export default function ClubDetailsScreen() {
         clubsApi.getClubById(clubId),
         clubsApi.getClubMembers(clubId),
       ]);
-      
+
       setClub(clubData);
       setMembers(membersData || []);
     } catch (err: any) {
@@ -119,7 +119,7 @@ export default function ClubDetailsScreen() {
 
     try {
       setJoiningLoading(true);
-      
+
       if (isJoined) {
         Alert.alert(
           'Leave Club',
@@ -272,10 +272,10 @@ export default function ClubDetailsScreen() {
             </View>
             <View style={styles.statDivider} />
             <View style={styles.stat}>
-              <Ionicons 
-                name={club.mode === 'PUBLIC' ? 'globe-outline' : club.mode === 'INVITE_ONLY' ? 'lock-closed' : 'checkmark-circle'} 
-                size={18} 
-                color="#6B7280" 
+              <Ionicons
+                name={club.mode === 'PUBLIC' ? 'globe-outline' : club.mode === 'INVITE_ONLY' ? 'lock-closed' : 'checkmark-circle'}
+                size={18}
+                color="#6B7280"
               />
               <Text style={styles.statText}>
                 {club.mode === 'PUBLIC' ? 'Public' : club.mode === 'INVITE_ONLY' ? 'Invite Only' : 'Approval'}
@@ -331,7 +331,7 @@ export default function ClubDetailsScreen() {
               </TouchableOpacity>
             )}
           </View>
-          
+
           <View style={styles.membersGrid}>
             {members?.slice(0, 6).map((member, index) => (
               <View key={member.id} style={styles.memberItem}>
@@ -369,22 +369,23 @@ export default function ClubDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F7FC',
+    backgroundColor: '#F5F3FF',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#F5F3FF',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
@@ -392,10 +393,12 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   headerButton: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#F5F3FF',
     justifyContent: 'center',
-    alignItems: 'flex-end',
+    alignItems: 'center',
   },
   scrollView: {
     flex: 1,
@@ -512,7 +515,7 @@ const styles = StyleSheet.create({
   actionButton: {
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#6366F1',
+    shadowColor: '#0284C7',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,

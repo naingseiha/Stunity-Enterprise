@@ -1,8 +1,9 @@
 /**
- * Profile Screen - Redesigned
+ * Profile Screen — Premium Enterprise Design
  * 
  * Beautiful, modern profile with Instagram/SchoolApp inspired design
  * Features: Cover photo, avatar, stats, performance highlights, tabs
+ * Compact edit button, settings icon, soft purple background
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -31,7 +32,7 @@ import { formatNumber } from '@/utils';
 import { ProfileStackScreenProps } from '@/navigation/types';
 
 const { width } = Dimensions.get('window');
-  const COVER_HEIGHT = 200;
+const COVER_HEIGHT = 200;
 
 type RouteProp = ProfileStackScreenProps<'Profile'>['route'];
 type NavigationProp = ProfileStackScreenProps<'Profile'>['navigation'];
@@ -44,21 +45,16 @@ interface StatsCardProps {
   colors: string[];
 }
 
-function StatsCard({ icon, value, label, colors }: StatsCardProps) {
+function PerformanceCard({ icon, value, label }: { icon: string; value: string | number; label: string }) {
   return (
-    <Animated.View entering={FadeInDown.duration(400)} style={styles.statsCard}>
-      <LinearGradient
-        colors={colors}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.statsCardGradient}
-      >
-        <Text style={styles.statsIcon}>{icon}</Text>
-        <View style={styles.statsContent}>
-          <Text style={styles.statsValue}>{value}</Text>
-          <Text style={styles.statsLabel}>{label}</Text>
+    <Animated.View entering={FadeInDown.duration(400)} style={styles.perfCard}>
+      <View style={styles.perfCardInner}>
+        <View style={styles.perfIconCircle}>
+          <Text style={styles.perfIcon}>{icon}</Text>
         </View>
-      </LinearGradient>
+        <Text style={styles.perfValue}>{value}</Text>
+        <Text style={styles.perfLabel}>{label}</Text>
+      </View>
     </Animated.View>
   );
 }
@@ -67,7 +63,7 @@ export default function ProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp>();
   const { user: currentUser } = useAuthStore();
-  
+
   const userId = route.params?.userId;
   const isOwnProfile = !userId || userId === currentUser?.id;
 
@@ -149,7 +145,7 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -159,18 +155,21 @@ export default function ProfileScreen() {
         {/* Cover Photo Section */}
         <View style={styles.coverSection}>
           <LinearGradient
-            colors={['#FFF9E6', '#FFE4E1', '#FFFFFF']}
+            colors={['#BAE6FD', '#E0F2FE', '#F0F9FF']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.coverGradient}
           />
-          
+
           {/* Back Button */}
           <SafeAreaView edges={['top']} style={styles.headerButtons}>
-            {/* Edit Cover Button (Own Profile) */}
+            {/* Settings Button (Own Profile) */}
             {isOwnProfile && (
-              <View style={styles.editCoverButtonWrapper}>
-                <TouchableOpacity style={styles.editCoverButton}>
+              <View style={styles.headerTopRow}>
+                <TouchableOpacity style={styles.headerCircleBtn}>
+                  <Ionicons name="settings-outline" size={20} color="#1a1a1a" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.headerCircleBtn}>
                   <Ionicons name="camera-outline" size={20} color="#1a1a1a" />
                 </TouchableOpacity>
               </View>
@@ -190,12 +189,12 @@ export default function ProfileScreen() {
                 gradientBorder="orange"
                 showBorder
               />
-              
+
               {/* Edit Avatar Button */}
               {isOwnProfile && (
                 <TouchableOpacity style={styles.editAvatarButton}>
                   <View style={styles.editAvatarCircle}>
-                    <Ionicons name="camera-outline" size={16} color="#FFA500" />
+                    <Ionicons name="camera-outline" size={16} color="#0EA5E9" />
                   </View>
                 </TouchableOpacity>
               )}
@@ -210,11 +209,11 @@ export default function ProfileScreen() {
                 <Ionicons name="checkmark-circle" size={22} color="#3B82F6" />
               )}
             </View>
-            
+
             {/* Level Badge - Moved here */}
             <View style={styles.levelBadgeInline}>
               <LinearGradient
-                colors={['#FFA500', '#FF8C00']}
+                colors={['#0EA5E9', '#0284C7']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.levelBadgeGradient}
@@ -223,19 +222,19 @@ export default function ProfileScreen() {
                 <Text style={styles.levelTextInline}>Level 5</Text>
               </LinearGradient>
             </View>
-            
+
             <Text style={styles.headline}>Computer Science Student</Text>
             <Text style={styles.bio}>
               Passionate about learning and building amazing things
             </Text>
-            
+
             {/* Location & Social Links */}
             <View style={styles.metaRow}>
               <View style={styles.locationRow}>
                 <Ionicons name="location-outline" size={14} color="#9CA3AF" />
                 <Text style={styles.locationText}>Phnom Penh, Cambodia</Text>
               </View>
-              
+
               <View style={styles.socialLinks}>
                 <TouchableOpacity style={styles.socialIcon}>
                   <Ionicons name="logo-github" size={16} color="#6B7280" />
@@ -247,119 +246,161 @@ export default function ProfileScreen() {
             </View>
           </Animated.View>
 
-          {/* Stats Row */}
+          {/* Stats Cards — Individual mini-cards */}
           <Animated.View entering={FadeIn.delay(300)} style={styles.statsRow}>
-            <TouchableOpacity style={styles.statItem}>
-              <Text style={styles.statValue}>{formatNumber(stats.posts)}</Text>
-              <Text style={styles.statLabel}>Posts</Text>
+            <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
+              <LinearGradient
+                colors={['#F3E8FF', '#FAF5FF']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.statCardGradient}
+              >
+                <View style={[styles.statIconCircle, { backgroundColor: '#C084FC' }]}>
+                  <Ionicons name="document-text" size={16} color="#581C87" />
+                </View>
+                <Text style={styles.statValue}>{formatNumber(stats.posts)}</Text>
+                <Text style={styles.statLabel}>Posts</Text>
+              </LinearGradient>
             </TouchableOpacity>
-            
-            <View style={styles.statDivider} />
-            
-            <TouchableOpacity style={styles.statItem}>
-              <Text style={styles.statValue}>{formatNumber(stats.followers)}</Text>
-              <Text style={styles.statLabel}>Followers</Text>
+
+            <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
+              <LinearGradient
+                colors={['#DBEAFE', '#EFF6FF']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.statCardGradient}
+              >
+                <View style={[styles.statIconCircle, { backgroundColor: '#93C5FD' }]}>
+                  <Ionicons name="people" size={16} color="#1E3A5F" />
+                </View>
+                <Text style={styles.statValue}>{formatNumber(stats.followers)}</Text>
+                <Text style={styles.statLabel}>Followers</Text>
+              </LinearGradient>
             </TouchableOpacity>
-            
-            <View style={styles.statDivider} />
-            
-            <TouchableOpacity style={styles.statItem}>
-              <Text style={styles.statValue}>{formatNumber(stats.following)}</Text>
-              <Text style={styles.statLabel}>Following</Text>
+
+            <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
+              <LinearGradient
+                colors={['#D1FAE5', '#ECFDF5']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.statCardGradient}
+              >
+                <View style={[styles.statIconCircle, { backgroundColor: '#6EE7B7' }]}>
+                  <Ionicons name="heart" size={16} color="#064E3B" />
+                </View>
+                <Text style={styles.statValue}>{formatNumber(stats.following)}</Text>
+                <Text style={styles.statLabel}>Following</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </Animated.View>
 
-          {/* Action Buttons */}
+          {/* Action Buttons — Compact layout */}
           <Animated.View entering={FadeIn.delay(400)} style={styles.actionButtons}>
             {isOwnProfile ? (
               <>
                 <TouchableOpacity
-                  style={styles.primaryButton}
+                  style={styles.editPill}
                   onPress={handleEditProfile}
+                  activeOpacity={0.8}
                 >
-                  <LinearGradient
-                    colors={['#FFA500', '#FF8C00']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.primaryButtonGradient}
-                  >
-                    <Ionicons name="create-outline" size={20} color="#fff" />
-                    <Text style={styles.primaryButtonText}>Edit Profile</Text>
-                  </LinearGradient>
+                  <Ionicons name="create-outline" size={16} color="#0284C7" />
+                  <Text style={styles.editPillText}>Edit</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity style={styles.secondaryButton}>
-                  <Ionicons name="share-social-outline" size={20} color="#6B7280" />
+
+                <TouchableOpacity style={styles.iconBtn}>
+                  <Ionicons name="share-social-outline" size={18} color="#6B7280" />
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.iconBtn}>
+                  <Ionicons name="qr-code-outline" size={18} color="#6B7280" />
                 </TouchableOpacity>
               </>
             ) : (
               <>
                 <TouchableOpacity
-                  style={[styles.primaryButton, styles.flexButton]}
+                  style={[styles.followPill, isFollowing && styles.followPillFollowing]}
                   onPress={handleFollow}
+                  activeOpacity={0.8}
                 >
-                  <LinearGradient
-                    colors={isFollowing ? ['#F3F4F6', '#F3F4F6'] : ['#FFA500', '#FF8C00']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.primaryButtonGradient}
-                  >
-                    <Text style={[styles.primaryButtonText, isFollowing && styles.followingText]}>
-                      {isFollowing ? 'Following' : 'Follow'}
-                    </Text>
-                  </LinearGradient>
+                  {isFollowing ? (
+                    <>
+                      <Ionicons name="checkmark" size={16} color="#6B7280" />
+                      <Text style={styles.followPillTextFollowing}>Following</Text>
+                    </>
+                  ) : (
+                    <LinearGradient
+                      colors={['#7DD3FC', '#0EA5E9', '#0284C7']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.followPillGradient}
+                    >
+                      <Ionicons name="person-add" size={14} color="#fff" />
+                      <Text style={styles.followPillText}>Follow</Text>
+                    </LinearGradient>
+                  )}
                 </TouchableOpacity>
-                
-                <TouchableOpacity style={styles.secondaryButton}>
-                  <Ionicons name="mail-outline" size={20} color="#6B7280" />
+
+                <TouchableOpacity style={styles.iconBtn}>
+                  <Ionicons name="mail-outline" size={18} color="#6B7280" />
                 </TouchableOpacity>
               </>
             )}
           </Animated.View>
 
-          {/* Performance Highlights */}
+          {/* Performance Highlights — Blue Hero Card */}
           <Animated.View entering={FadeInDown.delay(500)} style={styles.highlightsSection}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Performance Highlights</Text>
             </View>
 
-            <View style={styles.highlightsGrid}>
-              <StatsCard
-                icon="📚"
-                value={12}
-                label="Courses"
-                colors={['#F3E8FF', '#FAF5FF']}
-              />
-              <StatsCard
-                icon="📈"
-                value="85%"
-                label="Avg Grade"
-                colors={['#D1FAE5', '#ECFDF5']}
-              />
-              <StatsCard
-                icon="⏰"
-                value={142}
-                label="Study Hours"
-                colors={['#DBEAFE', '#EFF6FF']}
-              />
-              <StatsCard
-                icon="🔥"
-                value={12}
-                label="Day Streak"
-                colors={['#FFEDD5', '#FFF7ED']}
-              />
-              <StatsCard
-                icon="🏆"
-                value={24}
-                label="Achievements"
-                colors={['#FEF3C7', '#FFFBEB']}
-              />
-              <StatsCard
-                icon="💻"
-                value={8}
-                label="Projects"
-                colors={['#CCFBF1', '#F0FDFA']}
-              />
+            {/* Blue Hero Card */}
+            <View style={styles.blueHeroCard}>
+              <LinearGradient
+                colors={['#38BDF8', '#0EA5E9', '#0284C7']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.blueHeroGradient}
+              >
+                {/* Decorative circles */}
+                <View style={[styles.blueDecorCircle, { top: -20, right: -15, width: 80, height: 80 }]} />
+                <View style={[styles.blueDecorCircle, { bottom: -10, left: -10, width: 60, height: 60 }]} />
+                <View style={[styles.blueDecorCircle, { top: 30, left: 50, width: 30, height: 30, opacity: 0.08 }]} />
+
+                <View style={styles.blueHeroHeader}>
+                  <View style={styles.blueHeroIconCircle}>
+                    <Ionicons name="trending-up" size={20} color="#0284C7" />
+                  </View>
+                  <Text style={styles.blueHeroTitle}>Your Progress</Text>
+                </View>
+
+                {/* 3 inline stats */}
+                <View style={styles.blueHeroStatsRow}>
+                  <View style={styles.blueHeroStat}>
+                    <Text style={styles.blueHeroStatValue}>12</Text>
+                    <Text style={styles.blueHeroStatLabel}>Courses</Text>
+                  </View>
+                  <View style={styles.blueHeroStatDivider} />
+                  <View style={styles.blueHeroStat}>
+                    <Text style={styles.blueHeroStatValue}>85%</Text>
+                    <Text style={styles.blueHeroStatLabel}>Avg Grade</Text>
+                  </View>
+                  <View style={styles.blueHeroStatDivider} />
+                  <View style={styles.blueHeroStat}>
+                    <Text style={styles.blueHeroStatValue}>142h</Text>
+                    <Text style={styles.blueHeroStatLabel}>Study Time</Text>
+                  </View>
+                </View>
+              </LinearGradient>
+            </View>
+
+            {/* Secondary stat cards — 2-column grid */}
+            <View style={styles.perfGrid}>
+              <PerformanceCard icon="📚" value={12} label="Courses" />
+              <PerformanceCard icon="📈" value="85%" label="Avg Grade" />
+              <PerformanceCard icon="⏰" value={142} label="Study Hours" />
+              <PerformanceCard icon="🔥" value={12} label="Day Streak" />
+              <PerformanceCard icon="🏆" value={24} label="Achievements" />
+              <PerformanceCard icon="💻" value={8} label="Projects" />
             </View>
           </Animated.View>
 
@@ -381,7 +422,7 @@ export default function ProfileScreen() {
                   >
                     {isActive ? (
                       <View style={styles.tabActiveContent}>
-                        <Ionicons name={tab.icon as any} size={18} color="#FFA500" />
+                        <Ionicons name={tab.icon as any} size={18} color="#0EA5E9" />
                         <Text style={styles.tabTextActive}>{tab.label}</Text>
                         <View style={styles.tabActiveLine} />
                       </View>
@@ -427,13 +468,13 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F3FF',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F3FF',
   },
   errorText: {
     fontSize: 16,
@@ -457,8 +498,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 8,
   },
-  editCoverButtonWrapper: {
-    alignItems: 'flex-end',
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+    flex: 1,
+  },
+  headerCircleBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Shadows.small,
   },
   backButton: {
     width: 40,
@@ -470,10 +523,10 @@ const styles = StyleSheet.create({
     ...Shadows.small,
   },
   editCoverButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.9)',
     alignItems: 'center',
     justifyContent: 'center',
     ...Shadows.small,
@@ -582,72 +635,117 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
     marginHorizontal: 16,
-    borderRadius: 16,
-    paddingVertical: 20,
-    paddingHorizontal: 12,
-    marginBottom: 16,
-    ...Shadows.small,
+    gap: 10,
+    marginBottom: 20,
   },
-  statItem: {
+  statCard: {
     flex: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statCardGradient: {
     alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    borderRadius: 16,
+  },
+  statIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
   },
   statValue: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '800',
     color: '#1a1a1a',
-    marginBottom: 4,
+    marginBottom: 2,
+    letterSpacing: -0.5,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    fontWeight: '500',
-  },
-  statDivider: {
-    width: 1,
-    height: '100%',
-    backgroundColor: '#F3F4F6',
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   actionButtons: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
     gap: 10,
-    marginBottom: 32,
+    marginBottom: 28,
   },
-  primaryButton: {
-    flex: 1,
-    borderRadius: 12,
-    overflow: 'hidden',
-    ...Shadows.small,
-  },
-  flexButton: {
-    flex: 1,
-  },
-  primaryButtonGradient: {
+  // ── Compact edit pill ──
+  editPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    gap: 8,
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 24,
+    backgroundColor: '#E0F2FE',
+    borderWidth: 1.5,
+    borderColor: '#7DD3FC',
   },
-  primaryButtonText: {
-    fontSize: 15,
+  editPillText: {
+    fontSize: 14,
     fontWeight: '700',
-    color: '#fff',
+    color: '#0284C7',
   },
-  followingText: {
-    color: '#6B7280',
-  },
-  secondaryButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    ...Shadows.small,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  // ── Follow pill ──
+  followPill: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  followPillFollowing: {
+    backgroundColor: '#F3F4F6',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    shadowOpacity: 0,
+  },
+  followPillGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  followPillText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  followPillTextFollowing: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
   },
   highlightsSection: {
     paddingHorizontal: 16,
@@ -667,37 +765,125 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 10,
   },
-  statsCard: {
-    width: (width - 52) / 2,
-    borderRadius: 16,
+  // ── Blue Hero Card ──
+  blueHeroCard: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    elevation: 8,
+    marginBottom: 12,
+  },
+  blueHeroGradient: {
+    borderRadius: 20,
+    padding: 22,
+    position: 'relative',
     overflow: 'hidden',
   },
-  statsCardGradient: {
+  blueDecorCircle: {
+    position: 'absolute',
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  blueHeroHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
     gap: 12,
-    borderRadius: 16,
-    ...Shadows.small,
+    marginBottom: 20,
   },
-  statsIcon: {
-    fontSize: 28,
+  blueHeroIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  statsContent: {
-    flex: 1,
-  },
-  statsValue: {
-    fontSize: 20,
+  blueHeroTitle: {
+    fontSize: 18,
     fontWeight: '800',
-    color: '#1a1a1a',
+    color: '#fff',
+    letterSpacing: -0.3,
+  },
+  blueHeroStatsRow: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+  },
+  blueHeroStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  blueHeroStatValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#fff',
     marginBottom: 2,
   },
-  statsLabel: {
-    fontSize: 10,
-    color: '#9CA3AF',
+  blueHeroStatLabel: {
+    fontSize: 11,
     fontWeight: '600',
+    color: 'rgba(255,255,255,0.75)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  blueHeroStatDivider: {
+    width: 1,
+    height: '80%',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignSelf: 'center',
+  },
+  // ── Performance mini-cards ──
+  perfGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  perfCard: {
+    width: '47.5%',
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: '#EFF6FF',
+    shadowColor: '#0EA5E9',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  perfCardInner: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 6,
+  },
+  perfIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#DBEAFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  perfIcon: {
+    fontSize: 18,
+  },
+  perfValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0C4A6E',
+    marginBottom: 2,
+    letterSpacing: -0.3,
+  },
+  perfLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   tabsSection: {
     marginBottom: 16,
@@ -729,7 +915,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 3,
-    backgroundColor: '#FFA500',
+    backgroundColor: '#0EA5E9',
     borderRadius: 2,
   },
   tabGradient: {
@@ -747,7 +933,7 @@ const styles = StyleSheet.create({
   tabTextActive: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FFA500',
+    color: '#0EA5E9',
   },
   tabContent: {
     paddingHorizontal: 16,

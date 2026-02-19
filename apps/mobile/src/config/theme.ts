@@ -5,21 +5,21 @@
  * Following Material Design 3 and iOS Human Interface Guidelines
  */
 
-export const Colors = {
-  // Brand Colors
+// Color scales for full palette access
+const ColorScale = {
   primary: {
-    50: '#FFFBEB',
-    100: '#FEF3C7',
-    200: '#FDE68A',
-    300: '#FCD34D',
-    400: '#FBBF24',
-    500: '#F59E0B', // Main brand color
-    600: '#D97706',
-    700: '#B45309',
-    800: '#92400E',
-    900: '#78350F',
+    50: '#F0F9FF',
+    100: '#E0F2FE',
+    200: '#BAE6FD',
+    300: '#7DD3FC',
+    400: '#38BDF8',
+    500: '#0EA5E9', // Main brand color — Stunity sky blue
+    600: '#0284C7',
+    700: '#0369A1',
+    800: '#075985',
+    900: '#0C4A6E',
   },
-  
+
   secondary: {
     50: '#FFF7ED',
     100: '#FFEDD5',
@@ -32,33 +32,7 @@ export const Colors = {
     800: '#9A3412',
     900: '#7C2D12',
   },
-  
-  // Semantic Colors
-  success: {
-    light: '#4ADE80',
-    main: '#22C55E',
-    dark: '#16A34A',
-  },
-  
-  warning: {
-    light: '#FDE047',
-    main: '#EAB308',
-    dark: '#CA8A04',
-  },
-  
-  error: {
-    light: '#F87171',
-    main: '#EF4444',
-    dark: '#DC2626',
-  },
-  
-  info: {
-    light: '#60A5FA',
-    main: '#3B82F6',
-    dark: '#2563EB',
-  },
-  
-  // Neutral Colors
+
   gray: {
     50: '#F9FAFB',
     100: '#F3F4F6',
@@ -71,56 +45,98 @@ export const Colors = {
     800: '#1F2937',
     900: '#111827',
   },
-  
-  // Base Colors
-  white: '#FFFFFF',
-  black: '#000000',
-  transparent: 'transparent',
-  
-  // Common shorthand colors (matching FeedScreen pattern)
-  primary: '#F59E0B',
-  secondary: '#6366F1',
-  background: '#F8F7FC',
-  card: '#FFFFFF',
-  text: '#374151',
-  textSecondary: '#6B7280',
-  textTertiary: '#9CA3AF',
-  border: '#E5E7EB',
-  error: '#EF4444',
 } as const;
+
+// Semantic status colors
+const StatusColors = {
+  success: {
+    light: '#4ADE80',
+    main: '#22C55E',
+    dark: '#16A34A',
+  },
+
+  warning: {
+    light: '#FDE047',
+    main: '#EAB308',
+    dark: '#CA8A04',
+  },
+
+  error: {
+    light: '#F87171',
+    main: '#EF4444',
+    dark: '#DC2626',
+  },
+
+  info: {
+    light: '#60A5FA',
+    main: '#3B82F6',
+    dark: '#2563EB',
+  },
+} as const;
+
+// Merged Colors export — backward compatible
+// Colors.primary = '#0EA5E9' (flat string for quick access)
+// ColorScale.primary[500] = '#0EA5E9' (scale access for full palette)
+export const Colors = {
+  // Spread scales (accessible via Colors.gray[500], etc.)
+  ...ColorScale,
+  // Spread status colors (accessible via Colors.success.main, etc.)
+  ...StatusColors,
+
+  // Base Colors
+  white: '#FFFFFF' as const,
+  black: '#000000' as const,
+  transparent: 'transparent' as const,
+
+  // Flat shorthand colors — used throughout the app
+  // NOTE: These override the scale objects above, so Colors.primary returns the string.
+  // Use ColorScale.primary[500] when you need the full palette scale.
+  primary: '#0EA5E9' as const,
+  secondary: '#6366F1' as const,
+  background: '#F8F7FC' as const,
+  card: '#FFFFFF' as const,
+  text: '#374151' as const,
+  textSecondary: '#6B7280' as const,
+  textTertiary: '#9CA3AF' as const,
+  border: '#E5E7EB' as const,
+  error: '#EF4444' as const,
+};
+
+// Export ColorScale for components that need the full palette
+export { ColorScale };
 
 // Light Theme
 export const LightTheme = {
   dark: false,
   colors: {
-    primary: Colors.primary[500],
-    background: Colors.gray[50],
+    primary: ColorScale.primary[500],
+    background: ColorScale.gray[50],
     card: Colors.white,
-    text: Colors.gray[900],
-    textSecondary: Colors.gray[600],
-    textTertiary: Colors.gray[400],
-    border: Colors.gray[200],
-    notification: Colors.error.main,
-    
+    text: ColorScale.gray[900],
+    textSecondary: ColorScale.gray[600],
+    textTertiary: ColorScale.gray[400],
+    border: ColorScale.gray[200],
+    notification: StatusColors.error.main,
+
     // Surfaces
     surface: Colors.white,
-    surfaceVariant: Colors.gray[100],
-    
+    surfaceVariant: ColorScale.gray[100],
+
     // Interactive
-    buttonPrimary: Colors.primary[500],
-    buttonSecondary: Colors.gray[100],
-    buttonDisabled: Colors.gray[300],
-    
+    buttonPrimary: ColorScale.primary[500],
+    buttonSecondary: ColorScale.gray[100],
+    buttonDisabled: ColorScale.gray[300],
+
     // Status
-    success: Colors.success.main,
-    warning: Colors.warning.main,
-    error: Colors.error.main,
-    info: Colors.info.main,
-    
+    success: StatusColors.success.main,
+    warning: StatusColors.warning.main,
+    error: StatusColors.error.main,
+    info: StatusColors.info.main,
+
     // Skeleton
-    skeleton: Colors.gray[200],
-    skeletonHighlight: Colors.gray[100],
-    
+    skeleton: ColorScale.gray[200],
+    skeletonHighlight: ColorScale.gray[100],
+
     // Overlay
     overlay: 'rgba(0, 0, 0, 0.5)',
     overlayLight: 'rgba(0, 0, 0, 0.3)',
@@ -131,34 +147,34 @@ export const LightTheme = {
 export const DarkTheme = {
   dark: true,
   colors: {
-    primary: Colors.primary[400],
-    background: Colors.gray[900],
-    card: Colors.gray[800],
-    text: Colors.gray[50],
-    textSecondary: Colors.gray[400],
-    textTertiary: Colors.gray[500],
-    border: Colors.gray[700],
-    notification: Colors.error.main,
-    
+    primary: ColorScale.primary[400],
+    background: ColorScale.gray[900],
+    card: ColorScale.gray[800],
+    text: ColorScale.gray[50],
+    textSecondary: ColorScale.gray[400],
+    textTertiary: ColorScale.gray[500],
+    border: ColorScale.gray[700],
+    notification: StatusColors.error.main,
+
     // Surfaces
-    surface: Colors.gray[800],
-    surfaceVariant: Colors.gray[700],
-    
+    surface: ColorScale.gray[800],
+    surfaceVariant: ColorScale.gray[700],
+
     // Interactive
-    buttonPrimary: Colors.primary[500],
-    buttonSecondary: Colors.gray[700],
-    buttonDisabled: Colors.gray[600],
-    
+    buttonPrimary: ColorScale.primary[500],
+    buttonSecondary: ColorScale.gray[700],
+    buttonDisabled: ColorScale.gray[600],
+
     // Status
-    success: Colors.success.light,
-    warning: Colors.warning.light,
-    error: Colors.error.light,
-    info: Colors.info.light,
-    
+    success: StatusColors.success.light,
+    warning: StatusColors.warning.light,
+    error: StatusColors.error.light,
+    info: StatusColors.info.light,
+
     // Skeleton
-    skeleton: Colors.gray[700],
-    skeletonHighlight: Colors.gray[600],
-    
+    skeleton: ColorScale.gray[700],
+    skeletonHighlight: ColorScale.gray[600],
+
     // Overlay
     overlay: 'rgba(0, 0, 0, 0.7)',
     overlayLight: 'rgba(0, 0, 0, 0.5)',
@@ -173,7 +189,7 @@ export const Typography = {
     semibold: 'System',
     bold: 'System',
   },
-  
+
   // Font Sizes (following 8-point grid)
   fontSize: {
     xs: 12,
@@ -186,14 +202,14 @@ export const Typography = {
     '4xl': 36,
     '5xl': 48,
   },
-  
+
   // Line Heights
   lineHeight: {
     tight: 1.25,
     normal: 1.5,
     relaxed: 1.75,
   },
-  
+
   // Font Weights
   fontWeight: {
     regular: '400' as const,

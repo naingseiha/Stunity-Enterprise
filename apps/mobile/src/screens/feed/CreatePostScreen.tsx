@@ -35,11 +35,13 @@ import { QuizForm } from './create-post/forms/QuizForm';
 import { QuestionForm } from './create-post/forms/QuestionForm';
 import { PollForm } from './create-post/forms/PollForm';
 import { AnnouncementForm } from './create-post/forms/AnnouncementForm';
+import { CourseForm } from './create-post/forms/CourseForm';
+import { ProjectForm } from './create-post/forms/ProjectForm';
 import { VideoPlayer } from '@/components/common/VideoPlayer';
 
 // Post type options
 const POST_TYPES: { type: PostType; icon: string; label: string; color: string }[] = [
-  { type: 'ARTICLE', icon: 'document-text', label: 'Article', color: '#F59E0B' },
+  { type: 'ARTICLE', icon: 'document-text', label: 'Article', color: '#0EA5E9' },
   { type: 'QUESTION', icon: 'help-circle', label: 'Question', color: '#3B82F6' },
   { type: 'ANNOUNCEMENT', icon: 'megaphone', label: 'Announce', color: '#EF4444' },
   { type: 'POLL', icon: 'stats-chart', label: 'Poll', color: '#8B5CF6' },
@@ -85,6 +87,12 @@ export default function CreatePostScreen() {
 
   // Announcement state
   const [announcementData, setAnnouncementData] = useState<any>(null);
+
+  // Course state
+  const [courseData, setCourseData] = useState<any>(null);
+
+  // Project state
+  const [projectData, setProjectData] = useState<any>(null);
 
   // Add poll option with animation
   const addPollOption = () => {
@@ -214,6 +222,22 @@ export default function CreatePostScreen() {
       }
     }
 
+    // Validate course if it's a course post
+    if (postType === 'COURSE') {
+      if (!courseData || !courseData.syllabusSections || courseData.syllabusSections.length === 0) {
+        Alert.alert('Invalid Course', 'Please add at least one section to your syllabus.');
+        return;
+      }
+    }
+
+    // Validate project if it's a project post
+    if (postType === 'PROJECT') {
+      if (!projectData || !projectData.milestones || projectData.milestones.length === 0) {
+        Alert.alert('Invalid Project', 'Please add at least one milestone to your project.');
+        return;
+      }
+    }
+
     setIsPosting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
@@ -239,7 +263,9 @@ export default function CreatePostScreen() {
         quizPayload,
         postTitle,
         visibility,
-        postType === 'POLL' ? pollData : undefined
+        postType === 'POLL' ? pollData : undefined,
+        courseData,
+        projectData
       );
 
       if (success) {
@@ -261,7 +287,7 @@ export default function CreatePostScreen() {
     } finally {
       setIsPosting(false);
     }
-  }, [content, postType, mediaUris, pollOptions, quizData, navigation, createPost, visibility]);
+  }, [content, postType, mediaUris, pollOptions, quizData, courseData, projectData, navigation, createPost, visibility]);
 
   const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
   const canPost = content.trim().length > 0;
@@ -309,7 +335,7 @@ export default function CreatePostScreen() {
                 <Ionicons
                   name={POST_TYPES.find(t => t.type === postType)?.icon as any || 'document-text'}
                   size={12}
-                  color={POST_TYPES.find(t => t.type === postType)?.color || '#F59E0B'}
+                  color={POST_TYPES.find(t => t.type === postType)?.color || '#0EA5E9'}
                 />
                 <Text style={[
                   styles.postTypeBadgeText,
@@ -337,7 +363,6 @@ export default function CreatePostScreen() {
               >
                 <TouchableOpacity
                   onPress={() => {
-                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                     setPostType(type.type);
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   }}
@@ -375,46 +400,36 @@ export default function CreatePostScreen() {
 
           {/* Question Form (only for QUESTION type) */}
           {postType === 'QUESTION' && (
-            <Animated.View
-              entering={FadeIn.duration(300)}
-              exiting={FadeOut.duration(200)}
-            >
-              <QuestionForm onDataChange={setQuestionData} />
-            </Animated.View>
+            <QuestionForm onDataChange={setQuestionData} />
           )}
 
           {/* Poll Form (only for POLL type) */}
           {postType === 'POLL' && (
-            <Animated.View
-              entering={FadeIn.duration(300)}
-              exiting={FadeOut.duration(200)}
-            >
-              <PollForm
-                options={pollOptions}
-                onOptionsChange={setPollOptions}
-                onDataChange={setPollData}
-              />
-            </Animated.View>
+            <PollForm
+              options={pollOptions}
+              onOptionsChange={setPollOptions}
+              onDataChange={setPollData}
+            />
           )}
 
           {/* Quiz Form (only for QUIZ type) */}
           {postType === 'QUIZ' && (
-            <Animated.View
-              entering={FadeIn.duration(300)}
-              exiting={FadeOut.duration(200)}
-            >
-              <QuizForm onDataChange={setQuizData} />
-            </Animated.View>
+            <QuizForm onDataChange={setQuizData} />
           )}
 
           {/* Announcement Form (only for ANNOUNCEMENT type) */}
           {postType === 'ANNOUNCEMENT' && (
-            <Animated.View
-              entering={FadeIn.duration(300)}
-              exiting={FadeOut.duration(200)}
-            >
-              <AnnouncementForm onDataChange={setAnnouncementData} />
-            </Animated.View>
+            <AnnouncementForm onDataChange={setAnnouncementData} />
+          )}
+
+          {/* Course Form (only for COURSE type) */}
+          {postType === 'COURSE' && (
+            <CourseForm onDataChange={setCourseData} />
+          )}
+
+          {/* Project Form (only for PROJECT type) */}
+          {postType === 'PROJECT' && (
+            <ProjectForm onDataChange={setProjectData} />
           )}
 
           {/* Visibility Selector */}
@@ -551,8 +566,8 @@ export default function CreatePostScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.mediaButton}>
-              <View style={[styles.mediaButtonIcon, { backgroundColor: '#F59E0B20' }]}>
-                <Ionicons name="document" size={20} color="#F59E0B" />
+              <View style={[styles.mediaButtonIcon, { backgroundColor: '#0EA5E920' }]}>
+                <Ionicons name="document" size={20} color="#0EA5E9" />
               </View>
               <Text style={styles.mediaButtonText}>File</Text>
             </TouchableOpacity>

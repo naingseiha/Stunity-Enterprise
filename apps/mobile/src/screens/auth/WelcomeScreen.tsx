@@ -39,7 +39,7 @@ export default function WelcomeScreen() {
       
       {/* Light Yellow to White Gradient Background */}
       <LinearGradient
-        colors={['#FEF3C7', '#FFFFFF']}
+        colors={['#E0F2FE', '#FFFFFF']}
         style={styles.background}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
@@ -81,7 +81,7 @@ export default function WelcomeScreen() {
             style={styles.buttonShadow}
           >
             <LinearGradient
-              colors={['#F59E0B', '#D97706']}
+              colors={['#0EA5E9', '#0284C7']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.primaryButton}
@@ -116,7 +116,7 @@ export default function WelcomeScreen() {
             accessibilityRole="button"
           >
             <View style={styles.ssoIconContainer}>
-              <Ionicons name="business" size={18} color="#F59E0B" />
+              <Ionicons name="business" size={18} color="#0EA5E9" />
             </View>
             <Text style={styles.ssoButtonText}>Enterprise SSO</Text>
           </TouchableOpacity>
@@ -224,11 +224,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: Colors.white,
     borderWidth: 2,
-    borderColor: '#FEF3C7',
+    borderColor: '#E0F2FE',
     flexDirection: 'row',
   },
   ssoButtonShadow: {
-    shadowColor: '#F59E0B',
+    shadowColor: '#0EA5E9',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#FEF3C7',
+    backgroundColor: '#E0F2FE',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing[2],

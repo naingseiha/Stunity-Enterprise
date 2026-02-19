@@ -4,9 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, LayoutAnimation, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
 interface PollFormProps {
@@ -43,6 +42,9 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
   const [allowMultipleSelections, setAllowMultipleSelections] = useState(false);
   const [anonymousVoting, setAnonymousVoting] = useState(false);
 
+  // UI State
+  const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);
+
   useEffect(() => {
     onDataChange({
       options,
@@ -55,6 +57,7 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
 
   const addOption = () => {
     if (options.length < 10) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       onOptionsChange([...options, '']);
     }
@@ -62,6 +65,7 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
 
   const removeOption = (index: number) => {
     if (options.length > 2) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       onOptionsChange(options.filter((_, i) => i !== index));
     }
@@ -73,429 +77,427 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
     onOptionsChange(updated);
   };
 
+  const toggleSettings = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIsSettingsExpanded(!isSettingsExpanded);
+  };
+
   return (
     <View style={styles.container}>
       {/* Poll Options Card */}
-      <Animated.View entering={FadeIn.duration(300)} style={styles.card}>
+      <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={styles.iconBadge}>
-            <Ionicons name="list" size={18} color="#8B5CF6" />
+          <View style={[styles.iconContainer, { backgroundColor: '#EEF2FF' }]}>
+            <Ionicons name="stats-chart" size={24} color="#6366F1" />
           </View>
-          <Text style={styles.cardTitle}>Poll Options</Text>
-          <View style={styles.badge}>
+          <View>
+            <Text style={styles.cardTitle}>Poll Questions</Text>
+            <Text style={styles.cardSubtitle}>
+              Ask your community
+            </Text>
+          </View>
+          <View style={styles.badgeContainer}>
             <Text style={styles.badgeText}>{options.length}/10</Text>
           </View>
         </View>
 
-        {options.map((option, index) => (
-          <Animated.View
-            key={index}
-            entering={FadeIn.duration(200).delay(index * 30)}
-            exiting={FadeOut.duration(150)}
-            layout={Layout.springify()}
-            style={styles.optionRow}
-          >
-            <View style={styles.optionNumber}>
-              <Text style={styles.optionNumberText}>{index + 1}</Text>
-            </View>
-            <TextInput
-              style={styles.optionInput}
-              placeholder={`Option ${index + 1}`}
-              placeholderTextColor="#9CA3AF"
-              value={option}
-              onChangeText={(text) => updateOption(index, text)}
-            />
-            {options.length > 2 && (
-              <TouchableOpacity
-                onPress={() => removeOption(index)}
-                style={styles.removeButton}
-              >
-                <Ionicons name="close" size={18} color="#EF4444" />
-              </TouchableOpacity>
-            )}
-          </Animated.View>
-        ))}
-
-        {options.length < 10 && (
-          <TouchableOpacity onPress={addOption} style={styles.addButton}>
-            <Ionicons name="add-circle-outline" size={20} color="#8B5CF6" />
-            <Text style={styles.addButtonText}>Add Option</Text>
-          </TouchableOpacity>
-        )}
-      </Animated.View>
-
-      {/* Duration Card */}
-      <Animated.View entering={FadeIn.duration(300).delay(100)} style={styles.card}>
-        <View style={styles.cardHeader}>
-          <View style={styles.iconBadge}>
-            <Ionicons name="time" size={18} color="#10B981" />
-          </View>
-          <Text style={styles.cardTitle}>Poll Duration</Text>
-        </View>
-
-        <Text style={styles.description}>
-          How long should this poll run?
-        </Text>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipsContainer}
-        >
-          {DURATION_OPTIONS.map((option) => (
-            <TouchableOpacity
-              key={option.label}
-              onPress={() => {
-                Haptics.selectionAsync();
-                setDuration(option.value);
-              }}
-              style={[
-                styles.chip,
-                duration === option.value && styles.chipSelected,
-              ]}
+        <View style={styles.cardContent}>
+          {options.map((option, index) => (
+            <View
+              key={index}
+              style={styles.optionRow}
             >
-              <Text style={[
-                styles.chipText,
-                duration === option.value && styles.chipTextSelected,
-              ]}>
-                {option.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </Animated.View>
-
-      {/* Results Visibility Card */}
-      <Animated.View entering={FadeIn.duration(300).delay(200)} style={styles.card}>
-        <View style={styles.cardHeader}>
-          <View style={styles.iconBadge}>
-            <Ionicons name="eye" size={18} color="#3B82F6" />
-          </View>
-          <Text style={styles.cardTitle}>Results Visibility</Text>
-        </View>
-
-        <Text style={styles.description}>
-          When can voters see the results?
-        </Text>
-
-        {VISIBILITY_OPTIONS.map((option) => (
-          <TouchableOpacity
-            key={option.type}
-            onPress={() => {
-              Haptics.selectionAsync();
-              setResultsVisibility(option.type);
-            }}
-            style={[
-              styles.visibilityOption,
-              resultsVisibility === option.type && styles.visibilityOptionSelected,
-            ]}
-          >
-            <View style={[
-              styles.visibilityIconBadge,
-              resultsVisibility === option.type && styles.visibilityIconBadgeSelected,
-            ]}>
-              <Ionicons
-                name={option.icon as any}
-                size={20}
-                color={resultsVisibility === option.type ? '#3B82F6' : '#6B7280'}
+              <View style={styles.optionIndex}>
+                <Text style={styles.optionIndexText}>{String.fromCharCode(65 + index)}</Text>
+              </View>
+              <TextInput
+                style={styles.optionInput}
+                placeholder={`Option ${index + 1}`}
+                placeholderTextColor="#9CA3AF"
+                value={option}
+                onChangeText={(text) => updateOption(index, text)}
               />
+              {options.length > 2 && (
+                <TouchableOpacity
+                  onPress={() => removeOption(index)}
+                  style={styles.removeButton}
+                >
+                  <Ionicons name="close" size={18} color="#EF4444" />
+                </TouchableOpacity>
+              )}
             </View>
-            <View style={styles.visibilityContent}>
-              <Text style={[
-                styles.visibilityLabel,
-                resultsVisibility === option.type && styles.visibilityLabelSelected,
-              ]}>
-                {option.label}
+          ))}
+
+          {options.length < 10 && (
+            <TouchableOpacity onPress={addOption} style={styles.addButton}>
+              <View style={styles.addButtonIcon}>
+                <Ionicons name="add" size={20} color="#6366F1" />
+              </View>
+              <Text style={styles.addButtonText}>Add Another Option</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Settings Card */}
+      <View style={styles.card}>
+        <TouchableOpacity
+          style={[styles.cardHeader, isSettingsExpanded && styles.cardHeaderExpanded]}
+          onPress={toggleSettings}
+          activeOpacity={0.8}
+        >
+          <View style={styles.cardHeaderLeft}>
+            <View style={[styles.iconContainer, { backgroundColor: '#F0FDF4' }]}>
+              <Ionicons name="options" size={24} color="#10B981" />
+            </View>
+            <View>
+              <Text style={styles.cardTitle}>Settings</Text>
+              <Text style={styles.cardSubtitle}>
+                Duration & Visibility
               </Text>
-              <Text style={styles.visibilityDescription}>{option.description}</Text>
-            </View>
-            {resultsVisibility === option.type && (
-              <Ionicons name="checkmark-circle" size={24} color="#3B82F6" />
-            )}
-          </TouchableOpacity>
-        ))}
-      </Animated.View>
-
-      {/* Advanced Settings Card */}
-      <Animated.View entering={FadeIn.duration(300).delay(300)} style={styles.card}>
-        <View style={styles.cardHeader}>
-          <View style={styles.iconBadge}>
-            <Ionicons name="settings" size={18} color="#F59E0B" />
-          </View>
-          <Text style={styles.cardTitle}>Advanced Settings</Text>
-        </View>
-
-        {/* Multiple Selections Toggle */}
-        <TouchableOpacity
-          onPress={() => {
-            Haptics.selectionAsync();
-            setAllowMultipleSelections(!allowMultipleSelections);
-          }}
-          style={styles.toggleOption}
-        >
-          <View style={styles.toggleLeft}>
-            <View style={styles.toggleIconBadge}>
-              <Ionicons name="checkbox" size={18} color="#F59E0B" />
-            </View>
-            <View style={styles.toggleContent}>
-              <Text style={styles.toggleLabel}>Multiple Selections</Text>
-              <Text style={styles.toggleDescription}>Allow voters to pick multiple options</Text>
             </View>
           </View>
-          <View style={[
-            styles.toggle,
-            allowMultipleSelections && styles.toggleActive,
-          ]}>
-            <View style={[
-              styles.toggleThumb,
-              allowMultipleSelections && styles.toggleThumbActive,
-            ]} />
+          <View style={[styles.expandIcon, isSettingsExpanded && styles.expandIconRotated]}>
+            <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
           </View>
         </TouchableOpacity>
 
-        {/* Anonymous Voting Toggle */}
-        <TouchableOpacity
-          onPress={() => {
-            Haptics.selectionAsync();
-            setAnonymousVoting(!anonymousVoting);
-          }}
-          style={[styles.toggleOption, { marginTop: 12 }]}
-        >
-          <View style={styles.toggleLeft}>
-            <View style={styles.toggleIconBadge}>
-              <Ionicons name="eye-off" size={18} color="#F59E0B" />
+        {isSettingsExpanded && (
+          <View style={styles.cardContent}>
+            {/* Duration */}
+            <View style={styles.settingSection}>
+              <Text style={styles.sectionLabel}>Poll Duration</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.capsuleScroll}>
+                {DURATION_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={String(opt.value)}
+                    style={[
+                      styles.capsule,
+                      duration === opt.value && styles.capsuleSelected
+                    ]}
+                    onPress={() => { Haptics.selectionAsync(); setDuration(opt.value); }}
+                  >
+                    <Text style={[
+                      styles.capsuleText,
+                      duration === opt.value && styles.capsuleTextSelected
+                    ]}>{opt.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
-            <View style={styles.toggleContent}>
-              <Text style={styles.toggleLabel}>Anonymous Voting</Text>
-              <Text style={styles.toggleDescription}>Hide voter identities</Text>
-            </View>
-          </View>
-          <View style={[
-            styles.toggle,
-            anonymousVoting && styles.toggleActive,
-          ]}>
-            <View style={[
-              styles.toggleThumb,
-              anonymousVoting && styles.toggleThumbActive,
-            ]} />
-          </View>
-        </TouchableOpacity>
-      </Animated.View>
 
-      {/* Summary Card */}
-      <Animated.View entering={FadeIn.duration(300).delay(400)} style={styles.summaryCard}>
-        <View style={styles.summaryHeader}>
-          <Ionicons name="checkmark-circle" size={20} color="#10B981" />
-          <Text style={styles.summaryTitle}>Poll Summary</Text>
-        </View>
-        <View style={styles.summaryGrid}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Options</Text>
-            <Text style={styles.summaryValue}>{options.length}</Text>
+            <View style={styles.divider} />
+
+            {/* Visibility */}
+            <View style={styles.settingSection}>
+              <Text style={styles.sectionLabel}>Results Visibility</Text>
+              <View style={styles.visibilityGrid}>
+                {VISIBILITY_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.type}
+                    style={[
+                      styles.visibilityCard,
+                      resultsVisibility === opt.type && styles.visibilityCardSelected
+                    ]}
+                    onPress={() => { Haptics.selectionAsync(); setResultsVisibility(opt.type); }}
+                  >
+                    <View style={[
+                      styles.visibilityIcon,
+                      resultsVisibility === opt.type && styles.visibilityIconSelected
+                    ]}>
+                      <Ionicons
+                        name={opt.icon as any}
+                        size={20}
+                        color={resultsVisibility === opt.type ? '#6366F1' : '#6B7280'}
+                      />
+                    </View>
+                    <View style={styles.visibilityInfo}>
+                      <Text style={[
+                        styles.visibilityLabel,
+                        resultsVisibility === opt.type && styles.visibilityLabelSelected
+                      ]}>{opt.label}</Text>
+                      <Text style={styles.visibilityDesc}>{opt.description}</Text>
+                    </View>
+                    {resultsVisibility === opt.type && (
+                      <View style={styles.checkIcon}>
+                        <Ionicons name="checkmark-circle" size={18} color="#6366F1" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Toggles */}
+            <View style={styles.togglesContainer}>
+              <View style={styles.switchRow}>
+                <View style={[styles.switchIcon, { backgroundColor: '#E0E7FF' }]}>
+                  <Ionicons name="checkbox-outline" size={18} color="#4338CA" />
+                </View>
+                <View style={styles.switchLabelContainer}>
+                  <Text style={styles.switchLabel}>Multiple Answers</Text>
+                  <Text style={styles.switchSubLabel}>Allow selecting more than one option</Text>
+                </View>
+                <Switch
+                  value={allowMultipleSelections}
+                  onValueChange={(v) => { Haptics.selectionAsync(); setAllowMultipleSelections(v); }}
+                  trackColor={{ false: '#E5E7EB', true: '#818CF8' }}
+                  thumbColor={allowMultipleSelections ? '#4F46E5' : '#FFF'}
+                  ios_backgroundColor="#E5E7EB"
+                />
+              </View>
+
+              <View style={styles.switchRow}>
+                <View style={[styles.switchIcon, { backgroundColor: '#F3E8FF' }]}>
+                  <Ionicons name="eye-off-outline" size={18} color="#7C3AED" />
+                </View>
+                <View style={styles.switchLabelContainer}>
+                  <Text style={styles.switchLabel}>Anonymous Voting</Text>
+                  <Text style={styles.switchSubLabel}>Hide voter identities from results</Text>
+                </View>
+                <Switch
+                  value={anonymousVoting}
+                  onValueChange={(v) => { Haptics.selectionAsync(); setAnonymousVoting(v); }}
+                  trackColor={{ false: '#E5E7EB', true: '#818CF8' }}
+                  thumbColor={anonymousVoting ? '#4F46E5' : '#FFF'}
+                  ios_backgroundColor="#E5E7EB"
+                />
+              </View>
+            </View>
           </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Duration</Text>
-            <Text style={[styles.summaryValue, { fontSize: 16 }]}>
-              {duration ? `${duration}h` : 'No end'}
-            </Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Features</Text>
-            <Text style={[styles.summaryValue, { fontSize: 16 }]}>
-              {allowMultipleSelections || anonymousVoting
-                ? `${allowMultipleSelections ? 'Multi' : ''}${allowMultipleSelections && anonymousVoting ? '+' : ''}${anonymousVoting ? 'Anon' : ''}`
-                : 'Basic'}
-            </Text>
-          </View>
-        </View>
-      </Animated.View>
+        )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    gap: 16,
-    paddingVertical: 16,
+    padding: 16,
+    paddingBottom: 40,
   },
+  // Card
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 20,
-    marginHorizontal: 16,
-    shadowColor: '#8B5CF6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
     shadowRadius: 12,
     elevation: 3,
     borderWidth: 1,
-    borderColor: '#EDE9FE',
+    borderColor: '#F3F4F6',
+    overflow: 'hidden',
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 10,
+    justifyContent: 'space-between',
+    padding: 20,
   },
-  iconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#F5F3FF',
+  cardHeaderExpanded: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  cardHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: '#111827',
-    flex: 1,
+    marginBottom: 2,
     letterSpacing: -0.3,
   },
-  badge: {
-    backgroundColor: '#F5F3FF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
+  cardSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  badgeContainer: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
   },
   badgeText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#8B5CF6',
-    letterSpacing: -0.2,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#4B5563',
   },
-  description: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 16,
-    lineHeight: 20,
+  cardContent: {
+    padding: 20,
+    paddingTop: 8,
   },
+  expandIcon: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+    backgroundColor: '#F9FAFB',
+  },
+  expandIconRotated: {
+    transform: [{ rotate: '180deg' }],
+    backgroundColor: '#F3F4F6',
+  },
+  // Options
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 10,
+    gap: 12,
+    marginBottom: 12,
   },
-  optionNumber: {
+  optionIndex: {
     width: 32,
     height: 32,
-    borderRadius: 8,
-    backgroundColor: '#F5F3FF',
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
-  optionNumberText: {
+  optionIndexText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#8B5CF6',
+    color: '#6B7280',
   },
   optionInput: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 2,
+    backgroundColor: '#FAFAFA',
+    borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     fontSize: 15,
-    color: '#111827',
+    color: '#1F2937',
+    fontWeight: '500',
   },
   removeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#FEE2E2',
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: '#FEF2F2',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#DDD6FE',
-    borderStyle: 'dashed',
-    marginTop: 6,
-    backgroundColor: '#FAFBFF',
-  },
-  addButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#8B5CF6',
-    letterSpacing: -0.2,
-  },
-  chipsContainer: {
     gap: 10,
-    paddingRight: 16,
-  },
-  chip: {
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    padding: 16,
+    backgroundColor: '#F5F3FF',
     borderRadius: 14,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+    borderStyle: 'dashed',
+    marginTop: 8,
   },
-  chipSelected: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
-    shadowColor: '#10B981',
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  chipText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#6B7280',
-    letterSpacing: -0.2,
-  },
-  chipTextSelected: {
-    color: '#fff',
-    fontWeight: '700',
-  },
-  visibilityOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 14,
-    backgroundColor: '#F9FAFB',
+  addButtonIcon: {
+    width: 24,
+    height: 24,
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    marginBottom: 10,
-  },
-  visibilityOptionSelected: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#3B82F6',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  visibilityIconBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: '#fff',
+    backgroundColor: '#E0E7FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  visibilityIconBadgeSelected: {
-    backgroundColor: '#DBEAFE',
+  addButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#4F46E5',
   },
-  visibilityContent: {
+  // Settings Sections
+  settingSection: {
+    marginBottom: 20,
+  },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#374151',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  capsuleScroll: {
+    gap: 10,
+  },
+  capsule: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  capsuleSelected: {
+    backgroundColor: '#4F46E5',
+    borderColor: '#4F46E5',
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  capsuleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4B5563',
+  },
+  capsuleTextSelected: {
+    color: '#FFFFFF',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginHorizontal: -20,
+    marginBottom: 20,
+  },
+  // Visibility
+  visibilityGrid: {
+    gap: 12,
+  },
+  visibilityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FAFAFA',
+    gap: 14,
+  },
+  visibilityCardSelected: {
+    borderColor: '#6366F1',
+    backgroundColor: '#EEF2FF',
+  },
+  visibilityIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  visibilityIconSelected: {
+    backgroundColor: '#FFFFFF',
+  },
+  visibilityInfo: {
     flex: 1,
   },
   visibilityLabel: {
@@ -505,123 +507,44 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   visibilityLabelSelected: {
-    color: '#3B82F6',
-    fontWeight: '700',
+    color: '#4F46E5',
   },
-  visibilityDescription: {
-    fontSize: 13,
+  visibilityDesc: {
+    fontSize: 12,
     color: '#6B7280',
   },
-  toggleOption: {
+  checkIcon: {
+    marginLeft: 'auto',
+  },
+  // Toggles
+  togglesContainer: {
+    gap: 16,
+  },
+  switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 14,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
+    padding: 4,
   },
-  toggleLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  toggleIconBadge: {
+  switchIcon: {
     width: 36,
     height: 36,
-    borderRadius: 8,
-    backgroundColor: '#FEF3C7',
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 14,
   },
-  toggleContent: {
+  switchLabelContainer: {
     flex: 1,
   },
-  toggleLabel: {
+  switchLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#111827',
-    marginBottom: 2,
+    color: '#1F2937',
   },
-  toggleDescription: {
-    fontSize: 13,
+  switchSubLabel: {
+    fontSize: 12,
     color: '#6B7280',
-  },
-  toggle: {
-    width: 48,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#D1D5DB',
-    padding: 2,
-  },
-  toggleActive: {
-    backgroundColor: '#F59E0B',
-  },
-  toggleThumb: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  toggleThumbActive: {
-    transform: [{ translateX: 20 }],
-  },
-  summaryCard: {
-    backgroundColor: '#F0FDF4',
-    borderRadius: 20,
-    padding: 20,
-    marginHorizontal: 16,
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  summaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 20,
-  },
-  summaryTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#111827',
-    letterSpacing: -0.3,
-  },
-  summaryGrid: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  summaryItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  summaryDivider: {
-    width: 1,
-    height: 36,
-    backgroundColor: '#BBF7D0',
-  },
-  summaryLabel: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginBottom: 6,
-    fontWeight: '500',
-    letterSpacing: -0.1,
-  },
-  summaryValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#111827',
-    letterSpacing: -0.5,
+    marginTop: 1,
   },
 });

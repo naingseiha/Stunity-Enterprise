@@ -109,7 +109,7 @@ export default function LoginScreen() {
     <View style={styles.container}>
       {/* Light Yellow to White Gradient Background */}
       <LinearGradient
-        colors={['#FEF3C7', '#FFFFFF']}
+        colors={['#E0F2FE', '#FFFFFF']}
         style={styles.background}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
@@ -176,7 +176,7 @@ export default function LoginScreen() {
                     placeholderTextColor={Colors.gray[400]}
                   />
                   <View style={styles.iconContainer}>
-                    <Ionicons name="business" size={20} color="#F59E0B" />
+                    <Ionicons name="business" size={20} color="#0EA5E9" />
                   </View>
                 </View>
               </View>
@@ -200,7 +200,7 @@ export default function LoginScreen() {
                     placeholderTextColor={Colors.gray[400]}
                   />
                   <View style={styles.iconContainer}>
-                    <Ionicons name="mail" size={20} color="#F59E0B" />
+                    <Ionicons name="mail" size={20} color="#0EA5E9" />
                   </View>
                 </View>
               </View>
@@ -229,7 +229,7 @@ export default function LoginScreen() {
                     <Ionicons 
                       name={showPassword ? "eye-off" : "eye"} 
                       size={20} 
-                      color="#F59E0B" 
+                      color="#0EA5E9" 
                     />
                   </TouchableOpacity>
                 </View>
@@ -266,7 +266,7 @@ export default function LoginScreen() {
                 style={styles.loginButtonShadow}
               >
                 <LinearGradient
-                  colors={isLoading ? ['#9CA3AF', '#6B7280'] : ['#F59E0B', '#D97706']}
+                  colors={isLoading ? ['#9CA3AF', '#6B7280'] : ['#0EA5E9', '#0284C7']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.loginButton}
@@ -329,7 +329,7 @@ export default function LoginScreen() {
                   accessibilityRole="button"
                 >
                   <View style={styles.ssoIconContainer}>
-                    <Ionicons name="business" size={18} color="#F59E0B" />
+                    <Ionicons name="business" size={18} color="#0EA5E9" />
                   </View>
                   <Text style={styles.ssoButtonText}>Enterprise SSO</Text>
                 </TouchableOpacity>
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#FEF3C7',
+    backgroundColor: '#E0F2FE',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing[2],
   },
   toggleActive: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: '#0EA5E9',
   },
   toggleKnob: {
     width: 20,
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
   },
   forgotText: {
     fontSize: Typography.fontSize.sm,
-    color: '#F59E0B',
+    color: '#0EA5E9',
     fontWeight: '500',
   },
   loginButton: {
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   loginButtonShadow: {
-    shadowColor: '#F59E0B',
+    shadowColor: '#0EA5E9',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -614,9 +614,9 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FEF3C7',
+    backgroundColor: '#E0F2FE',
     borderWidth: 2,
-    borderColor: '#FDE68A',
+    borderColor: '#BAE6FD',
     flexDirection: 'row',
     gap: Spacing[2],
   },
@@ -660,7 +660,7 @@ const styles = StyleSheet.create({
     color: Colors.gray[700],
   },
   footerLink: {
-    color: '#F59E0B',
+    color: '#0EA5E9',
     fontWeight: '600',
   },
 });

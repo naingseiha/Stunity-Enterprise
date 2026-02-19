@@ -76,7 +76,7 @@ export const Input = forwardRef<TextInput, InputProps>(
       inputRange: [0, 1],
       outputRange: [
         error ? '#EF4444' : '#D1D5DB', // Colors.error.main : Colors.gray[300]
-        error ? '#EF4444' : '#F59E0B', // Colors.error.main : Colors.primary[500]
+        error ? '#EF4444' : '#0EA5E9', // Colors.error.main : Colors.primary[500]
       ],
     });
 

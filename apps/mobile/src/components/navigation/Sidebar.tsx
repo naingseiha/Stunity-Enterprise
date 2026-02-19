@@ -53,8 +53,8 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
       key: 'notifications',
       label: 'Notifications',
       icon: 'notifications',
-      iconColor: '#F59E0B',
-      iconBg: '#FEF3C7',
+      iconColor: '#0EA5E9',
+      iconBg: '#E0F2FE',
       badge: 5,
       onPress: () => { onNavigate('Notifications'); onClose(); },
     },
@@ -155,7 +155,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
             style={styles.profileCardWrapper}
           >
             <LinearGradient
-              colors={['#818CF8', '#6366F1', '#4F46E5']}
+              colors={['#7DD3FC', '#0EA5E9', '#0284C7']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.profileCard}
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: '#4F46E5',
+    shadowColor: '#0284C7',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
     shadowRadius: 14,

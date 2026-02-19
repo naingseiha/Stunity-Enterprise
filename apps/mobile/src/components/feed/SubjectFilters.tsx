@@ -29,16 +29,16 @@ export interface SubjectFilter {
 }
 
 const SUBJECTS: SubjectFilter[] = [
-  { key: 'ALL', label: 'All', icon: 'apps', color: '#6366F1', bgColor: '#EEF2FF', gradient: ['#818CF8', '#6366F1'] },
+  { key: 'ALL', label: 'All', icon: 'grid', color: '#0EA5E9', bgColor: '#E0F2FE', gradient: ['#7DD3FC', '#0EA5E9'] },
   { key: 'MATH', label: 'Math', icon: 'calculator', color: '#2563EB', bgColor: '#DBEAFE', gradient: ['#60A5FA', '#2563EB'] },
-  { key: 'PHYSICS', label: 'Physics', icon: 'planet', color: '#DC2626', bgColor: '#FEE2E2', gradient: ['#F87171', '#DC2626'] },
+  { key: 'PHYSICS', label: 'Physics', icon: 'rocket-outline', color: '#DC2626', bgColor: '#FEE2E2', gradient: ['#F87171', '#DC2626'] },
   { key: 'CHEMISTRY', label: 'Chemistry', icon: 'flask', color: '#059669', bgColor: '#D1FAE5', gradient: ['#34D399', '#059669'] },
   { key: 'BIOLOGY', label: 'Biology', icon: 'leaf', color: '#16A34A', bgColor: '#DCFCE7', gradient: ['#4ADE80', '#16A34A'] },
-  { key: 'CS', label: 'CS', icon: 'code-slash', color: '#4338CA', bgColor: '#E0E7FF', gradient: ['#818CF8', '#4338CA'] },
-  { key: 'ENGLISH', label: 'English', icon: 'book', color: '#DB2777', bgColor: '#FCE7F3', gradient: ['#F472B6', '#DB2777'] },
-  { key: 'HISTORY', label: 'History', icon: 'time', color: '#D97706', bgColor: '#FEF3C7', gradient: ['#FBBF24', '#D97706'] },
-  { key: 'GEOGRAPHY', label: 'Geography', icon: 'globe', color: '#0891B2', bgColor: '#CFFAFE', gradient: ['#22D3EE', '#0891B2'] },
-  { key: 'ARTS', label: 'Arts', icon: 'color-palette', color: '#E11D48', bgColor: '#FFE4E6', gradient: ['#FB7185', '#E11D48'] },
+  { key: 'CS', label: 'CS', icon: 'terminal-outline', color: '#4338CA', bgColor: '#E0E7FF', gradient: ['#818CF8', '#4338CA'] },
+  { key: 'ENGLISH', label: 'English', icon: 'library-outline', color: '#DB2777', bgColor: '#FCE7F3', gradient: ['#F472B6', '#DB2777'] },
+  { key: 'HISTORY', label: 'History', icon: 'hourglass-outline', color: '#C2410C', bgColor: '#FFEDD5', gradient: ['#FB923C', '#C2410C'] },
+  { key: 'GEOGRAPHY', label: 'Geography', icon: 'earth', color: '#0891B2', bgColor: '#CFFAFE', gradient: ['#22D3EE', '#0891B2'] },
+  { key: 'ARTS', label: 'Arts', icon: 'brush-outline', color: '#E11D48', bgColor: '#FFE4E6', gradient: ['#FB7185', '#E11D48'] },
 ];
 
 interface SubjectFiltersProps {

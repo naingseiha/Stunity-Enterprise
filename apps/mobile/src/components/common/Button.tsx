@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/config';
+import { Colors, ColorScale } from '@/config';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -81,7 +81,7 @@ export const Button: React.FC<ButtonProps> = ({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'primary' || variant === 'danger' ? Colors.white : Colors.primary[500]}
+          color={variant === 'primary' || variant === 'danger' ? Colors.white : ColorScale.primary[500]}
         />
       ) : (
         <>
@@ -102,7 +102,7 @@ export const Button: React.FC<ButtonProps> = ({
         {...rest}
       >
         <LinearGradient
-          colors={['#FEF3C7', '#FDE68A', '#FCD34D']}
+          colors={['#7DD3FC', '#0EA5E9', '#0284C7']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={[buttonStyles, styles.gradient]}
@@ -131,39 +131,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing[2],
+    gap: 8,
     borderRadius: 999,
-    ...Shadows.sm,
   },
 
   // Sizes
   size_sm: {
     height: 36,
-    paddingHorizontal: Spacing[4],
+    paddingHorizontal: 16,
     borderRadius: 18,
   },
   size_md: {
     height: 44,
-    paddingHorizontal: Spacing[5],
+    paddingHorizontal: 20,
     borderRadius: 22,
   },
   size_lg: {
     height: 56,
-    paddingHorizontal: Spacing[6],
+    paddingHorizontal: 24,
     borderRadius: 28,
   },
 
   // Variants
   primary: {
-    backgroundColor: Colors.primary[500],
+    backgroundColor: ColorScale.primary[500],
   },
   secondary: {
-    backgroundColor: Colors.gray[100],
+    backgroundColor: ColorScale.gray[100],
   },
   outline: {
     backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: Colors.primary[500],
+    borderColor: ColorScale.primary[500],
   },
   ghost: {
     backgroundColor: 'transparent',
@@ -171,12 +170,12 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   danger: {
-    backgroundColor: Colors.error.main,
+    backgroundColor: '#DC2626',
   },
 
   // States
   disabled: {
-    backgroundColor: Colors.gray[300],
+    backgroundColor: ColorScale.gray[300],
     shadowOpacity: 0,
     elevation: 0,
   },
@@ -189,35 +188,35 @@ const styles = StyleSheet.create({
 
   // Text
   text: {
-    fontWeight: Typography.fontWeight.semibold,
+    fontWeight: '600',
     textAlign: 'center',
   },
   text_sm: {
-    fontSize: Typography.fontSize.sm,
+    fontSize: 14,
   },
   text_md: {
-    fontSize: Typography.fontSize.base,
+    fontSize: 16,
   },
   text_lg: {
-    fontSize: Typography.fontSize.lg,
+    fontSize: 18,
   },
   text_primary: {
-    color: '#92400E',
+    color: '#0C4A6E',
   },
   text_secondary: {
-    color: Colors.gray[700],
+    color: ColorScale.gray[700],
   },
   text_outline: {
-    color: Colors.primary[500],
+    color: ColorScale.primary[500],
   },
   text_ghost: {
-    color: Colors.primary[500],
+    color: ColorScale.primary[500],
   },
   text_danger: {
     color: Colors.white,
   },
   textDisabled: {
-    color: Colors.gray[500],
+    color: ColorScale.gray[500],
   },
 });
 

@@ -294,7 +294,7 @@ export default function RegisterScreen() {
         accessibilityRole="button"
       >
         <LinearGradient
-          colors={['#F59E0B', '#D97706']}
+          colors={['#0EA5E9', '#0284C7']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.continueButton}
@@ -343,7 +343,7 @@ export default function RegisterScreen() {
           <Ionicons 
             name={useClaimCode ? "checkmark-circle" : "radio-button-off-outline"} 
             size={22} 
-            color={useClaimCode ? "#F59E0B" : Colors.gray[400]} 
+            color={useClaimCode ? "#0EA5E9" : Colors.gray[400]} 
           />
           <Text style={[styles.claimCodeToggleText, useClaimCode && styles.claimCodeToggleTextActive]}>
             I have a school claim code
@@ -449,14 +449,14 @@ export default function RegisterScreen() {
                     <Ionicons
                       name={type.icon as any}
                       size={22}
-                      color={organizationType === type.value ? '#F59E0B' : Colors.gray[600]}
+                      color={organizationType === type.value ? '#0EA5E9' : Colors.gray[600]}
                     />
                   </View>
                   <Text style={[styles.typeLabel, organizationType === type.value && styles.typeLabelSelected]}>
                     {type.label}
                   </Text>
                   {organizationType === type.value && (
-                    <Ionicons name="checkmark-circle" size={18} color="#F59E0B" style={styles.checkIcon} />
+                    <Ionicons name="checkmark-circle" size={18} color="#0EA5E9" style={styles.checkIcon} />
                   )}
                 </TouchableOpacity>
               ))}
@@ -472,7 +472,7 @@ export default function RegisterScreen() {
         accessibilityRole="button"
       >
         <LinearGradient
-          colors={['#F59E0B', '#D97706']}
+          colors={['#0EA5E9', '#0284C7']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.continueButton}
@@ -520,7 +520,7 @@ export default function RegisterScreen() {
               <Ionicons
                 name={r.icon}
                 size={26}
-                color={role === r.value ? Colors.white : '#F59E0B'}
+                color={role === r.value ? Colors.white : '#0EA5E9'}
               />
             </View>
             <View style={styles.roleInfo}>
@@ -533,7 +533,7 @@ export default function RegisterScreen() {
             </View>
             {role === r.value && (
               <View style={styles.roleCheckContainer}>
-                <Ionicons name="checkmark-circle" size={26} color="#F59E0B" />
+                <Ionicons name="checkmark-circle" size={26} color="#0EA5E9" />
               </View>
             )}
           </TouchableOpacity>
@@ -547,7 +547,7 @@ export default function RegisterScreen() {
         accessibilityRole="button"
       >
         <LinearGradient
-          colors={['#F59E0B', '#D97706']}
+          colors={['#0EA5E9', '#0284C7']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.continueButton}
@@ -730,7 +730,7 @@ export default function RegisterScreen() {
     <View style={styles.container}>
       {/* Light Yellow to White Gradient Background */}
       <LinearGradient
-        colors={['#FEF3C7', '#FFFFFF']}
+        colors={['#E0F2FE', '#FFFFFF']}
         style={styles.background}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
@@ -825,7 +825,7 @@ const styles = StyleSheet.create({
   },
   stepIndicator: {
     fontSize: Typography.fontSize.sm,
-    color: '#F59E0B',
+    color: '#0EA5E9',
     fontWeight: '700',
   },
   content: {
@@ -849,10 +849,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.gray[200],
   },
   progressDotActive: {
-    backgroundColor: '#FDE68A',
+    backgroundColor: '#BAE6FD',
   },
   progressDotComplete: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: '#0EA5E9',
   },
   stepTitle: {
     fontSize: 28,
@@ -904,7 +904,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing[6],
   },
   continueButtonShadow: {
-    shadowColor: '#F59E0B',
+    shadowColor: '#0EA5E9',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -939,22 +939,22 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   roleCardSelected: {
-    borderColor: '#F59E0B',
-    backgroundColor: '#FEF3C7',
-    shadowColor: '#F59E0B',
+    borderColor: '#0EA5E9',
+    backgroundColor: '#E0F2FE',
+    shadowColor: '#0EA5E9',
     shadowOpacity: 0.2,
   },
   roleIcon: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#FEF3C7',
+    backgroundColor: '#E0F2FE',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing[4],
   },
   roleIconSelected: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: '#0EA5E9',
   },
   roleInfo: {
     flex: 1,
@@ -992,8 +992,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   checkboxChecked: {
-    backgroundColor: '#F59E0B',
-    borderColor: '#F59E0B',
+    backgroundColor: '#0EA5E9',
+    borderColor: '#0EA5E9',
   },
   termsText: {
     flex: 1,
@@ -1002,7 +1002,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   termsLink: {
-    color: '#F59E0B',
+    color: '#0EA5E9',
     fontWeight: '600',
   },
   typeContainer: {
@@ -1028,9 +1028,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   typeCardSelected: {
-    borderColor: '#F59E0B',
-    backgroundColor: '#FEF3C7',
-    shadowColor: '#F59E0B',
+    borderColor: '#0EA5E9',
+    backgroundColor: '#E0F2FE',
+    shadowColor: '#0EA5E9',
     shadowOpacity: 0.15,
   },
   typeIconContainer: {
@@ -1050,7 +1050,7 @@ const styles = StyleSheet.create({
     color: Colors.gray[700],
   },
   typeLabelSelected: {
-    color: '#F59E0B',
+    color: '#0EA5E9',
     fontWeight: '700',
   },
   checkIcon: {
@@ -1102,7 +1102,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: Spacing[4],
-    backgroundColor: '#FEF3C7',
+    backgroundColor: '#E0F2FE',
     borderRadius: 16,
     marginBottom: Spacing[4],
   },
@@ -1117,7 +1117,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   claimCodeToggleTextActive: {
-    color: '#F59E0B',
+    color: '#0EA5E9',
   },
   validateButton: {
     backgroundColor: '#3B82F6',

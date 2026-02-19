@@ -1,7 +1,11 @@
 /**
- * Clubs Screen
+ * Clubs Screen — Premium Enterprise Design
  * 
- * Clean, professional club discovery interface
+ * Matching feed/course design language:
+ * - Soft purple background (#F5F3FF)
+ * - Circular header buttons
+ * - Amber brand FAB
+ * - Gradient club cards
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -245,65 +249,90 @@ export default function ClubsScreen() {
         </View>
       </View>
 
-      {/* Filter Pills */}
-      <View style={styles.filterSection}>
+      {/* Header Divider */}
+      <View style={styles.headerDivider} />
+
+      {/* Filter Tabs — Circle style matching course screen */}
+      <Animated.View entering={FadeInDown.duration(300)} style={styles.filterSection}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterScroll}
         >
-          {/* Main Filters */}
-          {(['all', 'joined', 'discover'] as const).map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              style={[
-                styles.filterPill,
-                selectedFilter === filter && styles.filterPillActive,
-              ]}
-              onPress={() => setSelectedFilter(filter)}
-            >
-              <Text
-                style={[
-                  styles.filterPillText,
-                  selectedFilter === filter && styles.filterPillTextActive,
-                ]}
-              >
-                {filter === 'all' ? 'All' : filter === 'joined' ? 'My Clubs' : 'Discover'}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {/* Main Filters as circles */}
+          {(['all', 'joined', 'discover'] as const).map((filter, index) => {
+            const isActive = selectedFilter === filter;
+            const filterConfig = {
+              all: { label: 'All', icon: 'apps' as const, color: '#0EA5E9', bg: '#E0F2FE' },
+              joined: { label: 'My Clubs', icon: 'heart' as const, color: '#EC4899', bg: '#FCE7F3' },
+              discover: { label: 'Discover', icon: 'compass' as const, color: '#6366F1', bg: '#EEF2FF' },
+            }[filter];
+            return (
+              <Animated.View key={filter} entering={FadeInRight.delay(50 * index).duration(300)}>
+                <TouchableOpacity
+                  style={styles.tabCircleItem}
+                  onPress={() => setSelectedFilter(filter)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[
+                    styles.tabCircleIcon,
+                    { backgroundColor: filterConfig.bg },
+                    isActive && {
+                      backgroundColor: filterConfig.color,
+                      shadowColor: filterConfig.color,
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 8,
+                      elevation: 5,
+                    },
+                  ]}>
+                    <Ionicons name={filterConfig.icon} size={24} color={isActive ? '#fff' : filterConfig.color} />
+                  </View>
+                  <Text style={[
+                    styles.tabCircleLabel,
+                    isActive && { color: filterConfig.color, fontWeight: '700' as const },
+                  ]}>{filterConfig.label}</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          })}
 
           <View style={styles.divider} />
 
-          {/* Type Filters */}
-          {CLUB_TYPES.map((type) => (
-            <TouchableOpacity
-              key={type.id}
-              style={[
-                styles.filterPill,
-                selectedType === type.id && { backgroundColor: type.color },
-                selectedType !== type.id && { backgroundColor: type.bgColor },
-              ]}
-              onPress={() => setSelectedType(type.id)}
-            >
-              <Ionicons
-                name={type.icon as any}
-                size={16}
-                color={selectedType === type.id ? 'white' : type.color}
-                style={styles.filterIcon}
-              />
-              <Text
-                style={[
-                  styles.filterPillText,
-                  selectedType === type.id ? { color: 'white' } : { color: type.color },
-                ]}
-              >
-                {type.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {/* Type Filters as circles */}
+          {CLUB_TYPES.map((type, index) => {
+            const isActive = selectedType === type.id;
+            return (
+              <Animated.View key={type.id} entering={FadeInRight.delay(50 * (index + 3)).duration(300)}>
+                <TouchableOpacity
+                  style={styles.tabCircleItem}
+                  onPress={() => setSelectedType(isActive ? 'all' : type.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[
+                    styles.tabCircleIcon,
+                    { backgroundColor: type.bgColor },
+                    isActive && {
+                      backgroundColor: type.color,
+                      shadowColor: type.color,
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 8,
+                      elevation: 5,
+                    },
+                  ]}>
+                    <Ionicons name={type.icon as any} size={24} color={isActive ? '#fff' : type.color} />
+                  </View>
+                  <Text style={[
+                    styles.tabCircleLabel,
+                    isActive && { color: type.color, fontWeight: '700' as const },
+                  ]}>{type.name}</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          })}
         </ScrollView>
-      </View>
+      </Animated.View>
 
       {/* Clubs List */}
       {loading ? (
@@ -352,7 +381,7 @@ export default function ClubsScreen() {
         activeOpacity={0.9}
       >
         <LinearGradient
-          colors={['#6366F1', '#4F46E5']}
+          colors={['#7DD3FC', '#0EA5E9', '#0284C7']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.fabGradient}
@@ -371,7 +400,7 @@ const getTypeColor = (type: string) => {
     case 'STRUCTURED_CLASS': return '#D1FAE5'; // Light green
     case 'PROJECT_GROUP': return '#FEE2E2'; // Light red
     case 'EXAM_PREP': return '#EDE9FE'; // Light purple
-    default: return '#FEF3C7'; // Light amber
+    default: return '#E0F2FE'; // Light amber
   }
 };
 
@@ -381,7 +410,7 @@ const getTypeColorDark = (type: string) => {
     case 'STRUCTURED_CLASS': return '#A7F3D0'; // Slightly darker green
     case 'PROJECT_GROUP': return '#FECACA'; // Slightly darker red
     case 'EXAM_PREP': return '#DDD6FE'; // Slightly darker purple
-    default: return '#FDE68A'; // Slightly darker amber
+    default: return '#BAE6FD'; // Slightly darker amber
   }
 };
 
@@ -401,7 +430,7 @@ const getIconColor = (type: string) => {
     case 'STRUCTURED_CLASS': return '#059669'; // Green
     case 'PROJECT_GROUP': return '#DC2626'; // Red
     case 'EXAM_PREP': return '#7C3AED'; // Purple
-    default: return '#F59E0B'; // Amber
+    default: return '#0EA5E9'; // Amber
   }
 };
 
@@ -418,75 +447,75 @@ const getTypeLabel = (type: string) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#F5F3FF',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
+  },
+  headerDivider: {
+    height: 1,
+    backgroundColor: '#EDE9FE',
   },
   menuButton: {
     width: 42,
     height: 42,
-    borderRadius: 12,
+    borderRadius: 21,
+    backgroundColor: '#F5F3FF',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerLogo: {
-    width: 120,
-    height: 32,
+    width: 110,
+    height: 30,
   },
   headerActions: {
     flexDirection: 'row',
-    gap: 4,
+    gap: 6,
   },
   headerButton: {
     width: 42,
     height: 42,
-    borderRadius: 12,
+    borderRadius: 21,
+    backgroundColor: '#F5F3FF',
     justifyContent: 'center',
     alignItems: 'center',
   },
   filterSection: {
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    paddingTop: 14,
+    paddingBottom: 8,
   },
   filterScroll: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: 12,
   },
-  filterPill: {
-    flexDirection: 'row',
+  tabCircleItem: {
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 24,
-    marginRight: 10,
+    width: 68,
   },
-  filterPillActive: {
-    backgroundColor: Colors.primary,
+  tabCircleIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
   },
-  filterIcon: {
-    marginRight: 6,
-  },
-  filterPillText: {
-    fontSize: 13,
+  tabCircleLabel: {
+    fontSize: 11,
     fontWeight: '600',
-  },
-  filterPillTextActive: {
-    color: 'white',
+    color: '#6B7280',
+    textAlign: 'center',
   },
   divider: {
     width: 1,
-    height: 24,
-    backgroundColor: Colors.border,
-    marginHorizontal: 8,
+    height: 40,
+    backgroundColor: '#EDE9FE',
+    marginHorizontal: 4,
     alignSelf: 'center',
   },
   listContent: {
@@ -764,9 +793,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 24,
     gap: 6,
-    // Gradient effect using solid color
-    backgroundColor: '#6366F1',
-    shadowColor: '#6366F1',
+    backgroundColor: '#0EA5E9',
+    shadowColor: '#0284C7',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -775,6 +803,7 @@ const styles = StyleSheet.create({
   joinedButton: {
     backgroundColor: '#fff',
     borderWidth: 2,
+    borderColor: '#E5E7EB',
     shadowColor: '#000',
     shadowOpacity: 0.05,
   },
@@ -820,22 +849,22 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
-  // Floating Action Button
+  // Floating Action Button — Amber brand
   fab: {
     position: 'absolute',
     bottom: 24,
     right: 24,
-    borderRadius: 28,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    borderRadius: 29,
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
     elevation: 8,
   },
   fabGradient: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     justifyContent: 'center',
     alignItems: 'center',
   },

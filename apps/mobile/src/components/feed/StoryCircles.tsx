@@ -55,7 +55,7 @@ export const StoryCircles: React.FC<StoryCirclesProps> = ({
       <View style={styles.avatarWrapper}>
         {hasUnviewed ? (
           <LinearGradient
-            colors={['#F59E0B', '#F97316', '#EF4444']}
+            colors={['#0EA5E9', '#F97316', '#EF4444']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.gradientRing}
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#F59E0B',
+    backgroundColor: '#0EA5E9',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,

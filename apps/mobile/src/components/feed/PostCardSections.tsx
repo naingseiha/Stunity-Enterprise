@@ -27,7 +27,7 @@ export const DeadlineBanner = React.memo<DeadlineBannerProps>(({ deadlineInfo })
         <Ionicons
             name={deadlineInfo.isUrgent ? 'warning' : 'time-outline'}
             size={16}
-            color={deadlineInfo.isUrgent ? '#EF4444' : '#F59E0B'}
+            color={deadlineInfo.isUrgent ? '#EF4444' : '#0EA5E9'}
         />
         <Text style={[sectionStyles.deadlineText, deadlineInfo.isUrgent && sectionStyles.deadlineTextUrgent]}>
             {deadlineInfo.isUrgent ? '⚡ Due soon: ' : 'Due: '}{deadlineInfo.text}
@@ -193,7 +193,7 @@ export const QuizSection = React.memo<QuizSectionProps>(({
 
                     <View style={sectionStyles.quizStatItem}>
                         <View style={sectionStyles.quizStatIconBg}>
-                            <Ionicons name="star" size={20} color="#F59E0B" />
+                            <Ionicons name="star" size={20} color="#0EA5E9" />
                         </View>
                         <Text style={sectionStyles.quizStatValue}>{quizData.totalPoints || 100}</Text>
                         <Text style={sectionStyles.quizStatLabel}>Points</Text>
@@ -268,7 +268,7 @@ const sectionStyles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 10,
-        backgroundColor: '#FFFBEB',
+        backgroundColor: '#F0F9FF',
         borderRadius: 8,
         marginHorizontal: 16,
         marginTop: 8,
@@ -280,7 +280,7 @@ const sectionStyles = StyleSheet.create({
     deadlineText: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#92400E',
+        color: '#0C4A6E',
     },
     deadlineTextUrgent: {
         color: '#DC2626',

@@ -50,7 +50,7 @@ const OPTION_COLORS = [
   { border: '#6366F1', bg: '#EEF2FF', fill: ['#818CF8', '#6366F1'] as [string, string], text: '#4338CA' },
   { border: '#EC4899', bg: '#FCE7F3', fill: ['#F472B6', '#EC4899'] as [string, string], text: '#BE185D' },
   { border: '#10B981', bg: '#D1FAE5', fill: ['#34D399', '#10B981'] as [string, string], text: '#047857' },
-  { border: '#F59E0B', bg: '#FEF3C7', fill: ['#FBBF24', '#F59E0B'] as [string, string], text: '#B45309' },
+  { border: '#0EA5E9', bg: '#E0F2FE', fill: ['#7DD3FC', '#0EA5E9'] as [string, string], text: '#0369A1' },
   { border: '#3B82F6', bg: '#DBEAFE', fill: ['#60A5FA', '#3B82F6'] as [string, string], text: '#1D4ED8' },
   { border: '#8B5CF6', bg: '#EDE9FE', fill: ['#A78BFA', '#8B5CF6'] as [string, string], text: '#6D28D9' },
 ];

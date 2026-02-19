@@ -112,7 +112,7 @@ interface FeedState {
   // Actions
   fetchPosts: (refresh?: boolean) => Promise<void>;
   fetchStories: () => Promise<void>;
-  createPost: (content: string, mediaUrls?: string[], postType?: string, pollOptions?: string[], quizData?: any, title?: string, visibility?: string, pollSettings?: any) => Promise<boolean>;
+  createPost: (content: string, mediaUrls?: string[], postType?: string, pollOptions?: string[], quizData?: any, title?: string, visibility?: string, pollSettings?: any, courseData?: any, projectData?: any) => Promise<boolean>;
   updatePost: (postId: string, data: { content: string; visibility?: string; mediaUrls?: string[]; mediaDisplayMode?: string; pollOptions?: string[]; quizData?: any; pollSettings?: any; deadline?: string }) => Promise<boolean>;
   likePost: (postId: string) => Promise<void>;
   unlikePost: (postId: string) => Promise<void>;
@@ -372,7 +372,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   },
 
   // Create a new post
-  createPost: async (content, mediaUrls = [], postType = 'ARTICLE', pollOptions = [], quizData, title, visibility = 'PUBLIC', pollSettings) => {
+  createPost: async (content, mediaUrls = [], postType = 'ARTICLE', pollOptions = [], quizData, title, visibility = 'PUBLIC', pollSettings, courseData, projectData) => {
     try {
       // Upload local images to R2 before creating post
       let uploadedMediaUrls = mediaUrls;
@@ -448,6 +448,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         pollSettings: postType === 'POLL' ? pollSettings : undefined, // Send full settings
         deadline, // Send deadline for backend to handle
         quizData: postType === 'QUIZ' ? quizData : undefined,
+        courseData: postType === 'COURSE' ? courseData : undefined,
+        projectData: postType === 'PROJECT' ? projectData : undefined,
       });
 
       if (response.data.success) {

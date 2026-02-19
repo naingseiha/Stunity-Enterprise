@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   activeTab: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: '#E0F2FE',
   },
   tabText: {
     fontSize: 14,
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   activeTabText: {
-    color: '#F59E0B',
+    color: '#0EA5E9',
     fontWeight: '600',
   },
   listContainer: {

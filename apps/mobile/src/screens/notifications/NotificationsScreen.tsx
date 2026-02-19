@@ -33,11 +33,11 @@ const NOTIFICATION_ICONS: Record<string, { name: keyof typeof Ionicons.glyphMap;
     LIKE: { name: 'heart', color: '#EF4444', bg: '#FEE2E2' },
     COMMENT: { name: 'chatbubble', color: '#3B82F6', bg: '#DBEAFE' },
     FOLLOW: { name: 'person-add', color: '#8B5CF6', bg: '#EDE9FE' },
-    MENTION: { name: 'at', color: '#F59E0B', bg: '#FEF3C7' },
+    MENTION: { name: 'at', color: '#0EA5E9', bg: '#E0F2FE' },
     ANNOUNCEMENT: { name: 'megaphone', color: '#6366F1', bg: '#EEF2FF' },
     ASSIGNMENT: { name: 'document-text', color: '#10B981', bg: '#D1FAE5' },
     QUIZ: { name: 'help-circle', color: '#EC4899', bg: '#FCE7F3' },
-    ACHIEVEMENT: { name: 'trophy', color: '#F59E0B', bg: '#FEF3C7' },
+    ACHIEVEMENT: { name: 'trophy', color: '#0EA5E9', bg: '#E0F2FE' },
 };
 
 const getNotificationIcon = (type: string) => {

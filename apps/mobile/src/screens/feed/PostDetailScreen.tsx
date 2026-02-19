@@ -52,7 +52,7 @@ type PostDetailRouteProp = RouteProp<FeedStackParamList, 'PostDetail'>;
 // Difficulty configurations
 const DIFFICULTY_CONFIG: Record<DifficultyLevel, { label: string; color: string; bgColor: string; icon: string }> = {
   BEGINNER: { label: 'Beginner', color: '#10B981', bgColor: '#D1FAE5', icon: 'leaf' },
-  INTERMEDIATE: { label: 'Intermediate', color: '#F59E0B', bgColor: '#FEF3C7', icon: 'flash' },
+  INTERMEDIATE: { label: 'Intermediate', color: '#0EA5E9', bgColor: '#E0F2FE', icon: 'flash' },
   ADVANCED: { label: 'Advanced', color: '#EF4444', bgColor: '#FEE2E2', icon: 'rocket' },
 };
 
@@ -69,7 +69,7 @@ const POST_TYPE_CONFIG: Record<string, {
   QUESTION: { icon: 'help-circle', label: 'Question', color: '#14B8A6', bgColor: '#CCFBF1', ctaLabel: 'Answer', gradient: ['#14B8A6', '#0D9488'] },
   ANNOUNCEMENT: { icon: 'megaphone', label: 'Announcement', color: '#F97316', bgColor: '#FFEDD5', ctaLabel: 'View Details', gradient: ['#F97316', '#EA580C'] },
   POLL: { icon: 'stats-chart', label: 'Poll', color: '#8B5CF6', bgColor: '#EDE9FE', ctaLabel: 'Vote Now', gradient: ['#8B5CF6', '#7C3AED'] },
-  ACHIEVEMENT: { icon: 'trophy', label: 'Achievement', color: '#F59E0B', bgColor: '#FEF3C7', ctaLabel: 'Celebrate', gradient: ['#F59E0B', '#D97706'] },
+  ACHIEVEMENT: { icon: 'trophy', label: 'Achievement', color: '#0EA5E9', bgColor: '#E0F2FE', ctaLabel: 'Celebrate', gradient: ['#0EA5E9', '#0284C7'] },
   PROJECT: { icon: 'folder', label: 'Project', color: '#F97316', bgColor: '#FFEDD5', ctaLabel: 'View Project', gradient: ['#F97316', '#EA580C'] },
   COURSE: { icon: 'book', label: 'Course', color: '#3B82F6', bgColor: '#DBEAFE', ctaLabel: 'Enroll Now', gradient: ['#3B82F6', '#2563EB'] },
   EVENT: { icon: 'calendar', label: 'Event', color: '#EC4899', bgColor: '#FCE7F3', ctaLabel: 'Join Event', gradient: ['#EC4899', '#DB2777'] },
@@ -90,7 +90,7 @@ const QUIZ_GRADIENTS: [string, string][] = [
   ['#8B5CF6', '#7C3AED'], // Violet
   ['#3B82F6', '#2563EB'], // Blue
   ['#10B981', '#059669'], // Emerald
-  ['#F59E0B', '#D97706'], // Amber
+  ['#0EA5E9', '#0284C7'], // Amber
   ['#6366F1', '#4F46E5'], // Indigo
 ];
 
@@ -438,7 +438,7 @@ export default function PostDetailScreen() {
               <Ionicons
                 name={deadlineInfo.isUrgent ? 'warning' : 'time-outline'}
                 size={16}
-                color={deadlineInfo.isUrgent ? '#EF4444' : '#F59E0B'}
+                color={deadlineInfo.isUrgent ? '#EF4444' : '#0EA5E9'}
               />
               <Text style={[styles.deadlineText, deadlineInfo.isUrgent && styles.deadlineTextUrgent]}>
                 {deadlineInfo.isUrgent ? '⚡ Due soon: ' : 'Due: '}{deadlineInfo.text}
@@ -551,7 +551,7 @@ export default function PostDetailScreen() {
 
                     <View style={styles.quizStatItem}>
                       <View style={styles.quizStatIconBg}>
-                        <Ionicons name="star" size={20} color="#F59E0B" />
+                        <Ionicons name="star" size={20} color="#0EA5E9" />
                       </View>
                       <Text style={styles.quizStatValue}>{post.quizData.totalPoints || 100}</Text>
                       <Text style={styles.quizStatLabel}>Points</Text>
@@ -603,7 +603,7 @@ export default function PostDetailScreen() {
                   <Text style={styles.metricText}>{learningMeta?.estimatedMinutes || 5} min</Text>
                 </View>
                 <View style={styles.metric}>
-                  <Ionicons name="star" size={14} color="#F59E0B" />
+                  <Ionicons name="star" size={14} color="#0EA5E9" />
                   <Text style={styles.metricText}>+{learningMeta?.xpReward || 15} XP</Text>
                 </View>
               </View>
@@ -1207,7 +1207,7 @@ const styles = StyleSheet.create({
   deadlineBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF3C7',
+    backgroundColor: '#E0F2FE',
     marginHorizontal: 16,
     marginBottom: 16,
     paddingHorizontal: 12,
@@ -1221,7 +1221,7 @@ const styles = StyleSheet.create({
   deadlineText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#92400E',
+    color: '#0C4A6E',
   },
   deadlineTextUrgent: {
     color: '#DC2626',

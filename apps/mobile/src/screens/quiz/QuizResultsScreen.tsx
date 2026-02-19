@@ -114,7 +114,7 @@ export function QuizResultsScreen() {
 
   const getPerformanceColor = () => {
     if (scorePercentage >= 80) return '#10B981'; // Green
-    if (scorePercentage >= 60) return '#F59E0B'; // Orange
+    if (scorePercentage >= 60) return '#0EA5E9'; // Orange
     return '#EF4444'; // Red
   };
 

@@ -62,9 +62,9 @@ export default function QuickActionBar({
       id: 'challenge',
       icon: 'trophy',
       label: 'Daily Challenge',
-      bgColor: '#FEF3C7', // Light amber
+      bgColor: '#E0F2FE', // Light amber
       textColor: '#B45309', // Dark amber
-      iconColor: '#F59E0B', // Vibrant amber
+      iconColor: '#0EA5E9', // Vibrant amber
       onPress: onDailyChallenge,
     },
   ];

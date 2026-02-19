@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
   submitHeaderButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#F59E0B',
+    color: '#0EA5E9',
   },
   scrollView: {
     flex: 1,
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
   instructionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF3C7',
+    backgroundColor: '#E0F2FE',
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   instructionText: {
     flex: 1,
     fontSize: 14,
-    color: '#92400E',
+    color: '#0C4A6E',
     lineHeight: 20,
   },
   contentSection: {
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
   addFileButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#F59E0B',
+    color: '#0EA5E9',
   },
   emptyAttachments: {
     backgroundColor: '#FFFFFF',
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F59E0B',
+    backgroundColor: '#0EA5E9',
     paddingVertical: 16,
     borderRadius: 12,
     gap: 8,

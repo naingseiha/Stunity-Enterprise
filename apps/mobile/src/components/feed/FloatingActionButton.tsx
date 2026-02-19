@@ -1,9 +1,9 @@
 /**
  * FloatingActionButton (FAB) Component — V2 Premium Design
  * 
- * - Purple gradient background with indigo shadow glow
+ * - Amber gradient background matching Stunity brand
  * - Always visible, bottom-right position
- * - Premium shadow with color-matched glow
+ * - Premium shadow with warm amber glow
  */
 
 import React from 'react';
@@ -33,7 +33,7 @@ export default function FloatingActionButton({
       style={[styles.container, { width: size, height: size, borderRadius: size / 2 }]}
     >
       <LinearGradient
-        colors={['#818CF8', '#6366F1', '#4F46E5']}
+        colors={['#7DD3FC', '#0EA5E9', '#0284C7']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.gradient, { borderRadius: size / 2 }]}
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     bottom: 24,
-    shadowColor: '#6366F1',
+    shadowColor: '#0284C7',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 12,

@@ -42,8 +42,8 @@ const EMPTY_STATES = {
     title: 'No Results Found',
     message: 'Try adjusting your search or filters to find what you\'re looking for.',
     actionLabel: 'Clear Filters' as string | undefined,
-    gradient: ['#FEF3C7', '#FDE68A'],
-    iconColor: '#F59E0B',
+    gradient: ['#E0F2FE', '#BAE6FD'],
+    iconColor: '#0EA5E9',
   },
   notifications: {
     icon: 'notifications-outline' as const,

@@ -371,7 +371,7 @@ export default function FeedScreen() {
       {/* Performance / Trophy Card — E-Learning focus */}
       <TouchableOpacity activeOpacity={0.9} style={styles.performanceCardWrapper}>
         <LinearGradient
-          colors={['#818CF8', '#6366F1', '#4F46E5']}
+          colors={['#7DD3FC', '#0EA5E9', '#0284C7']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.performanceCard}
@@ -402,7 +402,7 @@ export default function FeedScreen() {
             {/* CTA */}
             <TouchableOpacity style={styles.performanceCTA} activeOpacity={0.8}>
               <Text style={styles.performanceCTAText}>View Progress</Text>
-              <Ionicons name="arrow-forward" size={14} color="#6366F1" />
+              <Ionicons name="arrow-forward" size={14} color="#0284C7" />
             </TouchableOpacity>
           </View>
 
@@ -454,7 +454,7 @@ export default function FeedScreen() {
             </Text>
           </View>
           <TouchableOpacity onPress={handleCreatePost} style={styles.createPostMediaButton}>
-            <Ionicons name="images-outline" size={20} color="#6366F1" />
+            <Ionicons name="images-outline" size={20} color="#0284C7" />
           </TouchableOpacity>
         </TouchableOpacity>
 
@@ -473,7 +473,7 @@ export default function FeedScreen() {
             activeOpacity={0.7}
             style={styles.inCardAction}
           >
-            <LinearGradient colors={['#818CF8', '#6366F1']} style={styles.quickActionIcon}>
+            <LinearGradient colors={['#7DD3FC', '#0EA5E9']} style={styles.quickActionIcon}>
               <Ionicons name="help-circle" size={18} color="#fff" />
             </LinearGradient>
             <Text style={styles.inCardActionText}>Ask</Text>
@@ -495,7 +495,7 @@ export default function FeedScreen() {
             activeOpacity={0.7}
             style={styles.inCardAction}
           >
-            <LinearGradient colors={['#FBBF24', '#F59E0B']} style={styles.quickActionIcon}>
+            <LinearGradient colors={['#7DD3FC', '#0EA5E9']} style={styles.quickActionIcon}>
               <Ionicons name="bar-chart" size={18} color="#fff" />
             </LinearGradient>
             <Text style={styles.inCardActionText}>Poll</Text>
@@ -631,7 +631,7 @@ export default function FeedScreen() {
                   );
                 }}
               >
-                <Text style={{ color: '#6366F1', fontWeight: '600', fontSize: 12 }}>Seed</Text>
+                <Text style={{ color: '#0284C7', fontWeight: '600', fontSize: 12 }}>Seed</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity
@@ -696,8 +696,8 @@ export default function FeedScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor="#6366F1"
-            colors={['#6366F1']}
+            tintColor="#0EA5E9"
+            colors={['#0EA5E9']}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -821,7 +821,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: '#4F46E5',
+    shadowColor: '#0284C7',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
     shadowRadius: 14,
@@ -892,7 +892,7 @@ const styles = StyleSheet.create({
   performanceCTAText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#6366F1',
+    color: '#0284C7',
   },
   performanceRight: {
     justifyContent: 'center',
@@ -948,7 +948,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
     borderRadius: 18,
-    shadowColor: '#6366F1',
+    shadowColor: '#0284C7',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 10,
@@ -1076,12 +1076,12 @@ const styles = StyleSheet.create({
   newPostsPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#6366F1',
+    backgroundColor: '#0EA5E9',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 24,
     gap: 6,
-    shadowColor: '#6366F1',
+    shadowColor: '#0284C7',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

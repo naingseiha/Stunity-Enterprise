@@ -217,7 +217,7 @@ export default function AssignmentDetailScreen() {
                 )}
                 {isLateSubmission && (
                   <View style={styles.lateWarning}>
-                    <Ionicons name="time" size={14} color="#F59E0B" />
+                    <Ionicons name="time" size={14} color="#0EA5E9" />
                     <Text style={styles.lateWarningText}>Late submission</Text>
                   </View>
                 )}
@@ -247,7 +247,7 @@ export default function AssignmentDetailScreen() {
             <Ionicons 
               name={isOverdue ? "alert-circle" : "time-outline"} 
               size={20} 
-              color={isOverdue ? "#EF4444" : daysUntilDue <= 2 ? "#F59E0B" : "#6B7280"} 
+              color={isOverdue ? "#EF4444" : daysUntilDue <= 2 ? "#0EA5E9" : "#6B7280"} 
             />
             <View style={styles.dueDateContent}>
               <Text style={[
@@ -460,14 +460,14 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#FEF3C7',
+    backgroundColor: '#E0F2FE',
     borderRadius: 12,
     gap: 6,
   },
   subjectText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#F59E0B',
+    color: '#0EA5E9',
   },
   statusCard: {
     backgroundColor: '#FFFFFF',
@@ -531,12 +531,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#FEF3C7',
+    borderTopColor: '#E0F2FE',
   },
   lateWarningText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#F59E0B',
+    color: '#0EA5E9',
   },
   statusDescription: {
     fontSize: 14,
@@ -563,9 +563,9 @@ const styles = StyleSheet.create({
     borderColor: '#FCA5A5',
   },
   dueDateCardSoon: {
-    backgroundColor: '#FFFBEB',
+    backgroundColor: '#F0F9FF',
     borderWidth: 1,
-    borderColor: '#FCD34D',
+    borderColor: '#7DD3FC',
   },
   dueDateContent: {
     flex: 1,
@@ -580,7 +580,7 @@ const styles = StyleSheet.create({
     color: '#EF4444',
   },
   dueDateTextSoon: {
-    color: '#F59E0B',
+    color: '#0EA5E9',
   },
   lateAllowedText: {
     fontSize: 13,
@@ -703,13 +703,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F59E0B',
+    backgroundColor: '#0EA5E9',
     paddingVertical: 16,
     borderRadius: 12,
     gap: 8,
   },
   submitButtonLate: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: '#0EA5E9',
   },
   submitButtonText: {
     fontSize: 16,
@@ -720,11 +720,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F59E0B',
+    backgroundColor: '#0EA5E9',
     paddingVertical: 16,
     borderRadius: 12,
     gap: 8,
-    shadowColor: '#F59E0B',
+    shadowColor: '#0EA5E9',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -743,13 +743,13 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#F59E0B',
+    borderColor: '#0EA5E9',
     gap: 8,
   },
   viewSubmissionButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#F59E0B',
+    color: '#0EA5E9',
   },
   centered: {
     flex: 1,
@@ -767,7 +767,7 @@ const styles = StyleSheet.create({
   retryButton: {
     paddingHorizontal: 32,
     paddingVertical: 12,
-    backgroundColor: '#F59E0B',
+    backgroundColor: '#0EA5E9',
     borderRadius: 8,
   },
   retryButtonText: {

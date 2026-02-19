@@ -1,12 +1,11 @@
 /**
- * Quiz Form Component - Clean Modern Redesign
- * Minimal, spacious UI for quiz creation
+ * Quiz Form Component - COLORFUL & BEAUTIFUL REDESIGN
+ * Top-level configuration for the quiz
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, TextInput, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeOut, Layout, useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
 import { QuizQuestionInput, QuizQuestion, QuestionType } from '../components/QuizQuestionInput';
@@ -135,31 +134,26 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
           activeOpacity={0.8}
         >
           <View style={styles.cardHeaderLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: '#EEF2FF' }]}>
-              <Ionicons name="settings-outline" size={20} color="#4F46E5" />
+            <View style={[styles.iconContainer, { backgroundColor: '#F0F9FF' }]}>
+              <Ionicons name="settings" size={24} color="#0EA5E9" />
             </View>
             <View>
-              <Text style={styles.cardTitle}>Quiz Settings</Text>
+              <Text style={styles.cardTitle}>Quiz Configuration</Text>
               <Text style={styles.cardSubtitle}>
-                {totalPoints} Total Points • {timeLimit ? `${timeLimit} min` : 'No Limit'}
+                {totalPoints} Points • {questions.length} Questions
               </Text>
             </View>
           </View>
-          <Ionicons
-            name={isSettingsExpanded ? "chevron-up" : "chevron-down"}
-            size={20}
-            color="#6B7280"
-          />
+          <View style={[styles.expandIcon, isSettingsExpanded && styles.expandIconRotated]}>
+            <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
+          </View>
         </TouchableOpacity>
 
         {isSettingsExpanded && (
           <View style={styles.cardContent}>
             {/* Time Limit */}
-            <View style={styles.settingRow}>
-              <View style={styles.settingLabelContainer}>
-                <Ionicons name="timer-outline" size={18} color="#6B7280" />
-                <Text style={styles.settingLabel}>Time Limit</Text>
-              </View>
+            <View style={styles.settingSection}>
+              <Text style={styles.sectionLabel}>Time Limit</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.capsuleScroll}>
                 {TIME_LIMITS.map((opt) => (
                   <TouchableOpacity
@@ -179,12 +173,11 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
               </ScrollView>
             </View>
 
+            <View style={styles.divider} />
+
             {/* Passing Score */}
-            <View style={styles.settingRow}>
-              <View style={styles.settingLabelContainer}>
-                <Ionicons name="trophy-outline" size={18} color="#6B7280" />
-                <Text style={styles.settingLabel}>Passing Score (%)</Text>
-              </View>
+            <View style={styles.settingSection}>
+              <Text style={styles.sectionLabel}>Passing Score (%)</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.capsuleScroll}>
                 {PASSING_SCORES.map((score) => (
                   <TouchableOpacity
@@ -204,56 +197,45 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
               </ScrollView>
             </View>
 
-            {/* Max Attempts */}
-            <View style={styles.settingRow}>
-              <View style={styles.settingLabelContainer}>
-                <Ionicons name="repeat-outline" size={18} color="#6B7280" />
-                <Text style={styles.settingLabel}>Max Attempts</Text>
-              </View>
-              <View style={styles.togglesContainer}>
-                {[null, 1, 2, 3].map((val) => (
-                  <TouchableOpacity
-                    key={String(val)}
-                    style={[
-                      styles.capsule,
-                      maxAttempts === val && styles.capsuleSelected
-                    ]}
-                    onPress={() => { Haptics.selectionAsync(); setMaxAttempts(val); }}
-                  >
-                    <Text style={[
-                      styles.capsuleText,
-                      maxAttempts === val && styles.capsuleTextSelected
-                    ]}>{val === null ? 'Unlimited' : val}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
+            <View style={styles.divider} />
 
-            {/* Toggles */}
-            <View style={styles.switchRow}>
-              <View style={styles.switchLabelContainer}>
-                <Text style={styles.switchLabel}>Shuffle Questions</Text>
-                <Text style={styles.switchSubLabel}>Randomize order for each attempt</Text>
+            {/* Toggles Grid */}
+            <View style={styles.togglesGrid}>
+              {/* Shuffle Toggle */}
+              <View style={styles.toggleCard}>
+                <View style={styles.toggleHeader}>
+                  <View style={[styles.toggleIcon, { backgroundColor: '#F0FDFA' }]}>
+                    <Ionicons name="shuffle" size={18} color="#0D9488" />
+                  </View>
+                  <Switch
+                    value={shuffleQuestions}
+                    onValueChange={(v) => { Haptics.selectionAsync(); setShuffleQuestions(v); }}
+                    trackColor={{ false: '#E5E7EB', true: '#5EEAD4' }}
+                    thumbColor={shuffleQuestions ? '#0F766E' : '#FFFFFF'}
+                    ios_backgroundColor="#E5E7EB"
+                  />
+                </View>
+                <Text style={styles.toggleLabel}>Shuffle Questions</Text>
+                <Text style={styles.toggleDesc}>Randomize order per user</Text>
               </View>
-              <Switch
-                value={shuffleQuestions}
-                onValueChange={(v) => { Haptics.selectionAsync(); setShuffleQuestions(v); }}
-                trackColor={{ false: '#E5E7EB', true: '#818CF8' }}
-                thumbColor={shuffleQuestions ? '#4F46E5' : '#F9FAFB'}
-              />
-            </View>
 
-            <View style={[styles.switchRow, { borderBottomWidth: 0 }]}>
-              <View style={styles.switchLabelContainer}>
-                <Text style={styles.switchLabel}>Show Review</Text>
-                <Text style={styles.switchSubLabel}>Allow reviewing answers after submission</Text>
+              {/* Review Toggle */}
+              <View style={styles.toggleCard}>
+                <View style={styles.toggleHeader}>
+                  <View style={[styles.toggleIcon, { backgroundColor: '#FFF7ED' }]}>
+                    <Ionicons name="eye" size={18} color="#EA580C" />
+                  </View>
+                  <Switch
+                    value={showReview}
+                    onValueChange={(v) => { Haptics.selectionAsync(); setShowReview(v); }}
+                    trackColor={{ false: '#E5E7EB', true: '#FDBA74' }}
+                    thumbColor={showReview ? '#C2410C' : '#FFFFFF'}
+                    ios_backgroundColor="#E5E7EB"
+                  />
+                </View>
+                <Text style={styles.toggleLabel}>Allow Review</Text>
+                <Text style={styles.toggleDesc}>Show answers after quiz</Text>
               </View>
-              <Switch
-                value={showReview}
-                onValueChange={(v) => { Haptics.selectionAsync(); setShowReview(v); }}
-                trackColor={{ false: '#E5E7EB', true: '#818CF8' }}
-                thumbColor={showReview ? '#4F46E5' : '#F9FAFB'}
-              />
             </View>
 
           </View>
@@ -262,11 +244,10 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
 
       {/* Questions Header */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Questions ({questions.length})</Text>
-        <TouchableOpacity onPress={addQuestion} style={styles.addButtonSmall}>
-          <Ionicons name="add" size={16} color="#FFFFFF" />
-          <Text style={styles.addButtonSmallText}>Add New</Text>
-        </TouchableOpacity>
+        <Text style={styles.sectionTitle}>Questions</Text>
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{questions.length} Items</Text>
+        </View>
       </View>
 
       {/* Question List */}
@@ -286,9 +267,12 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
 
         <TouchableOpacity style={styles.addCardButton} onPress={addQuestion}>
           <View style={styles.addCardIcon}>
-            <Ionicons name="add" size={24} color="#4F46E5" />
+            <Ionicons name="add" size={24} color="#FFFFFF" />
           </View>
-          <Text style={styles.addCardText}>Add Question</Text>
+          <View>
+            <Text style={styles.addCardTitle}>Add New Question</Text>
+            <Text style={styles.addCardSubtitle}>Tap to create</Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -304,13 +288,13 @@ const styles = StyleSheet.create({
   // Card Styles
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 20,
     marginBottom: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 3,
     borderWidth: 1,
     borderColor: '#F3F4F6',
     overflow: 'hidden',
@@ -319,130 +303,158 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: 20,
+    backgroundColor: '#FFFFFF',
   },
   cardHeaderExpanded: {
-    backgroundColor: '#FAFAFA',
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
   cardHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     color: '#111827',
     marginBottom: 2,
+    letterSpacing: -0.3,
   },
   cardSubtitle: {
     fontSize: 13,
     color: '#6B7280',
+    fontWeight: '500',
+  },
+  expandIcon: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+    backgroundColor: '#F9FAFB',
+  },
+  expandIconRotated: {
+    transform: [{ rotate: '180deg' }],
+    backgroundColor: '#F3F4F6',
   },
   cardContent: {
-    padding: 16,
+    padding: 20,
+    paddingTop: 8,
   },
   // Settings Sections
-  settingRow: {
+  settingSection: {
     marginBottom: 20,
   },
-  settingLabelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
-  },
-  settingLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
     color: '#374151',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   capsuleScroll: {
-    gap: 8,
+    gap: 10,
   },
   capsule: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F9FAFB',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    marginRight: 8,
   },
   capsuleSelected: {
-    backgroundColor: '#EEF2FF',
-    borderColor: '#6366F1',
+    backgroundColor: '#0EA5E9', // Sky blue
+    borderColor: '#0EA5E9',
+    shadowColor: '#0EA5E9',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   capsuleText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: '#4B5563',
   },
   capsuleTextSelected: {
-    color: '#4F46E5',
+    color: '#FFFFFF',
   },
-  togglesContainer: {
+  divider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginHorizontal: -20,
+    marginBottom: 20,
+  },
+  // Toggles Grid
+  togglesGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    gap: 12,
   },
-  switchRow: {
+  toggleCard: {
+    flex: 1,
+    backgroundColor: '#FAFAFA',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  toggleHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    marginBottom: 12,
   },
-  switchLabelContainer: {
-    flex: 1,
-    paddingRight: 16,
+  toggleIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  switchLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#111827',
+  toggleLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 2,
   },
-  switchSubLabel: {
+  toggleDesc: {
     fontSize: 12,
     color: '#6B7280',
-    marginTop: 2,
   },
   // Section Header
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: 16,
     paddingHorizontal: 4,
+    gap: 10,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#111827',
+    letterSpacing: -0.5,
   },
-  addButtonSmall: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#4F46E5',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+  badge: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
-  addButtonSmallText: {
+  badgeText: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: '600',
+    color: '#4B5563',
   },
   questionsList: {
     gap: 0,
@@ -452,25 +464,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: '#F0F9FF',
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#BAE6FD',
     borderStyle: 'dashed',
-    marginTop: 8,
+    marginTop: 12,
     gap: 12,
   },
   addCardIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#EEF2FF',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#38BDF8',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#38BDF8',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
   },
-  addCardText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#4F46E5',
+  addCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0369A1',
+  },
+  addCardSubtitle: {
+    fontSize: 13,
+    color: '#0EA5E9',
+    fontWeight: '500',
   },
 });

@@ -1,10 +1,10 @@
 /**
- * Course Form Component
- * Clean UI for course creation with syllabus and materials
+ * Enhanced Course Form Component
+ * Beautiful, clean UI for course creation with syllabus and materials
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -30,17 +30,17 @@ interface SyllabusSection {
 const DURATION_OPTIONS = [2, 4, 6, 8, 12, 16];
 
 const SCHEDULE_TYPES = [
-  { type: 'FLEXIBLE' as const, label: 'Flexible', icon: 'infinite', description: 'Self-paced learning' },
+  { type: 'FLEXIBLE' as const, label: 'Flexible', icon: 'infinite', description: 'Self-paced' },
   { type: 'WEEKLY' as const, label: 'Weekly', icon: 'calendar', description: 'New content weekly' },
   { type: 'DAILY' as const, label: 'Daily', icon: 'time', description: 'Daily lessons' },
 ];
 
 const ENROLLMENT_OPTIONS = [
-  { label: 'No limit', value: null },
-  { label: '10 students', value: 10 },
-  { label: '25 students', value: 25 },
-  { label: '50 students', value: 50 },
-  { label: '100 students', value: 100 },
+  { label: 'Unlimited', value: null },
+  { label: '10', value: 10 },
+  { label: '25', value: 25 },
+  { label: '50', value: 50 },
+  { label: '100', value: 100 },
 ];
 
 export function CourseForm({ onDataChange }: CourseFormProps) {
@@ -52,6 +52,7 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
   const [enrollmentLimit, setEnrollmentLimit] = useState<number | null>(null);
   const [prerequisites, setPrerequisites] = useState<string[]>([]);
   const [prerequisiteInput, setPrerequisiteInput] = useState('');
+  const [expandedSectionId, setExpandedSectionId] = useState<string | null>(syllabusSections[0].id);
 
   useEffect(() => {
     onDataChange({
@@ -65,17 +66,21 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
 
   const addSection = () => {
     if (syllabusSections.length < 12) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const newId = Date.now().toString();
       setSyllabusSections([...syllabusSections, {
-        id: Date.now().toString(),
+        id: newId,
         title: '',
         description: '',
       }]);
+      setExpandedSectionId(newId);
     }
   };
 
   const removeSection = (id: string) => {
     if (syllabusSections.length > 1) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setSyllabusSections(syllabusSections.filter(s => s.id !== id));
     }
@@ -87,9 +92,15 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
     ));
   };
 
+  const toggleSectionExpand = (id: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedSectionId(expandedSectionId === id ? null : id);
+  };
+
   const addPrerequisite = () => {
     const trimmed = prerequisiteInput.trim();
     if (trimmed && prerequisites.length < 5 && !prerequisites.includes(trimmed)) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setPrerequisites([...prerequisites, trimmed]);
       setPrerequisiteInput('');
@@ -97,216 +108,211 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
   };
 
   const removePrerequisite = (prereq: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setPrerequisites(prerequisites.filter(p => p !== prereq));
   };
 
   return (
     <View style={styles.container}>
-      {/* Course Settings Card */}
-      <Animated.View entering={FadeIn.duration(300)} style={styles.card}>
+      {/* Course Structure Card */}
+      <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Ionicons name="school" size={20} color="#10B981" />
-          <Text style={styles.cardTitle}>Course Settings</Text>
-        </View>
-
-        {/* Duration */}
-        <View style={styles.settingRow}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Duration</Text>
-            <Text style={styles.settingValue}>{duration} weeks</Text>
+          <View style={[styles.iconContainer, { backgroundColor: '#ECFDF5' }]}>
+            <Ionicons name="school" size={20} color="#10B981" />
           </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipsScroll}
-          >
-            {DURATION_OPTIONS.map((weeks) => (
-              <TouchableOpacity
-                key={weeks}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  setDuration(weeks);
-                }}
-                style={[
-                  styles.chip,
-                  duration === weeks && styles.chipSelected
-                ]}
-              >
-                <Text style={[
-                  styles.chipText,
-                  duration === weeks && styles.chipTextSelected
-                ]}>
-                  {weeks}w
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <View>
+            <Text style={styles.cardTitle}>Structure</Text>
+            <Text style={styles.cardSubtitle}>Format and duration</Text>
+          </View>
         </View>
 
-        {/* Schedule Type */}
-        <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>Schedule Type</Text>
-          <View style={styles.scheduleTypes}>
-            {SCHEDULE_TYPES.map((type) => (
-              <TouchableOpacity
-                key={type.type}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  setSchedule(type.type);
-                }}
-                style={[
-                  styles.scheduleButton,
-                  schedule === type.type && styles.scheduleButtonSelected,
-                ]}
-              >
+        {/* Schedule Grid */}
+        <View style={styles.scheduleGrid}>
+          {SCHEDULE_TYPES.map((type) => (
+            <TouchableOpacity
+              key={type.type}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setSchedule(type.type);
+              }}
+              style={[
+                styles.scheduleCard,
+                schedule === type.type && styles.scheduleCardSelected,
+              ]}
+            >
+              <View style={[
+                styles.scheduleIcon,
+                schedule === type.type && styles.scheduleIconSelected,
+              ]}>
                 <Ionicons
                   name={type.icon as any}
                   size={20}
-                  color={schedule === type.type ? '#10B981' : '#6B7280'}
+                  color={schedule === type.type ? '#FFF' : '#6B7280'}
                 />
-                <Text style={[
-                  styles.scheduleText,
-                  schedule === type.type && styles.scheduleTextSelected,
-                ]}>
-                  {type.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Enrollment Limit */}
-        <View style={[styles.settingRow, { marginBottom: 0 }]}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Enrollment Limit</Text>
-            <Text style={styles.settingValue}>
-              {enrollmentLimit ? `${enrollmentLimit}` : 'No limit'}
-            </Text>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipsScroll}
-          >
-            {ENROLLMENT_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.label}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  setEnrollmentLimit(option.value);
-                }}
-                style={[
-                  styles.chip,
-                  enrollmentLimit === option.value && styles.chipSelected
-                ]}
-              >
-                <Text style={[
-                  styles.chipText,
-                  enrollmentLimit === option.value && styles.chipTextSelected
-                ]}>
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      </Animated.View>
-
-      {/* Syllabus Sections Card */}
-      <Animated.View entering={FadeIn.duration(300)} style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Ionicons name="list" size={20} color="#6366F1" />
-          <Text style={styles.cardTitle}>Syllabus</Text>
-          <View style={styles.countBadge}>
-            <Text style={styles.countText}>{syllabusSections.length}</Text>
-          </View>
-        </View>
-
-        {syllabusSections.map((section, index) => (
-          <Animated.View
-            key={section.id}
-            entering={FadeIn.duration(200)}
-            exiting={FadeOut.duration(150)}
-            layout={Layout.springify()}
-            style={styles.sectionItem}
-          >
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionNumber}>
-                <Text style={styles.sectionNumberText}>{index + 1}</Text>
               </View>
-              <Text style={styles.sectionLabel}>Section {index + 1}</Text>
-              {syllabusSections.length > 1 && (
+              <Text style={[
+                styles.scheduleLabel,
+                schedule === type.type && styles.scheduleLabelSelected,
+              ]}>
+                {type.label}
+              </Text>
+              <Text style={styles.scheduleDesc}>{type.description}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.divider} />
+
+        {/* Duration & Limit */}
+        <View style={styles.rowSettings}>
+          <View style={styles.halfCol}>
+            <Text style={styles.label}>Duration</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.miniScroll}>
+              {DURATION_OPTIONS.map((w) => (
                 <TouchableOpacity
-                  onPress={() => removeSection(section.id)}
-                  style={styles.removeButton}
+                  key={w}
+                  onPress={() => { Haptics.selectionAsync(); setDuration(w); }}
+                  style={[styles.miniChip, duration === w && styles.miniChipSelected]}
                 >
-                  <Ionicons name="close" size={18} color="#EF4444" />
+                  <Text style={[styles.miniChipText, duration === w && styles.miniChipTextSelected]}>{w}w</Text>
                 </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+          <View style={styles.halfCol}>
+            <Text style={styles.label}>Enrollment Limit</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.miniScroll}>
+              {ENROLLMENT_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={String(opt.value)}
+                  onPress={() => { Haptics.selectionAsync(); setEnrollmentLimit(opt.value); }}
+                  style={[styles.miniChip, enrollmentLimit === opt.value && styles.miniChipSelected]}
+                >
+                  <Text style={[styles.miniChipText, enrollmentLimit === opt.value && styles.miniChipTextSelected]}>
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </View>
+
+      {/* Syllabus Card */}
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={[styles.iconContainer, { backgroundColor: '#EEF2FF' }]}>
+            <Ionicons name="book" size={20} color="#6366F1" />
+          </View>
+          <View>
+            <Text style={styles.cardTitle}>Syllabus</Text>
+            <Text style={styles.cardSubtitle}>{syllabusSections.length} sections added</Text>
+          </View>
+        </View>
+
+        <View style={styles.sectionsList}>
+          {syllabusSections.map((section, index) => (
+            <Animated.View
+              key={section.id}
+              entering={FadeIn.duration(200)}
+              layout={Layout.springify()}
+              style={[
+                styles.sectionCard,
+                expandedSectionId === section.id && styles.sectionCardExpanded
+              ]}
+            >
+              <TouchableOpacity
+                onPress={() => toggleSectionExpand(section.id)}
+                style={styles.sectionHeader}
+              >
+                <View style={styles.sectionHeaderLeft}>
+                  <View style={styles.sectionBadge}>
+                    <Text style={styles.sectionBadgeText}>{index + 1}</Text>
+                  </View>
+                  <Text style={styles.sectionTitlePlaceholder} numberOfLines={1}>
+                    {section.title || `Section ${index + 1}`}
+                  </Text>
+                </View>
+                <View style={styles.sectionActions}>
+                  {syllabusSections.length > 1 && (
+                    <TouchableOpacity
+                      onPress={() => removeSection(section.id)}
+                      style={styles.iconButton}
+                    >
+                      <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                    </TouchableOpacity>
+                  )}
+                  <Ionicons
+                    name={expandedSectionId === section.id ? "chevron-up" : "chevron-down"}
+                    size={18}
+                    color="#9CA3AF"
+                  />
+                </View>
+              </TouchableOpacity>
+
+              {expandedSectionId === section.id && (
+                <View style={styles.sectionContent}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Section Title (e.g., Introduction to React)"
+                    placeholderTextColor="#9CA3AF"
+                    value={section.title}
+                    onChangeText={(text) => updateSection(section.id, 'title', text)}
+                  />
+                  <TextInput
+                    style={[styles.input, styles.textArea]}
+                    placeholder="What will students learn in this section?"
+                    placeholderTextColor="#9CA3AF"
+                    multiline
+                    numberOfLines={3}
+                    value={section.description}
+                    onChangeText={(text) => updateSection(section.id, 'description', text)}
+                  />
+                </View>
               )}
-            </View>
-
-            <TextInput
-              style={styles.sectionTitleInput}
-              placeholder="Section title"
-              placeholderTextColor="#9CA3AF"
-              value={section.title}
-              onChangeText={(text) => updateSection(section.id, 'title', text)}
-            />
-
-            <TextInput
-              style={styles.sectionDescInput}
-              placeholder="What will students learn?"
-              placeholderTextColor="#9CA3AF"
-              multiline
-              value={section.description}
-              onChangeText={(text) => updateSection(section.id, 'description', text)}
-            />
-          </Animated.View>
-        ))}
+            </Animated.View>
+          ))}
+        </View>
 
         {syllabusSections.length < 12 && (
           <TouchableOpacity onPress={addSection} style={styles.addButton}>
-            <Ionicons name="add-circle" size={22} color="#6366F1" />
+            <Ionicons name="add" size={20} color="#6366F1" />
             <Text style={styles.addButtonText}>Add Section</Text>
           </TouchableOpacity>
         )}
-      </Animated.View>
+      </View>
 
       {/* Prerequisites Card */}
-      <Animated.View entering={FadeIn.duration(300)} style={styles.card}>
+      <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Ionicons name="shield-checkmark" size={20} color="#F59E0B" />
-          <Text style={styles.cardTitle}>Prerequisites</Text>
-          <View style={styles.countBadge}>
-            <Text style={styles.countText}>{prerequisites.length}/5</Text>
+          <View style={[styles.iconContainer, { backgroundColor: '#F0F9FF' }]}>
+            <Ionicons name="shield-checkmark" size={20} color="#0EA5E9" />
+          </View>
+          <View>
+            <Text style={styles.cardTitle}>Prerequisites</Text>
+            <Text style={styles.cardSubtitle}>Requirements to join</Text>
           </View>
         </View>
 
-        <View style={styles.tagInputContainer}>
+        <View style={styles.inputWrapper}>
           <TextInput
-            style={styles.tagInput}
-            placeholder="Add a prerequisite..."
-            placeholderTextColor="#9CA3AF"
+            style={styles.mainInput}
+            placeholder={prerequisites.length < 5 ? "Add prerequisite..." : "Max reached"}
             value={prerequisiteInput}
             onChangeText={setPrerequisiteInput}
             onSubmitEditing={addPrerequisite}
-            maxLength={50}
             editable={prerequisites.length < 5}
+            returnKeyType="done"
           />
           <TouchableOpacity
             onPress={addPrerequisite}
             style={[
-              styles.addTagButton,
-              (prerequisites.length >= 5 || !prerequisiteInput.trim()) && styles.addTagButtonDisabled
+              styles.inputButton,
+              (!prerequisiteInput.trim() || prerequisites.length >= 5) && styles.inputButtonDisabled
             ]}
-            disabled={prerequisites.length >= 5 || !prerequisiteInput.trim()}
           >
-            <Ionicons
-              name="add"
-              size={20}
-              color={prerequisites.length >= 5 || !prerequisiteInput.trim() ? '#9CA3AF' : '#fff'}
-            />
+            <Ionicons name="arrow-up" size={16} color="#FFF" />
           </TouchableOpacity>
         </View>
 
@@ -316,41 +322,17 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
               <Animated.View
                 key={prereq}
                 entering={FadeIn.duration(200)}
-                exiting={FadeOut.duration(150)}
                 layout={Layout.springify()}
                 style={styles.tag}
               >
                 <Text style={styles.tagText}>{prereq}</Text>
-                <TouchableOpacity
-                  onPress={() => removePrerequisite(prereq)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Ionicons name="close" size={16} color="#F59E0B" />
+                <TouchableOpacity onPress={() => removePrerequisite(prereq)}>
+                  <Ionicons name="close-circle" size={16} color="#7DD3FC" />
                 </TouchableOpacity>
               </Animated.View>
             ))}
           </View>
         )}
-      </Animated.View>
-
-      {/* Summary Bar */}
-      <View style={styles.summaryBar}>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Sections</Text>
-          <Text style={styles.summaryValue}>{syllabusSections.length}</Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Duration</Text>
-          <Text style={styles.summaryValue}>{duration}w</Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Schedule</Text>
-          <Text style={[styles.summaryValue, { fontSize: 14 }]}>
-            {SCHEDULE_TYPES.find(t => t.type === schedule)?.label}
-          </Text>
-        </View>
       </View>
     </View>
   );
@@ -358,223 +340,244 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 20,
-    paddingHorizontal: 16,
+    padding: 16,
     paddingBottom: 40,
-    gap: 20,
+    gap: 16,
   },
-
-  // Cards
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#F3F4F6',
   },
-
-  // Card Header
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
     marginBottom: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
     color: '#111827',
-    flex: 1,
   },
-  countBadge: {
-    backgroundColor: '#F9FAFB',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  countText: {
+  cardSubtitle: {
     fontSize: 13,
-    fontWeight: '700',
     color: '#6B7280',
+    marginTop: 2,
   },
-
-  // Settings
-  settingRow: {
-    marginBottom: 20,
-  },
-  settingInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  settingLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginBottom: 12,
-  },
-  settingValue: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#10B981',
-  },
-
-  // Chips
-  chipsScroll: {
-    gap: 8,
-    paddingRight: 16,
-  },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-  },
-  chipSelected: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
-  },
-  chipText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  chipTextSelected: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-
-  // Schedule Types
-  scheduleTypes: {
+  // Schedule
+  scheduleGrid: {
     flexDirection: 'row',
     gap: 10,
   },
-  scheduleButton: {
+  scheduleCard: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
     padding: 12,
+    borderRadius: 12,
     backgroundColor: '#F9FAFB',
-    borderRadius: 10,
     borderWidth: 1.5,
     borderColor: '#E5E7EB',
+    alignItems: 'center',
+    gap: 6,
   },
-  scheduleButtonSelected: {
+  scheduleCardSelected: {
     backgroundColor: '#ECFDF5',
     borderColor: '#10B981',
   },
-  scheduleText: {
-    fontSize: 14,
+  scheduleIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scheduleIconSelected: {
+    backgroundColor: '#10B981',
+  },
+  scheduleLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#374151',
+  },
+  scheduleLabelSelected: {
+    color: '#064E3B',
+  },
+  scheduleDesc: {
+    fontSize: 10,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginVertical: 16,
+  },
+  // Row Settings
+  rowSettings: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  halfCol: {
+    flex: 1,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  miniScroll: {
+    gap: 6,
+  },
+  miniChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+  },
+  miniChipSelected: {
+    backgroundColor: '#10B981',
+  },
+  miniChipText: {
+    fontSize: 12,
     fontWeight: '600',
     color: '#6B7280',
   },
-  scheduleTextSelected: {
-    color: '#10B981',
-    fontWeight: '700',
+  miniChipTextSelected: {
+    color: '#FFF',
   },
-
-  // Syllabus Sections
-  sectionItem: {
-    marginBottom: 20,
-    padding: 16,
+  // Sections
+  sectionsList: {
+    gap: 12,
+  },
+  sectionCard: {
     backgroundColor: '#F9FAFB',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    overflow: 'hidden',
+  },
+  sectionCardExpanded: {
+    backgroundColor: '#FFF',
+    borderColor: '#C7D2FE',
+    shadowColor: '#6366F1',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    padding: 12,
   },
-  sectionNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+  sectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  sectionBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
     backgroundColor: '#6366F1',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sectionNumberText: {
-    fontSize: 14,
+  sectionBadgeText: {
+    fontSize: 12,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#FFF',
   },
-  sectionLabel: {
-    fontSize: 15,
+  sectionTitlePlaceholder: {
+    fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#374151',
     flex: 1,
   },
-  removeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#FEE2E2',
+  sectionActions: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 8,
   },
-  sectionTitleInput: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#111827',
-    fontWeight: '600',
-    marginBottom: 10,
+  iconButton: {
+    padding: 4,
   },
-  sectionDescInput: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+  sectionContent: {
+    padding: 12,
+    paddingTop: 0,
+    gap: 10,
+  },
+  input: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    padding: 12,
     fontSize: 14,
     color: '#111827',
+  },
+  textArea: {
     minHeight: 80,
     textAlignVertical: 'top',
   },
-
-  // Prerequisites
-  tagInputContainer: {
+  addButton: {
     flexDirection: 'row',
-    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 14,
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E0E7FF',
+    borderStyle: 'dashed',
+    backgroundColor: '#EEF2FF',
   },
-  tagInput: {
-    flex: 1,
+  addButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#6366F1',
+  },
+  // Prereqs
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#F9FAFB',
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
+    paddingRight: 6,
+  },
+  mainInput: {
+    flex: 1,
+    padding: 12,
+    fontSize: 14,
     color: '#111827',
   },
-  addTagButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 10,
-    backgroundColor: '#F59E0B',
+  inputButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#0EA5E9',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addTagButtonDisabled: {
+  inputButtonDisabled: {
     backgroundColor: '#E5E7EB',
   },
   tagsContainer: {
@@ -587,66 +590,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#E0F2FE',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#FCD34D',
+    borderColor: '#BAE6FD',
   },
   tagText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#F59E0B',
-  },
-
-  // Add Button
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderStyle: 'dashed',
-    marginTop: 4,
-  },
-  addButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#6366F1',
-  },
-
-  // Summary Bar
-  summaryBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  summaryItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  summaryDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: '#E5E7EB',
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginBottom: 4,
-    fontWeight: '500',
-  },
-  summaryValue: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#111827',
+    color: '#B45309',
   },
 });

@@ -426,8 +426,8 @@ export default function EditPostScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.mediaButton}>
-              <View style={[styles.mediaButtonIcon, { backgroundColor: '#F59E0B20' }]}>
-                <Ionicons name="document" size={20} color="#F59E0B" />
+              <View style={[styles.mediaButtonIcon, { backgroundColor: '#0EA5E920' }]}>
+                <Ionicons name="document" size={20} color="#0EA5E9" />
               </View>
               <Text style={styles.mediaButtonText}>File</Text>
             </TouchableOpacity>
@@ -576,7 +576,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 6,
-    backgroundColor: '#F59E0B',
+    backgroundColor: '#0EA5E9',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,

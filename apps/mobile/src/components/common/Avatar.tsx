@@ -57,11 +57,11 @@ const BORDER_WIDTH: Record<AvatarSize, number> = {
 // Beautiful gradient presets - Instagram story style
 const GRADIENT_PRESETS: Record<GradientPreset, string[]> = {
   purple: ['#6366F1', '#8B5CF6', '#A855F7'],
-  orange: ['#FFA500', '#FF8C00', '#FF6B35'],
+  orange: ['#0EA5E9', '#0284C7', '#FF6B35'],
   blue: ['#3B82F6', '#60A5FA', '#93C5FD'],
   green: ['#10B981', '#34D399'],
   pink: ['#EC4899', '#F472B6', '#FBCFE8'],
-  gold: ['#FBBF24', '#FCD34D', '#FDE68A'],
+  gold: ['#38BDF8', '#7DD3FC', '#BAE6FD'],
   rainbow: ['#F97316', '#FBBF24', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'],
   none: ['transparent', 'transparent'],
 };
@@ -85,11 +85,11 @@ const getGradientColors = (name: string): [string, string] => {
     ['#F8F9FA', '#E9ECEF'], // Soft grey
     ['#F5F5F5', '#EEEEEE'], // Neutral grey
   ];
-  
+
   const index = name
     ? name.charCodeAt(0) % gradients.length
     : 0;
-  
+
   return gradients[index];
 };
 
@@ -98,7 +98,7 @@ const getPostGradientColors = (name: string): [string, string] => {
   const gradients: [string, string][] = [
     ['#FEE2E2', '#FECACA'], // Light red/rose
     ['#DBEAFE', '#BFDBFE'], // Light blue
-    ['#FEF3C7', '#FDE68A'], // Light yellow
+    ['#E0F2FE', '#BAE6FD'], // Light yellow
     ['#D1FAE5', '#A7F3D0'], // Light green
     ['#FCE7F3', '#FBCFE8'], // Light pink
     ['#E0E7FF', '#C7D2FE'], // Light indigo
@@ -109,11 +109,11 @@ const getPostGradientColors = (name: string): [string, string] => {
     ['#D9F99D', '#BEF264'], // Light lime
     ['#FEE4C7', '#FDBA74'], // Light amber
   ];
-  
+
   const index = name
     ? name.charCodeAt(0) % gradients.length
     : 0;
-  
+
   return gradients[index];
 };
 
@@ -124,7 +124,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   showOnline = false,
   isOnline = false,
   style,
-  borderColor = '#FFA500',
+  borderColor = '#0EA5E9',
   showBorder = true,
   gradientBorder = 'orange',
   variant = 'default',
@@ -133,14 +133,14 @@ export const Avatar: React.FC<AvatarProps> = ({
   const fontSize = FONT_SIZES[size];
   const borderWidth = BORDER_WIDTH[size];
   const onlineSize = Math.max(8, dimension * 0.25);
-  
+
   // For 'post' variant, use light gradients and no border
   const isPostVariant = variant === 'post';
   const effectiveShowBorder = isPostVariant ? false : showBorder;
-  const backgroundGradient = isPostVariant 
-    ? getPostGradientColors(name) 
+  const backgroundGradient = isPostVariant
+    ? getPostGradientColors(name)
     : getGradientColors(name);
-  
+
   // Determine gradient colors
   const getGradientBorderColors = (): string[] => {
     if (!effectiveShowBorder || gradientBorder === 'none') {

@@ -72,7 +72,7 @@ const POST_TYPE_CONFIG: Record<string, {
   QUESTION: { icon: 'help-circle', label: 'Question', color: '#14B8A6', bgColor: '#CCFBF1', ctaLabel: 'Answer', gradient: ['#14B8A6', '#0D9488'] },
   ANNOUNCEMENT: { icon: 'megaphone', label: 'Announcement', color: '#F97316', bgColor: '#FFEDD5', ctaLabel: 'View Details', gradient: ['#F97316', '#EA580C'] },
   POLL: { icon: 'stats-chart', label: 'Poll', color: '#8B5CF6', bgColor: '#EDE9FE', ctaLabel: 'Vote Now', gradient: ['#8B5CF6', '#7C3AED'] },
-  ACHIEVEMENT: { icon: 'trophy', label: 'Achievement', color: '#F59E0B', bgColor: '#FEF3C7', ctaLabel: 'Celebrate', gradient: ['#F59E0B', '#D97706'] },
+  ACHIEVEMENT: { icon: 'trophy', label: 'Achievement', color: '#0EA5E9', bgColor: '#E0F2FE', ctaLabel: 'Celebrate', gradient: ['#0EA5E9', '#0284C7'] },
   PROJECT: { icon: 'folder', label: 'Project', color: '#F97316', bgColor: '#FFEDD5', ctaLabel: 'View Project', gradient: ['#F97316', '#EA580C'] },
   COURSE: { icon: 'book', label: 'Course', color: '#3B82F6', bgColor: '#DBEAFE', ctaLabel: 'Enroll Now', gradient: ['#3B82F6', '#2563EB'] },
   EVENT: { icon: 'calendar', label: 'Event', color: '#EC4899', bgColor: '#FCE7F3', ctaLabel: 'Join Event', gradient: ['#EC4899', '#DB2777'] },
@@ -90,7 +90,7 @@ const POST_TYPE_CONFIG: Record<string, {
 // Difficulty level configurations
 const DIFFICULTY_CONFIG: Record<DifficultyLevel, { label: string; labelKh: string; color: string; bgColor: string; icon: string }> = {
   BEGINNER: { label: 'Beginner', labelKh: 'ចាប់ផ្តើម', color: '#10B981', bgColor: '#D1FAE5', icon: 'leaf' },
-  INTERMEDIATE: { label: 'Intermediate', labelKh: 'មធ្យម', color: '#F59E0B', bgColor: '#FEF3C7', icon: 'flash' },
+  INTERMEDIATE: { label: 'Intermediate', labelKh: 'មធ្យម', color: '#0EA5E9', bgColor: '#E0F2FE', icon: 'flash' },
   ADVANCED: { label: 'Advanced', labelKh: 'កម្រិតខ្ពស់', color: '#EF4444', bgColor: '#FEE2E2', icon: 'rocket' },
 };
 
@@ -100,7 +100,7 @@ const QUIZ_GRADIENTS: [string, string][] = [
   ['#8B5CF6', '#7C3AED'], // Violet
   ['#3B82F6', '#2563EB'], // Blue
   ['#10B981', '#059669'], // Emerald
-  ['#F59E0B', '#D97706'], // Amber
+  ['#0EA5E9', '#0284C7'], // Amber
   ['#6366F1', '#4F46E5'], // Indigo
   ['#06B6D4', '#0891B2'], // Cyan
   ['#F97316', '#EA580C'], // Orange
@@ -579,7 +579,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
             <Ionicons
               name={learningMeta?.isAnswered ? 'checkmark-circle' : 'help-circle'}
               size={16}
-              color={learningMeta?.isAnswered ? '#10B981' : '#F59E0B'}
+              color={learningMeta?.isAnswered ? '#10B981' : '#0EA5E9'}
             />
             <Text style={[styles.qaBadgeText, learningMeta?.isAnswered && styles.qaBadgeTextAnswered]}>
               {learningMeta?.isAnswered ? 'Answered' : 'Awaiting Answer'}
@@ -643,7 +643,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
         <View style={styles.inlineMetrics}>
           {learningMeta?.xpReward != null && (
             <View style={styles.inlineMetric}>
-              <Ionicons name="flash" size={13} color="#F59E0B" />
+              <Ionicons name="flash" size={13} color="#0EA5E9" />
               <Text style={styles.inlineMetricText}>+{learningMeta.xpReward} XP</Text>
             </View>
           )}
@@ -914,7 +914,7 @@ const styles = StyleSheet.create({
   deadlineBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF3C7',
+    backgroundColor: '#E0F2FE',
     marginHorizontal: 14,
     marginBottom: 10,
     paddingHorizontal: 12,
@@ -928,7 +928,7 @@ const styles = StyleSheet.create({
   deadlineText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#92400E',
+    color: '#0C4A6E',
   },
   deadlineTextUrgent: {
     color: '#DC2626',
@@ -1032,7 +1032,7 @@ const styles = StyleSheet.create({
   qaBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF3C7',
+    backgroundColor: '#E0F2FE',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 6,
@@ -1044,7 +1044,7 @@ const styles = StyleSheet.create({
   qaBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#92400E',
+    color: '#0C4A6E',
   },
   qaBadgeTextAnswered: {
     color: '#065F46',

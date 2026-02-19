@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
   teacherBadgeText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#D97706',
+    color: '#0284C7',
   },
   commentText: {
     fontSize: 14,

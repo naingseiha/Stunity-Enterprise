@@ -1,10 +1,10 @@
 /**
- * Project Form Component
- * Clean UI for project creation with milestones and deliverables
+ * Enhanced Project Form Component
+ * Beautiful, clean UI for project creation with milestones and deliverables
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -28,10 +28,10 @@ interface Milestone {
 }
 
 const TEAM_TYPES = [
-  { type: 'INDIVIDUAL' as const, label: 'Individual', icon: 'person', max: 1 },
+  { type: 'INDIVIDUAL' as const, label: 'Solo', icon: 'person', max: 1 },
   { type: 'PAIR' as const, label: 'Pair', icon: 'people', max: 2 },
-  { type: 'SMALL_GROUP' as const, label: 'Small Group', icon: 'people-circle', max: 4 },
-  { type: 'LARGE_GROUP' as const, label: 'Large Group', icon: 'people', max: 8 },
+  { type: 'SMALL_GROUP' as const, label: 'Small Team', icon: 'people-circle-outline', max: 4 },
+  { type: 'LARGE_GROUP' as const, label: 'Large Team', icon: 'people-circle', max: 8 },
 ];
 
 const DURATION_OPTIONS = [7, 14, 21, 30, 45, 60, 90];
@@ -67,6 +67,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
 
   const addMilestone = () => {
     if (milestones.length < 10) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setMilestones([...milestones, {
         id: Date.now().toString(),
@@ -78,6 +79,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
 
   const removeMilestone = (id: string) => {
     if (milestones.length > 1) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setMilestones(milestones.filter(m => m.id !== id));
     }
@@ -92,6 +94,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
   const addDeliverable = () => {
     const trimmed = deliverableInput.trim();
     if (trimmed && deliverables.length < 10 && !deliverables.includes(trimmed)) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setDeliverables([...deliverables, trimmed]);
       setDeliverableInput('');
@@ -99,60 +102,61 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
   };
 
   const removeDeliverable = (deliverable: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setDeliverables(deliverables.filter(d => d !== deliverable));
   };
 
   return (
     <View style={styles.container}>
-      {/* Team Settings Card */}
-      <Animated.View entering={FadeIn.duration(300)} style={styles.card}>
+      {/* Scope Card */}
+      <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Ionicons name="people" size={20} color="#8B5CF6" />
-          <Text style={styles.cardTitle}>Team Settings</Text>
+          <View style={[styles.iconContainer, { backgroundColor: '#F5F3FF' }]}>
+            <Ionicons name="people" size={20} color="#8B5CF6" />
+          </View>
+          <View>
+            <Text style={styles.cardTitle}>Team & Timeline</Text>
+            <Text style={styles.cardSubtitle}>Group size and duration</Text>
+          </View>
         </View>
 
-        {/* Team Type */}
-        <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>Team Type</Text>
-          <View style={styles.teamTypes}>
-            {TEAM_TYPES.map((type) => (
-              <TouchableOpacity
-                key={type.type}
-                onPress={() => handleTeamTypeChange(type.type)}
-                style={[
-                  styles.teamButton,
-                  teamType === type.type && styles.teamButtonSelected,
-                ]}
-              >
+        <View style={styles.teamGrid}>
+          {TEAM_TYPES.map((type) => (
+            <TouchableOpacity
+              key={type.type}
+              onPress={() => handleTeamTypeChange(type.type)}
+              style={[
+                styles.teamCard,
+                teamType === type.type && styles.teamCardSelected,
+              ]}
+            >
+              <View style={[
+                styles.teamIcon,
+                teamType === type.type && styles.teamIconSelected,
+              ]}>
                 <Ionicons
                   name={type.icon as any}
                   size={20}
-                  color={teamType === type.type ? '#8B5CF6' : '#6B7280'}
+                  color={teamType === type.type ? '#8B5CF6' : '#9CA3AF'} // Fixed: Icon color when selected
                 />
-                <Text style={[
-                  styles.teamText,
-                  teamType === type.type && styles.teamTextSelected,
-                ]}>
-                  {type.label}
-                </Text>
-                <Text style={styles.teamSize}>({type.max})</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+              </View>
+              <Text style={[
+                styles.teamLabel,
+                teamType === type.type && styles.teamLabelSelected,
+              ]}>
+                {type.label}
+              </Text>
+              <Text style={styles.teamSize}>Max {type.max}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
-        {/* Project Duration */}
-        <View style={[styles.settingRow, { marginBottom: 0 }]}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Duration</Text>
-            <Text style={styles.settingValue}>{duration} days</Text>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipsScroll}
-          >
+        <View style={styles.divider} />
+
+        <View style={styles.durationSection}>
+          <Text style={styles.label}>Duration</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
             {DURATION_OPTIONS.map((days) => (
               <TouchableOpacity
                 key={days}
@@ -175,162 +179,135 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
             ))}
           </ScrollView>
         </View>
-      </Animated.View>
+      </View>
 
       {/* Milestones Card */}
-      <Animated.View entering={FadeIn.duration(300)} style={styles.card}>
+      <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Ionicons name="flag" size={20} color="#3B82F6" />
-          <Text style={styles.cardTitle}>Milestones</Text>
-          <View style={styles.countBadge}>
-            <Text style={styles.countText}>{milestones.length}</Text>
+          <View style={[styles.iconContainer, { backgroundColor: '#EFF6FF' }]}>
+            <Ionicons name="flag" size={20} color="#3B82F6" />
+          </View>
+          <View>
+            <Text style={styles.cardTitle}>Milestones</Text>
+            <Text style={styles.cardSubtitle}>Key project checkpoints</Text>
           </View>
         </View>
 
-        {milestones.map((milestone, index) => (
-          <Animated.View
-            key={milestone.id}
-            entering={FadeIn.duration(200)}
-            exiting={FadeOut.duration(150)}
-            layout={Layout.springify()}
-            style={styles.milestoneItem}
-          >
-            <View style={styles.milestoneHeader}>
-              <View style={styles.milestoneNumber}>
-                <Text style={styles.milestoneNumberText}>{index + 1}</Text>
-              </View>
-              <Text style={styles.milestoneLabel}>Milestone {index + 1}</Text>
-              {milestones.length > 1 && (
-                <TouchableOpacity
-                  onPress={() => removeMilestone(milestone.id)}
-                  style={styles.removeButton}
-                >
-                  <Ionicons name="close" size={18} color="#EF4444" />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            <TextInput
-              style={styles.milestoneTitleInput}
-              placeholder="Milestone title"
-              placeholderTextColor="#9CA3AF"
-              value={milestone.title}
-              onChangeText={(text) => updateMilestone(milestone.id, 'title', text)}
-            />
-
-            <View style={styles.dueInRow}>
-              <Text style={styles.dueInLabel}>Due in:</Text>
-              <View style={styles.dueInPicker}>
-                {[3, 7, 14, 21, 30].map((days) => (
+        <View style={styles.milestonesList}>
+          {milestones.map((milestone, index) => (
+            <Animated.View
+              key={milestone.id}
+              entering={FadeIn.duration(200)}
+              layout={Layout.springify()}
+              style={styles.milestoneCard}
+            >
+              <View style={styles.milestoneHeader}>
+                <View style={styles.milestoneBadge}>
+                  <Text style={styles.milestoneBadgeText}>{index + 1}</Text>
+                </View>
+                <TextInput
+                  style={styles.milestoneInput}
+                  placeholder={`Milestone ${index + 1} Title`}
+                  placeholderTextColor="#9CA3AF"
+                  value={milestone.title}
+                  onChangeText={(text) => updateMilestone(milestone.id, 'title', text)}
+                />
+                {milestones.length > 1 && (
                   <TouchableOpacity
-                    key={days}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      updateMilestone(milestone.id, 'dueInDays', days);
-                    }}
-                    style={[
-                      styles.dueInChip,
-                      milestone.dueInDays === days && styles.dueInChipSelected
-                    ]}
+                    onPress={() => removeMilestone(milestone.id)}
+                    style={styles.iconButton}
                   >
-                    <Text style={[
-                      styles.dueInChipText,
-                      milestone.dueInDays === days && styles.dueInChipTextSelected
-                    ]}>
-                      {days}d
-                    </Text>
+                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
                   </TouchableOpacity>
-                ))}
+                )}
               </View>
-            </View>
-          </Animated.View>
-        ))}
+
+              <View style={styles.dueInWrapper}>
+                <Text style={styles.dueInLabel}>Due day:</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.miniScroll}>
+                  {[3, 7, 14, 21, 30].map((d) => (
+                    <TouchableOpacity
+                      key={d}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        updateMilestone(milestone.id, 'dueInDays', d);
+                      }}
+                      style={[
+                        styles.miniChip,
+                        milestone.dueInDays === d && styles.miniChipSelected
+                      ]}
+                    >
+                      <Text style={[
+                        styles.miniChipText,
+                        milestone.dueInDays === d && styles.miniChipTextSelected
+                      ]}>{d}d</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </Animated.View>
+          ))}
+        </View>
 
         {milestones.length < 10 && (
           <TouchableOpacity onPress={addMilestone} style={styles.addButton}>
-            <Ionicons name="add-circle" size={22} color="#3B82F6" />
+            <Ionicons name="add" size={20} color="#3B82F6" />
             <Text style={styles.addButtonText}>Add Milestone</Text>
           </TouchableOpacity>
         )}
-      </Animated.View>
+      </View>
 
       {/* Deliverables Card */}
-      <Animated.View entering={FadeIn.duration(300)} style={styles.card}>
+      <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Ionicons name="checkbox" size={20} color="#10B981" />
-          <Text style={styles.cardTitle}>Deliverables</Text>
-          <View style={styles.countBadge}>
-            <Text style={styles.countText}>{deliverables.length}/10</Text>
+          <View style={[styles.iconContainer, { backgroundColor: '#ECFDF5' }]}>
+            <Ionicons name="checkbox" size={20} color="#10B981" />
+          </View>
+          <View>
+            <Text style={styles.cardTitle}>Deliverables</Text>
+            <Text style={styles.cardSubtitle}>What needs to be submitted</Text>
           </View>
         </View>
 
-        <View style={styles.tagInputContainer}>
+        <View style={styles.inputWrapper}>
           <TextInput
-            style={styles.tagInput}
-            placeholder="Add a deliverable..."
-            placeholderTextColor="#9CA3AF"
+            style={styles.mainInput}
+            placeholder={deliverables.length < 10 ? "Add deliverable (e.g., Final Report)..." : "Max reached"}
             value={deliverableInput}
             onChangeText={setDeliverableInput}
             onSubmitEditing={addDeliverable}
-            maxLength={50}
             editable={deliverables.length < 10}
+            returnKeyType="done"
           />
           <TouchableOpacity
             onPress={addDeliverable}
             style={[
-              styles.addTagButton,
-              (deliverables.length >= 10 || !deliverableInput.trim()) && styles.addTagButtonDisabled
+              styles.inputButton,
+              (!deliverableInput.trim() || deliverables.length >= 10) && styles.inputButtonDisabled
             ]}
-            disabled={deliverables.length >= 10 || !deliverableInput.trim()}
           >
-            <Ionicons
-              name="add"
-              size={20}
-              color={deliverables.length >= 10 || !deliverableInput.trim() ? '#9CA3AF' : '#fff'}
-            />
+            <Ionicons name="arrow-up" size={16} color="#FFF" />
           </TouchableOpacity>
         </View>
 
         {deliverables.length > 0 && (
-          <View style={styles.deliverablesContainer}>
-            {deliverables.map((deliverable, index) => (
+          <View style={styles.deliverablesList}>
+            {deliverables.map((deliverable) => (
               <Animated.View
                 key={deliverable}
                 entering={FadeIn.duration(200)}
-                exiting={FadeOut.duration(150)}
                 layout={Layout.springify()}
                 style={styles.deliverableItem}
               >
                 <Ionicons name="checkmark-circle" size={20} color="#10B981" />
                 <Text style={styles.deliverableText}>{deliverable}</Text>
-                <TouchableOpacity
-                  onPress={() => removeDeliverable(deliverable)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Ionicons name="close" size={18} color="#9CA3AF" />
+                <TouchableOpacity onPress={() => removeDeliverable(deliverable)}>
+                  <Ionicons name="close-circle" size={18} color="#9CA3AF" />
                 </TouchableOpacity>
               </Animated.View>
             ))}
           </View>
         )}
-      </Animated.View>
-
-      {/* Summary Bar */}
-      <View style={styles.summaryBar}>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Team</Text>
-          <Text style={styles.summaryValue}>{maxTeamSize}</Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Milestones</Text>
-          <Text style={styles.summaryValue}>{milestones.length}</Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Duration</Text>
-          <Text style={styles.summaryValue}>{duration}d</Text>
-        </View>
       </View>
     </View>
   );
@@ -338,120 +315,111 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 20,
-    paddingHorizontal: 16,
+    padding: 16,
     paddingBottom: 40,
-    gap: 20,
+    gap: 16,
   },
-
-  // Cards
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#F3F4F6',
   },
-
-  // Card Header
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
     marginBottom: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
     color: '#111827',
-    flex: 1,
   },
-  countBadge: {
-    backgroundColor: '#F9FAFB',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  countText: {
+  cardSubtitle: {
     fontSize: 13,
-    fontWeight: '700',
     color: '#6B7280',
+    marginTop: 2,
   },
-
-  // Settings
-  settingRow: {
-    marginBottom: 20,
-  },
-  settingInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  settingLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginBottom: 12,
-  },
-  settingValue: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#8B5CF6',
-  },
-
-  // Team Types
-  teamTypes: {
+  // Team Grid
+  teamGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
   },
-  teamButton: {
-    flex: 1,
-    minWidth: '47%',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 6,
-    padding: 14,
+  teamCard: {
+    width: '48%',
+    padding: 12,
+    borderRadius: 12,
     backgroundColor: '#F9FAFB',
-    borderRadius: 10,
     borderWidth: 1.5,
     borderColor: '#E5E7EB',
+    alignItems: 'center',
+    gap: 8,
   },
-  teamButtonSelected: {
+  teamCardSelected: {
     backgroundColor: '#F5F3FF',
     borderColor: '#8B5CF6',
   },
-  teamText: {
+  teamIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  teamIconSelected: {
+    backgroundColor: '#EDE9FE',
+  },
+  teamLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#374151',
   },
-  teamTextSelected: {
-    color: '#8B5CF6',
-    fontWeight: '700',
+  teamLabelSelected: {
+    color: '#5B21B6',
   },
   teamSize: {
-    fontSize: 12,
-    color: '#9CA3AF',
+    fontSize: 11,
+    color: '#6B7280',
   },
-
-  // Chips
+  divider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginVertical: 16,
+  },
+  // Duration
+  durationSection: {
+    gap: 10,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
   chipsScroll: {
     gap: 8,
-    paddingRight: 16,
   },
   chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
     backgroundColor: '#F9FAFB',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#E5E7EB',
   },
   chipSelected: {
@@ -459,137 +427,134 @@ const styles = StyleSheet.create({
     borderColor: '#8B5CF6',
   },
   chipText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#6B7280',
   },
   chipTextSelected: {
-    color: '#FFFFFF',
-    fontWeight: '700',
+    color: '#FFF',
   },
-
   // Milestones
-  milestoneItem: {
-    marginBottom: 20,
-    padding: 16,
+  milestonesList: {
+    gap: 12,
+  },
+  milestoneCard: {
+    padding: 12,
     backgroundColor: '#F9FAFB',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    gap: 10,
   },
   milestoneHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 12,
   },
-  milestoneNumber: {
-    width: 32,
-    height: 32,
+  milestoneBadge: {
+    width: 24,
+    height: 24,
     borderRadius: 8,
     backgroundColor: '#3B82F6',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  milestoneNumberText: {
-    fontSize: 14,
+  milestoneBadgeText: {
+    fontSize: 12,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#FFF',
   },
-  milestoneLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#6B7280',
+  milestoneInput: {
     flex: 1,
-  },
-  removeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#FEE2E2',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  milestoneTitleInput: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#111827',
+    fontSize: 14,
     fontWeight: '600',
-    marginBottom: 12,
+    color: '#111827',
   },
-  dueInRow: {
+  iconButton: {
+    padding: 4,
+  },
+  dueInWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    paddingLeft: 34,
   },
   dueInLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
     color: '#6B7280',
   },
-  dueInPicker: {
-    flexDirection: 'row',
+  miniScroll: {
     gap: 6,
-    flex: 1,
   },
-  dueInChip: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#FFFFFF',
+  miniChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: '#FFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    alignItems: 'center',
   },
-  dueInChipSelected: {
+  miniChipSelected: {
     backgroundColor: '#3B82F6',
     borderColor: '#3B82F6',
   },
-  dueInChipText: {
-    fontSize: 13,
+  miniChipText: {
+    fontSize: 11,
     fontWeight: '600',
     color: '#6B7280',
   },
-  dueInChipTextSelected: {
-    color: '#FFFFFF',
-    fontWeight: '700',
+  miniChipTextSelected: {
+    color: '#FFF',
   },
-
-  // Deliverables
-  tagInputContainer: {
+  addButton: {
     flexDirection: 'row',
-    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 14,
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#DBEAFE',
+    borderStyle: 'dashed',
+    backgroundColor: '#EFF6FF',
   },
-  tagInput: {
-    flex: 1,
+  addButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#3B82F6',
+  },
+  // Deliverables
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#F9FAFB',
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
+    paddingRight: 6,
+  },
+  mainInput: {
+    flex: 1,
+    padding: 12,
+    fontSize: 14,
     color: '#111827',
   },
-  addTagButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 10,
+  inputButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     backgroundColor: '#10B981',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addTagButtonDisabled: {
+  inputButtonDisabled: {
     backgroundColor: '#E5E7EB',
   },
-  deliverablesContainer: {
+  deliverablesList: {
     marginTop: 12,
-    gap: 10,
+    gap: 8,
   },
   deliverableItem: {
     flexDirection: 'row',
@@ -603,58 +568,8 @@ const styles = StyleSheet.create({
   },
   deliverableText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
-  },
-
-  // Add Button
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderStyle: 'dashed',
-    marginTop: 4,
-  },
-  addButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#3B82F6',
-  },
-
-  // Summary Bar
-  summaryBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  summaryItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  summaryDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: '#E5E7EB',
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginBottom: 4,
-    fontWeight: '500',
-  },
-  summaryValue: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#111827',
+    color: '#064E3B',
   },
 });

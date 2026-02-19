@@ -53,7 +53,7 @@ const RATING_DIMENSIONS = [
     icon: 'bulb',
     label: 'Helpfulness',
     description: 'Did it help you learn?',
-    color: '#F59E0B',
+    color: '#0EA5E9',
   },
   {
     key: 'clarity' as keyof EducationalValue,
@@ -73,7 +73,7 @@ const RATING_DIMENSIONS = [
 
 const DIFFICULTY_OPTIONS = [
   { value: 'too_easy', label: 'Too Easy', emoji: '😴', color: '#10B981' },
-  { value: 'just_right', label: 'Just Right', emoji: '🎯', color: '#F59E0B' },
+  { value: 'just_right', label: 'Just Right', emoji: '🎯', color: '#0EA5E9' },
   { value: 'too_hard', label: 'Too Hard', emoji: '😰', color: '#EF4444' },
 ];
 

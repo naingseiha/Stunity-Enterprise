@@ -295,7 +295,7 @@ export function TakeQuizScreen() {
                   <Text style={styles.summaryLabel}>Unanswered</Text>
                 </View>
                 <View style={styles.summaryItem}>
-                  <Ionicons name="flag" size={32} color="#F59E0B" />
+                  <Ionicons name="flag" size={32} color="#0EA5E9" />
                   <Text style={styles.summaryNumber}>{markedForReview.size}</Text>
                   <Text style={styles.summaryLabel}>Flagged</Text>
                 </View>
@@ -352,7 +352,7 @@ export function TakeQuizScreen() {
                       </View>
                     </View>
                     <View style={styles.reviewItemRight}>
-                      {isFlagged && <Ionicons name="flag" size={18} color="#F59E0B" />}
+                      {isFlagged && <Ionicons name="flag" size={18} color="#0EA5E9" />}
                       {!isAnswered && <Ionicons name="alert-circle" size={18} color="#EF4444" />}
                       <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
                     </View>
@@ -453,7 +453,7 @@ export function TakeQuizScreen() {
                   <Text style={styles.questionNumberText}>Q{currentQuestionIndex + 1}</Text>
                 </View>
                 <View style={styles.questionPoints}>
-                  <Ionicons name="star" size={16} color="#F59E0B" />
+                  <Ionicons name="star" size={16} color="#0EA5E9" />
                   <Text style={styles.pointsText}>{currentQuestion.points} pts</Text>
                 </View>
               </View>
@@ -461,7 +461,7 @@ export function TakeQuizScreen() {
                 <Ionicons
                   name={isMarkedForReview ? "flag" : "flag-outline"}
                   size={22}
-                  color={isMarkedForReview ? "#F59E0B" : "#9CA3AF"}
+                  color={isMarkedForReview ? "#0EA5E9" : "#9CA3AF"}
                 />
               </TouchableOpacity>
             </View>
@@ -933,7 +933,7 @@ const styles = StyleSheet.create({
   pointsText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#F59E0B',
+    color: '#0EA5E9',
   },
   questionText: {
     fontSize: 17,

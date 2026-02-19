@@ -114,7 +114,7 @@ export default function ConversationsScreen() {
           <View style={styles.avatarContainer}>
             {isUnread ? (
               <LinearGradient
-                colors={['#FFA500', '#FF8C00', '#FF6B35']}
+                colors={['#0EA5E9', '#0284C7', '#FF6B35']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.avatarGradientBorder}
@@ -195,7 +195,7 @@ export default function ConversationsScreen() {
       </Text>
       <TouchableOpacity onPress={handleNewMessage} style={styles.emptyButton}>
         <LinearGradient
-          colors={['#FFA500', '#FF8C00']}
+          colors={['#0EA5E9', '#0284C7']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.emptyButtonGradient}
@@ -311,8 +311,8 @@ export default function ConversationsScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor="#FFA500"
-            colors={['#FFA500']}
+            tintColor="#0EA5E9"
+            colors={['#0EA5E9']}
           />
         }
       />
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   timestampUnread: {
-    color: '#FFA500',
+    color: '#0EA5E9',
     fontWeight: '600',
   },
   messageRow: {
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     minWidth: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#FFA500',
+    backgroundColor: '#0EA5E9',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,
@@ -590,7 +590,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#FFA500',
+        shadowColor: '#0EA5E9',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,

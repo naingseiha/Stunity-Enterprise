@@ -1,10 +1,10 @@
 /**
- * Question Form Component
+ * Enhanced Question Form Component
  * Beautiful, clean UI for question creation with bounty system
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -20,18 +20,18 @@ export interface QuestionData {
 }
 
 const BOUNTY_OPTIONS = [
-  { label: 'No bounty', value: 0, icon: 'close-circle' },
-  { label: '50 pts', value: 50, icon: 'star' },
+  { label: 'No bounty', value: 0, icon: 'close-circle-outline' },
+  { label: '50 pts', value: 50, icon: 'star-outline' },
   { label: '100 pts', value: 100, icon: 'star' },
-  { label: '200 pts', value: 200, icon: 'flame' },
-  { label: '500 pts', value: 500, icon: 'trophy' },
+  { label: '250 pts', value: 250, icon: 'flame-outline' },
+  { label: '500 pts', value: 500, icon: 'trophy-outline' },
 ];
 
 const ANSWER_TYPES = [
-  { type: 'SHORT_ANSWER' as const, label: 'Short Answer', icon: 'chatbox' },
-  { type: 'DETAILED_EXPLANATION' as const, label: 'Detailed', icon: 'document-text' },
-  { type: 'CODE_SNIPPET' as const, label: 'Code', icon: 'code-slash' },
-  { type: 'RESOURCE_LINK' as const, label: 'Link', icon: 'link' },
+  { type: 'SHORT_ANSWER' as const, label: 'Quick Answer', icon: 'chatbox-outline', desc: 'Brief and concise' },
+  { type: 'DETAILED_EXPLANATION' as const, label: 'Detailed', icon: 'document-text-outline', desc: 'In-depth explanation' },
+  { type: 'CODE_SNIPPET' as const, label: 'Code', icon: 'code-slash-outline', desc: 'Code examples' },
+  { type: 'RESOURCE_LINK' as const, label: 'Resources', icon: 'link-outline', desc: 'Links & references' },
 ];
 
 export function QuestionForm({ onDataChange }: QuestionFormProps) {
@@ -47,6 +47,7 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
   const addTag = () => {
     const trimmed = tagInput.trim();
     if (trimmed && tags.length < 5 && !tags.includes(trimmed)) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setTags([...tags, trimmed]);
       setTagInput('');
@@ -54,6 +55,7 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
   };
 
   const removeTag = (tagToRemove: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
@@ -61,21 +63,21 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
   return (
     <View style={styles.container}>
       {/* Bounty Section */}
-      <Animated.View entering={FadeIn.duration(300)} style={styles.card}>
+      <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Ionicons name="trophy" size={20} color="#F59E0B" />
-          <Text style={styles.cardTitle}>Question Bounty</Text>
-          {bounty > 0 && (
-            <View style={styles.bountyBadge}>
-              <Text style={styles.bountyText}>{bounty} pts</Text>
-            </View>
-          )}
+          <View style={[styles.iconContainer, { backgroundColor: '#F0F9FF' }]}>
+            <Ionicons name="trophy" size={20} color="#0EA5E9" />
+          </View>
+          <View>
+            <Text style={styles.cardTitle}>Bounty Points</Text>
+            <Text style={styles.cardSubtitle}>Offer points to encourage answers</Text>
+          </View>
         </View>
 
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipsScroll}
+          contentContainerStyle={styles.bountyScroll}
         >
           {BOUNTY_OPTIONS.map((option) => (
             <TouchableOpacity
@@ -85,73 +87,76 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
                 setBounty(option.value);
               }}
               style={[
-                styles.chip,
-                bounty === option.value && styles.chipSelected,
-                option.value === 0 && bounty === option.value && styles.chipNoBounty,
+                styles.bountyCard,
+                bounty === option.value && styles.bountyCardSelected,
+                option.value === 0 && styles.bountyCardNone,
               ]}
             >
-              <Ionicons
-                name={option.icon as any}
-                size={16}
-                color={bounty === option.value 
-                  ? (option.value === 0 ? '#6B7280' : '#fff')
-                  : '#9CA3AF'}
-              />
+              <View style={[
+                styles.bountyIcon,
+                bounty === option.value && styles.bountyIconSelected,
+                option.value === 0 && styles.bountyIconNone,
+              ]}>
+                <Ionicons
+                  name={option.icon as any}
+                  size={20}
+                  color={bounty === option.value ? '#FFF' : (option.value === 0 ? '#6B7280' : '#0EA5E9')}
+                />
+              </View>
               <Text style={[
-                styles.chipText,
-                bounty === option.value && styles.chipTextSelected,
-                option.value === 0 && bounty === option.value && styles.chipTextNoBounty,
+                styles.bountyLabel,
+                bounty === option.value && styles.bountyLabelSelected
               ]}>
                 {option.label}
               </Text>
+              {bounty === option.value && (
+                <View style={styles.checkBadge}>
+                  <Ionicons name="checkmark" size={12} color="#0EA5E9" />
+                </View>
+              )}
             </TouchableOpacity>
           ))}
         </ScrollView>
-      </Animated.View>
+      </View>
 
       {/* Tags Section */}
-      <Animated.View entering={FadeIn.duration(300)} style={styles.card}>
+      <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Ionicons name="pricetag" size={20} color="#3B82F6" />
-          <Text style={styles.cardTitle}>Tags</Text>
-          <View style={styles.countBadge}>
-            <Text style={styles.countText}>{tags.length}/5</Text>
+          <View style={[styles.iconContainer, { backgroundColor: '#EFF6FF' }]}>
+            <Ionicons name="pricetags" size={20} color="#3B82F6" />
+          </View>
+          <View>
+            <Text style={styles.cardTitle}>Topic Tags</Text>
+            <Text style={styles.cardSubtitle}>{tags.length}/5 tags added</Text>
           </View>
         </View>
 
-        {/* Tag Input */}
-        <View style={styles.tagInputContainer}>
+        <View style={styles.tagInputWrapper}>
+          <Ionicons name="search-outline" size={20} color="#9CA3AF" style={styles.tagIcon} />
           <TextInput
             style={styles.tagInput}
-            placeholder="Add a tag..."
+            placeholder={tags.length < 5 ? "Add tags (e.g., math, physics)..." : "Max tags reached"}
             placeholderTextColor="#9CA3AF"
             value={tagInput}
             onChangeText={setTagInput}
             onSubmitEditing={addTag}
             maxLength={20}
             editable={tags.length < 5}
+            returnKeyType="done"
           />
-          <TouchableOpacity
-            onPress={addTag}
-            style={[styles.addTagButton, (tags.length >= 5 || !tagInput.trim()) && styles.addTagButtonDisabled]}
-            disabled={tags.length >= 5 || !tagInput.trim()}
-          >
-            <Ionicons
-              name="add"
-              size={20}
-              color={tags.length >= 5 || !tagInput.trim() ? '#9CA3AF' : '#fff'}
-            />
-          </TouchableOpacity>
+          {tagInput.length > 0 && (
+            <TouchableOpacity onPress={addTag} style={styles.addTagButton}>
+              <Ionicons name="arrow-up" size={16} color="#FFF" />
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* Tags Display */}
         {tags.length > 0 && (
           <View style={styles.tagsContainer}>
             {tags.map((tag) => (
               <Animated.View
                 key={tag}
                 entering={FadeIn.duration(200)}
-                exiting={FadeOut.duration(150)}
                 layout={Layout.springify()}
                 style={styles.tag}
               >
@@ -160,22 +165,27 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
                   onPress={() => removeTag(tag)}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Ionicons name="close" size={16} color="#3B82F6" />
+                  <Ionicons name="close-circle" size={16} color="#93C5FD" />
                 </TouchableOpacity>
               </Animated.View>
             ))}
           </View>
         )}
-      </Animated.View>
+      </View>
 
-      {/* Expected Answer Type */}
-      <Animated.View entering={FadeIn.duration(300)} style={styles.card}>
+      {/* Answer Type Section */}
+      <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Ionicons name="chatbox-ellipses" size={20} color="#10B981" />
-          <Text style={styles.cardTitle}>Expected Answer</Text>
+          <View style={[styles.iconContainer, { backgroundColor: '#ECFDF5' }]}>
+            <Ionicons name="bulb" size={20} color="#10B981" />
+          </View>
+          <View>
+            <Text style={styles.cardTitle}>Expected Answer</Text>
+            <Text style={styles.cardSubtitle}>What kind of response do you need?</Text>
+          </View>
         </View>
 
-        <View style={styles.answerTypesContainer}>
+        <View style={styles.answerGrid}>
           {ANSWER_TYPES.map((type) => (
             <TouchableOpacity
               key={type.type}
@@ -184,45 +194,33 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
                 setExpectedAnswerType(type.type);
               }}
               style={[
-                styles.answerTypeButton,
-                expectedAnswerType === type.type && styles.answerTypeButtonSelected,
+                styles.answerCard,
+                expectedAnswerType === type.type && styles.answerCardSelected
               ]}
             >
-              <Ionicons
-                name={type.icon as any}
-                size={20}
-                color={expectedAnswerType === type.type ? '#10B981' : '#6B7280'}
-              />
-              <Text style={[
-                styles.answerTypeText,
-                expectedAnswerType === type.type && styles.answerTypeTextSelected,
+              <View style={[
+                styles.answerIcon,
+                expectedAnswerType === type.type && styles.answerIconSelected
               ]}>
-                {type.label}
-              </Text>
+                <Ionicons
+                  name={type.icon as any}
+                  size={20}
+                  color={expectedAnswerType === type.type ? '#FFF' : '#6B7280'}
+                />
+              </View>
+              <View>
+                <Text style={[
+                  styles.answerLabel,
+                  expectedAnswerType === type.type && styles.answerLabelSelected
+                ]}>
+                  {type.label}
+                </Text>
+                <Text style={styles.answerDesc}>
+                  {type.desc}
+                </Text>
+              </View>
             </TouchableOpacity>
           ))}
-        </View>
-      </Animated.View>
-
-      {/* Summary Bar */}
-      <View style={styles.summaryBar}>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Bounty</Text>
-          <Text style={[styles.summaryValue, { color: bounty > 0 ? '#F59E0B' : '#6B7280' }]}>
-            {bounty > 0 ? `${bounty}` : '0'}
-          </Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Tags</Text>
-          <Text style={styles.summaryValue}>{tags.length}</Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Type</Text>
-          <Text style={[styles.summaryValue, { fontSize: 14 }]}>
-            {ANSWER_TYPES.find(t => t.type === expectedAnswerType)?.label}
-          </Text>
         </View>
       </View>
     </View>
@@ -231,129 +229,138 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 20,
-    paddingHorizontal: 16,
+    padding: 16,
     paddingBottom: 40,
-    gap: 20,
+    gap: 16,
   },
-
-  // Cards
+  // Card
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#F3F4F6',
   },
-
-  // Card Header
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
     marginBottom: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
     color: '#111827',
-    flex: 1,
   },
-  bountyBadge: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  bountyText: {
+  cardSubtitle: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#F59E0B',
-  },
-  countBadge: {
-    backgroundColor: '#F9FAFB',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  countText: {
-    fontSize: 13,
-    fontWeight: '700',
     color: '#6B7280',
+    marginTop: 2,
   },
-
-  // Chips
-  chipsScroll: {
-    gap: 8,
+  // Bounty
+  bountyScroll: {
+    gap: 12,
     paddingRight: 16,
   },
-  chip: {
-    flexDirection: 'row',
+  bountyCard: {
+    width: 100,
+    padding: 12,
+    borderRadius: 16,
+    backgroundColor: '#F0F9FF',
+    borderWidth: 2,
+    borderColor: '#E0F2FE',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1.5,
+    gap: 8,
+  },
+  bountyCardSelected: {
+    backgroundColor: '#F0F9FF',
+    borderColor: '#0EA5E9',
+    shadowColor: '#0EA5E9',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  bountyCardNone: {
+    backgroundColor: '#F3F4F6',
     borderColor: '#E5E7EB',
   },
-  chipSelected: {
-    backgroundColor: '#F59E0B',
-    borderColor: '#F59E0B',
+  bountyIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#E0F2FE',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  chipNoBounty: {
-    backgroundColor: '#F3F4F6',
-    borderColor: '#D1D5DB',
+  bountyIconSelected: {
+    backgroundColor: '#0EA5E9',
   },
-  chipText: {
-    fontSize: 14,
+  bountyIconNone: {
+    backgroundColor: '#E5E7EB',
+  },
+  bountyLabel: {
+    fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#0C4A6E',
   },
-  chipTextSelected: {
-    color: '#fff',
+  bountyLabelSelected: {
+    color: '#B45309',
     fontWeight: '700',
   },
-  chipTextNoBounty: {
-    color: '#6B7280',
-    fontWeight: '600',
+  checkBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#FFF',
+    borderWidth: 2,
+    borderColor: '#0EA5E9',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-
-  // Tag Input
-  tagInputContainer: {
+  // Tags
+  tagInputWrapper: {
     flexDirection: 'row',
-    gap: 10,
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 12,
+    height: 48,
+  },
+  tagIcon: {
+    marginRight: 8,
   },
   tagInput: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
     fontSize: 15,
     color: '#111827',
+    height: '100%',
   },
   addTagButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: '#3B82F6',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addTagButtonDisabled: {
-    backgroundColor: '#E5E7EB',
-  },
-
-  // Tags Display
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -365,79 +372,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#EFF6FF',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
+    paddingVertical: 6,
+    backgroundColor: '#3B82F6',
+    borderRadius: 20,
   },
   tagText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#3B82F6',
+    color: '#FFF',
   },
-
-  // Answer Types
-  answerTypesContainer: {
+  // Answer Type
+  answerGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
   },
-  answerTypeButton: {
-    flex: 1,
-    minWidth: '47%',
+  answerCard: {
+    width: '48%',
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    padding: 14,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
   },
-  answerTypeButtonSelected: {
+  answerCardSelected: {
     backgroundColor: '#ECFDF5',
     borderColor: '#10B981',
   },
-  answerTypeText: {
-    flex: 1,
+  answerIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  answerIconSelected: {
+    backgroundColor: '#10B981',
+  },
+  answerLabel: {
     fontSize: 14,
     fontWeight: '600',
+    color: '#374151',
+    marginBottom: 2,
+  },
+  answerLabelSelected: {
+    color: '#065F46',
+  },
+  answerDesc: {
+    fontSize: 11,
     color: '#6B7280',
-  },
-  answerTypeTextSelected: {
-    color: '#10B981',
-    fontWeight: '700',
-  },
-
-  // Summary Bar
-  summaryBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  summaryItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  summaryDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: '#E5E7EB',
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginBottom: 4,
-    fontWeight: '500',
-  },
-  summaryValue: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#111827',
   },
 });

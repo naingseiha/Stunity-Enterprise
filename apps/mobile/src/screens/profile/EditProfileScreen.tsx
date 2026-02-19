@@ -146,7 +146,7 @@ export default function EditProfileScreen() {
           </TouchableOpacity>
 
           <View style={styles.headerTitleWrapper}>
-            <Ionicons name="person-circle-outline" size={20} color="#FFA500" />
+            <Ionicons name="person-circle-outline" size={20} color="#0EA5E9" />
             <Text style={styles.headerTitle}>Edit Profile</Text>
           </View>
 
@@ -156,7 +156,7 @@ export default function EditProfileScreen() {
             style={styles.saveButtonWrapper}
           >
             <LinearGradient
-              colors={['#FFA500', '#FF8C00']}
+              colors={['#0EA5E9', '#0284C7']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.saveButton}
@@ -276,8 +276,8 @@ export default function EditProfileScreen() {
           {/* Social Links Section */}
           <Section
             icon="link-outline"
-            iconColor="#F59E0B"
-            iconBg="#FEF3C7"
+            iconColor="#0EA5E9"
+            iconBg="#E0F2FE"
             title="Social Links"
             subtitle="Connect your profiles"
             delay={300}
