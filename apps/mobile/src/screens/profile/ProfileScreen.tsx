@@ -372,56 +372,47 @@ export default function ProfileScreen() {
             </View>
           </Animated.View>
 
-          {/* Stats Cards — Individual mini-cards */}
+          {/* Stats Cards — Premium Canvas Design */}
           <View style={styles.statsRow}>
             <Animated.View entering={ZoomIn.delay(250).duration(400)} style={{ flex: 1 }}>
               <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
-                <LinearGradient
-                  colors={['#F3E8FF', '#FAF5FF']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.statCardGradient}
-                >
-                  <View style={[styles.statIconCircle, { backgroundColor: '#C084FC' }]}>
-                    <Ionicons name="document-text" size={16} color="#581C87" />
+                <View style={styles.statCardGradient}>
+                  <View style={[styles.statIconCircle, { backgroundColor: '#F3E8FF' }]}>
+                    <View style={[styles.statIconInner, { backgroundColor: '#A855F7' }]}>
+                      <Ionicons name="create" size={16} color="#fff" />
+                    </View>
                   </View>
                   <Text style={styles.statValue}>{formatNumber(stats.posts)}</Text>
                   <Text style={styles.statLabel}>Posts</Text>
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             </Animated.View>
 
             <Animated.View entering={ZoomIn.delay(350).duration(400)} style={{ flex: 1 }}>
               <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
-                <LinearGradient
-                  colors={['#DBEAFE', '#EFF6FF']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.statCardGradient}
-                >
-                  <View style={[styles.statIconCircle, { backgroundColor: '#93C5FD' }]}>
-                    <Ionicons name="people" size={16} color="#1E3A5F" />
+                <View style={styles.statCardGradient}>
+                  <View style={[styles.statIconCircle, { backgroundColor: '#DBEAFE' }]}>
+                    <View style={[styles.statIconInner, { backgroundColor: '#3B82F6' }]}>
+                      <Ionicons name="people" size={16} color="#fff" />
+                    </View>
                   </View>
                   <Text style={styles.statValue}>{formatNumber(stats.followers)}</Text>
                   <Text style={styles.statLabel}>Followers</Text>
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             </Animated.View>
 
             <Animated.View entering={ZoomIn.delay(450).duration(400)} style={{ flex: 1 }}>
               <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
-                <LinearGradient
-                  colors={['#D1FAE5', '#ECFDF5']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.statCardGradient}
-                >
-                  <View style={[styles.statIconCircle, { backgroundColor: '#6EE7B7' }]}>
-                    <Ionicons name="heart" size={16} color="#064E3B" />
+                <View style={styles.statCardGradient}>
+                  <View style={[styles.statIconCircle, { backgroundColor: '#D1FAE5' }]}>
+                    <View style={[styles.statIconInner, { backgroundColor: '#10B981' }]}>
+                      <Ionicons name="heart" size={16} color="#fff" />
+                    </View>
                   </View>
                   <Text style={styles.statValue}>{formatNumber(stats.following)}</Text>
                   <Text style={styles.statLabel}>Following</Text>
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             </Animated.View>
           </View>
@@ -878,30 +869,39 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: 'hidden',
+    backgroundColor: '#fff',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
   statCardGradient: {
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 18,
     paddingHorizontal: 8,
-    borderRadius: 16,
+    borderRadius: 18,
+    backgroundColor: '#fff',
   },
   statIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
   },
+  statIconInner: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   statValue: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '800',
     color: '#1a1a1a',
     marginBottom: 2,

@@ -21,7 +21,7 @@ import Animated, {
     withDelay,
     Easing,
 } from 'react-native-reanimated';
-import Svg, { Circle, Path, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path, Text as SvgText } from 'react-native-svg';
 import type { UserStats as QuizUserStats, UserAchievement, Streak } from '@/services/stats';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -42,50 +42,49 @@ interface PerformanceTabProps {
 
 // ── XP Progress Ring ─────────────────────────────────────────────
 
-function XPProgressRing({ xp, xpToNext, level }: { xp: number; xpToNext: number; level: number }) {
-    const progress = useSharedValue(0);
+function XPProgressRing({ xp, xpToNext, level, quizzes, avgScore }: { xp: number; xpToNext: number; level: number; quizzes?: number; avgScore?: number }) {
     const size = 140;
-    const strokeWidth = 10;
-    const radius = (size - strokeWidth) / 2;
-    const circumference = 2 * Math.PI * radius;
-    const percent = xpToNext > 0 ? Math.min(xp / xpToNext, 1) : 0;
+    const xpPct = xpToNext > 0 ? Math.min(xp / xpToNext, 1) : 0;
+    const quizPct = Math.min((quizzes ?? 0) / Math.max((quizzes ?? 0) + 5, 10), 1);
+    const scorePct = Math.min((avgScore ?? 0) / 100, 1);
 
-    useEffect(() => {
-        progress.value = withTiming(percent, { duration: 1200, easing: Easing.bezierFn(0.25, 0.1, 0.25, 1) });
-    }, [percent]);
-
-    const strokeDashoffset = circumference * (1 - percent);
+    const rings = [
+        { r: 60, sw: 10, pct: xpPct, id: 'xp', c1: '#38BDF8', c2: '#0284C7' },
+        { r: 46, sw: 8, pct: quizPct, id: 'quiz', c1: '#34D399', c2: '#059669' },
+        { r: 34, sw: 7, pct: scorePct, id: 'score', c1: '#FBBF24', c2: '#F97316' },
+    ];
 
     return (
         <View style={ringStyles.container}>
-            <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-                {/* Background circle */}
-                <Circle
-                    cx={size / 2}
-                    cy={size / 2}
-                    r={radius}
-                    stroke="rgba(14, 165, 233, 0.15)"
-                    strokeWidth={strokeWidth}
-                    fill="none"
-                />
-                {/* Progress circle */}
-                <Circle
-                    cx={size / 2}
-                    cy={size / 2}
-                    r={radius}
-                    stroke="#0EA5E9"
-                    strokeWidth={strokeWidth}
-                    fill="none"
-                    strokeDasharray={`${circumference}`}
-                    strokeDashoffset={strokeDashoffset}
-                    strokeLinecap="round"
-                    transform={`rotate(-90, ${size / 2}, ${size / 2})`}
-                />
+            <View style={ringStyles.glow} />
+            <Svg width={size} height={size}>
+                <Defs>
+                    {rings.map(ring => (
+                        <SvgLinearGradient key={ring.id} id={`pgrad_${ring.id}`} x1="0" y1="0" x2="1" y2="1">
+                            <Stop offset="0" stopColor={ring.c1} />
+                            <Stop offset="1" stopColor={ring.c2} />
+                        </SvgLinearGradient>
+                    ))}
+                </Defs>
+                {rings.map(ring => {
+                    const circ = 2 * Math.PI * ring.r;
+                    return (
+                        <React.Fragment key={ring.id}>
+                            <Circle cx={size / 2} cy={size / 2} r={ring.r}
+                                stroke={`${ring.c1}18`} strokeWidth={ring.sw} fill="none" />
+                            <Circle cx={size / 2} cy={size / 2} r={ring.r}
+                                stroke={`url(#pgrad_${ring.id})`} strokeWidth={ring.sw} fill="none"
+                                strokeDasharray={`${circ}`}
+                                strokeDashoffset={circ * (1 - ring.pct)}
+                                strokeLinecap="round"
+                                transform={`rotate(-90, ${size / 2}, ${size / 2})`} />
+                        </React.Fragment>
+                    );
+                })}
             </Svg>
             <View style={ringStyles.inner}>
-                <Text style={ringStyles.levelLabel}>LEVEL</Text>
                 <Text style={ringStyles.levelValue}>{level}</Text>
-                <Text style={ringStyles.xpText}>{xp.toLocaleString()} XP</Text>
+                <Text style={ringStyles.levelLabel}>LEVEL</Text>
             </View>
         </View>
     );
@@ -93,10 +92,10 @@ function XPProgressRing({ xp, xpToNext, level }: { xp: number; xpToNext: number;
 
 const ringStyles = StyleSheet.create({
     container: { alignItems: 'center', justifyContent: 'center', position: 'relative' },
+    glow: { position: 'absolute', width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(14,165,233,0.06)' },
     inner: { position: 'absolute', alignItems: 'center' },
-    levelLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 1 },
-    levelValue: { fontSize: 36, fontWeight: '800', color: '#1F2937', letterSpacing: -1 },
-    xpText: { fontSize: 11, fontWeight: '600', color: '#0EA5E9' },
+    levelLabel: { fontSize: 8, fontWeight: '700', color: '#9CA3AF', letterSpacing: 1.2 },
+    levelValue: { fontSize: 34, fontWeight: '900', color: '#1F2937', letterSpacing: -1 },
 });
 
 // ── Mini Line Chart ──────────────────────────────────────────────
@@ -207,7 +206,7 @@ export default function PerformanceTab({
                     style={s.cardGradient}
                 >
                     <View style={s.xpRow}>
-                        <XPProgressRing xp={xp} xpToNext={xpToNext} level={quizStats?.level ?? level} />
+                        <XPProgressRing xp={xp} xpToNext={xpToNext} level={quizStats?.level ?? level} quizzes={quizStats?.totalQuizzes ?? 0} avgScore={quizStats?.avgScore ?? 0} />
                         <View style={s.xpInfo}>
                             <View style={s.xpStatRow}>
                                 <View style={[s.xpStatIcon, { backgroundColor: '#EFF6FF' }]}>
@@ -441,8 +440,8 @@ const s = StyleSheet.create({
     xpBarLabels: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
     xpBarLeft: { fontSize: 11, fontWeight: '600', color: '#0EA5E9' },
     xpBarRight: { fontSize: 11, fontWeight: '600', color: '#9CA3AF' },
-    xpBarBg: { height: 8, backgroundColor: '#F1F5F9', borderRadius: 4, overflow: 'hidden' },
-    xpBarFill: { height: '100%', borderRadius: 4 },
+    xpBarBg: { height: 10, backgroundColor: '#F1F5F9', borderRadius: 5, overflow: 'hidden' },
+    xpBarFill: { height: '100%', borderRadius: 5 },
     xpBarHint: { fontSize: 11, color: '#9CA3AF', textAlign: 'center', marginTop: 6 },
 
     // Quiz Stats
