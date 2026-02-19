@@ -5,10 +5,11 @@
  * Features: Feed, Learn, Clubs, Profile (icon-only)
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { StyleSheet, Platform, View, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
@@ -25,9 +26,9 @@ import { Sidebar } from '@/components/navigation';
 import { NavigationProvider, useNavigationContext } from '@/contexts';
 
 // Implemented Screens
-import { FeedScreen, CreatePostScreen, EditPostScreen, PostDetailScreen, CommentsScreen, BookmarksScreen, MyPostsScreen } from '@/screens/feed';
+import { FeedScreen, CreatePostScreen, EditPostScreen, PostDetailScreen, CommentsScreen, BookmarksScreen, MyPostsScreen, SearchScreen } from '@/screens/feed';
 import { LearnScreen, CourseDetailScreen } from '@/screens/learn';
-import { ProfileScreen, EditProfileScreen } from '@/screens/profile';
+import { ProfileScreen, EditProfileScreen, SettingsScreen } from '@/screens/profile';
 import { ConversationsScreen, ChatScreen } from '@/screens/messages';
 import { ClubsScreen, ClubDetailsScreen, CreateClubScreen } from '@/screens/clubs';
 import {
@@ -63,7 +64,6 @@ const PlaceholderScreen = ({ title }: { title: string }) => (
 );
 
 // Feed Stack Screens (placeholders for remaining)
-const UserProfileScreen = () => <PlaceholderScreen title="User Profile" />;
 const HashtagScreen = () => <PlaceholderScreen title="Hashtag" />;
 const EventsScreen = () => <PlaceholderScreen title="Events" />;
 const EventDetailScreen = () => <PlaceholderScreen title="Event Detail" />;
@@ -82,10 +82,15 @@ const GroupInfoScreen = () => <PlaceholderScreen title="Group Info" />;
 
 // Profile Stack Screens
 const ConnectionsScreen = () => <PlaceholderScreen title="Connections" />;
-const SettingsScreen = () => <PlaceholderScreen title="Settings" />;
+
 
 // Create Stack Navigators
-const MainStack = createNativeStackNavigator<MainStackParamList>();
+// Add Search to MainStack param list
+type ExtendedMainStackParamList = MainStackParamList & {
+  Search: undefined;
+};
+
+const MainStack = createNativeStackNavigator<ExtendedMainStackParamList>();
 const FeedStack = createNativeStackNavigator<FeedStackParamList>();
 const LearnStack = createNativeStackNavigator<LearnStackParamList>();
 const MessagesStack = createNativeStackNavigator<MessagesStackParamList>();
@@ -117,7 +122,7 @@ const FeedStackNavigator: React.FC = () => (
     <FeedStack.Screen name="Comments" component={CommentsScreen} />
     <FeedStack.Screen name="Bookmarks" component={BookmarksScreen} />
     <FeedStack.Screen name="MyPosts" component={MyPostsScreen} />
-    <FeedStack.Screen name="UserProfile" component={UserProfileScreen} />
+    <FeedStack.Screen name="UserProfile" component={ProfileScreen} />
     <FeedStack.Screen name="Hashtag" component={HashtagScreen} />
     <FeedStack.Screen name="Events" component={EventsScreen} />
     <FeedStack.Screen name="EventDetail" component={EventDetailScreen} />
@@ -171,11 +176,38 @@ interface TabBarIconProps {
 
 const MainNavigatorContent: React.FC = () => {
   const { sidebarVisible, closeSidebar } = useNavigationContext();
+  const navigation = useNavigation<any>();
 
-  const handleNavigate = (screen: string) => {
-    // Navigation will be handled by the sidebar component
-    console.log('Navigate to:', screen);
-  };
+  const handleNavigate = useCallback((screen: string) => {
+    // Map sidebar menu items to proper tab + screen navigation
+    const screenToTabMap: Record<string, { tab: string; screen?: string }> = {
+      'Settings': { tab: 'ProfileTab', screen: 'Settings' },
+      'Bookmarks': { tab: 'ProfileTab', screen: 'Bookmarks' },
+      'MyPosts': { tab: 'ProfileTab', screen: 'MyPosts' },
+      'Connections': { tab: 'ProfileTab', screen: 'Connections' },
+      'EditProfile': { tab: 'ProfileTab', screen: 'EditProfile' },
+      'ProfileTab': { tab: 'ProfileTab' },
+      'Profile': { tab: 'ProfileTab', screen: 'Profile' },
+      'Events': { tab: 'FeedTab', screen: 'Events' },
+    };
+
+    const mapping = screenToTabMap[screen];
+    if (mapping) {
+      if (mapping.screen) {
+        // Navigate to a specific screen within a tab
+        navigation.navigate('MainTabs', {
+          screen: mapping.tab,
+          params: { screen: mapping.screen },
+        });
+      } else {
+        // Just switch to the tab
+        navigation.navigate('MainTabs', { screen: mapping.tab });
+      }
+    } else {
+      // For screens registered on MainStack (e.g., Notifications, Stats)
+      navigation.navigate(screen);
+    }
+  }, [navigation]);
 
   return (
     <>
@@ -304,6 +336,7 @@ const MainNavigator: React.FC = () => {
         <MainStack.Screen name="ChallengeResult" component={ChallengeResultScreen} />
         <MainStack.Screen name="Achievements" component={AchievementsScreen} />
         <MainStack.Screen name="Notifications" component={NotificationsScreen} />
+        <MainStack.Screen name="Search" component={SearchScreen} />
       </MainStack.Navigator>
     </NavigationProvider>
   );

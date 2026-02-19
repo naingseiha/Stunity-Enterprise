@@ -36,6 +36,11 @@ const TEAM_TYPES = [
 
 const DURATION_OPTIONS = [7, 14, 21, 30, 45, 60, 90];
 
+const SUGGESTED_SKILLS = [
+  'React', 'Python', 'Node.js', 'TypeScript', 'Java', 'SQL',
+  'Figma', 'Docker', 'AWS', 'Git', 'Flutter', 'Swift',
+];
+
 export function ProjectForm({ onDataChange }: ProjectFormProps) {
   const [teamType, setTeamType] = useState<ProjectData['teamType']>('INDIVIDUAL');
   const [maxTeamSize, setMaxTeamSize] = useState(1);
@@ -45,6 +50,8 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
   const [deliverables, setDeliverables] = useState<string[]>([]);
   const [deliverableInput, setDeliverableInput] = useState('');
   const [duration, setDuration] = useState(14);
+  const [skills, setSkills] = useState<string[]>([]);
+  const [skillInput, setSkillInput] = useState('');
 
   useEffect(() => {
     onDataChange({
@@ -309,6 +316,108 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
           </View>
         )}
       </View>
+
+      {/* Skills / Technologies Card */}
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={[styles.iconContainer, { backgroundColor: '#FFF7ED' }]}>
+            <Ionicons name="code-slash" size={20} color="#F97316" />
+          </View>
+          <View>
+            <Text style={styles.cardTitle}>Skills & Technologies</Text>
+            <Text style={styles.cardSubtitle}>Required skills for this project</Text>
+          </View>
+        </View>
+
+        {/* Active Skills */}
+        {skills.length > 0 && (
+          <View style={styles.skillsRow}>
+            {skills.map((skill) => (
+              <Animated.View
+                key={skill}
+                entering={FadeIn.duration(200)}
+                layout={Layout.springify()}
+                style={styles.skillChip}
+              >
+                <Text style={styles.skillChipText}>{skill}</Text>
+                <TouchableOpacity onPress={() => {
+                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  setSkills(skills.filter(s => s !== skill));
+                }}>
+                  <Ionicons name="close-circle" size={16} color="#F97316" />
+                </TouchableOpacity>
+              </Animated.View>
+            ))}
+          </View>
+        )}
+
+        {/* Skill Input */}
+        {skills.length < 8 && (
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.mainInput}
+              placeholder="Add a skill or technology..."
+              value={skillInput}
+              onChangeText={setSkillInput}
+              onSubmitEditing={() => {
+                const trimmed = skillInput.trim();
+                if (trimmed && !skills.includes(trimmed)) {
+                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setSkills([...skills, trimmed]);
+                  setSkillInput('');
+                }
+              }}
+              returnKeyType="done"
+            />
+            <TouchableOpacity
+              onPress={() => {
+                const trimmed = skillInput.trim();
+                if (trimmed && !skills.includes(trimmed)) {
+                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setSkills([...skills, trimmed]);
+                  setSkillInput('');
+                }
+              }}
+              style={[
+                styles.inputButton,
+                { backgroundColor: '#F97316' },
+                !skillInput.trim() && styles.inputButtonDisabled
+              ]}
+            >
+              <Ionicons name="arrow-up" size={16} color="#FFF" />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Suggested Skills */}
+        {skills.length < 8 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.suggestedScroll}
+            style={{ marginTop: 10 }}
+          >
+            {SUGGESTED_SKILLS.filter(s => !skills.includes(s)).slice(0, 6).map((skill) => (
+              <TouchableOpacity
+                key={skill}
+                style={styles.suggestedSkill}
+                onPress={() => {
+                  if (!skills.includes(skill) && skills.length < 8) {
+                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSkills([...skills, skill]);
+                  }
+                }}
+              >
+                <Text style={styles.suggestedSkillText}>{skill}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+      </View>
     </View>
   );
 }
@@ -571,5 +680,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#064E3B',
+  },
+  // Skills
+  skillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  skillChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#FFF7ED',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#FDBA74',
+  },
+  skillChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#EA580C',
+  },
+  suggestedScroll: {
+    gap: 6,
+  },
+  suggestedSkill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#FFF7ED',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+  },
+  suggestedSkillText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#EA580C',
   },
 });

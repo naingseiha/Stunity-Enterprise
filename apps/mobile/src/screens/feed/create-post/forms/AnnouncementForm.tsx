@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, LayoutAnimation, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -66,10 +66,19 @@ const EXPIRATION_OPTIONS = [
   { label: '2w', value: 336 },
 ];
 
+const AUDIENCE_OPTIONS = [
+  { value: 'EVERYONE', label: 'Everyone', icon: 'globe', color: '#6366F1' },
+  { value: 'MY_SCHOOL', label: 'My School', icon: 'school', color: '#10B981' },
+  { value: 'MY_CLASS', label: 'My Class', icon: 'people', color: '#F59E0B' },
+  { value: 'SPECIFIC', label: 'Specific Group', icon: 'person-add', color: '#8B5CF6' },
+];
+
 export function AnnouncementForm({ onDataChange }: AnnouncementFormProps) {
   const [importance, setImportance] = useState<AnnouncementData['importance']>('INFO');
   const [pinToTop, setPinToTop] = useState(false);
   const [expiresIn, setExpiresIn] = useState<number | null>(null);
+  const [targetAudience, setTargetAudience] = useState('EVERYONE');
+  const [sendNotification, setSendNotification] = useState(true);
 
   useEffect(() => {
     onDataChange({ importance, pinToTop, expiresIn });
@@ -220,6 +229,67 @@ export function AnnouncementForm({ onDataChange }: AnnouncementFormProps) {
               <Text style={styles.pinText}>PINNED</Text>
             </View>
           )}
+        </View>
+      </View>
+      {/* Target Audience Card */}
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={[styles.iconContainer, { backgroundColor: '#EEF2FF' }]}>
+            <Ionicons name="people" size={20} color="#6366F1" />
+          </View>
+          <View>
+            <Text style={styles.cardTitle}>Target Audience</Text>
+            <Text style={styles.cardSubtitle}>Who should see this</Text>
+          </View>
+        </View>
+
+        <View style={styles.audienceGrid}>
+          {AUDIENCE_OPTIONS.map((opt) => (
+            <TouchableOpacity
+              key={opt.value}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setTargetAudience(opt.value);
+              }}
+              style={[
+                styles.audienceCard,
+                targetAudience === opt.value && {
+                  backgroundColor: opt.color + '10',
+                  borderColor: opt.color,
+                },
+              ]}
+            >
+              <Ionicons
+                name={opt.icon as any}
+                size={20}
+                color={targetAudience === opt.value ? opt.color : '#9CA3AF'}
+              />
+              <Text style={[
+                styles.audienceLabel,
+                targetAudience === opt.value && { color: opt.color, fontWeight: '700' },
+              ]}>
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Notification Toggle */}
+        <View style={styles.notificationRow}>
+          <View style={[styles.switchIcon, { backgroundColor: '#FEF3C7' }]}>
+            <Ionicons name="notifications" size={18} color="#F59E0B" />
+          </View>
+          <View style={styles.switchLabelContainer}>
+            <Text style={styles.switchLabel}>Send Push Notification</Text>
+            <Text style={styles.switchSubLabel}>Alert recipients immediately</Text>
+          </View>
+          <Switch
+            value={sendNotification}
+            onValueChange={(v) => { Haptics.selectionAsync(); setSendNotification(v); }}
+            trackColor={{ false: '#E5E7EB', true: '#818CF8' }}
+            thumbColor={sendNotification ? '#4F46E5' : '#FFF'}
+            ios_backgroundColor="#E5E7EB"
+          />
         </View>
       </View>
     </View>
@@ -429,5 +499,53 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: '#FFF',
+  },
+  // Audience
+  audienceGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 16,
+  },
+  audienceCard: {
+    width: '48%',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F9FAFB',
+    gap: 6,
+  },
+  audienceLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  notificationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 4,
+  },
+  switchIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  switchLabelContainer: {
+    flex: 1,
+  },
+  switchLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  switchSubLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 1,
   },
 });

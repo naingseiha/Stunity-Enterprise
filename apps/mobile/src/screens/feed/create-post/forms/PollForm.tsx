@@ -36,6 +36,12 @@ const VISIBILITY_OPTIONS = [
   { type: 'AFTER_ENDING' as const, label: 'After End', icon: 'eye-off', description: 'After poll ends' },
 ];
 
+// Color palette for poll option badges
+const OPTION_COLORS = [
+  '#6366F1', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
+  '#EC4899', '#0EA5E9', '#14B8A6', '#F97316', '#84CC16',
+];
+
 export function PollForm({ options, onOptionsChange, onDataChange }: PollFormProps) {
   const [duration, setDuration] = useState<number | null>(24);
   const [resultsVisibility, setResultsVisibility] = useState<PollData['resultsVisibility']>('AFTER_VOTING');
@@ -107,7 +113,7 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
               key={index}
               style={styles.optionRow}
             >
-              <View style={styles.optionIndex}>
+              <View style={[styles.optionIndex, { backgroundColor: OPTION_COLORS[index % OPTION_COLORS.length] }]}>
                 <Text style={styles.optionIndexText}>{String.fromCharCode(65 + index)}</Text>
               </View>
               <TextInput
@@ -364,16 +370,13 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
   },
   optionIndexText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#6B7280',
+    color: '#FFFFFF',
   },
   optionInput: {
     flex: 1,

@@ -20,6 +20,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   InteractionManager,
+  Alert,
+  Share,
+  ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,6 +46,7 @@ import { DeadlineBanner, ClubAnnouncement, QuizSection } from './PostCardSection
 import { Post, DifficultyLevel } from '@/types';
 import { useAuthStore } from '@/stores';
 import { formatRelativeTime, formatNumber } from '@/utils';
+import { feedApi } from '@/api/client';
 
 interface PostCardProps {
   post: Post;
@@ -51,7 +55,8 @@ interface PostCardProps {
   onShare?: () => void;
   onRepost?: () => void;
   onBookmark?: () => void;
-  onValue?: () => void;  // NEW: Educational value rating
+  onValue?: () => void;  // Educational value rating
+  isValued?: boolean;     // Whether current user has already rated this post
   onUserPress?: () => void;
   onPress?: () => void;
   onVote?: (optionId: string) => void;
@@ -143,6 +148,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
   onRepost,
   onBookmark,
   onValue,
+  isValued: isValuedProp = false,
   onUserPress,
   onPress,
   onVote,
@@ -160,7 +166,11 @@ const PostCardInner: React.FC<PostCardProps> = ({
   const [bookmarked, setBookmarked] = useState(post.isBookmarked);
   const [likeCount, setLikeCount] = useState(post.likes);
   const [showMenu, setShowMenu] = useState(false);
-  const [valued, setValued] = useState(false);
+  const [valued, setValued] = useState(isValuedProp);
+  const [isFollowing, setIsFollowing] = useState(post.isFollowingAuthor || false);
+  const [followLoading, setFollowLoading] = useState(false);
+  // Keep valued in sync with prop when it changes from parent
+  if (isValuedProp && !valued) setValued(true);
 
   // Reset internal state when post identity or key fields change
   // Using a ref to track previous values avoids redundant re-renders
@@ -270,6 +280,10 @@ const PostCardInner: React.FC<PostCardProps> = ({
   };
 
   const handleRepost = () => {
+    if (isCurrentUser) {
+      Alert.alert('Cannot Repost', 'You cannot repost your own post.');
+      return;
+    }
     InteractionManager.runAfterInteractions(() => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     });
@@ -277,7 +291,63 @@ const PostCardInner: React.FC<PostCardProps> = ({
       withSpring(1.3, { damping: 8 }),
       withSpring(1, { damping: 12 })
     );
-    onRepost?.();
+    // Show repost confirmation
+    Alert.alert(
+      'Repost',
+      `Repost ${post.author.firstName}'s post to your feed?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Repost',
+          onPress: async () => {
+            try {
+              const res = await feedApi.post(`/posts/${post.id}/repost`, { comment: '' });
+              if (res.data.success) {
+                // Refresh feed so the repost appears
+                const { fetchPosts } = require('@/stores').useFeedStore.getState();
+                fetchPosts(true);
+                onRepost?.();
+                Alert.alert('Reposted!', 'This post has been shared to your feed.');
+              } else {
+                Alert.alert('Error', res.data.error || 'Failed to repost');
+              }
+            } catch (err: any) {
+              const msg = err?.response?.data?.error || 'Failed to repost';
+              Alert.alert('Error', msg);
+            }
+          },
+        },
+        {
+          text: 'Repost with Comment',
+          onPress: () => {
+            Alert.prompt(
+              'Add a Comment',
+              'Write something about this post (optional)',
+              async (text: string) => {
+                try {
+                  const res = await feedApi.post(`/posts/${post.id}/repost`, { comment: text || '' });
+                  if (res.data.success) {
+                    // Refresh feed so the repost appears
+                    const { fetchPosts } = require('@/stores').useFeedStore.getState();
+                    fetchPosts(true);
+                    onRepost?.();
+                    Alert.alert('Reposted!', 'This post has been shared to your feed.');
+                  } else {
+                    Alert.alert('Error', res.data.error || 'Failed to repost');
+                  }
+                } catch (err: any) {
+                  const msg = err?.response?.data?.error || 'Failed to repost';
+                  Alert.alert('Error', msg);
+                }
+              },
+              'plain-text',
+              '',
+              'Write a comment...',
+            );
+          },
+        },
+      ],
+    );
   };
 
   const handleShare = () => {
@@ -311,7 +381,26 @@ const PostCardInner: React.FC<PostCardProps> = ({
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     });
     setShowMenu(false);
-    onViewAnalytics?.();
+    if (onViewAnalytics) {
+      onViewAnalytics();
+    } else {
+      navigation.navigate('PostDetail', { postId: post.id });
+    }
+  };
+
+  const handleFollow = async () => {
+    if (followLoading) return;
+    setFollowLoading(true);
+    try {
+      const res = await feedApi.post(`/users/${post.author.id}/follow`);
+      if (res.data.success) {
+        setIsFollowing(res.data.isFollowing);
+      }
+    } catch (error) {
+      console.error('Follow error:', error);
+    } finally {
+      setFollowLoading(false);
+    }
   };
 
   const typeConfig = POST_TYPE_CONFIG[post.postType] || POST_TYPE_CONFIG.ARTICLE;
@@ -349,6 +438,14 @@ const PostCardInner: React.FC<PostCardProps> = ({
 
   return (
     <View style={styles.container}>
+
+      {/* Repost Label */}
+      {post.repostOfId && (
+        <View style={styles.repostLabel}>
+          <Ionicons name="repeat" size={14} color="#6B7280" />
+          <Text style={styles.repostLabelText}>{authorName} reposted</Text>
+        </View>
+      )}
 
       {/* LIVE Badge - Top Corner */}
       {learningMeta?.isLive && (
@@ -433,6 +530,48 @@ const PostCardInner: React.FC<PostCardProps> = ({
           </View>
         </TouchableOpacity>
 
+        {/* Follow Button — only for non-own posts */}
+        {!isCurrentUser && (
+          <TouchableOpacity
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              handleFollow();
+            }}
+            disabled={followLoading}
+            activeOpacity={0.8}
+            style={{ marginRight: 2 }}
+          >
+            {isFollowing ? (
+              <View style={styles.followBtnFollowing}>
+                {followLoading ? (
+                  <ActivityIndicator size={11} color="#6B7280" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle" size={14} color="#6B7280" />
+                    <Text style={styles.followBtnTextFollowing}>Following</Text>
+                  </>
+                )}
+              </View>
+            ) : (
+              <LinearGradient
+                colors={['#6366F1', '#4F46E5']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.followBtnGradient}
+              >
+                {followLoading ? (
+                  <ActivityIndicator size={11} color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="person-add" size={12} color="#fff" />
+                    <Text style={styles.followBtnText}>Follow</Text>
+                  </>
+                )}
+              </LinearGradient>
+            )}
+          </TouchableOpacity>
+        )}
+
         {/* Vertical More Menu */}
         <View style={styles.menuContainer}>
           <TouchableOpacity style={styles.moreButton} onPress={handleMenuToggle}>
@@ -468,15 +607,31 @@ const PostCardInner: React.FC<PostCardProps> = ({
                   {bookmarked ? 'Saved' : 'Save'}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem} onPress={() => setShowMenu(false)}>
+              <TouchableOpacity style={styles.menuItem} onPress={() => {
+                setShowMenu(false);
+                Alert.alert('Post Reported', 'Thanks for letting us know. We\'ll review this post.', [{ text: 'OK' }]);
+              }}>
                 <Ionicons name="flag-outline" size={18} color="#374151" />
                 <Text style={styles.menuItemText}>Report</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem} onPress={() => setShowMenu(false)}>
+              <TouchableOpacity style={styles.menuItem} onPress={() => {
+                setShowMenu(false);
+                Alert.alert('Post Hidden', 'You won\'t see this post in your feed anymore.');
+              }}>
                 <Ionicons name="eye-off-outline" size={18} color="#374151" />
                 <Text style={styles.menuItemText}>Hide</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem} onPress={() => setShowMenu(false)}>
+              <TouchableOpacity style={styles.menuItem} onPress={async () => {
+                setShowMenu(false);
+                const url = `https://stunity.com/posts/${post.id}`;
+                try {
+                  // Use RN Share to share/copy the link
+                  await Share.share({ message: url, title: 'Post Link' });
+                } catch {
+                  // Silent fail
+                }
+                Alert.alert('Link Copied', 'Post link has been copied to clipboard.');
+              }}>
                 <Ionicons name="link-outline" size={18} color="#374151" />
                 <Text style={styles.menuItemText}>Copy Link</Text>
               </TouchableOpacity>
@@ -533,6 +688,51 @@ const PostCardInner: React.FC<PostCardProps> = ({
           {post.content}
         </Text>
       </TouchableOpacity>
+
+      {/* Embedded Repost Card */}
+      {post.repostOfId && post.repostOf && (
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => navigation.navigate('PostDetail', { postId: post.repostOf!.id })}
+          style={styles.repostEmbed}
+        >
+          <View style={styles.repostEmbedHeader}>
+            {post.repostOf.author?.profilePictureUrl ? (
+              <Image
+                source={{ uri: post.repostOf.author.profilePictureUrl }}
+                style={styles.repostEmbedAvatar}
+              />
+            ) : (
+              <View style={[styles.repostEmbedAvatar, { backgroundColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center' }]}>
+                <Ionicons name="person" size={14} color="#9CA3AF" />
+              </View>
+            )}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.repostEmbedAuthor} numberOfLines={1}>
+                {post.repostOf.author ? `${post.repostOf.author.firstName} ${post.repostOf.author.lastName}` : 'Unknown'}
+              </Text>
+              <Text style={styles.repostEmbedTime}>{formatRelativeTime(post.repostOf.createdAt)}</Text>
+            </View>
+          </View>
+          {post.repostOf.title && (
+            <Text style={styles.repostEmbedTitle} numberOfLines={1}>{post.repostOf.title}</Text>
+          )}
+          <Text style={styles.repostEmbedContent} numberOfLines={3}>{post.repostOf.content}</Text>
+          {post.repostOf.mediaUrls && post.repostOf.mediaUrls.length > 0 && (
+            <Image
+              source={{ uri: post.repostOf.mediaUrls[0] }}
+              style={styles.repostEmbedMedia}
+              contentFit="cover"
+            />
+          )}
+          <View style={styles.repostEmbedStats}>
+            <Ionicons name="heart" size={12} color="#9CA3AF" />
+            <Text style={styles.repostEmbedStatText}>{formatNumber(post.repostOf.likesCount || 0)}</Text>
+            <Ionicons name="chatbubble" size={12} color="#9CA3AF" style={{ marginLeft: 8 }} />
+            <Text style={styles.repostEmbedStatText}>{formatNumber(post.repostOf.commentsCount || 0)}</Text>
+          </View>
+        </TouchableOpacity>
+      )}
 
       {/* Poll Voting */}
       {post.postType === 'POLL' && post.pollOptions && post.pollOptions.length > 0 && (
@@ -727,7 +927,8 @@ function arePostCardPropsEqual(prev: PostCardProps, next: PostCardProps): boolea
     prev.post.shares === next.post.shares &&
     prev.post.userVotedOptionId === next.post.userVotedOptionId &&
     prev.post.updatedAt === next.post.updatedAt &&
-    prev.post.content === next.post.content
+    prev.post.content === next.post.content &&
+    prev.isValued === next.isValued
   );
 }
 
@@ -1431,6 +1632,121 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     letterSpacing: 0.3,
+  },
+  // Follow Button
+  followBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    minWidth: 76,
+    height: 30,
+  },
+  followBtnFollowing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    minWidth: 88,
+    height: 30,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  followBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.2,
+  },
+  followBtnTextFollowing: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  // Repost Label
+  repostLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 6,
+  },
+  repostLabelText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  // Repost Embed Card
+  repostEmbed: {
+    marginHorizontal: 14,
+    marginBottom: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FAFAFA',
+    overflow: 'hidden',
+  },
+  repostEmbedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 6,
+  },
+  repostEmbedAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+  },
+  repostEmbedAuthor: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#374151',
+  },
+  repostEmbedTime: {
+    fontSize: 11,
+    color: '#9CA3AF',
+  },
+  repostEmbedTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
+    paddingHorizontal: 12,
+    marginBottom: 2,
+  },
+  repostEmbedContent: {
+    fontSize: 13,
+    color: '#6B7280',
+    lineHeight: 18,
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+  },
+  repostEmbedMedia: {
+    width: '100%',
+    height: 140,
+  },
+  repostEmbedStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  repostEmbedStatText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#9CA3AF',
   },
 });
 

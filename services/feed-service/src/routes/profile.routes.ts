@@ -409,4 +409,44 @@ router.delete('/users/me/cover-photo', authenticateToken, async (req: AuthReques
   }
 });
 
+// POST /users/:id/follow - Follow/unfollow a user (toggle)
+router.post('/users/:id/follow', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const followingId = req.params.id;
+    const followerId = req.user!.id;
+
+    if (followerId === followingId) {
+      return res.status(400).json({ success: false, error: 'Cannot follow yourself' });
+    }
+
+    // Check if already following
+    const existing = await prisma.follow.findUnique({
+      where: {
+        followerId_followingId: { followerId, followingId },
+      },
+    });
+
+    if (existing) {
+      // Unfollow
+      await prisma.follow.delete({
+        where: { followerId_followingId: { followerId, followingId } },
+      });
+
+      const followerCount = await prisma.follow.count({ where: { followingId } });
+      return res.json({ success: true, isFollowing: false, followerCount });
+    } else {
+      // Follow
+      await prisma.follow.create({
+        data: { followerId, followingId },
+      });
+
+      const followerCount = await prisma.follow.count({ where: { followingId } });
+      return res.json({ success: true, isFollowing: true, followerCount });
+    }
+  } catch (error: any) {
+    console.error('Follow toggle error:', error);
+    res.status(500).json({ success: false, error: 'Failed to toggle follow' });
+  }
+});
+
 export default router;

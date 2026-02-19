@@ -232,6 +232,7 @@ export class FeedRanker {
                 quiz: { select: { id: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
                 postScore: true,
                 _count: { select: { likes: true, comments: true, views: true } },
+                repostOf: { select: { id: true, content: true, title: true, postType: true, mediaUrls: true, createdAt: true, likesCount: true, commentsCount: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } } } },
             },
             orderBy: { trendingScore: 'desc' },
             take: 50,
@@ -278,6 +279,7 @@ export class FeedRanker {
                 quiz: { select: { id: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
                 postScore: true,
                 _count: { select: { likes: true, comments: true, views: true } },
+                repostOf: { select: { id: true, content: true, title: true, postType: true, mediaUrls: true, createdAt: true, likesCount: true, commentsCount: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } } } },
             },
             orderBy: [
                 { likesCount: 'desc' },
@@ -384,6 +386,13 @@ export class FeedRanker {
                 postScore: true,
                 _count: {
                     select: { likes: true, comments: true, views: true },
+                },
+                repostOf: {
+                    select: {
+                        id: true, content: true, title: true, postType: true, mediaUrls: true,
+                        createdAt: true, likesCount: true, commentsCount: true,
+                        author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } },
+                    },
                 },
             },
             orderBy: [
@@ -601,6 +610,13 @@ export class FeedRanker {
                     },
                     _count: {
                         select: { likes: true, comments: true, views: true },
+                    },
+                    repostOf: {
+                        select: {
+                            id: true, content: true, title: true, postType: true, mediaUrls: true,
+                            createdAt: true, likesCount: true, commentsCount: true,
+                            author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } },
+                        },
                     },
                 },
                 orderBy: [

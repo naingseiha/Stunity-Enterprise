@@ -31,15 +31,21 @@ import Animated, {
   Easing,
   interpolate,
   runOnJS,
+  FadeInDown,
+  FadeIn,
+  ZoomIn,
 } from 'react-native-reanimated';
 
 import { Avatar, Button } from '@/components/common';
+import { Skeleton } from '@/components/common/Loading';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useAuthStore } from '@/stores';
-import { User, UserStats, Education, Experience } from '@/types';
+import { User, UserStats, Education, Experience, Certification } from '@/types';
 import { formatNumber } from '@/utils';
 import { ProfileStackScreenProps } from '@/navigation/types';
-import { fetchProfile as apiFetchProfile, fetchEducation, fetchExperiences, followUser, unfollowUser } from '@/api/profileApi';
+import { fetchProfile as apiFetchProfile, fetchEducation, fetchExperiences, fetchCertifications, followUser, unfollowUser } from '@/api/profileApi';
+import { statsAPI, type UserStats as QuizUserStats, type Streak, type UserAchievement, type Achievement } from '@/services/stats';
+import { PerformanceTab, ActivityTab, CertificationsSection, SkillsSection } from './components';
 
 const { width } = Dimensions.get('window');
 const COVER_HEIGHT = 200;
@@ -95,8 +101,14 @@ export default function ProfileScreen() {
   const [profileStats, setProfileStats] = useState<UserStats | null>(null);
   const [education, setEducation] = useState<Education[]>([]);
   const [experiences, setExperiences] = useState<Experience[]>([]);
+  const [certifications, setCertifications] = useState<Certification[]>([]);
+  const [quizStats, setQuizStats] = useState<QuizUserStats | null>(null);
+  const [streak, setStreak] = useState<Streak | null>(null);
+  const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
+  const [allAchievements, setAllAchievements] = useState<Achievement[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'performance' | 'about' | 'activity'>('performance');
 
   // Fetch profile on mount and when userId changes
@@ -105,14 +117,17 @@ export default function ProfileScreen() {
   }, [userId, isOwnProfile]);
 
   const loadProfile = async () => {
+    if (!refreshing) setLoading(true);
     try {
       const targetId = isOwnProfile ? 'me' : userId!;
+      const resolvedUserId = isOwnProfile ? (currentUser?.id || 'me') : userId!;
 
-      // Fetch profile + education + experiences in parallel
-      const [profileData, eduData, expData] = await Promise.all([
+      // Fetch profile + education + experiences + certifications in parallel
+      const [profileData, eduData, expData, certData] = await Promise.all([
         apiFetchProfile(targetId),
         fetchEducation(targetId),
         fetchExperiences(targetId),
+        fetchCertifications(targetId).catch(() => []),
       ]);
 
       setProfile(profileData as any);
@@ -120,12 +135,28 @@ export default function ProfileScreen() {
       setIsFollowing(profileData.isFollowing || false);
       setEducation(eduData || []);
       setExperiences(expData || []);
+      setCertifications(certData || []);
+
+      // Fetch analytics data (non-blocking — graceful fallback)
+      Promise.all([
+        statsAPI.getUserStats(resolvedUserId).catch(() => null),
+        statsAPI.getStreak(resolvedUserId).catch(() => null),
+        statsAPI.getUserAchievements(resolvedUserId).catch(() => []),
+        statsAPI.getAchievements().catch(() => []),
+      ]).then(([qStats, streakData, uAch, allAch]) => {
+        if (qStats) setQuizStats(qStats);
+        if (streakData) setStreak(streakData);
+        setUserAchievements(uAch || []);
+        setAllAchievements(allAch || []);
+      });
     } catch (error) {
       console.error('Failed to load profile:', error);
       // Fallback to auth store user for own profile
       if (isOwnProfile && currentUser) {
         setProfile(currentUser);
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -156,10 +187,52 @@ export default function ProfileScreen() {
     navigation.navigate('EditProfile' as any);
   }, [navigation]);
 
-  if (!profile) {
+  // ── Blur Shimmer Loading State ─────────────────────────────────
+  if (loading || !profile) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Profile not found</Text>
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+        <LinearGradient
+          colors={['#BAE6FD', '#E0F2FE', '#F0F9FF']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255,255,255,0.65)' }]} />
+        <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          {/* Shimmer Avatar */}
+          <Animated.View entering={FadeIn.duration(400)} style={{ alignItems: 'center', gap: 16 }}>
+            <Skeleton width={100} height={100} borderRadius={50} />
+            <Skeleton width={180} height={20} borderRadius={10} />
+            <Skeleton width={120} height={14} borderRadius={7} />
+            <View style={{ flexDirection: 'row', gap: 24, marginTop: 12 }}>
+              <View style={{ alignItems: 'center', gap: 6 }}>
+                <Skeleton width={40} height={18} borderRadius={9} />
+                <Skeleton width={50} height={10} borderRadius={5} />
+              </View>
+              <View style={{ alignItems: 'center', gap: 6 }}>
+                <Skeleton width={40} height={18} borderRadius={9} />
+                <Skeleton width={50} height={10} borderRadius={5} />
+              </View>
+              <View style={{ alignItems: 'center', gap: 6 }}>
+                <Skeleton width={40} height={18} borderRadius={9} />
+                <Skeleton width={50} height={10} borderRadius={5} />
+              </View>
+            </View>
+            {/* Shimmer Cards */}
+            <View style={{ width: '100%', gap: 12, marginTop: 20 }}>
+              <Skeleton width="100%" height={110} borderRadius={20} />
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <Skeleton width="48%" height={80} borderRadius={16} />
+                <Skeleton width="48%" height={80} borderRadius={16} />
+              </View>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <Skeleton width="48%" height={80} borderRadius={16} />
+                <Skeleton width="48%" height={80} borderRadius={16} />
+              </View>
+            </View>
+          </Animated.View>
+        </SafeAreaView>
       </View>
     );
   }
@@ -196,26 +269,44 @@ export default function ProfileScreen() {
             style={styles.coverGradient}
           />
 
-          {/* Back Button */}
+          {/* Header Buttons */}
           <SafeAreaView edges={['top']} style={styles.headerButtons}>
-            {/* Settings Button (Own Profile) */}
-            {isOwnProfile && (
-              <View style={styles.headerTopRow}>
-                <TouchableOpacity style={styles.headerCircleBtn}>
-                  <Ionicons name="settings-outline" size={20} color="#1a1a1a" />
+            <View style={styles.headerTopRow}>
+              {/* Back Button — only when viewing someone else's profile */}
+              {!isOwnProfile && (
+                <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.goBack()}>
+                  <Ionicons name="chevron-back" size={22} color="#1a1a1a" />
                 </TouchableOpacity>
+              )}
+
+              <View style={{ flex: 1 }} />
+
+              {/* Settings & Camera — own profile only */}
+              {isOwnProfile && (
+                <>
+                  <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.navigate('Settings' as any)}>
+                    <Ionicons name="settings-outline" size={20} color="#1a1a1a" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.headerCircleBtn, { marginLeft: 8 }]}>
+                    <Ionicons name="camera-outline" size={20} color="#1a1a1a" />
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {/* More options — other user's profile */}
+              {!isOwnProfile && (
                 <TouchableOpacity style={styles.headerCircleBtn}>
-                  <Ionicons name="camera-outline" size={20} color="#1a1a1a" />
+                  <Ionicons name="ellipsis-horizontal" size={20} color="#1a1a1a" />
                 </TouchableOpacity>
-              </View>
-            )}
+              )}
+            </View>
           </SafeAreaView>
         </View>
 
         {/* Profile Content */}
         <View style={styles.contentContainer}>
           {/* Avatar Section */}
-          <View style={styles.avatarSection}>
+          <Animated.View entering={FadeInDown.delay(100).duration(500).springify()} style={styles.avatarSection}>
             <View style={styles.avatarWrapper}>
               <Avatar
                 uri={profile.profilePictureUrl}
@@ -234,10 +325,10 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               )}
             </View>
-          </View>
+          </Animated.View>
 
           {/* Name & Bio Section */}
-          <View style={styles.nameSection}>
+          <Animated.View entering={FadeInDown.delay(200).duration(500).springify()} style={styles.nameSection}>
             <View style={styles.nameRow}>
               <Text style={styles.name}>{fullName}</Text>
               {profile.isVerified && (
@@ -279,58 +370,64 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </Animated.View>
 
           {/* Stats Cards — Individual mini-cards */}
           <View style={styles.statsRow}>
-            <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
-              <LinearGradient
-                colors={['#F3E8FF', '#FAF5FF']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.statCardGradient}
-              >
-                <View style={[styles.statIconCircle, { backgroundColor: '#C084FC' }]}>
-                  <Ionicons name="document-text" size={16} color="#581C87" />
-                </View>
-                <Text style={styles.statValue}>{formatNumber(stats.posts)}</Text>
-                <Text style={styles.statLabel}>Posts</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+            <Animated.View entering={ZoomIn.delay(250).duration(400)} style={{ flex: 1 }}>
+              <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
+                <LinearGradient
+                  colors={['#F3E8FF', '#FAF5FF']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.statCardGradient}
+                >
+                  <View style={[styles.statIconCircle, { backgroundColor: '#C084FC' }]}>
+                    <Ionicons name="document-text" size={16} color="#581C87" />
+                  </View>
+                  <Text style={styles.statValue}>{formatNumber(stats.posts)}</Text>
+                  <Text style={styles.statLabel}>Posts</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </Animated.View>
 
-            <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
-              <LinearGradient
-                colors={['#DBEAFE', '#EFF6FF']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.statCardGradient}
-              >
-                <View style={[styles.statIconCircle, { backgroundColor: '#93C5FD' }]}>
-                  <Ionicons name="people" size={16} color="#1E3A5F" />
-                </View>
-                <Text style={styles.statValue}>{formatNumber(stats.followers)}</Text>
-                <Text style={styles.statLabel}>Followers</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+            <Animated.View entering={ZoomIn.delay(350).duration(400)} style={{ flex: 1 }}>
+              <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
+                <LinearGradient
+                  colors={['#DBEAFE', '#EFF6FF']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.statCardGradient}
+                >
+                  <View style={[styles.statIconCircle, { backgroundColor: '#93C5FD' }]}>
+                    <Ionicons name="people" size={16} color="#1E3A5F" />
+                  </View>
+                  <Text style={styles.statValue}>{formatNumber(stats.followers)}</Text>
+                  <Text style={styles.statLabel}>Followers</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </Animated.View>
 
-            <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
-              <LinearGradient
-                colors={['#D1FAE5', '#ECFDF5']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.statCardGradient}
-              >
-                <View style={[styles.statIconCircle, { backgroundColor: '#6EE7B7' }]}>
-                  <Ionicons name="heart" size={16} color="#064E3B" />
-                </View>
-                <Text style={styles.statValue}>{formatNumber(stats.following)}</Text>
-                <Text style={styles.statLabel}>Following</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+            <Animated.View entering={ZoomIn.delay(450).duration(400)} style={{ flex: 1 }}>
+              <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
+                <LinearGradient
+                  colors={['#D1FAE5', '#ECFDF5']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.statCardGradient}
+                >
+                  <View style={[styles.statIconCircle, { backgroundColor: '#6EE7B7' }]}>
+                    <Ionicons name="heart" size={16} color="#064E3B" />
+                  </View>
+                  <Text style={styles.statValue}>{formatNumber(stats.following)}</Text>
+                  <Text style={styles.statLabel}>Following</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </Animated.View>
           </View>
 
           {/* Action Buttons — Compact layout */}
-          <View style={styles.actionButtons}>
+          <Animated.View entering={FadeInDown.delay(350).duration(500).springify()} style={styles.actionButtons}>
             {isOwnProfile ? (
               <>
                 <TouchableOpacity
@@ -380,10 +477,10 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               </>
             )}
-          </View>
+          </Animated.View>
 
           {/* Performance Highlights */}
-          <View style={styles.highlightsSection}>
+          <Animated.View entering={FadeInDown.delay(400).duration(500).springify()} style={styles.highlightsSection}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Performance</Text>
             </View>
@@ -435,7 +532,7 @@ export default function ProfileScreen() {
               <StatCard icon="trophy-outline" value={profileStats?.achievements ?? 0} label="Achievements" index={4} />
               <StatCard icon="code-slash-outline" value={profileStats?.projects ?? 0} label="Projects" index={5} />
             </View>
-          </View>
+          </Animated.View>
 
           {/* Tabs */}
           <View style={styles.tabsSection}>
@@ -474,10 +571,17 @@ export default function ProfileScreen() {
           {/* Tab Content */}
           <View style={styles.tabContent}>
             {activeTab === 'performance' && (
-              <View style={styles.contentPlaceholder}>
-                <Ionicons name="analytics-outline" size={48} color="#E5E7EB" />
-                <Text style={styles.placeholderText}>Detailed analytics coming soon</Text>
-              </View>
+              <PerformanceTab
+                quizStats={quizStats}
+                streak={streak}
+                achievements={userAchievements}
+                totalAchievements={allAchievements.length || 12}
+                level={profile.level ?? 1}
+                totalPoints={profile.totalPoints ?? 0}
+                onViewAchievements={() => navigation.navigate('Achievements' as any)}
+                onViewLeaderboard={() => navigation.navigate('Leaderboard' as any)}
+                onViewStats={() => navigation.navigate('Stats' as any)}
+              />
             )}
             {activeTab === 'about' && (
               <View style={styles.aboutSection}>
@@ -567,24 +671,34 @@ export default function ProfileScreen() {
                 )}
 
                 {/* Empty state */}
-                {!profile.bio && education.length === 0 && experiences.length === 0 && (
+                {!profile.bio && education.length === 0 && experiences.length === 0 && certifications.length === 0 && (!profile.skills || profile.skills.length === 0) && profile.interests.length === 0 && (
                   <View style={styles.contentPlaceholder}>
                     <Ionicons name="person-outline" size={48} color="#E5E7EB" />
                     <Text style={styles.placeholderText}>No about information yet</Text>
                   </View>
                 )}
+
+                {/* Certifications */}
+                <CertificationsSection certifications={certifications} />
+
+                {/* Skills & Interests */}
+                <SkillsSection skills={profile.skills || []} interests={profile.interests || []} />
               </View>
             )}
             {activeTab === 'activity' && (
-              <View style={styles.contentPlaceholder}>
-                <Ionicons name="flame-outline" size={48} color="#E5E7EB" />
-                <Text style={styles.placeholderText}>Activity timeline coming soon</Text>
-              </View>
+              <ActivityTab
+                stats={profileStats}
+                posts={stats.posts}
+                followers={stats.followers}
+                recentAttempts={quizStats?.recentAttempts ?? []}
+                achievements={userAchievements}
+                streak={streak}
+              />
             )}
           </View>
         </View>
-      </ScrollView>
-    </View>
+      </ScrollView >
+    </View >
   );
 }
 

@@ -220,11 +220,34 @@ export interface Post {
   shares: number;
   isLiked: boolean;
   isBookmarked: boolean;
+  isFollowingAuthor?: boolean;
   visibility: 'PUBLIC' | 'SCHOOL' | 'CLASS' | 'PRIVATE';
   tags: string[];
   // E-Learning enhancements
   learningMeta?: PostLearningMeta;
   topicTags?: string[]; // Subject hashtags like #Math, #Physics
+  // Repost data
+  repostOfId?: string | null;
+  repostComment?: string | null;
+  repostOf?: {
+    id: string;
+    content: string;
+    title?: string;
+    postType: PostType;
+    mediaUrls: string[];
+    createdAt: string;
+    likesCount: number;
+    commentsCount: number;
+    author?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      name?: string;
+      profilePictureUrl?: string;
+      role: string;
+      isVerified: boolean;
+    };
+  } | null;
   // Poll fields
   pollOptions?: Array<{
     id: string;

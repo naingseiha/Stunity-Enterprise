@@ -37,11 +37,34 @@ export function transformPost(post: any): Post | null {
             shares: post.sharesCount || 0,
             isLiked: post.isLikedByMe || post.isLiked || false,
             isBookmarked: post.isBookmarked || false,
+            isFollowingAuthor: post.isFollowingAuthor || false,
             createdAt: post.createdAt,
             updatedAt: post.updatedAt,
             // E-Learning metadata
             topicTags: post.topicTags || post.tags || [],
             tags: post.tags || post.topicTags || [],
+            // Repost data
+            repostOfId: post.repostOfId || null,
+            repostComment: post.repostComment || null,
+            repostOf: post.repostOf ? {
+                id: post.repostOf.id,
+                content: post.repostOf.content,
+                title: post.repostOf.title,
+                postType: post.repostOf.postType,
+                mediaUrls: post.repostOf.mediaUrls || [],
+                createdAt: post.repostOf.createdAt,
+                likesCount: post.repostOf.likesCount || 0,
+                commentsCount: post.repostOf.commentsCount || 0,
+                author: post.repostOf.author ? {
+                    id: post.repostOf.author.id,
+                    firstName: post.repostOf.author.firstName,
+                    lastName: post.repostOf.author.lastName,
+                    name: `${post.repostOf.author.firstName || ''} ${post.repostOf.author.lastName || ''}`.trim(),
+                    profilePictureUrl: post.repostOf.author.profilePictureUrl,
+                    role: post.repostOf.author.role,
+                    isVerified: post.repostOf.author.isVerified,
+                } : undefined,
+            } : undefined,
             // Poll fields
             pollOptions: post.pollOptions?.map((opt: any) => ({
                 id: opt.id,

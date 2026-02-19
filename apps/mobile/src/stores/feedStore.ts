@@ -110,9 +110,10 @@ interface FeedState {
   isLoadingAnalytics: Record<string, boolean>;
 
   // Actions
-  fetchPosts: (refresh?: boolean) => Promise<void>;
+  fetchPosts: (refresh?: boolean, subject?: string) => Promise<void>;
+  fetchPostById: (postId: string) => Promise<Post | null>;
   fetchStories: () => Promise<void>;
-  createPost: (content: string, mediaUrls?: string[], postType?: string, pollOptions?: string[], quizData?: any, title?: string, visibility?: string, pollSettings?: any, courseData?: any, projectData?: any) => Promise<boolean>;
+  createPost: (content: string, mediaUrls?: string[], postType?: string, pollOptions?: string[], quizData?: any, title?: string, visibility?: string, pollSettings?: any, courseData?: any, projectData?: any, topicTags?: string[], deadline?: string) => Promise<boolean>;
   updatePost: (postId: string, data: { content: string; visibility?: string; mediaUrls?: string[]; mediaDisplayMode?: string; pollOptions?: string[]; quizData?: any; pollSettings?: any; deadline?: string }) => Promise<boolean>;
   likePost: (postId: string) => Promise<void>;
   unlikePost: (postId: string) => Promise<void>;
@@ -195,8 +196,35 @@ const initialState = {
 export const useFeedStore = create<FeedState>()((set, get) => ({
   ...initialState,
 
+  // Fetch a single post by ID from the API
+  fetchPostById: async (postId: string) => {
+    try {
+      const response = await feedApi.get(`/posts/${postId}`);
+      if (response.data.success && response.data.data) {
+        const transformed = transformPost(response.data.data);
+        if (!transformed) return null;
+        // Upsert into local posts array
+        const { posts } = get();
+        const idx = posts.findIndex(p => p.id === postId);
+        if (idx >= 0) {
+          const updated = [...posts];
+          updated[idx] = transformed;
+          set({ posts: updated });
+        } else {
+          set({ posts: [transformed, ...posts] });
+        }
+        return transformed;
+      }
+      return null;
+    } catch (error) {
+      console.error('❌ [FeedStore] fetchPostById error:', error);
+      return null;
+    }
+  },
+
   // Fetch posts with pagination
   fetchPosts: async (refresh = false, subject?: string) => {
+
     const { isLoadingPosts, postsPage, posts, hasMorePosts } = get();
 
     if (isLoadingPosts || (!refresh && !hasMorePosts)) return;
@@ -372,7 +400,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   },
 
   // Create a new post
-  createPost: async (content, mediaUrls = [], postType = 'ARTICLE', pollOptions = [], quizData, title, visibility = 'PUBLIC', pollSettings, courseData, projectData) => {
+  createPost: async (content, mediaUrls = [], postType = 'ARTICLE', pollOptions = [], quizData, title, visibility = 'PUBLIC', pollSettings, courseData, projectData, topicTags, deadline) => {
     try {
       // Upload local images to R2 before creating post
       let uploadedMediaUrls = mediaUrls;
@@ -450,6 +478,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         quizData: postType === 'QUIZ' ? quizData : undefined,
         courseData: postType === 'COURSE' ? courseData : undefined,
         projectData: postType === 'PROJECT' ? projectData : undefined,
+        topicTags: topicTags || [],
       });
 
       if (response.data.success) {

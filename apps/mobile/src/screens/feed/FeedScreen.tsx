@@ -107,6 +107,8 @@ export default function FeedScreen() {
   const [analyticsPostId, setAnalyticsPostId] = useState<string | null>(null);
   const [valuePostId, setValuePostId] = useState<string | null>(null);
   const [valuePostData, setValuePostData] = useState<{ postType: string; authorName: string } | null>(null);
+  const [valuedPostIds, setValuedPostIds] = useState<Set<string>>(new Set());
+  const [isValueSubmitting, setIsValueSubmitting] = useState(false);
 
   // Refs for stable polling (avoid re-creating interval on every posts change)
   const flatListRef = React.useRef<FlashListRef<Post>>(null);
@@ -291,36 +293,29 @@ export default function FeedScreen() {
   const handleSubmitValue = useCallback(async (value: EducationalValue) => {
     if (!valuePostId) return;
 
+    setIsValueSubmitting(true);
     try {
-      // Send to backend
-      const response = await feedApi.post(`/posts/${valuePostId}/value`, {
+      // Send to backend — map 'recommend' → 'wouldRecommend' to match API
+      await feedApi.post(`/posts/${valuePostId}/value`, {
         accuracy: value.accuracy,
         helpfulness: value.helpfulness,
         clarity: value.clarity,
         depth: value.depth,
         difficulty: value.difficulty,
-        // wouldRecommend: value.wouldRecommend, // Temporary fix: comment out if not in type
+        wouldRecommend: value.recommend,
       });
 
-      console.log('✅ Educational Value submitted:', {
-        postId: valuePostId,
-        averageRating: response.data.averageRating,
-        value,
-      });
+      // Mark post as valued
+      setValuedPostIds(prev => new Set(prev).add(valuePostId));
 
       // Close modal
       setValuePostId(null);
       setValuePostData(null);
-
-      // Show success feedback
-      Alert.alert(
-        'Thank You! 🎉',
-        'Your feedback helps improve learning for everyone in the community.',
-        [{ text: 'Got it' }]
-      );
     } catch (error: any) {
       console.error('❌ Failed to submit value:', error);
       Alert.alert('Error', 'Failed to submit rating. Please try again.');
+    } finally {
+      setIsValueSubmitting(false);
     }
   }, [valuePostId]);
 
@@ -362,8 +357,7 @@ export default function FeedScreen() {
     setActiveSubjectFilter(filterKey);
 
     // Refresh feed with subject filter
-    // await fetchPosts(true, filterKey); // Fix: fetchPosts might not accept filterKey yet
-    await fetchPosts(true);
+    await fetchPosts(true, filterKey);
   }, [fetchPosts]);
 
   const renderHeader = useCallback(() => (
@@ -526,10 +520,11 @@ export default function FeedScreen() {
         post={item}
         onLike={() => handleLikePost(item)}
         onComment={() => navigation.navigate('Comments', { postId: item.id })}
-        onRepost={() => { }}
+        onRepost={() => handleSharePost(item)}
         onShare={() => handleSharePost(item)}
         onBookmark={() => bookmarkPost(item.id)}
         onValue={() => handleValuePost(item)}
+        isValued={valuedPostIds.has(item.id)}
         onUserPress={() => navigation.navigate('UserProfile', { userId: item.author.id })}
         onPress={() => handlePostPress(item)}
         onVote={(optionId) => handleVoteOnPoll(item.id, optionId)}
@@ -549,7 +544,7 @@ export default function FeedScreen() {
     }
 
     return <View style={styles.postWrapper}>{card}</View>;
-  }, [handleLikePost, handleSharePost, handleValuePost, handlePostPress, handleVoteOnPoll, bookmarkPost, navigation]);
+  }, [handleLikePost, handleSharePost, handleValuePost, handlePostPress, handleVoteOnPoll, bookmarkPost, navigation, valuedPostIds]);
 
   const renderFooter = () => {
     if (!isLoadingPosts) return null;
@@ -728,6 +723,7 @@ export default function FeedScreen() {
           setValuePostData(null);
         }}
         onSubmit={handleSubmitValue}
+        isSubmitting={isValueSubmitting}
         postType={valuePostData?.postType || 'POST'}
         authorName={valuePostData?.authorName || 'Unknown'}
       />

@@ -16,7 +16,7 @@ const router = Router();
 // POST /posts - Create new post
 router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { content, title, postType = 'ARTICLE', visibility = 'SCHOOL', mediaUrls = [], mediaDisplayMode = 'AUTO', pollOptions, quizData } = req.body;
+    const { content, title, postType = 'ARTICLE', visibility = 'SCHOOL', mediaUrls = [], mediaDisplayMode = 'AUTO', pollOptions, quizData, topicTags, deadline, pollSettings } = req.body;
 
     console.log('📝 Creating post:', {
       postType,
@@ -24,11 +24,30 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
       authorId: req.user!.id,
       authorSchoolId: req.user!.schoolId,
       hasQuizData: !!quizData,
+      topicTags,
       quizDataKeys: quizData ? Object.keys(quizData) : []
     });
 
     if (!content || content.trim().length === 0) {
       return res.status(400).json({ success: false, error: 'Content is required' });
+    }
+
+    // Calculate deadline from poll duration if needed
+    let resolvedDeadline = deadline;
+    if (!resolvedDeadline && postType === 'POLL' && pollSettings?.duration) {
+      const now = new Date();
+      now.setHours(now.getHours() + pollSettings.duration);
+      resolvedDeadline = now.toISOString();
+    }
+
+    // Map deadline to the correct schema field based on post type
+    const deadlineFields: Record<string, any> = {};
+    if (resolvedDeadline) {
+      const deadlineDate = new Date(resolvedDeadline);
+      if (postType === 'POLL') deadlineFields.pollExpiresAt = deadlineDate;
+      else if (postType === 'PROJECT') deadlineFields.projectDeadline = deadlineDate;
+      else if (postType === 'ANNOUNCEMENT') deadlineFields.announcementExpiryDate = deadlineDate;
+      else if (postType === 'ASSIGNMENT') deadlineFields.assignmentDueDate = deadlineDate;
     }
 
     const postData: any = {
@@ -39,6 +58,8 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
       visibility,
       mediaUrls,
       mediaDisplayMode,
+      topicTags: topicTags || [],
+      ...deadlineFields,
     };
 
     // Create post with poll options if it's a poll, OR quiz if it's a quiz
@@ -858,6 +879,94 @@ router.delete('/comments/:id', authenticateToken, async (req: AuthRequest, res: 
     res.json({ success: true, message: 'Comment deleted' });
   } catch (error: any) {
     res.status(500).json({ success: false, error: 'Failed to delete comment' });
+  }
+});
+
+// POST /posts/:id/repost - Repost a post to your feed
+router.post('/posts/:id/repost', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const originalPostId = req.params.id;
+    const userId = req.user!.id;
+    const { comment } = req.body; // Optional repost comment
+
+    // Check original post exists
+    const originalPost = await prisma.post.findUnique({
+      where: { id: originalPostId },
+      select: { id: true, authorId: true, content: true, postType: true },
+    });
+    if (!originalPost) {
+      return res.status(404).json({ success: false, error: 'Original post not found' });
+    }
+
+    // Don't allow reposting your own post
+    if (originalPost.authorId === userId) {
+      return res.status(400).json({ success: false, error: 'Cannot repost your own post' });
+    }
+
+    // Check if already reposted
+    const existing = await prisma.post.findFirst({
+      where: { authorId: userId, repostOfId: originalPostId },
+    });
+    if (existing) {
+      return res.status(400).json({ success: false, error: 'You already reposted this' });
+    }
+
+    // Create the repost as a new post
+    const repost = await prisma.post.create({
+      data: {
+        authorId: userId,
+        content: comment || '',
+        postType: originalPost.postType,
+        repostOfId: originalPostId,
+        repostComment: comment || null,
+        visibility: 'SCHOOL',
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true,
+            role: true,
+            isVerified: true,
+          },
+        },
+        repostOf: {
+          select: {
+            id: true,
+            content: true,
+            title: true,
+            postType: true,
+            mediaUrls: true,
+            createdAt: true,
+            likesCount: true,
+            commentsCount: true,
+            author: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                profilePictureUrl: true,
+                role: true,
+                isVerified: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Increment original post sharesCount
+    await prisma.post.update({
+      where: { id: originalPostId },
+      data: { sharesCount: { increment: 1 } },
+    });
+
+    res.json({ success: true, data: repost });
+  } catch (error: any) {
+    console.error('Repost error:', error);
+    res.status(500).json({ success: false, error: 'Failed to repost' });
   }
 });
 

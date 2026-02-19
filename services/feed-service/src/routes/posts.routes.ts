@@ -30,6 +30,7 @@ function stripToMinimal(post: any): any {
     commentsCount: post.commentsCount ?? post._count?.comments ?? 0,
     sharesCount: post.sharesCount ?? 0,
     isLikedByMe: post.isLikedByMe,
+    isFollowingAuthor: post.isFollowingAuthor || false,
     author: post.author ? {
       id: post.author.id,
       firstName: post.author.firstName,
@@ -42,6 +43,12 @@ function stripToMinimal(post: any): any {
     ...(post.postType === 'POLL' && { pollOptions: post.pollOptions, userVotedOptionId: post.userVotedOptionId }),
     ...(post.postType === 'QUIZ' && post.quiz && { quiz: post.quiz }),
     ...(post.postType === 'QUIZ' && post.quizData && { quizData: post.quizData }),
+    // Repost data
+    ...(post.repostOfId && {
+      repostOfId: post.repostOfId,
+      repostComment: post.repostComment,
+      repostOf: post.repostOf,
+    }),
   };
 }
 
@@ -59,7 +66,7 @@ function createETag(posts: any[]): string {
 // GET /posts - Get feed posts
 router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { page = 1, limit = 20, type, subject, cursor, fields } = req.query;
+    const { page = 1, limit = 20, type, subject, cursor, fields, search } = req.query;
     const minimal = fields === 'minimal';
     // Cursor-based pagination: use cursor (last post ID) when available
     const useCursor = cursor && typeof cursor === 'string';
@@ -81,12 +88,30 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
       ];
     }
 
+    // Search filter — search in content, title, tags, and post type
+    if (search && typeof search === 'string' && search.trim()) {
+      const searchTerm = search.trim();
+      const searchOR: any[] = [
+        { content: { contains: searchTerm, mode: 'insensitive' } },
+        { title: { contains: searchTerm, mode: 'insensitive' } },
+        { topicTags: { hasSome: [searchTerm.toLowerCase()] } },
+      ];
+      // Also match post type (e.g. searching "Quiz" finds QUIZ posts)
+      const upperSearch = searchTerm.toUpperCase().replace(/\s+/g, '_');
+      const validPostTypes = ['ARTICLE', 'QUESTION', 'ANNOUNCEMENT', 'POLL', 'ACHIEVEMENT', 'PROJECT', 'COURSE', 'EVENT', 'QUIZ', 'EXAM', 'ASSIGNMENT', 'RESOURCE', 'TUTORIAL', 'RESEARCH', 'CLUB_ANNOUNCEMENT', 'REFLECTION', 'COLLABORATION'];
+      if (validPostTypes.includes(upperSearch)) {
+        searchOR.push({ postType: upperSearch });
+      }
+      where.AND = [{ OR: searchOR }];
+    }
+
     if (process.env.NODE_ENV !== 'production') {
       console.log('📋 [GET /posts] Query filters:', {
         userId: req.user!.id,
         userSchoolId: req.user!.schoolId,
         type,
         subject,
+        search,
       });
     }
 
@@ -137,6 +162,28 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
           _count: {
             select: { comments: true, likes: true },
           },
+          repostOf: {
+            select: {
+              id: true,
+              content: true,
+              title: true,
+              postType: true,
+              mediaUrls: true,
+              createdAt: true,
+              likesCount: true,
+              commentsCount: true,
+              author: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  profilePictureUrl: true,
+                  role: true,
+                  isVerified: true,
+                },
+              },
+            },
+          },
         },
         orderBy: [
           { isPinned: 'desc' },
@@ -174,6 +221,14 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
     });
     const likedPostIds = new Set(userLikes.map(l => l.postId));
 
+    // Check which post authors the current user follows
+    const authorIds = [...new Set(posts.map(p => p.authorId).filter(id => id !== req.user!.id))];
+    const userFollows = authorIds.length > 0 ? await prisma.follow.findMany({
+      where: { followerId: req.user!.id, followingId: { in: authorIds } },
+      select: { followingId: true },
+    }) : [];
+    const followingSet = new Set(userFollows.map(f => f.followingId));
+
     // Check if current user voted on any polls
     const pollPostIds = posts.filter(p => p.postType === 'POLL').map(p => p.id);
     const userVotes = pollPostIds.length > 0 ? await prisma.pollVote.findMany({
@@ -208,6 +263,7 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
     const formattedPosts = posts.map(post => ({
       ...post,
       isLikedByMe: likedPostIds.has(post.id),
+      isFollowingAuthor: followingSet.has(post.authorId),
       likesCount: post._count.likes,
       commentsCount: post._count.comments,
       // Add userVotedOptionId for polls
@@ -309,6 +365,14 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
     const likedSet = new Set(userLikes.map(l => l.postId));
     const bookmarkedSet = new Set(userBookmarks.map(b => b.postId));
 
+    // Check which post authors the current user follows
+    const feedAuthorIds = [...new Set(result.posts.map(sp => sp.post.authorId).filter(id => id !== userId))];
+    const feedFollows = feedAuthorIds.length > 0 ? await prisma.follow.findMany({
+      where: { followerId: userId, followingId: { in: feedAuthorIds } },
+      select: { followingId: true },
+    }) : [];
+    const feedFollowingSet = new Set(feedFollows.map(f => f.followingId));
+
     // Check if current user voted on any polls
     const pollPostIds = result.posts.filter(sp => sp.post.postType === 'POLL').map(sp => sp.post.id);
     const userVotes = pollPostIds.length > 0 ? await prisma.pollVote.findMany({
@@ -361,10 +425,14 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
       createdAt: sp.post.createdAt,
       updatedAt: sp.post.updatedAt,
       topicTags: (sp.post as any).topicTags || [],
+      repostOfId: (sp.post as any).repostOfId,
+      repostComment: (sp.post as any).repostComment,
+      repostOf: (sp.post as any).repostOf,
       author: sp.post.author,
       _count: sp.post._count,
       isLikedByMe: likedSet.has(sp.post.id),
       isBookmarked: bookmarkedSet.has(sp.post.id),
+      isFollowingAuthor: feedFollowingSet.has(sp.post.authorId),
       // Poll data
       pollOptions: (sp.post as any).pollOptions,
       ...(sp.post.postType === 'POLL' && {

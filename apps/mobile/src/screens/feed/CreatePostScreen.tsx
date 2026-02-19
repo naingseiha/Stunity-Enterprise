@@ -1,8 +1,12 @@
 /**
- * CreatePost Screen
+ * CreatePost Screen — Enhanced
  * 
- * Create new post with content and media
- * Matching v1 app clean design style
+ * Premium create post with:
+ * - Title field for structured post types
+ * - Topic tags with suggestion chips
+ * - Difficulty level for educational posts
+ * - Deadline picker for time-bound content
+ * - Gradient header and polished UI
  */
 
 import React, { useState, useCallback } from 'react';
@@ -26,6 +30,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeOut, Layout, ZoomIn, ZoomOut } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ResizeMode } from 'expo-av';
 
 import { Avatar } from '@/components/common';
@@ -40,14 +45,47 @@ import { ProjectForm } from './create-post/forms/ProjectForm';
 import { VideoPlayer } from '@/components/common/VideoPlayer';
 
 // Post type options
-const POST_TYPES: { type: PostType; icon: string; label: string; color: string }[] = [
-  { type: 'ARTICLE', icon: 'document-text', label: 'Article', color: '#0EA5E9' },
-  { type: 'QUESTION', icon: 'help-circle', label: 'Question', color: '#3B82F6' },
-  { type: 'ANNOUNCEMENT', icon: 'megaphone', label: 'Announce', color: '#EF4444' },
-  { type: 'POLL', icon: 'stats-chart', label: 'Poll', color: '#8B5CF6' },
-  { type: 'QUIZ', icon: 'school', label: 'Quiz', color: '#EC4899' },
-  { type: 'COURSE', icon: 'book', label: 'Course', color: '#10B981' },
-  { type: 'PROJECT', icon: 'folder', label: 'Project', color: '#F97316' },
+const POST_TYPES: { type: PostType; icon: string; label: string; color: string; gradient: [string, string] }[] = [
+  { type: 'ARTICLE', icon: 'document-text', label: 'Article', color: '#0EA5E9', gradient: ['#0EA5E9', '#38BDF8'] },
+  { type: 'QUESTION', icon: 'help-circle', label: 'Question', color: '#3B82F6', gradient: ['#3B82F6', '#60A5FA'] },
+  { type: 'ANNOUNCEMENT', icon: 'megaphone', label: 'Announce', color: '#EF4444', gradient: ['#EF4444', '#F87171'] },
+  { type: 'POLL', icon: 'stats-chart', label: 'Poll', color: '#8B5CF6', gradient: ['#8B5CF6', '#A78BFA'] },
+  { type: 'QUIZ', icon: 'school', label: 'Quiz', color: '#EC4899', gradient: ['#EC4899', '#F472B6'] },
+  { type: 'COURSE', icon: 'book', label: 'Course', color: '#10B981', gradient: ['#10B981', '#34D399'] },
+  { type: 'PROJECT', icon: 'folder', label: 'Project', color: '#F97316', gradient: ['#F97316', '#FB923C'] },
+];
+
+// Types that should show a title input
+const TITLE_POST_TYPES: PostType[] = ['COURSE', 'PROJECT', 'ANNOUNCEMENT', 'QUIZ'];
+
+// Types that should show difficulty selector
+const EDUCATIONAL_POST_TYPES: PostType[] = ['ARTICLE', 'COURSE', 'QUIZ', 'PROJECT'];
+
+// Types that support a deadline
+const DEADLINE_POST_TYPES: PostType[] = ['COURSE', 'PROJECT', 'QUIZ'];
+
+// Difficulty levels
+const DIFFICULTY_LEVELS = [
+  { value: 'BEGINNER', label: 'Beginner', icon: 'leaf', color: '#10B981', bg: '#ECFDF5' },
+  { value: 'INTERMEDIATE', label: 'Intermediate', icon: 'trending-up', color: '#F59E0B', bg: '#FFFBEB' },
+  { value: 'ADVANCED', label: 'Advanced', icon: 'flame', color: '#EF4444', bg: '#FEF2F2' },
+];
+
+// Deadline options
+const DEADLINE_OPTIONS = [
+  { label: 'None', value: null },
+  { label: '1 day', value: 1 },
+  { label: '3 days', value: 3 },
+  { label: '1 week', value: 7 },
+  { label: '2 weeks', value: 14 },
+  { label: '1 month', value: 30 },
+];
+
+// Suggested topic tags
+const SUGGESTED_TAGS = [
+  'Math', 'Science', 'Physics', 'Chemistry', 'Biology',
+  'Programming', 'English', 'History', 'Art', 'Music',
+  'Geography', 'Literature', 'Economics', 'Psychology',
 ];
 
 // Helper to check if URI is video
@@ -70,10 +108,21 @@ export default function CreatePostScreen() {
   const { createPost } = useFeedStore();
 
   const [content, setContent] = useState('');
+  const [postTitle, setPostTitle] = useState('');
   const [postType, setPostType] = useState<PostType>('ARTICLE');
   const [visibility, setVisibility] = useState('PUBLIC');
   const [mediaUris, setMediaUris] = useState<string[]>([]);
   const [isPosting, setIsPosting] = useState(false);
+
+  // Topic tags
+  const [topicTags, setTopicTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
+
+  // Difficulty level
+  const [difficulty, setDifficulty] = useState<string | null>(null);
+
+  // Deadline
+  const [deadlineDays, setDeadlineDays] = useState<number | null>(null);
 
   // Poll state
   const [pollOptions, setPollOptions] = useState<string[]>(['', '']);
@@ -93,6 +142,23 @@ export default function CreatePostScreen() {
 
   // Project state
   const [projectData, setProjectData] = useState<any>(null);
+
+  // Tag helpers
+  const addTag = useCallback((tag: string) => {
+    const trimmed = tag.trim().toLowerCase();
+    if (trimmed && topicTags.length < 5 && !topicTags.includes(trimmed)) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setTopicTags(prev => [...prev, trimmed]);
+      setTagInput('');
+    }
+  }, [topicTags]);
+
+  const removeTag = useCallback((tag: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setTopicTags(prev => prev.filter(t => t !== tag));
+  }, []);
 
   // Add poll option with animation
   const addPollOption = () => {
@@ -250,31 +316,44 @@ export default function CreatePostScreen() {
       // Prepare quiz data if it's a quiz
       const quizPayload = postType === 'QUIZ' && quizData ? quizData : undefined;
 
-      // Extract title from quiz data for QUIZ posts
-      const postTitle = postType === 'QUIZ' && quizData?.title ? quizData.title : undefined;
+      // Resolve title: use form title for structured types, quiz title for quiz
+      const resolvedTitle = TITLE_POST_TYPES.includes(postType) && postTitle.trim()
+        ? postTitle.trim()
+        : (postType === 'QUIZ' && quizData?.title ? quizData.title : undefined);
+
+      // Build deadline ISO string
+      let deadlineISO: string | undefined;
+      if (deadlineDays && DEADLINE_POST_TYPES.includes(postType)) {
+        const d = new Date();
+        d.setDate(d.getDate() + deadlineDays);
+        deadlineISO = d.toISOString();
+      }
+
+      // Build final topic tags (include difficulty as a tag if set)
+      const finalTags = [...topicTags];
+      if (difficulty && EDUCATIONAL_POST_TYPES.includes(postType)) {
+        finalTags.push(difficulty.toLowerCase());
+      }
 
       // Upload images and create post
-      // The createPost function will handle uploading local file:// URIs to R2
       const success = await createPost(
         content,
         mediaUris,
         postType,
         validPollOptions,
         quizPayload,
-        postTitle,
+        resolvedTitle,
         visibility,
         postType === 'POLL' ? pollData : undefined,
         courseData,
-        projectData
+        projectData,
+        finalTags,
+        deadlineISO
       );
 
       if (success) {
-        // Success animation sequence
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-        // Small delay for haptic feedback to register
         await new Promise(resolve => setTimeout(resolve, 100));
-
         navigation.goBack();
       } else {
         Alert.alert('Error', 'Failed to create post. Please try again.');
@@ -287,32 +366,45 @@ export default function CreatePostScreen() {
     } finally {
       setIsPosting(false);
     }
-  }, [content, postType, mediaUris, pollOptions, quizData, courseData, projectData, navigation, createPost, visibility]);
+  }, [content, postType, postTitle, mediaUris, pollOptions, quizData, courseData, projectData, navigation, createPost, visibility, topicTags, difficulty, deadlineDays]);
 
   const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
   const canPost = content.trim().length > 0;
+  const currentTypeConfig = POST_TYPES.find(t => t.type === postType) || POST_TYPES[0];
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
+      {/* Premium Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
           <Ionicons name="close" size={24} color="#374151" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Post</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Create Post</Text>
+          <View style={[styles.headerBadge, { backgroundColor: currentTypeConfig.color + '20' }]}>
+            <Ionicons name={currentTypeConfig.icon as any} size={12} color={currentTypeConfig.color} />
+            <Text style={[styles.headerBadgeText, { color: currentTypeConfig.color }]}>{currentTypeConfig.label}</Text>
+          </View>
+        </View>
         <TouchableOpacity
           onPress={handlePost}
           disabled={!canPost || isPosting}
-          style={[styles.postButton, (!canPost || isPosting) && styles.postButtonDisabled]}
           onPressIn={() => !(!canPost || isPosting) && Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
         >
-          {isPosting ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={[styles.postButtonText, !canPost && styles.postButtonTextDisabled]}>
-              Post
-            </Text>
-          )}
+          <LinearGradient
+            colors={canPost && !isPosting ? ['#6366F1', '#8B5CF6'] : ['#E5E7EB', '#E5E7EB']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.postButton}
+          >
+            {isPosting ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={[styles.postButtonText, !canPost && styles.postButtonTextDisabled]}>
+                Post
+              </Text>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
@@ -387,6 +479,21 @@ export default function CreatePostScreen() {
             ))}
           </ScrollView>
 
+          {/* Title Input — for structured post types */}
+          {TITLE_POST_TYPES.includes(postType) && (
+            <Animated.View entering={FadeIn.duration(200)} style={styles.titleSection}>
+              <TextInput
+                style={styles.titleInput}
+                placeholder={`${currentTypeConfig.label} title...`}
+                placeholderTextColor="#9CA3AF"
+                value={postTitle}
+                onChangeText={setPostTitle}
+                maxLength={120}
+              />
+              <Text style={styles.titleCounter}>{postTitle.length}/120</Text>
+            </Animated.View>
+          )}
+
           {/* Content Input */}
           <TextInput
             style={styles.contentInput}
@@ -397,6 +504,157 @@ export default function CreatePostScreen() {
             onChangeText={setContent}
             autoFocus
           />
+
+          {/* Topic Tags */}
+          <Animated.View entering={FadeIn.duration(200)} style={styles.tagsSection}>
+            <View style={styles.tagsSectionHeader}>
+              <View style={styles.tagsSectionTitle}>
+                <Ionicons name="pricetags" size={16} color="#6366F1" />
+                <Text style={styles.tagsSectionLabel}>Topic Tags</Text>
+              </View>
+              <Text style={styles.tagsCount}>{topicTags.length}/5</Text>
+            </View>
+
+            {/* Active Tags */}
+            {topicTags.length > 0 && (
+              <View style={styles.activeTagsRow}>
+                {topicTags.map((tag) => (
+                  <Animated.View
+                    key={tag}
+                    entering={ZoomIn.duration(200)}
+                    exiting={ZoomOut.duration(200)}
+                    layout={Layout.springify()}
+                  >
+                    <TouchableOpacity
+                      style={styles.activeTag}
+                      onPress={() => removeTag(tag)}
+                    >
+                      <Text style={styles.activeTagText}>#{tag}</Text>
+                      <Ionicons name="close" size={14} color="#6366F1" />
+                    </TouchableOpacity>
+                  </Animated.View>
+                ))}
+              </View>
+            )}
+
+            {/* Tag Input */}
+            {topicTags.length < 5 && (
+              <View style={styles.tagInputRow}>
+                <TextInput
+                  style={styles.tagInput}
+                  placeholder="Add a tag..."
+                  placeholderTextColor="#9CA3AF"
+                  value={tagInput}
+                  onChangeText={setTagInput}
+                  onSubmitEditing={() => addTag(tagInput)}
+                  returnKeyType="done"
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  onPress={() => addTag(tagInput)}
+                  style={[styles.tagAddButton, !tagInput.trim() && styles.tagAddButtonDisabled]}
+                  disabled={!tagInput.trim()}
+                >
+                  <Ionicons name="add" size={16} color="#FFF" />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Suggested Tags */}
+            {topicTags.length < 5 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.suggestedTagsScroll}
+              >
+                {SUGGESTED_TAGS.filter(t => !topicTags.includes(t.toLowerCase())).slice(0, 8).map((tag) => (
+                  <TouchableOpacity
+                    key={tag}
+                    style={styles.suggestedTag}
+                    onPress={() => addTag(tag)}
+                  >
+                    <Text style={styles.suggestedTagText}>{tag}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </Animated.View>
+
+          {/* Difficulty Level — for educational post types */}
+          {EDUCATIONAL_POST_TYPES.includes(postType) && (
+            <Animated.View entering={FadeIn.duration(200)} style={styles.difficultySection}>
+              <View style={styles.diffSectionHeader}>
+                <Ionicons name="speedometer" size={16} color="#F59E0B" />
+                <Text style={styles.diffSectionLabel}>Difficulty Level</Text>
+              </View>
+              <View style={styles.difficultyGrid}>
+                {DIFFICULTY_LEVELS.map((level) => (
+                  <TouchableOpacity
+                    key={level.value}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setDifficulty(difficulty === level.value ? null : level.value);
+                    }}
+                    style={[
+                      styles.difficultyCard,
+                      difficulty === level.value && {
+                        backgroundColor: level.bg,
+                        borderColor: level.color,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={level.icon as any}
+                      size={18}
+                      color={difficulty === level.value ? level.color : '#9CA3AF'}
+                    />
+                    <Text style={[
+                      styles.difficultyLabel,
+                      difficulty === level.value && { color: level.color, fontWeight: '700' },
+                    ]}>
+                      {level.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </Animated.View>
+          )}
+
+          {/* Deadline Picker — for time-bound post types */}
+          {DEADLINE_POST_TYPES.includes(postType) && (
+            <Animated.View entering={FadeIn.duration(200)} style={styles.deadlineSection}>
+              <View style={styles.deadlineSectionHeader}>
+                <Ionicons name="calendar" size={16} color="#EF4444" />
+                <Text style={styles.deadlineSectionLabel}>Deadline</Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.deadlineScroll}
+              >
+                {DEADLINE_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={String(opt.value)}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setDeadlineDays(opt.value);
+                    }}
+                    style={[
+                      styles.deadlineChip,
+                      deadlineDays === opt.value && styles.deadlineChipSelected,
+                    ]}
+                  >
+                    <Text style={[
+                      styles.deadlineChipText,
+                      deadlineDays === opt.value && styles.deadlineChipTextSelected,
+                    ]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </Animated.View>
+          )}
 
           {/* Question Form (only for QUESTION type) */}
           {postType === 'QUESTION' && (
@@ -587,7 +845,7 @@ export default function CreatePostScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FAFAFA',
   },
   header: {
     flexDirection: 'row',
@@ -595,31 +853,49 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#F0F0F0',
   },
   closeButton: {
-    padding: 4,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F5F3FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerCenter: {
+    alignItems: 'center',
+    gap: 4,
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#1F2937',
   },
+  headerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  headerBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
   postButton: {
-    backgroundColor: '#6366F1',
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 20,
     minWidth: 70,
     alignItems: 'center',
   },
-  postButtonDisabled: {
-    backgroundColor: '#E5E7EB',
-  },
   postButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#fff',
   },
   postButtonTextDisabled: {
@@ -636,6 +912,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     gap: 12,
+    backgroundColor: '#FFFFFF',
   },
   authorInfo: {
     flex: 1,
@@ -658,6 +935,7 @@ const styles = StyleSheet.create({
   typeSelector: {
     maxHeight: 50,
     marginBottom: 8,
+    backgroundColor: '#FFFFFF',
   },
   typeSelectorContent: {
     paddingHorizontal: 16,
@@ -669,7 +947,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#E5E7EB',
     gap: 6,
   },
@@ -678,20 +956,223 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#6B7280',
   },
+
+  // Title
+  titleSection: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  titleInput: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  titleCounter: {
+    fontSize: 11,
+    color: '#D1D5DB',
+    textAlign: 'right',
+    marginTop: 4,
+  },
+
   contentInput: {
     flex: 1,
     fontSize: 16,
     color: '#1F2937',
     paddingHorizontal: 16,
-    paddingTop: 8,
-    minHeight: 150,
+    paddingTop: 12,
+    minHeight: 120,
     textAlignVertical: 'top',
+    backgroundColor: '#FFFFFF',
   },
+
+  // Topic Tags
+  tagsSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  tagsSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  tagsSectionTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  tagsSectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  tagsCount: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontWeight: '500',
+  },
+  activeTagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 10,
+  },
+  activeTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#EEF2FF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  activeTagText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6366F1',
+  },
+  tagInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  tagInput: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: '#1F2937',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  tagAddButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#6366F1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tagAddButtonDisabled: {
+    backgroundColor: '#E5E7EB',
+  },
+  suggestedTagsScroll: {
+    gap: 6,
+  },
+  suggestedTag: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#F5F3FF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#EDE9FE',
+  },
+  suggestedTagText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#7C3AED',
+  },
+
+  // Difficulty
+  difficultySection: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  diffSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  diffSectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  difficultyGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  difficultyCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F9FAFB',
+    gap: 6,
+  },
+  difficultyLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+
+  // Deadline
+  deadlineSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  deadlineSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  deadlineSectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  deadlineScroll: {
+    gap: 8,
+  },
+  deadlineChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+  },
+  deadlineChipSelected: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#EF4444',
+  },
+  deadlineChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  deadlineChipTextSelected: {
+    color: '#EF4444',
+  },
+
   mediaPreview: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     padding: 16,
     gap: 8,
+    backgroundColor: '#FFFFFF',
   },
   mediaItem: {
     position: 'relative',
@@ -730,10 +1211,10 @@ const styles = StyleSheet.create({
   },
   bottomActions: {
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#F0F0F0',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
   },
   mediaActions: {
     flexDirection: 'row',
@@ -811,6 +1292,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
   },
   sectionLabel: {
     fontSize: 14,
@@ -830,7 +1312,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#E5E7EB',
     gap: 8,
   },

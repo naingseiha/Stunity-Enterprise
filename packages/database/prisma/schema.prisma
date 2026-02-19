@@ -718,6 +718,11 @@ model Post {
   author                   User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   quizQuestions            QuizQuestion[]
   quiz                     Quiz?
+  // Repost support
+  repostOfId               String? // ID of the original post being reposted
+  repostComment            String? // Optional comment added by the reposter
+  repostOf                 Post?          @relation("Reposts", fields: [repostOfId], references: [id], onDelete: SetNull)
+  reposts                  Post[]         @relation("Reposts")
   studyClub                StudyClub?     @relation("ClubPosts", fields: [studyClubId], references: [id], onDelete: SetNull)
 
   @@index([authorId, createdAt(sort: Desc)])
