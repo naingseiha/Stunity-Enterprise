@@ -464,7 +464,7 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.gray[50],
+    backgroundColor: '#FAFAFA',
   },
   header: {
     flexDirection: 'row',
@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing[2],
     backgroundColor: Colors.white,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[100],
+    borderBottomColor: '#F1F5F9',
   },
   backButton: {
     width: 40,
@@ -546,12 +546,12 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
   },
   myBubble: {
-    backgroundColor: Colors.primary[500],
-    borderBottomRightRadius: BorderRadius.sm,
+    backgroundColor: '#0EA5E9',
+    borderBottomRightRadius: 4,
   },
   otherBubble: {
     backgroundColor: Colors.white,
-    borderBottomLeftRadius: BorderRadius.sm,
+    borderBottomLeftRadius: 4,
     ...Shadows.sm,
   },
   pendingBubble: {
@@ -604,7 +604,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing[3],
     backgroundColor: Colors.white,
     borderTopWidth: 1,
-    borderTopColor: Colors.gray[100],
+    borderTopColor: '#F1F5F9',
   },
   attachButton: {
     width: 40,
@@ -640,7 +640,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: '#0EA5E9',
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: Spacing[2],
@@ -666,7 +666,7 @@ const styles = StyleSheet.create({
   replyBar: {
     width: 3,
     borderRadius: 2,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: '#0EA5E9',
     marginRight: 8,
   },
   myReplyBar: {
@@ -678,7 +678,7 @@ const styles = StyleSheet.create({
   replyAuthor: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.primary[500],
+    color: '#0EA5E9',
     marginBottom: 2,
   },
   myReplyAuthor: {
@@ -705,7 +705,7 @@ const styles = StyleSheet.create({
     width: 3,
     height: 36,
     borderRadius: 2,
-    backgroundColor: Colors.primary[500],
+    backgroundColor: '#0EA5E9',
     marginRight: Spacing[3],
   },
   replyBannerContent: {
@@ -714,7 +714,7 @@ const styles = StyleSheet.create({
   replyBannerTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.primary[500],
+    color: '#0EA5E9',
     marginBottom: 2,
   },
   replyBannerText: {

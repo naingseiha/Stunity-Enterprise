@@ -1,9 +1,8 @@
 /**
- * Conversations Screen - Redesigned
- * 
- * Beautiful, modern messaging interface with Instagram/Telegram inspiration
- * Features: Active now carousel, clean conversation cards, smooth animations
- * Real-time updates via Supabase Realtime + REST API
+ * Conversations Screen — Clean Professional Design
+ *
+ * Flat conversation list, iOS-style header, inline search
+ * Real-time updates via messagingStore + Supabase Realtime
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -15,19 +14,17 @@ import {
   TouchableOpacity,
   RefreshControl,
   StatusBar,
+  TextInput,
   Image,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeIn, FadeInDown, FadeInRight } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
-const StunityLogo = require('../../../../../Stunity.png');
-
-import { Avatar, Input, Card } from '@/components/common';
-import { Colors, Typography, Spacing, Shadows, BorderRadius } from '@/config';
+import { Avatar } from '@/components/common';
+import { Colors } from '@/config';
 import { formatRelativeTime } from '@/utils';
 import { MessagesStackScreenProps } from '@/navigation/types';
 import { useNavigationContext } from '@/contexts';
@@ -49,9 +46,9 @@ export default function ConversationsScreen() {
   } = useMessagingStore();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Initial fetch + realtime subscription
   useEffect(() => {
     fetchConversations();
     if (user?.id) {
@@ -60,7 +57,6 @@ export default function ConversationsScreen() {
     return () => unsubscribeAll();
   }, [user?.id]);
 
-  // Refresh on screen focus
   useFocusEffect(
     useCallback(() => {
       fetchConversations();
@@ -85,98 +81,70 @@ export default function ConversationsScreen() {
     navigation.navigate('NewMessage' as any);
   }, [navigation]);
 
-  const filteredConversations = conversations.filter((conv) => {
-    const name = conv.displayName.toLowerCase();
-    return name.includes(searchQuery.toLowerCase());
-  });
+  const filteredConversations = conversations.filter((conv) =>
+    conv.displayName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
+  const onlineConversations = conversations.filter((c) =>
+    c.participants.some(p => p.isOnline)
+  );
+
+  // ── Conversation Row ─────────────────────────────────────
   const renderConversation = ({ item, index }: { item: DMConversation; index: number }) => {
     const isUnread = item.unreadCount > 0;
     const firstParticipant = item.participants[0];
     const displayName = item.displayName;
     const displayAvatar = item.displayAvatar || firstParticipant?.profilePictureUrl;
-    const participantOnline = firstParticipant?.isOnline;
 
     return (
-      <Animated.View
-        entering={FadeInDown.delay(30 * Math.min(index, 5)).duration(400)}
-        style={styles.conversationWrapper}
-      >
+      <Animated.View entering={FadeInDown.delay(20 * Math.min(index, 8)).duration(300)}>
         <TouchableOpacity
           onPress={() => handleConversationPress(item)}
-          style={[
-            styles.conversationCard,
-            isUnread && styles.conversationCardUnread,
-          ]}
+          style={styles.conversationRow}
           activeOpacity={0.6}
         >
-          {/* Avatar with gradient border for unread */}
-          <View style={styles.avatarContainer}>
-            {isUnread ? (
-              <LinearGradient
-                colors={['#0EA5E9', '#0284C7', '#FF6B35']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.avatarGradientBorder}
-              >
-                <View style={styles.avatarInner}>
-                  <Avatar
-                    uri={displayAvatar}
-                    name={displayName}
-                    size="lg"
-                    showBorder={false}
-                  />
-                </View>
-              </LinearGradient>
-            ) : (
-              <Avatar
-                uri={displayAvatar}
-                name={displayName}
-                size="lg"
-                showOnline={participantOnline}
-              />
-            )}
+          {/* Avatar */}
+          <View style={styles.avatarWrap}>
+            <Avatar
+              uri={displayAvatar}
+              name={displayName}
+              size="lg"
+              showOnline={firstParticipant?.isOnline}
+            />
+            {isUnread && <View style={styles.unreadDot} />}
           </View>
 
           {/* Content */}
           <View style={styles.conversationContent}>
-            <View style={styles.conversationHeader}>
-              <Text style={[
-                styles.userName,
-                isUnread && styles.userNameUnread,
-              ]}>
+            <View style={styles.conversationTop}>
+              <Text
+                style={[styles.convName, isUnread && styles.convNameUnread]}
+                numberOfLines={1}
+              >
                 {displayName}
               </Text>
-              <View style={styles.timestampRow}>
-                {item.lastMessage && (
-                  <Text style={[
-                    styles.timestamp,
-                    isUnread && styles.timestampUnread
-                  ]}>
-                    {formatRelativeTime(item.lastMessage.createdAt)}
-                  </Text>
-                )}
-                {isUnread && (
-                  <View style={styles.unreadBadge}>
-                    <Text style={styles.unreadCount}>{item.unreadCount}</Text>
-                  </View>
-                )}
-              </View>
+              {item.lastMessage && (
+                <Text style={[styles.convTime, isUnread && styles.convTimeUnread]}>
+                  {formatRelativeTime(item.lastMessage.createdAt)}
+                </Text>
+              )}
             </View>
 
-            <View style={styles.messageRow}>
+            <View style={styles.conversationBottom}>
               <Text
-                style={[
-                  styles.lastMessage,
-                  isUnread && styles.lastMessageUnread
-                ]}
-                numberOfLines={2}
+                style={[styles.convMessage, isUnread && styles.convMessageUnread]}
+                numberOfLines={1}
               >
                 {item.lastMessage?.senderId === user?.id && (
                   <Text style={styles.youPrefix}>You: </Text>
                 )}
                 {item.lastMessage?.content || 'No messages yet'}
               </Text>
+              {isUnread && (
+                <View style={styles.unreadBadge}>
+                  <Text style={styles.unreadCount}>{item.unreadCount}</Text>
+                </View>
+              )}
             </View>
           </View>
         </TouchableOpacity>
@@ -184,24 +152,25 @@ export default function ConversationsScreen() {
     );
   };
 
+  // ── Empty State ──────────────────────────────────────────
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <View style={styles.emptyIconBg}>
-        <Ionicons name="chatbubbles-outline" size={48} color="#9CA3AF" />
+      <View style={styles.emptyIcon}>
+        <Ionicons name="chatbubbles-outline" size={40} color="#CBD5E1" />
       </View>
       <Text style={styles.emptyTitle}>No conversations yet</Text>
       <Text style={styles.emptyText}>
         Start a conversation with your classmates or teachers
       </Text>
-      <TouchableOpacity onPress={handleNewMessage} style={styles.emptyButton}>
+      <TouchableOpacity onPress={handleNewMessage} activeOpacity={0.85}>
         <LinearGradient
           colors={['#0EA5E9', '#0284C7']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={styles.emptyButtonGradient}
+          style={styles.emptyBtn}
         >
-          <Ionicons name="add" size={20} color="#fff" />
-          <Text style={styles.emptyButtonText}>New Message</Text>
+          <Ionicons name="add" size={18} color="#fff" />
+          <Text style={styles.emptyBtnText}>New Message</Text>
         </LinearGradient>
       </TouchableOpacity>
     </View>
@@ -211,95 +180,90 @@ export default function ConversationsScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Header - matching Feed/Learn style */}
+      {/* ── Header ─────────────────────────────────────────── */}
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.header}>
-          {/* Menu Button - Left */}
-          <TouchableOpacity onPress={openSidebar} style={styles.menuButton}>
-            <Ionicons name="menu" size={28} color="#374151" />
+          <TouchableOpacity onPress={openSidebar} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="menu" size={26} color="#1F2937" />
           </TouchableOpacity>
 
-          {/* Stunity Logo - Center */}
-          <Image
-            source={StunityLogo}
-            style={styles.headerLogo}
-            resizeMode="contain"
-          />
+          <Text style={styles.headerTitle}>Messages</Text>
 
-          {/* Actions - Right */}
           <View style={styles.headerActions}>
             <TouchableOpacity
-              style={styles.headerButton}
-              onPress={handleNewMessage}
+              onPress={() => setShowSearch(!showSearch)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="create-outline" size={24} color="#374151" />
+              <Ionicons name={showSearch ? "close" : "search-outline"} size={22} color="#6B7280" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.headerButton}>
-              <Ionicons name="search-outline" size={24} color="#374151" />
+            <TouchableOpacity
+              onPress={handleNewMessage}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="create-outline" size={22} color="#6B7280" />
             </TouchableOpacity>
           </View>
         </View>
-        <View style={styles.headerDivider} />
+
+        {/* Search bar */}
+        {showSearch && (
+          <Animated.View entering={FadeIn.duration(200)} style={styles.searchWrap}>
+            <View style={styles.searchBar}>
+              <Ionicons name="search" size={16} color="#9CA3AF" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search conversations..."
+                placeholderTextColor="#9CA3AF"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoFocus
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Ionicons name="close-circle" size={16} color="#9CA3AF" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </Animated.View>
+        )}
       </SafeAreaView>
 
-      {/* Active Now Section - Instagram Stories style */}
-      {conversations.filter((c) => c.participants.some(p => p.isOnline)).length > 0 && (
+      {/* ── Online Carousel ────────────────────────────────── */}
+      {onlineConversations.length > 0 && (
         <View style={styles.onlineSection}>
-          <View style={styles.onlineHeader}>
-            <Text style={styles.onlineTitle}>Active Now</Text>
-            <Text style={styles.onlineCount}>
-              {conversations.filter((c) => c.participants.some(p => p.isOnline)).length}
-            </Text>
-          </View>
           <FlatList
             horizontal
-            data={conversations.filter((c) => c.participants.some(p => p.isOnline))}
+            data={onlineConversations}
             keyExtractor={(item) => item.id}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.onlineList}
-            renderItem={({ item, index }) => {
-              const onlineParticipant = item.participants.find(p => p.isOnline) || item.participants[0];
+            renderItem={({ item }) => {
+              const p = item.participants.find(p => p.isOnline) || item.participants[0];
               return (
-                <Animated.View entering={FadeInRight.delay(50 * index).duration(400)}>
-                  <TouchableOpacity
-                    onPress={() => handleConversationPress(item)}
-                    style={styles.onlineUser}
-                    activeOpacity={0.7}
-                  >
-                    <LinearGradient
-                      colors={['#10B981', '#06B6D4', '#3B82F6']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.onlineGradientBorder}
-                    >
-                      <View style={styles.onlineAvatarInner}>
-                        <Avatar
-                          uri={onlineParticipant?.profilePictureUrl}
-                          name={item.displayName}
-                          size="md"
-                          showBorder={false}
-                        />
-                      </View>
-                    </LinearGradient>
-                    <Text style={styles.onlineUserName} numberOfLines={1}>
-                      {onlineParticipant?.firstName || item.displayName.split(' ')[0]}
-                    </Text>
-                  </TouchableOpacity>
-                </Animated.View>
+                <TouchableOpacity
+                  onPress={() => handleConversationPress(item)}
+                  style={styles.onlineItem}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.onlineAvatarWrap}>
+                    <Avatar
+                      uri={p?.profilePictureUrl}
+                      name={item.displayName}
+                      size="md"
+                    />
+                    <View style={styles.onlineIndicator} />
+                  </View>
+                  <Text style={styles.onlineName} numberOfLines={1}>
+                    {p?.firstName || item.displayName.split(' ')[0]}
+                  </Text>
+                </TouchableOpacity>
               );
             }}
           />
         </View>
       )}
 
-      {/* Conversations List Header */}
-      <View style={styles.conversationsHeader}>
-        <Text style={styles.conversationsTitle}>All Messages</Text>
-        <Text style={styles.conversationsCount}>
-          {filteredConversations.length}
-        </Text>
-      </View>
-
+      {/* ── Conversations List ─────────────────────────────── */}
       <FlatList
         data={filteredConversations}
         renderItem={renderConversation}
@@ -321,219 +285,153 @@ export default function ConversationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FAFAFA',
-  },
-  headerSafe: {
-    backgroundColor: '#fff',
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
+
+  // ── Header ────────────────────────────────────────────
+  headerSafe: { backgroundColor: '#fff' },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
     paddingVertical: 12,
   },
-  headerDivider: {
-    height: 1,
-    backgroundColor: '#F3F4F6',
-  },
-  headerLogo: {
-    height: 32,
-    width: 120,
-  },
-  menuButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
   },
   headerActions: {
     flexDirection: 'row',
-    gap: 4,
-  },
-  headerButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F9FAFB',
+    gap: 16,
   },
 
-  // Active Now Section
-  onlineSection: {
-    backgroundColor: '#fff',
-    paddingVertical: 18,
-    marginBottom: 8,
+  // ── Search ────────────────────────────────────────────
+  searchWrap: {
+    paddingHorizontal: 20,
+    paddingBottom: 12,
   },
-  onlineHeader: {
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 14,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 14,
+    gap: 8,
   },
-  onlineTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1F2937',
+  searchInput: {
     flex: 1,
+    fontSize: 14,
+    color: '#1F2937',
+    height: '100%',
   },
-  onlineCount: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#10B981',
-    backgroundColor: '#D1FAE5',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    overflow: 'hidden',
+
+  // ── Online Carousel ───────────────────────────────────
+  onlineSection: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingVertical: 14,
   },
   onlineList: {
-    paddingHorizontal: 12,
-    gap: 14,
+    paddingHorizontal: 16,
+    gap: 16,
   },
-  onlineUser: {
+  onlineItem: {
     alignItems: 'center',
-    width: 68,
+    width: 60,
   },
-  onlineGradientBorder: {
-    padding: 3,
-    borderRadius: 34,
+  onlineAvatarWrap: {
+    position: 'relative',
   },
-  onlineAvatarInner: {
-    backgroundColor: '#fff',
-    borderRadius: 32,
-    padding: 2,
+  onlineIndicator: {
+    position: 'absolute',
+    bottom: 1,
+    right: 1,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#22C55E',
+    borderWidth: 2,
+    borderColor: '#fff',
   },
-  onlineUserName: {
-    fontSize: 12,
+  onlineName: {
+    fontSize: 11,
     color: '#6B7280',
-    marginTop: 8,
+    marginTop: 6,
     textAlign: 'center',
     fontWeight: '500',
   },
 
-  // Conversations Header
-  conversationsHeader: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 1,
-  },
-  conversationsTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  conversationsCount: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#9CA3AF',
-  },
-
-  // Conversation Cards
+  // ── Conversation Row ──────────────────────────────────
   listContent: {
     flexGrow: 1,
-    backgroundColor: '#fff',
     paddingTop: 4,
   },
-  conversationWrapper: {
-    paddingHorizontal: 12,
-    marginBottom: 8,
-  },
-  conversationCard: {
+  conversationRow: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
   },
-  conversationCardUnread: {
-    backgroundColor: '#FFFBF5',
-    ...Platform.select({
-      ios: {
-        shadowOpacity: 0.08,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
+  avatarWrap: {
+    position: 'relative',
+    marginRight: 14,
   },
-  avatarContainer: {
-    marginRight: 12,
-  },
-  avatarGradientBorder: {
-    padding: 3,
-    borderRadius: 32,
-  },
-  avatarInner: {
-    backgroundColor: '#fff',
-    borderRadius: 30,
-    padding: 2,
+  unreadDot: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#0EA5E9',
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   conversationContent: {
     flex: 1,
-    justifyContent: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#F1F5F9',
+    paddingBottom: 12,
   },
-  conversationHeader: {
+  conversationTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 6,
+    alignItems: 'center',
+    marginBottom: 4,
   },
-  userName: {
-    fontSize: 16,
-    fontWeight: '600',
+  convName: {
+    fontSize: 15,
+    fontWeight: '500',
     color: '#374151',
     flex: 1,
+    marginRight: 8,
   },
-  userNameUnread: {
-    color: '#1F2937',
+  convNameUnread: {
     fontWeight: '700',
+    color: '#1F2937',
   },
-  timestampRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  timestamp: {
+  convTime: {
     fontSize: 12,
     color: '#9CA3AF',
-    fontWeight: '500',
   },
-  timestampUnread: {
+  convTimeUnread: {
     color: '#0EA5E9',
     fontWeight: '600',
   },
-  messageRow: {
+  conversationBottom: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
-  lastMessage: {
+  convMessage: {
     flex: 1,
     fontSize: 14,
-    color: '#6B7280',
-    lineHeight: 20,
+    color: '#9CA3AF',
+    marginRight: 8,
   },
-  lastMessageUnread: {
-    color: '#374151',
+  convMessageUnread: {
+    color: '#4B5563',
     fontWeight: '500',
   },
   youPrefix: {
@@ -555,60 +453,46 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 
-  // Empty State
+  // ── Empty State ───────────────────────────────────────
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 100,
-    paddingHorizontal: 32,
+    paddingHorizontal: 40,
   },
-  emptyIconBg: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: '#F3F4F6',
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: '#374151',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   emptyText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#9CA3AF',
     textAlign: 'center',
     lineHeight: 20,
   },
-  emptyButton: {
-    marginTop: 24,
-    borderRadius: 16,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#0EA5E9',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  emptyButtonGradient: {
+  emptyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingVertical: 14,
-    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 24,
+    gap: 6,
+    marginTop: 20,
   },
-  emptyButtonText: {
-    fontSize: 15,
+  emptyBtnText: {
+    fontSize: 14,
     fontWeight: '700',
     color: '#fff',
   },
