@@ -1,8 +1,8 @@
 /**
- * Edit Profile Screen
- * 
- * Full profile editing with photo upload, name editing, and API integration
- * Uses expo-image-picker for photo selection and profileApi for persistence
+ * Edit Profile Screen — Clean Professional Design
+ *
+ * Flat layout, fully rounded inputs, iOS-style header
+ * Photo upload + form fields with API integration
  */
 
 import React, { useState, useEffect } from 'react';
@@ -28,7 +28,6 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { useAuthStore } from '@/stores';
 import { Avatar } from '@/components/common';
-import { Shadows } from '@/config';
 import { ProfileStackScreenProps } from '@/navigation/types';
 import { updateProfile, uploadProfilePhoto, uploadCoverPhoto } from '@/api/profileApi';
 
@@ -47,36 +46,6 @@ interface FormData {
     facebook: string;
     portfolio: string;
   };
-}
-
-interface SectionProps {
-  icon: string;
-  iconColor: string;
-  iconBg: string;
-  title: string;
-  subtitle: string;
-  children: React.ReactNode;
-  delay?: number;
-}
-
-function Section({ icon, iconColor, iconBg, title, subtitle, children, delay = 0 }: SectionProps) {
-  return (
-    <Animated.View
-      entering={FadeInDown.delay(delay).duration(400)}
-      style={styles.section}
-    >
-      <View style={styles.sectionHeader}>
-        <View style={[styles.sectionIcon, { backgroundColor: iconBg }]}>
-          <Ionicons name={icon as any} size={20} color={iconColor} />
-        </View>
-        <View style={styles.sectionTitleWrapper}>
-          <Text style={styles.sectionTitle}>{title}</Text>
-          <Text style={styles.sectionSubtitle}>{subtitle}</Text>
-        </View>
-      </View>
-      {children}
-    </Animated.View>
-  );
 }
 
 export default function EditProfileScreen() {
@@ -203,7 +172,6 @@ export default function EditProfileScreen() {
     try {
       setSaving(true);
 
-      // Parse interests
       const interests = formData.interests
         .split(',')
         .map(i => i.trim())
@@ -219,9 +187,8 @@ export default function EditProfileScreen() {
         socialLinks: formData.socialLinks,
       };
 
-      const updatedProfile = await updateProfile(profileData);
+      await updateProfile(profileData);
 
-      // Update local auth store with new data
       updateUser({
         firstName: profileData.firstName,
         lastName: profileData.lastName,
@@ -248,403 +215,272 @@ export default function EditProfileScreen() {
   const profileUri = localProfilePic || user?.profilePictureUrl;
 
   return (
-    <View style={styles.container}>
+    <View style={s.container}>
       {/* Header */}
-      <SafeAreaView edges={['top']} style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            disabled={saving}
-            style={styles.backButton}
-          >
-            <Ionicons name="chevron-back" size={22} color="#1a1a1a" />
-            <Text style={styles.backText}>Back</Text>
-          </TouchableOpacity>
+      <SafeAreaView edges={['top']} style={s.header}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          disabled={saving}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Ionicons name="chevron-back" size={24} color="#1F2937" />
+        </TouchableOpacity>
 
-          <View style={styles.headerTitleWrapper}>
-            <Ionicons name="person-circle-outline" size={20} color="#0EA5E9" />
-            <Text style={styles.headerTitle}>Edit Profile</Text>
-          </View>
+        <Text style={s.headerTitle}>Edit Profile</Text>
 
-          <TouchableOpacity
-            onPress={handleSave}
-            disabled={saving}
-            style={styles.saveButtonWrapper}
+        <TouchableOpacity onPress={handleSave} disabled={saving}>
+          <LinearGradient
+            colors={saving ? ['#94A3B8', '#94A3B8'] : ['#0EA5E9', '#0284C7']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={s.saveBtn}
           >
-            <LinearGradient
-              colors={['#0EA5E9', '#0284C7']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.saveButton}
-            >
-              {saving ? (
-                <>
-                  <ActivityIndicator color="#fff" size="small" />
-                  <Text style={styles.saveButtonText}>Saving...</Text>
-                </>
-              ) : (
-                <>
-                  <Ionicons name="checkmark" size={18} color="#fff" />
-                  <Text style={styles.saveButtonText}>Save</Text>
-                </>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
+            {saving ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={s.saveBtnText}>Save</Text>
+            )}
+          </LinearGradient>
+        </TouchableOpacity>
       </SafeAreaView>
 
-      {/* Form Content */}
+      {/* Form */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        style={{ flex: 1 }}
       >
         <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={s.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* Cover Photo Section */}
-          <Animated.View entering={FadeInDown.delay(50).duration(400)} style={styles.coverSection}>
+          {/* ── Cover + Avatar ────────────────────────────── */}
+          <Animated.View entering={FadeInDown.delay(50).duration(400)} style={s.photoSection}>
             <TouchableOpacity
-              style={styles.coverTouchable}
+              style={s.coverTouch}
               onPress={pickCoverPhoto}
               disabled={uploadingCover}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
               {coverUri ? (
-                <Image source={{ uri: coverUri }} style={styles.coverImage} />
+                <Image source={{ uri: coverUri }} style={s.coverImage} />
               ) : (
                 <LinearGradient
                   colors={['#BAE6FD', '#E0F2FE', '#F0F9FF']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  style={styles.coverPlaceholder}
+                  style={s.coverPlaceholder}
                 />
               )}
-              <View style={styles.coverOverlay}>
+              <View style={s.coverBadge}>
                 {uploadingCover ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <>
-                    <Ionicons name="camera" size={20} color="#fff" />
-                    <Text style={styles.coverOverlayText}>Change Cover</Text>
-                  </>
+                  <Ionicons name="camera" size={14} color="#fff" />
                 )}
               </View>
             </TouchableOpacity>
 
-            {/* Avatar Overlay */}
-            <View style={styles.avatarOverlayWrap}>
+            <View style={s.avatarWrap}>
               <TouchableOpacity
                 onPress={pickProfilePhoto}
                 disabled={uploadingPhoto}
-                activeOpacity={0.8}
-                style={styles.avatarTouchable}
+                activeOpacity={0.85}
               >
                 <Avatar
                   uri={profileUri}
                   name={fullName}
                   size="xl"
                   showBorder
-                  gradientBorder="orange"
+                  gradientBorder="blue"
                 />
-                <View style={styles.avatarCameraBadge}>
+                <View style={s.avatarBadge}>
                   {uploadingPhoto ? (
                     <ActivityIndicator color="#0EA5E9" size="small" />
                   ) : (
-                    <Ionicons name="camera" size={16} color="#0EA5E9" />
+                    <Ionicons name="camera" size={14} color="#0EA5E9" />
                   )}
                 </View>
               </TouchableOpacity>
             </View>
           </Animated.View>
 
-          {/* Name Section */}
-          <Section
-            icon="person-outline"
-            iconColor="#0EA5E9"
-            iconBg="#E0F2FE"
-            title="Name"
-            subtitle="Your display name"
-            delay={100}
-          >
-            <View style={styles.nameRow}>
+          {/* ── Name ──────────────────────────────────────── */}
+          <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+            <Text style={s.label}>Name</Text>
+            <View style={s.nameRow}>
+              <View style={[s.inputWrap, { flex: 1 }]}>
+                <TextInput
+                  style={s.input}
+                  value={formData.firstName}
+                  onChangeText={(t) => setFormData({ ...formData, firstName: t })}
+                  placeholder="First"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+              <View style={[s.inputWrap, { flex: 1 }]}>
+                <TextInput
+                  style={s.input}
+                  value={formData.lastName}
+                  onChangeText={(t) => setFormData({ ...formData, lastName: t })}
+                  placeholder="Last"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+            </View>
+          </Animated.View>
+
+          {/* ── Headline ──────────────────────────────────── */}
+          <Animated.View entering={FadeInDown.delay(150).duration(400)}>
+            <View style={s.labelRow}>
+              <Text style={s.label}>Headline</Text>
+              <Text style={s.charCount}>{formData.headline.length}/100</Text>
+            </View>
+            <View style={s.inputWrap}>
               <TextInput
-                style={[styles.input, { flex: 1 }]}
-                value={formData.firstName}
-                onChangeText={(text) => setFormData({ ...formData, firstName: text })}
-                placeholder="First name"
+                style={s.input}
+                value={formData.headline}
+                onChangeText={(t) => setFormData({ ...formData, headline: t })}
+                placeholder="e.g., Computer Science Student"
+                placeholderTextColor="#9CA3AF"
+                maxLength={100}
+              />
+            </View>
+          </Animated.View>
+
+          {/* ── Bio ───────────────────────────────────────── */}
+          <Animated.View entering={FadeInDown.delay(200).duration(400)}>
+            <View style={s.labelRow}>
+              <Text style={s.label}>About</Text>
+              <Text style={s.charCount}>{formData.bio.length}/500</Text>
+            </View>
+            <View style={[s.inputWrap, { height: 'auto' }]}>
+              <TextInput
+                style={[s.input, { height: 100, paddingTop: 14 }]}
+                value={formData.bio}
+                onChangeText={(t) => setFormData({ ...formData, bio: t })}
+                placeholder="Write a brief bio about yourself..."
+                placeholderTextColor="#9CA3AF"
+                multiline
+                textAlignVertical="top"
+                maxLength={500}
+              />
+            </View>
+          </Animated.View>
+
+          {/* ── Location ──────────────────────────────────── */}
+          <Animated.View entering={FadeInDown.delay(250).duration(400)}>
+            <Text style={s.label}>Location</Text>
+            <View style={s.inputWrap}>
+              <Ionicons name="location-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+              <TextInput
+                style={s.input}
+                value={formData.location}
+                onChangeText={(t) => setFormData({ ...formData, location: t })}
+                placeholder="e.g., Phnom Penh, Cambodia"
                 placeholderTextColor="#9CA3AF"
               />
+            </View>
+          </Animated.View>
+
+          {/* ── Interests ─────────────────────────────────── */}
+          <Animated.View entering={FadeInDown.delay(300).duration(400)}>
+            <Text style={s.label}>Interests</Text>
+            <View style={s.inputWrap}>
+              <Ionicons name="pricetag-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
               <TextInput
-                style={[styles.input, { flex: 1 }]}
-                value={formData.lastName}
-                onChangeText={(text) => setFormData({ ...formData, lastName: text })}
-                placeholder="Last name"
+                style={s.input}
+                value={formData.interests}
+                onChangeText={(t) => setFormData({ ...formData, interests: t })}
+                placeholder="e.g., Programming, Design, Music"
                 placeholderTextColor="#9CA3AF"
               />
             </View>
-          </Section>
+            <Text style={s.hint}>Separate with commas</Text>
+          </Animated.View>
 
-          {/* Headline Section */}
-          <Section
-            icon="briefcase-outline"
-            iconColor="#A855F7"
-            iconBg="#F3E8FF"
-            title="Headline"
-            subtitle="Your professional title or role"
-            delay={150}
-          >
-            <TextInput
-              style={styles.input}
-              value={formData.headline}
-              onChangeText={(text) => setFormData({ ...formData, headline: text })}
-              placeholder="e.g., Computer Science Student"
-              placeholderTextColor="#9CA3AF"
-              maxLength={100}
-            />
-            <View style={styles.inputFooter}>
-              <Text style={styles.inputHint}>Appears below your name</Text>
-              <Text style={styles.charCount}>{formData.headline.length}/100</Text>
-            </View>
-          </Section>
-
-          {/* Bio Section */}
-          <Section
-            icon="document-text-outline"
-            iconColor="#3B82F6"
-            iconBg="#DBEAFE"
-            title="About Me"
-            subtitle="Tell others about yourself"
-            delay={200}
-          >
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={formData.bio}
-              onChangeText={(text) => setFormData({ ...formData, bio: text })}
-              placeholder="Write a brief bio about yourself, your interests, achievements, and goals..."
-              placeholderTextColor="#9CA3AF"
-              multiline
-              numberOfLines={5}
-              textAlignVertical="top"
-              maxLength={500}
-            />
-            <View style={styles.inputFooter}>
-              <Text style={styles.inputHint}>Share your story</Text>
-              <Text style={styles.charCount}>{formData.bio.length}/500</Text>
-            </View>
-          </Section>
-
-          {/* Location Section */}
-          <Section
-            icon="location-outline"
-            iconColor="#10B981"
-            iconBg="#D1FAE5"
-            title="Location"
-            subtitle="Where are you based?"
-            delay={250}
-          >
-            <TextInput
-              style={styles.input}
-              value={formData.location}
-              onChangeText={(text) => setFormData({ ...formData, location: text })}
-              placeholder="e.g., Phnom Penh, Cambodia"
-              placeholderTextColor="#9CA3AF"
-            />
-          </Section>
-
-          {/* Interests Section */}
-          <Section
-            icon="pricetag-outline"
-            iconColor="#EC4899"
-            iconBg="#FCE7F3"
-            title="Interests"
-            subtitle="What are you passionate about?"
-            delay={300}
-          >
-            <TextInput
-              style={styles.input}
-              value={formData.interests}
-              onChangeText={(text) => setFormData({ ...formData, interests: text })}
-              placeholder="e.g., Programming, Design, Music"
-              placeholderTextColor="#9CA3AF"
-            />
-            <Text style={styles.inputHint}>Separate with commas</Text>
-          </Section>
-
-          {/* Social Links Section */}
-          <Section
-            icon="link-outline"
-            iconColor="#0EA5E9"
-            iconBg="#E0F2FE"
-            title="Social Links"
-            subtitle="Connect your profiles"
-            delay={350}
-          >
-            <View style={styles.socialLinksContainer}>
-              <View style={styles.socialLinkRow}>
-                <View style={styles.socialLinkIcon}>
-                  <Ionicons name="logo-github" size={18} color="#1a1a1a" />
+          {/* ── Social Links ──────────────────────────────── */}
+          <Animated.View entering={FadeInDown.delay(350).duration(400)}>
+            <Text style={s.label}>Social Links</Text>
+            {([
+              { key: 'github' as const, icon: 'logo-github' as const, color: '#1F2937', placeholder: 'GitHub username' },
+              { key: 'linkedin' as const, icon: 'logo-linkedin' as const, color: '#0A66C2', placeholder: 'LinkedIn username' },
+              { key: 'facebook' as const, icon: 'logo-facebook' as const, color: '#1877F2', placeholder: 'Facebook profile' },
+              { key: 'portfolio' as const, icon: 'globe-outline' as const, color: '#6B7280', placeholder: 'Portfolio URL' },
+            ]).map((link) => (
+              <View key={link.key} style={s.socialRow}>
+                <View style={s.socialIcon}>
+                  <Ionicons name={link.icon} size={18} color={link.color} />
                 </View>
-                <TextInput
-                  style={styles.socialInput}
-                  value={formData.socialLinks.github}
-                  onChangeText={(text) =>
-                    setFormData({
-                      ...formData,
-                      socialLinks: { ...formData.socialLinks, github: text }
-                    })
-                  }
-                  placeholder="GitHub username"
-                  placeholderTextColor="#9CA3AF"
-                  autoCapitalize="none"
-                />
-              </View>
-
-              <View style={styles.socialLinkRow}>
-                <View style={styles.socialLinkIcon}>
-                  <Ionicons name="logo-linkedin" size={18} color="#0A66C2" />
+                <View style={[s.inputWrap, { flex: 1, marginBottom: 0 }]}>
+                  <TextInput
+                    style={s.input}
+                    value={formData.socialLinks[link.key]}
+                    onChangeText={(t) =>
+                      setFormData({
+                        ...formData,
+                        socialLinks: { ...formData.socialLinks, [link.key]: t }
+                      })
+                    }
+                    placeholder={link.placeholder}
+                    placeholderTextColor="#9CA3AF"
+                    autoCapitalize="none"
+                    keyboardType={link.key === 'portfolio' ? 'url' : 'default'}
+                  />
                 </View>
-                <TextInput
-                  style={styles.socialInput}
-                  value={formData.socialLinks.linkedin}
-                  onChangeText={(text) =>
-                    setFormData({
-                      ...formData,
-                      socialLinks: { ...formData.socialLinks, linkedin: text }
-                    })
-                  }
-                  placeholder="LinkedIn username"
-                  placeholderTextColor="#9CA3AF"
-                  autoCapitalize="none"
-                />
               </View>
+            ))}
+          </Animated.View>
 
-              <View style={styles.socialLinkRow}>
-                <View style={styles.socialLinkIcon}>
-                  <Ionicons name="logo-facebook" size={18} color="#1877F2" />
-                </View>
-                <TextInput
-                  style={styles.socialInput}
-                  value={formData.socialLinks.facebook}
-                  onChangeText={(text) =>
-                    setFormData({
-                      ...formData,
-                      socialLinks: { ...formData.socialLinks, facebook: text }
-                    })
-                  }
-                  placeholder="Facebook profile"
-                  placeholderTextColor="#9CA3AF"
-                  autoCapitalize="none"
-                />
-              </View>
-
-              <View style={styles.socialLinkRow}>
-                <View style={styles.socialLinkIcon}>
-                  <Ionicons name="globe-outline" size={18} color="#6B7280" />
-                </View>
-                <TextInput
-                  style={styles.socialInput}
-                  value={formData.socialLinks.portfolio}
-                  onChangeText={(text) =>
-                    setFormData({
-                      ...formData,
-                      socialLinks: { ...formData.socialLinks, portfolio: text }
-                    })
-                  }
-                  placeholder="Portfolio website"
-                  placeholderTextColor="#9CA3AF"
-                  autoCapitalize="none"
-                  keyboardType="url"
-                />
-              </View>
-            </View>
-          </Section>
-
-          {/* Bottom Spacing */}
-          <View style={{ height: 100 }} />
+          <View style={{ height: 80 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+
+  // ── Header ────────────────────────────────────────────
   header: {
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    ...Shadows.sm,
-  },
-  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  backText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#1a1a1a',
-  },
-  headerTitleWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    paddingBottom: 10,
+    backgroundColor: '#F8FAFC',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: '#1F2937',
   },
-  saveButtonWrapper: {
-    borderRadius: 10,
-    overflow: 'hidden',
-    ...Shadows.sm,
-  },
-  saveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
+  saveBtn: {
+    paddingHorizontal: 20,
     paddingVertical: 8,
-    gap: 6,
+    borderRadius: 20,
   },
-  saveButtonText: {
-    fontSize: 15,
+  saveBtnText: {
+    fontSize: 14,
     fontWeight: '700',
     color: '#fff',
   },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 20,
   },
 
-  // ── Cover Photo ──
-  coverSection: {
-    marginBottom: 16,
+  // ── Photo Section ─────────────────────────────────────
+  photoSection: {
+    marginBottom: 24,
+    borderRadius: 20,
+    overflow: 'visible',
+  },
+  coverTouch: {
+    height: 140,
     borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: '#fff',
-    ...Shadows.sm,
-  },
-  coverTouchable: {
-    height: 160,
-    position: 'relative',
+    backgroundColor: '#E0F2FE',
   },
   coverImage: {
     width: '100%',
@@ -655,141 +491,106 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  coverOverlay: {
+  coverBadge: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  coverOverlayText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  avatarOverlayWrap: {
-    alignItems: 'center',
-    marginTop: -40,
-    marginBottom: 16,
-  },
-  avatarTouchable: {
-    position: 'relative',
-  },
-  avatarCameraBadge: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
+    bottom: 10,
+    right: 10,
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-    ...Shadows.sm,
-  },
-
-  // ── Name Row ──
-  nameRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-
-  // ── Sections ──
-  section: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    ...Shadows.sm,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
-  },
-  sectionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.4)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sectionTitleWrapper: {
-    flex: 1,
+  avatarWrap: {
+    alignItems: 'center',
+    marginTop: -40,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 2,
-  },
-  sectionSubtitle: {
-    fontSize: 12,
-    color: '#9CA3AF',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#1a1a1a',
+  avatarBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  textArea: {
-    height: 120,
-    paddingTop: 12,
+
+  // ── Labels ────────────────────────────────────────────
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginBottom: 8,
+    marginLeft: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
-  inputFooter: {
+  labelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 8,
-  },
-  inputHint: {
-    fontSize: 11,
-    color: '#9CA3AF',
+    marginBottom: 8,
+    marginLeft: 4,
+    marginRight: 4,
   },
   charCount: {
     fontSize: 11,
-    color: '#6B7280',
-    fontWeight: '600',
+    color: '#9CA3AF',
+    fontWeight: '500',
   },
-  socialLinksContainer: {
-    gap: 12,
+  hint: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 4,
+    marginLeft: 4,
+    marginBottom: 12,
   },
-  socialLinkRow: {
+
+  // ── Inputs ────────────────────────────────────────────
+  nameRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 16,
+    marginBottom: 16,
   },
-  socialLinkIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#F3F4F6',
+  input: {
+    flex: 1,
+    fontSize: 15,
+    color: '#1F2937',
+    height: '100%',
+  },
+
+  // ── Social Links ──────────────────────────────────────
+  socialRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  socialIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  socialInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: '#1a1a1a',
-    backgroundColor: '#fff',
   },
 });
