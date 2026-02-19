@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   featureCard: {
     flex: 1,
     backgroundColor: '#fff',
-    borderRadius: 18,
+    borderRadius: 24,
     paddingVertical: 16,
     paddingHorizontal: 8,
     alignItems: 'center',
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   featureIcon: {
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
