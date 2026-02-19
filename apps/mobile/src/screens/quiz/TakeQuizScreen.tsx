@@ -274,7 +274,7 @@ export function TakeQuizScreen() {
               style={styles.backButton}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="arrow-back" size={28} color="#111827" />
+              <Ionicons name="chevron-back" size={28} color="#111827" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Review Your Answers</Text>
           </View>
@@ -398,7 +398,7 @@ export function TakeQuizScreen() {
             style={styles.backButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="arrow-back" size={28} color="#111827" />
+            <Ionicons name="chevron-back" size={28} color="#111827" />
           </TouchableOpacity>
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle} numberOfLines={1}>{quiz.title}</Text>

@@ -321,7 +321,7 @@ export default function SearchScreen() {
                     onPress={() => navigation.goBack()}
                     style={styles.backButton}
                 >
-                    <Ionicons name="arrow-back" size={24} color="#374151" />
+                    <Ionicons name="chevron-back" size={24} color="#374151" />
                 </TouchableOpacity>
 
                 <View style={styles.searchInputContainer}>

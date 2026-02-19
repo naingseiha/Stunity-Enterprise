@@ -125,7 +125,7 @@ export default function GradeSubmissionScreen() {
         style={styles.backButton}
         disabled={saving}
       >
-        <Ionicons name="arrow-back" size={24} color="#000" />
+        <Ionicons name="chevron-back" size={24} color="#000" />
       </TouchableOpacity>
       <Text style={styles.headerTitle}>Grade Submission</Text>
       <TouchableOpacity 

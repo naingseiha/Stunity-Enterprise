@@ -257,7 +257,7 @@ export default function EditProfileScreen() {
             disabled={saving}
             style={styles.backButton}
           >
-            <Ionicons name="arrow-back" size={22} color="#1a1a1a" />
+            <Ionicons name="chevron-back" size={22} color="#1a1a1a" />
             <Text style={styles.backText}>Back</Text>
           </TouchableOpacity>
 

@@ -227,7 +227,7 @@ export const ChallengeScreen: React.FC<Props> = ({ navigation }) => {
             onPress={() => navigation.goBack()}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="arrow-back" size={24} color="#FFF" />
+            <Ionicons name="chevron-back" size={24} color="#FFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Challenges</Text>
           <TouchableOpacity

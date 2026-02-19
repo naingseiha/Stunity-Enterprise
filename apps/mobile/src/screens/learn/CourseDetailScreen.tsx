@@ -520,7 +520,7 @@ export default function CourseDetailScreen() {
         <SafeAreaView edges={['top']} style={styles.headerControls}>
           <TouchableOpacity onPress={handleBack} style={styles.iconButtonBlur}>
             <BlurView intensity={50} tint="dark" style={styles.blurContainer}>
-              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+              <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
             </BlurView>
           </TouchableOpacity>
 

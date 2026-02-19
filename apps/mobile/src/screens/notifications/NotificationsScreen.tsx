@@ -157,7 +157,7 @@ export default function NotificationsScreen() {
                         onPress={() => navigation.goBack()}
                         style={styles.backButton}
                     >
-                        <Ionicons name="arrow-back" size={24} color="#374151" />
+                        <Ionicons name="chevron-back" size={24} color="#374151" />
                     </TouchableOpacity>
 
                     <Text style={styles.headerTitle}>Notifications</Text>

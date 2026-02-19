@@ -321,7 +321,7 @@ export default function PostDetailScreen() {
         <SafeAreaView edges={['top']} style={styles.headerSafe}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-              <Ionicons name="arrow-back" size={22} color="#374151" />
+              <Ionicons name="chevron-back" size={22} color="#374151" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Loading...</Text>
             <View style={{ width: 36 }} />
@@ -341,7 +341,7 @@ export default function PostDetailScreen() {
         <SafeAreaView edges={['top']} style={styles.headerSafe}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-              <Ionicons name="arrow-back" size={22} color="#374151" />
+              <Ionicons name="chevron-back" size={22} color="#374151" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Post</Text>
             <View style={{ width: 36 }} />
@@ -379,7 +379,7 @@ export default function PostDetailScreen() {
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={22} color="#374151" />
+            <Ionicons name="chevron-back" size={22} color="#374151" />
           </TouchableOpacity>
 
           {/* Post type badge in header */}

@@ -239,7 +239,7 @@ export default function CommentsScreen() {
               }}
               style={styles.backButton}
             >
-              <Ionicons name="arrow-back" size={22} color="#262626" />
+              <Ionicons name="chevron-back" size={22} color="#262626" />
             </TouchableOpacity>
 
             <View style={styles.headerTitleContainer}>

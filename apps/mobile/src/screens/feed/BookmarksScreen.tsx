@@ -135,7 +135,7 @@ export default function BookmarksScreen() {
           onPress={() => navigation.goBack()} 
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color="#262626" />
+          <Ionicons name="chevron-back" size={24} color="#262626" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Saved Posts</Text>
         <View style={styles.headerRight}>
