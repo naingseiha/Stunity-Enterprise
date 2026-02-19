@@ -239,41 +239,58 @@ export default function ProfileScreen() {
     }
   }, [updateUser]);
 
-  // ── Blur Shimmer Loading State ─────────────────────────────────
+  // ── Shimmer Loading State — matches actual profile layout ──────
   if (loading || !profile) {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" />
+        {/* Cover shimmer */}
         <LinearGradient
           colors={['#BAE6FD', '#E0F2FE', '#F0F9FF']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
+          style={{ height: COVER_HEIGHT }}
         />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255,255,255,0.65)' }]} />
-        <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          {/* Shimmer Avatar */}
-          <Animated.View entering={FadeIn.duration(400)} style={{ alignItems: 'center', gap: 16 }}>
+
+        <View style={{ flex: 1, marginTop: -90, alignItems: 'center' }}>
+          <Animated.View entering={FadeIn.duration(400)} style={{ width: '100%', alignItems: 'center' }}>
+            {/* Avatar */}
             <Skeleton width={100} height={100} borderRadius={50} />
-            <Skeleton width={180} height={20} borderRadius={10} />
-            <Skeleton width={120} height={14} borderRadius={7} />
-            <View style={{ flexDirection: 'row', gap: 24, marginTop: 12 }}>
-              <View style={{ alignItems: 'center', gap: 6 }}>
-                <Skeleton width={40} height={18} borderRadius={9} />
-                <Skeleton width={50} height={10} borderRadius={5} />
+
+            {/* Name + headline + level badge */}
+            <View style={{ alignItems: 'center', marginTop: 12, gap: 8 }}>
+              <Skeleton width={180} height={22} borderRadius={11} />
+              <Skeleton width={80} height={24} borderRadius={12} />
+              <Skeleton width={140} height={14} borderRadius={7} />
+            </View>
+
+            {/* Stats row — 3 cards */}
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 20, paddingHorizontal: 16, width: '100%' }}>
+              <View style={{ flex: 1, alignItems: 'center' }}>
+                <Skeleton width="100%" height={90} borderRadius={18} />
               </View>
-              <View style={{ alignItems: 'center', gap: 6 }}>
-                <Skeleton width={40} height={18} borderRadius={9} />
-                <Skeleton width={50} height={10} borderRadius={5} />
+              <View style={{ flex: 1, alignItems: 'center' }}>
+                <Skeleton width="100%" height={90} borderRadius={18} />
               </View>
-              <View style={{ alignItems: 'center', gap: 6 }}>
-                <Skeleton width={40} height={18} borderRadius={9} />
-                <Skeleton width={50} height={10} borderRadius={5} />
+              <View style={{ flex: 1, alignItems: 'center' }}>
+                <Skeleton width="100%" height={90} borderRadius={18} />
               </View>
             </View>
-            {/* Shimmer Cards */}
-            <View style={{ width: '100%', gap: 12, marginTop: 20 }}>
-              <Skeleton width="100%" height={110} borderRadius={20} />
+
+            {/* Action buttons */}
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
+              <Skeleton width={80} height={36} borderRadius={18} />
+              <Skeleton width={36} height={36} borderRadius={18} />
+              <Skeleton width={36} height={36} borderRadius={18} />
+            </View>
+
+            {/* Hero performance card */}
+            <View style={{ width: '100%', paddingHorizontal: 16, marginTop: 20 }}>
+              <Skeleton width="100%" height={120} borderRadius={20} />
+            </View>
+
+            {/* Stat grid 2x3 */}
+            <View style={{ width: '100%', paddingHorizontal: 16, marginTop: 12, gap: 10 }}>
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <Skeleton width="48%" height={80} borderRadius={16} />
                 <Skeleton width="48%" height={80} borderRadius={16} />
@@ -284,7 +301,7 @@ export default function ProfileScreen() {
               </View>
             </View>
           </Animated.View>
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
