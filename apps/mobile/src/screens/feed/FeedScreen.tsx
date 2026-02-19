@@ -110,6 +110,14 @@ export default function FeedScreen() {
   const [valuedPostIds, setValuedPostIds] = useState<Set<string>>(new Set());
   const [isValueSubmitting, setIsValueSubmitting] = useState(false);
 
+  // Learning stats for performance card
+  const [learningStats, setLearningStats] = useState({
+    currentStreak: 0,
+    totalPoints: 0,
+    completedLessons: 0,
+    level: 1,
+  });
+
   // Refs for stable polling (avoid re-creating interval on every posts change)
   const flatListRef = React.useRef<FlashListRef<Post>>(null);
   const postsRef = useRef(posts);
@@ -144,6 +152,18 @@ export default function FeedScreen() {
   useEffect(() => {
     fetchPosts();
     initializeRecommendations();
+
+    // Fetch learning stats for performance card
+    feedApi.get('/courses/stats/my-learning').then(res => {
+      if (res.data) {
+        setLearningStats({
+          currentStreak: res.data.currentStreak || 0,
+          totalPoints: res.data.totalPoints || 0,
+          completedLessons: res.data.completedLessons || 0,
+          level: res.data.level || 1,
+        });
+      }
+    }).catch(() => { /* Silent — card shows 0s on failure */ });
   }, []);
 
   // No useFocusEffect re-fetch — polling + realtime handle freshness
@@ -365,7 +385,7 @@ export default function FeedScreen() {
   const renderHeader = useCallback(() => (
     <View style={styles.headerSection}>
       {/* Performance / Trophy Card — E-Learning focus */}
-      <TouchableOpacity activeOpacity={0.9} style={styles.performanceCardWrapper}>
+      <TouchableOpacity activeOpacity={0.9} style={styles.performanceCardWrapper} onPress={() => navigation.navigate('Profile' as any)}>
         <LinearGradient
           colors={['#7DD3FC', '#0EA5E9', '#0284C7']}
           start={{ x: 0, y: 0 }}
@@ -375,28 +395,36 @@ export default function FeedScreen() {
           {/* Left side: Text info */}
           <View style={styles.performanceLeft}>
             <Text style={styles.performanceGreeting}>{getGreeting()}, {user?.firstName || 'Learner'}!</Text>
-            <Text style={styles.performanceTitle}>Keep up your streak! 🔥</Text>
+            <Text style={styles.performanceTitle}>
+              {learningStats.currentStreak > 0
+                ? `Keep up your streak! 🔥`
+                : `Start your learning journey! 📚`}
+            </Text>
 
             {/* Stats row */}
             <View style={styles.performanceStats}>
               <View style={styles.performanceStat}>
-                <Text style={styles.performanceStatValue}>7</Text>
+                <Text style={styles.performanceStatValue}>{learningStats.currentStreak}</Text>
                 <Text style={styles.performanceStatLabel}>Day Streak</Text>
               </View>
               <View style={styles.performanceStatDivider} />
               <View style={styles.performanceStat}>
-                <Text style={styles.performanceStatValue}>1,240</Text>
+                <Text style={styles.performanceStatValue}>
+                  {learningStats.totalPoints >= 1000
+                    ? `${(learningStats.totalPoints / 1000).toFixed(1)}k`
+                    : learningStats.totalPoints}
+                </Text>
                 <Text style={styles.performanceStatLabel}>Total XP</Text>
               </View>
               <View style={styles.performanceStatDivider} />
               <View style={styles.performanceStat}>
-                <Text style={styles.performanceStatValue}>12</Text>
+                <Text style={styles.performanceStatValue}>{learningStats.completedLessons}</Text>
                 <Text style={styles.performanceStatLabel}>Completed</Text>
               </View>
             </View>
 
             {/* CTA */}
-            <TouchableOpacity style={styles.performanceCTA} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.performanceCTA} activeOpacity={0.8} onPress={() => navigation.navigate('Profile' as any)}>
               <Text style={styles.performanceCTAText}>View Progress</Text>
               <Ionicons name="arrow-forward" size={14} color="#0284C7" />
             </TouchableOpacity>
