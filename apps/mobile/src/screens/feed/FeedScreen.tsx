@@ -387,7 +387,7 @@ export default function FeedScreen() {
     <View style={styles.headerSection}>
       {/* Performance Card — Compact XP Dashboard */}
       <TouchableOpacity activeOpacity={0.9} style={styles.perfCard} onPress={() => navigation.getParent()?.navigate('ProfileTab')}>
-        <LinearGradient colors={['#7DD3FC', '#0EA5E9', '#0284C7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.perfCardInner}>
+        <LinearGradient colors={['#ffffff', '#F0F9FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.perfCardInner}>
           <View style={styles.perfTopRow}>
             {/* Mini Level Ring */}
             {(() => {
@@ -401,8 +401,8 @@ export default function FeedScreen() {
               return (
                 <View style={styles.perfRingWrap}>
                   <Svg width={ringSize} height={ringSize}>
-                    <SvgCircle cx={ringSize / 2} cy={ringSize / 2} r={r} stroke="rgba(255,255,255,0.2)" strokeWidth={sw} fill="none" />
-                    <SvgCircle cx={ringSize / 2} cy={ringSize / 2} r={r} stroke="#ffffff" strokeWidth={sw} fill="none"
+                    <SvgCircle cx={ringSize / 2} cy={ringSize / 2} r={r} stroke="rgba(14,165,233,0.12)" strokeWidth={sw} fill="none" />
+                    <SvgCircle cx={ringSize / 2} cy={ringSize / 2} r={r} stroke="#0EA5E9" strokeWidth={sw} fill="none"
                       strokeDasharray={`${circ}`} strokeDashoffset={circ * (1 - pct)} strokeLinecap="round"
                       transform={`rotate(-90, ${ringSize / 2}, ${ringSize / 2})`} />
                   </Svg>
@@ -417,22 +417,22 @@ export default function FeedScreen() {
             {/* Stats Column */}
             <View style={styles.perfStats}>
               <View style={styles.perfStatRow}>
-                <View style={[styles.perfStatIcon, { backgroundColor: 'rgba(96,165,250,0.35)' }]}>
-                  <Ionicons name="diamond" size={13} color="#DBEAFE" />
+                <View style={[styles.perfStatIcon, { backgroundColor: '#EFF6FF' }]}>
+                  <Ionicons name="diamond" size={13} color="#3B82F6" />
                 </View>
                 <Text style={styles.perfStatVal}>{learningStats.totalPoints.toLocaleString()}</Text>
                 <Text style={styles.perfStatLbl}>XP</Text>
               </View>
               <View style={styles.perfStatRow}>
-                <View style={[styles.perfStatIcon, { backgroundColor: 'rgba(52,211,153,0.35)' }]}>
-                  <Ionicons name="checkmark-circle" size={13} color="#D1FAE5" />
+                <View style={[styles.perfStatIcon, { backgroundColor: '#ECFDF5' }]}>
+                  <Ionicons name="checkmark-circle" size={13} color="#10B981" />
                 </View>
                 <Text style={styles.perfStatVal}>{learningStats.completedLessons}</Text>
                 <Text style={styles.perfStatLbl}>Lessons</Text>
               </View>
               <View style={styles.perfStatRow}>
-                <View style={[styles.perfStatIcon, { backgroundColor: 'rgba(251,146,60,0.35)' }]}>
-                  <Ionicons name="flame" size={13} color="#FED7AA" />
+                <View style={[styles.perfStatIcon, { backgroundColor: '#FFF7ED' }]}>
+                  <Ionicons name="flame" size={13} color="#F97316" />
                 </View>
                 <Text style={styles.perfStatVal}>{learningStats.currentStreak}</Text>
                 <Text style={styles.perfStatLbl}>Streak</Text>
@@ -467,7 +467,7 @@ export default function FeedScreen() {
                 </View>
                 <View style={styles.perfBarBg}>
                   <LinearGradient
-                    colors={['rgba(255,255,255,0.5)', 'rgba(255,255,255,0.8)', '#ffffff'] as any}
+                    colors={['#38BDF8', '#0EA5E9', '#0284C7'] as any}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={[styles.perfBarFill, { width: `${Math.min((xpProgress / xpToNext) * 100, 100)}%` } as any]}
@@ -478,9 +478,9 @@ export default function FeedScreen() {
             );
           })()}
           {/* Decorative abstract circles */}
-          <View style={{ position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255,255,255,0.06)', top: -35, right: -25 }} />
-          <View style={{ position: 'absolute', width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(255,255,255,0.05)', bottom: -25, left: -20 }} />
-          <View style={{ position: 'absolute', width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.04)', top: 20, right: 60 }} />
+          <View style={{ position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(14,165,233,0.04)', top: -35, right: -25 }} />
+          <View style={{ position: 'absolute', width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(14,165,233,0.03)', bottom: -25, left: -20 }} />
+          <View style={{ position: 'absolute', width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(14,165,233,0.05)', top: 20, right: 60 }} />
         </LinearGradient>
       </TouchableOpacity>
 
@@ -897,11 +897,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: 'hidden',
     backgroundColor: '#fff',
-    shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
+    shadowColor: '#0EA5E9',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
     shadowRadius: 14,
-    elevation: 6,
+    elevation: 4,
   },
   perfCardInner: {
     padding: 16,
@@ -924,13 +924,13 @@ const styles = StyleSheet.create({
   perfRingLabel: {
     fontSize: 8,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.7)',
+    color: '#9CA3AF',
     letterSpacing: 1,
   },
   perfRingValue: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#1F2937',
     letterSpacing: -1,
   },
   perfStats: {
@@ -952,11 +952,11 @@ const styles = StyleSheet.create({
   perfStatVal: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#1F2937',
   },
   perfStatLbl: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.7)',
+    color: '#9CA3AF',
     fontWeight: '500',
   },
   perfAvatarWrap: {
@@ -991,26 +991,25 @@ const styles = StyleSheet.create({
   perfBarLeft: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#0EA5E9',
   },
   perfBarRight: {
     fontSize: 10,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.6)',
+    color: '#9CA3AF',
   },
   perfBarBg: {
     height: 6,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: '#F1F5F9',
     borderRadius: 3,
     overflow: 'hidden',
   },
   perfBarFill: {
     height: '100%',
-    borderRadius: 3,
   },
   perfBarHint: {
     fontSize: 10,
-    color: 'rgba(255,255,255,0.7)',
+    color: '#9CA3AF',
     textAlign: 'center',
     marginTop: 4,
   },
