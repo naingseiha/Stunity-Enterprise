@@ -85,7 +85,7 @@ router.post('/upload', authenticateToken, (req: AuthRequest, res: Response, next
 
             console.log(`📤 Uploading ${files.length} file(s)...`);
 
-            let results: { url: string; key: string; filename: string }[];
+            let results: { url: string; key: string; filename: string; width?: number; height?: number; blurHash?: string }[];
 
             if (isR2Configured()) {
                 // Upload to R2
@@ -94,8 +94,12 @@ router.post('/upload', authenticateToken, (req: AuthRequest, res: Response, next
                     originalname: f.originalname,
                     mimetype: f.mimetype,
                 }));
-                results = await uploadMultipleToR2(r2Files, 'posts');
-                console.log('✅ Files uploaded to R2:', results.map(r => r.url));
+                const r2Results = await uploadMultipleToR2(r2Files, 'posts');
+                results = r2Results.map(r => ({
+                    ...r,
+                    filename: r.key.split('/').pop() || r.key,
+                }));
+                console.log('✅ Files uploaded to R2:', results.map(r => `${r.url} (${r.width}x${r.height})`));
             } else {
                 // Fallback: use local disk paths
                 const baseUrl = `${req.protocol}://${req.get('host')}`;

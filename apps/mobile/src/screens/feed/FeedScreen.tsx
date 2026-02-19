@@ -275,6 +275,32 @@ export default function FeedScreen() {
     setRefreshing(false);
   }, [fetchPosts]);
 
+  // Phase 1 Day 5: Prefetch next page at 50% scroll (earlier than onEndReached)
+  const [hasPrefetched, setHasPrefetched] = useState(false);
+  
+  const handleScroll = useCallback((event: any) => {
+    // TEMPORARY: Always prefetch until native module rebuilt
+    // if (!networkQualityService.shouldPrefetch()) return; // Only prefetch on good networks
+    if (hasPrefetched || isLoadingPosts || !hasMorePosts) return;
+
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const scrollPercentage = (contentOffset.y / (contentSize.height - layoutMeasurement.height)) * 100;
+
+    // Prefetch when user reaches 50% of content (proactive loading)
+    if (scrollPercentage >= 50) {
+      console.log('⚡ [FeedScreen] Prefetching next page at 50% scroll');
+      setHasPrefetched(true);
+      fetchPosts(); // Load next page in background
+    }
+  }, [hasPrefetched, isLoadingPosts, hasMorePosts, fetchPosts]);
+
+  // Reset prefetch flag when new data loads
+  useEffect(() => {
+    if (!isLoadingPosts) {
+      setHasPrefetched(false);
+    }
+  }, [isLoadingPosts]);
+
   const handleLoadMore = useCallback(() => {
     if (!isLoadingPosts && hasMorePosts) {
       fetchPosts();
@@ -793,6 +819,7 @@ export default function FeedScreen() {
         ListEmptyComponent={renderEmpty}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.3}
+        onScroll={handleScroll} // Phase 1 Day 5: Prefetch at 50% scroll
         viewabilityConfig={viewabilityConfig}
         onViewableItemsChanged={onViewableItemsChanged}
         refreshControl={
@@ -805,8 +832,18 @@ export default function FeedScreen() {
         }
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
-        // ── FlashList performance props ──
+        // ── FlashList performance props for 120Hz smooth scrolling ──
         drawDistance={250}
+        estimatedItemSize={400} // Critical: Reduces layout thrashing
+        overrideItemLayout={(layout, item) => {
+          // Pre-calculate heights to eliminate layout jumps (massive perf boost)
+          let height = 250; // Base height (header + footer + padding)
+          if (item.mediaUrls?.length > 0) height += 300; // Image carousel
+          if (item.postType === 'POLL') height += 150; // Poll options
+          if (item.postType === 'QUIZ') height += 100; // Quiz preview
+          if (item.content && item.content.length > 200) height += 50; // Long text
+          layout.size = height;
+        }}
         getItemType={(item) => {
           // Type-bucketed recycling — cells of similar height are reused together
           if (item.postType === 'QUIZ') return 'quiz';
@@ -814,6 +851,15 @@ export default function FeedScreen() {
           if (item.mediaUrls && item.mediaUrls.length > 0) return 'media';
           return 'text';
         }}
+        // Critical for 120Hz: Remove expensive operations during scroll
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={5}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={8}
+        windowSize={5}
+        // Optimize interactions during scroll
+        scrollEventThrottle={16} // 60fps minimum, allows 120Hz on capable devices
+        decelerationRate="normal" // Smooth deceleration
       />
 
       {/* Post Analytics Modal */}

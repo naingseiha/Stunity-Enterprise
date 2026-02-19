@@ -455,6 +455,10 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
     // ETag for 304 Not Modified
     const etag = createETag(outputPosts);
     res.setHeader('ETag', etag);
+    
+    // Cache-Control: Personalized feed caches for 15 minutes
+    res.setHeader('Cache-Control', 'private, max-age=900, stale-while-revalidate=1800');
+    
     if (req.headers['if-none-match'] === etag) {
       return res.status(304).end();
     }

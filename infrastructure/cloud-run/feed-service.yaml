@@ -1,0 +1,32 @@
+# Cloud Run Service Configuration
+# Phase 1 Day 7: Optimized for free tier and scalability
+
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: stunity-feed-service
+  annotations:
+    run.googleapis.com/launch-stage: BETA
+spec:
+  template:
+    metadata:
+      annotations:
+        # Phase 1 Optimization: Scale to zero when idle (free tier)
+        autoscaling.knative.dev/minScale: '0'
+        autoscaling.knative.dev/maxScale: '10'
+        autoscaling.knative.dev/maxConcurrency: '80'
+        run.googleapis.com/cpu-throttling: 'true'
+        run.googleapis.com/startup-cpu-boost: 'true'
+    spec:
+      containers:
+      - name: feed-service
+        image: gcr.io/PROJECT_ID/stunity-feed-service:latest
+        resources:
+          limits:
+            memory: 512Mi
+            cpu: '1'
+          requests:
+            memory: 256Mi
+            cpu: '0.5'
+        ports:
+        - containerPort: 3010

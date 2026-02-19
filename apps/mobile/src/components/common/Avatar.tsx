@@ -189,7 +189,10 @@ export const Avatar: React.FC<AvatarProps> = ({
                 source={{ uri }}
                 style={styles.image}
                 contentFit="cover"
-                transition={300}
+                transition={150} // Faster transition for avatars
+                cachePolicy="memory-disk" // Cache avatars aggressively
+                priority="normal" // Lower priority than feed images
+                recyclingKey={uri} // Reuse across list
                 placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
                 placeholderContentFit="cover"
               />

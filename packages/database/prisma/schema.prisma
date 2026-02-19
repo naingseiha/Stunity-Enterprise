@@ -733,6 +733,10 @@ model Post {
   @@index([studyClubId])
   @@index([isPinned, createdAt(sort: Desc)]) // Feed sorts by isPinned DESC, createdAt DESC
   @@index([createdAt(sort: Desc)])            // Standalone for RECENT mode queries
+  // Phase 1 Performance Indexes (Free Tier Optimizations)
+  @@index([visibility, isPinned(sort: Desc), createdAt(sort: Desc)]) // Main feed query optimization
+  @@index([authorId, postType, createdAt(sort: Desc)]) // User profile by post type
+  @@index([studyClubId, createdAt(sort: Desc)]) // Club feed queries
   @@map("posts")
 }
 
@@ -766,6 +770,7 @@ model Like {
 
   @@unique([postId, userId])
   @@index([userId])
+  @@index([postId]) // Count likes per post (engagement queries)
   @@map("likes")
 }
 
@@ -1171,6 +1176,7 @@ model PostView {
   @@index([userId])
   @@index([viewedAt])
   @@index([postId, userId]) // Compound index for view deduplication checks
+  @@index([postId, viewedAt(sort: Desc)]) // Trending detection (views in last 24h)
   @@map("post_views")
 }
 

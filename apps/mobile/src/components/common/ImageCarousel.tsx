@@ -195,9 +195,16 @@ export default function ImageCarousel({
             source={{ uri }}
             style={[styles.image, { borderRadius }]}
             contentFit="cover"
-            transition={300}
+            transition={200}
+            // Critical for 120Hz scroll performance
+            cachePolicy="memory-disk" // Cache decoded images in memory
+            priority="high" // Decode immediately
+            recyclingKey={uri} // Reuse decoded bitmap across instances
             placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
             placeholderContentFit="cover"
+            // GPU acceleration hints
+            blurRadius={0} // No blur = faster
+            allowDownscaling={true} // Decode at optimal size
           />
         )}
       </TouchableOpacity>

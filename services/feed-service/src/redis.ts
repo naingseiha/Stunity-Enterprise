@@ -6,6 +6,64 @@
 import Redis from 'ioredis';
 import { SSEEvent, createEvent, EventType, EventData, REDIS_CHANNELS } from './events';
 
+// Simple in-memory LRU cache (fallback when Redis unavailable - Free Tier friendly)
+class LRUCache<T> {
+  private cache = new Map<string, { data: T; timestamp: number }>();
+  private maxSize: number;
+  private ttlMs: number;
+
+  constructor(maxSize = 100, ttlSeconds = 900) {
+    this.maxSize = maxSize;
+    this.ttlMs = ttlSeconds * 1000;
+  }
+
+  get(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    
+    // Check if expired
+    if (Date.now() - entry.timestamp > this.ttlMs) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    // Move to end (LRU)
+    this.cache.delete(key);
+    this.cache.set(key, entry);
+    return entry.data;
+  }
+
+  set(key: string, data: T): void {
+    // Evict oldest if at capacity
+    if (this.cache.size >= this.maxSize && !this.cache.has(key)) {
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+    }
+    
+    this.cache.set(key, { data, timestamp: Date.now() });
+  }
+
+  delete(key: string): void {
+    this.cache.delete(key);
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+
+  deleteByPattern(pattern: string): void {
+    const regex = new RegExp(pattern.replace('*', '.*'));
+    for (const key of this.cache.keys()) {
+      if (regex.test(key)) {
+        this.cache.delete(key);
+      }
+    }
+  }
+}
+
+// In-memory cache for hot feeds (top 100 cached feeds)
+const memoryCache = new LRUCache<any>(100, 900); // 100 entries, 15min TTL
+
 // Redis configuration from environment
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -215,29 +273,48 @@ export const EventPublisher = {
 // Feed Response Cache (reuses publisher client)
 // ========================================
 
-const FEED_CACHE_TTL = 300; // 5 minutes (invalidated on write)
+const FEED_CACHE_TTL = 900; // 15 minutes (Phase 1 optimization: increased from 5min for better hit rate)
 
 export const feedCache = {
   async get(key: string): Promise<any | null> {
+    // Try memory cache first (instant, works without Redis)
+    const memCached = memoryCache.get(key);
+    if (memCached) return memCached;
+    
+    // Fall back to Redis if available
     if (!publisher || !isRedisConnected) return null;
     try {
       const cached = await publisher.get(`feed:${key}`);
-      return cached ? JSON.parse(cached) : null;
+      if (cached) {
+        const data = JSON.parse(cached);
+        // Backfill memory cache
+        memoryCache.set(key, data);
+        return data;
+      }
+      return null;
     } catch {
       return null;
     }
   },
 
   async set(key: string, data: any): Promise<void> {
+    // Always set in memory cache (works without Redis)
+    memoryCache.set(key, data);
+    
+    // Also cache in Redis if available
     if (!publisher || !isRedisConnected) return;
     try {
       await publisher.setex(`feed:${key}`, FEED_CACHE_TTL, JSON.stringify(data));
     } catch {
-      // Non-critical — just skip caching
+      // Non-critical — memory cache still works
     }
   },
 
   async invalidateUser(userId: string): Promise<void> {
+    // Clear memory cache
+    memoryCache.deleteByPattern(`${userId}:*`);
+    
+    // Clear Redis if available
     if (!publisher || !isRedisConnected) return;
     try {
       // Delete all feed cache keys for this user

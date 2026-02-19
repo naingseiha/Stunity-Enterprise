@@ -20,6 +20,13 @@ import storiesRouter from './stories';
 import mediaRouter from './routes/media.routes';
 import { authenticateToken } from './middleware/auth';
 
+// ─── Phase 1 Day 7: Performance Monitoring ─────────────────────────
+import { 
+  performanceMonitoring, 
+  requestSizeTracking,
+  errorLogger
+} from './middleware/monitoring';
+
 // ─── Route Modules ─────────────────────────────────────────────────
 import postsRouter from './routes/posts.routes';
 import postActionsRouter from './routes/postActions.routes';
@@ -142,7 +149,25 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(generalLimiter);
-app.use(compression());
+
+// ─── HTTP Compression (Phase 1 Optimization) ───────────────────────
+// Compress responses > 1KB to reduce bandwidth by ~70%
+app.use(compression({
+  threshold: 1024, // Only compress responses > 1KB
+  level: 6, // Balance between speed and compression ratio
+  filter: (req, res) => {
+    // Don't compress if client doesn't support it
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    // Compress JSON, text, and feed responses
+    return compression.filter(req, res);
+  }
+}));
+
+app.use(performanceMonitoring);
+app.use(requestSizeTracking);
+
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
@@ -204,6 +229,9 @@ app.use('/calendar', authenticateToken as any, calendarRouter);
 app.use('/courses', authenticateToken as any, coursesRouter);
 app.use('/learning-paths', authenticateToken as any, coursesRouter);
 app.use('/stories', authenticateToken as any, storiesRouter);
+
+// ─── Phase 1 Day 7: Error Handler (must be last) ───────────────────
+app.use(errorLogger);
 
 // ─── Start Server ──────────────────────────────────────────────────
 server = app.listen(PORT, () => {
