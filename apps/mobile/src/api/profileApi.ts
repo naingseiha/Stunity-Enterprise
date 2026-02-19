@@ -76,6 +76,68 @@ export async function unfollowUser(userId: string) {
     return data;
 }
 
+// ── Profile Update API functions ─────────────────────────────────
+
+export interface UpdateProfileData {
+    firstName?: string;
+    lastName?: string;
+    bio?: string;
+    headline?: string;
+    professionalTitle?: string;
+    location?: string;
+    languages?: string[];
+    interests?: string[];
+    careerGoals?: string;
+    socialLinks?: {
+        github?: string;
+        linkedin?: string;
+        facebook?: string;
+        portfolio?: string;
+    };
+    profileVisibility?: string;
+    isOpenToOpportunities?: boolean;
+}
+
+/** Update own profile fields. */
+export async function updateProfile(profileData: UpdateProfileData) {
+    const { data } = await feedApi.put('/users/me/profile', profileData);
+    return data.profile;
+}
+
+/** Upload a new profile photo. Accepts a local file URI. */
+export async function uploadProfilePhoto(fileUri: string, fileName: string, mimeType: string = 'image/jpeg') {
+    const formData = new FormData();
+    formData.append('file', {
+        uri: fileUri,
+        name: fileName,
+        type: mimeType,
+    } as any);
+    const { data } = await feedApi.post('/users/me/profile-photo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
+}
+
+/** Upload a new cover photo. Accepts a local file URI. */
+export async function uploadCoverPhoto(fileUri: string, fileName: string, mimeType: string = 'image/jpeg') {
+    const formData = new FormData();
+    formData.append('file', {
+        uri: fileUri,
+        name: fileName,
+        type: mimeType,
+    } as any);
+    const { data } = await feedApi.post('/users/me/cover-photo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
+}
+
+/** Remove cover photo. */
+export async function deleteCoverPhoto() {
+    const { data } = await feedApi.delete('/users/me/cover-photo');
+    return data;
+}
+
 export default {
     fetchProfile,
     fetchEducation,
@@ -83,4 +145,8 @@ export default {
     fetchCertifications,
     followUser,
     unfollowUser,
+    updateProfile,
+    uploadProfilePhoto,
+    uploadCoverPhoto,
+    deleteCoverPhoto,
 };

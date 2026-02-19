@@ -43,9 +43,10 @@ import { useAuthStore } from '@/stores';
 import { User, UserStats, Education, Experience, Certification } from '@/types';
 import { formatNumber } from '@/utils';
 import { ProfileStackScreenProps } from '@/navigation/types';
-import { fetchProfile as apiFetchProfile, fetchEducation, fetchExperiences, fetchCertifications, followUser, unfollowUser } from '@/api/profileApi';
+import { fetchProfile as apiFetchProfile, fetchEducation, fetchExperiences, fetchCertifications, followUser, unfollowUser, uploadProfilePhoto, uploadCoverPhoto } from '@/api/profileApi';
 import { statsAPI, type UserStats as QuizUserStats, type Streak, type UserAchievement, type Achievement } from '@/services/stats';
 import { PerformanceTab, ActivityTab, CertificationsSection, SkillsSection } from './components';
+import * as ImagePicker from 'expo-image-picker';
 
 const { width } = Dimensions.get('window');
 const COVER_HEIGHT = 200;
@@ -96,6 +97,7 @@ export default function ProfileScreen() {
 
   const userId = route.params?.userId;
   const isOwnProfile = !userId || userId === currentUser?.id;
+  const { updateUser } = useAuthStore();
 
   const [profile, setProfile] = useState<User | null>(isOwnProfile ? currentUser : null);
   const [profileStats, setProfileStats] = useState<UserStats | null>(null);
@@ -187,6 +189,56 @@ export default function ProfileScreen() {
     navigation.navigate('EditProfile' as any);
   }, [navigation]);
 
+  // ── Photo Upload Handlers ───────────────────────────────────
+
+  const handlePickProfilePhoto = useCallback(async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      try {
+        const fileName = asset.uri.split('/').pop() || 'profile.jpg';
+        const data = await uploadProfilePhoto(asset.uri, fileName, asset.mimeType || 'image/jpeg');
+        updateUser({ profilePictureUrl: data.profilePictureUrl });
+        setProfile(prev => prev ? { ...prev, profilePictureUrl: data.profilePictureUrl } : prev);
+      } catch (e) {
+        console.error('Profile photo upload failed:', e);
+      }
+    }
+  }, [updateUser]);
+
+  const handlePickCoverPhoto = useCallback(async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      try {
+        const fileName = asset.uri.split('/').pop() || 'cover.jpg';
+        const data = await uploadCoverPhoto(asset.uri, fileName, asset.mimeType || 'image/jpeg');
+        updateUser({ coverPhotoUrl: data.coverPhotoUrl } as any);
+        setProfile(prev => prev ? { ...prev, coverPhotoUrl: data.coverPhotoUrl } : prev);
+      } catch (e) {
+        console.error('Cover photo upload failed:', e);
+      }
+    }
+  }, [updateUser]);
+
   // ── Blur Shimmer Loading State ─────────────────────────────────
   if (loading || !profile) {
     return (
@@ -262,12 +314,16 @@ export default function ProfileScreen() {
       >
         {/* Cover Photo Section */}
         <View style={styles.coverSection}>
-          <LinearGradient
-            colors={['#BAE6FD', '#E0F2FE', '#F0F9FF']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.coverGradient}
-          />
+          {(profile as any)?.coverPhotoUrl ? (
+            <Image source={{ uri: (profile as any).coverPhotoUrl }} style={styles.coverGradient} />
+          ) : (
+            <LinearGradient
+              colors={['#BAE6FD', '#E0F2FE', '#F0F9FF']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.coverGradient}
+            />
+          )}
 
           {/* Header Buttons */}
           <SafeAreaView edges={['top']} style={styles.headerButtons}>
@@ -287,7 +343,7 @@ export default function ProfileScreen() {
                   <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.navigate('Settings' as any)}>
                     <Ionicons name="settings-outline" size={20} color="#1a1a1a" />
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.headerCircleBtn, { marginLeft: 8 }]}>
+                  <TouchableOpacity style={[styles.headerCircleBtn, { marginLeft: 8 }]} onPress={handlePickCoverPhoto}>
                     <Ionicons name="camera-outline" size={20} color="#1a1a1a" />
                   </TouchableOpacity>
                 </>
@@ -318,7 +374,7 @@ export default function ProfileScreen() {
 
               {/* Edit Avatar Button */}
               {isOwnProfile && (
-                <TouchableOpacity style={styles.editAvatarButton}>
+                <TouchableOpacity style={styles.editAvatarButton} onPress={handlePickProfilePhoto}>
                   <View style={styles.editAvatarCircle}>
                     <Ionicons name="camera-outline" size={16} color="#0EA5E9" />
                   </View>
