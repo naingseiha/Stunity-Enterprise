@@ -391,8 +391,8 @@ export default function FeedScreen() {
           <View style={styles.perfTopRow}>
             {/* Mini Level Ring */}
             {(() => {
-              const ringSize = 72;
-              const sw = 6;
+              const ringSize = 90;
+              const sw = 7;
               const r = (ringSize - sw) / 2;
               const circ = 2 * Math.PI * r;
               const xpToNext = 250;
@@ -417,22 +417,22 @@ export default function FeedScreen() {
             {/* Stats Column */}
             <View style={styles.perfStats}>
               <View style={styles.perfStatRow}>
-                <View style={[styles.perfStatIcon, { backgroundColor: 'rgba(59,130,246,0.3)' }]}>
-                  <Ionicons name="diamond" size={12} color="#93C5FD" />
+                <View style={[styles.perfStatIcon, { backgroundColor: 'rgba(96,165,250,0.35)' }]}>
+                  <Ionicons name="diamond" size={13} color="#DBEAFE" />
                 </View>
                 <Text style={styles.perfStatVal}>{learningStats.totalPoints.toLocaleString()}</Text>
                 <Text style={styles.perfStatLbl}>XP</Text>
               </View>
               <View style={styles.perfStatRow}>
-                <View style={[styles.perfStatIcon, { backgroundColor: 'rgba(16,185,129,0.3)' }]}>
-                  <Ionicons name="checkmark-circle" size={12} color="#6EE7B7" />
+                <View style={[styles.perfStatIcon, { backgroundColor: 'rgba(52,211,153,0.35)' }]}>
+                  <Ionicons name="checkmark-circle" size={13} color="#D1FAE5" />
                 </View>
                 <Text style={styles.perfStatVal}>{learningStats.completedLessons}</Text>
                 <Text style={styles.perfStatLbl}>Lessons</Text>
               </View>
               <View style={styles.perfStatRow}>
-                <View style={[styles.perfStatIcon, { backgroundColor: 'rgba(249,115,22,0.3)' }]}>
-                  <Ionicons name="flame" size={12} color="#FDBA74" />
+                <View style={[styles.perfStatIcon, { backgroundColor: 'rgba(251,146,60,0.35)' }]}>
+                  <Ionicons name="flame" size={13} color="#FED7AA" />
                 </View>
                 <Text style={styles.perfStatVal}>{learningStats.currentStreak}</Text>
                 <Text style={styles.perfStatLbl}>Streak</Text>
@@ -477,6 +477,10 @@ export default function FeedScreen() {
               </View>
             );
           })()}
+          {/* Decorative abstract circles */}
+          <View style={{ position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255,255,255,0.06)', top: -35, right: -25 }} />
+          <View style={{ position: 'absolute', width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(255,255,255,0.05)', bottom: -25, left: -20 }} />
+          <View style={{ position: 'absolute', width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.04)', top: 20, right: 60 }} />
         </LinearGradient>
       </TouchableOpacity>
 
