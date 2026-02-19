@@ -22,7 +22,6 @@ import Animated, {
   FadeInDown,
   FadeInUp,
   FadeIn,
-  ZoomIn,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -66,7 +65,7 @@ export default function WelcomeScreen() {
           entering={FadeInDown.delay(200).duration(700).springify()}
           style={styles.brandingContainer}
         >
-          <Animated.View entering={ZoomIn.delay(100).duration(600)} style={styles.logoGlow}>
+          <Animated.View entering={FadeInDown.delay(100).duration(600)}>
             <Image
               source={require('../../../assets/Stunity.png')}
               style={styles.logo}
@@ -212,23 +211,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: height * 0.04,
   },
-  logoGlow: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#0EA5E9',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 6,
-    marginBottom: 20,
-  },
   logo: {
-    width: 120,
-    height: 120,
+    width: 160,
+    height: 160,
+    marginBottom: 16,
   },
   tagline: {
     fontSize: 30,
