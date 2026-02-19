@@ -385,7 +385,7 @@ export default function FeedScreen() {
   const renderHeader = useCallback(() => (
     <View style={styles.headerSection}>
       {/* Performance / Trophy Card — E-Learning focus */}
-      <TouchableOpacity activeOpacity={0.9} style={styles.performanceCardWrapper} onPress={() => navigation.navigate('Profile' as any)}>
+      <TouchableOpacity activeOpacity={0.9} style={styles.performanceCardWrapper} onPress={() => navigation.getParent()?.navigate('ProfileTab')}>
         <LinearGradient
           colors={['#7DD3FC', '#0EA5E9', '#0284C7']}
           start={{ x: 0, y: 0 }}
@@ -395,36 +395,36 @@ export default function FeedScreen() {
           {/* Left side: Text info */}
           <View style={styles.performanceLeft}>
             <Text style={styles.performanceGreeting}>{getGreeting()}, {user?.firstName || 'Learner'}!</Text>
-            <Text style={styles.performanceTitle}>
+            <Text style={styles.performanceTitle} numberOfLines={1}>
               {learningStats.currentStreak > 0
-                ? `Keep up your streak! 🔥`
-                : `Start your learning journey! 📚`}
+                ? `${learningStats.currentStreak}-day streak — keep going!`
+                : 'Start your learning journey'}
             </Text>
 
             {/* Stats row */}
             <View style={styles.performanceStats}>
               <View style={styles.performanceStat}>
-                <Text style={styles.performanceStatValue}>{learningStats.currentStreak}</Text>
-                <Text style={styles.performanceStatLabel}>Day Streak</Text>
+                <Text style={styles.performanceStatValue}>🔥 {learningStats.currentStreak}</Text>
+                <Text style={styles.performanceStatLabel}>Streak</Text>
               </View>
               <View style={styles.performanceStatDivider} />
               <View style={styles.performanceStat}>
                 <Text style={styles.performanceStatValue}>
-                  {learningStats.totalPoints >= 1000
+                  ⭐ {learningStats.totalPoints >= 1000
                     ? `${(learningStats.totalPoints / 1000).toFixed(1)}k`
                     : learningStats.totalPoints}
                 </Text>
-                <Text style={styles.performanceStatLabel}>Total XP</Text>
+                <Text style={styles.performanceStatLabel}>XP</Text>
               </View>
               <View style={styles.performanceStatDivider} />
               <View style={styles.performanceStat}>
-                <Text style={styles.performanceStatValue}>{learningStats.completedLessons}</Text>
-                <Text style={styles.performanceStatLabel}>Completed</Text>
+                <Text style={styles.performanceStatValue}>✅ {learningStats.completedLessons}</Text>
+                <Text style={styles.performanceStatLabel}>Done</Text>
               </View>
             </View>
 
             {/* CTA */}
-            <TouchableOpacity style={styles.performanceCTA} activeOpacity={0.8} onPress={() => navigation.navigate('Profile' as any)}>
+            <TouchableOpacity style={styles.performanceCTA} activeOpacity={0.8} onPress={() => navigation.getParent()?.navigate('ProfileTab')}>
               <Text style={styles.performanceCTAText}>View Progress</Text>
               <Ionicons name="arrow-forward" size={14} color="#0284C7" />
             </TouchableOpacity>
