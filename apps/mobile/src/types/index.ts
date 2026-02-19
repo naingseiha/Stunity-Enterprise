@@ -10,7 +10,7 @@ export interface User {
   firstName: string;
   lastName: string;
   username: string;
-  name?: string; // Full name (optional)
+  name?: string;
   email: string;
   phone?: string;
   role: UserRole;
@@ -22,9 +22,25 @@ export interface User {
   location?: string;
   languages: string[];
   interests: string[];
+  skills?: string[];
+  careerGoals?: string;
+  socialLinks?: Record<string, string>;
+  profileCompleteness?: number;
+  profileVisibility?: 'PUBLIC' | 'SCHOOL' | 'PRIVATE';
   isVerified: boolean;
   isOnline: boolean;
   lastActiveAt?: string;
+  // Learning & Gamification
+  totalLearningHours?: number;
+  currentStreak?: number;
+  longestStreak?: number;
+  totalPoints?: number;
+  level?: number;
+  isOpenToOpportunities?: boolean;
+  // Relations
+  school?: { id: string; name: string; logo?: string };
+  teacher?: { id: string; position?: string; degree?: string; hireDate?: string; major1?: string; major2?: string };
+  student?: { id: string; firstName: string; lastName: string; class?: { id: string; name: string; grade: string } };
   createdAt: string;
   updatedAt: string;
 }
@@ -41,8 +57,66 @@ export interface UserStats {
   posts: number;
   followers: number;
   following: number;
-  courses: number;
-  enrollments: number;
+  skills: number;
+  experiences: number;
+  certifications: number;
+  projects: number;
+  achievements: number;
+  recommendations: number;
+  postsThisMonth: number;
+  totalLikes: number;
+  totalViews: number;
+}
+
+export interface ProfileData {
+  user: User;
+  isOwnProfile: boolean;
+  isFollowing: boolean;
+  stats: UserStats;
+  education: Education[];
+  experiences: Experience[];
+  certifications: Certification[];
+}
+
+export interface Education {
+  id: string;
+  school: string;
+  degree?: string;
+  fieldOfStudy?: string;
+  grade?: string;
+  startDate: string;
+  endDate?: string;
+  isCurrent: boolean;
+  description?: string;
+  activities: string[];
+  skills: string[];
+}
+
+export interface Experience {
+  id: string;
+  type: 'WORK' | 'INTERNSHIP' | 'VOLUNTEER' | 'FREELANCE' | 'TEACHING_ASSISTANT' | 'RESEARCH' | 'STUDENT_ORG' | 'TUTORING';
+  title: string;
+  organization: string;
+  location?: string;
+  startDate: string;
+  endDate?: string;
+  isCurrent: boolean;
+  description?: string;
+  achievements: string[];
+  skills: string[];
+}
+
+export interface Certification {
+  id: string;
+  name: string;
+  issuingOrg: string;
+  issueDate: string;
+  expiryDate?: string;
+  credentialId?: string;
+  credentialUrl?: string;
+  description?: string;
+  skills: string[];
+  isVerified: boolean;
 }
 
 // Auth Types

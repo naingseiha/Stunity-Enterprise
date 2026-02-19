@@ -6,7 +6,7 @@
  * Compact edit button, settings icon, soft purple background
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -22,14 +22,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  withDelay,
+  Easing,
+  interpolate,
+  runOnJS,
+} from 'react-native-reanimated';
 
-import { Avatar, Button, Loading } from '@/components/common';
+import { Avatar, Button } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useAuthStore } from '@/stores';
-import { User } from '@/types';
+import { User, UserStats, Education, Experience } from '@/types';
 import { formatNumber } from '@/utils';
 import { ProfileStackScreenProps } from '@/navigation/types';
+import { fetchProfile as apiFetchProfile, fetchEducation, fetchExperiences, followUser, unfollowUser } from '@/api/profileApi';
 
 const { width } = Dimensions.get('window');
 const COVER_HEIGHT = 200;
@@ -37,24 +47,38 @@ const COVER_HEIGHT = 200;
 type RouteProp = ProfileStackScreenProps<'Profile'>['route'];
 type NavigationProp = ProfileStackScreenProps<'Profile'>['navigation'];
 
-// Stats Card Component
-interface StatsCardProps {
-  icon: string;
-  value: string | number;
-  label: string;
-  colors: string[];
-}
+// Clean stat card config
+const STAT_CARDS = [
+  { icon: 'book-outline' as const, bg: '#F0F9FF', accent: '#0EA5E9', tint: '#0C4A6E' },
+  { icon: 'star-outline' as const, bg: '#FFF7ED', accent: '#F59E0B', tint: '#92400E' },
+  { icon: 'time-outline' as const, bg: '#F0FDF4', accent: '#10B981', tint: '#065F46' },
+  { icon: 'flame-outline' as const, bg: '#FFF1F2', accent: '#F43F5E', tint: '#9F1239' },
+  { icon: 'trophy-outline' as const, bg: '#FAF5FF', accent: '#8B5CF6', tint: '#5B21B6' },
+  { icon: 'code-slash-outline' as const, bg: '#EFF6FF', accent: '#3B82F6', tint: '#1E3A8A' },
+];
 
-function PerformanceCard({ icon, value, label }: { icon: string; value: string | number; label: string }) {
+function StatCard({ icon, value, label, index = 0 }: { icon: string; value: string | number; label: string; index?: number }) {
+  const cfg = STAT_CARDS[index % STAT_CARDS.length];
+  const scale = useSharedValue(0.92);
+  const translateY = useSharedValue(12);
+
+  useEffect(() => {
+    const d = 200 + index * 50;
+    scale.value = withDelay(d, withSpring(1, { damping: 16, stiffness: 140 }));
+    translateY.value = withDelay(d, withSpring(0, { damping: 16, stiffness: 140 }));
+  }, []);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }, { translateY: translateY.value }],
+  }));
+
   return (
-    <Animated.View entering={FadeInDown.duration(400)} style={styles.perfCard}>
-      <View style={styles.perfCardInner}>
-        <View style={styles.perfIconCircle}>
-          <Text style={styles.perfIcon}>{icon}</Text>
-        </View>
-        <Text style={styles.perfValue}>{value}</Text>
-        <Text style={styles.perfLabel}>{label}</Text>
+    <Animated.View style={[styles.statGridCard, { backgroundColor: cfg.bg }, animStyle]}>
+      <View style={[styles.statGridIcon, { backgroundColor: cfg.accent }]}>
+        <Ionicons name={icon as any} size={16} color="#fff" />
       </View>
+      <Text style={[styles.statGridValue, { color: cfg.tint }]}>{value}</Text>
+      <Text style={styles.statGridLabel}>{label}</Text>
     </Animated.View>
   );
 }
@@ -68,58 +92,69 @@ export default function ProfileScreen() {
   const isOwnProfile = !userId || userId === currentUser?.id;
 
   const [profile, setProfile] = useState<User | null>(isOwnProfile ? currentUser : null);
-  const [isLoading, setIsLoading] = useState(!isOwnProfile);
+  const [profileStats, setProfileStats] = useState<UserStats | null>(null);
+  const [education, setEducation] = useState<Education[]>([]);
+  const [experiences, setExperiences] = useState<Experience[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'performance' | 'about' | 'activity'>('performance');
 
+  // Fetch profile on mount and when userId changes
   useEffect(() => {
-    if (!isOwnProfile && userId) {
-      fetchProfile(userId);
-    }
+    loadProfile();
   }, [userId, isOwnProfile]);
 
-  const fetchProfile = async (id: string) => {
-    setIsLoading(true);
-    // TODO: API call to fetch profile
-    setTimeout(() => {
-      setProfile({
-        id,
-        firstName: 'Jane',
-        lastName: 'Smith',
-        email: 'jane@example.com',
-        role: 'STUDENT',
-        isVerified: true,
-        isOnline: false,
-        languages: [],
-        interests: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-      setIsLoading(false);
-    }, 1000);
+  const loadProfile = async () => {
+    try {
+      const targetId = isOwnProfile ? 'me' : userId!;
+
+      // Fetch profile + education + experiences in parallel
+      const [profileData, eduData, expData] = await Promise.all([
+        apiFetchProfile(targetId),
+        fetchEducation(targetId),
+        fetchExperiences(targetId),
+      ]);
+
+      setProfile(profileData as any);
+      setProfileStats(profileData.stats);
+      setIsFollowing(profileData.isFollowing || false);
+      setEducation(eduData || []);
+      setExperiences(expData || []);
+    } catch (error) {
+      console.error('Failed to load profile:', error);
+      // Fallback to auth store user for own profile
+      if (isOwnProfile && currentUser) {
+        setProfile(currentUser);
+      }
+    }
   };
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    if (!isOwnProfile && userId) {
-      await fetchProfile(userId);
-    }
+    await loadProfile();
     setRefreshing(false);
-  }, [isOwnProfile, userId]);
+  }, [userId, isOwnProfile]);
 
-  const handleFollow = useCallback(() => {
-    setIsFollowing(!isFollowing);
-    // TODO: API call
-  }, [isFollowing]);
+  const handleFollow = useCallback(async () => {
+    if (!userId) return;
+    try {
+      if (isFollowing) {
+        await unfollowUser(userId);
+        setIsFollowing(false);
+        setProfileStats(prev => prev ? { ...prev, followers: prev.followers - 1 } : prev);
+      } else {
+        await followUser(userId);
+        setIsFollowing(true);
+        setProfileStats(prev => prev ? { ...prev, followers: prev.followers + 1 } : prev);
+      }
+    } catch (error) {
+      console.error('Follow/unfollow failed:', error);
+    }
+  }, [isFollowing, userId]);
 
   const handleEditProfile = useCallback(() => {
     navigation.navigate('EditProfile' as any);
   }, [navigation]);
-
-  if (isLoading) {
-    return <Loading fullScreen />;
-  }
 
   if (!profile) {
     return (
@@ -131,9 +166,9 @@ export default function ProfileScreen() {
 
   const fullName = `${profile.firstName} ${profile.lastName}`;
   const stats = {
-    posts: 142,
-    followers: 1247,
-    following: 456,
+    posts: profileStats?.posts ?? 0,
+    followers: profileStats?.followers ?? 0,
+    following: profileStats?.following ?? 0,
   };
 
   const tabs = [
@@ -202,7 +237,7 @@ export default function ProfileScreen() {
           </View>
 
           {/* Name & Bio Section */}
-          <Animated.View entering={FadeIn.delay(200)} style={styles.nameSection}>
+          <View style={styles.nameSection}>
             <View style={styles.nameRow}>
               <Text style={styles.name}>{fullName}</Text>
               {profile.isVerified && (
@@ -210,7 +245,7 @@ export default function ProfileScreen() {
               )}
             </View>
 
-            {/* Level Badge - Moved here */}
+            {/* Level Badge */}
             <View style={styles.levelBadgeInline}>
               <LinearGradient
                 colors={['#0EA5E9', '#0284C7']}
@@ -219,20 +254,20 @@ export default function ProfileScreen() {
                 style={styles.levelBadgeGradient}
               >
                 <Ionicons name="star" size={12} color="#fff" />
-                <Text style={styles.levelTextInline}>Level 5</Text>
+                <Text style={styles.levelTextInline}>Level {profile.level ?? 1}</Text>
               </LinearGradient>
             </View>
 
-            <Text style={styles.headline}>Computer Science Student</Text>
-            <Text style={styles.bio}>
-              Passionate about learning and building amazing things
-            </Text>
+            <Text style={styles.headline}>{profile.headline || profile.professionalTitle || ''}</Text>
+            {profile.bio ? (
+              <Text style={styles.bio}>{profile.bio}</Text>
+            ) : null}
 
             {/* Location & Social Links */}
             <View style={styles.metaRow}>
               <View style={styles.locationRow}>
                 <Ionicons name="location-outline" size={14} color="#9CA3AF" />
-                <Text style={styles.locationText}>Phnom Penh, Cambodia</Text>
+                <Text style={styles.locationText}>{profile.location || 'No location set'}</Text>
               </View>
 
               <View style={styles.socialLinks}>
@@ -244,10 +279,10 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          </Animated.View>
+          </View>
 
           {/* Stats Cards — Individual mini-cards */}
-          <Animated.View entering={FadeIn.delay(300)} style={styles.statsRow}>
+          <View style={styles.statsRow}>
             <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
               <LinearGradient
                 colors={['#F3E8FF', '#FAF5FF']}
@@ -292,10 +327,10 @@ export default function ProfileScreen() {
                 <Text style={styles.statLabel}>Following</Text>
               </LinearGradient>
             </TouchableOpacity>
-          </Animated.View>
+          </View>
 
           {/* Action Buttons — Compact layout */}
-          <Animated.View entering={FadeIn.delay(400)} style={styles.actionButtons}>
+          <View style={styles.actionButtons}>
             {isOwnProfile ? (
               <>
                 <TouchableOpacity
@@ -345,67 +380,65 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               </>
             )}
-          </Animated.View>
+          </View>
 
-          {/* Performance Highlights — Blue Hero Card */}
-          <Animated.View entering={FadeInDown.delay(500)} style={styles.highlightsSection}>
+          {/* Performance Highlights */}
+          <View style={styles.highlightsSection}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Performance Highlights</Text>
+              <Text style={styles.sectionTitle}>Performance</Text>
             </View>
 
-            {/* Blue Hero Card */}
-            <View style={styles.blueHeroCard}>
+            {/* Hero Progress Card */}
+            <View style={styles.heroCard}>
               <LinearGradient
                 colors={['#38BDF8', '#0EA5E9', '#0284C7']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.blueHeroGradient}
+                style={styles.heroGradient}
               >
-                {/* Decorative circles */}
-                <View style={[styles.blueDecorCircle, { top: -20, right: -15, width: 80, height: 80 }]} />
-                <View style={[styles.blueDecorCircle, { bottom: -10, left: -10, width: 60, height: 60 }]} />
-                <View style={[styles.blueDecorCircle, { top: 30, left: 50, width: 30, height: 30, opacity: 0.08 }]} />
+                {/* Decorative */}
+                <View style={[styles.heroDecor, { top: -20, right: -15, width: 80, height: 80 }]} />
+                <View style={[styles.heroDecor, { bottom: -10, left: -10, width: 60, height: 60 }]} />
 
-                <View style={styles.blueHeroHeader}>
-                  <View style={styles.blueHeroIconCircle}>
+                <View style={styles.heroHeader}>
+                  <View style={styles.heroIconWrap}>
                     <Ionicons name="trending-up" size={20} color="#0284C7" />
                   </View>
-                  <Text style={styles.blueHeroTitle}>Your Progress</Text>
+                  <Text style={styles.heroTitle}>Your Progress</Text>
                 </View>
 
-                {/* 3 inline stats */}
-                <View style={styles.blueHeroStatsRow}>
-                  <View style={styles.blueHeroStat}>
-                    <Text style={styles.blueHeroStatValue}>12</Text>
-                    <Text style={styles.blueHeroStatLabel}>Courses</Text>
+                <View style={styles.heroStatsRow}>
+                  <View style={styles.heroStat}>
+                    <Text style={styles.heroStatValue}>{profileStats?.certifications ?? 0}</Text>
+                    <Text style={styles.heroStatLabel}>Courses</Text>
                   </View>
-                  <View style={styles.blueHeroStatDivider} />
-                  <View style={styles.blueHeroStat}>
-                    <Text style={styles.blueHeroStatValue}>85%</Text>
-                    <Text style={styles.blueHeroStatLabel}>Avg Grade</Text>
+                  <View style={styles.heroStatDivider} />
+                  <View style={styles.heroStat}>
+                    <Text style={styles.heroStatValue}>Lv.{profile.level ?? 1}</Text>
+                    <Text style={styles.heroStatLabel}>Level</Text>
                   </View>
-                  <View style={styles.blueHeroStatDivider} />
-                  <View style={styles.blueHeroStat}>
-                    <Text style={styles.blueHeroStatValue}>142h</Text>
-                    <Text style={styles.blueHeroStatLabel}>Study Time</Text>
+                  <View style={styles.heroStatDivider} />
+                  <View style={styles.heroStat}>
+                    <Text style={styles.heroStatValue}>{profile.totalLearningHours ?? 0}h</Text>
+                    <Text style={styles.heroStatLabel}>Study Time</Text>
                   </View>
                 </View>
               </LinearGradient>
             </View>
 
-            {/* Secondary stat cards — 2-column grid */}
-            <View style={styles.perfGrid}>
-              <PerformanceCard icon="📚" value={12} label="Courses" />
-              <PerformanceCard icon="📈" value="85%" label="Avg Grade" />
-              <PerformanceCard icon="⏰" value={142} label="Study Hours" />
-              <PerformanceCard icon="🔥" value={12} label="Day Streak" />
-              <PerformanceCard icon="🏆" value={24} label="Achievements" />
-              <PerformanceCard icon="💻" value={8} label="Projects" />
+            {/* Clean stat grid */}
+            <View style={styles.statGrid}>
+              <StatCard icon="book-outline" value={profileStats?.certifications ?? 0} label="Courses" index={0} />
+              <StatCard icon="star-outline" value={profile.totalPoints ?? 0} label="Points" index={1} />
+              <StatCard icon="time-outline" value={profile.totalLearningHours ?? 0} label="Study Hours" index={2} />
+              <StatCard icon="flame-outline" value={profile.currentStreak ?? 0} label="Day Streak" index={3} />
+              <StatCard icon="trophy-outline" value={profileStats?.achievements ?? 0} label="Achievements" index={4} />
+              <StatCard icon="code-slash-outline" value={profileStats?.projects ?? 0} label="Projects" index={5} />
             </View>
-          </Animated.View>
+          </View>
 
           {/* Tabs */}
-          <Animated.View entering={FadeIn.delay(600)} style={styles.tabsSection}>
+          <View style={styles.tabsSection}>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -436,29 +469,119 @@ export default function ProfileScreen() {
                 );
               })}
             </ScrollView>
-          </Animated.View>
+          </View>
 
           {/* Tab Content */}
-          <Animated.View entering={FadeInDown.delay(700)} style={styles.tabContent}>
+          <View style={styles.tabContent}>
             {activeTab === 'performance' && (
               <View style={styles.contentPlaceholder}>
                 <Ionicons name="analytics-outline" size={48} color="#E5E7EB" />
-                <Text style={styles.placeholderText}>Performance data will appear here</Text>
+                <Text style={styles.placeholderText}>Detailed analytics coming soon</Text>
               </View>
             )}
             {activeTab === 'about' && (
-              <View style={styles.contentPlaceholder}>
-                <Ionicons name="person-outline" size={48} color="#E5E7EB" />
-                <Text style={styles.placeholderText}>About information will appear here</Text>
+              <View style={styles.aboutSection}>
+                {/* Bio */}
+                {profile.bio ? (
+                  <View style={styles.aboutCard}>
+                    <View style={styles.aboutCardHeader}>
+                      <Ionicons name="person-circle-outline" size={20} color="#0EA5E9" />
+                      <Text style={styles.aboutCardTitle}>Bio</Text>
+                    </View>
+                    <Text style={styles.aboutCardText}>{profile.bio}</Text>
+                  </View>
+                ) : null}
+
+                {/* Headline & Location */}
+                {(profile.headline || profile.location || profile.school) && (
+                  <View style={styles.aboutCard}>
+                    <View style={styles.aboutCardHeader}>
+                      <Ionicons name="information-circle-outline" size={20} color="#0EA5E9" />
+                      <Text style={styles.aboutCardTitle}>Info</Text>
+                    </View>
+                    {profile.headline ? (
+                      <View style={styles.aboutInfoRow}>
+                        <Ionicons name="briefcase-outline" size={16} color="#6B7280" />
+                        <Text style={styles.aboutInfoText}>{profile.headline}</Text>
+                      </View>
+                    ) : null}
+                    {profile.location ? (
+                      <View style={styles.aboutInfoRow}>
+                        <Ionicons name="location-outline" size={16} color="#6B7280" />
+                        <Text style={styles.aboutInfoText}>{profile.location}</Text>
+                      </View>
+                    ) : null}
+                    {profile.school ? (
+                      <View style={styles.aboutInfoRow}>
+                        <Ionicons name="school-outline" size={16} color="#6B7280" />
+                        <Text style={styles.aboutInfoText}>{profile.school.name}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                )}
+
+                {/* Education */}
+                {education.length > 0 && (
+                  <View style={styles.aboutCard}>
+                    <View style={styles.aboutCardHeader}>
+                      <Ionicons name="school-outline" size={20} color="#8B5CF6" />
+                      <Text style={styles.aboutCardTitle}>Education</Text>
+                    </View>
+                    {education.map((edu) => (
+                      <View key={edu.id} style={styles.timelineItem}>
+                        <View style={[styles.timelineDot, { backgroundColor: '#8B5CF6' }]} />
+                        <View style={styles.timelineContent}>
+                          <Text style={styles.timelineTitle}>{edu.degree ? `${edu.degree} in ${edu.fieldOfStudy || ''}` : edu.school}</Text>
+                          <Text style={styles.timelineSubtitle}>{edu.school}</Text>
+                          <Text style={styles.timelineDate}>
+                            {new Date(edu.startDate).getFullYear()} – {edu.isCurrent ? 'Present' : edu.endDate ? new Date(edu.endDate).getFullYear() : ''}
+                          </Text>
+                          {edu.description ? <Text style={styles.timelineDesc}>{edu.description}</Text> : null}
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Experience */}
+                {experiences.length > 0 && (
+                  <View style={styles.aboutCard}>
+                    <View style={styles.aboutCardHeader}>
+                      <Ionicons name="briefcase-outline" size={20} color="#10B981" />
+                      <Text style={styles.aboutCardTitle}>Experience</Text>
+                    </View>
+                    {experiences.map((exp) => (
+                      <View key={exp.id} style={styles.timelineItem}>
+                        <View style={[styles.timelineDot, { backgroundColor: '#10B981' }]} />
+                        <View style={styles.timelineContent}>
+                          <Text style={styles.timelineTitle}>{exp.title}</Text>
+                          <Text style={styles.timelineSubtitle}>{exp.organization}{exp.location ? ` · ${exp.location}` : ''}</Text>
+                          <Text style={styles.timelineDate}>
+                            {new Date(exp.startDate).getFullYear()} – {exp.isCurrent ? 'Present' : exp.endDate ? new Date(exp.endDate).getFullYear() : ''}
+                          </Text>
+                          {exp.description ? <Text style={styles.timelineDesc}>{exp.description}</Text> : null}
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Empty state */}
+                {!profile.bio && education.length === 0 && experiences.length === 0 && (
+                  <View style={styles.contentPlaceholder}>
+                    <Ionicons name="person-outline" size={48} color="#E5E7EB" />
+                    <Text style={styles.placeholderText}>No about information yet</Text>
+                  </View>
+                )}
               </View>
             )}
             {activeTab === 'activity' && (
               <View style={styles.contentPlaceholder}>
                 <Ionicons name="flame-outline" size={48} color="#E5E7EB" />
-                <Text style={styles.placeholderText}>Activity timeline will appear here</Text>
+                <Text style={styles.placeholderText}>Activity timeline coming soon</Text>
               </View>
             )}
-          </Animated.View>
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -511,7 +634,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.9)',
     alignItems: 'center',
     justifyContent: 'center',
-    ...Shadows.small,
+    ...Shadows.sm,
   },
   backButton: {
     width: 40,
@@ -520,7 +643,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    ...Shadows.small,
+    ...Shadows.sm,
   },
   editCoverButton: {
     width: 38,
@@ -529,14 +652,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.9)',
     alignItems: 'center',
     justifyContent: 'center',
-    ...Shadows.small,
+    ...Shadows.sm,
   },
   levelBadgeInline: {
     marginTop: 8,
     marginBottom: 10,
     borderRadius: 14,
     overflow: 'hidden',
-    ...Shadows.small,
+    ...Shadows.sm,
   },
   levelBadgeGradient: {
     flexDirection: 'row',
@@ -575,7 +698,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: '#FFF',
-    ...Shadows.small,
+    ...Shadows.sm,
   },
   nameSection: {
     alignItems: 'center',
@@ -765,35 +888,35 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 10,
   },
-  // ── Blue Hero Card ──
-  blueHeroCard: {
+  // ── Hero Progress Card ──
+  heroCard: {
     borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 14,
-    elevation: 8,
-    marginBottom: 12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
+    marginBottom: 16,
   },
-  blueHeroGradient: {
+  heroGradient: {
     borderRadius: 20,
-    padding: 22,
+    padding: 20,
     position: 'relative',
     overflow: 'hidden',
   },
-  blueDecorCircle: {
+  heroDecor: {
     position: 'absolute',
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
-  blueHeroHeader: {
+  heroHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 20,
+    marginBottom: 18,
   },
-  blueHeroIconCircle: {
+  heroIconWrap: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -801,87 +924,78 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  blueHeroTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+  heroTitle: {
+    fontSize: 17,
+    fontWeight: '700',
     color: '#fff',
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
   },
-  blueHeroStatsRow: {
+  heroStatsRow: {
     flexDirection: 'row',
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 6,
   },
-  blueHeroStat: {
+  heroStat: {
     flex: 1,
     alignItems: 'center',
   },
-  blueHeroStatValue: {
-    fontSize: 22,
+  heroStatValue: {
+    fontSize: 20,
     fontWeight: '800',
     color: '#fff',
     marginBottom: 2,
   },
-  blueHeroStatLabel: {
-    fontSize: 11,
+  heroStatLabel: {
+    fontSize: 10,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.75)',
+    color: 'rgba(255,255,255,0.7)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  blueHeroStatDivider: {
+  heroStatDivider: {
     width: 1,
-    height: '80%',
+    height: '70%',
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignSelf: 'center',
   },
-  // ── Performance mini-cards ──
-  perfGrid: {
+  // ── Clean Stat Grid ──
+  statGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
   },
-  perfCard: {
-    width: '47.5%',
+  statGridCard: {
+    width: '31%',
     borderRadius: 14,
-    overflow: 'hidden',
-    backgroundColor: '#EFF6FF',
-    shadowColor: '#0EA5E9',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  perfCardInner: {
-    alignItems: 'center',
     paddingVertical: 14,
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  perfIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#DBEAFE',
+  statGridIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
   },
-  perfIcon: {
-    fontSize: 18,
-  },
-  perfValue: {
+  statGridValue: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#0C4A6E',
     marginBottom: 2,
     letterSpacing: -0.3,
   },
-  perfLabel: {
-    fontSize: 10,
+  statGridLabel: {
+    fontSize: 9,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#9CA3AF',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
@@ -945,12 +1059,87 @@ const styles = StyleSheet.create({
     padding: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    ...Shadows.small,
+    ...Shadows.sm,
   },
   placeholderText: {
     fontSize: 14,
     color: '#9CA3AF',
     marginTop: 12,
     textAlign: 'center',
+  },
+  // ── About Tab Styles ──
+  aboutSection: {
+    gap: 16,
+  },
+  aboutCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    ...Shadows.sm,
+  },
+  aboutCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  aboutCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  aboutCardText: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#4B5563',
+  },
+  aboutInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 6,
+  },
+  aboutInfoText: {
+    fontSize: 14,
+    color: '#4B5563',
+    flex: 1,
+  },
+  timelineItem: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  timelineDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginTop: 5,
+  },
+  timelineContent: {
+    flex: 1,
+  },
+  timelineTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  timelineSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  timelineDate: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginBottom: 4,
+  },
+  timelineDesc: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#4B5563',
+    marginTop: 4,
   },
 });
