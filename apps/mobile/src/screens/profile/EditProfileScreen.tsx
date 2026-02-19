@@ -211,7 +211,7 @@ export default function EditProfileScreen() {
   };
 
   const fullName = user ? `${user.firstName} ${user.lastName}` : 'User';
-  const coverUri = localCoverPic || (user as any)?.coverPhotoUrl;
+  const coverUri = localCoverPic || user?.coverPhotoUrl;
   const profileUri = localProfilePic || user?.profilePictureUrl;
 
   return (
@@ -290,7 +290,7 @@ export default function EditProfileScreen() {
                 <Avatar
                   uri={profileUri}
                   name={fullName}
-                  size="xl"
+                  size="2xl"
                   showBorder
                   gradientBorder="blue"
                 />
@@ -477,7 +477,7 @@ const s = StyleSheet.create({
     overflow: 'visible',
   },
   coverTouch: {
-    height: 140,
+    height: 200,
     borderRadius: 20,
     overflow: 'hidden',
     backgroundColor: '#E0F2FE',
@@ -504,7 +504,7 @@ const s = StyleSheet.create({
   },
   avatarWrap: {
     alignItems: 'center',
-    marginTop: -40,
+    marginTop: -50,
   },
   avatarBadge: {
     position: 'absolute',
