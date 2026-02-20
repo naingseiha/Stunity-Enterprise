@@ -609,7 +609,7 @@ function QuickStat({ icon, label, color, onPress }: { icon: IoniconsName; label:
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: '#F0F4F8',
     },
     header: {
         flexDirection: 'row',
