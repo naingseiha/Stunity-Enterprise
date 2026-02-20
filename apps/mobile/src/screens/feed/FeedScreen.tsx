@@ -595,37 +595,36 @@ export default function FeedScreen() {
         />
       </View>
 
-      {/* Create Post Card — Compact Composer */}
+      {/* Create Post Card — E-Learning Focused */}
       <View style={styles.createPostCard}>
         <TouchableOpacity onPress={handleCreatePost} activeOpacity={0.8} style={styles.createPostRow}>
           <Avatar uri={user?.profilePictureUrl} name={user ? `${user.firstName} ${user.lastName}` : 'User'} size="md" variant="post" />
           <View style={styles.createPostInputFake}>
             <Text style={styles.createPostPlaceholder}>Share your learning...</Text>
           </View>
+          <TouchableOpacity onPress={handleCreatePost} style={styles.createPostMediaButton}>
+            <Ionicons name="images-outline" size={20} color="#0284C7" />
+          </TouchableOpacity>
         </TouchableOpacity>
 
         <LinearGradient colors={['transparent', '#E5E7EB', 'transparent']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.storyDivider} />
 
-        <View style={styles.quickActionsRow}>
-          <TouchableOpacity onPress={handleCreatePost} activeOpacity={0.7} style={styles.compactAction}>
-            <Ionicons name="images-outline" size={18} color="#0284C7" />
-            <Text style={[styles.compactActionText, { color: '#0284C7' }]}>Photo</Text>
+        <View style={styles.quickActionsInCard}>
+          <TouchableOpacity onPress={handleAskQuestion} activeOpacity={0.7} style={styles.inCardAction}>
+            <LinearGradient colors={['#7DD3FC', '#0EA5E9']} style={[styles.quickActionIcon, { shadowColor: '#0EA5E9' }]}><Ionicons name="help-circle" size={20} color="#fff" /></LinearGradient>
+            <Text style={[styles.inCardActionText, { color: '#0EA5E9' }]}>Ask</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleAskQuestion} activeOpacity={0.7} style={styles.compactAction}>
-            <Ionicons name="help-circle-outline" size={18} color="#0EA5E9" />
-            <Text style={[styles.compactActionText, { color: '#0EA5E9' }]}>Ask</Text>
+          <TouchableOpacity onPress={handleCreateQuiz} activeOpacity={0.7} style={styles.inCardAction}>
+            <LinearGradient colors={['#34D399', '#10B981']} style={[styles.quickActionIcon, { shadowColor: '#10B981' }]}><Ionicons name="bulb" size={20} color="#fff" /></LinearGradient>
+            <Text style={[styles.inCardActionText, { color: '#10B981' }]}>Quiz</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleCreateQuiz} activeOpacity={0.7} style={styles.compactAction}>
-            <Ionicons name="bulb-outline" size={18} color="#10B981" />
-            <Text style={[styles.compactActionText, { color: '#10B981' }]}>Quiz</Text>
+          <TouchableOpacity onPress={handleCreatePoll} activeOpacity={0.7} style={styles.inCardAction}>
+            <LinearGradient colors={['#A78BFA', '#8B5CF6']} style={[styles.quickActionIcon, { shadowColor: '#8B5CF6' }]}><Ionicons name="bar-chart" size={20} color="#fff" /></LinearGradient>
+            <Text style={[styles.inCardActionText, { color: '#8B5CF6' }]}>Poll</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleCreatePoll} activeOpacity={0.7} style={styles.compactAction}>
-            <Ionicons name="bar-chart-outline" size={18} color="#8B5CF6" />
-            <Text style={[styles.compactActionText, { color: '#8B5CF6' }]}>Poll</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleCreateResource} activeOpacity={0.7} style={styles.compactAction}>
-            <Ionicons name="book-outline" size={18} color="#EC4899" />
-            <Text style={[styles.compactActionText, { color: '#EC4899' }]}>Resource</Text>
+          <TouchableOpacity onPress={handleCreateResource} activeOpacity={0.7} style={styles.inCardAction}>
+            <LinearGradient colors={['#F472B6', '#EC4899']} style={[styles.quickActionIcon, { shadowColor: '#EC4899' }]}><Ionicons name="book" size={20} color="#fff" /></LinearGradient>
+            <Text style={[styles.inCardActionText, { color: '#EC4899' }]}>Resource</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -947,8 +946,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 10,
     marginBottom: 12,
-    paddingTop: 14,
-    paddingBottom: 4,
+    paddingTop: 16,
+    paddingBottom: 8,
     borderRadius: 16,
     shadowColor: '#94A3B8',
     shadowOffset: { width: 0, height: 3 },
@@ -968,6 +967,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 10,
+    
     borderColor: '#CCFBF1',
   },
   createPostPlaceholder: {
@@ -975,29 +975,50 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     fontWeight: '500',
   },
+  createPostMediaButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#F0FDFA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   storyDivider: {
     height: 1,
     marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 4,
+    marginTop: 14,
+    marginBottom: 10,
   },
-  quickActionsRow: {
+  quickActionsInCard: {
     flexDirection: 'row',
-    paddingHorizontal: 8,
-    paddingBottom: 8,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    gap: 4,
   },
-  compactAction: {
+  inCardAction: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
-    gap: 4,
-    borderRadius: 8,
+    gap: 7,
+    borderRadius: 12,
   },
-  compactActionText: {
+  quickActionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  inCardActionText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.1,
   },
   footer: {
     paddingHorizontal: 16,
