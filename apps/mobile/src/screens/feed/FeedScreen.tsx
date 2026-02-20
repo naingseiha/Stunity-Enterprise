@@ -28,9 +28,6 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle as SvgCircle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
-
-// Animated SVG circle driven by Reanimated
-const AnimatedSvgCircle = Animated.createAnimatedComponent(SvgCircle);
 import Animated, {
   FadeInDown,
   FadeOutUp,
@@ -82,42 +79,54 @@ interface PerformanceCardProps {
   onPress: () => void;
 }
 
-// ─── Animated ring arc — each ring manages its own animation ─────────────────
-interface RingArcProps {
+// ─── Rotating comet dot overlaid on each ring ────────────────────────────────
+// Sits in a View the same size as the SVG; rotation around center = ring orbit
+function RingCometDot({ cx, cy, r, sw, color, duration, startDelay }: {
   cx: number; cy: number; r: number; sw: number;
-  targetPct: number; gradId: string; c1: string; delay: number;
-}
-function RingArc({ cx, cy, r, sw, targetPct, gradId, c1, delay }: RingArcProps) {
-  const circ = 2 * Math.PI * r;
-  const progress = useSharedValue(0);
-
+  color: string; duration: number; startDelay: number;
+}) {
+  const rotation = useSharedValue(0);
   useEffect(() => {
-    progress.value = withDelay(
-      delay,
-      withTiming(targetPct, { duration: 1400, easing: Easing.out(Easing.cubic) }),
+    rotation.value = withDelay(
+      startDelay,
+      withRepeat(withTiming(360, { duration, easing: Easing.linear }), -1, false),
     );
-  }, [targetPct, delay]);
+  }, [duration, startDelay]);
 
-  const animatedProps = useAnimatedProps(() => ({
-    strokeDashoffset: circ * (1 - progress.value),
+  const dotSize = sw + 3;
+  const tailSize = sw;
+
+  // Rotate the entire View around the SVG centre — dot sits at 12-o'clock edge
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value}deg` }],
   }));
 
   return (
-    <>
-      {/* Track ring */}
-      <SvgCircle cx={cx} cy={cy} r={r} stroke={`${c1}22`} strokeWidth={sw} fill="none" />
-      {/* Animated fill ring */}
-      <AnimatedSvgCircle
-        cx={cx} cy={cy} r={r}
-        stroke={`url(#grad_${gradId})`}
-        strokeWidth={sw}
-        fill="none"
-        strokeDasharray={`${circ}`}
-        strokeLinecap="round"
-        transform={`rotate(-90, ${cx}, ${cy})`}
-        animatedProps={animatedProps}
-      />
-    </>
+    <Animated.View style={[StyleSheet.absoluteFill, animStyle]}>
+      {/* Comet tail (slightly below head, lower opacity) */}
+      <View style={{
+        position: 'absolute',
+        left: cx - tailSize / 2,
+        top: cy - r - tailSize / 2 + dotSize,
+        width: tailSize, height: tailSize * 2,
+        borderRadius: tailSize / 2,
+        backgroundColor: color,
+        opacity: 0.35,
+      }} />
+      {/* Bright head */}
+      <View style={{
+        position: 'absolute',
+        left: cx - dotSize / 2,
+        top: cy - r - dotSize / 2,
+        width: dotSize, height: dotSize,
+        borderRadius: dotSize / 2,
+        backgroundColor: '#ffffff',
+        shadowColor: color,
+        shadowOpacity: 1,
+        shadowRadius: 8,
+        elevation: 8,
+      }} />
+    </Animated.View>
   );
 }
 
@@ -127,82 +136,97 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
   const xpProgress = stats.totalPoints % xpToNext;
   const pct = Math.min((xpProgress / xpToNext) * 100, 100);
   const nextLevel = stats.level + 1;
-  const size = 110;
+  const size = 112;
   const cx = size / 2;
   const cy = size / 2;
 
   const rings = [
-    { r: 47, sw: 8,  targetPct: Math.min(xpProgress / xpToNext, 1),                                         id: 'xp',     c1: '#38BDF8', c2: '#0284C7', delay: 0   },
-    { r: 36, sw: 7,  targetPct: Math.min(stats.completedLessons / Math.max(stats.completedLessons + 5, 10), 1), id: 'lesson', c1: '#34D399', c2: '#059669', delay: 180 },
-    { r: 25, sw: 6,  targetPct: Math.min(stats.currentStreak / 7, 1),                                        id: 'streak', c1: '#FB923C', c2: '#DC2626', delay: 360 },
+    { r: 48, sw: 8,  pct: Math.min(xpProgress / xpToNext, 1),                                          id: 'xp',     c1: '#38BDF8', c2: '#0284C7', cometDur: 2800, cometDelay: 0   },
+    { r: 37, sw: 7,  pct: Math.min(stats.completedLessons / Math.max(stats.completedLessons + 5, 10), 1), id: 'lesson', c1: '#34D399', c2: '#059669', cometDur: 3400, cometDelay: 400 },
+    { r: 26, sw: 6,  pct: Math.min(stats.currentStreak / 7, 1),                                         id: 'streak', c1: '#FB923C', c2: '#EF4444', cometDur: 4200, cometDelay: 800 },
   ];
 
-  // XP bar animated width
-  const barProgress = useSharedValue(0);
-  useEffect(() => {
-    barProgress.value = withDelay(600, withTiming(pct, { duration: 1200, easing: Easing.out(Easing.cubic) }));
-  }, [pct]);
-  const barStyle = useAnimatedStyle(() => ({ width: `${barProgress.value}%` as any }));
-
-  // Level text subtle pulse
+  // Level text pulse
   const levelScale = useSharedValue(1);
   useEffect(() => {
-    levelScale.value = withDelay(
-      1800,
-      withRepeat(
-        withSequence(
-          withTiming(1.12, { duration: 900, easing: Easing.out(Easing.ease) }),
-          withTiming(1,    { duration: 900, easing: Easing.in(Easing.ease) }),
-        ),
-        -1, false,
-      ),
-    );
+    levelScale.value = withDelay(600, withRepeat(
+      withSequence(
+        withTiming(1.15, { duration: 800, easing: Easing.out(Easing.ease) }),
+        withTiming(1,    { duration: 800, easing: Easing.in(Easing.ease)  }),
+      ), -1, false,
+    ));
   }, []);
-  const levelPulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: levelScale.value }],
-  }));
+  const levelPulseStyle = useAnimatedStyle(() => ({ transform: [{ scale: levelScale.value }] }));
 
-  // Avatar gradient border rotation
-  const avatarRot = useSharedValue(0);
+  // Avatar outer glow pulse
+  const glowOpacity = useSharedValue(0.4);
   useEffect(() => {
-    avatarRot.value = withRepeat(
-      withTiming(360, { duration: 4000, easing: Easing.linear }),
-      -1, false,
+    glowOpacity.value = withRepeat(
+      withSequence(
+        withTiming(1,   { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.4, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+      ), -1, false,
     );
   }, []);
-  const avatarRotStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${avatarRot.value}deg` }],
-  }));
+  const glowStyle = useAnimatedStyle(() => ({ opacity: glowOpacity.value }));
+
+  // XP bar fill
+  const barWidth = useSharedValue(0);
+  useEffect(() => {
+    barWidth.value = withDelay(300, withTiming(pct, { duration: 1100, easing: Easing.out(Easing.cubic) }));
+  }, [pct]);
+  const barStyle = useAnimatedStyle(() => ({ width: `${barWidth.value}%` as any }));
 
   return (
     <TouchableOpacity activeOpacity={0.9} style={perfCardStyles.card} onPress={onPress}>
       <View style={perfCardStyles.inner}>
         <View style={perfCardStyles.topRow}>
 
-          {/* ── Animated Activity Rings ── */}
+          {/* ── Activity Rings + comet overlays ── */}
           <View style={[perfCardStyles.ringWrap, { width: size, height: size }]}>
+            {/* Static SVG arcs */}
             <Svg width={size} height={size}>
               <Defs>
                 {rings.map(ring => (
-                  <SvgLinearGradient key={ring.id} id={`grad_${ring.id}`} x1="0" y1="0" x2="1" y2="1">
+                  <SvgLinearGradient key={ring.id} id={`g_${ring.id}`} x1="0" y1="0" x2="1" y2="1">
                     <Stop offset="0" stopColor={ring.c1} />
                     <Stop offset="1" stopColor={ring.c2} />
                   </SvgLinearGradient>
                 ))}
               </Defs>
-              {rings.map(ring => (
-                <RingArc
-                  key={ring.id}
-                  cx={cx} cy={cy}
-                  r={ring.r} sw={ring.sw}
-                  targetPct={ring.targetPct}
-                  gradId={ring.id}
-                  c1={ring.c1}
-                  delay={ring.delay}
-                />
-              ))}
+              {rings.map(ring => {
+                const circ = 2 * Math.PI * ring.r;
+                return (
+                  <React.Fragment key={ring.id}>
+                    {/* Track */}
+                    <SvgCircle cx={cx} cy={cy} r={ring.r} stroke={`${ring.c1}22`} strokeWidth={ring.sw} fill="none" />
+                    {/* Progress arc */}
+                    <SvgCircle cx={cx} cy={cy} r={ring.r}
+                      stroke={`url(#g_${ring.id})`}
+                      strokeWidth={ring.sw} fill="none"
+                      strokeDasharray={`${circ}`}
+                      strokeDashoffset={circ * (1 - ring.pct)}
+                      strokeLinecap="round"
+                      transform={`rotate(-90, ${cx}, ${cy})`}
+                    />
+                  </React.Fragment>
+                );
+              })}
             </Svg>
-            {/* Level in centre with pulse */}
+
+            {/* Comet dots (Animated.View — guaranteed to animate) */}
+            {rings.map(ring => (
+              <RingCometDot
+                key={ring.id}
+                cx={cx} cy={cy}
+                r={ring.r} sw={ring.sw}
+                color={ring.c1}
+                duration={ring.cometDur}
+                startDelay={ring.cometDelay}
+              />
+            ))}
+
+            {/* Level label centred */}
             <View style={perfCardStyles.ringInner}>
               <Animated.Text style={[perfCardStyles.ringValue, levelPulseStyle]}>{stats.level}</Animated.Text>
               <Text style={perfCardStyles.ringLabel}>LEVEL</Text>
@@ -225,19 +249,22 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
             </View>
           </View>
 
-          {/* ── Avatar with rotating gradient border ── */}
+          {/* ── Avatar: SVG gradient ring + pulsing glow ── */}
           <View style={perfCardStyles.avatarWrap}>
+            {/* Pulsing outer glow */}
+            <Animated.View style={[perfCardStyles.avatarGlow, glowStyle]} />
+            {/* Gradient ring via SVG */}
             <View style={perfCardStyles.avatarOuter}>
-              {/* Rotating rainbow gradient */}
-              <Animated.View style={[StyleSheet.absoluteFill, { borderRadius: 36 }, avatarRotStyle]}>
-                <LinearGradient
-                  colors={['#A855F7', '#3B82F6', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#A855F7']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{ flex: 1, borderRadius: 36 }}
-                />
-              </Animated.View>
-              {/* White inner ring to frame avatar */}
+              <Svg width={76} height={76} style={StyleSheet.absoluteFill}>
+                <Defs>
+                  <SvgLinearGradient id="avGrad" x1="0" y1="0" x2="1" y2="1">
+                    <Stop offset="0"   stopColor="#A855F7" />
+                    <Stop offset="0.5" stopColor="#6366F1" />
+                    <Stop offset="1"   stopColor="#0EA5E9" />
+                  </SvgLinearGradient>
+                </Defs>
+                <SvgCircle cx={38} cy={38} r={35} stroke="url(#avGrad)" strokeWidth={3.5} fill="none" />
+              </Svg>
               <View style={perfCardStyles.avatarInner}>
                 <Avatar
                   uri={user?.profilePictureUrl}
@@ -248,14 +275,14 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
                 />
               </View>
             </View>
-            <View style={perfCardStyles.avatarBadge}>
+            <LinearGradient colors={['#A855F7', '#0EA5E9']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={perfCardStyles.avatarBadge}>
               <Text style={perfCardStyles.avatarBadgeText}>{stats.level}</Text>
-            </View>
+            </LinearGradient>
           </View>
 
         </View>
 
-        {/* ── XP Bar (animated fill) ── */}
+        {/* ── XP Bar ── */}
         <View style={perfCardStyles.barSection}>
           <View style={perfCardStyles.barLabels}>
             <Text style={perfCardStyles.barLeft}>{xpProgress} / {xpToNext} XP</Text>
@@ -263,11 +290,7 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
           </View>
           <View style={perfCardStyles.barBg}>
             <Animated.View style={[perfCardStyles.barFill, barStyle]}>
-              <LinearGradient
-                colors={['#38BDF8', '#0EA5E9', '#0284C7'] as any}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                style={StyleSheet.absoluteFill}
-              />
+              <LinearGradient colors={['#38BDF8', '#0EA5E9', '#0284C7'] as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
             </Animated.View>
           </View>
         </View>
@@ -281,7 +304,7 @@ const perfCardStyles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 12,
     borderRadius: 20,
-    overflow: 'hidden',
+    overflow: 'visible',         // allow glow shadow to show
     backgroundColor: '#FFFFFF',
     shadowColor: '#6366F1',
     shadowOffset: { width: 0, height: 2 },
@@ -289,7 +312,7 @@ const perfCardStyles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 3,
   },
-  inner:       { padding: 16, borderRadius: 20, backgroundColor: '#FFFFFF' },
+  inner:       { padding: 16, borderRadius: 20, backgroundColor: '#FFFFFF', overflow: 'hidden' },
   topRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
   ringWrap:    { alignItems: 'center', justifyContent: 'center' },
   ringInner:   { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
@@ -300,11 +323,18 @@ const perfCardStyles = StyleSheet.create({
   statIcon:    { width: 22, height: 22, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   statVal:     { fontSize: 13, fontWeight: '700', color: '#1E293B' },
   statLbl:     { fontSize: 11, fontWeight: '400', color: '#64748B' },
+  // Avatar
   avatarWrap:  { alignItems: 'center', position: 'relative' },
-  avatarOuter: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
-  avatarInner: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', zIndex: 1 },
-  avatarBadge: { position: 'absolute', bottom: -4, right: -4, backgroundColor: '#0EA5E9', width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff', zIndex: 2 },
+  avatarGlow:  {
+    position: 'absolute', width: 86, height: 86, borderRadius: 43,
+    backgroundColor: 'rgba(99,102,241,0.18)',
+    shadowColor: '#6366F1', shadowOpacity: 0.5, shadowRadius: 12, shadowOffset: { width: 0, height: 0 },
+  },
+  avatarOuter: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center' },
+  avatarInner: { width: 68, height: 68, borderRadius: 34, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatarBadge: { position: 'absolute', bottom: -4, right: -4, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff' },
   avatarBadgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
+  // XP bar
   barSection:  { gap: 4 },
   barLabels:   { flexDirection: 'row', justifyContent: 'space-between' },
   barLeft:     { fontSize: 11, fontWeight: '600', color: '#0284C7' },
