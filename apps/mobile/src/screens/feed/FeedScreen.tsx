@@ -141,20 +141,20 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
           {/* ── Stats ── */}
           <View style={perfCardStyles.stats}>
             <View style={perfCardStyles.statRow}>
-              <View style={[perfCardStyles.statIcon, { backgroundColor: '#EFF6FF' }]}>
-                <Ionicons name="diamond" size={12} color="#3B82F6" />
+              <View style={[perfCardStyles.statIcon, { backgroundColor: '#DBEAFE' }]}>
+                <Ionicons name="diamond" size={12} color="#2563EB" />
               </View>
               <Text style={perfCardStyles.statVal}>{stats.totalPoints.toLocaleString()} <Text style={perfCardStyles.statLbl}>XP</Text></Text>
             </View>
             <View style={perfCardStyles.statRow}>
-              <View style={[perfCardStyles.statIcon, { backgroundColor: '#ECFDF5' }]}>
-                <Ionicons name="checkmark-circle" size={12} color="#10B981" />
+              <View style={[perfCardStyles.statIcon, { backgroundColor: '#D1FAE5' }]}>
+                <Ionicons name="checkmark-circle" size={12} color="#059669" />
               </View>
               <Text style={perfCardStyles.statVal}>{stats.completedLessons} <Text style={perfCardStyles.statLbl}>Lessons</Text></Text>
             </View>
             <View style={perfCardStyles.statRow}>
-              <View style={[perfCardStyles.statIcon, { backgroundColor: '#FFF7ED' }]}>
-                <Ionicons name="flame" size={12} color="#F97316" />
+              <View style={[perfCardStyles.statIcon, { backgroundColor: '#FFEDD5' }]}>
+                <Ionicons name="flame" size={12} color="#EA580C" />
               </View>
               <Text style={perfCardStyles.statVal}>{stats.currentStreak} <Text style={perfCardStyles.statLbl}>Day Streak</Text></Text>
             </View>
@@ -206,8 +206,8 @@ const perfCardStyles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 5,
   },
-  inner:       { padding: 16, borderRadius: 16, overflow: 'hidden' },
-  topRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  inner:       { padding: 14, borderRadius: 16, overflow: 'hidden' },
+  topRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
   ringWrap:    { alignItems: 'center', justifyContent: 'center' },
   ringGlow:    { position: 'absolute', width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(59,130,246,0.06)' },
   ringInner:   { position: 'absolute', alignItems: 'center', justifyContent: 'center', width: 42, height: 42, borderRadius: 21 },
@@ -921,7 +921,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   headerSection: {
-    paddingTop: 12,
+    paddingTop: 8,
     paddingBottom: 0,
   },
   postWrapper: {
@@ -930,7 +930,7 @@ const styles = StyleSheet.create({
 
   // ── Featured Categories Section ──
   categoriesSection: {
-    marginTop: 16,
+    marginTop: 8,
   },
   categoriesSectionTitle: {
     fontSize: 17,
@@ -944,7 +944,7 @@ const styles = StyleSheet.create({
   createPostCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
-    marginTop: 10,
+    marginTop: 6,
     marginBottom: 12,
     paddingTop: 16,
     paddingBottom: 8,
