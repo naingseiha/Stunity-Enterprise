@@ -938,6 +938,7 @@ const styles = StyleSheet.create({
   },
   typeSelectorContent: {
     paddingHorizontal: 16,
+    paddingBottom: 12,
     gap: 8,
   },
   typeOption: {
