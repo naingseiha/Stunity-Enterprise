@@ -285,7 +285,7 @@ export default function ConversationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F0F4F8' },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
 
   // ── Header ────────────────────────────────────────────
   headerSafe: { backgroundColor: '#fff' },
@@ -316,9 +316,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: 40,
     borderRadius: 14,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 14,
     gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   searchInput: {
     flex: 1,

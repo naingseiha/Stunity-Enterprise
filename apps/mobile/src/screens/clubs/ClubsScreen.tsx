@@ -443,7 +443,7 @@ const getTypeLabel = (type: string) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8FAFC',
   },
   header: {
     flexDirection: 'row',
@@ -658,25 +658,25 @@ const styles = StyleSheet.create({
   // OLD STYLES - Remove these later
   cardInner: {
     backgroundColor: '#FFFFFF',
-    
-    
     borderRadius: 14,
-    overflow: 'hidden',
     position: 'relative',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
   clubCover: {
     width: '100%',
     height: 140,
     justifyContent: 'center',
     alignItems: 'center',
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
+    overflow: 'hidden',
   },
   typeBadgeCorner: {
     position: 'absolute',
