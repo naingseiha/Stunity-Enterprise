@@ -185,14 +185,14 @@ const PostCardInner: React.FC<PostCardProps> = ({
     if (likeCount !== post.likes) setLikeCount(post.likes);
   }
 
+  // Only create shared values for commonly-used animations (like + value)
+  // Other button animations use a single shared scale to reduce per-card overhead
   const likeScale = useSharedValue(1);
   const valueScale = useSharedValue(1);
-  const commentScale = useSharedValue(1);
-  const repostScale = useSharedValue(1);
-  const shareScale = useSharedValue(1);
+  const btnScale = useSharedValue(1); // Shared for comment/repost/share
   const livePulse = useSharedValue(1);
 
-  // Animate live indicator
+  // Animate live indicator — only for LIVE posts
   React.useEffect(() => {
     if (post.learningMeta?.isLive) {
       livePulse.value = withRepeat(
@@ -214,16 +214,9 @@ const PostCardInner: React.FC<PostCardProps> = ({
     transform: [{ scale: valueScale.value }],
   }));
 
-  const commentAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: commentScale.value }],
-  }));
-
-  const repostAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: repostScale.value }],
-  }));
-
-  const shareAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: shareScale.value }],
+  // Single animated style shared by comment/repost/share buttons
+  const btnAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: btnScale.value }],
   }));
 
   const liveAnimatedStyle = useAnimatedStyle(() => ({
@@ -272,7 +265,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
     InteractionManager.runAfterInteractions(() => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     });
-    commentScale.value = withSequence(
+    btnScale.value = withSequence(
       withSpring(1.2, { damping: 10 }),
       withSpring(1, { damping: 15 })
     );
@@ -287,7 +280,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
     InteractionManager.runAfterInteractions(() => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     });
-    repostScale.value = withSequence(
+    btnScale.value = withSequence(
       withSpring(1.3, { damping: 8 }),
       withSpring(1, { damping: 12 })
     );
@@ -354,7 +347,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
     InteractionManager.runAfterInteractions(() => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     });
-    shareScale.value = withSequence(
+    btnScale.value = withSequence(
       withSpring(1.2, { damping: 10 }),
       withSpring(1, { damping: 15 })
     );
@@ -422,8 +415,8 @@ const PostCardInner: React.FC<PostCardProps> = ({
   // Check if this is a Q&A post
   const isQuestion = post.postType === 'QUESTION';
 
-  // Role-based badge
-  const getRoleBadge = () => {
+  // Role-based badge — memoized to avoid object recreation on every render
+  const roleBadge = useMemo(() => {
     const role = post.author.role;
     if (role === 'TEACHER') {
       return { icon: 'school', color: '#3B82F6', label: 'Teacher' };
@@ -431,9 +424,8 @@ const PostCardInner: React.FC<PostCardProps> = ({
       return { icon: 'shield-checkmark', color: '#8B5CF6', label: 'Admin' };
     }
     return null;
-  };
+  }, [post.author.role]);
 
-  const roleBadge = getRoleBadge();
   const quizThemeColor = post.postType === 'QUIZ' ? getQuizGradient(post.id)[0] : '#EC4899';
 
   return (
@@ -781,11 +773,8 @@ const PostCardInner: React.FC<PostCardProps> = ({
             <Text style={styles.progressPercent}>{learningMeta?.progress || 0}%</Text>
           </View>
           <View style={styles.progressBarBg}>
-            <LinearGradient
-              colors={typeConfig.gradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={[styles.progressBarFill, { width: `${learningMeta?.progress || 0}%` }]}
+            <View
+              style={[styles.progressBarFill, { width: `${learningMeta?.progress || 0}%`, backgroundColor: typeConfig.color }]}
             />
           </View>
           {learningMeta?.completedSteps !== undefined && learningMeta?.totalSteps && (
@@ -798,16 +787,11 @@ const PostCardInner: React.FC<PostCardProps> = ({
 
       {/* Clean Learning Info Bar */}
       <View style={styles.learningBar}>
-        {/* Post Type — gradient pill */}
-        <LinearGradient
-          colors={typeConfig.gradient as [string, string]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.typeChip}
-        >
+        {/* Post Type — solid color pill (eliminates expensive native LinearGradient view) */}
+        <View style={[styles.typeChip, { backgroundColor: typeConfig.color }]}>
           <Ionicons name={typeConfig.icon as any} size={13} color="#FFFFFF" />
           <Text style={styles.typeChipText}>{typeConfig.label}</Text>
-        </LinearGradient>
+        </View>
 
         {/* Difficulty Badge */}
         {learningMeta?.difficulty && (
@@ -858,7 +842,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
           </Animated.View>
 
           {/* Comment */}
-          <Animated.View style={[commentAnimatedStyle, styles.actionButton]}>
+          <Animated.View style={[btnAnimatedStyle, styles.actionButton]}>
             <TouchableOpacity onPress={handleComment} style={styles.actionButtonInner}>
               <Ionicons name="chatbubble-outline" size={24} color="#262626" />
               {post.comments > 0 && (
@@ -868,7 +852,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
           </Animated.View>
 
           {/* Repost */}
-          <Animated.View style={[repostAnimatedStyle, styles.actionButton]}>
+          <Animated.View style={[btnAnimatedStyle, styles.actionButton]}>
             <TouchableOpacity onPress={handleRepost} style={styles.actionButtonInner}>
               <Ionicons name="repeat-outline" size={26} color="#262626" />
               {post.shares > 0 && (
@@ -878,7 +862,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
           </Animated.View>
 
           {/* Send (Instagram-style) */}
-          <Animated.View style={[shareAnimatedStyle, styles.actionButton]}>
+          <Animated.View style={[btnAnimatedStyle, styles.actionButton]}>
             <TouchableOpacity onPress={handleShare} style={styles.actionButtonInner}>
               <Ionicons name="paper-plane-outline" size={23} color="#262626" />
             </TouchableOpacity>

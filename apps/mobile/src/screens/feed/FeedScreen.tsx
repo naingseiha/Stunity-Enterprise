@@ -439,23 +439,32 @@ export default function FeedScreen() {
 
   // Prefetch tracking — useRef instead of useState: no re-render during scroll
   const hasPrefetchedRef = useRef(false);
-  const lastScrollCheck = React.useRef(0);
+  const lastScrollCheck = useRef(0);
+
+  // Ref-based scroll handler — stable identity, reads latest values from refs
+  // Avoids useCallback dependency churn that would invalidate FlashList's onScroll
+  const isLoadingRef = useRef(isLoadingPosts);
+  const hasMoreRef = useRef(hasMorePosts);
+  isLoadingRef.current = isLoadingPosts;
+  hasMoreRef.current = hasMorePosts;
 
   const handleScroll = useCallback((event: any) => {
     const now = Date.now();
-    if (now - lastScrollCheck.current < 500) return; // Throttle to 2 checks/sec
+    if (now - lastScrollCheck.current < 500) return;
     lastScrollCheck.current = now;
 
-    if (hasPrefetchedRef.current || isLoadingPosts || !hasMorePosts) return;
+    if (hasPrefetchedRef.current || isLoadingRef.current || !hasMoreRef.current) return;
 
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    const scrollPercentage = (contentOffset.y / (contentSize.height - layoutMeasurement.height)) * 100;
+    const totalScroll = contentSize.height - layoutMeasurement.height;
+    if (totalScroll <= 0) return;
+    const scrollPercentage = (contentOffset.y / totalScroll) * 100;
 
     if (scrollPercentage >= 50) {
       hasPrefetchedRef.current = true;
       fetchPosts();
     }
-  }, [isLoadingPosts, hasMorePosts, fetchPosts]);
+  }, [fetchPosts]); // Stable — fetchPosts from zustand is referentially stable
 
   // Reset prefetch flag when new data loads (ref — no re-render)
   useEffect(() => {
@@ -783,7 +792,7 @@ export default function FeedScreen() {
         ListEmptyComponent={renderEmpty}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.3}
-        onScroll={handleScroll} // Phase 1 Day 5: Prefetch at 50% scroll
+        onScroll={handleScroll}
         viewabilityConfig={viewabilityConfig}
         onViewableItemsChanged={onViewableItemsChanged}
         refreshControl={
@@ -797,7 +806,7 @@ export default function FeedScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         // ── FlashList performance props for 120Hz smooth scrolling ──
-        drawDistance={600}        // Pre-render 1.5 screens off-screen — eliminates blank cells on fast scroll
+        drawDistance={800}        // Pre-render 2 screens off-screen — eliminates blank cells on fast scroll
         estimatedItemSize={400}   // Critical: Reduces layout thrashing
         overrideItemLayout={(layout, item) => {
           // Pre-calculate heights to eliminate layout jumps (massive perf boost)
@@ -817,10 +826,10 @@ export default function FeedScreen() {
         }}
         // iOS: removeClippedSubviews causes native layer hide/show jank — Android only
         removeClippedSubviews={Platform.OS === 'android'}
-        maxToRenderPerBatch={8}           // Render more per batch for smoother catch-up
-        updateCellsBatchingPeriod={30}    // ~30fps batch flush (was 50ms=20fps)
-        initialNumToRender={8}
-        windowSize={7}                    // 3 screens above + below (was 5 = 2.5)
+        maxToRenderPerBatch={6}           // Smaller batches = less JS thread blocking per frame
+        updateCellsBatchingPeriod={16}    // ~60fps batch flush — matches display refresh
+        initialNumToRender={6}
+        windowSize={5}                    // 2 screens above + below — reduces off-screen component count
         scrollEventThrottle={16}          // 60fps — allows 120Hz on capable devices
         decelerationRate="normal"         // Smooth iOS momentum
       />
