@@ -93,7 +93,7 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
 
   return (
     <TouchableOpacity activeOpacity={0.9} style={perfCardStyles.card} onPress={onPress}>
-      <LinearGradient colors={['#ffffff', '#F0F9FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={perfCardStyles.inner}>
+      <View style={perfCardStyles.inner}>
         <View style={perfCardStyles.topRow}>
           {/* Activity Rings */}
           <View style={perfCardStyles.ringWrap}>
@@ -158,16 +158,25 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
             <LinearGradient colors={['#38BDF8', '#0EA5E9', '#0284C7'] as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[perfCardStyles.barFill, { width: `${pct}%` } as any]} />
           </View>
         </View>
-        <View style={{ position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(14,165,233,0.04)', top: -35, right: -25 }} />
-        <View style={{ position: 'absolute', width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(14,165,233,0.03)', bottom: -25, left: -20 }} />
-      </LinearGradient>
+      </View>
     </TouchableOpacity>
   );
 });
 
 const perfCardStyles = StyleSheet.create({
-  card: { marginHorizontal: 16, marginBottom: 12, borderRadius: 20, overflow: 'hidden' },
-  inner: { padding: 16, borderRadius: 20 },
+  card: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  inner: { padding: 16, borderRadius: 20, backgroundColor: '#FFFFFF' },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
   ringWrap: { width: 100, height: 100, alignItems: 'center', justifyContent: 'center' },
   ringGlow: { position: 'absolute', width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(14,165,233,0.06)' },
