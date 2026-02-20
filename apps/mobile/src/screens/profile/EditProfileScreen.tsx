@@ -468,6 +468,7 @@ const s = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
+    paddingTop: 16,
   },
 
   // ── Photo Section ─────────────────────────────────────
