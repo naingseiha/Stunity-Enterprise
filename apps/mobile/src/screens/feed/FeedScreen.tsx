@@ -659,6 +659,7 @@ export default function FeedScreen() {
           onPress={() => h.handlePostPress(item)}
           onVote={(optionId) => h.handleVoteOnPoll(item.id, optionId)}
           onViewAnalytics={() => setAnalyticsPostId(item.id)}
+          navigate={h.navigation.navigate as any}
         />
       </View>
     );

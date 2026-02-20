@@ -27,7 +27,7 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
+
 import * as Haptics from 'expo-haptics';
 import Animated, {
   useSharedValue,
@@ -62,6 +62,7 @@ interface PostCardProps {
   onVote?: (optionId: string) => void;
   onViewAnalytics?: () => void;
   currentUserId?: string; // Optional: for showing blue tick on current user
+  navigate?: (screen: string, params?: any) => void; // Avoids useNavigation subscription per card
 }
 
 // Post type configurations - V1 style with gradients
@@ -140,6 +141,78 @@ const getTimeRemaining = (deadline: string): { text: string; isUrgent: boolean }
   }
 };
 
+// Memoized action bar — isolates like/comment/share state from header/content re-renders
+interface ActionBarProps {
+  liked: boolean;
+  likeCount: number;
+  valued: boolean;
+  commentCount: number;
+  shareCount: number;
+  onLike: () => void;
+  onComment: () => void;
+  onRepost: () => void;
+  onShare: () => void;
+  onValue: () => void;
+  likeAnimatedStyle: any;
+  btnAnimatedStyle: any;
+  valueAnimatedStyle: any;
+}
+
+const ActionBar = React.memo<ActionBarProps>(({
+  liked, likeCount, valued, commentCount, shareCount,
+  onLike, onComment, onRepost, onShare, onValue,
+  likeAnimatedStyle, btnAnimatedStyle, valueAnimatedStyle,
+}) => (
+  <View style={styles.actionBar}>
+    <View style={styles.actionBarLeft}>
+      <Animated.View style={[likeAnimatedStyle, styles.actionButton]}>
+        <TouchableOpacity onPress={onLike} style={styles.actionButtonInner}>
+          <Ionicons
+            name={liked ? 'heart' : 'heart-outline'}
+            size={24}
+            color={liked ? '#EF4444' : '#262626'}
+          />
+          {likeCount > 0 && (
+            <Text style={[styles.actionText, liked && styles.actionTextLiked]}>
+              {formatNumber(likeCount)}
+            </Text>
+          )}
+        </TouchableOpacity>
+      </Animated.View>
+      <Animated.View style={[btnAnimatedStyle, styles.actionButton]}>
+        <TouchableOpacity onPress={onComment} style={styles.actionButtonInner}>
+          <Ionicons name="chatbubble-outline" size={24} color="#262626" />
+          {commentCount > 0 && (
+            <Text style={styles.actionText}>{formatNumber(commentCount)}</Text>
+          )}
+        </TouchableOpacity>
+      </Animated.View>
+      <Animated.View style={[btnAnimatedStyle, styles.actionButton]}>
+        <TouchableOpacity onPress={onRepost} style={styles.actionButtonInner}>
+          <Ionicons name="repeat-outline" size={26} color="#262626" />
+          {shareCount > 0 && (
+            <Text style={styles.actionText}>{formatNumber(shareCount)}</Text>
+          )}
+        </TouchableOpacity>
+      </Animated.View>
+      <Animated.View style={[btnAnimatedStyle, styles.actionButton]}>
+        <TouchableOpacity onPress={onShare} style={styles.actionButtonInner}>
+          <Ionicons name="paper-plane-outline" size={23} color="#262626" />
+        </TouchableOpacity>
+      </Animated.View>
+    </View>
+    <Animated.View style={[valueAnimatedStyle, styles.actionButton]}>
+      <TouchableOpacity onPress={onValue} style={styles.actionButtonInner}>
+        <Ionicons
+          name={valued ? 'diamond' : 'diamond-outline'}
+          size={24}
+          color={valued ? '#8B5CF6' : '#262626'}
+        />
+      </TouchableOpacity>
+    </Animated.View>
+  </View>
+));
+
 const PostCardInner: React.FC<PostCardProps> = ({
   post,
   onLike,
@@ -154,8 +227,8 @@ const PostCardInner: React.FC<PostCardProps> = ({
   onVote,
   onViewAnalytics,
   currentUserId,
+  navigate,
 }) => {
-  const navigation = useNavigation<any>();
 
   // Narrow selector — only subscribe to user ID, not entire auth store
   const currentUserId2 = useAuthStore(s => s.user?.id);
@@ -223,7 +296,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
     transform: [{ scale: livePulse.value }],
   }));
 
-  const handleLike = () => {
+  const handleLike = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
     likeScale.value = withSequence(
       withSpring(1.3, { damping: 10 }),
@@ -237,34 +310,34 @@ const PostCardInner: React.FC<PostCardProps> = ({
     }
     setLiked(!liked);
     onLike?.();
-  };
+  }, [liked, onLike]);
 
-  const handleValue = () => {
+  const handleValue = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 0);
     valueScale.value = withSequence(
       withSpring(1.4, { damping: 8 }),
       withSpring(1, { damping: 12 })
     );
-    onValue?.(); // Open educational value modal
-  };
+    onValue?.();
+  }, [onValue]);
 
-  const handleBookmark = () => {
+  const handleBookmark = useCallback(() => {
     setTimeout(() => Haptics.selectionAsync(), 0);
     setBookmarked(!bookmarked);
     setShowMenu(false);
     onBookmark?.();
-  };
+  }, [bookmarked, onBookmark]);
 
-  const handleComment = () => {
+  const handleComment = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
     btnScale.value = withSequence(
       withSpring(1.2, { damping: 10 }),
       withSpring(1, { damping: 15 })
     );
     onComment?.();
-  };
+  }, [onComment]);
 
-  const handleRepost = () => {
+  const handleRepost = useCallback(() => {
     if (isCurrentUser) {
       Alert.alert('Cannot Repost', 'You cannot repost your own post.');
       return;
@@ -331,16 +404,16 @@ const PostCardInner: React.FC<PostCardProps> = ({
         },
       ],
     );
-  };
+  }, [isCurrentUser, post.author.firstName, post.id, onRepost]);
 
-  const handleShare = () => {
+  const handleShare = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
     btnScale.value = withSequence(
       withSpring(1.2, { damping: 10 }),
       withSpring(1, { damping: 15 })
     );
     onShare?.();
-  };
+  }, [onShare]);
 
   const handleMenuToggle = () => {
     setTimeout(() => Haptics.selectionAsync(), 0);
@@ -350,7 +423,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
   const handleEdit = () => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
     setShowMenu(false);
-    navigation.navigate('EditPost', { post });
+    navigate?.('EditPost', { post });
   };
 
   const handleViewAnalytics = () => {
@@ -359,7 +432,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
     if (onViewAnalytics) {
       onViewAnalytics();
     } else {
-      navigation.navigate('PostDetail', { postId: post.id });
+      navigate?.('PostDetail', { postId: post.id });
     }
   };
 
@@ -378,8 +451,8 @@ const PostCardInner: React.FC<PostCardProps> = ({
     }
   };
 
-  const typeConfig = POST_TYPE_CONFIG[post.postType] || POST_TYPE_CONFIG.ARTICLE;
-  const authorName = post.author.name || `${post.author.firstName} ${post.author.lastName}`;
+  const typeConfig = useMemo(() => POST_TYPE_CONFIG[post.postType] || POST_TYPE_CONFIG.ARTICLE, [post.postType]);
+  const authorName = useMemo(() => post.author.name || `${post.author.firstName} ${post.author.lastName}`, [post.author.name, post.author.firstName, post.author.lastName]);
   const learningMeta = post.learningMeta;
 
   // Calculate deadline info if present
@@ -408,7 +481,10 @@ const PostCardInner: React.FC<PostCardProps> = ({
     return null;
   }, [post.author.role]);
 
-  const quizThemeColor = post.postType === 'QUIZ' ? getQuizGradient(post.id)[0] : '#EC4899';
+  const quizGradient = useMemo(
+    () => post.postType === 'QUIZ' ? getQuizGradient(post.id) : undefined,
+    [post.postType, post.id]
+  );
 
   return (
     <View style={styles.container} shouldRasterizeIOS renderToHardwareTextureAndroid>
@@ -646,7 +722,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
       {post.repostOfId && post.repostOf && (
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => navigation.navigate('PostDetail', { postId: post.repostOf!.id })}
+          onPress={() => navigate?.('PostDetail', { postId: post.repostOf!.id })}
           style={styles.repostEmbed}
         >
           <View style={styles.repostEmbedHeader}>
@@ -706,8 +782,8 @@ const PostCardInner: React.FC<PostCardProps> = ({
           postTitle={post.title}
           postContent={post.content}
           postId={post.id}
-          quizThemeColor={quizThemeColor}
-          quizGradient={getQuizGradient(post.id)}
+          quizThemeColor={quizGradient?.[0] || '#EC4899'}
+          quizGradient={quizGradient || ['#EC4899', '#DB2777']}
         />
       )}
 
@@ -804,64 +880,21 @@ const PostCardInner: React.FC<PostCardProps> = ({
         </View>
       </View>
 
-      {/* Action Bar - Instagram-style: Left (Like, Comment, Repost, Send) | Right (Value) */}
-      <View style={styles.actionBar}>
-        <View style={styles.actionBarLeft}>
-          {/* Like */}
-          <Animated.View style={[likeAnimatedStyle, styles.actionButton]}>
-            <TouchableOpacity onPress={handleLike} style={styles.actionButtonInner}>
-              <Ionicons
-                name={liked ? 'heart' : 'heart-outline'}
-                size={24}
-                color={liked ? '#EF4444' : '#262626'}
-              />
-              {likeCount > 0 && (
-                <Text style={[styles.actionText, liked && styles.actionTextLiked]}>
-                  {formatNumber(likeCount)}
-                </Text>
-              )}
-            </TouchableOpacity>
-          </Animated.View>
-
-          {/* Comment */}
-          <Animated.View style={[btnAnimatedStyle, styles.actionButton]}>
-            <TouchableOpacity onPress={handleComment} style={styles.actionButtonInner}>
-              <Ionicons name="chatbubble-outline" size={24} color="#262626" />
-              {post.comments > 0 && (
-                <Text style={styles.actionText}>{formatNumber(post.comments)}</Text>
-              )}
-            </TouchableOpacity>
-          </Animated.View>
-
-          {/* Repost */}
-          <Animated.View style={[btnAnimatedStyle, styles.actionButton]}>
-            <TouchableOpacity onPress={handleRepost} style={styles.actionButtonInner}>
-              <Ionicons name="repeat-outline" size={26} color="#262626" />
-              {post.shares > 0 && (
-                <Text style={styles.actionText}>{formatNumber(post.shares)}</Text>
-              )}
-            </TouchableOpacity>
-          </Animated.View>
-
-          {/* Send (Instagram-style) */}
-          <Animated.View style={[btnAnimatedStyle, styles.actionButton]}>
-            <TouchableOpacity onPress={handleShare} style={styles.actionButtonInner}>
-              <Ionicons name="paper-plane-outline" size={23} color="#262626" />
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
-
-        {/* Value - Right side (like Instagram bookmark) */}
-        <Animated.View style={[valueAnimatedStyle, styles.actionButton]}>
-          <TouchableOpacity onPress={handleValue} style={styles.actionButtonInner}>
-            <Ionicons
-              name={valued ? 'diamond' : 'diamond-outline'}
-              size={24}
-              color={valued ? '#8B5CF6' : '#262626'}
-            />
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
+      <ActionBar
+        liked={liked}
+        likeCount={likeCount}
+        valued={valued}
+        commentCount={post.comments}
+        shareCount={post.shares}
+        onLike={handleLike}
+        onComment={handleComment}
+        onRepost={handleRepost}
+        onShare={handleShare}
+        onValue={handleValue}
+        likeAnimatedStyle={likeAnimatedStyle}
+        btnAnimatedStyle={btnAnimatedStyle}
+        valueAnimatedStyle={valueAnimatedStyle}
+      />
     </View>
   );
 };

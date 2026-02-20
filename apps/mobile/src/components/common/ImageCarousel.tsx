@@ -45,7 +45,7 @@ const isVideo = (uri: string) => {
   return ext === 'mp4' || ext === 'mov' || ext === 'avi' || ext === 'mkv';
 };
 
-export default function ImageCarousel({
+function ImageCarouselInner({
   images,
   onImagePress,
   borderRadius = 12,
@@ -267,6 +267,20 @@ export default function ImageCarousel({
     </View>
   );
 }
+
+// Memoize to prevent re-renders when parent (PostCard) re-renders with same media
+function areCarouselPropsEqual(prev: ImageCarouselProps, next: ImageCarouselProps) {
+  return (
+    prev.borderRadius === next.borderRadius &&
+    prev.aspectRatio === next.aspectRatio &&
+    prev.mode === next.mode &&
+    prev.images.length === next.images.length &&
+    prev.images.every((img, i) => img === next.images[i])
+  );
+}
+
+const ImageCarousel = React.memo(ImageCarouselInner, areCarouselPropsEqual);
+export default ImageCarousel;
 
 const styles = StyleSheet.create({
   container: {
