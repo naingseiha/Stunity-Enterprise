@@ -19,10 +19,10 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  InteractionManager,
   Alert,
   Share,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -224,9 +224,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
   }));
 
   const handleLike = () => {
-    InteractionManager.runAfterInteractions(() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    });
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
     likeScale.value = withSequence(
       withSpring(1.3, { damping: 10 }),
       withSpring(1, { damping: 15 })
@@ -242,9 +240,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
   };
 
   const handleValue = () => {
-    InteractionManager.runAfterInteractions(() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    });
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 0);
     valueScale.value = withSequence(
       withSpring(1.4, { damping: 8 }),
       withSpring(1, { damping: 12 })
@@ -253,18 +249,14 @@ const PostCardInner: React.FC<PostCardProps> = ({
   };
 
   const handleBookmark = () => {
-    InteractionManager.runAfterInteractions(() => {
-      Haptics.selectionAsync();
-    });
+    setTimeout(() => Haptics.selectionAsync(), 0);
     setBookmarked(!bookmarked);
     setShowMenu(false);
     onBookmark?.();
   };
 
   const handleComment = () => {
-    InteractionManager.runAfterInteractions(() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    });
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
     btnScale.value = withSequence(
       withSpring(1.2, { damping: 10 }),
       withSpring(1, { damping: 15 })
@@ -277,9 +269,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
       Alert.alert('Cannot Repost', 'You cannot repost your own post.');
       return;
     }
-    InteractionManager.runAfterInteractions(() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    });
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 0);
     btnScale.value = withSequence(
       withSpring(1.3, { damping: 8 }),
       withSpring(1, { damping: 12 })
@@ -344,9 +334,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
   };
 
   const handleShare = () => {
-    InteractionManager.runAfterInteractions(() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    });
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
     btnScale.value = withSequence(
       withSpring(1.2, { damping: 10 }),
       withSpring(1, { damping: 15 })
@@ -355,24 +343,18 @@ const PostCardInner: React.FC<PostCardProps> = ({
   };
 
   const handleMenuToggle = () => {
-    InteractionManager.runAfterInteractions(() => {
-      Haptics.selectionAsync();
-    });
+    setTimeout(() => Haptics.selectionAsync(), 0);
     setShowMenu(!showMenu);
   };
 
   const handleEdit = () => {
-    InteractionManager.runAfterInteractions(() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    });
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
     setShowMenu(false);
     navigation.navigate('EditPost', { post });
   };
 
   const handleViewAnalytics = () => {
-    InteractionManager.runAfterInteractions(() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    });
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
     setShowMenu(false);
     if (onViewAnalytics) {
       onViewAnalytics();
@@ -429,7 +411,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
   const quizThemeColor = post.postType === 'QUIZ' ? getQuizGradient(post.id)[0] : '#EC4899';
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} shouldRasterizeIOS renderToHardwareTextureAndroid>
 
       {/* Repost Label */}
       {post.repostOfId && (

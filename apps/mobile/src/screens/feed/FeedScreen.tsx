@@ -288,9 +288,6 @@ export default function FeedScreen() {
   postsRef.current = posts;
   pendingPostsRef.current = pendingPosts;
 
-  // Track whether initial load animation has played
-  const hasAnimatedRef = useRef(false);
-
   // Stable key extractor for FlatList
   const keyExtractor = useCallback((item: Post) => item.id, []);
 
@@ -635,41 +632,37 @@ export default function FeedScreen() {
     </View>
   ), [handleCreatePost, user, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, activeSubjectFilter, handleSubjectFilterChange, navigation]);
 
-  const renderPost = useCallback(({ item, index }: { item: Post; index: number }) => {
-    // Only animate the first 3 posts on initial load, never on subsequent scrolls
-    const shouldAnimate = !hasAnimatedRef.current && index < 3;
-    if (index === 2) hasAnimatedRef.current = true;
+  // Stable callback refs — avoids recreating closures in renderPost on every call
+  const handlersRef = useRef({
+    handleLikePost, handleSharePost, handleValuePost, handlePostPress,
+    handleVoteOnPoll, bookmarkPost, navigation,
+  });
+  handlersRef.current = {
+    handleLikePost, handleSharePost, handleValuePost, handlePostPress,
+    handleVoteOnPoll, bookmarkPost, navigation,
+  };
 
-    const card = (
-      <PostCard
-        post={item}
-        onLike={() => handleLikePost(item)}
-        onComment={() => navigation.navigate('Comments', { postId: item.id })}
-        onRepost={() => handleSharePost(item)}
-        onShare={() => handleSharePost(item)}
-        onBookmark={() => bookmarkPost(item.id)}
-        onValue={() => handleValuePost(item)}
-        isValued={valuedPostIds.has(item.id)}
-        onUserPress={() => navigation.navigate('UserProfile', { userId: item.author.id })}
-        onPress={() => handlePostPress(item)}
-        onVote={(optionId) => handleVoteOnPoll(item.id, optionId)}
-        onViewAnalytics={() => setAnalyticsPostId(item.id)}
-      />
+  const renderPost = useCallback(({ item }: { item: Post }) => {
+    const h = handlersRef.current;
+    return (
+      <View style={styles.postWrapper}>
+        <PostCard
+          post={item}
+          onLike={() => h.handleLikePost(item)}
+          onComment={() => h.navigation.navigate('Comments', { postId: item.id })}
+          onRepost={() => h.handleSharePost(item)}
+          onShare={() => h.handleSharePost(item)}
+          onBookmark={() => h.bookmarkPost(item.id)}
+          onValue={() => h.handleValuePost(item)}
+          isValued={valuedPostIds.has(item.id)}
+          onUserPress={() => h.navigation.navigate('UserProfile', { userId: item.author.id })}
+          onPress={() => h.handlePostPress(item)}
+          onVote={(optionId) => h.handleVoteOnPoll(item.id, optionId)}
+          onViewAnalytics={() => setAnalyticsPostId(item.id)}
+        />
+      </View>
     );
-
-    if (shouldAnimate) {
-      return (
-        <Animated.View
-          entering={FadeInDown.delay(50 * index).duration(300)}
-          style={styles.postWrapper}
-        >
-          {card}
-        </Animated.View>
-      );
-    }
-
-    return <View style={styles.postWrapper}>{card}</View>;
-  }, [handleLikePost, handleSharePost, handleValuePost, handlePostPress, handleVoteOnPoll, bookmarkPost, navigation, valuedPostIds]);
+  }, [valuedPostIds]);
 
   const renderFooter = () => {
     if (!isLoadingPosts) return null;

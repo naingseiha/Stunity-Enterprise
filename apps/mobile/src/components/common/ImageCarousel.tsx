@@ -118,13 +118,13 @@ export default function ImageCarousel({
     }
   }, [IMAGE_WIDTH, aspectRatio, mode, imageDimensions, SCREEN_WIDTH]);
 
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollPosition = event.nativeEvent.contentOffset.x;
     const index = Math.round(scrollPosition / IMAGE_WIDTH);
     if (index !== activeIndex) {
       setActiveIndex(index);
     }
-  };
+  }, [IMAGE_WIDTH, activeIndex]);
 
   const scrollToIndex = (index: number) => {
     scrollViewRef.current?.scrollTo({
@@ -215,7 +215,7 @@ export default function ImageCarousel({
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onScroll={handleScroll}
-        scrollEventThrottle={16}
+        scrollEventThrottle={100}
         decelerationRate="fast"
         snapToInterval={IMAGE_WIDTH}
         snapToAlignment="start"
