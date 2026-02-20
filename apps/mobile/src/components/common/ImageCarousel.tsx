@@ -10,7 +10,7 @@
  * - Handles CloudFlare R2 URLs and relative keys
  */
 
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import {
   Text,
   View,
@@ -21,9 +21,8 @@ import {
   NativeSyntheticEvent,
   TouchableOpacity,
   useWindowDimensions,
-  Image as RNImage,
 } from 'react-native';
-import { Image } from 'expo-image';
+import { Image, ImageLoadEventData } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { normalizeMediaUrls } from '@/utils';
 import ImageViewerModal from './ImageViewerModal';
@@ -73,38 +72,26 @@ export default function ImageCarousel({
     return normalized;
   }, [images]);
 
-  // Load first image/video dimensions for auto mode
+  // For videos in auto mode, default to 16:9 since we can't use onLoad
   useEffect(() => {
-    if (mode === 'auto' && normalizedImages.length > 0) {
-      const firstUri = normalizedImages[0];
-
-      if (isVideo(firstUri)) {
-        // For video, default to 16:9 landscape if auto
-        // We could try to get size from video metadata but 16:9 is safe default
-        setImageDimensions({ width: 16, height: 9 });
-        setIsCropped(false);
-      } else {
-        RNImage.getSize(
-          firstUri,
-          (width: number, height: number) => {
-            setImageDimensions({ width, height });
-
-            // Check if image will be cropped (height limited to 1.4x width)
-            const imageAspectRatio = height / width;
-            const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
-            const maxHeight = IMAGE_WIDTH * 1.4;
-            setIsCropped(calculatedHeight > maxHeight);
-          },
-          (error: any) => {
-            console.warn('⚠️  [ImageCarousel] Failed to get image size:', firstUri);
-            // Fallback to landscape
-            setImageDimensions({ width: 16, height: 9 });
-            setIsCropped(false);
-          }
-        );
-      }
+    if (mode === 'auto' && !imageDimensions && normalizedImages.length > 0 && isVideo(normalizedImages[0])) {
+      setImageDimensions({ width: 16, height: 9 });
+      setIsCropped(false);
     }
-  }, [normalizedImages, mode, IMAGE_WIDTH]);
+  }, [normalizedImages, mode, imageDimensions]);
+
+  // Handle first image load to detect natural dimensions for auto mode
+  const handleFirstImageLoad = useCallback((event: ImageLoadEventData) => {
+    if (mode !== 'auto' || imageDimensions) return;
+    const { width, height } = event.source;
+    if (width && height) {
+      setImageDimensions({ width, height });
+      const imageAspectRatio = height / width;
+      const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
+      const maxHeight = IMAGE_WIDTH * 1.4;
+      setIsCropped(calculatedHeight > maxHeight);
+    }
+  }, [mode, imageDimensions, IMAGE_WIDTH]);
 
   // Calculate image height based on mode and dimensions
   const IMAGE_HEIGHT = useMemo(() => {
@@ -160,14 +147,6 @@ export default function ImageCarousel({
 
   if (normalizedImages.length === 0) return null;
 
-  if (mode === 'auto' && !imageDimensions && normalizedImages.length > 0) {
-    return (
-      <View style={[styles.loadingContainer, { width: IMAGE_WIDTH, height: IMAGE_WIDTH * 0.75 }]}>
-        <View style={styles.loadingPlaceholder} />
-      </View>
-    );
-  }
-
   // Render Item Helper
   const renderItem = (uri: string, index: number) => {
     const isVid = isVideo(uri);
@@ -205,6 +184,7 @@ export default function ImageCarousel({
             // GPU acceleration hints
             blurRadius={0} // No blur = faster
             allowDownscaling={true} // Decode at optimal size
+            onLoad={index === 0 ? handleFirstImageLoad : undefined}
           />
         )}
       </TouchableOpacity>
