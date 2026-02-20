@@ -158,17 +158,7 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
   }, []);
   const levelPulseStyle = useAnimatedStyle(() => ({ transform: [{ scale: levelScale.value }] }));
 
-  // Avatar outer glow pulse
-  const glowOpacity = useSharedValue(0.4);
-  useEffect(() => {
-    glowOpacity.value = withRepeat(
-      withSequence(
-        withTiming(1,   { duration: 1200, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0.4, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
-      ), -1, false,
-    );
-  }, []);
-  const glowStyle = useAnimatedStyle(() => ({ opacity: glowOpacity.value }));
+
 
   // XP bar fill
   const barWidth = useSharedValue(0);
@@ -249,22 +239,9 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
             </View>
           </View>
 
-          {/* ── Avatar: SVG gradient ring + pulsing glow ── */}
+          {/* ── Avatar: thin ring border + level badge ── */}
           <View style={perfCardStyles.avatarWrap}>
-            {/* Pulsing outer glow */}
-            <Animated.View style={[perfCardStyles.avatarGlow, glowStyle]} />
-            {/* Gradient ring via SVG */}
             <View style={perfCardStyles.avatarOuter}>
-              <Svg width={76} height={76} style={StyleSheet.absoluteFill}>
-                <Defs>
-                  <SvgLinearGradient id="avGrad" x1="0" y1="0" x2="1" y2="1">
-                    <Stop offset="0"   stopColor="#A855F7" />
-                    <Stop offset="0.5" stopColor="#6366F1" />
-                    <Stop offset="1"   stopColor="#0EA5E9" />
-                  </SvgLinearGradient>
-                </Defs>
-                <SvgCircle cx={38} cy={38} r={35} stroke="url(#avGrad)" strokeWidth={3.5} fill="none" />
-              </Svg>
               <View style={perfCardStyles.avatarInner}>
                 <Avatar
                   uri={user?.profilePictureUrl}
@@ -325,13 +302,13 @@ const perfCardStyles = StyleSheet.create({
   statLbl:     { fontSize: 11, fontWeight: '400', color: '#64748B' },
   // Avatar
   avatarWrap:  { alignItems: 'center', position: 'relative' },
-  avatarGlow:  {
-    position: 'absolute', width: 86, height: 86, borderRadius: 43,
-    backgroundColor: 'rgba(99,102,241,0.18)',
-    shadowColor: '#6366F1', shadowOpacity: 0.5, shadowRadius: 12, shadowOffset: { width: 0, height: 0 },
+  avatarOuter: {
+    width: 72, height: 72, borderRadius: 36,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2.5, borderColor: '#818CF8',   // light indigo — matches ring palette
+    backgroundColor: '#fff',
   },
-  avatarOuter: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center' },
-  avatarInner: { width: 68, height: 68, borderRadius: 34, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatarInner: { width: 65, height: 65, borderRadius: 32.5, overflow: 'hidden', backgroundColor: '#fff' },
   avatarBadge: { position: 'absolute', bottom: -4, right: -4, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff' },
   avatarBadgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
   // XP bar
