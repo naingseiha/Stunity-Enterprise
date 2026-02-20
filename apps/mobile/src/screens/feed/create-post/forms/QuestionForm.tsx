@@ -65,7 +65,7 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
       {/* Bounty Section */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: '#F0F4F8' }]}>
+          <View style={[styles.iconContainer, { backgroundColor: '#F8FAFC' }]}>
             <Ionicons name="trophy" size={20} color="#0EA5E9" />
           </View>
           <View>
@@ -122,7 +122,7 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
       {/* Tags Section */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: '#F0F4F8' }]}>
+          <View style={[styles.iconContainer, { backgroundColor: '#F8FAFC' }]}>
             <Ionicons name="pricetags" size={20} color="#3B82F6" />
           </View>
           <View>
@@ -279,8 +279,6 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 14,
     backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#E0F2FE',
     alignItems: 'center',
     gap: 8,
   },
@@ -328,8 +326,6 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     backgroundColor: '#FFF',
-    borderWidth: 2,
-    borderColor: '#0EA5E9',
     alignItems: 'center',
     justifyContent: 'center',
   },

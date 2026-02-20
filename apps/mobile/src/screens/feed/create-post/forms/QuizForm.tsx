@@ -134,7 +134,7 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
           activeOpacity={0.8}
         >
           <View style={styles.cardHeaderLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: '#F0F4F8' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: '#F8FAFC' }]}>
               <Ionicons name="settings" size={24} color="#0EA5E9" />
             </View>
             <View>
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8FAFC',
     marginHorizontal: -20,
     marginBottom: 20,
   },

@@ -149,7 +149,7 @@ export function AnnouncementForm({ onDataChange }: AnnouncementFormProps) {
       {/* Settings Card */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: '#F0F4F8' }]}>
+          <View style={[styles.iconContainer, { backgroundColor: '#F8FAFC' }]}>
             <Ionicons name="settings" size={20} color="#4B5563" />
           </View>
           <Text style={styles.cardTitle}>Display Options</Text>
@@ -347,7 +347,6 @@ const styles = StyleSheet.create({
     width: '48%',
     padding: 12,
     borderRadius: 12,
-    borderWidth: 1.5,
     gap: 8,
   },
   importanceCardSelected: {
@@ -381,7 +380,6 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 8,
     backgroundColor: '#FFF',
-    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -430,7 +428,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8FAFC',
     marginVertical: 12,
   },
   expirationSection: {
@@ -512,8 +510,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     borderRadius: 12,
-    borderWidth: 1.5,
-    
     backgroundColor: '#FFFFFF',
     gap: 6,
   },

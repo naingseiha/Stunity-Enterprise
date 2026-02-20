@@ -460,7 +460,7 @@ export default function CreatePostScreen() {
                   }}
                   style={[
                     styles.typeOption,
-                    postType === type.type && { backgroundColor: type.color + '15', borderColor: type.color },
+                    postType === type.type && { backgroundColor: type.color + '15' },
                   ]}
                 >
                   <Ionicons
@@ -599,7 +599,6 @@ export default function CreatePostScreen() {
                       styles.difficultyCard,
                       difficulty === level.value && {
                         backgroundColor: level.bg,
-                        borderColor: level.color,
                       },
                     ]}
                   >
@@ -706,7 +705,7 @@ export default function CreatePostScreen() {
                     disabled={isPosting}
                     style={[
                       styles.visibilityOption,
-                      isSelected && { backgroundColor: option.color + '15', borderColor: option.color },
+                      isSelected && { backgroundColor: option.color + '10' },
                     ]}
                   >
                     <Ionicons
@@ -845,7 +844,7 @@ export default function CreatePostScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8FAFC',
   },
   header: {
     flexDirection: 'row',
@@ -854,14 +853,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E7EB',
   },
   closeButton: {
     width: 36,
     height: 36,
-    borderRadius: 14,
-    backgroundColor: '#F5F3FF',
+    borderRadius: 18,
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -889,7 +888,7 @@ const styles = StyleSheet.create({
   postButton: {
     paddingHorizontal: 20,
     paddingVertical: 8,
-    borderRadius: 14,
+    borderRadius: 20,
     minWidth: 70,
     alignItems: 'center',
   },
@@ -946,9 +945,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
     gap: 6,
   },
   typeOptionText: {
@@ -968,8 +966,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1F2937',
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E7EB',
   },
   titleCounter: {
     fontSize: 11,
@@ -994,8 +992,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E5E7EB',
   },
   tagsSectionHeader: {
     flexDirection: 'row',
@@ -1031,9 +1029,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     backgroundColor: '#EEF2FF',
-    borderRadius: 14,
-    
-    borderColor: '#C7D2FE',
+    borderRadius: 16,
   },
   activeTagText: {
     fontSize: 13,
@@ -1048,19 +1044,17 @@ const styles = StyleSheet.create({
   },
   tagInput: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F3F4F6',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
     color: '#1F2937',
-    
-    
   },
   tagAddButton: {
     width: 32,
     height: 32,
-    borderRadius: 8,
+    borderRadius: 16,
     backgroundColor: '#6366F1',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1076,8 +1070,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: '#F5F3FF',
     borderRadius: 16,
-    
-    borderColor: '#EDE9FE',
   },
   suggestedTagText: {
     fontSize: 12,
@@ -1090,8 +1082,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E5E7EB',
   },
   diffSectionHeader: {
     flexDirection: 'row',
@@ -1113,9 +1105,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderRadius: 12,
-    borderWidth: 1.5,
-    
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F3F4F6',
     gap: 6,
   },
   difficultyLabel: {
@@ -1129,8 +1119,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E5E7EB',
   },
   deadlineSectionHeader: {
     flexDirection: 'row',
@@ -1149,14 +1139,11 @@ const styles = StyleSheet.create({
   deadlineChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
   },
   deadlineChipSelected: {
     backgroundColor: '#FEF2F2',
-    borderColor: '#EF4444',
   },
   deadlineChipText: {
     fontSize: 13,
@@ -1210,8 +1197,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bottomActions: {
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E5E7EB',
     paddingVertical: 12,
     paddingHorizontal: 16,
     backgroundColor: '#FFFFFF',
@@ -1245,8 +1232,8 @@ const styles = StyleSheet.create({
   // Poll styles
   pollSection: {
     padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E5E7EB',
   },
   pollLabel: {
     fontSize: 14,
@@ -1262,10 +1249,8 @@ const styles = StyleSheet.create({
   },
   pollInput: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    
-    
-    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
@@ -1290,8 +1275,8 @@ const styles = StyleSheet.create({
   visibilitySection: {
     paddingHorizontal: 16,
     paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
   },
   sectionLabel: {
@@ -1312,8 +1297,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderRadius: 12,
-    borderWidth: 1.5,
-    
+    backgroundColor: '#F3F4F6',
     gap: 8,
   },
   visibilityLabel: {

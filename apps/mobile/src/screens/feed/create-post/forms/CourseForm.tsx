@@ -286,7 +286,7 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
       {/* Prerequisites Card */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: '#F0F4F8' }]}>
+          <View style={[styles.iconContainer, { backgroundColor: '#F8FAFC' }]}>
             <Ionicons name="shield-checkmark" size={20} color="#0EA5E9" />
           </View>
           <View>
@@ -389,14 +389,11 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    
     alignItems: 'center',
     gap: 6,
   },
   scheduleCardSelected: {
     backgroundColor: '#ECFDF5',
-    borderColor: '#10B981',
   },
   scheduleIcon: {
     width: 32,
@@ -424,7 +421,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8FAFC',
     marginVertical: 16,
   },
   // Row Settings
@@ -543,9 +540,6 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: 12,
     borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#E0E7FF',
-    borderStyle: 'dashed',
     backgroundColor: '#EEF2FF',
   },
   addButtonText: {

@@ -474,14 +474,11 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    
     alignItems: 'center',
     gap: 8,
   },
   teamCardSelected: {
     backgroundColor: '#F5F3FF',
-    borderColor: '#8B5CF6',
   },
   teamIcon: {
     width: 32,
@@ -508,7 +505,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8FAFC',
     marginVertical: 16,
   },
   // Duration
@@ -624,9 +621,6 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: 12,
     borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#DBEAFE',
-    borderStyle: 'dashed',
     backgroundColor: '#EFF6FF',
   },
   addButtonText: {

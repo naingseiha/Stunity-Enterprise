@@ -504,7 +504,7 @@ export function QuizQuestionInput({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8FAFC',
     borderRadius: 20,
     marginBottom: 16,
     
@@ -517,7 +517,6 @@ const styles = StyleSheet.create({
     
   },
   cardExpanded: {
-    borderWidth: 2,
     elevation: 4,
     transform: [{ scale: 1.01 }], // Subtle pop
   },
@@ -526,7 +525,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8FAFC',
   },
   headerExpanded: {
     paddingVertical: 20,
@@ -607,7 +606,7 @@ const styles = StyleSheet.create({
     color: '#111827',
     minHeight: 100,
     textAlignVertical: 'top',
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8FAFC',
     borderRadius: 16,
     padding: 16,
     
@@ -625,7 +624,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8FAFC',
     
     
   },
@@ -645,7 +644,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
     
@@ -674,15 +673,13 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8FAFC',
   },
   optionInput: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8FAFC',
     
     
     borderRadius: 12,
@@ -708,7 +705,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     
     borderRadius: 12,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8FAFC',
     marginTop: 8,
     borderStyle: 'dashed',
   },
@@ -728,7 +725,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     paddingVertical: 16,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8FAFC',
     borderRadius: 14,
     
     
@@ -756,7 +753,7 @@ const styles = StyleSheet.create({
   },
   // Input Field
   inputField: {
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8FAFC',
     
     
     borderRadius: 12,
@@ -789,7 +786,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   matchInput: {
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8FAFC',
     
     
     borderRadius: 12,
