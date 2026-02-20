@@ -204,10 +204,10 @@ const perfCardStyles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#BFDBFE',
     shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 4,
   },
   inner:       { padding: 16, borderRadius: 16, overflow: 'hidden' },
   topRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
@@ -859,7 +859,7 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8FAFC',
   },
   headerSafe: {
     backgroundColor: '#FFFFFF',
@@ -953,7 +953,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingTop: 16,
     paddingBottom: 8,
-    borderRadius: 14,
+    borderRadius: 16,
+    shadowColor: '#94A3B8',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
   },
   createPostRow: {
     flexDirection: 'row',

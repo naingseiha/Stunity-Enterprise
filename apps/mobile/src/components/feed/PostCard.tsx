@@ -922,10 +922,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
     marginBottom: 12,
-    borderRadius: 14,
-    overflow: 'hidden',
+    borderRadius: 16,
     position: 'relative',
     paddingTop: 14,
+    shadowColor: '#94A3B8',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
   },
   // LIVE Badge styles
   liveBadge: {
