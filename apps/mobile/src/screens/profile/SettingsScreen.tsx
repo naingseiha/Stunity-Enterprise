@@ -609,7 +609,7 @@ function QuickStat({ icon, label, color, onPress }: { icon: IoniconsName; label:
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F0F4F8',
+        backgroundColor: '#F8FAFC',
     },
     header: {
         flexDirection: 'row',
@@ -640,6 +640,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingHorizontal: 16,
+        paddingTop: 16,
         paddingBottom: 50,
     },
 
