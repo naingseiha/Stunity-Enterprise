@@ -22,7 +22,6 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar } from '@/components/common';
 import { useAuthStore } from '@/stores';
 
@@ -147,52 +146,31 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* Profile Card — Gradient style matching feed performance card */}
+          {/* Profile Card */}
           <TouchableOpacity
-            activeOpacity={0.9}
+            activeOpacity={0.7}
             onPress={() => { onNavigate('ProfileTab'); onClose(); }}
-            style={styles.profileCardWrapper}
+            style={styles.profileCard}
           >
-            <LinearGradient
-              colors={['#7DD3FC', '#0EA5E9', '#0284C7']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.profileCard}
-            >
-              {/* Avatar */}
-              <View style={styles.profileAvatarContainer}>
-                <View style={styles.profileAvatarRing}>
-                  <Avatar
-                    uri={user?.profilePictureUrl}
-                    name={userName}
-                    size="xl"
-                    showBorder={false}
-                    gradientBorder="none"
-                  />
-                </View>
-              </View>
-
-              {/* Name & Role */}
+            <Avatar
+              uri={user?.profilePictureUrl}
+              name={userName}
+              size="lg"
+              showBorder={false}
+              gradientBorder="none"
+            />
+            <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{userName}</Text>
               <View style={styles.profileRoleBadge}>
                 <Ionicons
                   name={userRole === 'Teacher' ? 'school' : userRole === 'Admin' ? 'shield-checkmark' : 'person'}
-                  size={12}
-                  color="rgba(255,255,255,0.9)"
+                  size={11}
+                  color="#0EA5E9"
                 />
                 <Text style={styles.profileRoleText}>{userRole}</Text>
               </View>
-
-              {/* View Profile Link */}
-              <View style={styles.viewProfileRow}>
-                <Text style={styles.viewProfileText}>View Profile</Text>
-                <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.7)" />
-              </View>
-
-              {/* Decorative circles */}
-              <View style={[styles.decorCircle, styles.decorCircle1]} />
-              <View style={[styles.decorCircle, styles.decorCircle2]} />
-            </LinearGradient>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
           </TouchableOpacity>
 
           {/* Menu Items */}
@@ -278,87 +256,46 @@ const styles = StyleSheet.create({
   },
 
   // ── Profile Card ──
-  profileCardWrapper: {
+  profileCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginHorizontal: 16,
     marginTop: 8,
     marginBottom: 20,
-    borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 14,
-    elevation: 6,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 16,
+    gap: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  profileCard: {
-    alignItems: 'center',
-    paddingVertical: 28,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  profileAvatarContainer: {
-    marginBottom: 14,
-  },
-  profileAvatarRing: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+  profileInfo: {
+    flex: 1,
   },
   profileName: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -0.3,
-    marginBottom: 6,
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1F2937',
+    letterSpacing: -0.2,
+    marginBottom: 4,
   },
   profileRoleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 5,
-    marginBottom: 12,
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+    gap: 4,
+    alignSelf: 'flex-start',
   },
   profileRoleText: {
     fontSize: 12,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.9)',
-  },
-  viewProfileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  viewProfileText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.7)',
-  },
-  decorCircle: {
-    position: 'absolute',
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  decorCircle1: {
-    width: 120,
-    height: 120,
-    top: -30,
-    right: -20,
-  },
-  decorCircle2: {
-    width: 80,
-    height: 80,
-    bottom: -20,
-    left: -15,
+    color: '#0EA5E9',
   },
 
   // ── Menu Items ──
