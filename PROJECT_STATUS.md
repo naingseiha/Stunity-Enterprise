@@ -1,331 +1,170 @@
-# 🎓 Stunity Enterprise - Project Status
+# 🎓 Stunity Enterprise — Project Status
 
-**Date:** February 12, 2026  
-**Version:** 21.10  
-**Status:** Quiz System 100% Complete + Bug Fixed! 🎉 | 99% Complete 🚀
-
----
-
-## 🎉 Latest Achievement: QUIZ FEED BUG FIXED!
-
-**Fix Date**: February 12, 2026  
-**Status**: Production Ready ✅
-
-### Today's Bug Fixes (v21.10 - Quiz Feed Fix)
-- ✅ **Quiz Disappearing Bug Fixed** (Added missing id to quizData)
-- ✅ **Enhanced Error Logging** (Try-catch around post transformation)
-- ✅ **Quiz-Specific Debug Logs** (Track quiz posts in feed)
-- ✅ **Null Post Filtering** (Prevent crashes from bad data)
-
-### Earlier Today (v21.9 - Quiz Submission)
-- ✅ **Quiz Submission API** (POST /quizzes/:id/submit with auto-grading)
-- ✅ **Quiz Attempts Tracking** (Database storage of all submissions)
-- ✅ **Automatic Grading** (MC, True/False, Short Answer support)
-- ✅ **Instructor Analytics** (View all attempts, pass rates, statistics)
-- ✅ **Mobile Service Layer** (quiz.ts with TypeScript interfaces)
-- ✅ **Real-time Results** (Instant feedback after submission)
-- ✅ **Pass/Fail Calculation** (Score percentage and pass determination)
-
-### Earlier Today (v21.8 - Backend Integration)
-- ✅ **Quiz Database Models** (Quiz + QuizAttempt tables)
-- ✅ **POST /posts Quiz Creation** (Saves quiz metadata to database)
-- ✅ **GET /posts Quiz Fetching** (Includes quiz data + user attempts)
-- ✅ **Feed Store Integration** (Transforms quiz data for mobile)
-- ✅ **Quiz Card Display** (Shows previous attempts)
-
-### Earlier Today (v21.7 - Quiz Feed Card)
-- ✅ **Quiz Feed Card Design** (Beautiful gradient card for feed)
-- ✅ **Quiz Stats Display** (Questions, Time, Points, Pass score)
-- ✅ **Take Quiz Button** (Direct navigation to TakeQuizScreen)
-- ✅ **Previous Attempt Display** (Shows if user took quiz before)
-
-### Earlier Today (v21.6 - Quiz Taking UI)
-- ✅ **Quiz Taking UI** (Student interface for taking quizzes)
-- ✅ **Quiz Results Screen** (Beautiful performance display)
-- ✅ **Timer System** (Countdown with auto-submit)
-- ✅ **Progress Tracking** (Answer status grid)
-
-### Earlier Today (v21.5 - All Post Forms)
-- ✅ **Course Form** (Created from scratch)
-- ✅ **Project Form** (Created from scratch)
-- ✅ **Quiz UI Clean Redesign** (Complete restructure)
-- ✅ **Quiz Settings Redesign** (Clean card style)
-- ✅ **Question Form Update** (Clean style matching)
-- ✅ **All 7 Post Types** (100% complete with consistent design)
-
-### Recent Completions (v21.3-21.4)
-- ✅ **Quiz UI Professional Redesign** (Enterprise-grade, beautiful design)
-- ✅ **Vertical Card Type Selector** (Spacious, clear selection states)
-- ✅ **Fixed Point Button Overflow** (Proper flexWrap, contained layout)
-- ✅ **Enhanced True/False Buttons** (Full color backgrounds, white text)
-- ✅ **Refined Typography** (Professional hierarchy, consistent spacing)
-- ✅ **Quiz Post Type** (Complete with 3 question types)
-- ✅ **Beautiful UI Redesign** (Card-based, professional design)
-- ✅ **Smooth Animations** (60 FPS, haptic feedback throughout)
-- ✅ **QuizForm Component** (Settings, questions, summary)
-- ✅ **QuizQuestionInput Component** (Multiple choice, True/False, Short answer)
-- ✅ **Real-time Quiz Summary** (Points, questions, time, pass score)
-- ✅ **Animation System** (Reusable utilities and presets)
-- ✅ **ClubDetailsScreen** (Beautiful modern UI with join/leave functionality)
-- ✅ **PUBLIC Club Feed Integration** (Auto-posts to feed on creation)
-- ✅ **Instructor Grading Workflow** (Complete Phase 3 - submissions & grading)
-
-### Key Features (v21.2)
-
-#### 🎓 Enhanced Post Creation
-- ✅ **Quiz Type**: Multiple choice, True/False, Short answer questions
-- ✅ **Settings**: Time limits, passing scores, results visibility
-- ✅ **Dynamic Questions**: Add/remove with smooth animations
-- ✅ **Points System**: Configurable points per question (1-10)
-- ✅ **Beautiful UI**: Card-based design with professional styling
-- ✅ **Smooth Animations**: FadeIn/FadeOut, spring physics (60 FPS)
-- ✅ **Haptic Feedback**: Touch response on all interactions
-- ✅ **Real-time Summary**: Auto-updating quiz statistics
-
-#### 🏫 Clubs & Community
-- ✅ **Club Details Screen** (Modern UI, join/leave, members grid)
-- ✅ **PUBLIC Club Feed Integration** (Auto-announcement on creation)
-- ✅ **Clubs Mobile Integration** (List, create, view details, join/leave clubs)
-
-#### 📝 Assignments
-- ✅ **Instructor Grading Workflow** (View submissions, grade students, add feedback)
-- ✅ **Complete assignment workflow** (student + instructor)
-
-#### 🔧 Technical Improvements
-- ✅ **Enhanced Network Resilience** (60s timeout, 3 retries, exponential backoff)
-- ✅ **Auto-Recovery System** (5-15s WiFi change recovery)
-- ✅ **Expo Auto-IP Detection** (No manual .env.local updates)
-
-### Integrated Workflows
-🎓 Complete assignment workflow (student + instructor)  
-📝 Instructor grading with statistics dashboard  
-🏫 Complete clubs workflow (browse, create, view, join)  
-📢 Auto-posting PUBLIC clubs to feed  
-🎯 Quiz creation with multiple question types  
-✨ Smooth animations throughout post creation  
-🎨 Professional UI design system  
-🔄 Automatic network reconnection  
-📱 Mobile-backend data synchronization  
-⚡ Auto-retry with exponential backoff  
-🎯 Type-safe API contracts  
-✅ All 13 microservices operational  
-
-**Latest Documentation**: See `QUIZ_UI_PROFESSIONAL_REDESIGN_COMPLETE.md`, `QUIZ_POST_TYPE_COMPLETE.md`, `SMOOTH_ANIMATIONS_COMPLETE.md`
+**Last Updated:** February 20, 2026
+**Version:** 22.0
+**Status:** 97% Complete — Feed Optimized, School Integration Active 🚀
 
 ---
 
-## 📊 Feature Completion Status
+## 🏗️ What Is Stunity?
 
-### ✅ Completed Features (97%)
+Stunity Enterprise is an **enterprise e-learning platform** that unifies **school management** (attendance, grades, timetables, student records) with a **social learning feed** (posts, quizzes, clubs, messaging) — designed for global multi-school deployment.
 
-#### Core Features
-- ✅ Authentication (Login, Register, SSO ready)
-- ✅ Feed System (Posts, interactions, filters, **beautiful quiz cards**)
-- ✅ **Post Creation - ALL 7 TYPES COMPLETE** ✅
-  - ✅ Article (Basic text post)
-  - ✅ Quiz (3 question types, settings, points, **beautiful feed card**)
-  - ✅ Question (Bounty system, tags, answer types)
-  - ✅ Poll (Options, duration, visibility, anonymous)
-  - ✅ Announcement (4 importance levels, pin, expiration)
-  - ✅ Course (Syllabus, schedule, enrollment, prerequisites)
-  - ✅ Project (Teams, milestones, deliverables)
-- ✅ **Quiz System - COMPLETE END-TO-END** ✅
-  - ✅ Quiz Creation (QuizForm - 3 question types)
-  - ✅ Quiz Taking (TakeQuizScreen - Student interface)
-  - ✅ Quiz Results (QuizResultsScreen - Performance display)
-  - ✅ **Quiz Feed Card (Beautiful gradient card with stats)** ✅
-  - ✅ Timer, Progress, Navigation, Answer Status
-- ✅ Enhanced Post Creation UI (Clean design, smooth animations)
-- ✅ Clubs System (Browse, create, join/leave, details)
-- ✅ Assignments (Create, submit, grade, feedback)
-- ✅ Profile (View, edit, avatar)
-- ✅ Study Materials (Upload, view, organize)
-- ✅ Media Handling (Images, videos, documents)
-- ✅ Claim Code System (Generate, distribute, claim)
-
-#### Mobile Features
-- ✅ React Native app (iOS + Android)
-- ✅ Navigation (Tab + Stack navigation)
-- ✅ Feed with interactions (Like, comment, share)
-- ✅ Post creation with media (Photos, videos)
-- ✅ Quiz creation (3 question types, settings)
-- ✅ Smooth animations (60 FPS throughout)
-- ✅ Profile management
-- ✅ Club browsing and joining
-- ✅ Assignment submission
-- ✅ Instructor grading UI
-- ✅ Network error handling
-- ✅ Auto-retry mechanism
-- ✅ Haptic feedback system
-
-#### Backend Services
-- ✅ Auth Service (JWT tokens, SSO endpoints)
-- ✅ Feed Service (CRUD operations, interactions)
-- ✅ Club Service (Complete lifecycle)
-- ✅ Profile Service (User data)
-- ✅ Assignment Service (Submission + grading)
-- ✅ Study Materials Service
-- ✅ Claim Code Service (Generation + redemption)
-- ✅ Analytics Service (Basic tracking)
-- ✅ Notification Service (Basic setup)
-- ✅ Search Service (Basic search)
-- ✅ API Gateway (Request routing)
-- ✅ Database (PostgreSQL + Prisma)
-- ✅ File Storage (Local + S3 ready)
-
-### 🚧 In Progress (1%)
-
-#### Backend Integration
-- 🚧 Quiz submission API endpoints
-- 🚧 Course/Project API endpoints
-- 🚧 Quiz grading system (auto-grade objective questions)
-- 🚧 Quiz data population in feed
-- ⏳ Real-time notifications (WebSocket)
-
-### ⏳ Planned Features (2%)
-
-#### High Priority
-- ⏳ Backend API integration for Quiz submission
-- ⏳ Quiz taking/grading endpoints
-- ⏳ Real-time notifications (WebSocket)
-- ⏳ Advanced search (Full-text)
-- ⏳ Analytics dashboard (Enhanced)
-
-#### Medium Priority
-- ⏳ Messaging system (Direct messages)
-- ⏳ Video conferencing (Integration)
-- ⏳ Calendar integration
-- ⏳ Grade book (Complete view)
-- ⏳ Discussion forums (Enhanced)
-
-#### Low Priority
-- ⏳ Mobile app polish (Final touches)
-- ⏳ Performance optimization (Advanced)
-- ⏳ Offline mode (Basic support)
-- ⏳ Push notifications (Native)
-- ⏳ Dark mode (UI theme)
+- **Mobile App:** React Native / Expo SDK 54 (iOS + Android)
+- **Web App:** Next.js 14 (teachers, admin, parents)
+- **Backend:** 14 microservices on Express.js + PostgreSQL (Supabase)
+- **Infrastructure:** Google Cloud Run + Cloudflare R2 + Supabase Free Tier
 
 ---
 
-## 🏗️ Technical Architecture
+## ✅ Completed Features (v22.0)
 
-### Frontend
-- **Mobile**: React Native + Expo (SDK 54)
-- **Navigation**: React Navigation v6
-- **State**: Zustand stores
-- **Animations**: react-native-reanimated
-- **UI Components**: Custom design system
-- **Type Safety**: TypeScript
+### 🔐 Authentication
+- Email/password login + registration with role selection
+- Claim code system (STNT-XXXX-XXXX) — school enrollment
+- JWT access + refresh tokens (7-day refresh)
+- Parent portal login (separate flow)
+- Enterprise SSO UI ready (Azure AD, Google Workspace — backend pending)
 
-### Backend
-- **Framework**: Express.js
-- **Database**: PostgreSQL + Prisma ORM
-- **Authentication**: JWT tokens
-- **API**: RESTful design
-- **File Storage**: Local + S3 compatible
-- **Services**: 13 microservices
+### 📱 Mobile Social Feed (Complete + Optimized)
+- **7 post types:** Text, Poll, Quiz, Course, Project, Question, Exam, Announcement
+- **Real-time feed:** Supabase postgres_changes → "New Posts" pill (Twitter-style)
+- **Feed algorithm:** 6-factor scoring (Engagement 25%, Relevance 25%, Quality 15%, Recency 15%, Social Proof 10%, Learning 10%) — 3-pool mixing (60% relevance + 25% trending + 15% explore)
+- **Scroll performance:** FlashList, drawDistance=600, windowSize=7, removeClippedSubviews=Android-only
+- **Optimistic UI:** Like, comment, repost update instantly before API confirms
+- **Post visibility fix:** Two-query candidate pool (75 trending + 25 fresh/last-6h) so new posts always appear
+- **Comments:** Real-time (Supabase), no double-display, DELETE handled in-state
+- **Reactions/Likes:** Real-time counter updates via postgres_changes
+- **Reposts:** Full repost + quote repost, notification to original author
+- **Bookmarks, Search, Trending**
+- **Stories** (24-hour expiry)
+- **Notifications:** Bell badge via Supabase Realtime, SSE fallback
 
-### Infrastructure
-- **Monorepo**: Turborepo
-- **Package Manager**: npm
-- **Version Control**: Git
-- **Environment**: Node.js 18+
-- **Database**: PostgreSQL 14+
+### 🧠 Quiz System (Complete)
+- Create quiz posts with questions, time limit, passing score, shuffle
+- Take quiz with timer, progress grid, auto-submit
+- Results screen with score, pass/fail, points earned
+- Quiz detail screen shows full info + Start Quiz / Retake Quiz button
+- Previous attempt result displayed (score %, passed badge)
+- userAttempt included in GET /posts/:id response
 
----
+### 📊 Analytics (Optimized)
+- Post analytics modal: gradient header (brand sky-blue), period toggle (24h/7d/30d), skeleton loading
+- Backend uses DB-level COUNT/aggregate — no memory bloat for viral posts
+- Algorithm relevance score with factor breakdown (clamped to 100%)
+- 7-day bar chart with today highlighted
+- Traffic source breakdown with inline progress bars
 
-## 📈 Progress Metrics
+### 💬 Comments & Reposts
+- Real-time comments (Supabase postgres_changes per postId)
+- Own comment skips re-fetch (no double-display)
+- DELETE removes from state without round-trip
+- Repost notification: SHARE enum in NotificationType, notification + SSE to original author
 
-**Overall Completion**: 97%
-- Core Features: 99%
-- Mobile App: 97%
-- Backend Services: 92%
-- Documentation: 94%
-- Testing: 75%
+### 🏫 School Management (Web + Mobile)
+- Multi-school support with academic years
+- Student enrollment with auto-generated IDs, bulk CSV import
+- Teacher management + subject/class assignment
+- Class sections with rosters
+- Timetable generation (shifts, constraints, drag-drop on web)
+- Grade entry (GPA scales, exam types, subject averages)
+- Attendance marking with session management
+- Parent portal (grades, attendance, report cards, parent-to-teacher messages)
+- Academic year promotion workflow
+- Admin claim code generation + school templates
 
-**Recent Milestones**:
-- Feb 12 (v21.7): Quiz Feed Card complete! ✅
-- Feb 12 (v21.6): Quiz Taking System complete! ✅
-- Feb 12 (v21.5): ALL 7 post type forms complete! ✅
-- Feb 12: Course & Project forms created ✅
-- Feb 12: Quiz UI clean redesign complete ✅
-- Feb 12: Question form updated ✅
-- Feb 11: Instructor grading workflow complete ✅
-- Feb 11: Clubs backend integration complete ✅
+### 📚 Learning
+- Course creation and enrollment (mobile + web)
+- Course detail with lessons
+- Live quiz (Kahoot-style): host, lobby, play, leaderboard, podium
+- Assignments: create, submit, grade, submission list
+- Clubs: create, join, post, members, events
 
-**Code Statistics** (v21.7):
-- Total Lines: ~161,000+
-- Components: 165+
-- Screens: 42+
-- API Endpoints: 120+
-- Database Models: 35+
-- Documentation: 78+ files
+### 💬 Messaging
+- Direct messages (conversations list + chat)
+- Real-time (Supabase Realtime channels)
+- New message screen
 
----
+### 🏆 Gamification
+- XP system + leaderboard
+- Achievement badges (academic + social milestones)
+- Streaks (learning, attendance)
+- Challenge system (quiz duels)
 
-## 🎯 Next Steps
-
-### Immediate (This Week)
-1. **Question Post Type** with bounty system
-2. **Enhanced Poll** with duration and visibility
-3. **Announcement Post Type** with importance levels
-
-### Short-term (Next 2 Weeks)
-1. Backend API integration for Quiz
-2. Quiz submission and grading endpoints
-3. Complete remaining post types (Course, Project)
-4. Advanced search implementation
-
-### Medium-term (Next Month)
-1. Real-time notifications
-2. Messaging system
-3. Enhanced analytics
-4. Mobile app polish
-5. Performance optimization
-
----
-
-## 📚 Documentation
-
-### Latest Documents
-- `QUIZ_FEED_CARD_COMPLETE.md` - Beautiful quiz feed card design (NEW!)
-- `QUIZ_TAKING_SYSTEM_COMPLETE.md` - Quiz taking & results
-- `ALL_POST_TYPES_COMPLETE.md` - Complete post type system summary
-- `QUIZ_UI_CLEAN_REDESIGN_COMPLETE.md` - Quiz redesign details
-- `QUIZ_POST_TYPE_COMPLETE.md` - Complete quiz implementation
-- `QUIZ_INTEGRATION_GUIDE.md` - Integration guide
-- `QUIZ_UI_REDESIGN.md` - UI design specifications
-- `SMOOTH_ANIMATIONS_COMPLETE.md` - Animation system
-
-### Key Documents
-- `CLUB_DETAILS_AND_FEED_INTEGRATION.md` - Club features
-- `PHASE3_INSTRUCTOR_GRADING_COMPLETE.md` - Grading workflow
-- `WIFI_NETWORK_ERROR_FIX.md` - Network resilience
-- `CLUBS_BACKEND_INTEGRATION_COMPLETE.md` - API integration
-- `ARCHITECTURE_FIX_SUMMARY.md` - System architecture
+### 🚀 Production Ready
+- CORS env var (ALLOWED_ORIGINS) for multi-domain
+- PORT from env (Cloud Run compatibility)
+- Background jobs gated (DISABLE_BACKGROUND_JOBS=true for scaled deployments)
+- keepAliveTimeout=620s (Cloud Run LB)
+- Docker build from monorepo root
+- Redis SCAN (not KEYS), createMany for batch inserts
+- ETag/304 for feed caching
 
 ---
 
-## 🚀 Quick Start
+## ⚠️ Remaining Work (Priority Order)
 
-```bash
-# Start all services
-./start-all-services.sh
+### 🔴 Priority 1 — Blocking Features
+1. **Web Feed: Quiz Post Card** — Web PostCard shows quiz label but no "Take Quiz" button or quiz stats (mobile has full card). Need to add quiz card UI to web PostCard.
+2. **Web Feed: Course/Exam/Question/Project post forms** — CreatePostModal on web only supports Text, Poll, Announcement, Question, Project (no Quiz, Course, Exam with their full form UIs).
+3. **Push Notifications (FCM)** — In-app bell works, but no push when app is closed.
+4. **DB Migration: SHARE enum** — Run on production Supabase: `ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'SHARE';`
 
-# Start mobile app
-cd apps/mobile && npm start
+### 🟡 Priority 2 — Important Enhancements
+5. **Web Feed: Repost button** — Mobile has full repost, web only has share (no repost-as-post)
+6. **Web Feed: Real-time comments** — Web shows inline comments but no Supabase real-time subscription (needs `useEffect` + Supabase channel per postId)
+7. **Enterprise SSO backend** — UI ready, Azure AD/Google Workspace integration not implemented
+8. **Video post support** — Currently images only (R2 + image picker). Need video upload + HLS streaming.
+9. **School-Feed notification bridge** — Grade published → notify student in-app via feed notification. Attendance absence → alert parent AND student via feed.
 
-# Run health check
-./health-check.sh
+### 🟢 Priority 3 — Polish
+10. **Web Profile page parity** — Mobile has rich ProfileScreen (activity, performance tabs, achievements). Web profile is simpler.
+11. **Search service integration** — Search service (port 3016) exists but web search UI not fully built out.
+12. **Admin portal** — apps/admin-portal exists but needs review of completeness.
+13. **FeedRanker author-affinity sub-query** — Sequential 2 queries in getUserSignals (minor optimization).
+
+---
+
+## 📁 Repository Structure
+
+```
+Stunity-Enterprise/
+├── apps/
+│   ├── mobile/          # React Native + Expo SDK 54
+│   ├── web/             # Next.js 14 (admin/teacher/parent web)
+│   ├── admin-portal/    # Separate admin app (in progress)
+│   └── docs/            # Documentation site
+├── services/            # 14 microservices
+├── packages/
+│   └── database/        # Shared Prisma schema + client
+├── docs/                # Architecture + feature docs
+└── scripts/             # Deployment + seed scripts
 ```
 
-**Default URLs**:
-- Mobile App: http://localhost:8081
-- API Gateway: http://localhost:3000
-- Database: localhost:5432
+---
+
+## 🌐 Service Map
+
+| Service | Port | Responsibility |
+|---------|------|----------------|
+| auth-service | 3001 | JWT auth, claim codes, SSO |
+| school-service | 3002 | School reg, templates, claim codes |
+| student-service | 3003 | Student profiles, enrollment, IDs |
+| teacher-service | 3004 | Teacher profiles, assignments |
+| class-service | 3005 | Classes, sections, rosters |
+| subject-service | 3006 | Subject definitions, curriculum |
+| grade-service | 3007 | Grades, GPA, analytics |
+| attendance-service | 3008 | Attendance tracking |
+| timetable-service | 3009 | Schedule generation |
+| feed-service | 3010 | Social feed, posts, media, quizzes, profiles |
+| messaging-service | 3011 | Direct messages |
+| club-service | 3012 | Clubs, events, discussions |
+| notification-service | 3013 | Push notification delivery |
+| analytics-service | 3014 | Live quizzes, XP, achievements, leaderboards |
 
 ---
 
-**Last Updated**: February 12, 2026  
-**Next Review**: After Question/Poll implementation  
-**Status**: �� All systems operational
+## 🔗 Quick Links
+- **Developer Guide:** [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)
+- **Feature Roadmap:** [NEXT_IMPLEMENTATION.md](./NEXT_IMPLEMENTATION.md)
+- **Architecture:** [docs/architecture/](./docs/architecture/)

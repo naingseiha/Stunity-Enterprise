@@ -1,13 +1,15 @@
 # 📱 Stunity Feed System Documentation
 
-**Version:** 3.0  
-**Last Updated:** February 5, 2026
+**Version:** 4.0  
+**Last Updated:** February 20, 2026
+
+> **v4.0 Changes:** Scale optimizations for millions of users (parallel DB queries, Redis SCAN, bulk view inserts), Cloud Run deployment fixes, scroll performance improvements, feed visibility fix for new posts, quiz detail complete, comment real-time fix, repost SHARE notification, analytics DB-level aggregation. See DEVELOPER_GUIDE.md for full details.
 
 ---
 
 ## Overview
 
-The Stunity Feed System is a comprehensive social media platform integrated into the school management system. It provides a LinkedIn-style experience for school community engagement with posts, analytics, media sharing, and real-time interactions.
+The Stunity Feed System is a comprehensive social media platform integrated into the school management system. It provides a LinkedIn + TikTok-style experience for school community engagement with posts, analytics, media sharing, and real-time interactions — designed to scale to millions of users on Google Cloud Run.
 
 ---
 

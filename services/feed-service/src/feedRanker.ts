@@ -457,53 +457,72 @@ export class FeedRanker {
             baseWhere.authorId = { in: signals.followingIds };
         }
 
-        const candidates = await this.prisma.post.findMany({
-            where: baseWhere,
-            include: {
-                author: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                        profilePictureUrl: true,
-                        role: true,
-                        isVerified: true,
-                    },
-                },
-                pollOptions: {
-                    include: {
-                        _count: { select: { votes: true } },
-                    },
-                },
-                quiz: {
-                    select: {
-                        id: true,
-                        // questions omitted — load on detail
-                        timeLimit: true,
-                        passingScore: true,
-                        totalPoints: true,
-                        resultsVisibility: true,
-                    },
-                },
-                postScore: true,
-                _count: {
-                    select: { likes: true, comments: true, views: true },
-                },
-                repostOf: {
-                    select: {
-                        id: true, content: true, title: true, postType: true, mediaUrls: true,
-                        createdAt: true, likesCount: true, commentsCount: true,
-                        author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } },
-                    },
+        const sharedInclude = {
+            author: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    profilePictureUrl: true,
+                    role: true,
+                    isVerified: true,
                 },
             },
-            orderBy: [
-                { isPinned: 'desc' },
-                { trendingScore: 'desc' },
-                { createdAt: 'desc' },
-            ],
-            take: 100, // candidate pool size (reduced from 200 for speed)
-        }) as unknown as PostWithRelations[];
+            pollOptions: {
+                include: {
+                    _count: { select: { votes: true } },
+                },
+            },
+            quiz: {
+                select: {
+                    id: true,
+                    timeLimit: true,
+                    passingScore: true,
+                    totalPoints: true,
+                    resultsVisibility: true,
+                },
+            },
+            postScore: true,
+            _count: {
+                select: { likes: true, comments: true, views: true },
+            },
+            repostOf: {
+                select: {
+                    id: true, content: true, title: true, postType: true, mediaUrls: true,
+                    createdAt: true, likesCount: true, commentsCount: true,
+                    author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } },
+                },
+            },
+        };
+
+        // Two-pool candidate fetch: 75 established (by trendingScore) + 25 fresh (last 6 hours)
+        // This guarantees new posts always enter the feed even before they have engagement.
+        const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+
+        const [established, fresh] = await Promise.all([
+            this.prisma.post.findMany({
+                where: baseWhere,
+                include: sharedInclude,
+                orderBy: [
+                    { isPinned: 'desc' },
+                    { trendingScore: 'desc' },
+                    { createdAt: 'desc' },
+                ],
+                take: 75,
+            }),
+            // Fresh posts (< 6h) that might not have trendingScore yet
+            this.prisma.post.findMany({
+                where: { ...baseWhere, createdAt: { gte: sixHoursAgo } },
+                include: sharedInclude,
+                orderBy: { createdAt: 'desc' },
+                take: 25,
+            }),
+        ]);
+
+        // Merge and deduplicate (established posts take priority if in both)
+        const seen = new Set<string>(established.map(p => p.id));
+        const freshOnly = fresh.filter(p => !seen.has(p.id));
+        const candidates = [...established, ...freshOnly] as unknown as PostWithRelations[];
 
         return candidates;
     }

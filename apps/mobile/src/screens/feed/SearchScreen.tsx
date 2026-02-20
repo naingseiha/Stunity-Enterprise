@@ -155,6 +155,9 @@ export default function SearchScreen() {
 
     const renderPostResult = ({ item, index }: { item: Post; index: number }) => {
         const authorName = item.author.name || `${item.author.firstName} ${item.author.lastName}`;
+        const isQuiz = item.postType === 'QUIZ';
+        const isPoll = item.postType === 'POLL';
+
         return (
             <Animated.View entering={FadeInDown.delay(30 * Math.min(index, 10)).duration(300)}>
                 <TouchableOpacity
@@ -173,14 +176,78 @@ export default function SearchScreen() {
                             <Text style={styles.postResultAuthor} numberOfLines={1}>{authorName}</Text>
                             <Text style={styles.postResultTime}>{formatRelativeTime(item.createdAt)}</Text>
                         </View>
-                        <View style={[styles.postTypeBadge, { backgroundColor: '#EEF2FF' }]}>
-                            <Text style={styles.postTypeText}>{item.postType}</Text>
+                        <View style={[styles.postTypeBadge, {
+                            backgroundColor: isQuiz ? '#FEF3C7' : isPoll ? '#EDE9FE' : '#EEF2FF'
+                        }]}>
+                            <Text style={[styles.postTypeText, {
+                                color: isQuiz ? '#D97706' : isPoll ? '#7C3AED' : '#6366F1'
+                            }]}>{item.postType}</Text>
                         </View>
                     </View>
 
-                    <Text style={styles.postResultContent} numberOfLines={3}>
+                    {/* Title (for quiz/course/resource posts) */}
+                    {item.title ? (
+                        <Text style={styles.postResultTitle} numberOfLines={1}>{item.title}</Text>
+                    ) : null}
+
+                    <Text style={styles.postResultContent} numberOfLines={isQuiz || isPoll ? 2 : 3}>
                         {item.content}
                     </Text>
+
+                    {/* ── Quiz Info Card ── */}
+                    {isQuiz && item.quizData && (() => {
+                        const quiz = item.quizData;
+                        const questionCount = quiz?.questions?.length || 0;
+                        return (
+                            <View style={styles.quizInfoBox}>
+                                <View style={styles.quizInfoRow}>
+                                    {questionCount > 0 && (
+                                        <View style={styles.quizInfoChip}>
+                                            <Ionicons name="help-circle" size={13} color="#D97706" />
+                                            <Text style={styles.quizInfoText}>{questionCount} Qs</Text>
+                                        </View>
+                                    )}
+                                    {quiz?.timeLimit ? (
+                                        <View style={styles.quizInfoChip}>
+                                            <Ionicons name="timer-outline" size={13} color="#D97706" />
+                                            <Text style={styles.quizInfoText}>{quiz.timeLimit}m</Text>
+                                        </View>
+                                    ) : null}
+                                    {quiz?.totalPoints ? (
+                                        <View style={styles.quizInfoChip}>
+                                            <Ionicons name="star" size={13} color="#D97706" />
+                                            <Text style={styles.quizInfoText}>{quiz.totalPoints} pts</Text>
+                                        </View>
+                                    ) : null}
+                                    {quiz?.passingScore ? (
+                                        <View style={styles.quizInfoChip}>
+                                            <Ionicons name="checkmark-circle" size={13} color="#10B981" />
+                                            <Text style={[styles.quizInfoText, { color: '#10B981' }]}>Pass: {quiz.passingScore}%</Text>
+                                        </View>
+                                    ) : null}
+                                </View>
+                                <View style={styles.quizStartBtn}>
+                                    <Ionicons name="play-circle" size={14} color="#fff" />
+                                    <Text style={styles.quizStartText}>Take Quiz</Text>
+                                </View>
+                            </View>
+                        );
+                    })()}
+
+                    {/* ── Poll Preview ── */}
+                    {isPoll && item.pollOptions && item.pollOptions.length > 0 && (
+                        <View style={styles.pollPreview}>
+                            {item.pollOptions.slice(0, 3).map((opt: any, i: number) => (
+                                <View key={opt.id || i} style={styles.pollOptionRow}>
+                                    <View style={styles.pollOptionDot} />
+                                    <Text style={styles.pollOptionText} numberOfLines={1}>{opt.text}</Text>
+                                </View>
+                            ))}
+                            {item.pollOptions.length > 3 && (
+                                <Text style={styles.pollMoreText}>+{item.pollOptions.length - 3} more options</Text>
+                            )}
+                        </View>
+                    )}
 
                     <View style={styles.postResultStats}>
                         <View style={styles.postStatItem}>
@@ -693,5 +760,90 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '500',
         color: '#6366F1',
+    },
+
+    // Post result title (for quiz/course/resource)
+    postResultTitle: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#1F2937',
+        marginBottom: 4,
+    },
+
+    // Quiz info box
+    quizInfoBox: {
+        backgroundColor: '#FFFBEB',
+        borderRadius: 10,
+        padding: 10,
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: '#FDE68A',
+        gap: 8,
+    },
+    quizInfoRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 6,
+    },
+    quizInfoChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: '#FEF3C7',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    quizInfoText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#D97706',
+    },
+    quizStartBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        backgroundColor: '#F59E0B',
+        paddingVertical: 7,
+        borderRadius: 8,
+    },
+    quizStartText: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#fff',
+    },
+
+    // Poll preview
+    pollPreview: {
+        backgroundColor: '#F5F3FF',
+        borderRadius: 10,
+        padding: 10,
+        marginBottom: 10,
+        gap: 6,
+        borderWidth: 1,
+        borderColor: '#EDE9FE',
+    },
+    pollOptionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    pollOptionDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#7C3AED',
+    },
+    pollOptionText: {
+        flex: 1,
+        fontSize: 13,
+        color: '#374151',
+    },
+    pollMoreText: {
+        fontSize: 12,
+        color: '#7C3AED',
+        fontWeight: '500',
+        marginTop: 2,
     },
 });

@@ -55,3 +55,8 @@ build/
 tmp/
 temp/
 *.tmp
+
+# Build artifacts
+*.apk
+*.ipa
+*.aab

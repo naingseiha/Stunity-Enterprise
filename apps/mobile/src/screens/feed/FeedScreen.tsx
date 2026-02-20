@@ -69,6 +69,128 @@ const getGreeting = (): string => {
 
 type NavigationProp = FeedStackScreenProps<'Feed'>['navigation'];
 
+// ─── M3 FIX: PerformanceCard memoized outside FeedScreen ────────────────────
+// Extracting the SVG activity rings into its own component prevents the heavy
+// SVG path recalculation from running on every FeedScreen re-render.
+interface PerformanceCardProps {
+  stats: { currentStreak: number; totalPoints: number; completedLessons: number; level: number };
+  user: { firstName: string; lastName: string; profilePictureUrl?: string } | null;
+  onPress: () => void;
+}
+
+const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPress }: PerformanceCardProps) {
+  const xpToNext = 250;
+  const xpProgress = stats.totalPoints % xpToNext;
+  const pct = Math.min((xpProgress / xpToNext) * 100, 100);
+  const nextLevel = stats.level + 1;
+  const size = 100;
+
+  const rings = [
+    { r: 42, sw: 8, pct: Math.min(xpProgress / xpToNext, 1), id: 'xp', c1: '#38BDF8', c2: '#0284C7' },
+    { r: 32, sw: 7, pct: Math.min(stats.completedLessons / Math.max(stats.completedLessons + 5, 10), 1), id: 'lesson', c1: '#34D399', c2: '#059669' },
+    { r: 22, sw: 6, pct: Math.min(stats.currentStreak / 7, 1), id: 'streak', c1: '#FB923C', c2: '#DC2626' },
+  ];
+
+  return (
+    <TouchableOpacity activeOpacity={0.9} style={perfCardStyles.card} onPress={onPress}>
+      <LinearGradient colors={['#ffffff', '#F0F9FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={perfCardStyles.inner}>
+        <View style={perfCardStyles.topRow}>
+          {/* Activity Rings */}
+          <View style={perfCardStyles.ringWrap}>
+            <View style={perfCardStyles.ringGlow} />
+            <Svg width={size} height={size}>
+              <Defs>
+                {rings.map(ring => (
+                  <SvgLinearGradient key={ring.id} id={`grad_${ring.id}`} x1="0" y1="0" x2="1" y2="1">
+                    <Stop offset="0" stopColor={ring.c1} />
+                    <Stop offset="1" stopColor={ring.c2} />
+                  </SvgLinearGradient>
+                ))}
+              </Defs>
+              {rings.map(ring => {
+                const circ = 2 * Math.PI * ring.r;
+                return (
+                  <React.Fragment key={ring.id}>
+                    <SvgCircle cx={size / 2} cy={size / 2} r={ring.r} stroke={`${ring.c1}18`} strokeWidth={ring.sw} fill="none" />
+                    <SvgCircle cx={size / 2} cy={size / 2} r={ring.r} stroke={`url(#grad_${ring.id})`} strokeWidth={ring.sw} fill="none"
+                      strokeDasharray={`${circ}`} strokeDashoffset={circ * (1 - ring.pct)}
+                      strokeLinecap="round" transform={`rotate(-90, ${size / 2}, ${size / 2})`} />
+                  </React.Fragment>
+                );
+              })}
+            </Svg>
+            <View style={perfCardStyles.ringInner}>
+              <Text style={perfCardStyles.ringValue}>{stats.level}</Text>
+              <Text style={perfCardStyles.ringLabel}>LEVEL</Text>
+            </View>
+          </View>
+
+          {/* Stats */}
+          <View style={perfCardStyles.stats}>
+            <View style={perfCardStyles.statRow}>
+              <View style={[perfCardStyles.statIcon, { backgroundColor: '#EFF6FF' }]}><Ionicons name="diamond" size={13} color="#3B82F6" /></View>
+              <Text style={perfCardStyles.statVal}>{stats.totalPoints.toLocaleString()} <Text style={perfCardStyles.statLbl}>XP</Text></Text>
+            </View>
+            <View style={perfCardStyles.statRow}>
+              <View style={[perfCardStyles.statIcon, { backgroundColor: '#ECFDF5' }]}><Ionicons name="checkmark-circle" size={13} color="#10B981" /></View>
+              <Text style={perfCardStyles.statVal}>{stats.completedLessons} <Text style={perfCardStyles.statLbl}>Lessons</Text></Text>
+            </View>
+            <View style={perfCardStyles.statRow}>
+              <View style={[perfCardStyles.statIcon, { backgroundColor: '#FFF7ED' }]}><Ionicons name="flame" size={13} color="#F97316" /></View>
+              <Text style={perfCardStyles.statVal}>{stats.currentStreak} <Text style={perfCardStyles.statLbl}>Day Streak</Text></Text>
+            </View>
+          </View>
+
+          {/* Avatar */}
+          <View style={perfCardStyles.avatarWrap}>
+            <Avatar uri={user?.profilePictureUrl} name={user ? `${user.firstName} ${user.lastName}` : 'User'} size="xl" showBorder={false} gradientBorder="none" />
+            <View style={perfCardStyles.avatarBadge}><Text style={perfCardStyles.avatarBadgeText}>{stats.level}</Text></View>
+          </View>
+        </View>
+
+        {/* XP Bar */}
+        <View style={perfCardStyles.barSection}>
+          <View style={perfCardStyles.barLabels}>
+            <Text style={perfCardStyles.barLeft}>{xpProgress} / {xpToNext} XP</Text>
+            <Text style={perfCardStyles.barRight}>Level {nextLevel}</Text>
+          </View>
+          <View style={perfCardStyles.barBg}>
+            <LinearGradient colors={['#38BDF8', '#0EA5E9', '#0284C7'] as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[perfCardStyles.barFill, { width: `${pct}%` } as any]} />
+          </View>
+        </View>
+        <View style={{ position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(14,165,233,0.04)', top: -35, right: -25 }} />
+        <View style={{ position: 'absolute', width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(14,165,233,0.03)', bottom: -25, left: -20 }} />
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+});
+
+const perfCardStyles = StyleSheet.create({
+  card: { marginHorizontal: 16, marginBottom: 12, borderRadius: 20, overflow: 'hidden' },
+  inner: { padding: 16, borderRadius: 20 },
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  ringWrap: { width: 100, height: 100, alignItems: 'center', justifyContent: 'center' },
+  ringGlow: { position: 'absolute', width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(14,165,233,0.06)' },
+  ringInner: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
+  ringValue: { fontSize: 22, fontWeight: '800', color: '#0284C7' },
+  ringLabel: { fontSize: 8, fontWeight: '700', color: '#64748B', letterSpacing: 1 },
+  stats: { flex: 1, gap: 6 },
+  statRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  statIcon: { width: 22, height: 22, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+  statVal: { fontSize: 13, fontWeight: '700', color: '#1E293B' },
+  statLbl: { fontSize: 11, fontWeight: '400', color: '#64748B' },
+  avatarWrap: { alignItems: 'center', position: 'relative' },
+  avatarBadge: { position: 'absolute', bottom: -4, right: -4, backgroundColor: '#0EA5E9', width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff' },
+  avatarBadgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
+  barSection: { gap: 4 },
+  barLabels: { flexDirection: 'row', justifyContent: 'space-between' },
+  barLeft: { fontSize: 11, fontWeight: '600', color: '#0284C7' },
+  barRight: { fontSize: 11, fontWeight: '500', color: '#64748B' },
+  barBg: { height: 6, backgroundColor: '#E0F2FE', borderRadius: 3, overflow: 'hidden' },
+  barFill: { height: '100%', borderRadius: 3 },
+});
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function FeedScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
@@ -79,28 +201,27 @@ export default function FeedScreen() {
   const tabIndicatorStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: tabIndicatorX.value }],
   }));
-  const {
-    feedMode,
-    toggleFeedMode,
-    posts,
-    isLoadingPosts,
-    hasMorePosts,
-    fetchPosts,
-    // Real-time
-    subscribeToFeed,
-    unsubscribeFromFeed,
-    pendingPosts,
-    applyPendingPosts,
-    // Post actions
-    likePost,
-    unlikePost,
-    bookmarkPost,
-    voteOnPoll,
-    sharePost,
-    trackPostView,
-    initializeRecommendations,
-    seedFeed,
-  } = useFeedStore();
+
+  // M1 FIX: Granular Zustand selectors — each selector only re-renders when its slice changes.
+  // Previously, one big destructure caused the whole screen to re-render on any store change.
+  const feedMode = useFeedStore(s => s.feedMode);
+  const toggleFeedMode = useFeedStore(s => s.toggleFeedMode);
+  const posts = useFeedStore(s => s.posts);
+  const isLoadingPosts = useFeedStore(s => s.isLoadingPosts);
+  const hasMorePosts = useFeedStore(s => s.hasMorePosts);
+  const fetchPosts = useFeedStore(s => s.fetchPosts);
+  const subscribeToFeed = useFeedStore(s => s.subscribeToFeed);
+  const unsubscribeFromFeed = useFeedStore(s => s.unsubscribeFromFeed);
+  const pendingPosts = useFeedStore(s => s.pendingPosts);
+  const applyPendingPosts = useFeedStore(s => s.applyPendingPosts);
+  const likePost = useFeedStore(s => s.likePost);
+  const unlikePost = useFeedStore(s => s.unlikePost);
+  const bookmarkPost = useFeedStore(s => s.bookmarkPost);
+  const voteOnPoll = useFeedStore(s => s.voteOnPoll);
+  const sharePost = useFeedStore(s => s.sharePost);
+  const trackPostView = useFeedStore(s => s.trackPostView);
+  const initializeRecommendations = useFeedStore(s => s.initializeRecommendations);
+  const seedFeed = useFeedStore(s => s.seedFeed);
   const unreadNotifications = useNotificationStore(state => state.unreadCount);
 
   const [refreshing, setRefreshing] = useState(false);
@@ -275,31 +396,33 @@ export default function FeedScreen() {
     setRefreshing(false);
   }, [fetchPosts]);
 
-  // Phase 1 Day 5: Prefetch next page at 50% scroll (earlier than onEndReached)
-  const [hasPrefetched, setHasPrefetched] = useState(false);
-  
+  // Prefetch tracking — useRef instead of useState: no re-render during scroll
+  const hasPrefetchedRef = useRef(false);
+  const lastScrollCheck = React.useRef(0);
+
   const handleScroll = useCallback((event: any) => {
-    // TEMPORARY: Always prefetch until native module rebuilt
-    // if (!networkQualityService.shouldPrefetch()) return; // Only prefetch on good networks
-    if (hasPrefetched || isLoadingPosts || !hasMorePosts) return;
+    const now = Date.now();
+    if (now - lastScrollCheck.current < 500) return; // Throttle to 2 checks/sec
+    lastScrollCheck.current = now;
+
+    if (hasPrefetchedRef.current || isLoadingPosts || !hasMorePosts) return;
 
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
     const scrollPercentage = (contentOffset.y / (contentSize.height - layoutMeasurement.height)) * 100;
 
-    // Prefetch when user reaches 50% of content (proactive loading)
     if (scrollPercentage >= 50) {
-      console.log('⚡ [FeedScreen] Prefetching next page at 50% scroll');
-      setHasPrefetched(true);
-      fetchPosts(); // Load next page in background
+      hasPrefetchedRef.current = true;
+      fetchPosts();
     }
-  }, [hasPrefetched, isLoadingPosts, hasMorePosts, fetchPosts]);
+  }, [isLoadingPosts, hasMorePosts, fetchPosts]);
 
-  // Reset prefetch flag when new data loads
+  // Reset prefetch flag when new data loads (ref — no re-render)
   useEffect(() => {
     if (!isLoadingPosts) {
-      setHasPrefetched(false);
+      hasPrefetchedRef.current = false;
     }
   }, [isLoadingPosts]);
+
 
   const handleLoadMore = useCallback(() => {
     if (!isLoadingPosts && hasMorePosts) {
@@ -411,133 +534,12 @@ export default function FeedScreen() {
 
   const renderHeader = useCallback(() => (
     <View style={styles.headerSection}>
-      {/* Performance Card — Compact XP Dashboard */}
-      <TouchableOpacity activeOpacity={0.9} style={styles.perfCard} onPress={() => navigation.getParent()?.navigate('ProfileTab')}>
-        <LinearGradient colors={['#ffffff', '#F0F9FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.perfCardInner}>
-          <View style={styles.perfTopRow}>
-            {/* Apple Watch Activity Rings */}
-            {(() => {
-              const size = 100;
-              const xpToNext = 250;
-              const xpProgress = learningStats.totalPoints % xpToNext;
-              const xpPct = xpToNext > 0 ? Math.min(xpProgress / xpToNext, 1) : 0;
-              const lessonsPct = Math.min(learningStats.completedLessons / Math.max(learningStats.completedLessons + 5, 10), 1);
-              const streakPct = Math.min(learningStats.currentStreak / 7, 1);
-
-              const rings = [
-                { r: 42, sw: 8, pct: xpPct, id: 'xp', c1: '#38BDF8', c2: '#0284C7' },
-                { r: 32, sw: 7, pct: lessonsPct, id: 'lesson', c1: '#34D399', c2: '#059669' },
-                { r: 22, sw: 6, pct: streakPct, id: 'streak', c1: '#FB923C', c2: '#DC2626' },
-              ];
-
-              return (
-                <View style={styles.perfRingWrap}>
-                  <View style={styles.perfRingGlow} />
-                  <Svg width={size} height={size}>
-                    <Defs>
-                      {rings.map(ring => (
-                        <SvgLinearGradient key={ring.id} id={`grad_${ring.id}`} x1="0" y1="0" x2="1" y2="1">
-                          <Stop offset="0" stopColor={ring.c1} />
-                          <Stop offset="1" stopColor={ring.c2} />
-                        </SvgLinearGradient>
-                      ))}
-                    </Defs>
-                    {rings.map(ring => {
-                      const circ = 2 * Math.PI * ring.r;
-                      return (
-                        <React.Fragment key={ring.id}>
-                          <SvgCircle cx={size / 2} cy={size / 2} r={ring.r}
-                            stroke={`${ring.c1}18`} strokeWidth={ring.sw} fill="none" />
-                          <SvgCircle cx={size / 2} cy={size / 2} r={ring.r}
-                            stroke={`url(#grad_${ring.id})`} strokeWidth={ring.sw} fill="none"
-                            strokeDasharray={`${circ}`}
-                            strokeDashoffset={circ * (1 - ring.pct)}
-                            strokeLinecap="round"
-                            transform={`rotate(-90, ${size / 2}, ${size / 2})`} />
-                        </React.Fragment>
-                      );
-                    })}
-                  </Svg>
-                  <View style={styles.perfRingInner}>
-                    <Text style={styles.perfRingValue}>{learningStats.level}</Text>
-                    <Text style={styles.perfRingLabel}>LEVEL</Text>
-                  </View>
-                </View>
-              );
-            })()}
-
-            {/* Stats Column */}
-            <View style={styles.perfStats}>
-              <View style={styles.perfStatRow}>
-                <View style={[styles.perfStatIcon, { backgroundColor: '#EFF6FF' }]}>
-                  <Ionicons name="diamond" size={13} color="#3B82F6" />
-                </View>
-                <View>
-                  <Text style={styles.perfStatVal}>{learningStats.totalPoints.toLocaleString()} <Text style={styles.perfStatLbl}>XP</Text></Text>
-                </View>
-              </View>
-              <View style={styles.perfStatRow}>
-                <View style={[styles.perfStatIcon, { backgroundColor: '#ECFDF5' }]}>
-                  <Ionicons name="checkmark-circle" size={13} color="#10B981" />
-                </View>
-                <View>
-                  <Text style={styles.perfStatVal}>{learningStats.completedLessons} <Text style={styles.perfStatLbl}>Lessons</Text></Text>
-                </View>
-              </View>
-              <View style={styles.perfStatRow}>
-                <View style={[styles.perfStatIcon, { backgroundColor: '#FFF7ED' }]}>
-                  <Ionicons name="flame" size={13} color="#F97316" />
-                </View>
-                <View>
-                  <Text style={styles.perfStatVal}>{learningStats.currentStreak} <Text style={styles.perfStatLbl}>Day Streak</Text></Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Avatar */}
-            <View style={styles.perfAvatarWrap}>
-              <Avatar
-                uri={user?.profilePictureUrl}
-                name={user ? `${user.firstName} ${user.lastName}` : 'User'}
-                size="xl"
-                showBorder={false}
-                gradientBorder="none"
-              />
-              <View style={styles.perfAvatarBadge}>
-                <Text style={styles.perfAvatarBadgeText}>{learningStats.level}</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* XP Progress Bar */}
-          {(() => {
-            const xpToNext = 250;
-            const xpProgress = learningStats.totalPoints % xpToNext;
-            const nextLevel = learningStats.level + 1;
-            const pct = Math.min((xpProgress / xpToNext) * 100, 100);
-            return (
-              <View style={styles.perfBarSection}>
-                <View style={styles.perfBarLabels}>
-                  <Text style={styles.perfBarLeft}>{xpProgress} / {xpToNext} XP</Text>
-                  <Text style={styles.perfBarRight}>Level {nextLevel}</Text>
-                </View>
-                <View style={styles.perfBarBg}>
-                  <LinearGradient
-                    colors={['#38BDF8', '#0EA5E9', '#0284C7'] as any}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={[styles.perfBarFill, { width: `${pct}%` } as any]}
-                  />
-                </View>
-              </View>
-            );
-          })()}
-          {/* Decorative abstract circles */}
-          <View style={{ position: 'absolute', width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(14,165,233,0.04)', top: -35, right: -25 }} />
-          <View style={{ position: 'absolute', width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(14,165,233,0.03)', bottom: -25, left: -20 }} />
-          <View style={{ position: 'absolute', width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(14,165,233,0.05)', top: 20, right: 60 }} />
-        </LinearGradient>
-      </TouchableOpacity>
+      {/* M3 FIX: PerformanceCard is memoized — SVG rings only re-render when stats change */}
+      <PerformanceCard
+        stats={learningStats}
+        user={user}
+        onPress={() => navigation.getParent()?.navigate('ProfileTab')}
+      />
 
       {/* Featured Categories */}
       <View style={styles.categoriesSection}>
@@ -547,88 +549,41 @@ export default function FeedScreen() {
         />
       </View>
 
-
       {/* Create Post Card — E-Learning Focused */}
       <View style={styles.createPostCard}>
-        {/* Top row: Create post input */}
-        <TouchableOpacity
-          onPress={handleCreatePost}
-          activeOpacity={0.8}
-          style={styles.createPostRow}
-        >
-          <Avatar
-            uri={user?.profilePictureUrl}
-            name={user ? `${user.firstName} ${user.lastName}` : 'User'}
-            size="md"
-            variant="post"
-          />
+        <TouchableOpacity onPress={handleCreatePost} activeOpacity={0.8} style={styles.createPostRow}>
+          <Avatar uri={user?.profilePictureUrl} name={user ? `${user.firstName} ${user.lastName}` : 'User'} size="md" variant="post" />
           <View style={styles.createPostInputFake}>
-            <Text style={styles.createPostPlaceholder}>
-              Share your learning...
-            </Text>
+            <Text style={styles.createPostPlaceholder}>Share your learning...</Text>
           </View>
           <TouchableOpacity onPress={handleCreatePost} style={styles.createPostMediaButton}>
             <Ionicons name="images-outline" size={20} color="#0284C7" />
           </TouchableOpacity>
         </TouchableOpacity>
 
-        {/* Gradient Divider */}
-        <LinearGradient
-          colors={['transparent', '#E5E7EB', 'transparent']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.storyDivider}
-        />
+        <LinearGradient colors={['transparent', '#E5E7EB', 'transparent']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.storyDivider} />
 
-        {/* Quick Action Bar */}
         <View style={styles.quickActionsInCard}>
-          <TouchableOpacity
-            onPress={handleAskQuestion}
-            activeOpacity={0.7}
-            style={styles.inCardAction}
-          >
-            <LinearGradient colors={['#7DD3FC', '#0EA5E9']} style={styles.quickActionIcon}>
-              <Ionicons name="help-circle" size={18} color="#fff" />
-            </LinearGradient>
+          <TouchableOpacity onPress={handleAskQuestion} activeOpacity={0.7} style={styles.inCardAction}>
+            <LinearGradient colors={['#7DD3FC', '#0EA5E9']} style={styles.quickActionIcon}><Ionicons name="help-circle" size={18} color="#fff" /></LinearGradient>
             <Text style={styles.inCardActionText}>Ask</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={handleCreateQuiz}
-            activeOpacity={0.7}
-            style={styles.inCardAction}
-          >
-            <LinearGradient colors={['#34D399', '#10B981']} style={styles.quickActionIcon}>
-              <Ionicons name="bulb" size={18} color="#fff" />
-            </LinearGradient>
+          <TouchableOpacity onPress={handleCreateQuiz} activeOpacity={0.7} style={styles.inCardAction}>
+            <LinearGradient colors={['#34D399', '#10B981']} style={styles.quickActionIcon}><Ionicons name="bulb" size={18} color="#fff" /></LinearGradient>
             <Text style={styles.inCardActionText}>Quiz</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={handleCreatePoll}
-            activeOpacity={0.7}
-            style={styles.inCardAction}
-          >
-            <LinearGradient colors={['#7DD3FC', '#0EA5E9']} style={styles.quickActionIcon}>
-              <Ionicons name="bar-chart" size={18} color="#fff" />
-            </LinearGradient>
+          <TouchableOpacity onPress={handleCreatePoll} activeOpacity={0.7} style={styles.inCardAction}>
+            <LinearGradient colors={['#7DD3FC', '#0EA5E9']} style={styles.quickActionIcon}><Ionicons name="bar-chart" size={18} color="#fff" /></LinearGradient>
             <Text style={styles.inCardActionText}>Poll</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={handleCreateResource}
-            activeOpacity={0.7}
-            style={styles.inCardAction}
-          >
-            <LinearGradient colors={['#F472B6', '#EC4899']} style={styles.quickActionIcon}>
-              <Ionicons name="book" size={18} color="#fff" />
-            </LinearGradient>
+          <TouchableOpacity onPress={handleCreateResource} activeOpacity={0.7} style={styles.inCardAction}>
+            <LinearGradient colors={['#F472B6', '#EC4899']} style={styles.quickActionIcon}><Ionicons name="book" size={18} color="#fff" /></LinearGradient>
             <Text style={styles.inCardActionText}>Resource</Text>
           </TouchableOpacity>
         </View>
       </View>
     </View>
-  ), [handleCreatePost, user, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, activeSubjectFilter, handleSubjectFilterChange]);
+  ), [handleCreatePost, user, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, activeSubjectFilter, handleSubjectFilterChange, navigation]);
 
   const renderPost = useCallback(({ item, index }: { item: Post; index: number }) => {
     // Only animate the first 3 posts on initial load, never on subsequent scrolls
@@ -833,8 +788,8 @@ export default function FeedScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         // ── FlashList performance props for 120Hz smooth scrolling ──
-        drawDistance={250}
-        estimatedItemSize={400} // Critical: Reduces layout thrashing
+        drawDistance={600}        // Pre-render 1.5 screens off-screen — eliminates blank cells on fast scroll
+        estimatedItemSize={400}   // Critical: Reduces layout thrashing
         overrideItemLayout={(layout, item) => {
           // Pre-calculate heights to eliminate layout jumps (massive perf boost)
           let height = 250; // Base height (header + footer + padding)
@@ -851,15 +806,14 @@ export default function FeedScreen() {
           if (item.mediaUrls && item.mediaUrls.length > 0) return 'media';
           return 'text';
         }}
-        // Critical for 120Hz: Remove expensive operations during scroll
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={5}
-        updateCellsBatchingPeriod={50}
+        // iOS: removeClippedSubviews causes native layer hide/show jank — Android only
+        removeClippedSubviews={Platform.OS === 'android'}
+        maxToRenderPerBatch={8}           // Render more per batch for smoother catch-up
+        updateCellsBatchingPeriod={30}    // ~30fps batch flush (was 50ms=20fps)
         initialNumToRender={8}
-        windowSize={5}
-        // Optimize interactions during scroll
-        scrollEventThrottle={16} // 60fps minimum, allows 120Hz on capable devices
-        decelerationRate="normal" // Smooth deceleration
+        windowSize={7}                    // 3 screens above + below (was 5 = 2.5)
+        scrollEventThrottle={16}          // 60fps — allows 120Hz on capable devices
+        decelerationRate="normal"         // Smooth iOS momentum
       />
 
       {/* Post Analytics Modal */}
@@ -963,138 +917,6 @@ const styles = StyleSheet.create({
   },
   postWrapper: {
     marginBottom: 0,
-  },
-
-  // ── Performance Card (v3 — Profile-matching design) ──
-  perfCard: {
-    marginHorizontal: 14,
-    marginTop: 10,
-    borderRadius: 20,
-    overflow: 'hidden',
-    backgroundColor: '#fff',
-    shadowColor: '#0EA5E9',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    elevation: 4,
-  },
-  perfCardInner: {
-    padding: 16,
-    borderRadius: 20,
-  },
-  perfTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  perfRingWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  perfRingGlow: {
-    position: 'absolute',
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(14,165,233,0.08)',
-  },
-  perfRingInner: {
-    position: 'absolute',
-    alignItems: 'center',
-  },
-  perfRingLabel: {
-    fontSize: 7,
-    fontWeight: '700',
-    color: '#9CA3AF',
-    letterSpacing: 1.2,
-  },
-  perfRingValue: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: '#1F2937',
-    letterSpacing: -1,
-  },
-  perfStats: {
-    flex: 1,
-    gap: 8,
-  },
-  perfStatRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  perfStatIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 7,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  perfStatVal: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#1F2937',
-  },
-  perfStatLbl: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    fontWeight: '500',
-  },
-  perfAvatarWrap: {
-    position: 'relative',
-  },
-  perfAvatarBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    backgroundColor: '#0EA5E9',
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  perfAvatarBadgeText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#fff',
-  },
-  perfBarSection: {
-    marginTop: 14,
-  },
-  perfBarLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  perfBarLeft: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#0EA5E9',
-  },
-  perfBarRight: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#9CA3AF',
-  },
-  perfBarBg: {
-    height: 10,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 5,
-    overflow: 'hidden',
-  },
-  perfBarFill: {
-    height: '100%',
-    borderRadius: 5,
-  },
-  perfBarHint: {
-    fontSize: 10,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    marginTop: 4,
   },
 
   // ── Featured Categories Section ──

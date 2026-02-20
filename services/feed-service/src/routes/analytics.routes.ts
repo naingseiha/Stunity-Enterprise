@@ -66,84 +66,94 @@ router.post('/posts/:id/view', authenticateToken, async (req: AuthRequest, res: 
 router.get('/posts/:id/analytics', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const postId = req.params.id;
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
-      include: {
-        views: {
-          select: { id: true, viewedAt: true, duration: true, source: true, userId: true },
-        },
-        likes: { select: { userId: true, createdAt: true } },
-        comments: { select: { id: true, createdAt: true, authorId: true } },
-        bookmarks: { select: { userId: true, createdAt: true } },
-      },
-    });
-
-    if (!post) {
-      return res.status(404).json({ success: false, error: 'Post not found' });
-    }
-
-    // Check if user is author or admin
-    if (post.authorId !== req.user!.id && req.user!.role !== 'ADMIN') {
-      return res.status(403).json({ success: false, error: 'Not authorized' });
-    }
-
     const now = new Date();
     const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const last30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    // Calculate metrics
-    const totalViews = post.views.length;
-    const uniqueViewers = new Set(post.views.filter(v => v.userId).map(v => v.userId)).size;
-    const avgDuration = post.views.filter(v => v.duration).reduce((sum, v) => sum + (v.duration || 0), 0) / (post.views.filter(v => v.duration).length || 1);
-
-    const views24h = post.views.filter(v => new Date(v.viewedAt) >= last24h).length;
-    const views7d = post.views.filter(v => new Date(v.viewedAt) >= last7d).length;
-    const views30d = post.views.filter(v => new Date(v.viewedAt) >= last30d).length;
-
-    const likes24h = post.likes.filter(l => new Date(l.createdAt) >= last24h).length;
-    const comments24h = post.comments.filter(c => new Date(c.createdAt) >= last24h).length;
-
-    // Engagement rate: (likes + comments + bookmarks) / views * 100
-    const engagementRate = totalViews > 0
-      ? ((post.likes.length + post.comments.length + post.bookmarks.length) / totalViews * 100).toFixed(2)
-      : 0;
-
-    // Views by source
-    const viewsBySource: Record<string, number> = {};
-    post.views.forEach(v => {
-      const src = v.source || 'feed';
-      viewsBySource[src] = (viewsBySource[src] || 0) + 1;
+    // Verify post exists and user is authorized — fetch only scalar fields
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { authorId: true, sharesCount: true, createdAt: true, _count: { select: { likes: true, comments: true, bookmarks: true, views: true } } },
     });
 
-    // Daily views for chart (last 7 days)
-    const dailyViews: { date: string; views: number }[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      const dateStr = date.toISOString().split('T')[0];
-      const dayViews = post.views.filter(v => {
-        const vDate = new Date(v.viewedAt).toISOString().split('T')[0];
-        return vDate === dateStr;
-      }).length;
-      dailyViews.push({ date: dateStr, views: dayViews });
+    if (!post) {
+      return res.status(404).json({ success: false, error: 'Post not found' });
     }
+    if (post.authorId !== req.user!.id && req.user!.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, error: 'Not authorized' });
+    }
+
+    // Run all DB-level aggregations in parallel (no full row fetches)
+    const [
+      uniqueViewers,
+      avgDurationResult,
+      views24h, views7d, views30d,
+      likes24h, comments24h,
+      viewsBySourceRaw,
+      dailyViewsRaw,
+    ] = await Promise.all([
+      // Distinct viewers count
+      prisma.postView.findMany({ where: { postId, userId: { not: null } }, select: { userId: true }, distinct: ['userId'] })
+        .then(r => r.length),
+      // Average watch duration
+      prisma.postView.aggregate({ where: { postId, duration: { not: null } }, _avg: { duration: true } }),
+      // Period view counts
+      prisma.postView.count({ where: { postId, viewedAt: { gte: last24h } } }),
+      prisma.postView.count({ where: { postId, viewedAt: { gte: last7d } } }),
+      prisma.postView.count({ where: { postId, viewedAt: { gte: last30d } } }),
+      // Period engagement counts
+      prisma.like.count({ where: { postId, createdAt: { gte: last24h } } }),
+      prisma.comment.count({ where: { postId, createdAt: { gte: last24h } } }),
+      // Views by source
+      prisma.$queryRaw<{ source: string; count: bigint }[]>`
+        SELECT COALESCE(source, 'feed') as source, COUNT(*)::int as count
+        FROM post_views WHERE "postId" = ${postId}
+        GROUP BY COALESCE(source, 'feed')
+      `,
+      // Daily views last 7 days
+      prisma.$queryRaw<{ date: string; views: bigint }[]>`
+        SELECT TO_CHAR("viewedAt"::date, 'YYYY-MM-DD') as date, COUNT(*)::int as views
+        FROM post_views WHERE "postId" = ${postId} AND "viewedAt" >= ${last7d}
+        GROUP BY "viewedAt"::date ORDER BY "viewedAt"::date ASC
+      `,
+    ]);
+
+    const totalViews = post._count.views;
+    const avgDuration = Math.round(avgDurationResult._avg.duration || 0);
+    const engagementRate = totalViews > 0
+      ? parseFloat(((post._count.likes + post._count.comments + post._count.bookmarks) / totalViews * 100).toFixed(2))
+      : 0;
+
+    // Build viewsBySource map
+    const viewsBySource: Record<string, number> = {};
+    viewsBySourceRaw.forEach(r => { viewsBySource[r.source] = Number(r.count); });
+
+    // Build full 7-day chart (fill gaps with 0)
+    const dailyMap: Record<string, number> = {};
+    dailyViewsRaw.forEach(r => { dailyMap[r.date] = Number(r.views); });
+    const dailyViews = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(now.getTime() - (6 - i) * 24 * 60 * 60 * 1000);
+      const dateStr = d.toISOString().split('T')[0];
+      return { date: dateStr, views: dailyMap[dateStr] || 0 };
+    });
 
     res.json({
       success: true,
       analytics: {
         totalViews,
         uniqueViewers,
-        avgDuration: Math.round(avgDuration),
+        avgDuration,
         views24h,
         views7d,
         views30d,
-        likes: post.likes.length,
+        likes: post._count.likes,
         likes24h,
-        comments: post.comments.length,
+        comments: post._count.comments,
         comments24h,
         shares: post.sharesCount || 0,
-        bookmarks: post.bookmarks.length,
-        engagementRate: parseFloat(engagementRate as string),
+        bookmarks: post._count.bookmarks,
+        engagementRate,
         viewsBySource,
         dailyViews,
         createdAt: post.createdAt,

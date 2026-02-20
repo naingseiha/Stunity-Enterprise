@@ -37,7 +37,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Avatar } from '@/components/common';
-import { useFeedStore, useAuthStore } from '@/stores';
+import { useFeedStore, feedStore, useAuthStore } from '@/stores';
 import { Comment } from '@/types';
 import { formatRelativeTime } from '@/utils';
 import { Colors, Shadows } from '@/config';
@@ -85,8 +85,10 @@ export default function CommentsScreen() {
           filter: `postId=eq.${postId}`,
         },
         (payload) => {
-          console.log('💬 [Comments] New comment received:', payload.new);
-          // Re-fetch to get full populated data (author details)
+          const incoming = payload.new as any;
+          // Skip own comments — addComment() already optimistically added them to state
+          if (incoming?.authorId === user?.id) return;
+          console.log('💬 [Comments] New comment from other user:', incoming?.id);
           fetchComments(postId);
         }
       )
@@ -98,9 +100,15 @@ export default function CommentsScreen() {
           table: 'comments',
         },
         (payload) => {
+          // Handle DELETE directly in state — no round-trip needed
           const deletedId = (payload.old as any)?.id;
           if (deletedId) {
-            fetchComments(postId);
+            feedStore.setState((state) => ({
+              comments: {
+                ...state.comments,
+                [postId]: (state.comments[postId] || []).filter(c => c.id !== deletedId),
+              },
+            }));
           }
         }
       )

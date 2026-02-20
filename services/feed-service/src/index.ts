@@ -1,8 +1,9 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load environment variables from root .env FIRST before other imports
+// Load environment variables — root .env in local dev, Cloud Run env vars in production
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config(); // fallback: also check service-local .env
 
 import express, { Request, Response } from 'express';
 import cors from 'cors';
@@ -38,7 +39,7 @@ import experienceRouter from './routes/experience.routes';
 import achievementsRouter from './routes/achievements.routes';
 
 const app = express();
-const PORT = 3010;
+const PORT = parseInt(process.env.PORT || '3010', 10);
 
 // ─── Graceful Shutdown ─────────────────────────────────────────────
 let server: any;
@@ -76,58 +77,69 @@ warmUpDb();
 setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000);
 
 // ─── Background Jobs ──────────────────────────────────────────────
-setInterval(async () => {
-  try {
-    const count = await feedRanker.refreshPostScores();
-    console.log(`🧠 [FeedRanker] Refreshed ${count} post scores`);
-  } catch (err) {
-    console.error('❌ [FeedRanker] Score refresh error:', err);
-  }
-}, 5 * 60 * 1000);
+// CLOUD RUN NOTE: On Cloud Run, multiple instances can run simultaneously.
+// Set ENABLE_BACKGROUND_JOBS=true on exactly ONE instance (via Cloud Run
+// min-instances=1 with a dedicated revision, or just accept duplicate runs
+// on free tier since refreshPostScores is idempotent and low-frequency).
+// Set DISABLE_BACKGROUND_JOBS=true to opt a specific instance OUT.
+const runBackgroundJobs = process.env.DISABLE_BACKGROUND_JOBS !== 'true';
 
-setTimeout(async () => {
-  try {
-    const count = await feedRanker.refreshPostScores();
-    console.log(`🧠 [FeedRanker] Initial score refresh: ${count} posts`);
-  } catch (err) {
-    console.error('❌ [FeedRanker] Initial score refresh error:', err);
-  }
-}, 5000);
-
-// Pre-compute ranked feeds for top 100 active users every 5 minutes
-setInterval(async () => {
-  try {
-    // Find the 100 most recently active users
-    const activeUsers = await prisma.userFeedSignal.findMany({
-      select: { userId: true },
-      orderBy: { lastInteraction: 'desc' },
-      distinct: ['userId'],
-      take: 100,
-    });
-
-    let cached = 0;
-    for (const { userId } of activeUsers) {
-      try {
-        const rankedFeed = await feedRanker.generateFeed(userId, { page: 1, limit: 20 });
-        if (rankedFeed.posts.length > 0) {
-          const { feedCache: cache } = require('./redis');
-          await cache.set(
-            `feed:precomputed:${userId}`,
-            JSON.stringify(rankedFeed.posts.map((p: any) => p.id)),
-            300 // 5min TTL
-          );
-          cached++;
-        }
-      } catch { /* skip individual user errors */ }
+if (runBackgroundJobs) {
+  setInterval(async () => {
+    try {
+      const count = await feedRanker.refreshPostScores();
+      console.log(`🧠 [FeedRanker] Refreshed ${count} post scores`);
+    } catch (err) {
+      console.error('❌ [FeedRanker] Score refresh error:', err);
     }
+  }, 5 * 60 * 1000);
 
-    if (cached > 0) {
-      console.log(`📦 [FeedCache] Pre-computed feeds for ${cached}/${activeUsers.length} active users`);
+  setTimeout(async () => {
+    try {
+      const count = await feedRanker.refreshPostScores();
+      console.log(`🧠 [FeedRanker] Initial score refresh: ${count} posts`);
+    } catch (err) {
+      console.error('❌ [FeedRanker] Initial score refresh error:', err);
     }
-  } catch (err) {
-    console.error('❌ [FeedCache] Pre-compute error:', err);
-  }
-}, 5 * 60 * 1000);
+  }, 5000);
+
+  // Pre-compute ranked feeds for top 100 active users every 5 minutes
+  setInterval(async () => {
+    try {
+      // Find the 100 most recently active users
+      const activeUsers = await prisma.userFeedSignal.findMany({
+        select: { userId: true },
+        orderBy: { lastInteraction: 'desc' },
+        distinct: ['userId'],
+        take: 100,
+      });
+
+      let cached = 0;
+      for (const { userId } of activeUsers) {
+        try {
+          const rankedFeed = await feedRanker.generateFeed(userId, { page: 1, limit: 20 });
+          if (rankedFeed.posts.length > 0) {
+            const { feedCache: cache } = require('./redis');
+            await cache.set(
+              `feed:precomputed:${userId}`,
+              JSON.stringify(rankedFeed.posts.map((p: any) => p.id)),
+              300 // 5min TTL
+            );
+            cached++;
+          }
+        } catch { /* skip individual user errors */ }
+      }
+
+      if (cached > 0) {
+        console.log(`📦 [FeedCache] Pre-computed feeds for ${cached}/${activeUsers.length} active users`);
+      }
+    } catch (err) {
+      console.error('❌ [FeedCache] Pre-compute error:', err);
+    }
+  }, 5 * 60 * 1000);
+} else {
+  console.log('⏭️  Background jobs disabled on this instance (DISABLE_BACKGROUND_JOBS=true)');
+}
 
 // ─── Redis ─────────────────────────────────────────────────────────
 initRedis();
@@ -141,9 +153,21 @@ const generalLimiter = rateLimit({
   message: { success: false, error: 'Too many requests, please try again later' },
 });
 
-// ─── Middleware ─────────────────────────────────────────────────────
+// ─── CORS ──────────────────────────────────────────────────────────
+// In production (Cloud Run), set ALLOWED_ORIGINS env var to comma-separated list
+// e.g. ALLOWED_ORIGINS=https://stunity.com,https://app.stunity.com
+const defaultOrigins = ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3010'];
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : defaultOrigins;
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3010'],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -234,7 +258,7 @@ app.use('/stories', authenticateToken as any, storiesRouter);
 app.use(errorLogger);
 
 // ─── Start Server ──────────────────────────────────────────────────
-server = app.listen(PORT, () => {
+server = app.listen(PORT, '0.0.0.0', () => {
   console.log('');
   console.log('╔════════════════════════════════════════════════╗');
   console.log('║   📱 Feed Service - Stunity Enterprise v7.0   ║');
@@ -258,3 +282,8 @@ server = app.listen(PORT, () => {
   console.log('   courses, stories  → Learning, stories');
   console.log('');
 });
+
+// Cloud Run: keep-alive timeout must exceed the load balancer's 600s timeout
+// This prevents "connection reset" errors on long-lived SSE streams
+server.keepAliveTimeout = 620 * 1000; // 620 seconds
+server.headersTimeout = 630 * 1000;   // must be > keepAliveTimeout

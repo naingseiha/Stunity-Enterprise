@@ -1,47 +1,44 @@
 # 🎓 Stunity Enterprise - School Management + Social E-Learning Platform
 
-**Version:** 21.10  
-**Status:** Production Ready 🚀 | 95% Complete ✅  
-**Last Updated:** February 17, 2026
+**Version:** 22.0  
+**Status:** Production Ready 🚀 | 97% Complete  
+**Last Updated:** February 20, 2026
 
-A comprehensive, multi-tenant school management SaaS platform with **social feed**, **interactive quizzes**, **live quiz mode**, **study clubs**, **assignments**, **messaging**, and complete **mobile app** (iOS + Android). Features include claim code system, student/teacher ID generation, parent portal, real-time collaboration, gamification, and advanced analytics.
-
----
-
-## 📚 Documentation Quick Links
-
-| Document | Description |
-|----------|-------------|
-| **[FEATURES_COMPLETE.md](./FEATURES_COMPLETE.md)** | ✅ Complete inventory of working features |
-| **[NEXT_IMPLEMENTATION.md](./NEXT_IMPLEMENTATION.md)** | 🚀 Prioritized roadmap & implementation guide |
-| **[DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)** | 👨‍💻 Complete developer onboarding guide |
-| **[CHANGELOG.md](./CHANGELOG.md)** | 📝 Version history |
-
-**Legacy Docs:** [docs/archive/2024-2026-sessions/](./docs/archive/2024-2026-sessions/) (135+ historical files)
+An enterprise-grade school management + social e-learning platform. Combines **school management** (grades, attendance, timetables, enrollment) with a **social learning feed** (posts, quizzes, clubs, real-time messaging) — designed for global multi-school deployment.
 
 ---
 
-## 🎉 What's New in v21.10
+## 📚 Documentation
 
-### Latest Features (February 2026)
-- ✅ **Complete Mobile App** - 55+ screens, production ready
-- ✅ **Advanced Quiz System** - 4 question types, live quiz mode, analytics
-- ✅ **Study Clubs** - Create, join, assignments, grading
-- ✅ **Real-time Messaging** - Direct messages with SSE/WebSocket
-- ✅ **7 Post Types** - Article, Quiz, Question, Poll, Course, Project, Announcement
-- ✅ **Gamification** - Points, badges, leaderboards, achievements
-- ✅ **Enhanced Feed** - Infinite scroll, filters, analytics
-- ✅ **Cloud Storage** - R2 integration for media uploads
+| Document | Purpose |
+|----------|---------|
+| **[PROJECT_STATUS.md](./PROJECT_STATUS.md)** | What's done, what remains, service map |
+| **[DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)** | Architecture, patterns, deployment — read first |
+| **[CURRENT_FEATURES.md](./CURRENT_FEATURES.md)** | Complete feature inventory |
+| **[NEXT_IMPLEMENTATION.md](./NEXT_IMPLEMENTATION.md)** | Prioritized roadmap with code examples |
+| **[docs/](./docs/README.md)** | Technical deep dives (feed, realtime, school integration) |
 
-**Full Feature List:** See [FEATURES_COMPLETE.md](./FEATURES_COMPLETE.md)  
-**What's Next:** See [NEXT_IMPLEMENTATION.md](./NEXT_IMPLEMENTATION.md)
+---
+
+## ✅ v22.0 Highlights (February 2026)
+
+- 🚀 **Feed scaled for millions** — parallel DB queries, Redis SCAN, batch view inserts, ETag caching
+- 📱 **60fps scroll** — FlashList tuned (drawDistance=600, iOS removeClippedSubviews fix, granular Zustand selectors)
+- 🧠 **Quiz detail complete** — Start/Retake Quiz, previous attempt result, full quiz include in API
+- 💬 **Real-time comments** — no double-display, own-INSERT skip, DELETE in-state
+- 🔁 **Repost notification** — SHARE notification type, SSE event to original author
+- 📊 **Analytics redesigned** — gradient header, period toggle, skeleton, DB-level aggregates (no OOM)
+- ☁️ **Cloud Run ready** — CORS env var, PORT env var, keepAliveTimeout 620s, Dockerfile fixed
+
+**Full Feature List:** [CURRENT_FEATURES.md](./CURRENT_FEATURES.md)  
+**What's Next:** [NEXT_IMPLEMENTATION.md](./NEXT_IMPLEMENTATION.md)
 
 ---
 
 ## 🚀 Quick Start
 
 ```bash
-# Start all 12 services
+# Start all 14 services
 ./quick-start.sh
 
 # Open browser
@@ -100,7 +97,7 @@ npx expo start --tunnel
 **Screens:** 55+ (Feed, Quiz, Clubs, Assignments, Profile, Messaging, Analytics)  
 **Components:** 100+ reusable components with smooth animations  
 **State Management:** Zustand stores with persistent storage  
-**Documentation:** See [FEATURES_COMPLETE.md](./FEATURES_COMPLETE.md) for full details
+**Documentation:** See [CURRENT_FEATURES.md](./CURRENT_FEATURES.md) for full details
 
 ### Tech Stack
 - **Frontend:** Next.js 14, React, TypeScript, TailwindCSS
@@ -154,7 +151,7 @@ npx expo start --tunnel
 - ✅ **Real-time Messaging** - Direct messages with SSE
 - ✅ **Cloud Storage** - R2 for media uploads
 
-**See complete list:** [FEATURES_COMPLETE.md](./FEATURES_COMPLETE.md)
+**See complete list:** [CURRENT_FEATURES.md](./CURRENT_FEATURES.md)
 
 ---
 
@@ -266,21 +263,19 @@ Child: Chanthy Kong (S9A-025)
 ### Main Documentation
 | Document | Description |
 |----------|-------------|
-| **[FEATURES_COMPLETE.md](./FEATURES_COMPLETE.md)** | Complete feature inventory |
-| **[NEXT_IMPLEMENTATION.md](./NEXT_IMPLEMENTATION.md)** | Implementation roadmap |
-| **[DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)** | Developer onboarding |
-| **[README.md](./README.md)** | Quick start (this file) |
-| **[CHANGELOG.md](./CHANGELOG.md)** | Version history |
+| **[PROJECT_STATUS.md](./PROJECT_STATUS.md)** | What's done, what remains, service map |
+| **[DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)** | Architecture, patterns, deployment |
+| **[CURRENT_FEATURES.md](./CURRENT_FEATURES.md)** | Complete feature inventory |
+| **[NEXT_IMPLEMENTATION.md](./NEXT_IMPLEMENTATION.md)** | Prioritized roadmap with code examples |
 
-### Additional Documentation
+### Technical Deep Dives
 | Location | Description |
 |----------|-------------|
-| `docs/current/` | Current feature documentation |
-| `docs/api/` | API endpoint documentation |
-| `docs/archive/` | Historical docs (135+ files) |
-
-### Legacy Documentation
-- **[docs/archive/2024-2026-sessions/](./docs/archive/2024-2026-sessions/)** - Historical session notes, bug fixes, phase completions (for reference only)
+| **[docs/](./docs/README.md)** | Feed system, realtime, school integration, deployment |
+| `docs/admin-system/` | Role-based permission system |
+| `docs/stunity-vision/` | Long-term product vision |
+| `docs/future-implementation/` | Planned enterprise features |
+| `docs/archive/` | Historical docs (completed phases, session logs) |
 
 ---
 
@@ -348,7 +343,7 @@ cd packages/database && npm run seed
 
 **New to the project?**
 1. Read [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) - Complete setup guide
-2. Review [FEATURES_COMPLETE.md](./FEATURES_COMPLETE.md) - Understand what exists
+2. Review [CURRENT_FEATURES.md](./CURRENT_FEATURES.md) - Understand what exists
 3. Check [NEXT_IMPLEMENTATION.md](./NEXT_IMPLEMENTATION.md) - See what's next
 4. Follow quick start above to run the project
 

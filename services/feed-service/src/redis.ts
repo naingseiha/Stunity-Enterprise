@@ -314,13 +314,18 @@ export const feedCache = {
     // Clear memory cache
     memoryCache.deleteByPattern(`${userId}:*`);
     
-    // Clear Redis if available
+    // Clear Redis if available — use SCAN (non-blocking) instead of KEYS (blocks Redis)
     if (!publisher || !isRedisConnected) return;
     try {
-      // Delete all feed cache keys for this user
-      const keys = await publisher.keys(`feed:${userId}:*`);
-      if (keys.length > 0) {
-        await publisher.del(...keys);
+      const keysToDelete: string[] = [];
+      let cursor = '0';
+      do {
+        const [nextCursor, keys] = await publisher.scan(cursor, 'MATCH', `feed:${userId}:*`, 'COUNT', 100);
+        cursor = nextCursor;
+        keysToDelete.push(...keys);
+      } while (cursor !== '0');
+      if (keysToDelete.length > 0) {
+        await publisher.del(...keysToDelete);
       }
     } catch {
       // Non-critical

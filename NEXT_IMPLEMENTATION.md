@@ -1,715 +1,245 @@
-# 🚀 Stunity Enterprise - Next Implementation Roadmap
+# 🚀 Stunity Enterprise — Implementation Roadmap
 
-**Last Updated:** February 17, 2026  
-**Current Version:** 21.10  
-**Target Version:** 22.0
+**Version:** 22.0 | **Updated:** February 20, 2026
 
-> **This document outlines the prioritized roadmap for the next phase of development.**  
-> Features are organized by priority and dependency.
+> This document is the authoritative roadmap. Each item has enough context for a developer to implement it immediately after reading. Read DEVELOPER_GUIDE.md first.
 
 ---
 
-## 📋 Implementation Status Overview
+## 🔴 Priority 1 — Critical / Blocking
 
-### Current State
-- ✅ **Mobile App:** 95% complete (55+ screens)
-- ✅ **Backend Services:** 13 services operational
-- ✅ **Core Features:** Authentication, Feed, Quiz, Clubs, Messaging
-- ✅ **Database:** 90+ models, fully normalized
-- ⚠️ **Missing:** Push notifications, video support, some integrations
+### P1-A: DB Migration — SHARE Notification Type
+**Why:** `postActions.routes.ts` already creates `{ type: 'SHARE' }` notifications (added for repost), but this value isn't in the production DB enum yet.
 
-### What's Next
-Focus on **enhancing existing features**, **improving user experience**, and **adding high-value features**.
-
----
-
-## 🎯 Priority 1: Critical Enhancements (2-3 Weeks)
-
-### 1.1 Push Notifications 🔔
-
-**Why:** Essential for user engagement and retention
-
-**Tasks:**
-- [ ] Set up Firebase Cloud Messaging (FCM)
-  - Create Firebase project
-  - Configure iOS APNs
-  - Configure Android FCM
-  - Add Firebase SDK to mobile app
-
-- [ ] Implement notification service
-  - `POST /notifications/send` - Send push notification
-  - `POST /notifications/schedule` - Schedule notification
-  - `GET /notifications/history` - Notification history
-  - Token management (device tokens)
-
-- [ ] Mobile integration
-  - Request notification permissions
-  - Handle foreground notifications
-  - Handle background notifications
-  - Deep linking from notifications
-  - Notification preferences UI
-
-**Triggers:**
-- New comment on your post
-- New like on your post
-- Someone followed you
-- Assignment due soon (24h, 1h)
-- Quiz challenge received
-- New message received
-- Club announcement
-- Grade published
-
-**Dependencies:** None  
-**Estimated Time:** 1 week  
-**Priority:** ⚡ CRITICAL
-
----
-
-### 1.2 Video Upload & Playback 🎥
-
-**Why:** Richer content for courses and posts
-
-**Tasks:**
-- [ ] Backend video processing
-  - Video upload endpoint with chunking
-  - Video transcoding (HLS format)
-  - Thumbnail generation
-  - Storage optimization (R2)
-  - CDN setup for video delivery
-
-- [ ] Mobile video features
-  - Video picker integration
-  - Upload progress indicator
-  - Video player component (react-native-video)
-  - Playback controls (play, pause, seek, fullscreen)
-  - Quality selection (360p, 720p, 1080p)
-  - Picture-in-picture mode
-
-- [ ] Video in posts
-  - Update Post model (add videoUrl, thumbnailUrl, duration)
-  - Video preview in feed
-  - Video detail view
-  - Video analytics (views, completion rate)
-
-**Dependencies:** None  
-**Estimated Time:** 2 weeks  
-**Priority:** ⚡ HIGH
-
----
-
-### 1.3 Email Notification System 📧
-
-**Why:** Backend is ready, just needs frontend integration
-
-**Tasks:**
-- [ ] Email templates (already created, verify)
-  - Welcome email
-  - Password reset
-  - New comment notification
-  - Assignment reminder
-  - Weekly digest
-
-- [ ] Mobile settings UI
-  - Email preferences screen
-  - Toggle email notifications
-  - Frequency settings (instant, daily, weekly)
-  - Unsubscribe management
-
-- [ ] Backend verification
-  - Test email delivery (SendGrid/AWS SES)
-  - Queue management (Bull/BullMQ)
-  - Retry logic for failed emails
-  - Bounce handling
-
-**Dependencies:** None  
-**Estimated Time:** 3-4 days  
-**Priority:** 🔥 MEDIUM
-
----
-
-### 1.4 Enhanced Search 🔍
-
-**Why:** Users need better content discovery
-
-**Tasks:**
-- [ ] Backend search improvements
-  - Full-text search (PostgreSQL FTS)
-  - Search indexing optimization
-  - Search filters (post type, subject, date range)
-  - Search suggestions/autocomplete
-  - Recent searches
-
-- [ ] Mobile search UI
-  - Dedicated search screen
-  - Search filters UI
-  - Search history
-  - Trending searches
-  - Voice search (optional)
-
-- [ ] Advanced search features
-  - Search users by name/skills
-  - Search posts by content
-  - Search clubs by name/subject
-  - Search courses
-  - Global search (all entities)
-
-**Dependencies:** None  
-**Estimated Time:** 1 week  
-**Priority:** 🔥 MEDIUM
-
----
-
-## 🎨 Priority 2: User Experience Improvements (1-2 Weeks)
-
-### 2.1 Offline Mode & Caching 💾
-
-**Why:** Better app performance and offline usability
-
-**Tasks:**
-- [ ] Implement offline storage
-  - Cache posts locally (SQLite/Realm)
-  - Cache user profiles
-  - Cache quiz data
-  - Queue actions (like, comment) when offline
-
-- [ ] Sync mechanism
-  - Background sync on reconnect
-  - Conflict resolution
-  - Sync status indicator
-  - Manual sync trigger
-
-- [ ] Offline UI
-  - Offline indicator banner
-  - Cached content label
-  - "Posting when online" message
-  - Retry failed actions
-
-**Dependencies:** None  
-**Estimated Time:** 1 week  
-**Priority:** 🔥 MEDIUM
-
----
-
-### 2.2 Dark Mode 🌙
-
-**Why:** User preference, reduces eye strain
-
-**Tasks:**
-- [ ] Design system
-  - Dark color palette
-  - Update all color variables
-  - Test contrast ratios (WCAG AA)
-
-- [ ] Theme switcher
-  - Settings screen toggle
-  - System default option
-  - Persist theme preference
-  - Smooth theme transition
-
-- [ ] Update all screens
-  - 55+ screens to update
-  - Components library update
-  - Test every screen in dark mode
-  - Fix any contrast issues
-
-**Dependencies:** None  
-**Estimated Time:** 1 week  
-**Priority:** 🟡 LOW
-
----
-
-### 2.3 Accessibility Improvements ♿
-
-**Why:** Inclusive design, better UX for all users
-
-**Tasks:**
-- [ ] Screen reader support
-  - Add accessibility labels to all buttons
-  - Add accessibility hints
-  - Test with TalkBack (Android) and VoiceOver (iOS)
-
-- [ ] Keyboard navigation
-  - Tab order optimization
-  - Keyboard shortcuts
-  - Focus indicators
-
-- [ ] Visual improvements
-  - Increase contrast where needed
-  - Larger touch targets (44x44 minimum)
-  - Font scaling support
-  - Color-blind friendly colors
-
-**Dependencies:** None  
-**Estimated Time:** 3-4 days  
-**Priority:** 🟡 LOW
-
----
-
-### 2.4 Performance Optimization ⚡
-
-**Why:** Faster app = better user experience
-
-**Tasks:**
-- [ ] Mobile optimizations
-  - Image lazy loading
-  - Virtual lists (FlashList)
-  - Code splitting
-  - Bundle size reduction
-  - Reduce re-renders (React.memo, useMemo)
-
-- [ ] Backend optimizations
-  - Database query optimization
-  - N+1 query elimination
-  - Caching strategy (Redis)
-  - Connection pooling
-  - Response compression
-
-- [ ] Monitoring
-  - Performance metrics tracking
-  - Crash reporting (Sentry)
-  - Analytics (Firebase Analytics)
-  - APM (Application Performance Monitoring)
-
-**Dependencies:** None  
-**Estimated Time:** 1 week  
-**Priority:** 🔥 MEDIUM
-
----
-
-## 🚀 Priority 3: New Features (2-4 Weeks)
-
-### 3.1 Parent Portal Mobile App 👨‍👩‍👧‍👦
-
-**Why:** Parents need mobile access to student data
-
-**Tasks:**
-- [ ] Parent-specific screens
-  - Parent dashboard
-  - View children list
-  - Child selection
-  - Student grades view
-  - Student attendance view
-  - Teacher messaging
-  - School announcements
-
-- [ ] Parent authentication
-  - Parent login (phone/email)
-  - Link to students
-  - Multi-child support
-
-- [ ] Backend endpoints
-  - `GET /parent/children` - List children
-  - `GET /parent/children/:id/grades` - Child grades
-  - `GET /parent/children/:id/attendance` - Attendance
-  - `POST /parent/messages` - Message teacher
-
-**Dependencies:** None  
-**Estimated Time:** 2 weeks  
-**Priority:** 🔥 MEDIUM
-
----
-
-### 3.2 Live Streaming Classes 📹
-
-**Why:** Interactive learning experience
-
-**Tasks:**
-- [ ] Video streaming setup
-  - Choose streaming service (Agora, Twitch, YouTube Live)
-  - Set up streaming server
-  - WebRTC integration
-  - Recording functionality
-
-- [ ] Mobile streaming
-  - Start live stream (teacher)
-  - Join live stream (student)
-  - Chat during stream
-  - Screen sharing
-  - Whiteboard integration
-  - Participant management
-
-- [ ] Backend
-  - `POST /streams/start` - Start stream
-  - `POST /streams/end` - End stream
-  - `GET /streams/active` - Active streams
-  - `GET /streams/recordings` - Past recordings
-  - Stream analytics
-
-**Dependencies:** Video upload feature  
-**Estimated Time:** 3 weeks  
-**Priority:** 🟡 LOW (complex)
-
----
-
-### 3.3 Advanced Quiz Features 📝
-
-**Why:** Enhance quiz system with more features
-
-**Tasks:**
-- [ ] Question banks
-  - Create reusable question library
-  - Tag questions by topic
-  - Difficulty levels
-  - Question versioning
-  - Import/export questions
-
-- [ ] Adaptive quizzes
-  - Difficulty adjusts based on performance
-  - Personalized question selection
-  - Learning path recommendations
-
-- [ ] Quiz analytics
-  - Question difficulty analysis
-  - Common wrong answers
-  - Time spent per question
-  - Improvement tracking
-
-- [ ] Collaborative quizzes
-  - Team quizzes
-  - Peer review questions
-  - Quiz creation together
-
-**Dependencies:** None  
-**Estimated Time:** 2 weeks  
-**Priority:** 🟡 LOW
-
----
-
-### 3.4 Gamification Enhancements 🎮
-
-**Why:** Increase engagement and motivation
-
-**Tasks:**
-- [ ] More achievements
-  - Create 50+ new achievements
-  - Achievement categories
-  - Secret achievements
-  - Achievement progress tracking
-
-- [ ] Leaderboards
-  - Subject-specific leaderboards
-  - School leaderboards
-  - National leaderboards
-  - Friend leaderboards
-
-- [ ] Rewards system
-  - Virtual coins/points
-  - Unlockable themes
-  - Profile customizations
-  - Special badges
-
-- [ ] Challenges
-  - Daily challenges
-  - Weekly challenges
-  - Friend challenges
-  - Club challenges
-
-**Dependencies:** None  
-**Estimated Time:** 1-2 weeks  
-**Priority:** 🟡 LOW
-
----
-
-## 🌍 Priority 4: Platform Expansion (4-8 Weeks)
-
-### 4.1 Multi-Language Support 🌐
-
-**Why:** Expand to international markets
-
-**Tasks:**
-- [ ] Internationalization (i18n)
-  - Set up i18n library (react-i18next)
-  - Extract all strings
-  - Create translation files
-  - Language switcher UI
-
-- [ ] Translations
-  - English (default)
-  - Khmer (Cambodian)
-  - Thai
-  - Vietnamese
-  - French
-  - Chinese
-
-- [ ] RTL support (Right-to-Left)
-  - Arabic UI layout
-  - Test all screens in RTL
-
-**Dependencies:** None  
-**Estimated Time:** 2-3 weeks  
-**Priority:** 🟡 LOW (strategic)
-
----
-
-### 4.2 Web Application (Progressive Web App) 💻
-
-**Why:** Desktop users prefer web access
-
-**Tasks:**
-- [ ] Responsive web design
-  - Desktop layouts
-  - Tablet layouts
-  - Responsive grid system
-
-- [ ] PWA features
-  - Service worker
-  - Offline support
-  - Install prompt
-  - Desktop notifications
-
-- [ ] Web-specific features
-  - Keyboard shortcuts
-  - Desktop file upload
-  - Multi-window support
-
-**Dependencies:** None  
-**Estimated Time:** 4 weeks  
-**Priority:** 🟡 LOW (major project)
-
----
-
-### 4.3 Admin Dashboard Enhancements 👨‍💼
-
-**Why:** Better school administration tools
-
-**Tasks:**
-- [ ] Enhanced analytics
-  - Student performance dashboard
-  - Teacher activity monitoring
-  - Content moderation tools
-  - Usage statistics
-
-- [ ] Bulk operations
-  - Bulk user import (CSV)
-  - Bulk grade entry
-  - Bulk email sending
-  - Bulk notifications
-
-- [ ] Reports
-  - Custom report builder
-  - Scheduled reports
-  - Export to Excel/PDF
-  - Email reports
-
-**Dependencies:** None  
-**Estimated Time:** 2 weeks  
-**Priority:** 🟡 LOW
-
----
-
-## 🔧 Priority 5: Technical Improvements (Ongoing)
-
-### 5.1 Testing & Quality Assurance
-
-**Tasks:**
-- [ ] Unit tests
-  - Backend service tests (Jest)
-  - Mobile component tests (React Native Testing Library)
-  - 80% code coverage target
-
-- [ ] Integration tests
-  - API endpoint tests
-  - Database integration tests
-  - Mobile-backend integration tests
-
-- [ ] E2E tests
-  - Critical user flows (Detox)
-  - Regression test suite
-  - CI/CD integration
-
-**Priority:** 🔥 MEDIUM (ongoing)
-
----
-
-### 5.2 DevOps & Infrastructure
-
-**Tasks:**
-- [ ] CI/CD pipeline
-  - GitHub Actions / GitLab CI
-  - Automated testing
-  - Automated deployments
-  - Code quality checks (ESLint, Prettier)
-
-- [ ] Monitoring & logging
-  - Error tracking (Sentry)
-  - Performance monitoring (Firebase Performance)
-  - Log aggregation (ELK stack)
-  - Uptime monitoring
-
-- [ ] Security
-  - Security audit
-  - Dependency updates
-  - Vulnerability scanning
-  - Penetration testing
-
-**Priority:** 🔥 MEDIUM (ongoing)
-
----
-
-### 5.3 Documentation
-
-**Tasks:**
-- [ ] API documentation
-  - OpenAPI/Swagger specs
-  - API reference docs
-  - Example requests/responses
-  - Authentication guide
-
-- [ ] Developer docs
-  - Architecture overview
-  - Development setup
-  - Contribution guidelines
-  - Code style guide
-
-- [ ] User docs
-  - User manual
-  - Video tutorials
-  - FAQ
-  - Troubleshooting guide
-
-**Priority:** 🔥 MEDIUM (ongoing)
-
----
-
-## 📊 Feature Prioritization Matrix
-
-| Feature | Business Value | User Impact | Effort | Priority |
-|---------|---------------|-------------|--------|----------|
-| Push Notifications | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | 🔨 Medium | ⚡ CRITICAL |
-| Video Upload | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | 🔨🔨 High | ⚡ HIGH |
-| Enhanced Search | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | 🔨 Medium | 🔥 MEDIUM |
-| Offline Mode | ⭐⭐⭐ | ⭐⭐⭐⭐ | 🔨 Medium | 🔥 MEDIUM |
-| Email Notifications | ⭐⭐⭐ | ⭐⭐⭐ | 🔨 Low | 🔥 MEDIUM |
-| Performance | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | 🔨 Medium | 🔥 MEDIUM |
-| Parent App | ⭐⭐⭐⭐ | ⭐⭐⭐ | 🔨🔨 High | 🔥 MEDIUM |
-| Dark Mode | ⭐⭐ | ⭐⭐⭐ | 🔨 Medium | 🟡 LOW |
-| Accessibility | ⭐⭐⭐ | ⭐⭐⭐ | 🔨 Low | 🟡 LOW |
-| Live Streaming | ⭐⭐⭐⭐ | ⭐⭐⭐ | 🔨🔨🔨 Very High | 🟡 LOW |
-| Multi-Language | ⭐⭐⭐⭐ | ⭐⭐⭐ | 🔨🔨 High | 🟡 LOW |
-| Web App | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | 🔨🔨🔨🔨 Very High | 🟡 LOW |
-
----
-
-## 🗓️ Suggested Timeline
-
-### Month 1 (Weeks 1-4)
-- ✅ Week 1-2: Push Notifications
-- ✅ Week 2-4: Video Upload & Playback
-- ✅ Ongoing: Email Notifications, Enhanced Search
-
-### Month 2 (Weeks 5-8)
-- ✅ Week 5-6: Offline Mode & Caching
-- ✅ Week 6-7: Performance Optimization
-- ✅ Week 7-8: Enhanced Search (complete)
-- ✅ Ongoing: Testing & Documentation
-
-### Month 3 (Weeks 9-12)
-- ✅ Week 9-10: Parent Portal App
-- ✅ Week 10-11: Dark Mode
-- ✅ Week 11-12: Accessibility Improvements
-- ✅ Ongoing: Bug fixes, polish
-
-### Month 4+ (Strategic)
-- Multi-Language Support
-- Web Application
-- Live Streaming
-- Advanced Quiz Features
-- Admin Dashboard Enhancements
-
----
-
-## 🎯 Success Metrics
-
-### Engagement Metrics
-- [ ] Daily Active Users (DAU) +20%
-- [ ] Session Duration +15%
-- [ ] Content Creation +30%
-- [ ] User Retention (7-day) >60%
-- [ ] User Retention (30-day) >40%
-
-### Performance Metrics
-- [ ] App Load Time <2s
-- [ ] API Response Time <300ms (p95)
-- [ ] Crash-free Rate >99.5%
-- [ ] App Size <50MB
-
-### Quality Metrics
-- [ ] Code Coverage >80%
-- [ ] Bug Resolution Time <48h
-- [ ] User-reported Bugs <10/week
-- [ ] App Store Rating >4.5
-
----
-
-## 💡 Implementation Guidelines
-
-### Development Process
-1. **Planning** - Review requirements, create technical design
-2. **Development** - Implement feature with tests
-3. **Code Review** - Peer review, code quality check
-4. **Testing** - QA testing, user acceptance testing
-5. **Deployment** - Staged rollout, monitoring
-6. **Feedback** - Collect user feedback, iterate
-
-### Code Standards
-- ✅ TypeScript for type safety
-- ✅ ESLint + Prettier for code formatting
-- ✅ Conventional Commits for commit messages
-- ✅ PR template with checklist
-- ✅ Minimum 80% test coverage
-
-### Documentation Requirements
-- ✅ API endpoints documented (OpenAPI)
-- ✅ Component props documented (JSDoc)
-- ✅ README for each major feature
-- ✅ Changelog updated with each release
-
----
-
-## 🚀 Getting Started
-
-### For Developers
-
-```bash
-# Create feature branch
-git checkout -b feature/push-notifications
-
-# Make changes
-# Write tests
-# Commit with conventional commit format
-git commit -m "feat: add push notification system"
-
-# Push and create PR
-git push origin feature/push-notifications
+**Action:** Run once on Supabase production via SQL editor:
+```sql
+ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'SHARE';
 ```
 
-### For Project Managers
-1. Review this document
-2. Prioritize features based on business needs
-3. Allocate resources
-4. Track progress via project board
-5. Review completed features
+---
+
+### P1-B: Web Feed — Quiz Post Card
+**Why:** Mobile renders a full quiz card (questions count, time limit, take quiz button, previous attempt). Web PostCard only shows a `from-purple-500` badge with the post title.
+
+**File:** `apps/web/src/components/feed/PostCard.tsx`
+
+**What to add:** Inside the `post.postType === 'QUIZ'` section (currently just shows type badge):
+```tsx
+{post.postType === 'QUIZ' && post.quizData && (
+  <div className="mt-3 rounded-xl border border-purple-200 bg-purple-50 p-4">
+    <div className="flex gap-4 text-sm text-purple-700 mb-3">
+      <span>📝 {post.quizData.questions?.length ?? 0} questions</span>
+      <span>⏱ {post.quizData.timeLimit ?? 0} min</span>
+      <span>🎯 Pass: {post.quizData.passingScore ?? 0}%</span>
+    </div>
+    <a href={`/quiz/${post.id}`} className="block text-center bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold py-2 rounded-lg">
+      Take Quiz
+    </a>
+  </div>
+)}
+```
 
 ---
 
-## 📞 Support
+### P1-C: Push Notifications (FCM / APNs)
+**Why:** In-app bell works. But when app is closed, users miss likes, comments, reposts, grade updates.
 
-### Questions or Suggestions?
-- Open an issue on GitHub
-- Contact development team
-- Review existing documentation
+**Files to modify:**
+- `services/notification-service/src/index.ts` — already has FCM scaffold
+- `apps/mobile/src/stores/notificationStore.ts` — add `registerDeviceToken()` 
+- `apps/mobile/App.tsx` — request permissions + get Expo push token on startup
 
-### Feature Requests
-- Submit feature request with use case
-- Explain business value
-- Provide mockups/wireframes if available
+**Steps:**
+1. Install: `expo install expo-notifications`
+2. In `App.tsx` on launch: `Notifications.getExpoPushTokenAsync()` → send token to `auth-service` via `PUT /users/device-token`
+3. `auth-service`: Store `deviceToken` on `User` model
+4. `notification-service`: On `Notification` INSERT trigger → read recipient's `deviceToken` → call Expo Push API: `https://exp.host/--/api/v2/push/send`
 
----
-
-**Document Status:** ✅ Complete  
-**Next Review:** After Priority 1 completion  
-**Maintainer:** Development Team
+**Note:** Expo Push Service handles both FCM (Android) + APNs (iOS) with one API — no need for separate FCM/APNs integration during development.
 
 ---
 
-*This roadmap is a living document and will be updated as priorities change and features are completed.*
+## 🟡 Priority 2 — Important Enhancements
+
+### P2-A: Web Feed — Repost Button
+**Why:** Mobile has a full repost flow. Web has a "Share" button that only copies a link.
+
+**File:** `apps/web/src/components/feed/PostCard.tsx`
+
+**What to add:** In the actions row, replace/augment the Share button:
+```tsx
+const handleRepost = async () => {
+  await fetch(`${FEED_SERVICE}/posts/${post.id}/repost`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ type: 'REPOST' })
+  });
+  // update repostCount in local state
+};
+```
+
+---
+
+### P2-B: Web Feed — Real-time Comments
+**Why:** Web comments are loaded once. Mobile gets real-time updates via Supabase Realtime.
+
+**File:** `apps/web/src/components/feed/PostCard.tsx`
+
+**What to add:** In the component, after comments are loaded:
+```ts
+import { createClient } from '@supabase/supabase-js';
+
+useEffect(() => {
+  const channel = supabase.channel(`comments-${post.id}`)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'Comment',
+      filter: `postId=eq.${post.id}`
+    }, (payload) => {
+      setComments(prev => [...prev, payload.new as Comment]);
+    })
+    .subscribe();
+  return () => { supabase.removeChannel(channel); };
+}, [post.id]);
+```
+
+---
+
+### P2-C: Web CreatePostModal — Quiz & Course Post Types
+**Why:** Mobile supports 7 post types. Web `CreatePostModal` only has: Text, Poll, Announcement, Question, Project. Missing: **Quiz, Course, Exam**.
+
+**File:** `apps/web/src/components/feed/CreatePostModal.tsx`
+
+**What to add for QUIZ:**
+```tsx
+// Add to POST_TYPES array:
+{ id: 'QUIZ', label: 'Quiz', icon: HelpCircle, description: 'Test knowledge', color: 'purple' }
+
+// Add quiz fields state:
+const [quizQuestions, setQuizQuestions] = useState([{ text: '', options: ['', ''], answer: 0 }]);
+const [quizTimeLimit, setQuizTimeLimit] = useState(10);
+const [quizPassingScore, setQuizPassingScore] = useState(70);
+
+// Add quiz fields UI block (rendered when postType === 'QUIZ')
+// On submit: include quizData: { questions: quizQuestions, timeLimit, passingScore }
+```
+
+---
+
+### P2-D: School → Feed Notification Bridge
+**Why:** Grade service already notifies parents via push. But students don't see their own grade notification in-app via the bell. Same for attendance alerts to students.
+
+**grade-service changes** (`services/grade-service/src/index.ts`):
+After creating a grade, also call feed-service to create an in-app notification:
+```ts
+// After prisma.grade.create() succeeds:
+await fetch(`${FEED_SERVICE_URL}/notifications`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', 'x-internal-key': INTERNAL_KEY },
+  body: JSON.stringify({
+    recipientId: studentUserId,
+    type: 'GRADE_UPDATE',
+    title: `Grade posted: ${subject}`,
+    body: `You received ${gradeValue} in ${subject}`,
+    data: { gradeId, subjectId }
+  })
+});
+```
+Supabase Realtime then delivers this to the student's bell badge automatically (already wired up in `notificationStore.subscribeToNotifications`).
+
+---
+
+### P2-E: Enterprise SSO Backend
+**Why:** UI is ready (Enterprise SSO screen in mobile and web). Backend connection to Azure AD / Google Workspace not implemented.
+
+**Files:**
+- `services/auth-service/src/index.ts` — add `/auth/sso/azure` + `/auth/sso/google-workspace` routes
+- Use `passport-azure-ad` (Azure AD) or `passport-google-oauth20` (Google Workspace)
+- On successful OAuth: look up user by email → issue Stunity JWT → same session flow
+
+---
+
+## 🟢 Priority 3 — Polish & Growth
+
+### P3-A: Video Post Support
+**Why:** Posts currently support images only. Video is critical for TikTok-style learning content.
+
+**Steps:**
+1. Mobile: Add video picker in `CreatePostScreen.tsx` using `expo-image-picker` (video mode)
+2. storage-service: Accept video upload → store in R2 → return URL
+3. PostCard (mobile + web): Add `VideoPlayer` component (use `expo-video` on mobile, `<video>` on web)
+4. Feed: `stripToMinimal` should include `mediaType: 'video'` flag for player decision
+
+### P3-B: FeedRanker Author Affinity Optimization
+**Current issue:** `getUserSignals` in `feedRanker.ts` makes a sequential second query to get author data after `like.groupBy`. Minor performance issue.
+**Fix:** Pre-compute author affinity scores into `UserFeedSignal` table during background job, read from there instead.
+
+### P3-C: Composite Index for School Feed
+Add this index to improve school-scoped feed query performance:
+```sql
+CREATE INDEX IF NOT EXISTS "Post_authorSchoolId_createdAt_idx" 
+  ON "Post" ("authorSchoolId", "createdAt" DESC);
+```
+Run in Supabase SQL editor.
+
+### P3-D: Web Profile Page Parity
+**Why:** Mobile ProfileScreen has: Activity tab, Performance tab (grades/attendance widgets), Achievements grid, Bio edit. Web profile is a simple info card.
+**Files:** `apps/web/src/app/[locale]/profile/page.tsx`
+**Add:** Tabs for Activity/Performance/Achievements, same data via `GET /users/:id/profile` + `GET /users/:id/analytics`.
+
+### P3-E: Rate Limiting on Write Endpoints
+Prevent spam and DDoS on feed-service write endpoints (like, comment, post creation):
+```ts
+// In services/feed-service/src/index.ts, add:
+import rateLimit from 'express-rate-limit';
+app.use('/posts', rateLimit({ windowMs: 60000, max: 30 }));        // 30 posts/min
+app.use('/posts/:id/like', rateLimit({ windowMs: 60000, max: 100 })); // 100 likes/min
+```
+Install: `npm install express-rate-limit` in feed-service.
+
+---
+
+## 📋 Quick Reference: Feature Completion Status
+
+| Feature | Mobile | Web | Notes |
+|---------|--------|-----|-------|
+| Social feed | ✅ | ✅ | Both have real-time new post pill |
+| Comments real-time | ✅ | ❌ | Web: loads once, no live updates |
+| Repost | ✅ | ❌ | Web has share link only |
+| Quiz post card | ✅ | ❌ | Web: label badge only |
+| Analytics modal | ✅ | ✅ | Both redesigned with gradient header |
+| Stories | ✅ | ✅ | |
+| Bookmarks | ✅ | ✅ | |
+| Search | ✅ | Partial | Web search UI not fully built |
+| Push notifications | ❌ | ❌ | In-app bell works, push on closed app missing |
+| SSO (Azure/Google) | UI only | UI only | Backend not connected |
+| School management | ✅ | ✅ | Grades, attendance, timetable |
+| Grade → feed notification | ❌ | — | Bridge not yet built |
+| Video posts | ❌ | ❌ | Images only |
+| Live Quiz (Kahoot) | ✅ | — | analytics-service hosts it |
+| DM / Messaging | ✅ | Partial | Web exists but limited |
+| Clubs | ✅ | Partial | |
+
+---
+
+## 🗄️ One-Time Production Setup Checklist
+
+```bash
+# 1. Run SHARE enum migration on Supabase production
+ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'SHARE';
+
+# 2. Add composite index for school feed
+CREATE INDEX IF NOT EXISTS "Post_authorSchoolId_createdAt_idx" 
+  ON "Post" ("authorSchoolId", "createdAt" DESC);
+
+# 3. Enable Realtime on all required tables in Supabase Dashboard:
+# → Database → Replication → enable: Post, Comment, Notification, Like, Story
+
+# 4. Set Cloud Run environment variables (see DEVELOPER_GUIDE.md)
+
+# 5. Set Cloud Run request timeout to 3600s (for SSE)
+
+# 6. Create Cloud Scheduler job: POST /internal/refresh-scores every 5 min
+#    (when DISABLE_BACKGROUND_JOBS=true is set on Cloud Run)
+```

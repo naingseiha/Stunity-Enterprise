@@ -23,7 +23,7 @@ function stripToMinimal(post: any): any {
     title: post.title,
     content: post.content?.slice(0, 300) || '',
     postType: post.postType,
-    mediaUrls: post.mediaUrls?.slice(0, 1) || [],
+    mediaUrls: post.mediaUrls || [],  // Keep ALL URLs — needed for image carousel
     createdAt: post.createdAt,
     isPinned: post.isPinned,
     likesCount: post.likesCount ?? post._count?.likes ?? 0,
@@ -126,8 +126,8 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
       };
     }
 
-    const [posts, total] = await Promise.all([
-      prisma.post.findMany({
+    // B4 FIX: Remove expensive COUNT(*) — derive hasMore from posts.length === limit
+    const posts = await prisma.post.findMany({
         where,
         include: {
           author: {
@@ -140,8 +140,6 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
               isVerified: true,
               professionalTitle: true,
               level: true,
-              // Note: achievements removed from feed list for performance
-              // Fetch them on profile/detail pages only
             },
           },
           pollOptions: {
@@ -152,7 +150,6 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
           quiz: {
             select: {
               id: true,
-              // questions omitted from feed list — load on post detail
               timeLimit: true,
               passingScore: true,
               totalPoints: true,
@@ -189,75 +186,50 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
           { isPinned: 'desc' },
           { createdAt: 'desc' },
         ],
-        // Cursor-based pagination (O(1) vs O(N) for offset)
         ...(useCursor ? {
           cursor: { id: cursor as string },
-          skip: 1, // Skip the cursor item itself
+          skip: 1,
         } : {
           skip: (Number(page) - 1) * Number(limit),
         }),
         take: Number(limit),
-      }),
-      prisma.post.count({ where }),
-    ]);
+      });
 
     if (process.env.NODE_ENV !== 'production') {
       console.log('📊 [GET /posts] Query results:', {
         postsFound: posts.length,
-        totalCount: total,
         quizPosts: posts.filter(p => p.postType === 'QUIZ').length,
         postTypes: posts.map(p => p.postType),
       });
     }
 
-    // Check if current user liked each post
+    // B1 FIX: All 4 user-state lookups run in PARALLEL (was sequential)
     const postIds = posts.map(p => p.id);
-    const userLikes = await prisma.like.findMany({
-      where: {
-        postId: { in: postIds },
-        userId: req.user!.id,
-      },
-      select: { postId: true },
-    });
-    const likedPostIds = new Set(userLikes.map(l => l.postId));
-
-    // Check which post authors the current user follows
     const authorIds = [...new Set(posts.map(p => p.authorId).filter(id => id !== req.user!.id))];
-    const userFollows = authorIds.length > 0 ? await prisma.follow.findMany({
-      where: { followerId: req.user!.id, followingId: { in: authorIds } },
-      select: { followingId: true },
-    }) : [];
-    const followingSet = new Set(userFollows.map(f => f.followingId));
-
-    // Check if current user voted on any polls
     const pollPostIds = posts.filter(p => p.postType === 'POLL').map(p => p.id);
-    const userVotes = pollPostIds.length > 0 ? await prisma.pollVote.findMany({
-      where: {
-        postId: { in: pollPostIds },
-        userId: req.user!.id,
-      },
-      select: { postId: true, optionId: true },
-    }) : [];
-    const votedOptions = new Map(userVotes.map(v => [v.postId, v.optionId]));
+    const quizPostIds = posts.filter(p => p.postType === 'QUIZ' && p.quiz).map(p => p.quiz?.id).filter(Boolean) as string[];
 
-    // Check if current user has taken any quizzes
-    const quizPostIds = posts.filter(p => p.postType === 'QUIZ' && p.quiz).map(p => p.quiz?.id).filter(Boolean);
-    const userQuizAttempts = quizPostIds.length > 0 ? await prisma.quizAttempt.findMany({
-      where: {
-        quizId: { in: quizPostIds as string[] },
-        userId: req.user!.id,
-      },
-      orderBy: { submittedAt: 'desc' },
-      distinct: ['quizId'],
-      select: {
-        id: true,
-        quizId: true,
-        score: true,
-        passed: true,
-        pointsEarned: true,
-        submittedAt: true,
-      },
-    }) : [];
+    const [userLikes, userFollows, userVotes, userQuizAttempts] = await Promise.all([
+      prisma.like.findMany({ where: { postId: { in: postIds }, userId: req.user!.id }, select: { postId: true } }),
+      authorIds.length > 0
+        ? prisma.follow.findMany({ where: { followerId: req.user!.id, followingId: { in: authorIds } }, select: { followingId: true } })
+        : Promise.resolve([]),
+      pollPostIds.length > 0
+        ? prisma.pollVote.findMany({ where: { postId: { in: pollPostIds }, userId: req.user!.id }, select: { postId: true, optionId: true } })
+        : Promise.resolve([]),
+      quizPostIds.length > 0
+        ? prisma.quizAttempt.findMany({
+            where: { quizId: { in: quizPostIds }, userId: req.user!.id },
+            orderBy: { submittedAt: 'desc' },
+            distinct: ['quizId'],
+            select: { id: true, quizId: true, score: true, passed: true, pointsEarned: true, submittedAt: true },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const likedPostIds = new Set(userLikes.map(l => l.postId));
+    const followingSet = new Set(userFollows.map(f => f.followingId));
+    const votedOptions = new Map(userVotes.map(v => [v.postId, v.optionId]));
     const quizAttempts = new Map(userQuizAttempts.map(a => [a.quizId, a]));
 
     const formattedPosts = posts.map(post => ({
@@ -266,11 +238,9 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
       isFollowingAuthor: followingSet.has(post.authorId),
       likesCount: post._count.likes,
       commentsCount: post._count.comments,
-      // Add userVotedOptionId for polls
       ...(post.postType === 'POLL' && {
         userVotedOptionId: votedOptions.get(post.id) || null,
       }),
-      // Add userAttempt for quizzes
       ...(post.postType === 'QUIZ' && post.quiz && {
         quiz: {
           ...post.quiz,
@@ -280,6 +250,7 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
     }));
 
     const outputPosts = minimal ? formattedPosts.map(stripToMinimal) : formattedPosts;
+    const hasMore = posts.length === Number(limit);
 
     // ETag for 304 Not Modified
     const etag = createETag(outputPosts);
@@ -294,10 +265,7 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
       pagination: {
         page: Number(page),
         limit: Number(limit),
-        total,
-        totalPages: Math.ceil(total / Number(limit)),
-        hasMore: posts.length === Number(limit),
-        // Include last post ID for cursor-based pagination
+        hasMore,
         ...(posts.length > 0 && { nextCursor: posts[posts.length - 1].id }),
       },
     });
@@ -350,61 +318,38 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
       excludeIds: excludeIds ? String(excludeIds).split(',') : [],
     });
 
-    // Check which posts the user has liked/bookmarked
+    // B1 FIX: All 5 user-state queries run in PARALLEL (was 3 sequential round-trips after likes+bookmarks)
     const postIds = result.posts.map(sp => sp.post.id);
-    const [userLikes, userBookmarks] = await Promise.all([
-      prisma.like.findMany({
-        where: { userId, postId: { in: postIds } },
-        select: { postId: true },
-      }),
-      prisma.bookmark.findMany({
-        where: { userId, postId: { in: postIds } },
-        select: { postId: true },
-      }),
-    ]);
-    const likedSet = new Set(userLikes.map(l => l.postId));
-    const bookmarkedSet = new Set(userBookmarks.map(b => b.postId));
-
-    // Check which post authors the current user follows
     const feedAuthorIds = [...new Set(result.posts.map(sp => sp.post.authorId).filter(id => id !== userId))];
-    const feedFollows = feedAuthorIds.length > 0 ? await prisma.follow.findMany({
-      where: { followerId: userId, followingId: { in: feedAuthorIds } },
-      select: { followingId: true },
-    }) : [];
-    const feedFollowingSet = new Set(feedFollows.map(f => f.followingId));
-
-    // Check if current user voted on any polls
     const pollPostIds = result.posts.filter(sp => sp.post.postType === 'POLL').map(sp => sp.post.id);
-    const userVotes = pollPostIds.length > 0 ? await prisma.pollVote.findMany({
-      where: {
-        postId: { in: pollPostIds },
-        userId,
-      },
-      select: { postId: true, optionId: true },
-    }) : [];
-    const votedOptions = new Map(userVotes.map(v => [v.postId, v.optionId]));
-
-    // Check if current user has taken any quizzes
     const quizPostIds = result.posts
       .filter(sp => sp.post.postType === 'QUIZ' && (sp.post as any).quiz)
       .map(sp => (sp.post as any).quiz?.id)
-      .filter(Boolean);
-    const userQuizAttempts = quizPostIds.length > 0 ? await prisma.quizAttempt.findMany({
-      where: {
-        quizId: { in: quizPostIds as string[] },
-        userId,
-      },
-      orderBy: { submittedAt: 'desc' },
-      distinct: ['quizId'],
-      select: {
-        id: true,
-        quizId: true,
-        score: true,
-        passed: true,
-        pointsEarned: true,
-        submittedAt: true,
-      },
-    }) : [];
+      .filter(Boolean) as string[];
+
+    const [userLikes, userBookmarks, feedFollows, userVotes, userQuizAttempts] = await Promise.all([
+      prisma.like.findMany({ where: { userId, postId: { in: postIds } }, select: { postId: true } }),
+      prisma.bookmark.findMany({ where: { userId, postId: { in: postIds } }, select: { postId: true } }),
+      feedAuthorIds.length > 0
+        ? prisma.follow.findMany({ where: { followerId: userId, followingId: { in: feedAuthorIds } }, select: { followingId: true } })
+        : Promise.resolve([]),
+      pollPostIds.length > 0
+        ? prisma.pollVote.findMany({ where: { postId: { in: pollPostIds }, userId }, select: { postId: true, optionId: true } })
+        : Promise.resolve([]),
+      quizPostIds.length > 0
+        ? prisma.quizAttempt.findMany({
+            where: { quizId: { in: quizPostIds }, userId },
+            orderBy: { submittedAt: 'desc' },
+            distinct: ['quizId'],
+            select: { id: true, quizId: true, score: true, passed: true, pointsEarned: true, submittedAt: true },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const likedSet = new Set(userLikes.map(l => l.postId));
+    const bookmarkedSet = new Set(userBookmarks.map(b => b.postId));
+    const feedFollowingSet = new Set(feedFollows.map(f => f.followingId));
+    const votedOptions = new Map(userVotes.map(v => [v.postId, v.optionId]));
     const quizAttempts = new Map(userQuizAttempts.map(a => [a.quizId, a]));
 
     // Format response to match existing mobile expectations
@@ -534,33 +479,27 @@ router.post('/feed/track-views', authenticateToken, async (req: AuthRequest, res
       return res.status(400).json({ success: false, error: 'views array is required' });
     }
 
-    // Cap batch size to prevent abuse
-    const batch = views.slice(0, 50);
+    // B3 FIX: Single createMany instead of N individual inserts + removed useless post.update(increment:0)
+    const batch = views.slice(0, 50) as { postId: string; duration?: number; source?: string }[];
 
-    // Process all views in parallel — fire-and-forget DB writes + feed ranker signals
-    await Promise.allSettled(
-      batch.map(async (view: { postId: string; duration?: number; source?: string }) => {
-        if (!view.postId) return;
+    // Bulk insert all views in one query — skipDuplicates handles re-views within the same session
+    await prisma.postView.createMany({
+      data: batch
+        .filter(v => v.postId)
+        .map(v => ({
+          postId: v.postId,
+          userId,
+          duration: v.duration || 3,
+          source: v.source || 'feed',
+        })),
+      skipDuplicates: true,
+    }).catch(() => {}); // Non-critical — analytics, not user-facing
 
-        // Record view in DB (upsert to avoid duplicates within session)
-        await prisma.postView.create({
-          data: {
-            postId: view.postId,
-            userId,
-            duration: view.duration || 3,
-            source: view.source || 'feed',
-          },
-        }).catch(() => { }); // Ignore duplicates
-
-        // Update view count on post
-        await prisma.post.update({
-          where: { id: view.postId },
-          data: { likesCount: { increment: 0 } }, // Touch updatedAt without real change
-        }).catch(() => { });
-
-        // Track for feed algorithm
-        await feedRanker.trackAction(userId, view.postId, 'VIEW', view.duration || 3, view.source || 'feed');
-      })
+    // Track feed ranker signals in parallel (fire-and-forget)
+    Promise.allSettled(
+      batch
+        .filter(v => v.postId)
+        .map(v => feedRanker.trackAction(userId, v.postId, 'VIEW', v.duration || 3, v.source || 'feed'))
     );
 
     res.json({ success: true, message: `${batch.length} views tracked` });

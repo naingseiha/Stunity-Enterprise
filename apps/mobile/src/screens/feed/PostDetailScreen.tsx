@@ -583,8 +583,24 @@ export default function PostDetailScreen() {
                       <Text style={styles.quizStatLabel}>Points</Text>
                     </View>
                   </View>
-                  <TouchableOpacity style={styles.quizStartButton}>
-                    <Text style={styles.quizStartButtonText}>Start Quiz</Text>
+                  {post.quizData.userAttempt && (
+                    <View style={styles.quizPrevResult}>
+                      <Ionicons name="checkmark-circle" size={16} color={post.quizData.userAttempt.passed ? '#22c55e' : '#f59e0b'} />
+                      <Text style={styles.quizPrevResultText}>
+                        Last attempt: {Math.round(post.quizData.userAttempt.score ?? 0)}%
+                        {post.quizData.userAttempt.passed ? ' · Passed ✓' : ' · Not passed'}
+                      </Text>
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    style={styles.quizStartButton}
+                    onPress={() => navigation.navigate('TakeQuiz' as any, {
+                      quiz: { ...post.quizData, title: post.title },
+                    })}
+                  >
+                    <Text style={styles.quizStartButtonText}>
+                      {post.quizData.userAttempt ? 'Retake Quiz' : 'Start Quiz'}
+                    </Text>
                     <Ionicons name="arrow-forward" size={20} color={typeConfig.color} />
                   </TouchableOpacity>
                 </LinearGradient>
@@ -905,6 +921,12 @@ const styles = StyleSheet.create({
   },
   quizStatValue: { fontSize: 18, fontWeight: '800', color: '#fff' },
   quizStatLabel: { fontSize: 11, fontWeight: '500', color: 'rgba(255,255,255,0.7)' },
+  quizPrevResult: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10,
+  },
+  quizPrevResultText: { fontSize: 13, color: '#fff', fontWeight: '500' },
   quizStartButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     backgroundColor: '#fff', borderRadius: 14, paddingVertical: 14, gap: 8,

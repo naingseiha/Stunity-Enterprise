@@ -1,246 +1,96 @@
-# 📚 School Management System Documentation
+# 📚 Stunity Enterprise — Documentation
 
-## 🎯 Current Documentation (v2.0)
+**Version:** 22.0 | **Updated:** February 20, 2026
 
-All current and future documentation is located in:
-
-### **👉 [`docs/future-implementation/`](./future-implementation/)**
-
-**Start here**: [`future-implementation/README.md`](./future-implementation/README.md)
+> **New developer?** Start with the root-level docs, then come here for deep dives.
 
 ---
 
-## 📖 Documentation Structure
+## 🚀 Start Here (Root-Level)
 
-### Main Documentation
+These four files at the project root give the full picture:
+
+| File | Purpose |
+|------|---------|
+| [`/README.md`](../README.md) | Project overview + quick start |
+| [`/PROJECT_STATUS.md`](../PROJECT_STATUS.md) | **What's done, what remains, service port map** |
+| [`/DEVELOPER_GUIDE.md`](../DEVELOPER_GUIDE.md) | **Architecture, patterns, deployment — read this first** |
+| [`/NEXT_IMPLEMENTATION.md`](../NEXT_IMPLEMENTATION.md) | **Prioritized roadmap with code examples** |
+| [`/CURRENT_FEATURES.md`](../CURRENT_FEATURES.md) | Complete feature list |
+
+---
+
+## 📖 Technical Deep Dives
+
+Reference these when working on a specific subsystem:
+
+### Social Feed
+| Doc | What it covers |
+|-----|---------------|
+| [`FEED_SYSTEM.md`](./FEED_SYSTEM.md) | Feed API, algorithm, post types, scoring formula |
+| [`REALTIME_ARCHITECTURE.md`](./REALTIME_ARCHITECTURE.md) | Supabase Realtime + SSE patterns |
+| [`FEED_MEDIA_UPLOAD.md`](./FEED_MEDIA_UPLOAD.md) | R2 upload flow, image handling |
+
+### School Management ↔ Social Integration
+| Doc | What it covers |
+|-----|---------------|
+| [`SCHOOL_SOCIAL_INTEGRATION.md`](./SCHOOL_SOCIAL_INTEGRATION.md) | How school data connects to social feed, notification bridges |
+| [`TIMETABLE_SYSTEM.md`](./TIMETABLE_SYSTEM.md) | Timetable generation, shifts, constraints |
+| [`MOBILE_API_INTEGRATION_GUIDE.md`](./MOBILE_API_INTEGRATION_GUIDE.md) | How mobile app calls all backend services |
+
+### Admin & Permissions
+| Doc | What it covers |
+|-----|---------------|
+| [`admin-system/ADMIN_PERMISSION_SYSTEM.md`](./admin-system/ADMIN_PERMISSION_SYSTEM.md) | Role-based access control |
+| [`admin-system/ADMIN_PERMISSION_QUICK_REFERENCE.md`](./admin-system/ADMIN_PERMISSION_QUICK_REFERENCE.md) | Quick reference card |
+
+### Deployment
+| Doc | What it covers |
+|-----|---------------|
+| [`deployment-setup/R2_PRODUCTION_READY.md`](./deployment-setup/R2_PRODUCTION_READY.md) | Cloudflare R2 setup |
+| [`deployment-setup/DEPLOYMENT_CHECKLIST.md`](./archive/deployment/DEPLOYMENT_CHECKLIST.md) | Step-by-step Cloud Run deploy |
+| [`deployment-setup/PRISMA_BINARY_FIX.md`](./deployment-setup/PRISMA_BINARY_FIX.md) | Prisma in Docker fix |
+
+### Vision & Long-Term Roadmap
+| Doc | What it covers |
+|-----|---------------|
+| [`stunity-vision/VISION_AND_STRATEGY.md`](./stunity-vision/VISION_AND_STRATEGY.md) | Product vision |
+| [`stunity-vision/TECHNICAL_ARCHITECTURE.md`](./stunity-vision/TECHNICAL_ARCHITECTURE.md) | Long-term architecture plan |
+| [`future-implementation/`](./future-implementation/README.md) | Future features (SSO, multi-tenant, school websites) |
+
+---
+
+## 🗂️ Archive
+
+Everything in [`archive/`](./archive/) is historical — completed implementation phases, session summaries, bug fix notes. You don't need to read these unless debugging a specific historical issue.
+
 ```
-docs/future-implementation/
-├── README.md                           ⭐ START HERE
-├── MASTER_VISION.md                    🎯 Vision & Strategy
-├── QUICK_START.md                      ⚡ Developer Quick Start
-├── CURRENT_SYSTEM_BASELINE.md          📸 Current System Documentation
-├── IMPLEMENTATION_SUMMARY.md           📋 Summary of All Docs
-│
-├── architecture/
-│   └── ARCHITECTURE_OVERVIEW.md        🏗️ System Architecture
-│
-├── features/
-│   ├── SOCIAL_MEDIA_FEATURES.md        📱 Social Features
-│   └── E_LEARNING_PLATFORM.md          🎓 E-Learning Features
-│
-├── international/
-│   └── GLOBAL_EDUCATION_SYSTEMS.md     🌍 Global Support
-│
-└── implementation/
-    └── MIGRATION_GUIDE.md              🔄 Upgrade from Current System
-```
-
----
-
-## 🗺️ Quick Navigation
-
-### 👨💻 For Developers
-1. **Getting Started**
-   - Read [`future-implementation/CURRENT_SYSTEM_BASELINE.md`](./future-implementation/CURRENT_SYSTEM_BASELINE.md) - Understand current system
-   - Follow [`future-implementation/QUICK_START.md`](./future-implementation/QUICK_START.md) - Start coding immediately
-   - Reference [`future-implementation/implementation/MIGRATION_GUIDE.md`](./future-implementation/implementation/MIGRATION_GUIDE.md) - Upgrade path
-
-2. **Architecture**
-   - Study [`future-implementation/architecture/ARCHITECTURE_OVERVIEW.md`](./future-implementation/architecture/ARCHITECTURE_OVERVIEW.md)
-
-3. **Features**
-   - Social: [`future-implementation/features/SOCIAL_MEDIA_FEATURES.md`](./future-implementation/features/SOCIAL_MEDIA_FEATURES.md)
-   - E-Learning: [`future-implementation/features/E_LEARNING_PLATFORM.md`](./future-implementation/features/E_LEARNING_PLATFORM.md)
-
-### 👔 For Stakeholders & Product Managers
-1. **Vision & Strategy**
-   - Read [`future-implementation/MASTER_VISION.md`](./future-implementation/MASTER_VISION.md)
-   - Review business model, revenue projections, roadmap
-
-2. **Overview**
-   - Quick overview: [`future-implementation/README.md`](./future-implementation/README.md)
-   - Summary: [`future-implementation/IMPLEMENTATION_SUMMARY.md`](./future-implementation/IMPLEMENTATION_SUMMARY.md)
-
-### 🏗️ For Technical Leads & Architects
-1. **Architecture**
-   - Complete architecture: [`future-implementation/architecture/ARCHITECTURE_OVERVIEW.md`](./future-implementation/architecture/ARCHITECTURE_OVERVIEW.md)
-   - Current baseline: [`future-implementation/CURRENT_SYSTEM_BASELINE.md`](./future-implementation/CURRENT_SYSTEM_BASELINE.md)
-   - Migration strategy: [`future-implementation/implementation/MIGRATION_GUIDE.md`](./future-implementation/implementation/MIGRATION_GUIDE.md)
-
-### 🌍 For International Expansion
-1. **Global Support**
-   - Education systems: [`future-implementation/international/GLOBAL_EDUCATION_SYSTEMS.md`](./future-implementation/international/GLOBAL_EDUCATION_SYSTEMS.md)
-
----
-
-## 📦 Archived Documentation
-
-Historical documentation (2024-2025 implementation) is archived in:
-**[`docs/archive/`](./archive/)**
-
-### What's in the Archive?
-- Original feature implementation summaries
-- Bug fix documentation
-- Historical deployment guides
-- Phase completion summaries
-
-### ⚠️ Important Note
-Archived docs are **historical reference only**. They may be outdated. Always use the current documentation in `future-implementation/` for active development.
-
----
-
-## 🎯 What's Different in v2.0?
-
-### Old Documentation (v1.0 - Archived)
-- 95 files scattered across multiple directories
-- Implementation-focused
-- Cambodia-specific only
-- Single school, single year
-- No social or e-learning features
-
-### New Documentation (v2.0 - Current)
-- 10+ comprehensive, well-organized files
-- Vision → Implementation coverage
-- Global support (20+ countries, 50+ languages)
-- Social media + E-learning platform
-- Multi-school, multi-year architecture
-- Production-ready code examples
-- Complete migration path
-
-**See**: [`future-implementation/OLD_DOCS_COMPARISON.md`](./future-implementation/OLD_DOCS_COMPARISON.md) for detailed comparison
-
----
-
-## 📊 Documentation Coverage
-
-### Current System
-- ✅ **Complete baseline documentation** of existing system
-- ✅ **All features documented** (students, teachers, grades, attendance, reports)
-- ✅ **Current architecture** fully explained
-- ✅ **Database schema** documented
-- ✅ **API endpoints** listed
-
-### Future Platform
-- ✅ **Vision & strategy** (5-year roadmap)
-- ✅ **Business model** (revenue, pricing, go-to-market)
-- ✅ **Social media features** (posts, feed, messaging, stories, groups)
-- ✅ **E-learning platform** (courses, lessons, quizzes, live classes)
-- ✅ **Global support** (20+ education systems, 50+ languages)
-- ✅ **Technical architecture** (microservices, multi-region, auto-scaling)
-- ✅ **Migration guide** (step-by-step upgrade from current system)
-- ✅ **Implementation guides** (phase-by-phase with code examples)
-
----
-
-## 🚀 Getting Started
-
-### For Immediate Development
-
-```bash
-# 1. Read current system baseline
-cat docs/future-implementation/CURRENT_SYSTEM_BASELINE.md
-
-# 2. Understand the vision
-cat docs/future-implementation/MASTER_VISION.md
-
-# 3. Start coding with quick start guide
-cat docs/future-implementation/QUICK_START.md
-
-# 4. Follow migration guide for upgrades
-cat docs/future-implementation/implementation/MIGRATION_GUIDE.md
-```
-
-### For Understanding Complete Scope
-
-```bash
-# Start with main README
-cat docs/future-implementation/README.md
-
-# Review all documentation
-cd docs/future-implementation
-find . -name "*.md" -type f | sort
+archive/
+├── completed-phases/    ← PHASE*_COMPLETE.md, implementation summaries
+├── 2024-2026-sessions/  ← Per-session work logs
+├── deployment/          ← Old deployment guides (superseded by DEVELOPER_GUIDE.md)
+├── fixes/               ← Bug fix notes
+└── ...
 ```
 
 ---
 
-## 📈 Documentation Statistics
+## 🏗️ System at a Glance
 
-### New Documentation
 ```
-Files:           11 comprehensive documents
-Total Lines:     ~8,000 lines
-Code Examples:   50+ TypeScript/Prisma examples
-Features:        100+ features specified
-Countries:       20+ education systems
-Languages:       50+ languages planned
-Architecture:    Microservices, multi-region
-Investment:      $2.7M project plan
-Revenue (Y5):    $5M+ potential
+Mobile (Expo SDK 54)        Web (Next.js 14)
+        │                          │
+        └──────────┬───────────────┘
+                   │ HTTP + SSE
+     ┌─────────────▼──────────────┐
+     │     14 Microservices        │
+     │  (auth, feed, school, ...)  │
+     └─────────────┬──────────────┘
+                   │ Prisma ORM
+     ┌─────────────▼──────────────┐
+     │   PostgreSQL (Supabase)     │
+     │   + Realtime subscriptions  │
+     └────────────────────────────┘
 ```
 
-### Documentation Quality
-- ✅ Production-ready code examples
-- ✅ Complete TypeScript interfaces
-- ✅ Real Prisma schemas
-- ✅ Step-by-step migration guides
-- ✅ Backward compatibility ensured
-- ✅ Zero-downtime upgrade path
-
----
-
-## 🎓 Learning Path
-
-### Beginner (New to Project)
-1. Read [`CURRENT_SYSTEM_BASELINE.md`](./future-implementation/CURRENT_SYSTEM_BASELINE.md)
-2. Explore codebase (src/, api/)
-3. Follow [`QUICK_START.md`](./future-implementation/QUICK_START.md)
-
-### Intermediate (Ready to Implement)
-1. Study [`MIGRATION_GUIDE.md`](./future-implementation/implementation/MIGRATION_GUIDE.md)
-2. Review feature specifications
-3. Start Phase 1 implementation
-
-### Advanced (Architecture & Strategy)
-1. Study [`ARCHITECTURE_OVERVIEW.md`](./future-implementation/architecture/ARCHITECTURE_OVERVIEW.md)
-2. Review [`MASTER_VISION.md`](./future-implementation/MASTER_VISION.md)
-3. Plan long-term strategy
-
----
-
-## 📞 Support & Questions
-
-### Documentation Issues
-- Found outdated information? Create an issue
-- Need clarification? Ask in team chat
-- Want to contribute? Submit a pull request
-
-### Quick Links
-- **Main Docs**: `docs/future-implementation/README.md`
-- **Current System**: `docs/future-implementation/CURRENT_SYSTEM_BASELINE.md`
-- **Get Started**: `docs/future-implementation/QUICK_START.md`
-- **Vision**: `docs/future-implementation/MASTER_VISION.md`
-- **Migration**: `docs/future-implementation/implementation/MIGRATION_GUIDE.md`
-
----
-
-## 🎉 Ready to Build!
-
-You now have **complete, comprehensive documentation** covering:
-- ✅ Current system (what exists)
-- ✅ Future vision (where we're going)
-- ✅ Migration path (how to get there)
-- ✅ Implementation guides (step-by-step)
-- ✅ Code examples (production-ready)
-
-**Start with**: [`docs/future-implementation/README.md`](./future-implementation/README.md)
-
----
-
-**Documentation Version**: 2.0
-**Last Updated**: January 18, 2026
-**Status**: Active & Maintained
-**License**: Internal Use Only
-
----
-
-*For the archived v1.0 documentation, see [`docs/archive/`](./archive/)*
+**Brand color:** `#0EA5E9` (sky blue) — used everywhere. Never use `#0066FF`.

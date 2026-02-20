@@ -191,6 +191,7 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
             _count: { select: { votes: true } },
           },
         },
+        quiz: true,
         _count: { select: { comments: true, likes: true } },
       },
     });
@@ -199,22 +200,21 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
 
-    const isLiked = await prisma.like.findFirst({
-      where: { postId: post.id, userId: req.user!.id },
-    });
+    const postWithQuiz = post as typeof post & { quiz?: any };
 
-    // Check if user voted on this poll
-    let userVotedOptionId = null;
-    if (post.postType === 'POLL') {
-      const userVote = await prisma.pollVote.findFirst({
-        where: {
-          postId: post.id,
-          userId: req.user!.id,
-        },
-        select: { optionId: true },
-      });
-      userVotedOptionId = userVote?.optionId || null;
-    }
+    const [isLiked, userVote, userAttempt] = await Promise.all([
+      prisma.like.findFirst({ where: { postId: post.id, userId: req.user!.id } }),
+      post.postType === 'POLL'
+        ? prisma.pollVote.findFirst({ where: { postId: post.id, userId: req.user!.id }, select: { optionId: true } })
+        : Promise.resolve(null),
+      post.postType === 'QUIZ' && postWithQuiz.quiz
+        ? prisma.quizAttempt.findFirst({
+            where: { quizId: postWithQuiz.quiz.id, userId: req.user!.id },
+            orderBy: { submittedAt: 'desc' },
+            select: { id: true, quizId: true, score: true, passed: true, pointsEarned: true, submittedAt: true },
+          })
+        : Promise.resolve(null),
+    ]);
 
     res.json({
       success: true,
@@ -223,7 +223,10 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
         isLikedByMe: !!isLiked,
         likesCount: post._count.likes,
         commentsCount: post._count.comments,
-        ...(post.postType === 'POLL' && { userVotedOptionId }),
+        ...(post.postType === 'POLL' && { userVotedOptionId: userVote?.optionId || null }),
+        ...(post.postType === 'QUIZ' && postWithQuiz.quiz && {
+          quiz: { ...postWithQuiz.quiz, userAttempt: userAttempt || null },
+        }),
       },
     });
   } catch (error: any) {
@@ -962,6 +965,30 @@ router.post('/posts/:id/repost', authenticateToken, async (req: AuthRequest, res
       where: { id: originalPostId },
       data: { sharesCount: { increment: 1 } },
     });
+
+    // 🔔 Notify original post author (like/comment pattern)
+    if (originalPost.authorId !== userId) {
+      const reposter = repost.author;
+      const reposterName = `${reposter.firstName} ${reposter.lastName}`;
+      await prisma.notification.create({
+        data: {
+          recipientId: originalPost.authorId,
+          actorId: userId,
+          type: 'SHARE',
+          title: 'Post Reposted',
+          message: comment
+            ? `${reposterName} reposted your post: "${comment.trim().slice(0, 80)}"`
+            : `${reposterName} reposted your post`,
+          postId: originalPostId,
+          link: `/posts/${originalPostId}`,
+        },
+      }).catch(err => console.error('Failed to create repost notification:', err));
+
+      // SSE event to notify original author in real-time
+      EventPublisher.newLike(
+        originalPost.authorId, userId, reposterName, originalPostId
+      );
+    }
 
     res.json({ success: true, data: repost });
   } catch (error: any) {
