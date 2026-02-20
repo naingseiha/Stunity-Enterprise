@@ -933,7 +933,7 @@ const styles = StyleSheet.create({
   },
   typeSelector: {
     maxHeight: 50,
-    marginBottom: 8,
+    marginBottom: 16,
     backgroundColor: '#FFFFFF',
   },
   typeSelectorContent: {
