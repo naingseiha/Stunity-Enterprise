@@ -28,12 +28,19 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle as SvgCircle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
+
+// Animated SVG circle driven by Reanimated
+const AnimatedSvgCircle = Animated.createAnimatedComponent(SvgCircle);
 import Animated, {
   FadeInDown,
   FadeOutUp,
   useAnimatedStyle,
+  useAnimatedProps,
   useSharedValue,
   withTiming,
+  withDelay,
+  withRepeat,
+  withSequence,
   Easing,
 } from 'react-native-reanimated';
 
@@ -69,35 +76,111 @@ const getGreeting = (): string => {
 
 type NavigationProp = FeedStackScreenProps<'Feed'>['navigation'];
 
-// ─── M3 FIX: PerformanceCard memoized outside FeedScreen ────────────────────
-// Extracting the SVG activity rings into its own component prevents the heavy
-// SVG path recalculation from running on every FeedScreen re-render.
 interface PerformanceCardProps {
   stats: { currentStreak: number; totalPoints: number; completedLessons: number; level: number };
   user: { firstName: string; lastName: string; profilePictureUrl?: string } | null;
   onPress: () => void;
 }
 
+// ─── Animated ring arc — each ring manages its own animation ─────────────────
+interface RingArcProps {
+  cx: number; cy: number; r: number; sw: number;
+  targetPct: number; gradId: string; c1: string; delay: number;
+}
+function RingArc({ cx, cy, r, sw, targetPct, gradId, c1, delay }: RingArcProps) {
+  const circ = 2 * Math.PI * r;
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    progress.value = withDelay(
+      delay,
+      withTiming(targetPct, { duration: 1400, easing: Easing.out(Easing.cubic) }),
+    );
+  }, [targetPct, delay]);
+
+  const animatedProps = useAnimatedProps(() => ({
+    strokeDashoffset: circ * (1 - progress.value),
+  }));
+
+  return (
+    <>
+      {/* Track ring */}
+      <SvgCircle cx={cx} cy={cy} r={r} stroke={`${c1}22`} strokeWidth={sw} fill="none" />
+      {/* Animated fill ring */}
+      <AnimatedSvgCircle
+        cx={cx} cy={cy} r={r}
+        stroke={`url(#grad_${gradId})`}
+        strokeWidth={sw}
+        fill="none"
+        strokeDasharray={`${circ}`}
+        strokeLinecap="round"
+        transform={`rotate(-90, ${cx}, ${cy})`}
+        animatedProps={animatedProps}
+      />
+    </>
+  );
+}
+
+// ─── PerformanceCard ──────────────────────────────────────────────────────────
 const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPress }: PerformanceCardProps) {
   const xpToNext = 250;
   const xpProgress = stats.totalPoints % xpToNext;
   const pct = Math.min((xpProgress / xpToNext) * 100, 100);
   const nextLevel = stats.level + 1;
-  const size = 100;
+  const size = 110;
+  const cx = size / 2;
+  const cy = size / 2;
 
   const rings = [
-    { r: 42, sw: 8, pct: Math.min(xpProgress / xpToNext, 1), id: 'xp', c1: '#38BDF8', c2: '#0284C7' },
-    { r: 32, sw: 7, pct: Math.min(stats.completedLessons / Math.max(stats.completedLessons + 5, 10), 1), id: 'lesson', c1: '#34D399', c2: '#059669' },
-    { r: 22, sw: 6, pct: Math.min(stats.currentStreak / 7, 1), id: 'streak', c1: '#FB923C', c2: '#DC2626' },
+    { r: 47, sw: 8,  targetPct: Math.min(xpProgress / xpToNext, 1),                                         id: 'xp',     c1: '#38BDF8', c2: '#0284C7', delay: 0   },
+    { r: 36, sw: 7,  targetPct: Math.min(stats.completedLessons / Math.max(stats.completedLessons + 5, 10), 1), id: 'lesson', c1: '#34D399', c2: '#059669', delay: 180 },
+    { r: 25, sw: 6,  targetPct: Math.min(stats.currentStreak / 7, 1),                                        id: 'streak', c1: '#FB923C', c2: '#DC2626', delay: 360 },
   ];
+
+  // XP bar animated width
+  const barProgress = useSharedValue(0);
+  useEffect(() => {
+    barProgress.value = withDelay(600, withTiming(pct, { duration: 1200, easing: Easing.out(Easing.cubic) }));
+  }, [pct]);
+  const barStyle = useAnimatedStyle(() => ({ width: `${barProgress.value}%` as any }));
+
+  // Level text subtle pulse
+  const levelScale = useSharedValue(1);
+  useEffect(() => {
+    levelScale.value = withDelay(
+      1800,
+      withRepeat(
+        withSequence(
+          withTiming(1.12, { duration: 900, easing: Easing.out(Easing.ease) }),
+          withTiming(1,    { duration: 900, easing: Easing.in(Easing.ease) }),
+        ),
+        -1, false,
+      ),
+    );
+  }, []);
+  const levelPulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: levelScale.value }],
+  }));
+
+  // Avatar gradient border rotation
+  const avatarRot = useSharedValue(0);
+  useEffect(() => {
+    avatarRot.value = withRepeat(
+      withTiming(360, { duration: 4000, easing: Easing.linear }),
+      -1, false,
+    );
+  }, []);
+  const avatarRotStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${avatarRot.value}deg` }],
+  }));
 
   return (
     <TouchableOpacity activeOpacity={0.9} style={perfCardStyles.card} onPress={onPress}>
       <View style={perfCardStyles.inner}>
         <View style={perfCardStyles.topRow}>
-          {/* Activity Rings */}
-          <View style={perfCardStyles.ringWrap}>
-            <View style={perfCardStyles.ringGlow} />
+
+          {/* ── Animated Activity Rings ── */}
+          <View style={[perfCardStyles.ringWrap, { width: size, height: size }]}>
             <Svg width={size} height={size}>
               <Defs>
                 {rings.map(ring => (
@@ -107,25 +190,26 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
                   </SvgLinearGradient>
                 ))}
               </Defs>
-              {rings.map(ring => {
-                const circ = 2 * Math.PI * ring.r;
-                return (
-                  <React.Fragment key={ring.id}>
-                    <SvgCircle cx={size / 2} cy={size / 2} r={ring.r} stroke={`${ring.c1}18`} strokeWidth={ring.sw} fill="none" />
-                    <SvgCircle cx={size / 2} cy={size / 2} r={ring.r} stroke={`url(#grad_${ring.id})`} strokeWidth={ring.sw} fill="none"
-                      strokeDasharray={`${circ}`} strokeDashoffset={circ * (1 - ring.pct)}
-                      strokeLinecap="round" transform={`rotate(-90, ${size / 2}, ${size / 2})`} />
-                  </React.Fragment>
-                );
-              })}
+              {rings.map(ring => (
+                <RingArc
+                  key={ring.id}
+                  cx={cx} cy={cy}
+                  r={ring.r} sw={ring.sw}
+                  targetPct={ring.targetPct}
+                  gradId={ring.id}
+                  c1={ring.c1}
+                  delay={ring.delay}
+                />
+              ))}
             </Svg>
+            {/* Level in centre with pulse */}
             <View style={perfCardStyles.ringInner}>
-              <Text style={perfCardStyles.ringValue}>{stats.level}</Text>
+              <Animated.Text style={[perfCardStyles.ringValue, levelPulseStyle]}>{stats.level}</Animated.Text>
               <Text style={perfCardStyles.ringLabel}>LEVEL</Text>
             </View>
           </View>
 
-          {/* Stats */}
+          {/* ── Stats ── */}
           <View style={perfCardStyles.stats}>
             <View style={perfCardStyles.statRow}>
               <View style={[perfCardStyles.statIcon, { backgroundColor: '#EFF6FF' }]}><Ionicons name="diamond" size={13} color="#3B82F6" /></View>
@@ -141,21 +225,50 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
             </View>
           </View>
 
-          {/* Avatar */}
+          {/* ── Avatar with rotating gradient border ── */}
           <View style={perfCardStyles.avatarWrap}>
-            <Avatar uri={user?.profilePictureUrl} name={user ? `${user.firstName} ${user.lastName}` : 'User'} size="xl" showBorder={false} gradientBorder="none" />
-            <View style={perfCardStyles.avatarBadge}><Text style={perfCardStyles.avatarBadgeText}>{stats.level}</Text></View>
+            <View style={perfCardStyles.avatarOuter}>
+              {/* Rotating rainbow gradient */}
+              <Animated.View style={[StyleSheet.absoluteFill, { borderRadius: 36 }, avatarRotStyle]}>
+                <LinearGradient
+                  colors={['#A855F7', '#3B82F6', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#A855F7']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{ flex: 1, borderRadius: 36 }}
+                />
+              </Animated.View>
+              {/* White inner ring to frame avatar */}
+              <View style={perfCardStyles.avatarInner}>
+                <Avatar
+                  uri={user?.profilePictureUrl}
+                  name={user ? `${user.firstName} ${user.lastName}` : 'User'}
+                  size="xl"
+                  showBorder={false}
+                  gradientBorder="none"
+                />
+              </View>
+            </View>
+            <View style={perfCardStyles.avatarBadge}>
+              <Text style={perfCardStyles.avatarBadgeText}>{stats.level}</Text>
+            </View>
           </View>
+
         </View>
 
-        {/* XP Bar */}
+        {/* ── XP Bar (animated fill) ── */}
         <View style={perfCardStyles.barSection}>
           <View style={perfCardStyles.barLabels}>
             <Text style={perfCardStyles.barLeft}>{xpProgress} / {xpToNext} XP</Text>
             <Text style={perfCardStyles.barRight}>Level {nextLevel}</Text>
           </View>
           <View style={perfCardStyles.barBg}>
-            <LinearGradient colors={['#38BDF8', '#0EA5E9', '#0284C7'] as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[perfCardStyles.barFill, { width: `${pct}%` } as any]} />
+            <Animated.View style={[perfCardStyles.barFill, barStyle]}>
+              <LinearGradient
+                colors={['#38BDF8', '#0EA5E9', '#0284C7'] as any}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                style={StyleSheet.absoluteFill}
+              />
+            </Animated.View>
           </View>
         </View>
       </View>
@@ -176,27 +289,28 @@ const perfCardStyles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 3,
   },
-  inner: { padding: 16, borderRadius: 20, backgroundColor: '#FFFFFF' },
-  topRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-  ringWrap: { width: 100, height: 100, alignItems: 'center', justifyContent: 'center' },
-  ringGlow: { position: 'absolute', width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(14,165,233,0.06)' },
-  ringInner: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
-  ringValue: { fontSize: 22, fontWeight: '800', color: '#0284C7' },
-  ringLabel: { fontSize: 8, fontWeight: '700', color: '#64748B', letterSpacing: 1 },
-  stats: { flex: 1, gap: 6 },
-  statRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  statIcon: { width: 22, height: 22, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
-  statVal: { fontSize: 13, fontWeight: '700', color: '#1E293B' },
-  statLbl: { fontSize: 11, fontWeight: '400', color: '#64748B' },
-  avatarWrap: { alignItems: 'center', position: 'relative' },
-  avatarBadge: { position: 'absolute', bottom: -4, right: -4, backgroundColor: '#0EA5E9', width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff' },
+  inner:       { padding: 16, borderRadius: 20, backgroundColor: '#FFFFFF' },
+  topRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  ringWrap:    { alignItems: 'center', justifyContent: 'center' },
+  ringInner:   { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
+  ringValue:   { fontSize: 22, fontWeight: '800', color: '#0284C7' },
+  ringLabel:   { fontSize: 8,  fontWeight: '700', color: '#64748B', letterSpacing: 1 },
+  stats:       { flex: 1, gap: 6 },
+  statRow:     { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  statIcon:    { width: 22, height: 22, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+  statVal:     { fontSize: 13, fontWeight: '700', color: '#1E293B' },
+  statLbl:     { fontSize: 11, fontWeight: '400', color: '#64748B' },
+  avatarWrap:  { alignItems: 'center', position: 'relative' },
+  avatarOuter: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
+  avatarInner: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', zIndex: 1 },
+  avatarBadge: { position: 'absolute', bottom: -4, right: -4, backgroundColor: '#0EA5E9', width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff', zIndex: 2 },
   avatarBadgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
-  barSection: { gap: 4 },
-  barLabels: { flexDirection: 'row', justifyContent: 'space-between' },
-  barLeft: { fontSize: 11, fontWeight: '600', color: '#0284C7' },
-  barRight: { fontSize: 11, fontWeight: '500', color: '#64748B' },
-  barBg: { height: 6, backgroundColor: '#E0F2FE', borderRadius: 3, overflow: 'hidden' },
-  barFill: { height: '100%', borderRadius: 3 },
+  barSection:  { gap: 4 },
+  barLabels:   { flexDirection: 'row', justifyContent: 'space-between' },
+  barLeft:     { fontSize: 11, fontWeight: '600', color: '#0284C7' },
+  barRight:    { fontSize: 11, fontWeight: '500', color: '#64748B' },
+  barBg:       { height: 6, backgroundColor: '#E0F2FE', borderRadius: 3, overflow: 'hidden' },
+  barFill:     { height: '100%', borderRadius: 3, overflow: 'hidden' },
 });
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -921,7 +1035,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   headerSection: {
-    paddingTop: 4,
+    paddingTop: 12,
     paddingBottom: 0,
   },
   postWrapper: {
