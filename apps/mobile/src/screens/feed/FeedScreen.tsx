@@ -102,7 +102,7 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
 
   return (
     <TouchableOpacity activeOpacity={0.9} style={perfCardStyles.card} onPress={onPress}>
-      <LinearGradient colors={['#FDE68A', '#BAE6FD']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={perfCardStyles.inner}>
+      <View style={perfCardStyles.inner}>
         <View style={perfCardStyles.topRow}>
 
           {/* ── Activity Rings ── */}
@@ -121,7 +121,7 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
                 const circ = 2 * Math.PI * ring.r;
                 return (
                   <React.Fragment key={ring.id}>
-                    <SvgCircle cx={cx} cy={cy} r={ring.r} stroke="rgba(0,0,0,0.08)" strokeWidth={ring.sw} fill="none" />
+                    <SvgCircle cx={cx} cy={cy} r={ring.r} stroke="rgba(14,165,233,0.1)" strokeWidth={ring.sw} fill="none" />
                     <SvgCircle cx={cx} cy={cy} r={ring.r}
                       stroke={`url(#g_${ring.id})`}
                       strokeWidth={ring.sw} fill="none"
@@ -142,21 +142,21 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
           {/* ── Stats ── */}
           <View style={perfCardStyles.stats}>
             <View style={perfCardStyles.statRow}>
-              <LinearGradient colors={['#60A5FA', '#3B82F6']} style={perfCardStyles.statIcon}>
-                <Ionicons name="diamond" size={12} color="#fff" />
-              </LinearGradient>
+              <View style={[perfCardStyles.statIcon, { backgroundColor: '#EFF6FF' }]}>
+                <Ionicons name="diamond" size={12} color="#3B82F6" />
+              </View>
               <Text style={perfCardStyles.statVal}>{stats.totalPoints.toLocaleString()} <Text style={perfCardStyles.statLbl}>XP</Text></Text>
             </View>
             <View style={perfCardStyles.statRow}>
-              <LinearGradient colors={['#34D399', '#10B981']} style={perfCardStyles.statIcon}>
-                <Ionicons name="checkmark-circle" size={12} color="#fff" />
-              </LinearGradient>
+              <View style={[perfCardStyles.statIcon, { backgroundColor: '#ECFDF5' }]}>
+                <Ionicons name="checkmark-circle" size={12} color="#10B981" />
+              </View>
               <Text style={perfCardStyles.statVal}>{stats.completedLessons} <Text style={perfCardStyles.statLbl}>Lessons</Text></Text>
             </View>
             <View style={perfCardStyles.statRow}>
-              <LinearGradient colors={['#FB923C', '#EF4444']} style={perfCardStyles.statIcon}>
-                <Ionicons name="flame" size={12} color="#fff" />
-              </LinearGradient>
+              <View style={[perfCardStyles.statIcon, { backgroundColor: '#FFF7ED' }]}>
+                <Ionicons name="flame" size={12} color="#F97316" />
+              </View>
               <Text style={perfCardStyles.statVal}>{stats.currentStreak} <Text style={perfCardStyles.statLbl}>Day Streak</Text></Text>
             </View>
           </View>
@@ -167,12 +167,12 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
               uri={user?.profilePictureUrl}
               name={user ? `${user.firstName} ${user.lastName}` : 'User'}
               size="xl"
-              gradientBorder="orange"
+              gradientBorder="blue"
               showBorder
             />
-            <LinearGradient colors={['#A855F7', '#0EA5E9']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={perfCardStyles.avatarBadge}>
+            <View style={perfCardStyles.avatarBadge}>
               <Text style={perfCardStyles.avatarBadgeText}>{stats.level}</Text>
-            </LinearGradient>
+            </View>
           </View>
 
         </View>
@@ -189,7 +189,7 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
             </Animated.View>
           </View>
         </View>
-      </LinearGradient>
+      </View>
     </TouchableOpacity>
   );
 });
@@ -198,19 +198,21 @@ const perfCardStyles = StyleSheet.create({
   card: {
     marginHorizontal: 16,
     marginBottom: 12,
-    borderRadius: 14,
+    borderRadius: 16,
     overflow: 'visible',
     backgroundColor: '#FFFFFF',
-    shadowColor: '#94A3B8',
+    borderWidth: 1.5,
+    borderColor: '#BFDBFE',
+    shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
     elevation: 3,
   },
-  inner:       { padding: 16, borderRadius: 14, overflow: 'hidden' },
+  inner:       { padding: 16, borderRadius: 16, overflow: 'hidden' },
   topRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
   ringWrap:    { alignItems: 'center', justifyContent: 'center' },
-  ringGlow:    { position: 'absolute', width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(14,165,233,0.1)' },
+  ringGlow:    { position: 'absolute', width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(59,130,246,0.06)' },
   ringInner:   { position: 'absolute', alignItems: 'center', justifyContent: 'center', width: 42, height: 42, borderRadius: 21 },
   ringValue:   { fontSize: 24, fontWeight: '900', color: '#FFFFFF', letterSpacing: -1 },
   ringLabel:   { fontSize: 10, fontWeight: '700', color: '#0284C7', letterSpacing: 1.5, marginTop: 5 },
@@ -221,14 +223,14 @@ const perfCardStyles = StyleSheet.create({
   statLbl:     { fontSize: 11, fontWeight: '400', color: '#64748B' },
   // Avatar
   avatarWrap:  { alignItems: 'center', position: 'relative' },
-  avatarBadge: { position: 'absolute', bottom: -4, right: -4, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#FFFFFF' },
+  avatarBadge: { position: 'absolute', bottom: -4, right: -4, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#FFFFFF', backgroundColor: '#0EA5E9' },
   avatarBadgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
   // XP bar
   barSection:  { gap: 5 },
   barLabels:   { flexDirection: 'row', justifyContent: 'space-between' },
   barLeft:     { fontSize: 11, fontWeight: '600', color: '#0284C7' },
   barRight:    { fontSize: 11, fontWeight: '500', color: '#64748B' },
-  barBg:       { height: 8, backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: 4, overflow: 'hidden' },
+  barBg:       { height: 8, backgroundColor: '#EFF6FF', borderRadius: 4, overflow: 'hidden' },
   barFill:     { height: '100%', borderRadius: 4, overflow: 'hidden' },
 });
 // ─────────────────────────────────────────────────────────────────────────────
