@@ -30,6 +30,7 @@ Reference these when working on a specific subsystem:
 | [`FEED_SYSTEM.md`](./FEED_SYSTEM.md) | Feed API, algorithm, post types, scoring formula |
 | [`REALTIME_ARCHITECTURE.md`](./REALTIME_ARCHITECTURE.md) | Supabase Realtime + SSE patterns |
 | [`FEED_MEDIA_UPLOAD.md`](./FEED_MEDIA_UPLOAD.md) | R2 upload flow, image handling |
+| [`POLYGLOT_ARCHITECTURE_PLAN.md`](./POLYGLOT_ARCHITECTURE_PLAN.md) | Database architecture upgrade: Redis + pgvector + Typesense + TimescaleDB — phases, code, cost |
 
 ### School Management ↔ Social Integration
 | Doc | What it covers |
