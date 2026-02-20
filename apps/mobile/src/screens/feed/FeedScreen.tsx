@@ -45,7 +45,6 @@ import {
   PostCard,
   PostAnalyticsModal,
   SubjectFilters,
-  FloatingActionButton,
   EducationalValueModal,
   type EducationalValue,
 } from '@/components/feed';
@@ -848,8 +847,6 @@ export default function FeedScreen() {
         authorName={valuePostData?.authorName || 'Unknown'}
       />
 
-      {/* Floating Action Button */}
-      <FloatingActionButton onPress={handleCreatePost} />
     </View>
   );
 }
