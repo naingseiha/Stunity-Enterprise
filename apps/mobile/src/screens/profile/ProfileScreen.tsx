@@ -803,13 +803,13 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F3FF',
+    backgroundColor: '#F0F4F8',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F3FF',
+    backgroundColor: '#F0F4F8',
   },
   errorText: {
     fontSize: 16,
@@ -851,7 +851,7 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -887,7 +887,7 @@ const styles = StyleSheet.create({
   },
   openToWorkBanner: {
     marginTop: 8,
-    borderRadius: 20,
+    borderRadius: 14,
     overflow: 'hidden',
     alignSelf: 'center',
   },
@@ -982,7 +982,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -994,20 +994,22 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    borderRadius: 18,
+    borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: '#fff',
+    
+    
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
+    
+    
+    
+    
   },
   statCardGradient: {
     alignItems: 'center',
     paddingVertical: 18,
     paddingHorizontal: 8,
-    borderRadius: 18,
+    borderRadius: 14,
     backgroundColor: '#fff',
   },
   statIconCircle: {
@@ -1066,25 +1068,25 @@ const styles = StyleSheet.create({
   iconBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
   },
   // ── Follow pill ──
   followPill: {
     borderRadius: 24,
     overflow: 'hidden',
     shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 3,
+    
+    
   },
   followPillFollowing: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -1129,17 +1131,17 @@ const styles = StyleSheet.create({
   },
   // ── Hero Progress Card ──
   heroCard: {
-    borderRadius: 20,
+    borderRadius: 14,
     overflow: 'hidden',
     shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 4 },
+    
     shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 6,
+    
+    
     marginBottom: 16,
   },
   heroGradient: {
-    borderRadius: 20,
+    borderRadius: 14,
     padding: 20,
     position: 'relative',
     overflow: 'hidden',
@@ -1158,7 +1160,7 @@ const styles = StyleSheet.create({
   heroIconWrap: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.9)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1212,15 +1214,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    
     shadowOpacity: 0.04,
     shadowRadius: 4,
-    elevation: 1,
+    
   },
   statGridIcon: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -1312,7 +1314,9 @@ const styles = StyleSheet.create({
   },
   aboutCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    
+    
+    borderRadius: 14,
     padding: 20,
     ...Shadows.sm,
   },

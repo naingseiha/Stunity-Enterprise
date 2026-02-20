@@ -474,7 +474,7 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FAFAFA',
+        backgroundColor: '#F0F4F8',
     },
     header: {
         flexDirection: 'row',
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
     backButton: {
         width: 40,
         height: 40,
-        borderRadius: 20,
+        borderRadius: 14,
         backgroundColor: '#F5F3FF',
         alignItems: 'center',
         justifyContent: 'center',
@@ -562,14 +562,16 @@ const styles = StyleSheet.create({
     // Post Result Card
     postResultCard: {
         backgroundColor: '#FFFFFF',
+        
+        
         borderRadius: 14,
         padding: 14,
         marginBottom: 10,
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 1 },
+        
+        
         shadowOpacity: 0.04,
-        shadowRadius: 6,
-        elevation: 2,
+        
+        
     },
     postResultHeader: {
         flexDirection: 'row',
@@ -639,15 +641,17 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#FFFFFF',
+        
+        
         borderRadius: 14,
         padding: 14,
         marginBottom: 10,
         gap: 14,
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 1 },
+        
+        
         shadowOpacity: 0.04,
-        shadowRadius: 6,
-        elevation: 2,
+        
+        
     },
     userResultInfo: {
         flex: 1,
@@ -752,8 +756,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#EEF2FF',
         paddingVertical: 8,
         paddingHorizontal: 16,
-        borderRadius: 20,
-        borderWidth: 1,
+        borderRadius: 14,
+        
         borderColor: '#E0E7FF',
     },
     suggestionChipText: {
@@ -776,7 +780,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 10,
         marginBottom: 10,
-        borderWidth: 1,
+        
         borderColor: '#FDE68A',
         gap: 8,
     },
@@ -821,7 +825,7 @@ const styles = StyleSheet.create({
         padding: 10,
         marginBottom: 10,
         gap: 6,
-        borderWidth: 1,
+        
         borderColor: '#EDE9FE',
     },
     pollOptionRow: {

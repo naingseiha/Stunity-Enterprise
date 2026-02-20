@@ -13,7 +13,6 @@ import {
   Dimensions,
   StatusBar,
   TouchableOpacity,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,6 +23,7 @@ import Animated, {
   FadeIn,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import StunityLogo from '../../../assets/Stunity.svg';
 
 import { Colors, Typography, Spacing } from '@/config';
 import { AuthStackScreenProps } from '@/navigation/types';
@@ -66,11 +66,7 @@ export default function WelcomeScreen() {
           style={styles.brandingContainer}
         >
           <Animated.View entering={FadeInDown.delay(100).duration(600)}>
-            <Image
-              source={require('../../../assets/Stunity.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <StunityLogo width={160} height={160} style={{ marginBottom: 16 }} />
           </Animated.View>
 
           <Text style={styles.tagline}>
@@ -251,10 +247,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    
+    
   },
   featureIcon: {
     width: 44,
@@ -309,10 +305,10 @@ const styles = StyleSheet.create({
   },
   secondaryShadow: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    
+    
+    
+    
     borderRadius: 28,
   },
   secondaryButton: {

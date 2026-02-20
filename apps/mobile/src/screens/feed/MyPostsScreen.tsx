@@ -185,7 +185,7 @@ export default function MyPostsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F0F4F8',
   },
   
   // Header
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 20,
+    borderRadius: 14,
   },
   headerTitle: {
     fontSize: 18,

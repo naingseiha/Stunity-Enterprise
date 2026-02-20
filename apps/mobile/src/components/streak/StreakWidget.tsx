@@ -191,13 +191,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.9)',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 20,
+    borderRadius: 14,
     gap: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    
+    
     shadowRadius: 2,
-    elevation: 2,
+    
   },
   compactFlame: {
     fontSize: 16,
@@ -207,16 +207,16 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   container: {
-    borderRadius: 20,
+    borderRadius: 14,
     padding: 16,
     overflow: 'hidden',
     position: 'relative',
     shadowColor: '#F97316',
-    shadowOffset: { width: 0, height: 4 },
+    
     shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-    borderWidth: 1,
+    
+    
+    
     borderColor: 'rgba(255,255,255,0.1)',
   },
   glowContainer: {
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   },
   glow: {
     flex: 1,
-    borderRadius: 20,
+    borderRadius: 14,
   },
   content: {
     flexDirection: 'row',
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.3)',
   },
   flameEmoji: {

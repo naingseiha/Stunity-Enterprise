@@ -286,7 +286,7 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
       {/* Prerequisites Card */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: '#F0F9FF' }]}>
+          <View style={[styles.iconContainer, { backgroundColor: '#F0F4F8' }]}>
             <Ionicons name="shield-checkmark" size={20} color="#0EA5E9" />
           </View>
           <View>
@@ -346,14 +346,14 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
+    
+    
+    
     borderColor: '#F3F4F6',
   },
   cardHeader: {
@@ -388,9 +388,9 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    
     alignItems: 'center',
     gap: 6,
   },
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F0F4F8',
     marginVertical: 16,
   },
   // Row Settings
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
   },
   miniChipSelected: {
     backgroundColor: '#10B981',
@@ -466,19 +466,19 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sectionCard: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
     overflow: 'hidden',
   },
   sectionCardExpanded: {
     backgroundColor: '#FFF',
     borderColor: '#C7D2FE',
-    shadowColor: '#6366F1',
-    shadowOpacity: 0.1,
+    
+    
     shadowRadius: 4,
-    elevation: 2,
+    
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   input: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
@@ -557,10 +557,10 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
     paddingRight: 6,
   },
   mainInput: {
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: '#E0F2FE',
     borderRadius: 8,
-    borderWidth: 1,
+    
     borderColor: '#BAE6FD',
   },
   tagText: {

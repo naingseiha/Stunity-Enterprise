@@ -336,7 +336,7 @@ export default function CreateClubScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F3FF',
+    backgroundColor: '#F0F4F8',
   },
   keyboardView: {
     flex: 1,
@@ -392,8 +392,8 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 15,
     color: '#111827',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
   },
   textArea: {
     height: 120,
@@ -421,8 +421,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
     position: 'relative',
   },
   typeIconContainer: {
@@ -464,8 +464,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     gap: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
   },
   modeOptionSelected: {
     borderColor: Colors.primary,
@@ -499,10 +499,10 @@ const styles = StyleSheet.create({
   },
   previewCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
   },
   previewCover: {
     height: 120,
@@ -549,10 +549,10 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     overflow: 'hidden',
     shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 4 },
+    
     shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
+    
+    
   },
   createButtonDisabled: {
     opacity: 0.6,

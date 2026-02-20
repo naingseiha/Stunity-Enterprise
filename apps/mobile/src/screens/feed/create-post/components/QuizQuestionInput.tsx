@@ -504,17 +504,17 @@ export function QuizQuestionInput({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F0F4F8',
     borderRadius: 20,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
+    
+    
   },
   cardExpanded: {
     borderWidth: 2,
@@ -526,7 +526,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F0F4F8',
   },
   headerExpanded: {
     paddingVertical: 20,
@@ -607,11 +607,11 @@ const styles = StyleSheet.create({
     color: '#111827',
     minHeight: 100,
     textAlignVertical: 'top',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F0F4F8',
     borderRadius: 16,
     padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
     fontWeight: '500',
   },
   typeScroll: {
@@ -625,9 +625,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#F0F4F8',
+    
+    
   },
   typeChipText: {
     fontSize: 13,
@@ -645,11 +645,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F0F4F8',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
   },
   pointChipText: {
     fontSize: 15,
@@ -661,7 +661,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFAFA',
     padding: 16,
     borderRadius: 16,
-    borderWidth: 1,
+    
     borderStyle: 'dashed', // Dashed border for answer area
   },
   optionRow: {
@@ -678,13 +678,13 @@ const styles = StyleSheet.create({
     borderColor: '#D1D5DB',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F0F4F8',
   },
   optionInput: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#F0F4F8',
+    
+    
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -692,10 +692,10 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     fontWeight: '500',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    
     shadowOpacity: 0.02,
     shadowRadius: 2,
-    elevation: 1,
+    
   },
   removeOptionBtn: {
     padding: 8,
@@ -706,9 +706,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 12,
-    borderWidth: 1,
+    
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F0F4F8',
     marginTop: 8,
     borderStyle: 'dashed',
   },
@@ -728,15 +728,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F0F4F8',
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.03,
     shadowRadius: 4,
-    elevation: 2,
+    
   },
   tfButtonTrue: {
     backgroundColor: '#10B981',
@@ -756,9 +756,9 @@ const styles = StyleSheet.create({
   },
   // Input Field
   inputField: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#F0F4F8',
+    
+    
     borderRadius: 12,
     padding: 14,
     fontSize: 15,
@@ -789,9 +789,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   matchInput: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#F0F4F8',
+    
+    
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,

@@ -172,11 +172,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 0,
     borderRadius: 18,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    
+    
+    
     shadowRadius: 10,
-    elevation: 3,
+    
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     borderRadius: STORY_SIZE / 2,
     backgroundColor: '#F3F4F6',
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',

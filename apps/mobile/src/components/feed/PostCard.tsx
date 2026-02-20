@@ -538,36 +538,15 @@ const PostCardInner: React.FC<PostCardProps> = ({
               handleFollow();
             }}
             disabled={followLoading}
-            activeOpacity={0.8}
-            style={{ marginRight: 2 }}
+            activeOpacity={0.5}
+            style={styles.followBtnWrap}
           >
-            {isFollowing ? (
-              <View style={styles.followBtnFollowing}>
-                {followLoading ? (
-                  <ActivityIndicator size={11} color="#6B7280" />
-                ) : (
-                  <>
-                    <Ionicons name="checkmark-circle" size={14} color="#6B7280" />
-                    <Text style={styles.followBtnTextFollowing}>Following</Text>
-                  </>
-                )}
-              </View>
+            {followLoading ? (
+              <ActivityIndicator size={11} color="#0D9488" />
+            ) : isFollowing ? (
+              <Text style={styles.followBtnTextFollowing}>Following</Text>
             ) : (
-              <LinearGradient
-                colors={['#6366F1', '#4F46E5']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.followBtnGradient}
-              >
-                {followLoading ? (
-                  <ActivityIndicator size={11} color="#fff" />
-                ) : (
-                  <>
-                    <Ionicons name="person-add" size={12} color="#fff" />
-                    <Text style={styles.followBtnText}>Follow</Text>
-                  </>
-                )}
-              </LinearGradient>
+              <Text style={styles.followBtnText}>Follow</Text>
             )}
           </TouchableOpacity>
         )}
@@ -601,7 +580,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
                 <Ionicons
                   name={bookmarked ? 'bookmark' : 'bookmark-outline'}
                   size={18}
-                  color={bookmarked ? '#6366F1' : '#374151'}
+                  color={bookmarked ? '#0D9488' : '#374151'}
                 />
                 <Text style={[styles.menuItemText, bookmarked && styles.menuItemTextActive]}>
                   {bookmarked ? 'Saved' : 'Save'}
@@ -819,11 +798,16 @@ const PostCardInner: React.FC<PostCardProps> = ({
 
       {/* Clean Learning Info Bar */}
       <View style={styles.learningBar}>
-        {/* Post Type */}
-        <View style={[styles.typeChip, { backgroundColor: typeConfig.bgColor }]}>
-          <Ionicons name={typeConfig.icon as any} size={14} color={typeConfig.color} />
-          <Text style={[styles.typeChipText, { color: typeConfig.color }]}>{typeConfig.label}</Text>
-        </View>
+        {/* Post Type — gradient pill */}
+        <LinearGradient
+          colors={typeConfig.gradient as [string, string]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.typeChip}
+        >
+          <Ionicons name={typeConfig.icon as any} size={13} color="#FFFFFF" />
+          <Text style={styles.typeChipText}>{typeConfig.label}</Text>
+        </LinearGradient>
 
         {/* Difficulty Badge */}
         {learningMeta?.difficulty && (
@@ -848,7 +832,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
             </View>
           )}
           <View style={styles.inlineMetric}>
-            <Ionicons name="stats-chart" size={13} color="#6366F1" />
+            <Ionicons name="stats-chart" size={13} color="#0D9488" />
             <Text style={styles.inlineMetricText}>{formatNumber(post.likes + post.comments)}</Text>
           </View>
         </View>
@@ -937,21 +921,12 @@ export const PostCard = React.memo(PostCardInner, arePostCardPropsEqual);
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 14,
-    marginBottom: 14,
-    borderRadius: 18,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 14,
     overflow: 'hidden',
     position: 'relative',
     paddingTop: 14,
-    // Premium card shadow with indigo tint
-    shadowColor: '#6366F1',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
   },
   // LIVE Badge styles
   liveBadge: {
@@ -1052,7 +1027,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: '#EDE9FE',
+    backgroundColor: '#F0FDFA',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -1060,7 +1035,7 @@ const styles = StyleSheet.create({
   studyGroupText: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#8B5CF6',
+    color: '#0D9488',
   },
   // Menu Container for dropdown
   menuContainer: {
@@ -1100,7 +1075,7 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   menuItemTextActive: {
-    color: '#6366F1',
+    color: '#0D9488',
   },
   // Twitter-style Blue Tick
   twitterBlueTick: {
@@ -1136,9 +1111,9 @@ const styles = StyleSheet.create({
   },
   mediaWrapper: {
     marginHorizontal: 0,        // Full-width, edge-to-edge
-    marginTop: 12,              // Breathing room from content above
-    marginBottom: 12,           // Breathing room from content below
-    borderRadius: 0,            // No rounded corners for modern look
+    marginTop: 12,
+    marginBottom: 12,
+    borderRadius: 0,
     overflow: 'hidden',
     position: 'relative',
   },
@@ -1202,7 +1177,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   topicTag: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#F0FDFA',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -1210,7 +1185,7 @@ const styles = StyleSheet.create({
   topicTagText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6366F1',
+    color: '#0D9488',
   },
   moreTagsText: {
     fontSize: 12,
@@ -1313,12 +1288,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 6,
+    borderRadius: 20,
     gap: 5,
+    overflow: 'hidden',
   },
   typeChipText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   // Difficulty Badge
   difficultyBadge: {
@@ -1420,10 +1397,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    
+    
     shadowRadius: 4,
-    elevation: 3,
+    
   },
   quizHeaderText: {
     flex: 1,
@@ -1480,9 +1457,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     gap: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
+    
+    
+    
     elevation: 4,
   },
   takeQuizButtonText: {
@@ -1545,7 +1522,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#F0FDFA',
     paddingVertical: 14,
     borderRadius: 12,
     gap: 8,
@@ -1553,7 +1530,7 @@ const styles = StyleSheet.create({
   viewResultsButtonText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#6366F1',
+    color: '#0D9488',
   },
   retakeQuizButton: {
     flexDirection: 'row',
@@ -1578,8 +1555,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     padding: 16,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#EEF2FF',
+    
+    borderColor: '#CCFBF1',
   },
   clubBannerContent: {
     flexDirection: 'row',
@@ -1621,11 +1598,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 12,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 2 },
+    
+    
     shadowOpacity: 0.15,
     shadowRadius: 4,
-    elevation: 3,
+    
   },
   clubJoinButtonText: {
     fontSize: 14,
@@ -1633,42 +1610,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     letterSpacing: 0.3,
   },
-  // Follow Button
-  followBtnGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    minWidth: 76,
-    height: 30,
-  },
-  followBtnFollowing: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
-    minWidth: 88,
-    height: 30,
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+  // Follow Button — plain text, no border/background
+  followBtnWrap: {
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+    marginRight: 2,
   },
   followBtnText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#fff',
-    letterSpacing: 0.2,
+    color: '#0D9488',
   },
   followBtnTextFollowing: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6B7280',
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#9CA3AF',
   },
   // Repost Label
   repostLabel: {
@@ -1689,8 +1645,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 14,
     marginBottom: 10,
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
     backgroundColor: '#FAFAFA',
     overflow: 'hidden',
   },

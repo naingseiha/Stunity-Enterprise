@@ -210,11 +210,11 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.1)',
   },
   headerTitle: {
@@ -229,10 +229,10 @@ const styles = StyleSheet.create({
   },
   // Progress Card
   progressCard: {
-    borderRadius: 20,
+    borderRadius: 14,
     padding: 20,
     marginBottom: 24,
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.1)',
   },
   progressHeader: {
@@ -286,10 +286,10 @@ const styles = StyleSheet.create({
   badgeItem: {
     width: (SCREEN_WIDTH - 60) / 2,
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 20,
+    borderRadius: 14,
     padding: 16,
     alignItems: 'center',
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.05)',
     marginBottom: 16,
   },

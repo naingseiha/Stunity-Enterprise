@@ -448,7 +448,7 @@ export default function EditPostScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F0F4F8',
   },
   header: {
     flexDirection: 'row',
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#6366F1',
     paddingHorizontal: 20,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 14,
     minWidth: 70,
     alignItems: 'center',
   },
@@ -524,8 +524,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
     gap: 8,
   },
   visibilityLabel: {

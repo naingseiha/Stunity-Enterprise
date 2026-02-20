@@ -433,11 +433,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
+    
+    
+    
     borderColor: '#F3F4F6',
   },
   cardHeader: {
@@ -473,9 +473,9 @@ const styles = StyleSheet.create({
     width: '48%',
     padding: 12,
     borderRadius: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    
     alignItems: 'center',
     gap: 8,
   },
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F0F4F8',
     marginVertical: 16,
   },
   // Duration
@@ -527,9 +527,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    
+    
   },
   chipSelected: {
     backgroundColor: '#8B5CF6',
@@ -549,10 +549,10 @@ const styles = StyleSheet.create({
   },
   milestoneCard: {
     padding: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
     gap: 10,
   },
   milestoneHeader: {
@@ -601,8 +601,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
     backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
   },
   miniChipSelected: {
     backgroundColor: '#3B82F6',
@@ -638,10 +638,10 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
     paddingRight: 6,
   },
   mainInput: {
@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: '#ECFDF5',
     borderRadius: 10,
-    borderWidth: 1,
+    
     borderColor: '#BBF7D0',
   },
   deliverableText: {
@@ -696,7 +696,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: '#FFF7ED',
     borderRadius: 20,
-    borderWidth: 1,
+    
     borderColor: '#FDBA74',
   },
   skillChipText: {
@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: '#FFF7ED',
     borderRadius: 16,
-    borderWidth: 1,
+    
     borderColor: '#FED7AA',
   },
   suggestedSkillText: {

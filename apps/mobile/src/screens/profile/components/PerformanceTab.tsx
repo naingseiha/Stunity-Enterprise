@@ -163,7 +163,7 @@ function WeeklyDots({ streak }: { streak: Streak | null }) {
 const dotStyles = StyleSheet.create({
     container: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 20 },
     dayColumn: { alignItems: 'center', gap: 6 },
-    dot: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#F3F4F6' },
+    dot: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#F0F4F8' },
     dotActive: { backgroundColor: '#F97316' },
     dotToday: { borderWidth: 2.5, borderColor: '#FB923C' },
     dayLabel: { fontSize: 10, fontWeight: '600', color: '#D1D5DB' },
@@ -209,7 +209,7 @@ export default function PerformanceTab({
                         <XPProgressRing xp={xp} xpToNext={xpToNext} level={quizStats?.level ?? level} quizzes={quizStats?.totalQuizzes ?? 0} avgScore={quizStats?.avgScore ?? 0} />
                         <View style={s.xpInfo}>
                             <View style={s.xpStatRow}>
-                                <View style={[s.xpStatIcon, { backgroundColor: '#EFF6FF' }]}>
+                                <View style={[s.xpStatIcon, { backgroundColor: '#F0F4F8' }]}>
                                     <Ionicons name="diamond" size={14} color="#3B82F6" />
                                 </View>
                                 <View>
@@ -260,7 +260,7 @@ export default function PerformanceTab({
             {/* Quiz Performance Card */}
             <View style={s.card}>
                 <View style={s.cardHeader}>
-                    <View style={[s.cardHeaderIcon, { backgroundColor: '#EFF6FF' }]}>
+                    <View style={[s.cardHeaderIcon, { backgroundColor: '#F0F4F8' }]}>
                         <Ionicons name="analytics" size={18} color="#3B82F6" />
                     </View>
                     <Text style={s.cardTitle}>Quiz Performance</Text>
@@ -401,13 +401,15 @@ const s = StyleSheet.create({
     container: { gap: 16 },
     card: {
         backgroundColor: '#fff',
-        borderRadius: 20,
+        
+        
+        borderRadius: 14,
         overflow: 'hidden',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 12,
-        elevation: 3,
+        
+        
+        
+        
     },
     cardGradient: { padding: 20 },
     cardHeader: {
@@ -453,7 +455,7 @@ const s = StyleSheet.create({
     quizStat: { flex: 1, alignItems: 'center' },
     quizStatValue: { fontSize: 18, fontWeight: '800' },
     quizStatLabel: { fontSize: 10, color: '#9CA3AF', fontWeight: '600', marginTop: 2 },
-    quizStatDivider: { width: 1, height: 30, backgroundColor: '#F3F4F6', alignSelf: 'center' },
+    quizStatDivider: { width: 1, height: 30, backgroundColor: '#F0F4F8', alignSelf: 'center' },
     chartContainer: { paddingHorizontal: 16, paddingBottom: 16 },
     chartTitle: { fontSize: 12, fontWeight: '600', color: '#9CA3AF', marginBottom: 4, paddingLeft: 4 },
     emptyChart: { alignItems: 'center', paddingVertical: 24, paddingBottom: 20, gap: 8 },
@@ -480,7 +482,7 @@ const s = StyleSheet.create({
     badgeName: { fontSize: 10, fontWeight: '600', color: '#6B7280', textAlign: 'center' },
 
     // Leaderboard
-    leaderboardCard: { borderRadius: 20, overflow: 'hidden' },
+    leaderboardCard: { borderRadius: 14, overflow: 'hidden' },
     leaderboardGradient: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         padding: 20,

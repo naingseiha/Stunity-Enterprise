@@ -440,7 +440,7 @@ export default function EditProfileScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: '#F0F4F8' },
 
   // ── Header ────────────────────────────────────────────
   header: {
@@ -459,7 +459,7 @@ const s = StyleSheet.create({
   saveBtn: {
     paddingHorizontal: 20,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 14,
   },
   saveBtnText: {
     fontSize: 14,
@@ -473,12 +473,12 @@ const s = StyleSheet.create({
   // ── Photo Section ─────────────────────────────────────
   photoSection: {
     marginBottom: 24,
-    borderRadius: 20,
+    borderRadius: 14,
     overflow: 'visible',
   },
   coverTouch: {
     height: 200,
-    borderRadius: 20,
+    borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: '#E0F2FE',
   },
@@ -517,10 +517,10 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    
+    
     shadowRadius: 4,
-    elevation: 2,
+    
   },
 
   // ── Labels ────────────────────────────────────────────
@@ -566,7 +566,7 @@ const s = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     backgroundColor: '#fff',
-    borderWidth: 1,
+    
     borderColor: '#E2E8F0',
     paddingHorizontal: 16,
     marginBottom: 16,
@@ -588,7 +588,7 @@ const s = StyleSheet.create({
   socialIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',

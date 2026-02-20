@@ -65,7 +65,7 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
       {/* Bounty Section */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: '#F0F9FF' }]}>
+          <View style={[styles.iconContainer, { backgroundColor: '#F0F4F8' }]}>
             <Ionicons name="trophy" size={20} color="#0EA5E9" />
           </View>
           <View>
@@ -122,7 +122,7 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
       {/* Tags Section */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: '#EFF6FF' }]}>
+          <View style={[styles.iconContainer, { backgroundColor: '#F0F4F8' }]}>
             <Ionicons name="pricetags" size={20} color="#3B82F6" />
           </View>
           <View>
@@ -236,14 +236,14 @@ const styles = StyleSheet.create({
   // Card
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
+    
+    
+    
     borderColor: '#F3F4F6',
   },
   cardHeader: {
@@ -277,30 +277,30 @@ const styles = StyleSheet.create({
   bountyCard: {
     width: 100,
     padding: 12,
-    borderRadius: 16,
-    backgroundColor: '#F0F9FF',
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
     borderWidth: 2,
     borderColor: '#E0F2FE',
     alignItems: 'center',
     gap: 8,
   },
   bountyCardSelected: {
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#FFFFFF',
     borderColor: '#0EA5E9',
     shadowColor: '#0EA5E9',
-    shadowOffset: { width: 0, height: 4 },
+    
     shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    
+    
   },
   bountyCardNone: {
-    backgroundColor: '#F3F4F6',
-    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    
   },
   bountyIcon: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 14,
     backgroundColor: '#E0F2FE',
     alignItems: 'center',
     justifyContent: 'center',
@@ -337,10 +337,10 @@ const styles = StyleSheet.create({
   tagInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
     paddingHorizontal: 12,
     height: 48,
   },
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     backgroundColor: '#3B82F6',
-    borderRadius: 20,
+    borderRadius: 14,
   },
   tagText: {
     fontSize: 13,
@@ -391,9 +391,9 @@ const styles = StyleSheet.create({
     width: '48%',
     padding: 12,
     borderRadius: 12,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    
+    
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,

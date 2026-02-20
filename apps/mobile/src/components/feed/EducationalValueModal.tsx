@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    
     backgroundColor: '#FAFAFA',
     gap: 5,
   },
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    
     backgroundColor: '#FAFAFA',
   },
   recommendRowActive: {

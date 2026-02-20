@@ -376,11 +376,11 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.1)',
   },
   headerTitle: {
@@ -392,11 +392,11 @@ const styles = StyleSheet.create({
   filterButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.1)',
   },
   tabContainer: {
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     padding: 16,
     borderRadius: 16,
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.05)',
   },
   rankContainer: {
@@ -589,7 +589,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1e1b4b',
     borderRadius: 24,
     padding: 24,
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.1)',
   },
   modalHeader: {

@@ -369,7 +369,7 @@ export default function ClubDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F3FF',
+    backgroundColor: '#F0F4F8',
   },
   header: {
     flexDirection: 'row',
@@ -426,10 +426,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 6,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    
+    
     shadowRadius: 4,
-    elevation: 3,
+    
   },
   typeBadgeText: {
     fontSize: 12,
@@ -439,15 +439,17 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     backgroundColor: '#FFFFFF',
+    
+    
     marginHorizontal: 16,
     marginTop: -40,
-    borderRadius: 20,
+    borderRadius: 14,
     padding: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
+    
+    
+    
+    
   },
   clubName: {
     fontSize: 24,
@@ -513,13 +515,13 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   actionButton: {
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: 'hidden',
     shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 4 },
+    
     shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    
+    
   },
   actionButtonJoined: {
     borderWidth: 2,
@@ -541,15 +543,17 @@ const styles = StyleSheet.create({
   },
   section: {
     backgroundColor: '#FFFFFF',
+    
+    
     marginHorizontal: 16,
     marginTop: 16,
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 2,
+    
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -624,7 +628,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     backgroundColor: Colors.primary,
-    borderRadius: 20,
+    borderRadius: 14,
   },
   retryButtonText: {
     fontSize: 14,

@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
+    
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   statusBadge: {

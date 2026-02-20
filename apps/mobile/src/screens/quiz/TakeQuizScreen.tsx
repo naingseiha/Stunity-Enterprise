@@ -809,11 +809,11 @@ export function TakeQuizScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F0F4F8',
   },
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F0F4F8',
   },
   header: {
     flexDirection: 'row',
@@ -847,7 +847,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EEF2FF',
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 14,
     gap: 6,
   },
   timerWarning: {
@@ -894,9 +894,9 @@ const styles = StyleSheet.create({
     margin: 16,
     marginBottom: 8,
     padding: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderRadius: 14,
+    
+    
   },
   questionHeader: {
     flexDirection: 'row',
@@ -912,7 +912,7 @@ const styles = StyleSheet.create({
   flagButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
   },
   questionNumber: {
     backgroundColor: '#EEF2FF',
@@ -952,26 +952,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 18,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 14,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    
     gap: 14,
     minHeight: 64,
   },
   optionButtonSelected: {
     backgroundColor: '#EEF2FF',
     borderColor: '#6366F1',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    
+    
+    
+    
+    
   },
   optionLetter: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 14,
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
     borderColor: '#D1D5DB',
@@ -1011,10 +1011,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    
     gap: 8,
   },
   trueButtonSelected: {
@@ -1034,9 +1034,9 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   textInput: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    
     borderRadius: 12,
     padding: 16,
     fontSize: 15,
@@ -1049,8 +1049,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
     padding: 20,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
   },
   answerGridTitle: {
     fontSize: 15,
@@ -1069,10 +1069,10 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
   },
   gridItemAnswered: {
     backgroundColor: '#D1FAE5',
@@ -1133,7 +1133,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   navButtonDisabled: {
-    borderColor: '#E5E7EB',
+    
   },
   navButtonText: {
     fontSize: 15,
@@ -1207,8 +1207,8 @@ const styles = StyleSheet.create({
     margin: 16,
     padding: 20,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
   },
   reviewTitle: {
     fontSize: 18,
@@ -1245,8 +1245,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     padding: 16,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
     marginBottom: 12,
   },
   reviewItemLeft: {
@@ -1259,7 +1259,7 @@ const styles = StyleSheet.create({
   reviewNumber: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1336,7 +1336,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F0F4F8',
   },
 
   // New Question Type Styles
@@ -1357,8 +1357,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     padding: 12,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
     gap: 12,
   },
   orderingNumber: {
@@ -1386,7 +1386,7 @@ const styles = StyleSheet.create({
   orderBtn: {
     padding: 4,
     borderRadius: 4,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
   },
   orderBtnDisabled: {
     opacity: 0.5,
@@ -1400,10 +1400,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     padding: 12,
     borderRadius: 12,
-    borderWidth: 1,
+    
     borderColor: '#F3F4F6',
   },
   matchLeft: {
@@ -1420,10 +1420,10 @@ const styles = StyleSheet.create({
   matchChip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
     marginRight: 8,
   },
   matchChipSelected: {

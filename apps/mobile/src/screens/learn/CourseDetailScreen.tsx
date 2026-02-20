@@ -403,7 +403,7 @@ export default function CourseDetailScreen() {
                       <View style={styles.lessonIconContainer}>
                         {lesson.type === 'video' ? (
                           <View style={[styles.lessonIconBg, {
-                            backgroundColor: lesson.isFree ? '#EEF2FF' : '#F3F4F6'
+                            backgroundColor: lesson.isFree ? '#EEF2FF' : '#F4F6F9'
                           }]}>
                             <Ionicons
                               name="play"
@@ -611,7 +611,7 @@ export default function CourseDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F3FF',
+    backgroundColor: '#F0F4F8',
   },
 
   // ── Sticky Header ──
@@ -739,13 +739,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 10,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 4,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    
+    
+    
+    
+    
   },
   tabPill: {
     flex: 1,
@@ -758,11 +758,11 @@ const styles = StyleSheet.create({
   },
   tabPillActive: {
     backgroundColor: '#6366F1',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 2 },
+    
+    
     shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 3,
+    
+    
   },
   tabPillText: {
     fontSize: 13,
@@ -782,15 +782,17 @@ const styles = StyleSheet.create({
   quickStatsRow: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    
+    
+    borderRadius: 14,
     padding: 16,
     justifyContent: 'space-between',
     marginBottom: 20,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
+    
+    
+    
+    
+    
   },
   quickStat: {
     alignItems: 'center',
@@ -853,14 +855,16 @@ const styles = StyleSheet.create({
   // ── Instructor ──
   instructorCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    
+    
+    borderRadius: 14,
     padding: 18,
     overflow: 'hidden',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
+    
+    
+    
+    
+    
   },
   instructorGradientAccent: {
     position: 'absolute',
@@ -880,7 +884,7 @@ const styles = StyleSheet.create({
   instructorAvatar: {
     width: 56,
     height: 56,
-    borderRadius: 18,
+    borderRadius: 14,
     marginRight: 14,
   },
   instructorInfo: {
@@ -899,11 +903,11 @@ const styles = StyleSheet.create({
   verifiedBadge: {
     borderRadius: 9,
     overflow: 'hidden',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 1 },
+    
+    
     shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 2,
+    
+    
   },
   verifiedGradient: {
     width: 18,
@@ -968,15 +972,17 @@ const styles = StyleSheet.create({
   infoGrid: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    
+    
+    borderRadius: 14,
     padding: 20,
     justifyContent: 'space-between',
     marginBottom: 20,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
+    
+    
+    
+    
+    
   },
   infoItem: {
     alignItems: 'center',
@@ -985,7 +991,7 @@ const styles = StyleSheet.create({
   infoIconBg: {
     width: 48,
     height: 48,
-    borderRadius: 16,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1023,14 +1029,16 @@ const styles = StyleSheet.create({
   },
   accordionItem: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    
+    
+    borderRadius: 14,
     marginBottom: 12,
     overflow: 'hidden',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 2 },
+    
+    
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    
+    
   },
   accordionHeader: {
     flexDirection: 'row',
@@ -1079,7 +1087,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F0F4F8',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1146,7 +1154,7 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F0F4F8',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1158,13 +1166,15 @@ const styles = StyleSheet.create({
     gap: 16,
     marginBottom: 20,
     backgroundColor: '#FFFFFF',
+    
+    
     padding: 18,
-    borderRadius: 20,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
+    borderRadius: 14,
+    
+    
+    
+    
+    
   },
   reviewScoreContainer: {
     alignItems: 'center',
@@ -1196,14 +1206,16 @@ const styles = StyleSheet.create({
   },
   reviewCard: {
     backgroundColor: '#FFFFFF',
+    
+    
     padding: 16,
-    borderRadius: 18,
+    borderRadius: 14,
     marginBottom: 12,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 1 },
+    
+    
     shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    
+    
   },
   reviewHeader: {
     flexDirection: 'row',
@@ -1273,11 +1285,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    shadowColor: '#6366F1',
+    
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.08,
+    
     shadowRadius: 16,
-    elevation: 10,
+    
   },
   priceContainer: {},
   priceLabel: {
@@ -1303,13 +1315,13 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   enrollButton: {
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: 'hidden',
     shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 4 },
+    
     shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 6,
+    
+    
   },
   enrollButtonGradient: {
     flexDirection: 'row',

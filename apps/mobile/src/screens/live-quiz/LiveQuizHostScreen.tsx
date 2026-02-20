@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
     marginBottom: 12,
-    borderWidth: 1,
+    
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   participantAvatar: {
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   cancelButtonText: {

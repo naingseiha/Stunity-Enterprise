@@ -297,7 +297,7 @@ export default function AssignmentsListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F7FC',
+    backgroundColor: '#F0F4F8',
   },
   header: {
     flexDirection: 'row',
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     marginRight: 8,
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: 'transparent',
   },
   activeTab: {
@@ -359,13 +359,15 @@ const styles = StyleSheet.create({
   },
   assignmentCard: {
     backgroundColor: '#FFFFFF',
+    
+    
     borderRadius: 12,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 2,
+    
   },
   cardHeader: {
     flexDirection: 'row',
@@ -377,7 +379,7 @@ const styles = StyleSheet.create({
   typeIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -363,7 +363,7 @@ export default function CommentsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F0F4F8',
   },
 
   // Header Styles - Clean and Professional
@@ -389,8 +389,8 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 20,
-    backgroundColor: '#F5F5F5',
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
   },
   headerTitleContainer: {
     flexDirection: 'row',
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
-    borderWidth: 1,
+    
     borderColor: '#DBEAFE',
   },
   commentCountText: {
@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     padding: 14,
     borderRadius: 12,
-    borderWidth: 1,
+    
     borderColor: '#F0F0F0',
   },
   postPreviewHeader: {
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderTopLeftRadius: 4,
     padding: 12,
-    borderWidth: 1,
+    
     borderColor: '#F0F0F0',
   },
   ownCommentBubble: {
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
-    borderWidth: 1,
+    
     borderColor: '#FFE4C4',
   },
   teacherBadgeText: {
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
   skeletonAvatar: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: '#F0F0F0',
   },
   skeletonBubble: {
@@ -630,7 +630,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9F9F9',
     borderRadius: 22,
     padding: 8,
-    borderWidth: 1,
+    
     borderColor: '#E8E8E8',
   },
   inputField: {
@@ -656,13 +656,13 @@ const styles = StyleSheet.create({
   sendButtonGradient: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#0066FF',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 3,
+    
   },
 });

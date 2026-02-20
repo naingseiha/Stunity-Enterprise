@@ -36,13 +36,10 @@ import Animated, {
   useSharedValue,
   withTiming,
   withDelay,
-  withRepeat,
-  withSequence,
   Easing,
 } from 'react-native-reanimated';
 
-// Import actual Stunity logo
-const StunityLogo = require('../../../../../Stunity.png');
+import StunityLogo from '../../../assets/Stunity.svg';
 
 import {
   PostCard,
@@ -79,57 +76,6 @@ interface PerformanceCardProps {
   onPress: () => void;
 }
 
-// ─── Rotating comet dot overlaid on each ring ────────────────────────────────
-// Sits in a View the same size as the SVG; rotation around center = ring orbit
-function RingCometDot({ cx, cy, r, sw, color, duration, startDelay }: {
-  cx: number; cy: number; r: number; sw: number;
-  color: string; duration: number; startDelay: number;
-}) {
-  const rotation = useSharedValue(0);
-  useEffect(() => {
-    rotation.value = withDelay(
-      startDelay,
-      withRepeat(withTiming(360, { duration, easing: Easing.linear }), -1, false),
-    );
-  }, [duration, startDelay]);
-
-  const dotSize = sw + 3;
-  const tailSize = sw;
-
-  // Rotate the entire View around the SVG centre — dot sits at 12-o'clock edge
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotation.value}deg` }],
-  }));
-
-  return (
-    <Animated.View style={[StyleSheet.absoluteFill, animStyle]}>
-      {/* Comet tail (slightly below head, lower opacity) */}
-      <View style={{
-        position: 'absolute',
-        left: cx - tailSize / 2,
-        top: cy - r - tailSize / 2 + dotSize,
-        width: tailSize, height: tailSize * 2,
-        borderRadius: tailSize / 2,
-        backgroundColor: color,
-        opacity: 0.35,
-      }} />
-      {/* Bright head */}
-      <View style={{
-        position: 'absolute',
-        left: cx - dotSize / 2,
-        top: cy - r - dotSize / 2,
-        width: dotSize, height: dotSize,
-        borderRadius: dotSize / 2,
-        backgroundColor: '#ffffff',
-        shadowColor: color,
-        shadowOpacity: 1,
-        shadowRadius: 8,
-        elevation: 8,
-      }} />
-    </Animated.View>
-  );
-}
-
 // ─── PerformanceCard ──────────────────────────────────────────────────────────
 const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPress }: PerformanceCardProps) {
   const xpToNext = 250;
@@ -146,19 +92,6 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
     { r: 26, sw: 6,  pct: Math.min(stats.currentStreak / 7, 1),                                         id: 'streak', c1: '#FB923C', c2: '#EF4444', cometDur: 4200, cometDelay: 800 },
   ];
 
-  // Level text pulse
-  const levelScale = useSharedValue(1);
-  useEffect(() => {
-    levelScale.value = withDelay(600, withRepeat(
-      withSequence(
-        withTiming(1.15, { duration: 800, easing: Easing.out(Easing.ease) }),
-        withTiming(1,    { duration: 800, easing: Easing.in(Easing.ease)  }),
-      ), -1, false,
-    ));
-  }, []);
-  const levelPulseStyle = useAnimatedStyle(() => ({ transform: [{ scale: levelScale.value }] }));
-
-
 
   // XP bar fill
   const barWidth = useSharedValue(0);
@@ -169,12 +102,12 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
 
   return (
     <TouchableOpacity activeOpacity={0.9} style={perfCardStyles.card} onPress={onPress}>
-      <View style={perfCardStyles.inner}>
+      <LinearGradient colors={['#FDE68A', '#BAE6FD']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={perfCardStyles.inner}>
         <View style={perfCardStyles.topRow}>
 
-          {/* ── Activity Rings + comet overlays ── */}
+          {/* ── Activity Rings ── */}
           <View style={[perfCardStyles.ringWrap, { width: size, height: size }]}>
-            {/* Static SVG arcs */}
+            <View style={perfCardStyles.ringGlow} />
             <Svg width={size} height={size}>
               <Defs>
                 {rings.map(ring => (
@@ -188,9 +121,7 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
                 const circ = 2 * Math.PI * ring.r;
                 return (
                   <React.Fragment key={ring.id}>
-                    {/* Track */}
-                    <SvgCircle cx={cx} cy={cy} r={ring.r} stroke={`${ring.c1}22`} strokeWidth={ring.sw} fill="none" />
-                    {/* Progress arc */}
+                    <SvgCircle cx={cx} cy={cy} r={ring.r} stroke="rgba(0,0,0,0.08)" strokeWidth={ring.sw} fill="none" />
                     <SvgCircle cx={cx} cy={cy} r={ring.r}
                       stroke={`url(#g_${ring.id})`}
                       strokeWidth={ring.sw} fill="none"
@@ -203,55 +134,42 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
                 );
               })}
             </Svg>
-
-            {/* Comet dots (Animated.View — guaranteed to animate) */}
-            {rings.map(ring => (
-              <RingCometDot
-                key={ring.id}
-                cx={cx} cy={cy}
-                r={ring.r} sw={ring.sw}
-                color={ring.c1}
-                duration={ring.cometDur}
-                startDelay={ring.cometDelay}
-              />
-            ))}
-
-            {/* Level label centred */}
-            <View style={perfCardStyles.ringInner}>
-              <Animated.Text style={[perfCardStyles.ringValue, levelPulseStyle]}>{stats.level}</Animated.Text>
-              <Text style={perfCardStyles.ringLabel}>LEVEL</Text>
-            </View>
+            <LinearGradient colors={['#38BDF8', '#0284C7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={perfCardStyles.ringInner}>
+              <Text style={perfCardStyles.ringValue}>{stats.level}</Text>
+            </LinearGradient>
           </View>
 
           {/* ── Stats ── */}
           <View style={perfCardStyles.stats}>
             <View style={perfCardStyles.statRow}>
-              <View style={[perfCardStyles.statIcon, { backgroundColor: '#EFF6FF' }]}><Ionicons name="diamond" size={13} color="#3B82F6" /></View>
+              <LinearGradient colors={['#60A5FA', '#3B82F6']} style={perfCardStyles.statIcon}>
+                <Ionicons name="diamond" size={12} color="#fff" />
+              </LinearGradient>
               <Text style={perfCardStyles.statVal}>{stats.totalPoints.toLocaleString()} <Text style={perfCardStyles.statLbl}>XP</Text></Text>
             </View>
             <View style={perfCardStyles.statRow}>
-              <View style={[perfCardStyles.statIcon, { backgroundColor: '#ECFDF5' }]}><Ionicons name="checkmark-circle" size={13} color="#10B981" /></View>
+              <LinearGradient colors={['#34D399', '#10B981']} style={perfCardStyles.statIcon}>
+                <Ionicons name="checkmark-circle" size={12} color="#fff" />
+              </LinearGradient>
               <Text style={perfCardStyles.statVal}>{stats.completedLessons} <Text style={perfCardStyles.statLbl}>Lessons</Text></Text>
             </View>
             <View style={perfCardStyles.statRow}>
-              <View style={[perfCardStyles.statIcon, { backgroundColor: '#FFF7ED' }]}><Ionicons name="flame" size={13} color="#F97316" /></View>
+              <LinearGradient colors={['#FB923C', '#EF4444']} style={perfCardStyles.statIcon}>
+                <Ionicons name="flame" size={12} color="#fff" />
+              </LinearGradient>
               <Text style={perfCardStyles.statVal}>{stats.currentStreak} <Text style={perfCardStyles.statLbl}>Day Streak</Text></Text>
             </View>
           </View>
 
-          {/* ── Avatar: thin ring border + level badge ── */}
+          {/* ── Avatar ── */}
           <View style={perfCardStyles.avatarWrap}>
-            <View style={perfCardStyles.avatarOuter}>
-              <View style={perfCardStyles.avatarInner}>
-                <Avatar
-                  uri={user?.profilePictureUrl}
-                  name={user ? `${user.firstName} ${user.lastName}` : 'User'}
-                  size="xl"
-                  showBorder={false}
-                  gradientBorder="none"
-                />
-              </View>
-            </View>
+            <Avatar
+              uri={user?.profilePictureUrl}
+              name={user ? `${user.firstName} ${user.lastName}` : 'User'}
+              size="xl"
+              gradientBorder="orange"
+              showBorder
+            />
             <LinearGradient colors={['#A855F7', '#0EA5E9']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={perfCardStyles.avatarBadge}>
               <Text style={perfCardStyles.avatarBadgeText}>{stats.level}</Text>
             </LinearGradient>
@@ -271,7 +189,7 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
             </Animated.View>
           </View>
         </View>
-      </View>
+      </LinearGradient>
     </TouchableOpacity>
   );
 });
@@ -280,44 +198,38 @@ const perfCardStyles = StyleSheet.create({
   card: {
     marginHorizontal: 16,
     marginBottom: 12,
-    borderRadius: 20,
-    overflow: 'visible',         // allow glow shadow to show
+    borderRadius: 14,
+    overflow: 'visible',
     backgroundColor: '#FFFFFF',
-    shadowColor: '#6366F1',
+    shadowColor: '#94A3B8',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
     elevation: 3,
   },
-  inner:       { padding: 16, borderRadius: 20, backgroundColor: '#FFFFFF', overflow: 'hidden' },
+  inner:       { padding: 16, borderRadius: 14, overflow: 'hidden' },
   topRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
   ringWrap:    { alignItems: 'center', justifyContent: 'center' },
-  ringInner:   { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
-  ringValue:   { fontSize: 22, fontWeight: '800', color: '#0284C7' },
-  ringLabel:   { fontSize: 8,  fontWeight: '700', color: '#64748B', letterSpacing: 1 },
-  stats:       { flex: 1, gap: 6 },
-  statRow:     { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  statIcon:    { width: 22, height: 22, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+  ringGlow:    { position: 'absolute', width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(14,165,233,0.1)' },
+  ringInner:   { position: 'absolute', alignItems: 'center', justifyContent: 'center', width: 42, height: 42, borderRadius: 21 },
+  ringValue:   { fontSize: 24, fontWeight: '900', color: '#FFFFFF', letterSpacing: -1 },
+  ringLabel:   { fontSize: 10, fontWeight: '700', color: '#0284C7', letterSpacing: 1.5, marginTop: 5 },
+  stats:       { flex: 1, gap: 8 },
+  statRow:     { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  statIcon:    { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   statVal:     { fontSize: 13, fontWeight: '700', color: '#1E293B' },
   statLbl:     { fontSize: 11, fontWeight: '400', color: '#64748B' },
   // Avatar
   avatarWrap:  { alignItems: 'center', position: 'relative' },
-  avatarOuter: {
-    width: 72, height: 72, borderRadius: 36,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2.5, borderColor: '#818CF8',   // light indigo — matches ring palette
-    backgroundColor: '#fff',
-  },
-  avatarInner: { width: 65, height: 65, borderRadius: 32.5, overflow: 'hidden', backgroundColor: '#fff' },
-  avatarBadge: { position: 'absolute', bottom: -4, right: -4, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff' },
+  avatarBadge: { position: 'absolute', bottom: -4, right: -4, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#FFFFFF' },
   avatarBadgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
   // XP bar
-  barSection:  { gap: 4 },
+  barSection:  { gap: 5 },
   barLabels:   { flexDirection: 'row', justifyContent: 'space-between' },
   barLeft:     { fontSize: 11, fontWeight: '600', color: '#0284C7' },
   barRight:    { fontSize: 11, fontWeight: '500', color: '#64748B' },
-  barBg:       { height: 6, backgroundColor: '#E0F2FE', borderRadius: 3, overflow: 'hidden' },
-  barFill:     { height: '100%', borderRadius: 3, overflow: 'hidden' },
+  barBg:       { height: 8, backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: 4, overflow: 'hidden' },
+  barFill:     { height: '100%', borderRadius: 4, overflow: 'hidden' },
 });
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -351,7 +263,6 @@ export default function FeedScreen() {
   const sharePost = useFeedStore(s => s.sharePost);
   const trackPostView = useFeedStore(s => s.trackPostView);
   const initializeRecommendations = useFeedStore(s => s.initializeRecommendations);
-  const seedFeed = useFeedStore(s => s.seedFeed);
   const unreadNotifications = useNotificationStore(state => state.unreadCount);
 
   const [refreshing, setRefreshing] = useState(false);
@@ -695,20 +606,20 @@ export default function FeedScreen() {
 
         <View style={styles.quickActionsInCard}>
           <TouchableOpacity onPress={handleAskQuestion} activeOpacity={0.7} style={styles.inCardAction}>
-            <LinearGradient colors={['#7DD3FC', '#0EA5E9']} style={styles.quickActionIcon}><Ionicons name="help-circle" size={18} color="#fff" /></LinearGradient>
-            <Text style={styles.inCardActionText}>Ask</Text>
+            <LinearGradient colors={['#7DD3FC', '#0EA5E9']} style={[styles.quickActionIcon, { shadowColor: '#0EA5E9' }]}><Ionicons name="help-circle" size={20} color="#fff" /></LinearGradient>
+            <Text style={[styles.inCardActionText, { color: '#0EA5E9' }]}>Ask</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreateQuiz} activeOpacity={0.7} style={styles.inCardAction}>
-            <LinearGradient colors={['#34D399', '#10B981']} style={styles.quickActionIcon}><Ionicons name="bulb" size={18} color="#fff" /></LinearGradient>
-            <Text style={styles.inCardActionText}>Quiz</Text>
+            <LinearGradient colors={['#34D399', '#10B981']} style={[styles.quickActionIcon, { shadowColor: '#10B981' }]}><Ionicons name="bulb" size={20} color="#fff" /></LinearGradient>
+            <Text style={[styles.inCardActionText, { color: '#10B981' }]}>Quiz</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreatePoll} activeOpacity={0.7} style={styles.inCardAction}>
-            <LinearGradient colors={['#7DD3FC', '#0EA5E9']} style={styles.quickActionIcon}><Ionicons name="bar-chart" size={18} color="#fff" /></LinearGradient>
-            <Text style={styles.inCardActionText}>Poll</Text>
+            <LinearGradient colors={['#A78BFA', '#8B5CF6']} style={[styles.quickActionIcon, { shadowColor: '#8B5CF6' }]}><Ionicons name="bar-chart" size={20} color="#fff" /></LinearGradient>
+            <Text style={[styles.inCardActionText, { color: '#8B5CF6' }]}>Poll</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreateResource} activeOpacity={0.7} style={styles.inCardAction}>
-            <LinearGradient colors={['#F472B6', '#EC4899']} style={styles.quickActionIcon}><Ionicons name="book" size={18} color="#fff" /></LinearGradient>
-            <Text style={styles.inCardActionText}>Resource</Text>
+            <LinearGradient colors={['#F472B6', '#EC4899']} style={[styles.quickActionIcon, { shadowColor: '#EC4899' }]}><Ionicons name="book" size={20} color="#fff" /></LinearGradient>
+            <Text style={[styles.inCardActionText, { color: '#EC4899' }]}>Resource</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -798,42 +709,10 @@ export default function FeedScreen() {
           </TouchableOpacity>
 
           {/* Stunity Logo - Center */}
-          <Image
-            source={StunityLogo}
-            style={styles.headerLogo}
-            resizeMode="contain"
-          />
+          <StunityLogo width={110} height={30} />
 
           {/* Actions - Right */}
           <View style={styles.headerActions}>
-            {/* DEV: Mock Data Seed Button */}
-            {__DEV__ && (
-              <TouchableOpacity
-                style={[styles.headerButton, { backgroundColor: '#EEF2FF', width: 'auto', paddingHorizontal: 12 }]}
-                onPress={() => {
-                  Alert.alert(
-                    'Seed Database',
-                    'This will populate your feed with sample posts, quizzes, and stories. Continue?',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Seed',
-                        onPress: async () => {
-                          try {
-                            await seedFeed();
-                            Alert.alert('Success', 'Database seeded! Pull to refresh.');
-                          } catch (e) {
-                            Alert.alert('Error', 'Failed to seed database');
-                          }
-                        }
-                      }
-                    ]
-                  );
-                }}
-              >
-                <Text style={{ color: '#0284C7', fontWeight: '600', fontSize: 12 }}>Seed</Text>
-              </TouchableOpacity>
-            )}
             <TouchableOpacity
               style={styles.headerButton}
               onPress={() => navigation.navigate('Notifications' as any)}
@@ -975,14 +854,14 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F3FF', // Soft purple-tinted background
+    backgroundColor: '#F0F4F8',
   },
   headerSafe: {
     backgroundColor: '#FFFFFF',
   },
   headerDivider: {
     height: 1,
-    backgroundColor: '#EDE9FE',
+    backgroundColor: '#DBEAFE',
   },
   header: {
     flexDirection: 'row',
@@ -999,7 +878,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#F5F3FF',
+    backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1011,7 +890,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#F5F3FF',
+    backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1024,7 +903,7 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: '#EF4444',
     borderWidth: 2,
-    borderColor: '#F5F3FF',
+    borderColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
@@ -1064,17 +943,12 @@ const styles = StyleSheet.create({
   // ── Create Post Card ──
   createPostCard: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 14,
+    marginHorizontal: 16,
     marginTop: 10,
     marginBottom: 12,
     paddingTop: 16,
     paddingBottom: 8,
-    borderRadius: 18,
-    shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
+    borderRadius: 14,
   },
   createPostRow: {
     flexDirection: 'row',
@@ -1084,12 +958,12 @@ const styles = StyleSheet.create({
   },
   createPostInputFake: {
     flex: 1,
-    backgroundColor: '#F5F3FF',
+    backgroundColor: '#F0FDFA',
     borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: '#EDE9FE',
+    
+    borderColor: '#CCFBF1',
   },
   createPostPlaceholder: {
     fontSize: 14,
@@ -1100,7 +974,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#F0FDFA',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1113,7 +987,7 @@ const styles = StyleSheet.create({
   quickActionsInCard: {
     flexDirection: 'row',
     paddingHorizontal: 12,
-    paddingBottom: 10,
+    paddingBottom: 12,
     gap: 4,
   },
   inCardAction: {
@@ -1121,21 +995,24 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    gap: 6,
+    paddingVertical: 8,
+    gap: 7,
     borderRadius: 12,
   },
   quickActionIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
   },
   inCardActionText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#4B5563',
+    fontWeight: '700',
     letterSpacing: 0.1,
   },
   footer: {
@@ -1155,12 +1032,10 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#F0FDFA',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
-  },
-  emptyTitle: {
     fontSize: 17,
     fontWeight: '600',
     color: '#374151',
@@ -1206,7 +1081,7 @@ const styles = StyleSheet.create({
     shadowColor: '#0284C7',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    
     elevation: 6,
   },
   newPostsText: {

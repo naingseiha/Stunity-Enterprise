@@ -287,14 +287,14 @@ const styles = StyleSheet.create({
   // Card
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 14,
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
+    
+    
+    
     borderColor: '#F3F4F6',
     overflow: 'hidden',
   },
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   badgeContainer: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
@@ -353,11 +353,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
   },
   expandIconRotated: {
     transform: [{ rotate: '180deg' }],
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
   },
   // Options
   optionRow: {
@@ -381,8 +381,8 @@ const styles = StyleSheet.create({
   optionInput: {
     flex: 1,
     backgroundColor: '#FAFAFA',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF2F2',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    
     borderColor: '#FEE2E2',
   },
   addButton: {
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#F5F3FF',
     borderRadius: 14,
-    borderWidth: 1,
+    
     borderColor: '#C7D2FE',
     borderStyle: 'dashed',
     marginTop: 8,
@@ -444,16 +444,16 @@ const styles = StyleSheet.create({
   capsule: {
     paddingHorizontal: 18,
     paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    
+    
   },
   capsuleSelected: {
     backgroundColor: '#4F46E5',
     borderColor: '#4F46E5',
     shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F0F4F8',
     marginHorizontal: -20,
     marginBottom: 20,
   },
@@ -479,9 +479,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderRadius: 14,
+    
+    
     backgroundColor: '#FAFAFA',
     gap: 14,
   },

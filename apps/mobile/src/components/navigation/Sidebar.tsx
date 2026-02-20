@@ -26,8 +26,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar } from '@/components/common';
 import { useAuthStore } from '@/stores';
 
-// Import Stunity logo
-const StunityLogo = require('../../../../../Stunity.png');
+import StunityLogo from '../../../assets/Stunity.svg';
 
 interface MenuItem {
   key: string;
@@ -133,7 +132,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
 
         {/* Header with Logo and Close */}
         <View style={styles.header}>
-          <Image source={StunityLogo} style={styles.logo} resizeMode="contain" />
+          <StunityLogo width={120} height={30} />
           <TouchableOpacity
             onPress={onClose}
             style={styles.closeButton}

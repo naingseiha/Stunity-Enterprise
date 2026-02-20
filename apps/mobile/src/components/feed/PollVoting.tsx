@@ -148,7 +148,7 @@ export const PollVoting: React.FC<PollVotingProps> = ({
         entering={FadeIn.duration(300)}
         style={styles.resultContainer}
       >
-        <View style={[styles.resultPill, isHighlighted && { borderColor: colorSet.border, borderWidth: 2 }]}>
+        <View style={[styles.resultPill, isHighlighted && { backgroundColor: colorSet.bg }]}>
           {/* Progress fill */}
           <Animated.View
             entering={FadeIn.duration(400)}
@@ -225,7 +225,6 @@ const styles = StyleSheet.create({
   optionPill: {
     height: 48,
     borderRadius: 24,
-    borderWidth: 1.5,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 18,
@@ -249,9 +248,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 24,
     overflow: 'hidden',
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#F3F4F6',
     position: 'relative',
   },
   progressFill: {

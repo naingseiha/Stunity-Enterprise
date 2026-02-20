@@ -328,11 +328,11 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.1)',
   },
   headerTitle: {
@@ -344,11 +344,11 @@ const styles = StyleSheet.create({
   shareButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.1)',
   },
   scrollContent: {
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderRadius: 24,
     overflow: 'hidden',
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.1)',
   },
   levelCardGradient: {
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(251, 191, 36, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    
     borderColor: 'rgba(251, 191, 36, 0.3)',
   },
   progressContainer: {
@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
     padding: 16,
     justifyContent: 'center',
     alignItems: 'flex-start',
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.1)',
   },
   gridValue: {
@@ -478,10 +478,10 @@ const styles = StyleSheet.create({
   },
   chartCard: {
     backgroundColor: 'rgba(0,0,0,0.2)',
-    borderRadius: 20,
+    borderRadius: 14,
     padding: 20,
     alignItems: 'center',
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.05)',
   },
   chartSubtitle: {
@@ -492,10 +492,10 @@ const styles = StyleSheet.create({
   // Detail Card
   detailCard: {
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 20,
+    borderRadius: 14,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.05)',
   },
   detailRow: {
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
   detailIconBg: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.05)',
     alignItems: 'center',
     justifyContent: 'center',

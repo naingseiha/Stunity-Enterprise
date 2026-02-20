@@ -343,7 +343,7 @@ const sectionStyles = StyleSheet.create({
     },
     quizGradientCard: {
         marginHorizontal: 16,
-        borderRadius: 20,
+        borderRadius: 14,
         padding: 20,
     },
     quizHeader: {
@@ -388,7 +388,7 @@ const sectionStyles = StyleSheet.create({
     quizStatIconBg: {
         width: 36,
         height: 36,
-        borderRadius: 18,
+        borderRadius: 14,
         backgroundColor: 'rgba(255,255,255,0.9)',
         alignItems: 'center',
         justifyContent: 'center',

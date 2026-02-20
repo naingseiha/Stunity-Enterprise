@@ -27,7 +27,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 
-const StunityLogo = require('../../../../../Stunity.png');
+import StunityLogo from '../../../assets/Stunity.svg';
 
 import { Avatar } from '@/components/common';
 import { Colors } from '@/config';
@@ -233,11 +233,7 @@ export default function ClubsScreen() {
           <Ionicons name="menu" size={28} color="#374151" />
         </TouchableOpacity>
 
-        <Image
-          source={StunityLogo}
-          style={styles.headerLogo}
-          resizeMode="contain"
-        />
+        <StunityLogo width={110} height={30} />
 
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerButton}>
@@ -280,10 +276,10 @@ export default function ClubsScreen() {
                     isActive && {
                       backgroundColor: filterConfig.color,
                       shadowColor: filterConfig.color,
-                      shadowOffset: { width: 0, height: 4 },
+                      
                       shadowOpacity: 0.3,
-                      shadowRadius: 8,
-                      elevation: 5,
+                      
+                      
                     },
                   ]}>
                     <Ionicons name={filterConfig.icon} size={24} color={isActive ? '#fff' : filterConfig.color} />
@@ -315,10 +311,10 @@ export default function ClubsScreen() {
                     isActive && {
                       backgroundColor: type.color,
                       shadowColor: type.color,
-                      shadowOffset: { width: 0, height: 4 },
+                      
                       shadowOpacity: 0.3,
-                      shadowRadius: 8,
-                      elevation: 5,
+                      
+                      
                     },
                   ]}>
                     <Ionicons name={type.icon as any} size={24} color={isActive ? '#fff' : type.color} />
@@ -447,7 +443,7 @@ const getTypeLabel = (type: string) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F3FF',
+    backgroundColor: '#F0F4F8',
   },
   header: {
     flexDirection: 'row',
@@ -527,15 +523,15 @@ const styles = StyleSheet.create({
   },
   // Beautiful gradient card design
   gradientCard: {
-    borderRadius: 20,
+    borderRadius: 14,
     padding: 20,
     minHeight: 200,
     justifyContent: 'space-between',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
+    
+    
+    
+    
   },
   cardTopSection: {
     flexDirection: 'row',
@@ -546,22 +542,22 @@ const styles = StyleSheet.create({
   iconSquare: {
     width: 64,
     height: 64,
-    borderRadius: 16,
+    borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.95)',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    
+    
     shadowRadius: 4,
-    elevation: 3,
+    
   },
   typeBadgeNew: {
     backgroundColor: 'rgba(255,255,255,0.25)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.3)',
   },
   typeBadgeTextNew: {
@@ -598,7 +594,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.3)',
   },
   tagTextNew: {
@@ -638,7 +634,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.3)',
   },
   memberCountNew: {
@@ -656,13 +652,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.25)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.3)',
   },
   // OLD STYLES - Remove these later
   cardInner: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    
+    
+    borderRadius: 14,
     overflow: 'hidden',
     position: 'relative',
     shadowColor: '#000',
@@ -672,7 +670,7 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 2,
+    
   },
   clubCover: {
     width: '100%',
@@ -691,10 +689,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    
+    
     shadowRadius: 4,
-    elevation: 3,
+    
   },
   typeBadgeCornerText: {
     fontSize: 11,
@@ -795,15 +793,15 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: '#0EA5E9',
     shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 3,
+    
   },
   joinedButton: {
     backgroundColor: '#fff',
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    
     shadowColor: '#000',
     shadowOpacity: 0.05,
   },
@@ -830,7 +828,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     backgroundColor: Colors.primary,
-    borderRadius: 20,
+    borderRadius: 14,
   },
   retryButtonText: {
     fontSize: 14,
@@ -858,8 +856,8 @@ const styles = StyleSheet.create({
     shadowColor: '#0284C7',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 8,
+    
+    
   },
   fabGradient: {
     width: 58,

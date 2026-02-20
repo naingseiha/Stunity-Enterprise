@@ -210,7 +210,7 @@ export function ProfileCompletenessCard({ profile, onEdit }: { profile: User; on
             <View style={cmpStyles.checklist}>
                 {items.map((item, i) => (
                     <View key={i} style={cmpStyles.checkRow}>
-                        <View style={[cmpStyles.checkIcon, { backgroundColor: item.done ? item.color + '15' : '#F3F4F6' }]}>
+                        <View style={[cmpStyles.checkIcon, { backgroundColor: item.done ? item.color + '15' : '#F4F6F9' }]}>
                             <Ionicons
                                 name={item.done ? 'checkmark' : (item.icon as any)}
                                 size={14}
@@ -228,7 +228,7 @@ export function ProfileCompletenessCard({ profile, onEdit }: { profile: User; on
 }
 
 const cmpStyles = StyleSheet.create({
-    card: { backgroundColor: '#fff', borderRadius: 16, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
+    card: { backgroundColor: '#fff', borderRadius: 14, padding: 20, shadowColor: '#000',  shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
     topRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
     ringWrap: { width: 60, height: 60, alignItems: 'center', justifyContent: 'center' },
     ringPct: { position: 'absolute', fontSize: 14, fontWeight: '800', color: '#0EA5E9' },
@@ -282,11 +282,11 @@ export function CareerGoalsCard({ careerGoals, isOwnProfile, onEdit }: { careerG
 }
 
 const goalStyles = StyleSheet.create({
-    card: { backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
+    card: { backgroundColor: '#fff', borderRadius: 14, overflow: 'hidden', shadowColor: '#000',  shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
     headerGradient: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
     headerIcon: { width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center' },
     headerTitle: { fontSize: 15, fontWeight: '700', color: '#fff', flex: 1 },
-    headerEdit: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+    headerEdit: { width: 32, height: 32, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
     body: { padding: 16 },
     text: { fontSize: 14, color: '#374151', lineHeight: 22 },
     empty: { alignItems: 'center', paddingVertical: 12, gap: 4 },
@@ -368,7 +368,7 @@ export function ProjectShowcase({ stats, isOwnProfile }: { stats: UserStats | nu
 }
 
 const projStyles = StyleSheet.create({
-    card: { backgroundColor: '#fff', borderRadius: 16, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
+    card: { backgroundColor: '#fff', borderRadius: 14, padding: 20, shadowColor: '#000',  shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
     scroll: { marginTop: 4, marginHorizontal: -4 },
     projCard: { width: 160, marginHorizontal: 4, borderRadius: 14, overflow: 'hidden' },
     projGradient: { padding: 14, borderRadius: 14, minHeight: 130 },
@@ -386,7 +386,7 @@ const projStyles = StyleSheet.create({
 // ── Shared Styles ────────────────────────────────────────────────
 
 const sectionStyles = StyleSheet.create({
-    card: { backgroundColor: '#fff', borderRadius: 16, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
+    card: { backgroundColor: '#fff', borderRadius: 14, padding: 20, shadowColor: '#000',  shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
     header: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
     title: { fontSize: 16, fontWeight: '700', color: '#1F2937', flex: 1 },
     countBadge: { backgroundColor: '#EFF6FF', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
@@ -395,7 +395,7 @@ const sectionStyles = StyleSheet.create({
 
 const tagStyles = StyleSheet.create({
     container: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    tag: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
+    tag: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14, borderWidth: 1 },
     dot: { width: 6, height: 6, borderRadius: 3 },
     text: { fontSize: 13, fontWeight: '600' },
 });

@@ -385,7 +385,7 @@ export default function GradeSubmissionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F7FC',
+    backgroundColor: '#F0F4F8',
   },
   keyboardView: {
     flex: 1,
@@ -434,15 +434,17 @@ const styles = StyleSheet.create({
   },
   studentCard: {
     backgroundColor: '#fff',
+    
+    
     margin: 16,
     marginBottom: 8,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 14,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    
+    
   },
   studentHeader: {
     flexDirection: 'row',
@@ -500,15 +502,17 @@ const styles = StyleSheet.create({
   },
   assignmentCard: {
     backgroundColor: '#fff',
+    
+    
     marginHorizontal: 16,
     marginBottom: 8,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 14,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    
+    
   },
   assignmentLabel: {
     fontSize: 12,
@@ -525,15 +529,17 @@ const styles = StyleSheet.create({
   },
   submissionCard: {
     backgroundColor: '#fff',
+    
+    
     marginHorizontal: 16,
     marginBottom: 8,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 14,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    
+    
   },
   sectionTitle: {
     fontSize: 16,
@@ -545,7 +551,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.gray[50],
     padding: 16,
     borderRadius: 12,
-    borderWidth: 1,
+    
     borderColor: Colors.gray[200],
   },
   contentText: {
@@ -610,15 +616,17 @@ const styles = StyleSheet.create({
   },
   gradingCard: {
     backgroundColor: '#fff',
+    
+    
     marginHorizontal: 16,
     marginBottom: 8,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 14,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    
+    
   },
   inputGroup: {
     marginBottom: 20,
@@ -665,7 +673,7 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: Colors.gray[50],
     borderRadius: 12,
-    borderWidth: 1,
+    
     borderColor: Colors.gray[200],
     minHeight: 140,
   },

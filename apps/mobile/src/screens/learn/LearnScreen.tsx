@@ -30,7 +30,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInRight, FadeIn } from 'react-native-reanimated';
 
-const StunityLogo = require('../../../../../Stunity.png');
+import StunityLogo from '../../../assets/Stunity.svg';
 
 import { CourseCard } from '@/components/learn';
 import { useAuthStore } from '@/stores';
@@ -636,7 +636,7 @@ export default function LearnScreen() {
           <TouchableOpacity onPress={openSidebar} style={styles.menuButton}>
             <Ionicons name="menu" size={28} color="#374151" />
           </TouchableOpacity>
-          <Image source={StunityLogo} style={styles.headerLogo} resizeMode="contain" />
+          <StunityLogo width={110} height={30} />
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.headerButton}>
               <Ionicons name="notifications-outline" size={24} color="#374151" />
@@ -674,7 +674,7 @@ export default function LearnScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F3FF',
+    backgroundColor: '#F0F4F8',
   },
 
   // ── Header ──
@@ -741,10 +741,10 @@ const styles = StyleSheet.create({
   tabCircleIconActive: {
     backgroundColor: '#0EA5E9',
     shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 4 },
+    
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    
+    
   },
   tabCircleLabel: {
     fontSize: 12,
@@ -766,7 +766,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
     shadowRadius: 16,
-    elevation: 8,
+    
   },
   heroCard: {
     flexDirection: 'row',
@@ -861,7 +861,9 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
+    
+    
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: Platform.OS === 'ios' ? 12 : 6,
@@ -954,17 +956,17 @@ const styles = StyleSheet.create({
   },
   featuredCard: {
     width: SCREEN_WIDTH * 0.72,
-    borderRadius: 20,
+    borderRadius: 14,
     overflow: 'hidden',
     shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
+    
+    
+    
+    
   },
   featuredGradient: {
     padding: 20,
-    borderRadius: 20,
+    borderRadius: 14,
     overflow: 'hidden',
     position: 'relative',
     minHeight: 200,
@@ -1071,10 +1073,10 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     overflow: 'hidden',
     shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    
+    
     shadowRadius: 14,
-    elevation: 6,
+    
   },
   pathCard: {
     padding: 22,
@@ -1187,13 +1189,13 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   createCourseBtn: {
-    borderRadius: 20,
+    borderRadius: 14,
     overflow: 'hidden',
     shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 4 },
+    
     shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 6,
+    
+    
   },
   createGradient: {
     flexDirection: 'row',
@@ -1207,7 +1209,7 @@ const styles = StyleSheet.create({
   createIconCircle: {
     width: 48,
     height: 48,
-    borderRadius: 16,
+    borderRadius: 14,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',

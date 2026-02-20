@@ -148,13 +148,13 @@ const styles = StyleSheet.create({
   },
   card: {
     padding: 20,
-    borderRadius: 16,
+    borderRadius: 14,
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    
+    
     shadowRadius: 4,
-    elevation: 3,
+    
   },
   cardHeader: {
     flexDirection: 'row',
@@ -198,14 +198,16 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: '45%',
     backgroundColor: '#fff',
+    
+    
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    
     shadowOpacity: 0.05,
     shadowRadius: 2,
-    elevation: 2,
+    
   },
   statValue: {
     fontSize: 24,
@@ -223,7 +225,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fef3c7',
     padding: 16,
     borderRadius: 12,
-    borderWidth: 1,
+    
     borderColor: '#fbbf24',
   },
   tipsTitle: {

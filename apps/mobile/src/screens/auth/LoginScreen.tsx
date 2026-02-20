@@ -16,7 +16,6 @@ import {
   Platform,
   ScrollView,
   Alert,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -29,6 +28,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import StunityLogo from '../../../assets/Stunity.svg';
 
 import { Colors, Typography, Spacing } from '@/config';
 import { useAuthStore } from '@/stores';
@@ -139,11 +139,7 @@ export default function LoginScreen() {
               entering={FadeInDown.delay(100).duration(500)}
               style={styles.header}
             >
-              <Image
-                source={require('../../../assets/Stunity.png')}
-                style={styles.logo}
-                resizeMode="contain"
-              />
+              <StunityLogo width={140} height={140} style={{ marginBottom: 12 }} />
               <Text style={styles.title}>Sign in to Stunity</Text>
             </Animated.View>
 

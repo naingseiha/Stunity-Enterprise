@@ -702,10 +702,10 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 2,
+    
   },
   headerTitle: {
     fontSize: 18,
@@ -833,10 +833,10 @@ const s = StyleSheet.create({
     borderColor: '#E2E8F0',
     backgroundColor: '#fff',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    
     shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    
+    
   },
   roleIcon: {
     width: 50,
@@ -932,7 +932,7 @@ const s = StyleSheet.create({
     shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
-    shadowRadius: 8,
+    
     elevation: 4,
   },
   validateBtnText: {

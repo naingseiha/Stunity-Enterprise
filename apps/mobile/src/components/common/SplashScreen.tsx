@@ -14,14 +14,11 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
-  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import StunityLogo from '../../../assets/Stunity.svg';
 
 const { width, height } = Dimensions.get('window');
-
-// Import Stunity logo from mobile assets
-const StunityLogo = require('../../../assets/Stunity.png');
 
 interface SplashScreenProps {
   onComplete?: () => void;
@@ -251,11 +248,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
               },
             ]}
           >
-            <Image
-              source={StunityLogo}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <StunityLogo width={260} height={85} />
           </Animated.View>
 
           {/* Loading dots */}
@@ -354,7 +347,7 @@ const styles = StyleSheet.create({
     shadowColor: '#0EA5E9',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
-    shadowRadius: 8,
+    
     elevation: 4,
   },
   dotGradient: {

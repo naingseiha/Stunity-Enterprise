@@ -609,7 +609,7 @@ function QuickStat({ icon, label, color, onPress }: { icon: IoniconsName; label:
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: '#F0F4F8',
     },
     header: {
         flexDirection: 'row',
@@ -626,11 +626,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 6,
-        elevation: 2,
+        
+        
+        
+        
+        
     },
     headerTitle: {
         fontSize: 18,
@@ -646,14 +646,16 @@ const styles = StyleSheet.create({
     // ── Profile Card
     profileCard: {
         backgroundColor: '#fff',
-        borderRadius: 20,
+        
+        
+        borderRadius: 14,
         padding: 18,
         marginBottom: 14,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        
         shadowOpacity: 0.05,
-        shadowRadius: 10,
-        elevation: 3,
+        
+        
     },
     profileTop: {
         flexDirection: 'row',
@@ -748,7 +750,9 @@ const styles = StyleSheet.create({
         gap: 6,
         paddingVertical: 10,
         borderRadius: 12,
-        backgroundColor: '#F0F9FF',
+        backgroundColor: '#FFFFFF',
+        
+        
     },
     profileActionBtnPrimary: {
         backgroundColor: '#0EA5E9',
@@ -768,15 +772,17 @@ const styles = StyleSheet.create({
     quickStatBtn: {
         flex: 1,
         backgroundColor: '#fff',
-        borderRadius: 16,
+        
+        
+        borderRadius: 14,
         paddingVertical: 14,
         alignItems: 'center',
         gap: 6,
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 1 },
+        
+        
         shadowOpacity: 0.04,
         shadowRadius: 4,
-        elevation: 1,
+        
     },
     quickStatIcon: {
         width: 38,
@@ -818,17 +824,19 @@ const styles = StyleSheet.create({
     },
     sectionCard: {
         backgroundColor: '#fff',
-        borderRadius: 18,
+        
+        
+        borderRadius: 14,
         overflow: 'hidden',
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 1 },
+        
+        
         shadowOpacity: 0.04,
-        shadowRadius: 6,
-        elevation: 1,
+        
+        
     },
     dangerCard: {
         backgroundColor: '#FFFBFB',
-        borderWidth: 1,
+        
         borderColor: '#FEE2E2',
     },
 

@@ -134,7 +134,7 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
           activeOpacity={0.8}
         >
           <View style={styles.cardHeaderLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: '#F0F9FF' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: '#F0F4F8' }]}>
               <Ionicons name="settings" size={24} color="#0EA5E9" />
             </View>
             <View>
@@ -288,14 +288,14 @@ const styles = StyleSheet.create({
   // Card Styles
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 14,
     marginBottom: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
+    
+    
+    
     borderColor: '#F3F4F6',
     overflow: 'hidden',
   },
@@ -340,11 +340,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
   },
   expandIconRotated: {
     transform: [{ rotate: '180deg' }],
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
   },
   cardContent: {
     padding: 20,
@@ -368,16 +368,16 @@ const styles = StyleSheet.create({
   capsule: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    
+    
   },
   capsuleSelected: {
     backgroundColor: '#0EA5E9', // Sky blue
     borderColor: '#0EA5E9',
     shadowColor: '#0EA5E9',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F0F4F8',
     marginHorizontal: -20,
     marginBottom: 20,
   },
@@ -403,10 +403,10 @@ const styles = StyleSheet.create({
   toggleCard: {
     flex: 1,
     backgroundColor: '#FAFAFA',
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
   },
   toggleHeader: {
     flexDirection: 'row',
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   badge: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -464,9 +464,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: '#F0F9FF',
-    borderRadius: 20,
-    borderWidth: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    
     borderColor: '#BAE6FD',
     borderStyle: 'dashed',
     marginTop: 12,
@@ -475,14 +475,14 @@ const styles = StyleSheet.create({
   addCardIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: '#38BDF8',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#38BDF8',
-    shadowOffset: { width: 0, height: 4 },
+    
     shadowOpacity: 0.3,
-    shadowRadius: 6,
+    
   },
   addCardTitle: {
     fontSize: 16,

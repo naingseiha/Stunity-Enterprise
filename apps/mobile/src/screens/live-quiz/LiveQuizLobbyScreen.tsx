@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
     paddingHorizontal: 32,
     paddingVertical: 16,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.4)',
   },
@@ -308,9 +308,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 14,
     marginBottom: 12,
-    borderWidth: 1,
+    
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   participantAvatar: {

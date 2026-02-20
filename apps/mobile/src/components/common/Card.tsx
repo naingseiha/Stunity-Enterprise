@@ -89,11 +89,10 @@ const styles = StyleSheet.create({
   },
   elevated: {
     backgroundColor: Colors.white,
-    ...Shadows.md,
   },
   outlined: {
     backgroundColor: Colors.white,
-    borderWidth: 1,
+    
     borderColor: Colors.gray[200],
   },
   filled: {

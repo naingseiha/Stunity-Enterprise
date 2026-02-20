@@ -240,14 +240,16 @@ export const CourseCard: React.FC<CourseCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
-    borderRadius: 20,
+    
+    
+    borderRadius: 14,
     overflow: 'hidden',
     marginBottom: 16,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
+    
+    
+    
     shadowRadius: 16,
-    elevation: 5,
+    
   },
   compactContainer: {
     width: CARD_WIDTH,
@@ -384,11 +386,11 @@ const styles = StyleSheet.create({
   verifiedBadge: {
     borderRadius: 8,
     overflow: 'hidden',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 1 },
+    
+    
     shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 2,
+    
+    
   },
   verifiedGradient: {
     width: 16,
@@ -447,7 +449,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 10,
     gap: 5,
-    borderWidth: 1,
+    
     borderColor: '#D1FAE5',
   },
   freeText: {
@@ -459,11 +461,11 @@ const styles = StyleSheet.create({
   enrollMiniBtn: {
     borderRadius: 12,
     overflow: 'hidden',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 2 },
+    
+    
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 3,
+    
   },
   enrollMiniBtnGradient: {
     flexDirection: 'row',

@@ -111,7 +111,7 @@ export function AnnouncementForm({ onDataChange }: AnnouncementFormProps) {
               style={[
                 styles.importanceCard,
                 {
-                  backgroundColor: importance === level.type ? level.bgColor : '#F9FAFB',
+                  backgroundColor: importance === level.type ? level.bgColor : '#F4F6F9',
                   borderColor: importance === level.type ? level.borderColor : '#E5E7EB',
                 },
                 importance === level.type && styles.importanceCardSelected,
@@ -149,7 +149,7 @@ export function AnnouncementForm({ onDataChange }: AnnouncementFormProps) {
       {/* Settings Card */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: '#F3F4F6' }]}>
+          <View style={[styles.iconContainer, { backgroundColor: '#F0F4F8' }]}>
             <Ionicons name="settings" size={20} color="#4B5563" />
           </View>
           <Text style={styles.cardTitle}>Display Options</Text>
@@ -304,14 +304,14 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
+    
+    
+    
     borderColor: '#F3F4F6',
   },
   cardHeader: {
@@ -352,10 +352,10 @@ const styles = StyleSheet.create({
   },
   importanceCardSelected: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    
+    
     shadowRadius: 4,
-    elevation: 2,
+    
   },
   importanceIcon: {
     width: 32,
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#FFF',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.2,
     shadowRadius: 2,
   },
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F0F4F8',
     marginVertical: 12,
   },
   expirationSection: {
@@ -442,10 +442,10 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    
+    
   },
   chipSelected: {
     backgroundColor: '#111827',
@@ -461,8 +461,8 @@ const styles = StyleSheet.create({
   },
   // Preview
   previewCard: {
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 14,
+    
     padding: 16,
   },
   previewHeader: {
@@ -513,8 +513,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
+    
+    backgroundColor: '#FFFFFF',
     gap: 6,
   },
   audienceLabel: {

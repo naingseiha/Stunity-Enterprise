@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   },
   codeInput: {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 20,
+    borderRadius: 14,
     paddingVertical: 24,
     paddingHorizontal: 20,
     fontSize: 48,
@@ -233,10 +233,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    
+    
   },
   joinButtonDisabled: {
     opacity: 0.5,

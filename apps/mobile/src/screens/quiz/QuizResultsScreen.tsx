@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: 'hidden',
     height: 100,
   },
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.1)',
   },
   statValue: {
@@ -412,14 +412,14 @@ const styles = StyleSheet.create({
   exploreCard: {
     flex: 1,
     height: 90,
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: 'hidden',
   },
   exploreGradient: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.1)',
   },
   exploreLabel: {
@@ -436,13 +436,13 @@ const styles = StyleSheet.create({
   primaryButton: {
     backgroundColor: '#8B5CF6',
     paddingVertical: 16,
-    borderRadius: 16,
+    borderRadius: 14,
     alignItems: 'center',
     shadowColor: '#8B5CF6',
-    shadowOffset: { width: 0, height: 4 },
+    
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    
+    
   },
   primaryButtonText: {
     color: '#FFF',
@@ -452,9 +452,9 @@ const styles = StyleSheet.create({
   secondaryButton: {
     backgroundColor: 'rgba(255,255,255,0.1)',
     paddingVertical: 16,
-    borderRadius: 16,
+    borderRadius: 14,
     alignItems: 'center',
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.1)',
   },
   secondaryButtonText: {
@@ -468,9 +468,9 @@ const styles = StyleSheet.create({
   },
   questionCard: {
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 16,
-    borderWidth: 1,
+    
     borderColor: 'rgba(255,255,255,0.05)',
   },
   questionHeader: {

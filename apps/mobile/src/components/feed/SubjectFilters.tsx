@@ -63,32 +63,17 @@ export default function SubjectFilters({
             <TouchableOpacity
               key={subject.key}
               onPress={() => onFilterChange(subject.key)}
-              activeOpacity={0.7}
+              activeOpacity={0.75}
               style={styles.categoryItem}
             >
-              {/* Outer ring for active state */}
-              {isActive ? (
-                <LinearGradient
+              <LinearGradient
                   colors={subject.gradient}
-                  style={styles.activeRing}
+                  style={[styles.iconBox, isActive && styles.iconBoxActive]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
                 >
-                  <View style={styles.iconCircle}>
-                    <Ionicons
-                      name={subject.icon}
-                      size={24}
-                      color={subject.color}
-                    />
-                  </View>
+                  <Ionicons name={subject.icon} size={20} color="#fff" />
                 </LinearGradient>
-              ) : (
-                <View style={[styles.iconCircleOuter, { backgroundColor: subject.bgColor }]}>
-                  <Ionicons
-                    name={subject.icon}
-                    size={24}
-                    color={subject.color}
-                  />
-                </View>
-              )}
               <Text
                 style={[
                   styles.categoryLabel,
@@ -98,6 +83,7 @@ export default function SubjectFilters({
               >
                 {subject.label}
               </Text>
+              {isActive && <View style={[styles.activeDot, { backgroundColor: subject.color }]} />}
             </TouchableOpacity>
           );
         })}
@@ -112,42 +98,35 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 4,
+    paddingVertical: 8,
     gap: 4,
   },
   categoryItem: {
     alignItems: 'center',
-    width: 72,
+    width: 64,
+    gap: 5,
   },
-  activeRing: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 3,
-  },
-  iconCircle: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#FFFFFF',
+  iconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconCircleOuter: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
+  iconBoxActive: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   categoryLabel: {
     fontSize: 11,
     fontWeight: '600',
     color: '#6B7280',
-    marginTop: 6,
     textAlign: 'center',
+  },
+  activeDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
   },
 });

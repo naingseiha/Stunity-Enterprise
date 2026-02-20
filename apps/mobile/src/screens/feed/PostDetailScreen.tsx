@@ -791,8 +791,8 @@ export default function PostDetailScreen() {
 
 // ─── Styles ─────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F3FF' },
-  centeredContainer: { flex: 1, backgroundColor: '#F5F3FF' },
+  container: { flex: 1, backgroundColor: '#F0F4F8' },
+  centeredContainer: { flex: 1, backgroundColor: '#F0F4F8' },
   loadingBody: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 40 },
   loadingText: { fontSize: 15, color: '#9CA3AF', marginTop: 8 },
   errorTitle: { fontSize: 18, fontWeight: '700', color: '#374151', marginTop: 12 },
@@ -812,13 +812,13 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 12,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center', justifyContent: 'center',
   },
   headerCenter: { flex: 1, alignItems: 'center' },
   headerTypeBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14,
   },
   headerTypeText: { fontSize: 13, fontWeight: '700' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
@@ -830,12 +830,12 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 56, right: 16,
     backgroundColor: '#fff', borderRadius: 14, paddingVertical: 6,
     minWidth: 180,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 16,
-    elevation: 8, zIndex: 1000,
+    shadowColor: '#000',   shadowRadius: 16,
+     zIndex: 1000,
   },
   menuItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
   menuText: { fontSize: 15, fontWeight: '500', color: '#374151' },
-  menuDivider: { height: 1, backgroundColor: '#F3F4F6', marginHorizontal: 16 },
+  menuDivider: { height: 1, backgroundColor: '#F0F4F8', marginHorizontal: 16 },
 
   scrollContent: { paddingBottom: 100 },
 
@@ -861,13 +861,13 @@ const styles = StyleSheet.create({
   timeText: { fontSize: 13, color: '#9CA3AF' },
   followBtn: {
     backgroundColor: '#6366F1', paddingHorizontal: 16, paddingVertical: 7,
-    borderRadius: 20,
+    borderRadius: 14,
   },
   followBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
 
   // Deadline Banner
   deadlineBanner: {
-    backgroundColor: '#F0F9FF', flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center',
     gap: 8, paddingHorizontal: 16, paddingVertical: 10,
     borderLeftWidth: 3, borderLeftColor: '#0EA5E9',
   },
@@ -900,7 +900,7 @@ const styles = StyleSheet.create({
 
   // Quiz
   quizSection: { paddingHorizontal: 16, paddingBottom: 12 },
-  quizGradientCard: { borderRadius: 20, padding: 20 },
+  quizGradientCard: { borderRadius: 14, padding: 20 },
   quizHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   quizIconCircle: {
     width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.9)',
@@ -964,10 +964,12 @@ const styles = StyleSheet.create({
 
   // Progress
   progressCard: {
-    backgroundColor: '#fff', marginTop: 6, paddingHorizontal: 16, paddingVertical: 16,
-    borderRadius: 16, marginHorizontal: 12,
-    shadowColor: '#6366F1', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8,
-    elevation: 2,
+    backgroundColor: '#fff',    
+    
+ marginTop: 6, paddingHorizontal: 16, paddingVertical: 16,
+    borderRadius: 14, marginHorizontal: 12,
+       
+    
   },
   progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   progressLabel: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
@@ -1009,9 +1011,9 @@ const styles = StyleSheet.create({
   commentItem: { flexDirection: 'row', marginBottom: 16, gap: 10 },
   commentContent: { flex: 1 },
   commentBubble: {
-    backgroundColor: '#F9FAFB', borderRadius: 16, borderTopLeftRadius: 4,
+    backgroundColor: '#FFFFFF', borderRadius: 16, borderTopLeftRadius: 4,
     paddingHorizontal: 14, paddingVertical: 10,
-    borderWidth: 1, borderColor: '#F3F4F6',
+     borderColor: '#F3F4F6',
   },
   commentHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   commentAuthor: { fontSize: 13, fontWeight: '700', color: '#111827' },
@@ -1031,7 +1033,7 @@ const styles = StyleSheet.create({
   noComments: { alignItems: 'center', paddingVertical: 32 },
   noCommentsIcon: {
     width: 72, height: 72, borderRadius: 36,
-    backgroundColor: '#F9FAFB', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center',
     marginBottom: 12,
   },
   noCommentsText: { fontSize: 16, fontWeight: '600', color: '#6B7280' },
@@ -1046,7 +1048,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   commentInputWrapper: {
-    flex: 1, backgroundColor: '#F3F4F6', borderRadius: 22,
+    flex: 1, backgroundColor: '#FFFFFF', borderRadius: 22,
     paddingHorizontal: 16, paddingVertical: 10, maxHeight: 100,
   },
   commentInput: { fontSize: 14, color: '#1F2937', maxHeight: 80 },

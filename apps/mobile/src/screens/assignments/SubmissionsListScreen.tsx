@@ -343,7 +343,7 @@ export default function SubmissionsListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F7FC',
+    backgroundColor: '#F0F4F8',
   },
   header: {
     flexDirection: 'row',
@@ -377,14 +377,16 @@ const styles = StyleSheet.create({
   },
   statsCard: {
     backgroundColor: '#fff',
+    
+    
     margin: 16,
     padding: 20,
-    borderRadius: 16,
+    borderRadius: 14,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    
+    
   },
   statsRow: {
     flexDirection: 'row',
@@ -423,7 +425,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: '#fff',
     marginRight: 10,
     gap: 8,
@@ -463,14 +465,16 @@ const styles = StyleSheet.create({
   },
   submissionCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    
+    
+    borderRadius: 14,
     padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    
+    
   },
   studentInfo: {
     flexDirection: 'row',

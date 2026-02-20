@@ -845,7 +845,7 @@ export default function CreatePostScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#F0F4F8',
   },
   header: {
     flexDirection: 'row',
@@ -860,7 +860,7 @@ const styles = StyleSheet.create({
   closeButton: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 14,
     backgroundColor: '#F5F3FF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -889,7 +889,7 @@ const styles = StyleSheet.create({
   postButton: {
     paddingHorizontal: 20,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 14,
     minWidth: 70,
     alignItems: 'center',
   },
@@ -946,9 +946,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    
     gap: 6,
   },
   typeOptionText: {
@@ -1031,8 +1031,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     backgroundColor: '#EEF2FF',
-    borderRadius: 20,
-    borderWidth: 1,
+    borderRadius: 14,
+    
     borderColor: '#C7D2FE',
   },
   activeTagText: {
@@ -1048,14 +1048,14 @@ const styles = StyleSheet.create({
   },
   tagInput: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
     color: '#1F2937',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    
+    
   },
   tagAddButton: {
     width: 32,
@@ -1076,7 +1076,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: '#F5F3FF',
     borderRadius: 16,
-    borderWidth: 1,
+    
     borderColor: '#EDE9FE',
   },
   suggestedTagText: {
@@ -1114,8 +1114,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
+    
+    backgroundColor: '#FFFFFF',
     gap: 6,
   },
   difficultyLabel: {
@@ -1149,10 +1149,10 @@ const styles = StyleSheet.create({
   deadlineChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#F9FAFB',
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    
   },
   deadlineChipSelected: {
     backgroundColor: '#FEF2F2',
@@ -1262,9 +1262,9 @@ const styles = StyleSheet.create({
   },
   pollInput: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    
+    
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -1313,7 +1313,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    
     gap: 8,
   },
   visibilityLabel: {

@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     backgroundColor: '#F5F5F5',
-    borderRadius: 20,
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 14,
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   sendButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },

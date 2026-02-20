@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderRadius: 16,
-    borderWidth: 1,
+    
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   scoreAvatar: {
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
-    borderWidth: 1,
+    
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   statsTitle: {
@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
   doneButton: {
     borderRadius: 16,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderWidth: 1,
+    
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   doneButtonContent: {
