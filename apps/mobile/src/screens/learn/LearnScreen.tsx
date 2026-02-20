@@ -674,7 +674,7 @@ export default function LearnScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8FAFC',
   },
 
   // ── Header ──
@@ -862,12 +862,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    
-    
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: Platform.OS === 'ios' ? 12 : 6,
     gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   filterButton: {
     width: 36,

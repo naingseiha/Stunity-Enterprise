@@ -240,16 +240,13 @@ export const CourseCard: React.FC<CourseCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
-    
-    
     borderRadius: 14,
-    overflow: 'hidden',
     marginBottom: 16,
-    
-    
-    
-    shadowRadius: 16,
-    
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
   compactContainer: {
     width: CARD_WIDTH,
@@ -258,6 +255,9 @@ const styles = StyleSheet.create({
   thumbnailContainer: {
     height: 175,
     position: 'relative',
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
+    overflow: 'hidden',
   },
   compactThumbnail: {
     height: 110,
