@@ -154,6 +154,18 @@ const notifyParents = async (studentId: string, type: string, title: string, mes
   }
 };
 
+const notifyStudent = async (studentId: string, type: string, title: string, message: string, link?: string) => {
+  try {
+    await fetch(`${AUTH_SERVICE_URL}/notifications/student`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, type, title, message, link }),
+    });
+  } catch (error) {
+    // Silent fail
+  }
+};
+
 // Types
 interface AttendanceRecord {
   studentId: string;
@@ -412,6 +424,13 @@ app.post('/attendance/bulk', authenticateToken, async (req: AuthRequest, res: Re
         `Attendance Alert: ${statusText.charAt(0).toUpperCase() + statusText.slice(1)}`,
         `Your child was marked as ${statusText} on ${format(targetDate, 'MMM dd, yyyy')} (${session})`,
         `/parent/child/${record.studentId}/attendance`
+      );
+      notifyStudent(
+        record.studentId,
+        'ATTENDANCE_MARKED',
+        `Attendance: ${statusText.charAt(0).toUpperCase() + statusText.slice(1)}`,
+        `You were marked as ${statusText} on ${format(targetDate, 'MMM dd, yyyy')} (${session})`,
+        `/attendance`
       );
     }
 

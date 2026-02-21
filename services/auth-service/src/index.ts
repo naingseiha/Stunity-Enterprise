@@ -1219,6 +1219,78 @@ app.post('/notifications/parent', async (req: Request, res: Response) => {
   }
 });
 
+// School→Feed Notification Bridge: notify students directly
+app.post('/notifications/student', async (req: Request, res: Response) => {
+  try {
+    const { studentId, type, title, message, link } = req.body;
+
+    if (!studentId || !type || !title || !message) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: studentId, type, title, message',
+      });
+    }
+
+    // Find student's user account
+    const student = await prisma.student.findUnique({
+      where: { id: studentId },
+      include: { user: { select: { id: true } } },
+    });
+
+    if (!student?.user?.id) {
+      return res.status(404).json({ success: false, error: 'Student user not found' });
+    }
+
+    const notification = await prisma.notification.create({
+      data: {
+        recipientId: student.user.id,
+        type,
+        title,
+        message,
+        link,
+      },
+    });
+
+    res.status(201).json({ success: true, data: notification });
+  } catch (error: any) {
+    console.error('Send student notification error:', error);
+    res.status(500).json({ success: false, error: 'Failed to send student notification' });
+  }
+});
+
+// School→Feed Notification Bridge: batch notify (e.g., class-wide announcements)
+app.post('/notifications/batch', async (req: Request, res: Response) => {
+  try {
+    const { userIds, type, title, message, link, actorId } = req.body;
+
+    if (!userIds?.length || !type || !title || !message) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: userIds[], type, title, message',
+      });
+    }
+
+    const notifications = await prisma.notification.createMany({
+      data: userIds.map((uid: string) => ({
+        recipientId: uid,
+        actorId: actorId || null,
+        type,
+        title,
+        message,
+        link,
+      })),
+    });
+
+    res.status(201).json({
+      success: true,
+      count: notifications.count,
+    });
+  } catch (error: any) {
+    console.error('Batch notification error:', error);
+    res.status(500).json({ success: false, error: 'Failed to send batch notifications' });
+  }
+});
+
 // ============================================
 // END NOTIFICATION ENDPOINTS
 // ============================================
@@ -2003,6 +2075,8 @@ app.listen(PORT, () => {
   console.log('   PUT  /notifications/read-all    - Mark all as read');
   console.log('   POST /notifications             - Create notification');
   console.log('   POST /notifications/parent      - Notify parent(s)');
+  console.log('   POST /notifications/student     - Notify student');
+  console.log('   POST /notifications/batch       - Batch notify users');
   console.log('');
   console.log('🔑 Password Reset:');
   console.log('   POST /auth/forgot-password       - Request reset email');

@@ -27,6 +27,8 @@ import {
   Rocket,
   Microscope,
   UsersRound,
+  GraduationCap,
+  ClipboardList,
 } from 'lucide-react';
 
 interface CreatePostModalProps {
@@ -51,6 +53,19 @@ export interface CreatePostData {
     timeLimit: number;
     passingScore: number;
   };
+  courseData?: {
+    title: string;
+    description: string;
+    modules: { title: string; description: string }[];
+    difficulty: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+    estimatedHours: number;
+  };
+  examData?: {
+    questions: { text: string; options: string[]; correctAnswer: number }[];
+    timeLimit: number;
+    passingScore: number;
+    maxAttempts: number;
+  };
 }
 
 const POST_TYPES = [
@@ -65,6 +80,8 @@ const POST_TYPES = [
   { id: 'RESEARCH', label: 'Research', icon: Microscope, description: 'Share findings', color: 'cyan' },
   { id: 'COLLABORATION', label: 'Collaboration', icon: UsersRound, description: 'Find study partners', color: 'pink' },
   { id: 'QUIZ', label: 'Quiz', icon: HelpCircle, description: 'Test knowledge', color: 'purple' },
+  { id: 'COURSE', label: 'Course', icon: GraduationCap, description: 'Create a learning course', color: 'emerald' },
+  { id: 'EXAM', label: 'Exam', icon: ClipboardList, description: 'Formal assessment', color: 'red' },
 ];
 
 const VISIBILITY_OPTIONS = [
@@ -88,6 +105,17 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
   const [quizQuestions, setQuizQuestions] = useState([{ text: '', options: ['', ''], correctAnswer: 0 }]);
   const [quizTimeLimit, setQuizTimeLimit] = useState(10);
   const [quizPassingScore, setQuizPassingScore] = useState(70);
+  // Course state
+  const [courseTitle, setCourseTitle] = useState('');
+  const [courseDescription, setCourseDescription] = useState('');
+  const [courseModules, setCourseModules] = useState([{ title: '', description: '' }]);
+  const [courseDifficulty, setCourseDifficulty] = useState<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'>('BEGINNER');
+  const [courseEstimatedHours, setCourseEstimatedHours] = useState(1);
+  // Exam state
+  const [examQuestions, setExamQuestions] = useState([{ text: '', options: ['', ''], correctAnswer: 0 }]);
+  const [examTimeLimit, setExamTimeLimit] = useState(60);
+  const [examPassingScore, setExamPassingScore] = useState(50);
+  const [examMaxAttempts, setExamMaxAttempts] = useState(1);
   const [creating, setCreating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
@@ -145,6 +173,26 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
       }
     }
 
+    if (postType === 'COURSE') {
+      if (!courseTitle.trim()) {
+        alert('Please enter a course title');
+        return;
+      }
+      const validModules = courseModules.filter(m => m.title.trim());
+      if (validModules.length === 0) {
+        alert('Please add at least 1 module with a title');
+        return;
+      }
+    }
+
+    if (postType === 'EXAM') {
+      const validQuestions = examQuestions.filter(q => q.text.trim() && q.options.filter(o => o.trim()).length >= 2);
+      if (validQuestions.length === 0) {
+        alert('Please add at least 1 question with 2+ options');
+        return;
+      }
+    }
+
     setCreating(true);
     try {
       let uploadedMediaUrls: string[] = [];
@@ -191,6 +239,23 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
           timeLimit: quizTimeLimit,
           passingScore: quizPassingScore,
         } : undefined,
+        courseData: postType === 'COURSE' ? {
+          title: courseTitle,
+          description: courseDescription,
+          modules: courseModules.filter(m => m.title.trim()),
+          difficulty: courseDifficulty,
+          estimatedHours: courseEstimatedHours,
+        } : undefined,
+        examData: postType === 'EXAM' ? {
+          questions: examQuestions.filter(q => q.text.trim()).map(q => ({
+            text: q.text,
+            options: q.options.filter(o => o.trim()),
+            correctAnswer: q.correctAnswer,
+          })),
+          timeLimit: examTimeLimit,
+          passingScore: examPassingScore,
+          maxAttempts: examMaxAttempts,
+        } : undefined,
       });
       // Reset form
       setContent('');
@@ -200,6 +265,15 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
       setQuizQuestions([{ text: '', options: ['', ''], correctAnswer: 0 }]);
       setQuizTimeLimit(10);
       setQuizPassingScore(70);
+      setCourseTitle('');
+      setCourseDescription('');
+      setCourseModules([{ title: '', description: '' }]);
+      setCourseDifficulty('BEGINNER');
+      setCourseEstimatedHours(1);
+      setExamQuestions([{ text: '', options: ['', ''], correctAnswer: 0 }]);
+      setExamTimeLimit(60);
+      setExamPassingScore(50);
+      setExamMaxAttempts(1);
       setMediaFiles([]);
       setMediaPreviews([]);
       setMediaUrls([]);
@@ -525,6 +599,247 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                 <UsersRound className="w-4 h-4" />
                 <span className="text-sm font-medium">Find study partners or collaborators</span>
               </div>
+            </div>
+          )}
+
+          {/* Course Builder */}
+          {postType === 'COURSE' && (
+            <div className="mt-4 space-y-4">
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Course Title</label>
+                <input
+                  type="text"
+                  value={courseTitle}
+                  onChange={(e) => setCourseTitle(e.target.value)}
+                  placeholder="e.g. Introduction to React"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Course Description</label>
+                <textarea
+                  value={courseDescription}
+                  onChange={(e) => setCourseDescription(e.target.value)}
+                  placeholder="What will students learn?"
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                />
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Difficulty</label>
+                  <select
+                    value={courseDifficulty}
+                    onChange={(e) => setCourseDifficulty(e.target.value as 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED')}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="BEGINNER">Beginner</option>
+                    <option value="INTERMEDIATE">Intermediate</option>
+                    <option value="ADVANCED">Advanced</option>
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Est. Hours</label>
+                  <input
+                    type="number"
+                    value={courseEstimatedHours}
+                    onChange={(e) => setCourseEstimatedHours(Math.max(1, parseInt(e.target.value) || 1))}
+                    min={1}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <p className="text-sm font-medium text-gray-700">Modules</p>
+              {courseModules.map((mod, idx) => (
+                <div key={idx} className="p-3 border border-emerald-200 bg-emerald-50/50 rounded-xl space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">{idx + 1}</span>
+                    <input
+                      type="text"
+                      value={mod.title}
+                      onChange={(e) => {
+                        const updated = [...courseModules];
+                        updated[idx].title = e.target.value;
+                        setCourseModules(updated);
+                      }}
+                      placeholder={`Module ${idx + 1} title`}
+                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                    {courseModules.length > 1 && (
+                      <button
+                        onClick={() => setCourseModules(courseModules.filter((_, i) => i !== idx))}
+                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  <textarea
+                    value={mod.description}
+                    onChange={(e) => {
+                      const updated = [...courseModules];
+                      updated[idx].description = e.target.value;
+                      setCourseModules(updated);
+                    }}
+                    placeholder="Module description (optional)"
+                    rows={1}
+                    className="w-full ml-8 px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                    style={{ width: 'calc(100% - 2rem)' }}
+                  />
+                </div>
+              ))}
+              {courseModules.length < 20 && (
+                <button
+                  onClick={() => setCourseModules([...courseModules, { title: '', description: '' }])}
+                  className="flex items-center gap-2 px-3 py-2 text-emerald-600 hover:bg-emerald-50 rounded-full transition-colors text-sm font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Module
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Exam Builder */}
+          {postType === 'EXAM' && (
+            <div className="mt-4 space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Time Limit (min)</label>
+                  <input
+                    type="number"
+                    value={examTimeLimit}
+                    onChange={(e) => setExamTimeLimit(Math.max(1, parseInt(e.target.value) || 1))}
+                    min={1}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Passing Score (%)</label>
+                  <input
+                    type="number"
+                    value={examPassingScore}
+                    onChange={(e) => setExamPassingScore(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+                    min={0}
+                    max={100}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Max Attempts</label>
+                  <input
+                    type="number"
+                    value={examMaxAttempts}
+                    onChange={(e) => setExamMaxAttempts(Math.max(1, parseInt(e.target.value) || 1))}
+                    min={1}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  />
+                </div>
+              </div>
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                <div className="flex items-center gap-2 text-red-700">
+                  <ClipboardList className="w-4 h-4" />
+                  <span className="text-sm font-medium">Formal assessment — results are recorded and graded</span>
+                </div>
+              </div>
+
+              <p className="text-sm font-medium text-gray-700">Questions</p>
+              {examQuestions.map((question, qIdx) => (
+                <div key={qIdx} className="p-3 border border-red-200 bg-red-50/50 rounded-xl space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center text-xs font-bold">{qIdx + 1}</span>
+                    <input
+                      type="text"
+                      value={question.text}
+                      onChange={(e) => {
+                        const updated = [...examQuestions];
+                        updated[qIdx].text = e.target.value;
+                        setExamQuestions(updated);
+                      }}
+                      placeholder={`Question ${qIdx + 1}`}
+                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                    {examQuestions.length > 1 && (
+                      <button
+                        onClick={() => setExamQuestions(examQuestions.filter((_, i) => i !== qIdx))}
+                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  {question.options.map((opt, oIdx) => (
+                    <div key={oIdx} className="flex items-center gap-2 ml-8">
+                      <button
+                        onClick={() => {
+                          const updated = [...examQuestions];
+                          updated[qIdx].correctAnswer = oIdx;
+                          setExamQuestions(updated);
+                        }}
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                          question.correctAnswer === oIdx
+                            ? 'border-green-500 bg-green-500'
+                            : 'border-gray-300 hover:border-green-400'
+                        }`}
+                      >
+                        {question.correctAnswer === oIdx && (
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </button>
+                      <input
+                        type="text"
+                        value={opt}
+                        onChange={(e) => {
+                          const updated = [...examQuestions];
+                          updated[qIdx].options[oIdx] = e.target.value;
+                          setExamQuestions(updated);
+                        }}
+                        placeholder={`Option ${oIdx + 1}`}
+                        className="flex-1 px-3 py-1.5 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                      />
+                      {question.options.length > 2 && (
+                        <button
+                          onClick={() => {
+                            const updated = [...examQuestions];
+                            updated[qIdx].options = updated[qIdx].options.filter((_, i) => i !== oIdx);
+                            if (updated[qIdx].correctAnswer >= updated[qIdx].options.length) {
+                              updated[qIdx].correctAnswer = 0;
+                            }
+                            setExamQuestions(updated);
+                          }}
+                          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {question.options.length < 6 && (
+                    <button
+                      onClick={() => {
+                        const updated = [...examQuestions];
+                        updated[qIdx].options.push('');
+                        setExamQuestions(updated);
+                      }}
+                      className="ml-8 flex items-center gap-1 text-xs text-red-600 hover:text-red-800 font-medium transition-colors"
+                    >
+                      <Plus className="w-3 h-3" /> Add Option
+                    </button>
+                  )}
+                </div>
+              ))}
+              {examQuestions.length < 50 && (
+                <button
+                  onClick={() => setExamQuestions([...examQuestions, { text: '', options: ['', ''], correctAnswer: 0 }])}
+                  className="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-full transition-colors text-sm font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Question
+                </button>
+              )}
             </div>
           )}
 

@@ -7,6 +7,8 @@ dotenv.config(); // fallback: also check service-local .env
 
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import hpp from 'hpp';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { prisma } from './context';
@@ -153,6 +155,23 @@ const generalLimiter = rateLimit({
   message: { success: false, error: 'Too many requests, please try again later' },
 });
 
+// Write-endpoint rate limits (enterprise security)
+const writeLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many write requests, slow down' },
+});
+
+const uploadLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Upload limit reached, try again later' },
+});
+
 // ─── CORS ──────────────────────────────────────────────────────────
 // In production (Cloud Run), set ALLOWED_ORIGINS env var to comma-separated list
 // e.g. ALLOWED_ORIGINS=https://stunity.com,https://app.stunity.com
@@ -172,6 +191,14 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
+// ─── Security Headers (Enterprise) ─────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: false, // CSP handled at reverse proxy level
+  crossOriginEmbedderPolicy: false, // Allow media embeds
+}));
+app.use(hpp()); // HTTP Parameter Pollution protection
+
 app.use(generalLimiter);
 
 // ─── HTTP Compression (Phase 1 Optimization) ───────────────────────
@@ -231,7 +258,16 @@ app.get('/health', async (_req: Request, res: Response) => {
 
 // ─── Static & Media ────────────────────────────────────────────────
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/upload', uploadLimiter); // Rate limit file uploads
 app.use('/', mediaRouter);
+
+// ─── Write-Endpoint Rate Limiting ──────────────────────────────────
+// Apply stricter limits to POST/PUT/DELETE on content endpoints
+app.post('/posts', writeLimiter);
+app.post('/posts/:id/comments', writeLimiter);
+app.post('/posts/:id/repost', writeLimiter);
+app.put('/posts/:id', writeLimiter);
+app.delete('/posts/:id', writeLimiter);
 
 // ─── Route Modules ─────────────────────────────────────────────────
 app.use('/', postsRouter);
@@ -267,8 +303,8 @@ app.use(errorLogger);
 server = app.listen(PORT, '0.0.0.0', () => {
   console.log('');
   console.log('╔════════════════════════════════════════════════╗');
-  console.log('║   📱 Feed Service - Stunity Enterprise v7.0   ║');
-  console.log('║        Modular Route Architecture              ║');
+  console.log('║   📱 Feed Service - Stunity Enterprise v8.0   ║');
+  console.log('║   Secure · Modular · Enterprise-Ready          ║');
   console.log('╚════════════════════════════════════════════════╝');
   console.log('');
   console.log(`✅ Server running on port ${PORT}`);
