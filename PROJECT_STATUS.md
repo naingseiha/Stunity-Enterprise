@@ -24,13 +24,13 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 - Claim code system (STNT-XXXX-XXXX) — school enrollment
 - JWT access tokens (1h) + refresh tokens (7d), bcrypt 12 rounds
 - Parent portal login (separate flow)
-- Enterprise SSO UI ready (Azure AD, Google Workspace — backend pending)
+- Enterprise SSO fully integrated (Azure AD, Google Workspace) with auto-provisioning
 - **Security headers** — Helmet + HPP on auth-service + feed-service
 - **Rate limiting** — 6 endpoint-specific limiters (global, auth, register, reset, 2FA, feed writes/uploads)
 - **Brute force protection** — progressive lockout (5/10/15 attempts → 15min/30min/1hr)
 - **Password policy** — 8+ chars, complexity rules, common password block, history check
 - **Password reset flow** — Resend email (prod) / console.log (dev), crypto tokens
-- **OAuth2 social login** — Google, Apple, Facebook, LinkedIn (backend ready, env vars needed)
+- **OAuth2 social login** — Google, Apple, Facebook, LinkedIn (backend ready)
 - **2FA/MFA** — TOTP + 10 backup codes (Google Authenticator compatible)
 - **DB models**: SocialAccount, TwoFactorSecret, LoginAttempt (Prisma schema)
 - **Mobile screens**: ForgotPasswordScreen, ResetPasswordScreen, TwoFactorScreen
@@ -40,7 +40,7 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 - **7 post types:** Text, Poll, Quiz, Course, Project, Question, Exam, Announcement
 - **Real-time feed:** Supabase postgres_changes → "New Posts" pill (Twitter-style)
 - **Feed algorithm:** 6-factor scoring with **author affinity** (0–0.4 boost) — 3-pool mixing (60% relevance + 25% trending + 15% explore)
-- **Scroll performance:** FlashList, drawDistance=600, windowSize=7, removeClippedSubviews=Android-only
+- **Scroll performance:** FlashList, drawDistance=800, `React.memo()` on PostCard with deep equality checks, removeClippedSubviews=Android-only
 - **Optimistic UI:** Like, comment, repost update instantly before API confirms
 - **Post visibility fix:** Two-query candidate pool (75 trending + 25 fresh/last-6h) so new posts always appear
 - **Comments:** Real-time (Supabase), no double-display, DELETE handled in-state
@@ -48,6 +48,7 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 - **Reposts:** Full repost + quote repost, notification to original author
 - **Bookmarks, Search, Trending**
 - **Stories** (24-hour expiry)
+- **Video Post Support**: 50MB video uploads, R2 storage optimization bypass, inline VideoPlayer
 - **Notifications:** Bell badge via Supabase Realtime, SSE fallback
 - **Push notifications** — Expo Push (FCM/APNs) for background/closed app
 - **School→Feed notification bridge** — grade/attendance events → student in-app notifications

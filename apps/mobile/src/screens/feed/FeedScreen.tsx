@@ -8,7 +8,7 @@
  * - Subject filter chips with clear active states
  */
 
-import React, { useEffect, useCallback, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useCallback, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,6 @@ import {
   RefreshControl,
   TouchableOpacity,
   StatusBar,
-  Image,
   Platform,
   Alert,
   AppState,
@@ -41,7 +40,6 @@ import Animated, {
 import StunityLogo from '../../../assets/Stunity.svg';
 
 import {
-  PostCard,
   PostAnalyticsModal,
   SubjectFilters,
   EducationalValueModal,
@@ -55,6 +53,7 @@ import { Post } from '@/types';
 import { transformPosts } from '@/utils/transformPost';
 import { FeedStackScreenProps } from '@/navigation/types';
 import { useNavigationContext } from '@/contexts';
+import RenderPostItem from './RenderPostItem';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -85,9 +84,9 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
   const cy = size / 2;
 
   const rings = [
-    { r: 55, sw: 10, pct: Math.min(xpProgress / xpToNext, 1),                                           id: 'xp',     c1: '#38BDF8', c2: '#0284C7' },
-    { r: 42, sw: 8,  pct: Math.min(stats.completedLessons / Math.max(stats.completedLessons + 5, 10), 1), id: 'lesson', c1: '#34D399', c2: '#059669' },
-    { r: 31, sw: 7,  pct: Math.min(stats.currentStreak / 7, 1),                                          id: 'streak', c1: '#FBBF24', c2: '#F97316' },
+    { r: 55, sw: 10, pct: Math.min(xpProgress / xpToNext, 1), id: 'xp', c1: '#38BDF8', c2: '#0284C7' },
+    { r: 42, sw: 8, pct: Math.min(stats.completedLessons / Math.max(stats.completedLessons + 5, 10), 1), id: 'lesson', c1: '#34D399', c2: '#059669' },
+    { r: 31, sw: 7, pct: Math.min(stats.currentStreak / 7, 1), id: 'streak', c1: '#FBBF24', c2: '#F97316' },
   ];
 
   // XP bar fill
@@ -200,26 +199,26 @@ const perfCardStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  inner:       { padding: 14, borderRadius: 16, overflow: 'hidden' },
-  topRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
-  ringWrap:    { alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  ringGlow:    { position: 'absolute', width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(14,165,233,0.06)' },
-  ringInner:   { position: 'absolute', alignItems: 'center' },
-  ringValue:   { fontSize: 30, fontWeight: '900', color: '#1F2937', letterSpacing: -1 },
-  ringLabel:   { fontSize: 8, fontWeight: '700', color: '#9CA3AF', letterSpacing: 1.2 },
-  stats:       { flex: 1, gap: 8 },
-  statRow:     { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  statIcon:    { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  statVal:     { fontSize: 14, fontWeight: '700', color: '#1E293B' },
-  statLbl:     { fontSize: 11, fontWeight: '400', color: '#64748B' },
-  avatarWrap:  { alignItems: 'center', position: 'relative' },
+  inner: { padding: 14, borderRadius: 16, overflow: 'hidden' },
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
+  ringWrap: { alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  ringGlow: { position: 'absolute', width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(14,165,233,0.06)' },
+  ringInner: { position: 'absolute', alignItems: 'center' },
+  ringValue: { fontSize: 30, fontWeight: '900', color: '#1F2937', letterSpacing: -1 },
+  ringLabel: { fontSize: 8, fontWeight: '700', color: '#9CA3AF', letterSpacing: 1.2 },
+  stats: { flex: 1, gap: 8 },
+  statRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  statIcon: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  statVal: { fontSize: 14, fontWeight: '700', color: '#1E293B' },
+  statLbl: { fontSize: 11, fontWeight: '400', color: '#64748B' },
+  avatarWrap: { alignItems: 'center', position: 'relative' },
   // XP bar
-  barSection:  { gap: 5 },
-  barLabels:   { flexDirection: 'row', justifyContent: 'space-between' },
-  barLeft:     { fontSize: 11, fontWeight: '600', color: '#0284C7' },
-  barRight:    { fontSize: 11, fontWeight: '500', color: '#64748B' },
-  barBg:       { height: 8, backgroundColor: '#EFF6FF', borderRadius: 4, overflow: 'hidden' },
-  barFill:     { height: '100%', borderRadius: 4, overflow: 'hidden' },
+  barSection: { gap: 5 },
+  barLabels: { flexDirection: 'row', justifyContent: 'space-between' },
+  barLeft: { fontSize: 11, fontWeight: '600', color: '#0284C7' },
+  barRight: { fontSize: 11, fontWeight: '500', color: '#64748B' },
+  barBg: { height: 8, backgroundColor: '#EFF6FF', borderRadius: 4, overflow: 'hidden' },
+  barFill: { height: '100%', borderRadius: 4, overflow: 'hidden' },
 });
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -398,43 +397,6 @@ export default function FeedScreen() {
     setRefreshing(false);
   }, [fetchPosts]);
 
-  // Prefetch tracking — useRef instead of useState: no re-render during scroll
-  const hasPrefetchedRef = useRef(false);
-  const lastScrollCheck = useRef(0);
-
-  // Ref-based scroll handler — stable identity, reads latest values from refs
-  // Avoids useCallback dependency churn that would invalidate FlashList's onScroll
-  const isLoadingRef = useRef(isLoadingPosts);
-  const hasMoreRef = useRef(hasMorePosts);
-  isLoadingRef.current = isLoadingPosts;
-  hasMoreRef.current = hasMorePosts;
-
-  const handleScroll = useCallback((event: any) => {
-    const now = Date.now();
-    if (now - lastScrollCheck.current < 500) return;
-    lastScrollCheck.current = now;
-
-    if (hasPrefetchedRef.current || isLoadingRef.current || !hasMoreRef.current) return;
-
-    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    const totalScroll = contentSize.height - layoutMeasurement.height;
-    if (totalScroll <= 0) return;
-    const scrollPercentage = (contentOffset.y / totalScroll) * 100;
-
-    if (scrollPercentage >= 50) {
-      hasPrefetchedRef.current = true;
-      fetchPosts();
-    }
-  }, [fetchPosts]); // Stable — fetchPosts from zustand is referentially stable
-
-  // Reset prefetch flag when new data loads (ref — no re-render)
-  useEffect(() => {
-    if (!isLoadingPosts) {
-      hasPrefetchedRef.current = false;
-    }
-  }, [isLoadingPosts]);
-
-
   const handleLoadMore = useCallback(() => {
     if (!isLoadingPosts && hasMorePosts) {
       fetchPosts();
@@ -601,44 +563,35 @@ export default function FeedScreen() {
     handleLikePost, handleSharePost, handleValuePost, handlePostPress,
     handleVoteOnPoll, bookmarkPost, navigation,
   });
-  handlersRef.current = {
-    handleLikePost, handleSharePost, handleValuePost, handlePostPress,
-    handleVoteOnPoll, bookmarkPost, navigation,
-  };
+  // Update ref on every render so callbacks are fresh but identity is stable
+  useEffect(() => {
+    handlersRef.current = {
+      handleLikePost, handleSharePost, handleValuePost, handlePostPress,
+      handleVoteOnPoll, bookmarkPost, navigation,
+    };
+  });
 
   const renderPost = useCallback(({ item }: { item: Post }) => {
-    const h = handlersRef.current;
     return (
-      <View style={styles.postWrapper}>
-        <PostCard
-          post={item}
-          onLike={() => h.handleLikePost(item)}
-          onComment={() => h.navigation.navigate('Comments', { postId: item.id })}
-          onRepost={() => h.handleSharePost(item)}
-          onShare={() => h.handleSharePost(item)}
-          onBookmark={() => h.bookmarkPost(item.id)}
-          onValue={() => h.handleValuePost(item)}
-          isValued={valuedPostIds.has(item.id)}
-          onUserPress={() => h.navigation.navigate('UserProfile', { userId: item.author.id })}
-          onPress={() => h.handlePostPress(item)}
-          onVote={(optionId) => h.handleVoteOnPoll(item.id, optionId)}
-          onViewAnalytics={() => setAnalyticsPostId(item.id)}
-          navigate={h.navigation.navigate as any}
-        />
-      </View>
+      <RenderPostItem
+        item={item}
+        handlersRef={handlersRef}
+        isValued={valuedPostIds.has(item.id)}
+        setAnalyticsPostId={setAnalyticsPostId}
+      />
     );
-  }, [valuedPostIds]);
+  }, [valuedPostIds]); // Only re-create if valued set changes
 
-  const renderFooter = () => {
+  const renderFooter = useCallback(() => {
     if (!isLoadingPosts) return null;
     return (
       <View style={styles.footer}>
         <PostSkeleton />
       </View>
     );
-  };
+  }, [isLoadingPosts]);
 
-  const renderEmpty = () => {
+  const renderEmpty = useCallback(() => {
     if (isLoadingPosts) {
       return (
         <View style={styles.skeletonContainer}>
@@ -658,7 +611,7 @@ export default function FeedScreen() {
         onAction={handleCreatePost}
       />
     );
-  };
+  }, [isLoadingPosts, handleCreatePost]);
 
   return (
     <View style={styles.container}>
@@ -749,8 +702,7 @@ export default function FeedScreen() {
         ListFooterComponent={renderFooter}
         ListEmptyComponent={renderEmpty}
         onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.3}
-        onScroll={handleScroll}
+        onEndReachedThreshold={0.45}
         viewabilityConfig={viewabilityConfig}
         onViewableItemsChanged={onViewableItemsChanged}
         refreshControl={
@@ -765,16 +717,6 @@ export default function FeedScreen() {
         contentContainerStyle={styles.listContent}
         // ── FlashList performance props for 120Hz smooth scrolling ──
         drawDistance={800}        // Pre-render 2 screens off-screen — eliminates blank cells on fast scroll
-        estimatedItemSize={400}   // Critical: Reduces layout thrashing
-        overrideItemLayout={(layout, item) => {
-          // Pre-calculate heights to eliminate layout jumps (massive perf boost)
-          let height = 250; // Base height (header + footer + padding)
-          if (item.mediaUrls?.length > 0) height += 300; // Image carousel
-          if (item.postType === 'POLL') height += 150; // Poll options
-          if (item.postType === 'QUIZ') height += 100; // Quiz preview
-          if (item.content && item.content.length > 200) height += 50; // Long text
-          layout.size = height;
-        }}
         getItemType={(item) => {
           // Type-bucketed recycling — cells of similar height are reused together
           if (item.postType === 'QUIZ') return 'quiz';
@@ -784,11 +726,6 @@ export default function FeedScreen() {
         }}
         // iOS: removeClippedSubviews causes native layer hide/show jank — Android only
         removeClippedSubviews={Platform.OS === 'android'}
-        maxToRenderPerBatch={6}           // Smaller batches = less JS thread blocking per frame
-        updateCellsBatchingPeriod={16}    // ~60fps batch flush — matches display refresh
-        initialNumToRender={6}
-        windowSize={5}                    // 2 screens above + below — reduces off-screen component count
-        scrollEventThrottle={16}          // 60fps — allows 120Hz on capable devices
         decelerationRate="normal"         // Smooth iOS momentum
       />
 
@@ -929,7 +866,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    
+
     borderColor: '#CCFBF1',
   },
   createPostPlaceholder: {
@@ -1048,7 +985,7 @@ const styles = StyleSheet.create({
     shadowColor: '#0284C7',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    
+
     elevation: 6,
   },
   newPostsText: {

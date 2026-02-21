@@ -13,7 +13,7 @@
  * - Rich content indicators (PDF, Code, Formula)
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -43,6 +43,8 @@ import {
   PollVoting,
 } from '@/components/feed';
 import { DeadlineBanner, ClubAnnouncement, QuizSection } from './PostCardSections';
+import PostHeader from './PostHeader';
+import PostContent from './PostContent';
 import { Post, DifficultyLevel } from '@/types';
 import { useAuthStore } from '@/stores';
 import { formatRelativeTime, formatNumber } from '@/utils';
@@ -269,6 +271,10 @@ const PostCardInner: React.FC<PostCardProps> = ({
   const isCurrentUser = currentUserId ? post.author.id === currentUserId : post.author.id === currentUserId2;
 
   // Derive directly from props — no useEffect sync needed
+  // We use key={post.id} on the component itself (in the parent list) to force remounting
+  // But FlashList recycles, so we DO need to handle prop updates.
+  // Instead of state, we can use a "derived state" pattern or useLayoutEffect to sync.
+
   const [liked, setLiked] = useState(post.isLiked);
   const [bookmarked, setBookmarked] = useState(post.isBookmarked);
   const [likeCount, setLikeCount] = useState(post.likes);
@@ -276,21 +282,21 @@ const PostCardInner: React.FC<PostCardProps> = ({
   const [valued, setValued] = useState(isValuedProp);
   const [isFollowing, setIsFollowing] = useState(post.isFollowingAuthor || false);
   const [followLoading, setFollowLoading] = useState(false);
-  // Keep valued in sync with prop when it changes from parent
-  if (isValuedProp && !valued) setValued(true);
 
-  // Reset internal state when post identity or key fields change
-  // Using a ref to track previous values avoids redundant re-renders
-  const prevPostRef = React.useRef({ id: post.id, isLiked: post.isLiked, isBookmarked: post.isBookmarked, likes: post.likes });
-  if (prevPostRef.current.id !== post.id ||
-    prevPostRef.current.isLiked !== post.isLiked ||
-    prevPostRef.current.isBookmarked !== post.isBookmarked ||
-    prevPostRef.current.likes !== post.likes) {
-    prevPostRef.current = { id: post.id, isLiked: post.isLiked, isBookmarked: post.isBookmarked, likes: post.likes };
-    if (liked !== post.isLiked) setLiked(post.isLiked);
-    if (bookmarked !== post.isBookmarked) setBookmarked(post.isBookmarked);
-    if (likeCount !== post.likes) setLikeCount(post.likes);
-  }
+  // Keep valued in sync with prop when it changes from parent
+  useEffect(() => {
+    if (isValuedProp && !valued) setValued(true);
+  }, [isValuedProp]);
+
+  // Reset internal state when post identity changes (recycling)
+  // Use layout effect to ensure state is reset before paint
+  React.useLayoutEffect(() => {
+    setLiked(post.isLiked);
+    setBookmarked(post.isBookmarked);
+    setLikeCount(post.likes);
+    setIsFollowing(post.isFollowingAuthor || false);
+    setValued(isValuedProp);
+  }, [post.id, post.isLiked, post.isBookmarked, post.likes, post.isFollowingAuthor, isValuedProp]);
 
   // Only create shared values for commonly-used animations (like + value)
   // Other button animations use a single shared scale to reduce per-card overhead
@@ -430,18 +436,18 @@ const PostCardInner: React.FC<PostCardProps> = ({
     onShare?.();
   }, [onShare]);
 
-  const handleMenuToggle = () => {
+  const handleMenuToggle = useCallback(() => {
     setTimeout(() => Haptics.selectionAsync(), 0);
-    setShowMenu(!showMenu);
-  };
+    setShowMenu(prev => !prev);
+  }, []);
 
-  const handleEdit = () => {
+  const handleEdit = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
     setShowMenu(false);
     navigate?.('EditPost', { post });
-  };
+  }, [navigate, post]);
 
-  const handleViewAnalytics = () => {
+  const handleViewAnalytics = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
     setShowMenu(false);
     if (onViewAnalytics) {
@@ -449,9 +455,9 @@ const PostCardInner: React.FC<PostCardProps> = ({
     } else {
       navigate?.('PostDetail', { postId: post.id });
     }
-  };
+  }, [onViewAnalytics, navigate, post.id]);
 
-  const handleFollow = async () => {
+  const handleFollow = useCallback(async () => {
     if (followLoading) return;
     setFollowLoading(true);
     try {
@@ -464,7 +470,18 @@ const PostCardInner: React.FC<PostCardProps> = ({
     } finally {
       setFollowLoading(false);
     }
-  };
+  }, [followLoading, post.author.id]);
+
+  // Vote handler wrapper
+  const handleVote = useCallback((optionId: string) => {
+    onVote?.(optionId);
+  }, [onVote]);
+
+  // Image/Content press handler wrapper
+  const handleContentPress = useCallback(() => {
+    onPress?.();
+  }, [onPress]);
+
 
   const typeConfig = useMemo(() => POST_TYPE_CONFIG[post.postType] || POST_TYPE_CONFIG.ARTICLE, [post.postType]);
   const authorName = useMemo(() => post.author.name || `${post.author.firstName} ${post.author.lastName}`, [post.author.name, post.author.firstName, post.author.lastName]);
@@ -501,6 +518,83 @@ const PostCardInner: React.FC<PostCardProps> = ({
     [post.postType, post.id]
   );
 
+  // Prepare props for PostHeader
+  const headerProps = useMemo(() => ({
+    author: post.author,
+    createdAt: post.createdAt,
+    visibility: post.visibility,
+    learningMeta: post.learningMeta,
+    isCurrentUser,
+    isFollowing,
+    followLoading,
+    onUserPress: onUserPress || (() => { }),
+    onFollow: handleFollow,
+    onMenuToggle: handleMenuToggle,
+    showMenu,
+    menuContent: (
+      <View style={styles.dropdownMenu}>
+        {isCurrentUser && (
+          <>
+            <TouchableOpacity style={styles.menuItem} onPress={handleEdit}>
+              <Ionicons name="create-outline" size={18} color="#0EA5E9" />
+              <Text style={[styles.menuItemText, { color: '#0EA5E9' }]}>
+                Edit Post
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={handleViewAnalytics}>
+              <Ionicons name="stats-chart-outline" size={18} color="#10B981" />
+              <Text style={[styles.menuItemText, { color: '#10B981' }]}>
+                View Analytics
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
+        <TouchableOpacity style={styles.menuItem} onPress={handleBookmark}>
+          <Ionicons
+            name={bookmarked ? 'bookmark' : 'bookmark-outline'}
+            size={18}
+            color={bookmarked ? '#0D9488' : '#374151'}
+          />
+          <Text style={[styles.menuItemText, bookmarked && styles.menuItemTextActive]}>
+            {bookmarked ? 'Saved' : 'Save'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.menuItem} onPress={() => {
+          setShowMenu(false);
+          Alert.alert('Post Reported', 'Thanks for letting us know. We\'ll review this post.', [{ text: 'OK' }]);
+        }}>
+          <Ionicons name="flag-outline" size={18} color="#374151" />
+          <Text style={styles.menuItemText}>Report</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.menuItem} onPress={() => {
+          setShowMenu(false);
+          Alert.alert('Post Hidden', 'You won\'t see this post in your feed anymore.');
+        }}>
+          <Ionicons name="eye-off-outline" size={18} color="#374151" />
+          <Text style={styles.menuItemText}>Hide</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.menuItem} onPress={async () => {
+          setShowMenu(false);
+          const url = `https://stunity.com/posts/${post.id}`;
+          try {
+            await Share.share({ message: url, title: 'Post Link' });
+          } catch {
+            // Silent fail
+          }
+          Alert.alert('Link Copied', 'Post link has been copied to clipboard.');
+        }}>
+          <Ionicons name="link-outline" size={18} color="#374151" />
+          <Text style={styles.menuItemText}>Copy Link</Text>
+        </TouchableOpacity>
+      </View>
+    )
+  }), [
+    post.author, post.createdAt, post.visibility, post.learningMeta,
+    isCurrentUser, isFollowing, followLoading, onUserPress, handleFollow,
+    handleMenuToggle, showMenu, isCurrentUser, handleEdit, handleViewAnalytics,
+    handleBookmark, bookmarked, post.id
+  ]);
+
   return (
     <View style={styles.container}>
 
@@ -518,369 +612,21 @@ const PostCardInner: React.FC<PostCardProps> = ({
       )}
 
       {/* Author Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onUserPress} style={styles.authorSection}>
-          <Avatar
-            uri={post.author.profilePictureUrl}
-            name={authorName}
-            size="md"
-            variant="post"
-          />
-          <View style={styles.authorInfo}>
-            <View style={styles.authorRow}>
-              <Text style={styles.authorName} numberOfLines={1}>{authorName}</Text>
-              {/* Twitter-style Verified Badge - Show for verified users OR current user (experiment) */}
-              {(post.author.isVerified || isCurrentUser) && (
-                <View style={styles.verifiedBadge}>
-                  <View style={styles.twitterBlueTick}>
-                    <Ionicons name="checkmark" size={10} color="#fff" />
-                  </View>
-                </View>
-              )}
-              {/* Role Badge (Teacher/Admin) */}
-              {roleBadge && (
-                <View style={[styles.roleBadge, { backgroundColor: roleBadge.color + '20' }]}>
-                  <Ionicons name={roleBadge.icon as any} size={12} color={roleBadge.color} />
-                  <Text style={[styles.roleBadgeText, { color: roleBadge.color }]}>{roleBadge.label}</Text>
-                </View>
-              )}
-            </View>
-            <View style={styles.metaRow}>
-              <Text style={styles.timeText}>{formatRelativeTime(post.createdAt)}</Text>
+      <PostHeader {...headerProps} />
 
-              {/* Visibility Icon */}
-              <Text style={styles.metaDot}>•</Text>
-              <View style={styles.visibilityIndicator}>
-                <Ionicons
-                  name={
-                    post.visibility === 'PUBLIC' ? 'earth' :
-                      post.visibility === 'SCHOOL' ? 'school' :
-                        post.visibility === 'CLASS' ? 'people' :
-                          'lock-closed'
-                  }
-                  size={10}
-                  color={
-                    post.visibility === 'PUBLIC' ? '#10B981' :
-                      post.visibility === 'SCHOOL' ? '#3B82F6' :
-                        post.visibility === 'CLASS' ? '#8B5CF6' :
-                          '#6B7280'
-                  }
-                />
-              </View>
+      {/* Content Section */}
+      <PostContent
+        post={post}
+        onPress={handleContentPress}
+        onImagePress={handleContentPress}
+        onVote={handleVote}
+        navigate={navigate}
+        typeConfig={typeConfig}
+        learningMeta={learningMeta}
+        deadlineInfo={deadlineInfo}
+        DIFFICULTY_CONFIG={DIFFICULTY_CONFIG}
+      />
 
-              {/* Study Group Tag */}
-              {learningMeta?.studyGroupName && (
-                <>
-                  <Text style={styles.metaDot}>•</Text>
-                  <View style={styles.studyGroupTag}>
-                    <Ionicons name="people" size={10} color="#8B5CF6" />
-                    <Text style={styles.studyGroupText}>{learningMeta.studyGroupName}</Text>
-                  </View>
-                </>
-              )}
-            </View>
-          </View>
-        </TouchableOpacity>
-
-        {/* Follow Button — only for non-own posts */}
-        {!isCurrentUser && (
-          <TouchableOpacity
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              handleFollow();
-            }}
-            disabled={followLoading}
-            activeOpacity={0.5}
-            style={styles.followBtnWrap}
-          >
-            {followLoading ? (
-              <ActivityIndicator size={11} color="#0EA5E9" />
-            ) : isFollowing ? (
-              <Text style={styles.followBtnTextFollowing}>Following</Text>
-            ) : (
-              <Text style={styles.followBtnText}>Follow</Text>
-            )}
-          </TouchableOpacity>
-        )}
-
-        {/* Vertical More Menu */}
-        <View style={styles.menuContainer}>
-          <TouchableOpacity style={styles.moreButton} onPress={handleMenuToggle}>
-            <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
-          </TouchableOpacity>
-
-          {/* Dropdown Menu */}
-          {showMenu && (
-            <View style={styles.dropdownMenu}>
-              {isCurrentUser && (
-                <>
-                  <TouchableOpacity style={styles.menuItem} onPress={handleEdit}>
-                    <Ionicons name="create-outline" size={18} color="#0EA5E9" />
-                    <Text style={[styles.menuItemText, { color: '#0EA5E9' }]}>
-                      Edit Post
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.menuItem} onPress={handleViewAnalytics}>
-                    <Ionicons name="stats-chart-outline" size={18} color="#10B981" />
-                    <Text style={[styles.menuItemText, { color: '#10B981' }]}>
-                      View Analytics
-                    </Text>
-                  </TouchableOpacity>
-                </>
-              )}
-              <TouchableOpacity style={styles.menuItem} onPress={handleBookmark}>
-                <Ionicons
-                  name={bookmarked ? 'bookmark' : 'bookmark-outline'}
-                  size={18}
-                  color={bookmarked ? '#0D9488' : '#374151'}
-                />
-                <Text style={[styles.menuItemText, bookmarked && styles.menuItemTextActive]}>
-                  {bookmarked ? 'Saved' : 'Save'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem} onPress={() => {
-                setShowMenu(false);
-                Alert.alert('Post Reported', 'Thanks for letting us know. We\'ll review this post.', [{ text: 'OK' }]);
-              }}>
-                <Ionicons name="flag-outline" size={18} color="#374151" />
-                <Text style={styles.menuItemText}>Report</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem} onPress={() => {
-                setShowMenu(false);
-                Alert.alert('Post Hidden', 'You won\'t see this post in your feed anymore.');
-              }}>
-                <Ionicons name="eye-off-outline" size={18} color="#374151" />
-                <Text style={styles.menuItemText}>Hide</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem} onPress={async () => {
-                setShowMenu(false);
-                const url = `https://stunity.com/posts/${post.id}`;
-                try {
-                  // Use RN Share to share/copy the link
-                  await Share.share({ message: url, title: 'Post Link' });
-                } catch {
-                  // Silent fail
-                }
-                Alert.alert('Link Copied', 'Post link has been copied to clipboard.');
-              }}>
-                <Ionicons name="link-outline" size={18} color="#374151" />
-                <Text style={styles.menuItemText}>Copy Link</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Deadline Alert Banner */}
-      {deadlineInfo && (
-        <DeadlineBanner deadlineInfo={deadlineInfo} />
-      )}
-
-      {/* Club Announcement Banner */}
-      {post.postType === 'CLUB_ANNOUNCEMENT' && (
-        <ClubAnnouncement typeConfig={typeConfig} onPress={onPress} />
-      )}
-
-      {/* Media - Full Width (Instagram-style) */}
-      {post.mediaUrls && post.mediaUrls.length > 0 && (
-        <View style={styles.mediaWrapper}>
-          <ImageCarousel
-            images={post.mediaUrls}
-            onImagePress={onPress}
-            borderRadius={0}
-            mode="auto"
-          />
-          {/* Rich content indicators on media */}
-          {(learningMeta?.hasCode || learningMeta?.hasPdf || learningMeta?.hasFormula) && (
-            <View style={styles.richContentIndicators}>
-              {learningMeta.hasCode && (
-                <View style={styles.richContentBadge}>
-                  <Ionicons name="code-slash" size={12} color="#fff" />
-                </View>
-              )}
-              {learningMeta.hasPdf && (
-                <View style={styles.richContentBadge}>
-                  <Ionicons name="document-text" size={12} color="#fff" />
-                </View>
-              )}
-              {learningMeta.hasFormula && (
-                <View style={styles.richContentBadge}>
-                  <Text style={styles.formulaIcon}>∑</Text>
-                </View>
-              )}
-            </View>
-          )}
-        </View>
-      )}
-
-      {/* Content - Below image */}
-      <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={styles.contentSection}>
-        <Text style={styles.contentText} numberOfLines={4}>
-          {post.content}
-        </Text>
-      </TouchableOpacity>
-
-      {/* Embedded Repost Card */}
-      {post.repostOfId && post.repostOf && (
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => navigate?.('PostDetail', { postId: post.repostOf!.id })}
-          style={styles.repostEmbed}
-        >
-          <View style={styles.repostEmbedHeader}>
-            {post.repostOf.author?.profilePictureUrl ? (
-              <Image
-                source={{ uri: post.repostOf.author.profilePictureUrl }}
-                style={styles.repostEmbedAvatar}
-              />
-            ) : (
-              <View style={[styles.repostEmbedAvatar, { backgroundColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center' }]}>
-                <Ionicons name="person" size={14} color="#9CA3AF" />
-              </View>
-            )}
-            <View style={{ flex: 1 }}>
-              <Text style={styles.repostEmbedAuthor} numberOfLines={1}>
-                {post.repostOf.author ? `${post.repostOf.author.firstName} ${post.repostOf.author.lastName}` : 'Unknown'}
-              </Text>
-              <Text style={styles.repostEmbedTime}>{formatRelativeTime(post.repostOf.createdAt)}</Text>
-            </View>
-          </View>
-          {post.repostOf.title && (
-            <Text style={styles.repostEmbedTitle} numberOfLines={1}>{post.repostOf.title}</Text>
-          )}
-          <Text style={styles.repostEmbedContent} numberOfLines={3}>{post.repostOf.content}</Text>
-          {post.repostOf.mediaUrls && post.repostOf.mediaUrls.length > 0 && (
-            <Image
-              source={{ uri: post.repostOf.mediaUrls[0] }}
-              style={styles.repostEmbedMedia}
-              contentFit="cover"
-            />
-          )}
-          <View style={styles.repostEmbedStats}>
-            <Ionicons name="heart" size={12} color="#9CA3AF" />
-            <Text style={styles.repostEmbedStatText}>{formatNumber(post.repostOf.likesCount || 0)}</Text>
-            <Ionicons name="chatbubble" size={12} color="#9CA3AF" style={{ marginLeft: 8 }} />
-            <Text style={styles.repostEmbedStatText}>{formatNumber(post.repostOf.commentsCount || 0)}</Text>
-          </View>
-        </TouchableOpacity>
-      )}
-
-      {/* Poll Voting */}
-      {post.postType === 'POLL' && post.pollOptions && post.pollOptions.length > 0 && (
-        <View style={styles.pollSection}>
-          <PollVoting
-            options={post.pollOptions}
-            userVotedOptionId={post.userVotedOptionId}
-            onVote={onVote || (() => { })}
-            endsAt={post.learningMeta?.deadline}
-          />
-        </View>
-      )}
-
-      {/* Quiz Card - Extracted memoized section */}
-      {post.postType === 'QUIZ' && post.quizData && (
-        <QuizSection
-          quizData={post.quizData}
-          postTitle={post.title}
-          postContent={post.content}
-          postId={post.id}
-          quizThemeColor={quizGradient?.[0] || '#EC4899'}
-          quizGradient={quizGradient || ['#EC4899', '#DB2777']}
-        />
-      )}
-
-      {/* Topic Tags */}
-      {post.topicTags && post.topicTags.length > 0 && (
-        <View style={styles.topicTagsContainer}>
-          {post.topicTags.slice(0, 4).map((tag, index) => (
-            <TouchableOpacity key={index} style={styles.topicTag}>
-              <Text style={styles.topicTagText}>#{tag}</Text>
-            </TouchableOpacity>
-          ))}
-          {post.topicTags.length > 4 && (
-            <Text style={styles.moreTagsText}>+{post.topicTags.length - 4}</Text>
-          )}
-        </View>
-      )}
-
-      {/* Q&A Section - For Question posts */}
-      {isQuestion && (
-        <View style={styles.qaSection}>
-          <View style={[styles.qaBadge, learningMeta?.isAnswered && styles.qaBadgeAnswered]}>
-            <Ionicons
-              name={learningMeta?.isAnswered ? 'checkmark-circle' : 'help-circle'}
-              size={16}
-              color={learningMeta?.isAnswered ? '#10B981' : '#0EA5E9'}
-            />
-            <Text style={[styles.qaBadgeText, learningMeta?.isAnswered && styles.qaBadgeTextAnswered]}>
-              {learningMeta?.isAnswered ? 'Answered' : 'Awaiting Answer'}
-            </Text>
-          </View>
-          <View style={styles.answerCount}>
-            <Ionicons name="chatbubbles-outline" size={14} color="#6B7280" />
-            <Text style={styles.answerCountText}>
-              {learningMeta?.answerCount || 0} {(learningMeta?.answerCount || 0) === 1 ? 'answer' : 'answers'}
-            </Text>
-          </View>
-        </View>
-      )}
-
-      {/* Progress Bar - For Courses/Quizzes */}
-      {showProgress && (
-        <View style={styles.progressSection}>
-          <View style={styles.progressHeader}>
-            <Text style={styles.progressLabel}>Progress</Text>
-            <Text style={styles.progressPercent}>{learningMeta?.progress || 0}%</Text>
-          </View>
-          <View style={styles.progressBarBg}>
-            <View
-              style={[styles.progressBarFill, { width: `${learningMeta?.progress || 0}%`, backgroundColor: typeConfig.color }]}
-            />
-          </View>
-          {learningMeta?.completedSteps !== undefined && learningMeta?.totalSteps && (
-            <Text style={styles.progressSteps}>
-              {learningMeta.completedSteps}/{learningMeta.totalSteps} steps completed
-            </Text>
-          )}
-        </View>
-      )}
-
-      {/* Clean Learning Info Bar */}
-      <View style={styles.learningBar}>
-        {/* Post Type — solid color pill (eliminates expensive native LinearGradient view) */}
-        <View style={[styles.typeChip, { backgroundColor: typeConfig.color }]}>
-          <Ionicons name={typeConfig.icon as any} size={13} color="#FFFFFF" />
-          <Text style={styles.typeChipText}>{typeConfig.label}</Text>
-        </View>
-
-        {/* Difficulty Badge */}
-        {learningMeta?.difficulty && (
-          <View style={[styles.difficultyBadge, { backgroundColor: DIFFICULTY_CONFIG[learningMeta.difficulty].bgColor }]}>
-            <Ionicons
-              name={DIFFICULTY_CONFIG[learningMeta.difficulty].icon as any}
-              size={12}
-              color={DIFFICULTY_CONFIG[learningMeta.difficulty].color}
-            />
-            <Text style={[styles.difficultyText, { color: DIFFICULTY_CONFIG[learningMeta.difficulty].color }]}>
-              {DIFFICULTY_CONFIG[learningMeta.difficulty].label}
-            </Text>
-          </View>
-        )}
-
-        {/* Metrics — Analytics-style stats */}
-        <View style={styles.inlineMetrics}>
-          {learningMeta?.xpReward != null && (
-            <View style={styles.inlineMetric}>
-              <Ionicons name="flash" size={13} color="#0EA5E9" />
-              <Text style={styles.inlineMetricText}>+{learningMeta.xpReward} XP</Text>
-            </View>
-          )}
-          <View style={styles.inlineMetric}>
-            <Ionicons name="stats-chart" size={13} color="#0D9488" />
-            <Text style={styles.inlineMetricText}>{formatNumber(post.likes + post.comments)}</Text>
-          </View>
-        </View>
-      </View>
 
       <ActionBar
         liked={liked}
@@ -1384,7 +1130,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     padding: 16,
     borderRadius: 16,
-    
+
     borderColor: '#CCFBF1',
   },
   clubBannerContent: {
@@ -1427,11 +1173,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 12,
-    
-    
+
+
     shadowOpacity: 0.15,
     shadowRadius: 4,
-    
+
   },
   clubJoinButtonText: {
     fontSize: 14,
@@ -1474,8 +1220,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 14,
     marginBottom: 10,
     borderRadius: 14,
-    
-    
+
+
     backgroundColor: '#FAFAFA',
     overflow: 'hidden',
   },
@@ -1535,5 +1281,22 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PostCard;
-
+export default React.memo(PostCard, (prevProps, nextProps) => {
+  return (
+    // Re-render if the post object itself changes deeply. We specifically check
+    // properties that update during interactions:
+    prevProps.post.id === nextProps.post.id &&
+    prevProps.post.likesCount === nextProps.post.likesCount &&
+    prevProps.post.commentsCount === nextProps.post.commentsCount &&
+    prevProps.post.sharesCount === nextProps.post.sharesCount &&
+    prevProps.post.isLiked === nextProps.post.isLiked &&
+    prevProps.post.isLikedByMe === nextProps.post.isLikedByMe &&
+    prevProps.post.isBookmarked === nextProps.post.isBookmarked &&
+    prevProps.post.content === nextProps.post.content && // for edits
+    // Check if the user has valued it changes
+    prevProps.isValued === nextProps.isValued &&
+    // Check if poll votes updated
+    prevProps.post.userVotedOptionId === nextProps.post.userVotedOptionId
+    // Handlers (like onLike, onComment) are assumed stable from the parent (FeedScreen uses useRef for them)
+  );
+});

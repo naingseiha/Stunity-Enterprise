@@ -334,7 +334,7 @@ const sectionStyles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 10,
+        paddingVertical: 14,
         borderRadius: 10,
         gap: 6,
     },
@@ -406,9 +406,11 @@ const sectionStyles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 14,
+        paddingVertical: 16,
         borderRadius: 50,
         gap: 8,
+        marginTop: 4,
+        marginBottom: 8,
     },
     quizCtaText: {
         fontSize: 15,
@@ -417,7 +419,9 @@ const sectionStyles = StyleSheet.create({
         letterSpacing: 0.2,
     },
     quizAttemptedBlock: {
-        gap: 10,
+        gap: 12,
+        marginTop: 6,
+        marginBottom: 8,
     },
     quizScoreBar: {
         flexDirection: 'row',
@@ -443,7 +447,7 @@ const sectionStyles = StyleSheet.create({
     },
     quizActionRow: {
         flexDirection: 'row',
-        gap: 8,
+        gap: 12,
     },
     quizRoundedBtn: {
         flex: 1,
@@ -451,7 +455,7 @@ const sectionStyles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 6,
-        paddingVertical: 11,
+        paddingVertical: 14,
         borderRadius: 50,
     },
     quizRoundedBtnText: {

@@ -174,10 +174,10 @@ function ImageCarouselInner({
             source={{ uri }}
             style={[styles.image, { borderRadius }]}
             contentFit="cover"
-            transition={200}
+            transition={120}
             // Critical for 120Hz scroll performance
             cachePolicy="memory-disk" // Cache decoded images in memory
-            priority="high" // Decode immediately
+            priority="normal" // Avoid decode spikes while fast-scrolling the feed
             recyclingKey={uri} // Reuse decoded bitmap across instances
             placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
             placeholderContentFit="cover"

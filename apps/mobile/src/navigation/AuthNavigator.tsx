@@ -39,6 +39,7 @@ const AuthNavigator: React.FC = () => {
         headerShown: false,
         contentStyle: { backgroundColor: Colors.white },
         animation: 'slide_from_right',
+        gestureEnabled: true,
       }}
       initialRouteName="Welcome"
     >

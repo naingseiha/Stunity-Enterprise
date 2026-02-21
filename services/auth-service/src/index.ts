@@ -12,6 +12,7 @@ import ClaimCodeGenerator from './utils/claimCodeGenerator';
 import passwordResetRoutes from './routes/passwordReset.routes';
 import socialAuthRoutes from './routes/socialAuth.routes';
 import twoFactorRoutes from './routes/twoFactor.routes';
+import ssoRoutes from './routes/sso.routes';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
@@ -246,6 +247,7 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
 // ─── Mount modular route files ───────────────────────────────────────
 app.use('/auth', passwordResetRoutes(prisma));
 app.use('/auth/social', socialAuthRoutes(prisma));
+app.use('/auth/sso', ssoRoutes(prisma));
 app.use('/auth/2fa', twoFactorRoutes(prisma));
 
 // Health check

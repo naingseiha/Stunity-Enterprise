@@ -99,7 +99,7 @@ const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 const ClubsStack = createNativeStackNavigator();
 
 const ClubsStackNavigator: React.FC = () => (
-  <ClubsStack.Navigator screenOptions={{ headerShown: false }}>
+  <ClubsStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true }}>
     <ClubsStack.Screen name="ClubsList" component={ClubsScreen} />
     <ClubsStack.Screen name="ClubDetails" component={ClubDetailsScreen} />
     <ClubsStack.Screen name="CreateClub" component={CreateClubScreen} />
@@ -113,7 +113,7 @@ const ClubsStackNavigator: React.FC = () => (
 
 // Feed Stack Navigator
 const FeedStackNavigator: React.FC = () => (
-  <FeedStack.Navigator screenOptions={{ headerShown: false }}>
+  <FeedStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true }}>
     <FeedStack.Screen name="Feed" component={FeedScreen} />
     <FeedStack.Screen name="CreatePost" component={CreatePostScreen} />
     <FeedStack.Screen name="EditPost" component={EditPostScreen} />
@@ -130,7 +130,7 @@ const FeedStackNavigator: React.FC = () => (
 
 // Learn Stack Navigator
 const LearnStackNavigator: React.FC = () => (
-  <LearnStack.Navigator screenOptions={{ headerShown: false }}>
+  <LearnStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true }}>
     <LearnStack.Screen name="LearnHub" component={LearnScreen} />
     <LearnStack.Screen name="CourseDetail" component={CourseDetailScreen} />
     <LearnStack.Screen name="LessonViewer" component={LessonViewerScreen} />
@@ -144,7 +144,7 @@ const LearnStackNavigator: React.FC = () => (
 
 // Messages Stack Navigator
 const MessagesStackNavigator: React.FC = () => (
-  <MessagesStack.Navigator screenOptions={{ headerShown: false }}>
+  <MessagesStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true }}>
     <MessagesStack.Screen name="Conversations" component={ConversationsScreen} />
     <MessagesStack.Screen name="Chat" component={ChatScreen} />
     <MessagesStack.Screen name="NewMessage" component={NewMessageScreen} />
@@ -154,7 +154,7 @@ const MessagesStackNavigator: React.FC = () => (
 
 // Profile Stack Navigator
 const ProfileStackNavigator: React.FC = () => (
-  <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+  <ProfileStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true }}>
     <ProfileStack.Screen name="Profile" component={ProfileScreen} />
     <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} />
     <ProfileStack.Screen name="Connections" component={ConnectionsScreen} />
@@ -319,7 +319,7 @@ const MainNavigatorContent: React.FC = () => {
 const MainNavigator: React.FC = () => {
   return (
     <NavigationProvider>
-      <MainStack.Navigator screenOptions={{ headerShown: false }}>
+      <MainStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true }}>
         <MainStack.Screen name="MainTabs" component={MainNavigatorContent} />
         <MainStack.Screen name="TakeQuiz" component={TakeQuizScreen} />
         <MainStack.Screen name="QuizResults" component={QuizResultsScreen} />

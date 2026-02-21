@@ -1,6 +1,8 @@
 'use client';
 
 import { Search, Bell, HelpCircle, User } from 'lucide-react';
+import { useState, FormEvent, useEffect } from 'react';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 
 interface HeaderProps {
   user?: {
@@ -11,19 +13,41 @@ interface HeaderProps {
 }
 
 export default function Header({ user }: HeaderProps) {
+  const router = useRouter();
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const locale = (params?.locale as string) || 'en';
+
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Sync with URL
+  useEffect(() => {
+    const q = searchParams?.get('q');
+    if (q) setSearchQuery(q);
+  }, [searchParams]);
+
+  const handleSearch = (e: FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/${locale}/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
   return (
     <header className="h-16 bg-white border-b border-gray-200 fixed top-0 right-0 left-64 z-10">
       <div className="h-full px-6 flex items-center justify-between">
         {/* Search */}
         <div className="flex-1 max-w-lg">
-          <div className="relative">
+          <form onSubmit={handleSearch} className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search students, teachers, classes..."
               className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-          </div>
+          </form>
         </div>
 
         {/* Right section */}

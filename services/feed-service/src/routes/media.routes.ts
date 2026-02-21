@@ -45,19 +45,19 @@ const imageStorageDisk = multer.diskStorage({
 const imageUploadMemory = multer({
     storage: multer.memoryStorage(),
     fileFilter: (_req, file, cb) => {
-        const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime'];
+        const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime', 'video/x-m4v', 'video/webm'];
         cb(null, allowed.includes(file.mimetype));
     },
-    limits: { fileSize: 20 * 1024 * 1024 }, // 20MB per file
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB per file
 });
 
 const imageUploadDisk = multer({
     storage: imageStorageDisk,
     fileFilter: (_req, file, cb) => {
-        const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime'];
+        const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime', 'video/x-m4v', 'video/webm'];
         cb(null, allowed.includes(file.mimetype));
     },
-    limits: { fileSize: 20 * 1024 * 1024 },
+    limits: { fileSize: 50 * 1024 * 1024 },
 });
 
 // ==========================================

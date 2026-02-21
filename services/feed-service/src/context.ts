@@ -36,12 +36,13 @@ export const feedRanker = new FeedRanker(prisma);
 export const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB
+        fileSize: 50 * 1024 * 1024, // 50MB to support short videos
         files: 10,
     },
     fileFilter: (_req, file, cb) => {
         const allowedMimes = [
             'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+            'video/mp4', 'video/quicktime', 'video/x-m4v', 'video/webm',
             'application/pdf',
             'application/msword',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -49,7 +50,7 @@ export const upload = multer({
         if (allowedMimes.includes(file.mimetype)) {
             cb(null, true);
         } else {
-            cb(new Error('Invalid file type. Only images and documents are allowed.'));
+            cb(new Error(`Invalid file type. ${file.mimetype} is not allowed.`));
         }
     },
 });
