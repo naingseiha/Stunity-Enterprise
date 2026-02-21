@@ -738,6 +738,7 @@ model Post {
   // Phase 1 Performance Indexes (Free Tier Optimizations)
   @@index([visibility, isPinned(sort: Desc), createdAt(sort: Desc)]) // Main feed query optimization
   @@index([authorId, postType, createdAt(sort: Desc)]) // User profile by post type
+  @@index([authorId, visibility, createdAt(sort: Desc)]) // School feed: join author → filter visibility → sort
   @@index([studyClubId, createdAt(sort: Desc)]) // Club feed queries
   @@map("posts")
 }

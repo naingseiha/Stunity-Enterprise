@@ -1345,33 +1345,93 @@ export default function ProfilePage() {
 
               {/* Activity Section */}
               {activeTab === 'activity' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Activity</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{profile.stats.followers} followers</p>
-                  </div>
-                  <div className="p-6">
-                    <div className="grid grid-cols-3 gap-4 mb-6">
-                      <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white">{profile.stats.postsThisMonth}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">Posts this month</div>
-                      </div>
-                      <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white">{profile.stats.totalLikes}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">Total likes</div>
-                      </div>
-                      <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white">{profile.stats.totalViews}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">Total views</div>
-                      </div>
+                <div className="space-y-3" style={{ animation: 'fadeInUpContent 0.5s ease-out forwards' }}>
+                  {/* Performance Stats */}
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                        <Zap className="w-5 h-5 text-amber-500" />
+                        Performance
+                      </h3>
                     </div>
-                    <Link
-                      href={`/${locale}/feed?author=${profile.id}`}
-                      className="inline-flex items-center gap-1 text-amber-600 hover:text-amber-700 font-medium"
-                    >
-                      See all activity
-                      <ChevronRight className="w-4 h-4" />
-                    </Link>
+                    <div className="p-6">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                        <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl">
+                          <div className="text-2xl font-bold text-amber-600">{profile.totalPoints.toLocaleString()}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Total XP</div>
+                        </div>
+                        <div className="text-center p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 rounded-xl">
+                          <div className="text-2xl font-bold text-sky-600">Lv.{profile.level}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Level</div>
+                        </div>
+                        <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
+                          <div className="text-2xl font-bold text-green-600">{profile.currentStreak}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Day Streak 🔥</div>
+                        </div>
+                        <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-xl">
+                          <div className="text-2xl font-bold text-purple-600">{profile.totalLearningHours}h</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Learning Hours</div>
+                        </div>
+                      </div>
+
+                      {/* Profile Completeness */}
+                      {profile.isOwnProfile && profile.profileCompleteness < 100 && (
+                        <div className="p-4 bg-sky-50 dark:bg-sky-900/20 rounded-xl mb-6">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Profile Completeness</span>
+                            <span className="text-sm font-bold text-sky-600">{profile.profileCompleteness}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                            <div
+                              className="bg-gradient-to-r from-sky-500 to-blue-500 h-2 rounded-full transition-all duration-500"
+                              style={{ width: `${profile.profileCompleteness}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Longest Streak */}
+                      {profile.longestStreak > 0 && (
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                          <Trophy className="w-5 h-5 text-amber-500" />
+                          <div>
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">Longest Streak: {profile.longestStreak} days</span>
+                            <p className="text-xs text-gray-500">Personal best</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Activity Feed Stats */}
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Activity</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{profile.stats.followers} followers</p>
+                    </div>
+                    <div className="p-6">
+                      <div className="grid grid-cols-3 gap-4 mb-6">
+                        <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                          <div className="text-2xl font-bold text-gray-900 dark:text-white">{profile.stats.postsThisMonth}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">Posts this month</div>
+                        </div>
+                        <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                          <div className="text-2xl font-bold text-gray-900 dark:text-white">{profile.stats.totalLikes}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">Total likes</div>
+                        </div>
+                        <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                          <div className="text-2xl font-bold text-gray-900 dark:text-white">{profile.stats.totalViews}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">Total views</div>
+                        </div>
+                      </div>
+                      <Link
+                        href={`/${locale}/feed?author=${profile.id}`}
+                        className="inline-flex items-center gap-1 text-amber-600 hover:text-amber-700 font-medium"
+                      >
+                        See all activity
+                        <ChevronRight className="w-4 h-4" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               )}
