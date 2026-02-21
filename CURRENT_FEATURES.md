@@ -1,21 +1,63 @@
 # ✅ Stunity Enterprise — Current Features
 
-**Version:** 22.0 | **Updated:** February 20, 2026
+**Version:** 23.0 | **Updated:** February 21, 2026
 
 > This document lists all implemented and working features. For what's coming next, see NEXT_IMPLEMENTATION.md.
 
 ---
 
-## 🔐 Authentication & Onboarding
+## 🔐 Authentication & Security (Enterprise-Grade)
 
+### Core Auth
 - Email/password registration + login
 - Role selection: Student, Teacher, Admin, Parent
 - Claim code enrollment: `STNT-XXXX-XXXX` links users to a school
-- JWT access tokens (1h) + refresh tokens (7 days)
+- JWT access tokens (1h) + refresh tokens (7 days), bcrypt 12 rounds
 - Parent portal with separate login (linked to student accounts)
-- Forgot password / reset flow
 - Profile setup screen (bio, avatar, interests)
-- Enterprise SSO UI screens (Azure AD, Google Workspace) — backend pending
+
+### Security Foundation
+- **Helmet** security headers on auth-service + feed-service
+- **HPP** (HTTP Parameter Pollution) protection
+- **Rate limiting** — 6 different limiters:
+  - Global: 100 req/15min (auth), 100 req/min (feed)
+  - Auth-specific: 10 login attempts/15min (skip successful)
+  - Register: 5/hour, Password reset: 3/hour, 2FA: 5/5min
+  - Feed writes: 30/min, Uploads: 20/5min
+- **Brute force protection** — progressive lockout (5/10/15 failed attempts → 15min/30min/1hr lock)
+- **Password policy** — 8+ chars, uppercase, lowercase, number, special char, common password block, password history check
+- **JWT hardening** — short expiry, `passwordChangedAt` invalidation
+
+### Password Reset Flow
+- `POST /auth/forgot-password` — sends reset email (Resend in prod, console.log in dev)
+- `POST /auth/reset-password` — validates crypto token, enforces password policy
+- `POST /auth/change-password` — authenticated password change with history check
+- **Mobile:** ForgotPasswordScreen + ResetPasswordScreen (full UI with validation)
+- **Web:** `/auth/forgot-password` + `/auth/reset-password` pages with strength indicators
+
+### OAuth2 Social Login (Backend Ready)
+- **4 providers:** Google, Apple, Facebook, LinkedIn
+- Unified `handleSocialLogin()` handler with automatic account linking
+- Account link/unlink endpoints for managing connected social accounts
+- Graceful 501 response when provider env vars not configured
+- **Mobile:** OAuth-ready buttons (Google + Apple) — activate by adding env vars
+- **Web:** Social login icon buttons on login page (Google, Apple, Facebook, LinkedIn)
+- **Env vars needed:** `GOOGLE_CLIENT_ID`, `APPLE_SERVICE_ID`, `FACEBOOK_APP_ID`/`FACEBOOK_APP_SECRET`, `LINKEDIN_CLIENT_ID`/`LINKEDIN_CLIENT_SECRET`
+
+### Two-Factor Authentication (2FA)
+- **TOTP-based** (compatible with Google Authenticator, Authy, etc.)
+- `POST /auth/2fa/setup` — generates QR code + secret
+- `POST /auth/2fa/verify-setup` — enables 2FA, returns 10 backup codes
+- `POST /auth/2fa/verify` — login challenge (TOTP or backup code)
+- `POST /auth/2fa/disable` — disable with TOTP verification
+- Backup codes: 10 one-time codes, individually bcrypt-hashed
+- **Mobile:** TwoFactorScreen — 6-digit input with paste support + backup code toggle
+- **Web:** Auth API functions (setup2FA, verifySetup2FA, verify2FA, disable2FA)
+
+### Database Models (Prisma)
+- `SocialAccount` — stores linked social provider accounts per user
+- `TwoFactorSecret` — stores encrypted TOTP secret + hashed backup codes
+- `LoginAttempt` — audit trail for login attempts (IP, user agent, success/failure)
 
 ---
 
@@ -30,7 +72,9 @@
 ### Feed Display & Algorithm
 - Personalized feed with 6-factor scoring algorithm:
   - Engagement (25%), Relevance (25%), Quality (15%), Recency (15%), Social Proof (10%), Learning Context (10%)
+- **Author affinity** — 0–0.4 boost based on interaction history (likes, comments, follows)
 - 3-pool mixing: 60% relevance + 25% trending + 15% explore
+- Diversity enforcement across post types
 - New posts always appear (two-query candidate pool: 75 trending + 25 fresh/last-6h)
 - Real-time "New Posts" pill (Twitter-style) via Supabase postgres_changes
 - ETag/304 caching (saves bandwidth on unchanged feeds)
@@ -57,6 +101,8 @@
 - Bell badge updates instantly via Supabase Realtime
 - Notification types: Like, Comment, Follow, Repost (SHARE), Quiz Attempt, Achievement, Grade Update, System
 - SSE fallback for non-Supabase events
+- **Push notifications** (Expo Push with FCM/APNs) — works when app is closed
+- **School→Feed notification bridge**: grade/attendance events → student in-app notifications
 
 ### Feed Performance (Optimized for Scale)
 - FlashList (RecyclerView-backed, not FlatList)
@@ -164,14 +210,14 @@
 - Subject average computation
 - Grade analytics (class average, distribution)
 - Transcript generation
-- Grade notifications to parents (via push)
+- Grade notifications to parents AND students (via push + feed notification bridge)
 
 ### Attendance
 - Mark attendance by session (morning/afternoon/full-day)
 - Attendance statuses: Present, Absent, Late, Excused
 - Session management (create/close)
 - Attendance report by student, class, date range
-- Absence notifications to parents (via push)
+- Absence notifications to parents AND students (via push + feed notification bridge)
 
 ### Timetable
 - Create timetable with periods and breaks
@@ -235,12 +281,16 @@
 ## 🌐 Web App (Next.js)
 
 - Full school management interface (all CRUD operations)
-- Social feed with SSE real-time (new post notification pill)
-- 7 post type cards (Quiz shows badge; full quiz card UI coming in P1-B)
-- Create posts: Text, Poll, Announcement, Question, Project (Quiz/Course/Exam forms coming in P2-C)
+- Social feed with SSE real-time (new post notification pill + real-time comments)
+- 7 post type cards (Quiz shows badge; full quiz card UI coming)
+- Create posts: Text, Poll, Announcement, Question, Project, **Course, Exam** (all with full builder UIs)
+- **Repost button** — full repost-as-post (parity with mobile)
+- **Real-time comments** via SSE with exponential backoff reconnection
 - Analytics modal (redesigned to match mobile)
 - Timetable editor with drag-and-drop
 - Student/teacher/grade/attendance management pages
+- **Auth flows:** Login with social buttons, forgot-password page, reset-password page (with strength indicators)
+- **Profile page:** Activity tab with XP, Level, Streak, Learning Hours, profile completeness bar
 - Internationalization (next-intl, multi-locale routing)
 - Dark mode support
 
@@ -255,3 +305,7 @@
 - Google Cloud Run ready (PORT env, CORS env, keepAliveTimeout 620s, Dockerfile fixed)
 - In-memory LRU + optional Redis feed cache
 - ETag/304 response caching
+- **Helmet + HPP** security headers on auth-service + feed-service
+- **Rate limiting** — 6 endpoint-specific limiters (auth + feed)
+- **Composite DB indexes** for school feed query performance
+- **Pluggable email** — Resend in production (free 3K/month), console.log in development

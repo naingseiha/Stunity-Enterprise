@@ -1,8 +1,50 @@
 # 🚀 Stunity Enterprise — Implementation Roadmap
 
-**Version:** 22.0 | **Updated:** February 20, 2026
+**Version:** 23.0 | **Updated:** February 21, 2026
 
 > This document is the authoritative roadmap. Each item has enough context for a developer to implement it immediately after reading. Read DEVELOPER_GUIDE.md first.
+
+---
+
+## ✅ Recently Completed (v23.0)
+
+### Auth Security Foundation
+- ✅ Helmet + HPP security headers (auth-service + feed-service)
+- ✅ Rate limiting — 6 endpoint-specific limiters
+- ✅ Brute force protection — progressive lockout
+- ✅ Password policy — 8+ chars, complexity, common password block, history check
+- ✅ JWT hardening — 1h access, 7d refresh, bcrypt 12
+
+### Password Reset Flow
+- ✅ Backend: forgot-password, reset-password, change-password endpoints
+- ✅ Pluggable email — Resend (prod) / console.log (dev)
+- ✅ Mobile: ForgotPasswordScreen + ResetPasswordScreen
+- ✅ Web: forgot-password + reset-password pages (with strength indicators)
+
+### OAuth2 Social Login
+- ✅ Backend: Google, Apple, Facebook, LinkedIn providers
+- ✅ Account linking/unlinking, graceful 501 when env not configured
+- ✅ Mobile: OAuth-ready buttons, Web: social login icon buttons
+- ✅ DB: SocialAccount model in Prisma schema
+
+### Two-Factor Authentication (2FA)
+- ✅ TOTP-based (Google Authenticator compatible)
+- ✅ 10 backup codes (individually bcrypt-hashed, one-time use)
+- ✅ Mobile: TwoFactorScreen (6-digit input with paste + backup code toggle)
+- ✅ Web: Auth API functions (setup, verify, disable)
+- ✅ DB: TwoFactorSecret + LoginAttempt models
+
+### Feed & Web Enhancements
+- ✅ Web CreatePostModal: Course builder + Exam builder
+- ✅ Web repost button (already implemented)
+- ✅ Web real-time comments via SSE
+- ✅ Feed-service security (helmet, hpp, write/upload rate limiters)
+- ✅ School→Feed notification bridge (/notifications/student, /notifications/batch)
+- ✅ Grade/attendance services notify students AND parents
+- ✅ Push notifications (Expo Push with FCM/APNs)
+- ✅ Web profile: Activity tab with XP, Level, Streak, Learning Hours, completeness bar
+- ✅ FeedRanker author affinity (6-factor model with interaction history)
+- ✅ Composite DB index for school feed queries
 
 ---
 
@@ -18,12 +60,12 @@ ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'SHARE';
 
 ---
 
-### P1-B: Web Feed — Quiz Post Card
-**Why:** Mobile renders a full quiz card (questions count, time limit, take quiz button, previous attempt). Web PostCard only shows a `from-purple-500` badge with the post title.
+### P1-B: Web Feed — Quiz Post Card (Full UI)
+**Why:** Mobile renders a full quiz card (questions count, time limit, take quiz button, previous attempt). Web PostCard only shows a badge.
 
 **File:** `apps/web/src/components/feed/PostCard.tsx`
 
-**What to add:** Inside the `post.postType === 'QUIZ'` section (currently just shows type badge):
+**What to add:** Inside the `post.postType === 'QUIZ'` section:
 ```tsx
 {post.postType === 'QUIZ' && post.quizData && (
   <div className="mt-3 rounded-xl border border-purple-200 bg-purple-50 p-4">
@@ -41,112 +83,26 @@ ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'SHARE';
 
 ---
 
-### P1-C: Push Notifications (FCM / APNs)
-**Why:** In-app bell works. But when app is closed, users miss likes, comments, reposts, grade updates.
-
-**Files to modify:**
-- `services/notification-service/src/index.ts` — already has FCM scaffold
-- `apps/mobile/src/stores/notificationStore.ts` — add `registerDeviceToken()` 
-- `apps/mobile/App.tsx` — request permissions + get Expo push token on startup
-
-**Steps:**
-1. Install: `expo install expo-notifications`
-2. In `App.tsx` on launch: `Notifications.getExpoPushTokenAsync()` → send token to `auth-service` via `PUT /users/device-token`
-3. `auth-service`: Store `deviceToken` on `User` model
-4. `notification-service`: On `Notification` INSERT trigger → read recipient's `deviceToken` → call Expo Push API: `https://exp.host/--/api/v2/push/send`
-
-**Note:** Expo Push Service handles both FCM (Android) + APNs (iOS) with one API — no need for separate FCM/APNs integration during development.
-
----
-
 ## 🟡 Priority 2 — Important Enhancements
 
-### P2-A: Web Feed — Repost Button
-**Why:** Mobile has a full repost flow. Web has a "Share" button that only copies a link.
-
-**File:** `apps/web/src/components/feed/PostCard.tsx`
-
-**What to add:** In the actions row, replace/augment the Share button:
-```tsx
-const handleRepost = async () => {
-  await fetch(`${FEED_SERVICE}/posts/${post.id}/repost`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ type: 'REPOST' })
-  });
-  // update repostCount in local state
-};
-```
+### ~~P2-A: Web Feed — Repost Button~~ ✅ DONE
+Already implemented — full repost-as-post on web.
 
 ---
 
-### P2-B: Web Feed — Real-time Comments
-**Why:** Web comments are loaded once. Mobile gets real-time updates via Supabase Realtime.
-
-**File:** `apps/web/src/components/feed/PostCard.tsx`
-
-**What to add:** In the component, after comments are loaded:
-```ts
-import { createClient } from '@supabase/supabase-js';
-
-useEffect(() => {
-  const channel = supabase.channel(`comments-${post.id}`)
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'Comment',
-      filter: `postId=eq.${post.id}`
-    }, (payload) => {
-      setComments(prev => [...prev, payload.new as Comment]);
-    })
-    .subscribe();
-  return () => { supabase.removeChannel(channel); };
-}, [post.id]);
-```
+### ~~P2-B: Web Feed — Real-time Comments~~ ✅ DONE
+Already working via SSE with exponential backoff reconnection.
 
 ---
 
-### P2-C: Web CreatePostModal — Quiz & Course Post Types
-**Why:** Mobile supports 7 post types. Web `CreatePostModal` only has: Text, Poll, Announcement, Question, Project. Missing: **Quiz, Course, Exam**.
-
-**File:** `apps/web/src/components/feed/CreatePostModal.tsx`
-
-**What to add for QUIZ:**
-```tsx
-// Add to POST_TYPES array:
-{ id: 'QUIZ', label: 'Quiz', icon: HelpCircle, description: 'Test knowledge', color: 'purple' }
-
-// Add quiz fields state:
-const [quizQuestions, setQuizQuestions] = useState([{ text: '', options: ['', ''], answer: 0 }]);
-const [quizTimeLimit, setQuizTimeLimit] = useState(10);
-const [quizPassingScore, setQuizPassingScore] = useState(70);
-
-// Add quiz fields UI block (rendered when postType === 'QUIZ')
-// On submit: include quizData: { questions: quizQuestions, timeLimit, passingScore }
-```
+### ~~P2-C: Web CreatePostModal — Quiz & Course Post Types~~ ✅ DONE
+Course builder (title, modules, difficulty, hours) and Exam builder (questions, time limit, passing score, max attempts) added.
 
 ---
 
-### P2-D: School → Feed Notification Bridge
-**Why:** Grade service already notifies parents via push. But students don't see their own grade notification in-app via the bell. Same for attendance alerts to students.
-
-**grade-service changes** (`services/grade-service/src/index.ts`):
-After creating a grade, also call feed-service to create an in-app notification:
-```ts
-// After prisma.grade.create() succeeds:
-await fetch(`${FEED_SERVICE_URL}/notifications`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json', 'x-internal-key': INTERNAL_KEY },
-  body: JSON.stringify({
-    recipientId: studentUserId,
-    type: 'GRADE_UPDATE',
-    title: `Grade posted: ${subject}`,
-    body: `You received ${gradeValue} in ${subject}`,
-    data: { gradeId, subjectId }
-  })
-});
-```
-Supabase Realtime then delivers this to the student's bell badge automatically (already wired up in `notificationStore.subscribeToNotifications`).
+### ~~P2-D: School → Feed Notification Bridge~~ ✅ DONE
+- `/notifications/student` and `/notifications/batch` endpoints in auth-service
+- Grade-service and attendance-service now notify students directly (not just parents)
 
 ---
 
@@ -171,32 +127,17 @@ Supabase Realtime then delivers this to the student's bell badge automatically (
 3. PostCard (mobile + web): Add `VideoPlayer` component (use `expo-video` on mobile, `<video>` on web)
 4. Feed: `stripToMinimal` should include `mediaType: 'video'` flag for player decision
 
-### P3-B: FeedRanker Author Affinity Optimization
-**Current issue:** `getUserSignals` in `feedRanker.ts` makes a sequential second query to get author data after `like.groupBy`. Minor performance issue.
-**Fix:** Pre-compute author affinity scores into `UserFeedSignal` table during background job, read from there instead.
+### ~~P3-B: FeedRanker Author Affinity Optimization~~ ✅ DONE
+Already implemented — full 6-factor model with interaction history (0–0.4 boost).
 
-### P3-C: Composite Index for School Feed
-Add this index to improve school-scoped feed query performance:
-```sql
-CREATE INDEX IF NOT EXISTS "Post_authorSchoolId_createdAt_idx" 
-  ON "Post" ("authorSchoolId", "createdAt" DESC);
-```
-Run in Supabase SQL editor.
+### ~~P3-C: Composite Index for School Feed~~ ✅ DONE
+Added composite index `[authorId, visibility, createdAt]` on Post model in Prisma schema.
 
-### P3-D: Web Profile Page Parity
-**Why:** Mobile ProfileScreen has: Activity tab, Performance tab (grades/attendance widgets), Achievements grid, Bio edit. Web profile is a simple info card.
-**Files:** `apps/web/src/app/[locale]/profile/page.tsx`
-**Add:** Tabs for Activity/Performance/Achievements, same data via `GET /users/:id/profile` + `GET /users/:id/analytics`.
+### ~~P3-D: Web Profile Page Parity~~ ✅ DONE
+Activity tab with XP, Level, Streak, Learning Hours, profile completeness bar, longest streak.
 
-### P3-E: Rate Limiting on Write Endpoints
-Prevent spam and DDoS on feed-service write endpoints (like, comment, post creation):
-```ts
-// In services/feed-service/src/index.ts, add:
-import rateLimit from 'express-rate-limit';
-app.use('/posts', rateLimit({ windowMs: 60000, max: 30 }));        // 30 posts/min
-app.use('/posts/:id/like', rateLimit({ windowMs: 60000, max: 100 })); // 100 likes/min
-```
-Install: `npm install express-rate-limit` in feed-service.
+### ~~P3-E: Rate Limiting on Write Endpoints~~ ✅ DONE
+Feed-service: 30/min write limiter, 20/5min upload limiter. Auth-service: 6 distinct limiters.
 
 ---
 
@@ -205,18 +146,25 @@ Install: `npm install express-rate-limit` in feed-service.
 | Feature | Mobile | Web | Notes |
 |---------|--------|-----|-------|
 | Social feed | ✅ | ✅ | Both have real-time new post pill |
-| Comments real-time | ✅ | ❌ | Web: loads once, no live updates |
-| Repost | ✅ | ❌ | Web has share link only |
-| Quiz post card | ✅ | ❌ | Web: label badge only |
+| Comments real-time | ✅ | ✅ | Web uses SSE with reconnection |
+| Repost | ✅ | ✅ | Full repost-as-post on both |
+| Quiz post card | ✅ | 🟡 | Web: badge only (full card next) |
+| Course/Exam post forms | ✅ | ✅ | CreatePostModal has full builders |
 | Analytics modal | ✅ | ✅ | Both redesigned with gradient header |
 | Stories | ✅ | ✅ | |
 | Bookmarks | ✅ | ✅ | |
 | Search | ✅ | Partial | Web search UI not fully built |
-| Push notifications | ❌ | ❌ | In-app bell works, push on closed app missing |
+| Push notifications | ✅ | — | Expo Push (FCM/APNs) |
+| OAuth2 social login | ✅ | ✅ | Backend ready, env vars needed |
+| 2FA/MFA | ✅ | ✅ | TOTP + backup codes |
+| Password reset | ✅ | ✅ | Email flow (Resend/console) |
+| Security headers | — | — | Helmet + HPP on auth + feed |
+| Rate limiting | — | — | 6 endpoint-specific limiters |
 | SSO (Azure/Google) | UI only | UI only | Backend not connected |
 | School management | ✅ | ✅ | Grades, attendance, timetable |
-| Grade → feed notification | ❌ | — | Bridge not yet built |
-| Video posts | ❌ | ❌ | Images only |
+| Grade → student notify | ✅ | — | Bridge + push notification |
+| Profile (full) | ✅ | ✅ | XP, Level, Streak, completeness |
+| Video posts | ❌ | ❌ | Images only — next priority |
 | Live Quiz (Kahoot) | ✅ | — | analytics-service hosts it |
 | DM / Messaging | ✅ | Partial | Web exists but limited |
 | Clubs | ✅ | Partial | |
@@ -229,14 +177,20 @@ Install: `npm install express-rate-limit` in feed-service.
 # 1. Run SHARE enum migration on Supabase production
 ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'SHARE';
 
-# 2. Add composite index for school feed
-CREATE INDEX IF NOT EXISTS "Post_authorSchoolId_createdAt_idx" 
-  ON "Post" ("authorSchoolId", "createdAt" DESC);
+# 2. Apply Prisma schema changes (new models + indexes)
+#    Run when Supabase DB is reachable:
+npx prisma db push
 
 # 3. Enable Realtime on all required tables in Supabase Dashboard:
 # → Database → Replication → enable: Post, Comment, Notification, Like, Story
 
 # 4. Set Cloud Run environment variables (see DEVELOPER_GUIDE.md)
+#    NEW env vars for OAuth2:
+#    - GOOGLE_CLIENT_ID
+#    - APPLE_SERVICE_ID, APPLE_TEAM_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY
+#    - FACEBOOK_APP_ID, FACEBOOK_APP_SECRET
+#    - LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET
+#    - RESEND_API_KEY (for password reset emails)
 
 # 5. Set Cloud Run request timeout to 3600s (for SSE)
 
