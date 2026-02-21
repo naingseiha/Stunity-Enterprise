@@ -504,31 +504,26 @@ export function QuizQuestionInput({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     marginBottom: 16,
-    
-    
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     overflow: 'hidden',
-    shadowColor: '#000',
-    
-    shadowOpacity: 0.03,
-    
-    
   },
   cardExpanded: {
-    elevation: 4,
-    transform: [{ scale: 1.01 }], // Subtle pop
+    borderWidth: 1,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
   headerExpanded: {
-    paddingVertical: 20,
+    backgroundColor: '#F8FAFC',
+    paddingVertical: 18,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -595,22 +590,20 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#6B7280',
+    fontWeight: '600',
+    color: '#4B5563',
     marginBottom: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   questionInput: {
-    fontSize: 17,
+    fontSize: 16,
     color: '#111827',
     minHeight: 100,
     textAlignVertical: 'top',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     padding: 16,
-    
-    
     fontWeight: '500',
   },
   typeScroll: {
@@ -621,12 +614,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: '#F8FAFC',
-    
-    
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
   },
   typeChipText: {
     fontSize: 13,
@@ -643,12 +636,12 @@ const styles = StyleSheet.create({
   pointChip: {
     width: 44,
     height: 44,
-    borderRadius: 14,
-    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    
-    
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
   },
   pointChipText: {
     fontSize: 15,
@@ -657,11 +650,10 @@ const styles = StyleSheet.create({
   },
   // Answer Sections
   answerSection: {
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#F8FAFC',
     padding: 16,
-    borderRadius: 16,
-    
-    borderStyle: 'dashed', // Dashed border for answer area
+    borderRadius: 14,
+    borderWidth: 1,
   },
   optionRow: {
     flexDirection: 'row',
@@ -675,13 +667,15 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
   },
   optionInput: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
-    
-    
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -703,11 +697,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 12,
-    
+    borderWidth: 1,
     borderRadius: 12,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     marginTop: 8,
-    borderStyle: 'dashed',
   },
   addOptionText: {
     fontSize: 14,
@@ -725,15 +718,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     paddingVertical: 16,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderRadius: 14,
-    
-    
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
     shadowColor: '#000',
-    
     shadowOpacity: 0.03,
     shadowRadius: 4,
-    
+    shadowOffset: { width: 0, height: 2 },
   },
   tfButtonTrue: {
     backgroundColor: '#10B981',
@@ -753,9 +745,9 @@ const styles = StyleSheet.create({
   },
   // Input Field
   inputField: {
-    backgroundColor: '#F8FAFC',
-    
-    
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     borderRadius: 12,
     padding: 14,
     fontSize: 15,
@@ -786,9 +778,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   matchInput: {
-    backgroundColor: '#F8FAFC',
-    
-    
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,

@@ -65,7 +65,7 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
   const [expandedQuestionId, setExpandedQuestionId] = useState<string | null>(
     initialData?.questions?.[0]?.id || questions[0]?.id || null
   );
-  const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);
+  const [isSettingsExpanded, setIsSettingsExpanded] = useState(true);
 
   useEffect(() => {
     const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
@@ -154,7 +154,7 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
             {/* Time Limit */}
             <View style={styles.settingSection}>
               <Text style={styles.sectionLabel}>Time Limit</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.capsuleScroll}>
+              <View style={styles.optionWrap}>
                 {TIME_LIMITS.map((opt) => (
                   <TouchableOpacity
                     key={String(opt.value)}
@@ -170,7 +170,7 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
                     ]}>{opt.label}</Text>
                   </TouchableOpacity>
                 ))}
-              </ScrollView>
+              </View>
             </View>
 
             <View style={styles.divider} />
@@ -178,7 +178,7 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
             {/* Passing Score */}
             <View style={styles.settingSection}>
               <Text style={styles.sectionLabel}>Passing Score (%)</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.capsuleScroll}>
+              <View style={styles.optionWrap}>
                 {PASSING_SCORES.map((score) => (
                   <TouchableOpacity
                     key={score}
@@ -194,47 +194,51 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
                     ]}>{score}%</Text>
                   </TouchableOpacity>
                 ))}
-              </ScrollView>
+              </View>
             </View>
 
             <View style={styles.divider} />
 
             {/* Toggles Grid */}
-            <View style={styles.togglesGrid}>
-              {/* Shuffle Toggle */}
-              <View style={styles.toggleCard}>
-                <View style={styles.toggleHeader}>
+            <View style={styles.toggleList}>
+              <View style={styles.toggleRow}>
+                <View style={styles.toggleRowLeft}>
                   <View style={[styles.toggleIcon, { backgroundColor: '#F0FDFA' }]}>
                     <Ionicons name="shuffle" size={18} color="#0D9488" />
                   </View>
-                  <Switch
-                    value={shuffleQuestions}
-                    onValueChange={(v) => { Haptics.selectionAsync(); setShuffleQuestions(v); }}
-                    trackColor={{ false: '#E5E7EB', true: '#5EEAD4' }}
-                    thumbColor={shuffleQuestions ? '#0F766E' : '#FFFFFF'}
-                    ios_backgroundColor="#E5E7EB"
-                  />
+                  <View>
+                    <Text style={styles.toggleLabel}>Shuffle Questions</Text>
+                    <Text style={styles.toggleDesc}>Randomize order per user</Text>
+                  </View>
                 </View>
-                <Text style={styles.toggleLabel}>Shuffle Questions</Text>
-                <Text style={styles.toggleDesc}>Randomize order per user</Text>
+                <Switch
+                  value={shuffleQuestions}
+                  onValueChange={(v) => { Haptics.selectionAsync(); setShuffleQuestions(v); }}
+                  trackColor={{ false: '#E5E7EB', true: '#5EEAD4' }}
+                  thumbColor={shuffleQuestions ? '#0F766E' : '#FFFFFF'}
+                  ios_backgroundColor="#E5E7EB"
+                />
               </View>
 
-              {/* Review Toggle */}
-              <View style={styles.toggleCard}>
-                <View style={styles.toggleHeader}>
+              <View style={styles.toggleDivider} />
+
+              <View style={styles.toggleRow}>
+                <View style={styles.toggleRowLeft}>
                   <View style={[styles.toggleIcon, { backgroundColor: '#FFF7ED' }]}>
                     <Ionicons name="eye" size={18} color="#EA580C" />
                   </View>
-                  <Switch
-                    value={showReview}
-                    onValueChange={(v) => { Haptics.selectionAsync(); setShowReview(v); }}
-                    trackColor={{ false: '#E5E7EB', true: '#FDBA74' }}
-                    thumbColor={showReview ? '#C2410C' : '#FFFFFF'}
-                    ios_backgroundColor="#E5E7EB"
-                  />
+                  <View>
+                    <Text style={styles.toggleLabel}>Allow Review</Text>
+                    <Text style={styles.toggleDesc}>Show answers after quiz</Text>
+                  </View>
                 </View>
-                <Text style={styles.toggleLabel}>Allow Review</Text>
-                <Text style={styles.toggleDesc}>Show answers after quiz</Text>
+                <Switch
+                  value={showReview}
+                  onValueChange={(v) => { Haptics.selectionAsync(); setShowReview(v); }}
+                  trackColor={{ false: '#E5E7EB', true: '#FDBA74' }}
+                  thumbColor={showReview ? '#C2410C' : '#FFFFFF'}
+                  ios_backgroundColor="#E5E7EB"
+                />
               </View>
             </View>
 
@@ -288,15 +292,10 @@ const styles = StyleSheet.create({
   // Card Styles
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     marginBottom: 24,
-    shadowColor: '#000',
-    
-    shadowOpacity: 0.04,
-    
-    
-    
-    borderColor: '#F3F4F6',
     overflow: 'hidden',
   },
   cardHeader: {
@@ -355,31 +354,27 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionLabel: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
     color: '#374151',
     marginBottom: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
-  capsuleScroll: {
-    gap: 10,
+  optionWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   capsule: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
     backgroundColor: '#FFFFFF',
-    
-    
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
   },
   capsuleSelected: {
     backgroundColor: '#0EA5E9', // Sky blue
     borderColor: '#0EA5E9',
-    shadowColor: '#0EA5E9',
-    
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
   },
   capsuleText: {
     fontSize: 14,
@@ -396,23 +391,29 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   // Toggles Grid
-  togglesGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  toggleCard: {
-    flex: 1,
-    backgroundColor: '#FAFAFA',
+  toggleList: {
+    backgroundColor: '#F8FAFC',
     borderRadius: 14,
-    padding: 16,
-    
-    
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 12,
   },
-  toggleHeader: {
+  toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  toggleRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  toggleDivider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
   },
   toggleIcon: {
     width: 36,
@@ -423,13 +424,13 @@ const styles = StyleSheet.create({
   },
   toggleLabel: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1F2937',
-    marginBottom: 2,
   },
   toggleDesc: {
     fontSize: 12,
     color: '#6B7280',
+    marginTop: 1,
   },
   // Section Header
   sectionHeader: {
@@ -446,7 +447,9 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   badge: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -466,7 +469,7 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
-    
+    borderWidth: 1,
     borderColor: '#BAE6FD',
     borderStyle: 'dashed',
     marginTop: 12,

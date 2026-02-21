@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
+import Animated, { FadeIn, Layout } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
 interface ProjectFormProps {
@@ -163,7 +163,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
 
         <View style={styles.durationSection}>
           <Text style={styles.label}>Duration</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
+          <View style={styles.chipsWrap}>
             {DURATION_OPTIONS.map((days) => (
               <TouchableOpacity
                 key={days}
@@ -184,7 +184,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
                 </Text>
               </TouchableOpacity>
             ))}
-          </ScrollView>
+          </View>
         </View>
       </View>
 
@@ -231,7 +231,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
 
               <View style={styles.dueInWrapper}>
                 <Text style={styles.dueInLabel}>Due day:</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.miniScroll}>
+                <View style={styles.miniWrap}>
                   {[3, 7, 14, 21, 30].map((d) => (
                     <TouchableOpacity
                       key={d}
@@ -250,7 +250,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
                       ]}>{d}d</Text>
                     </TouchableOpacity>
                   ))}
-                </ScrollView>
+                </View>
               </View>
             </Animated.View>
           ))}
@@ -431,14 +431,9 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     padding: 16,
-    shadowColor: '#000',
-    
-    shadowOpacity: 0.05,
-    
-    
-    
-    borderColor: '#F3F4F6',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -473,12 +468,15 @@ const styles = StyleSheet.create({
     width: '48%',
     padding: 12,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     alignItems: 'center',
     gap: 8,
   },
   teamCardSelected: {
     backgroundColor: '#F5F3FF',
+    borderColor: '#8B5CF6',
   },
   teamIcon: {
     width: 32,
@@ -517,16 +515,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#374151',
   },
-  chipsScroll: {
+  chipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 12,
     backgroundColor: '#FFFFFF',
-    
-    
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
   },
   chipSelected: {
     backgroundColor: '#8B5CF6',
@@ -546,10 +546,10 @@ const styles = StyleSheet.create({
   },
   milestoneCard: {
     padding: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
     borderRadius: 12,
-    
-    
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     gap: 10,
   },
   milestoneHeader: {
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
   },
   dueInWrapper: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 10,
     paddingLeft: 34,
   },
@@ -590,16 +590,19 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#6B7280',
   },
-  miniScroll: {
+  miniWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
+    flex: 1,
   },
   miniChip: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
     backgroundColor: '#FFF',
-    
-    
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
   },
   miniChipSelected: {
     backgroundColor: '#3B82F6',
@@ -622,6 +625,8 @@ const styles = StyleSheet.create({
     marginTop: 12,
     borderRadius: 12,
     backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
   },
   addButtonText: {
     fontSize: 14,
@@ -634,8 +639,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
-    
-    
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     paddingRight: 6,
   },
   mainInput: {
@@ -666,7 +671,7 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: '#ECFDF5',
     borderRadius: 10,
-    
+    borderWidth: 1,
     borderColor: '#BBF7D0',
   },
   deliverableText: {
@@ -690,7 +695,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: '#FFF7ED',
     borderRadius: 20,
-    
+    borderWidth: 1,
     borderColor: '#FDBA74',
   },
   skillChipText: {
@@ -706,7 +711,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: '#FFF7ED',
     borderRadius: 16,
-    
+    borderWidth: 1,
     borderColor: '#FED7AA',
   },
   suggestedSkillText: {

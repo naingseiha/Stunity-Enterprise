@@ -4,9 +4,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, LayoutAnimation } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
+import Animated, { FadeIn, Layout } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
 interface CourseFormProps {
@@ -165,10 +165,10 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
         <View style={styles.divider} />
 
         {/* Duration & Limit */}
-        <View style={styles.rowSettings}>
-          <View style={styles.halfCol}>
+        <View style={styles.settingsStack}>
+          <View>
             <Text style={styles.label}>Duration</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.miniScroll}>
+            <View style={styles.chipWrap}>
               {DURATION_OPTIONS.map((w) => (
                 <TouchableOpacity
                   key={w}
@@ -178,11 +178,12 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
                   <Text style={[styles.miniChipText, duration === w && styles.miniChipTextSelected]}>{w}w</Text>
                 </TouchableOpacity>
               ))}
-            </ScrollView>
+            </View>
           </View>
-          <View style={styles.halfCol}>
+
+          <View>
             <Text style={styles.label}>Enrollment Limit</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.miniScroll}>
+            <View style={styles.chipWrap}>
               {ENROLLMENT_OPTIONS.map((opt) => (
                 <TouchableOpacity
                   key={String(opt.value)}
@@ -194,7 +195,7 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
                   </Text>
                 </TouchableOpacity>
               ))}
-            </ScrollView>
+            </View>
           </View>
         </View>
       </View>
@@ -346,15 +347,10 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     padding: 16,
-    shadowColor: '#000',
-    
-    shadowOpacity: 0.05,
-    
-    
-    
-    borderColor: '#F3F4F6',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -388,12 +384,15 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     alignItems: 'center',
     gap: 6,
   },
   scheduleCardSelected: {
     backgroundColor: '#ECFDF5',
+    borderColor: '#10B981',
   },
   scheduleIcon: {
     width: 32,
@@ -425,30 +424,31 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   // Row Settings
-  rowSettings: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  halfCol: {
-    flex: 1,
+  settingsStack: {
+    gap: 14,
   },
   label: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: '#374151',
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  miniScroll: {
-    gap: 6,
+  chipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   miniChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
     backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
   },
   miniChipSelected: {
     backgroundColor: '#10B981',
+    borderColor: '#10B981',
   },
   miniChipText: {
     fontSize: 12,
@@ -463,19 +463,19 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sectionCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
     borderRadius: 12,
-    
-    
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     overflow: 'hidden',
   },
   sectionCardExpanded: {
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF',
     borderColor: '#C7D2FE',
-    
-    
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
-    
+    shadowOpacity: 0.08,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -524,6 +524,8 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     padding: 12,
     fontSize: 14,
     color: '#111827',
@@ -541,6 +543,8 @@ const styles = StyleSheet.create({
     marginTop: 12,
     borderRadius: 12,
     backgroundColor: '#EEF2FF',
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
   },
   addButtonText: {
     fontSize: 14,
@@ -553,8 +557,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
-    
-    
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     paddingRight: 6,
   },
   mainInput: {
@@ -588,12 +592,12 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: '#E0F2FE',
     borderRadius: 8,
-    
+    borderWidth: 1,
     borderColor: '#BAE6FD',
   },
   tagText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#B45309',
+    color: '#0369A1',
   },
 });

@@ -4,9 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, LayoutAnimation, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
 interface AnnouncementFormProps {
@@ -67,10 +66,10 @@ const EXPIRATION_OPTIONS = [
 ];
 
 const AUDIENCE_OPTIONS = [
-  { value: 'EVERYONE', label: 'Everyone', icon: 'globe', color: '#6366F1' },
-  { value: 'MY_SCHOOL', label: 'My School', icon: 'school', color: '#10B981' },
-  { value: 'MY_CLASS', label: 'My Class', icon: 'people', color: '#F59E0B' },
-  { value: 'SPECIFIC', label: 'Specific Group', icon: 'person-add', color: '#8B5CF6' },
+  { value: 'EVERYONE', label: 'Everyone', desc: 'All users can view', icon: 'globe', color: '#6366F1' },
+  { value: 'MY_SCHOOL', label: 'My School', desc: 'Only school members', icon: 'school', color: '#10B981' },
+  { value: 'MY_CLASS', label: 'My Class', desc: 'Only class members', icon: 'people', color: '#F59E0B' },
+  { value: 'SPECIFIC', label: 'Specific Group', desc: 'Invite selected people', icon: 'person-add', color: '#8B5CF6' },
 ];
 
 export function AnnouncementForm({ onDataChange }: AnnouncementFormProps) {
@@ -152,35 +151,46 @@ export function AnnouncementForm({ onDataChange }: AnnouncementFormProps) {
           <View style={[styles.iconContainer, { backgroundColor: '#F8FAFC' }]}>
             <Ionicons name="settings" size={20} color="#4B5563" />
           </View>
-          <Text style={styles.cardTitle}>Display Options</Text>
+          <View>
+            <Text style={styles.cardTitle}>Display Options</Text>
+            <Text style={styles.cardSubtitle}>Control placement and duration</Text>
+          </View>
         </View>
 
-        {/* Pin Toggle */}
-        <TouchableOpacity
-          onPress={() => {
-            Haptics.selectionAsync();
-            setPinToTop(!pinToTop);
-          }}
-          style={styles.settingRow}
-        >
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Pin to Top</Text>
-            <Text style={styles.settingDesc}>Keep at top of feed</Text>
+        <View style={styles.settingTile}>
+          <View style={styles.settingTileLeft}>
+            <View style={[styles.settingMiniIcon, { backgroundColor: '#EEF2FF' }]}>
+              <Ionicons name="pin" size={16} color="#6366F1" />
+            </View>
+            <View style={styles.settingTextWrap}>
+              <Text style={styles.settingLabel}>Pin to Top</Text>
+              <Text style={styles.settingDesc}>Keep at top of feed</Text>
+            </View>
           </View>
-          <View style={[styles.toggle, pinToTop && styles.toggleActive]}>
-            <View style={[styles.toggleThumb, pinToTop && styles.toggleThumbActive]} />
-          </View>
-        </TouchableOpacity>
+          <Switch
+            value={pinToTop}
+            onValueChange={(value) => {
+              Haptics.selectionAsync();
+              setPinToTop(value);
+            }}
+            trackColor={{ false: '#E5E7EB', true: '#C7D2FE' }}
+            thumbColor={pinToTop ? '#4F46E5' : '#FFF'}
+            ios_backgroundColor="#E5E7EB"
+          />
+        </View>
 
-        <View style={styles.divider} />
-
-        {/* Expiration */}
-        <View style={styles.expirationSection}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Auto-Expiration</Text>
-            <Text style={styles.settingDesc}>Remove after set time</Text>
+        <View style={styles.settingTile}>
+          <View style={styles.settingTileLeft}>
+            <View style={[styles.settingMiniIcon, { backgroundColor: '#FEF2F2' }]}>
+              <Ionicons name="time" size={16} color="#EF4444" />
+            </View>
+            <View style={styles.settingTextWrap}>
+              <Text style={styles.settingLabel}>Auto-Expiration</Text>
+              <Text style={styles.settingDesc}>Remove after set time</Text>
+            </View>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsContainer}>
+
+          <View style={styles.chipsWrap}>
             {EXPIRATION_OPTIONS.map((option) => (
               <TouchableOpacity
                 key={option.label}
@@ -199,7 +209,7 @@ export function AnnouncementForm({ onDataChange }: AnnouncementFormProps) {
                 ]}>{option.label}</Text>
               </TouchableOpacity>
             ))}
-          </ScrollView>
+          </View>
         </View>
       </View>
 
@@ -243,35 +253,48 @@ export function AnnouncementForm({ onDataChange }: AnnouncementFormProps) {
           </View>
         </View>
 
-        <View style={styles.audienceGrid}>
-          {AUDIENCE_OPTIONS.map((opt) => (
-            <TouchableOpacity
-              key={opt.value}
-              onPress={() => {
-                Haptics.selectionAsync();
-                setTargetAudience(opt.value);
-              }}
-              style={[
-                styles.audienceCard,
-                targetAudience === opt.value && {
-                  backgroundColor: opt.color + '10',
-                  borderColor: opt.color,
-                },
-              ]}
-            >
-              <Ionicons
-                name={opt.icon as any}
-                size={20}
-                color={targetAudience === opt.value ? opt.color : '#9CA3AF'}
-              />
-              <Text style={[
-                styles.audienceLabel,
-                targetAudience === opt.value && { color: opt.color, fontWeight: '700' },
-              ]}>
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.audienceList}>
+          {AUDIENCE_OPTIONS.map((opt) => {
+            const isSelected = targetAudience === opt.value;
+            return (
+              <TouchableOpacity
+                key={opt.value}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setTargetAudience(opt.value);
+                }}
+                style={[
+                  styles.audienceRow,
+                  isSelected && {
+                    backgroundColor: opt.color + '10',
+                    borderColor: opt.color,
+                  },
+                ]}
+              >
+                <View style={[styles.audienceIconWrap, { backgroundColor: isSelected ? opt.color + '22' : '#F3F4F6' }]}>
+                  <Ionicons
+                    name={opt.icon as any}
+                    size={18}
+                    color={isSelected ? opt.color : '#9CA3AF'}
+                  />
+                </View>
+                <View style={styles.audienceInfo}>
+                  <Text style={[
+                    styles.audienceLabel,
+                    isSelected && { color: opt.color, fontWeight: '700' },
+                  ]}>
+                    {opt.label}
+                  </Text>
+                  <Text style={styles.audienceHint}>{opt.desc}</Text>
+                </View>
+                {isSelected ? (
+                  <Ionicons name="checkmark-circle" size={20} color={opt.color} />
+                ) : (
+                  <View style={styles.audienceRadio} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {/* Notification Toggle */}
@@ -304,15 +327,10 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     padding: 16,
-    shadowColor: '#000',
-    
-    shadowOpacity: 0.05,
-    
-    
-    
-    borderColor: '#F3F4F6',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -348,13 +366,14 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     gap: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   importanceCardSelected: {
     shadowColor: '#000',
-    
-    
+    shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
-    
+    shadowOpacity: 0.08,
   },
   importanceIcon: {
     width: 32,
@@ -384,66 +403,52 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   // Settings
-  settingRow: {
+  settingTile: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 12,
+    marginBottom: 10,
+  },
+  settingTileLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
+    gap: 10,
   },
-  settingInfo: {
+  settingMiniIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingTextWrap: {
     flex: 1,
   },
   settingLabel: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: '#111827',
   },
   settingDesc: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#6B7280',
     marginTop: 2,
   },
-  toggle: {
-    width: 48,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#D1D5DB',
-    padding: 2,
-  },
-  toggleActive: {
-    backgroundColor: '#4F46E5',
-  },
-  toggleThumb: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#FFF',
-    shadowColor: '#000',
-    
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  toggleThumbActive: {
-    transform: [{ translateX: 20 }],
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#F8FAFC',
-    marginVertical: 12,
-  },
-  expirationSection: {
-    gap: 12,
-  },
-  chipsContainer: {
+  chipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
+    marginTop: 10,
   },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
     backgroundColor: '#FFFFFF',
-    
-    
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
   },
   chipSelected: {
     backgroundColor: '#111827',
@@ -459,8 +464,8 @@ const styles = StyleSheet.create({
   },
   // Preview
   previewCard: {
-    borderRadius: 14,
-    
+    borderRadius: 16,
+    borderWidth: 1,
     padding: 16,
   },
   previewHeader: {
@@ -499,29 +504,55 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   // Audience
-  audienceGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  audienceList: {
     gap: 10,
     marginBottom: 16,
   },
-  audienceCard: {
-    width: '48%',
+  audienceRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
+    padding: 12,
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
-    gap: 6,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 10,
+  },
+  audienceIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  audienceInfo: {
+    flex: 1,
   },
   audienceLabel: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#374151',
+  },
+  audienceHint: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 1,
+  },
+  audienceRadio: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
   },
   notificationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 4,
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F8FAFC',
   },
   switchIcon: {
     width: 36,

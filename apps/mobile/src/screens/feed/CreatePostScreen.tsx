@@ -22,6 +22,7 @@ import {
   Alert,
   ActivityIndicator,
   LayoutAnimation,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -113,6 +114,12 @@ export default function CreatePostScreen() {
   const [visibility, setVisibility] = useState('PUBLIC');
   const [mediaUris, setMediaUris] = useState<string[]>([]);
   const [isPosting, setIsPosting] = useState(false);
+
+  // Advanced Options Modals
+  const [isTagModalVisible, setIsTagModalVisible] = useState(false);
+  const [isDifficultyModalVisible, setIsDifficultyModalVisible] = useState(false);
+  const [isDeadlineModalVisible, setIsDeadlineModalVisible] = useState(false);
+  const [isVisibilityModalVisible, setIsVisibilityModalVisible] = useState(false);
 
   // Topic tags
   const [topicTags, setTopicTags] = useState<string[]>([]);
@@ -423,61 +430,52 @@ export default function CreatePostScreen() {
             />
             <View style={styles.authorInfo}>
               <Text style={styles.authorName}>{userName}</Text>
-              <View style={styles.postTypeBadge}>
-                <Ionicons
-                  name={POST_TYPES.find(t => t.type === postType)?.icon as any || 'document-text'}
-                  size={12}
-                  color={POST_TYPES.find(t => t.type === postType)?.color || '#0EA5E9'}
-                />
-                <Text style={[
-                  styles.postTypeBadgeText,
-                  { color: POST_TYPES.find(t => t.type === postType)?.color }
-                ]}>
-                  {POST_TYPES.find(t => t.type === postType)?.label || 'Article'}
-                </Text>
-                <Ionicons name="chevron-down" size={12} color="#9CA3AF" />
-              </View>
+              <Text style={styles.authorSubtitleText}>Creating a new post</Text>
             </View>
           </View>
 
-          {/* Post Type Selector */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.typeSelector}
-            contentContainerStyle={styles.typeSelectorContent}
-          >
-            {POST_TYPES.map((type) => (
-              <Animated.View
-                key={type.type}
-                entering={FadeIn.duration(200)}
-                layout={Layout.springify()}
-              >
-                <TouchableOpacity
-                  onPress={() => {
-                    setPostType(type.type);
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  }}
-                  style={[
-                    styles.typeOption,
-                    postType === type.type && { backgroundColor: type.color + '15' },
-                  ]}
-                >
-                  <Ionicons
-                    name={type.icon as any}
-                    size={16}
-                    color={postType === type.type ? type.color : '#6B7280'}
-                  />
-                  <Text style={[
-                    styles.typeOptionText,
-                    postType === type.type && { color: type.color, fontWeight: '600' },
-                  ]}>
-                    {type.label}
-                  </Text>
-                </TouchableOpacity>
-              </Animated.View>
-            ))}
-          </ScrollView>
+          {/* Post Type Selector (Horizontal List) */}
+          <View style={styles.postTypeContainer}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.postTypeScrollContent}
+            >
+              {POST_TYPES.map((typeObj) => {
+                const isActive = postType === typeObj.type;
+                return (
+                  <TouchableOpacity
+                    key={typeObj.type}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setPostType(typeObj.type);
+                    }}
+                    activeOpacity={0.75}
+                    style={styles.postTypeItem}
+                  >
+                    <LinearGradient
+                      colors={typeObj.gradient}
+                      style={[styles.postTypeIconBox, isActive && styles.postTypeIconBoxActive]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                    >
+                      <Ionicons name={typeObj.icon as any} size={20} color="#fff" />
+                    </LinearGradient>
+                    <Text
+                      style={[
+                        styles.postTypeLabel,
+                        isActive && { color: typeObj.color, fontWeight: '700' },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {typeObj.label}
+                    </Text>
+                    {isActive && <View style={[styles.postTypeActiveDot, { backgroundColor: typeObj.color }]} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
 
           {/* Title Input — for structured post types */}
           {TITLE_POST_TYPES.includes(postType) && (
@@ -505,225 +503,149 @@ export default function CreatePostScreen() {
             autoFocus
           />
 
-          {/* Topic Tags */}
-          <Animated.View entering={FadeIn.duration(200)} style={styles.tagsSection}>
-            <View style={styles.tagsSectionHeader}>
-              <View style={styles.tagsSectionTitle}>
-                <Ionicons name="pricetags" size={16} color="#6366F1" />
-                <Text style={styles.tagsSectionLabel}>Topic Tags</Text>
+          {/* ─── Advanced Settings Card ─── */}
+          <View style={styles.settingsSection}>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionTitleIcon, { backgroundColor: '#6B728015' }]}>
+                <Ionicons name="options" size={14} color="#6B7280" />
               </View>
-              <Text style={styles.tagsCount}>{topicTags.length}/5</Text>
+              <Text style={styles.sectionTitle}>Advanced Options</Text>
             </View>
 
-            {/* Active Tags */}
-            {topicTags.length > 0 && (
-              <View style={styles.activeTagsRow}>
-                {topicTags.map((tag) => (
-                  <Animated.View
-                    key={tag}
-                    entering={ZoomIn.duration(200)}
-                    exiting={ZoomOut.duration(200)}
-                    layout={Layout.springify()}
-                  >
-                    <TouchableOpacity
-                      style={styles.activeTag}
-                      onPress={() => removeTag(tag)}
-                    >
-                      <Text style={styles.activeTagText}>#{tag}</Text>
-                      <Ionicons name="close" size={14} color="#6366F1" />
-                    </TouchableOpacity>
-                  </Animated.View>
-                ))}
-              </View>
-            )}
-
-            {/* Tag Input */}
-            {topicTags.length < 5 && (
-              <View style={styles.tagInputRow}>
-                <TextInput
-                  style={styles.tagInput}
-                  placeholder="Add a tag..."
-                  placeholderTextColor="#9CA3AF"
-                  value={tagInput}
-                  onChangeText={setTagInput}
-                  onSubmitEditing={() => addTag(tagInput)}
-                  returnKeyType="done"
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  onPress={() => addTag(tagInput)}
-                  style={[styles.tagAddButton, !tagInput.trim() && styles.tagAddButtonDisabled]}
-                  disabled={!tagInput.trim()}
-                >
-                  <Ionicons name="add" size={16} color="#FFF" />
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Suggested Tags */}
-            {topicTags.length < 5 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.suggestedTagsScroll}
+            <View style={styles.settingsCard}>
+              {/* 1. Topic Tags */}
+              <TouchableOpacity
+                style={styles.settingRow}
+                activeOpacity={0.7}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setIsTagModalVisible(true);
+                }}
               >
-                {SUGGESTED_TAGS.filter(t => !topicTags.includes(t.toLowerCase())).slice(0, 8).map((tag) => (
-                  <TouchableOpacity
-                    key={tag}
-                    style={styles.suggestedTag}
-                    onPress={() => addTag(tag)}
-                  >
-                    <Text style={styles.suggestedTagText}>{tag}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
-          </Animated.View>
+                <View style={[styles.settingIcon, { backgroundColor: '#EEF2FF' }]}>
+                  <Ionicons name="pricetag-outline" size={18} color="#6366F1" />
+                </View>
+                <View style={styles.settingContent}>
+                  <Text style={styles.settingLabel}>Topic Tags</Text>
+                  <Text style={styles.settingSublabel} numberOfLines={1}>
+                    {topicTags.length > 0 ? topicTags.map(t => `#${t}`).join(', ') : 'Add tags to help people find your post'}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+              </TouchableOpacity>
 
-          {/* Difficulty Level — for educational post types */}
-          {EDUCATIONAL_POST_TYPES.includes(postType) && (
-            <Animated.View entering={FadeIn.duration(200)} style={styles.difficultySection}>
-              <View style={styles.diffSectionHeader}>
-                <Ionicons name="speedometer" size={16} color="#F59E0B" />
-                <Text style={styles.diffSectionLabel}>Difficulty Level</Text>
-              </View>
-              <View style={styles.difficultyGrid}>
-                {DIFFICULTY_LEVELS.map((level) => (
-                  <TouchableOpacity
-                    key={level.value}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setDifficulty(difficulty === level.value ? null : level.value);
-                    }}
-                    style={[
-                      styles.difficultyCard,
-                      difficulty === level.value && {
-                        backgroundColor: level.bg,
-                      },
-                    ]}
-                  >
-                    <Ionicons
-                      name={level.icon as any}
-                      size={18}
-                      color={difficulty === level.value ? level.color : '#9CA3AF'}
-                    />
-                    <Text style={[
-                      styles.difficultyLabel,
-                      difficulty === level.value && { color: level.color, fontWeight: '700' },
-                    ]}>
-                      {level.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </Animated.View>
-          )}
+              <View style={styles.settingsDivider} />
 
-          {/* Deadline Picker — for time-bound post types */}
-          {DEADLINE_POST_TYPES.includes(postType) && (
-            <Animated.View entering={FadeIn.duration(200)} style={styles.deadlineSection}>
-              <View style={styles.deadlineSectionHeader}>
-                <Ionicons name="calendar" size={16} color="#EF4444" />
-                <Text style={styles.deadlineSectionLabel}>Deadline</Text>
-              </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.deadlineScroll}
+              {/* 2. Visibility */}
+              <TouchableOpacity
+                style={styles.settingRow}
+                activeOpacity={0.7}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setIsVisibilityModalVisible(true);
+                }}
               >
-                {DEADLINE_OPTIONS.map((opt) => (
+                <View style={[styles.settingIcon, { backgroundColor: '#ECFEFF' }]}>
+                  <Ionicons name="eye-outline" size={18} color="#06B6D4" />
+                </View>
+                <View style={styles.settingContent}>
+                  <Text style={styles.settingLabel}>Visibility</Text>
+                  <Text style={styles.settingSublabel} numberOfLines={1}>
+                    {VISIBILITY_OPTIONS.find(o => o.value === visibility)?.label || 'Public'}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+              </TouchableOpacity>
+
+              {/* 3. Difficulty (Educational Only) */}
+              {EDUCATIONAL_POST_TYPES.includes(postType) && (
+                <>
+                  <View style={styles.settingsDivider} />
                   <TouchableOpacity
-                    key={String(opt.value)}
+                    style={styles.settingRow}
+                    activeOpacity={0.7}
                     onPress={() => {
-                      Haptics.selectionAsync();
-                      setDeadlineDays(opt.value);
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setIsDifficultyModalVisible(true);
                     }}
-                    style={[
-                      styles.deadlineChip,
-                      deadlineDays === opt.value && styles.deadlineChipSelected,
-                    ]}
                   >
-                    <Text style={[
-                      styles.deadlineChipText,
-                      deadlineDays === opt.value && styles.deadlineChipTextSelected,
-                    ]}>
-                      {opt.label}
-                    </Text>
+                    <View style={[styles.settingIcon, { backgroundColor: '#FFFBEB' }]}>
+                      <Ionicons name="school-outline" size={18} color="#F59E0B" />
+                    </View>
+                    <View style={styles.settingContent}>
+                      <Text style={styles.settingLabel}>Difficulty Limit</Text>
+                      <Text style={styles.settingSublabel} numberOfLines={1}>
+                        {difficulty ? DIFFICULTY_LEVELS.find(l => l.value === difficulty)?.label : 'Set maximum educational level'}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
                   </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </Animated.View>
-          )}
+                </>
+              )}
 
-          {/* Question Form (only for QUESTION type) */}
-          {postType === 'QUESTION' && (
-            <QuestionForm onDataChange={setQuestionData} />
-          )}
-
-          {/* Poll Form (only for POLL type) */}
-          {postType === 'POLL' && (
-            <PollForm
-              options={pollOptions}
-              onOptionsChange={setPollOptions}
-              onDataChange={setPollData}
-            />
-          )}
-
-          {/* Quiz Form (only for QUIZ type) */}
-          {postType === 'QUIZ' && (
-            <QuizForm onDataChange={setQuizData} />
-          )}
-
-          {/* Announcement Form (only for ANNOUNCEMENT type) */}
-          {postType === 'ANNOUNCEMENT' && (
-            <AnnouncementForm onDataChange={setAnnouncementData} />
-          )}
-
-          {/* Course Form (only for COURSE type) */}
-          {postType === 'COURSE' && (
-            <CourseForm onDataChange={setCourseData} />
-          )}
-
-          {/* Project Form (only for PROJECT type) */}
-          {postType === 'PROJECT' && (
-            <ProjectForm onDataChange={setProjectData} />
-          )}
-
-          {/* Visibility Selector */}
-          <View style={styles.visibilitySection}>
-            <Text style={styles.sectionLabel}>Visibility</Text>
-            <View style={styles.visibilityGrid}>
-              {VISIBILITY_OPTIONS.map((option) => {
-                const isSelected = visibility === option.value;
-                return (
+              {/* 4. Deadline (Time-bound Only) */}
+              {DEADLINE_POST_TYPES.includes(postType) && (
+                <>
+                  <View style={styles.settingsDivider} />
                   <TouchableOpacity
-                    key={option.value}
+                    style={styles.settingRow}
+                    activeOpacity={0.7}
                     onPress={() => {
-                      setVisibility(option.value);
-                      Haptics.selectionAsync();
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setIsDeadlineModalVisible(true);
                     }}
-                    disabled={isPosting}
-                    style={[
-                      styles.visibilityOption,
-                      isSelected && { backgroundColor: option.color + '10' },
-                    ]}
                   >
-                    <Ionicons
-                      name={option.icon as any}
-                      size={20}
-                      color={isSelected ? option.color : '#6B7280'}
-                    />
-                    <Text style={[
-                      styles.visibilityLabel,
-                      isSelected && { color: option.color },
-                    ]}>
-                      {option.label}
-                    </Text>
-                    <Text style={styles.visibilityDesc}>{option.desc}</Text>
+                    <View style={[styles.settingIcon, { backgroundColor: '#FEF2F2' }]}>
+                      <Ionicons name="calendar-outline" size={18} color="#EF4444" />
+                    </View>
+                    <View style={styles.settingContent}>
+                      <Text style={styles.settingLabel}>Deadline</Text>
+                      <Text style={styles.settingSublabel} numberOfLines={1}>
+                        {deadlineDays ? DEADLINE_OPTIONS.find(o => o.value === deadlineDays)?.label : 'No deadline set'}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
                   </TouchableOpacity>
-                );
-              })}
+                </>
+              )}
             </View>
+          </View>
+
+          {/* Advanced Forms Container */}
+          <View style={styles.advancedFormsContainer}>
+            {/* Question Form (only for QUESTION type) */}
+            {postType === 'QUESTION' && (
+              <QuestionForm onDataChange={setQuestionData} />
+            )}
+
+            {/* Poll Form (only for POLL type) */}
+            {postType === 'POLL' && (
+              <PollForm
+                options={pollOptions}
+                onOptionsChange={setPollOptions}
+                onDataChange={setPollData}
+              />
+            )}
+
+            {/* Quiz Form (only for QUIZ type) */}
+            {postType === 'QUIZ' && (
+              <QuizForm onDataChange={setQuizData} />
+            )}
+
+            {/* Announcement Form (only for ANNOUNCEMENT type) */}
+            {postType === 'ANNOUNCEMENT' && (
+              <AnnouncementForm onDataChange={setAnnouncementData} />
+            )}
+
+            {/* Course Form (only for COURSE type) */}
+            {postType === 'COURSE' && (
+              <CourseForm onDataChange={setCourseData} />
+            )}
+
+            {/* Project Form (only for PROJECT type) */}
+            {postType === 'PROJECT' && (
+              <ProjectForm onDataChange={setProjectData} />
+            )}
           </View>
 
           {/* Media Preview */}
@@ -768,75 +690,231 @@ export default function CreatePostScreen() {
           )}
         </ScrollView>
 
-        {/* Bottom Actions */}
-        <View style={styles.bottomActions}>
-          <View style={styles.mediaActions}>
-            <TouchableOpacity
-              onPress={handlePickImage}
-              style={styles.mediaButton}
-              disabled={mediaUris.length >= 4}
-            >
-              <View style={[styles.mediaButtonIcon, { backgroundColor: '#10B98120' }]}>
+        {/* Bottom Actions Toolbar */}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        >
+          <View style={styles.bottomActions}>
+            <View style={styles.mediaActions}>
+              <TouchableOpacity
+                onPress={handlePickImage}
+                style={styles.mediaIconButton}
+                disabled={mediaUris.length >= 4}
+              >
                 <Ionicons
                   name="image"
-                  size={20}
-                  color={mediaUris.length >= 4 ? '#9CA3AF' : '#10B981'}
+                  size={24}
+                  color={mediaUris.length >= 4 ? '#D1D5DB' : '#10B981'}
                 />
-              </View>
-              <Text style={[styles.mediaButtonText, mediaUris.length >= 4 && { color: '#9CA3AF' }]}>
-                Photo
-              </Text>
-            </TouchableOpacity>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={handleTakePhoto}
-              style={styles.mediaButton}
-              disabled={mediaUris.length >= 4}
-            >
-              <View style={[styles.mediaButtonIcon, { backgroundColor: '#3B82F620' }]}>
+              <TouchableOpacity
+                onPress={handleTakePhoto}
+                style={styles.mediaIconButton}
+                disabled={mediaUris.length >= 4}
+              >
                 <Ionicons
                   name="camera"
-                  size={20}
-                  color={mediaUris.length >= 4 ? '#9CA3AF' : '#3B82F6'}
+                  size={24}
+                  color={mediaUris.length >= 4 ? '#D1D5DB' : '#3B82F6'}
                 />
-              </View>
-              <Text style={[styles.mediaButtonText, mediaUris.length >= 4 && { color: '#9CA3AF' }]}>
-                Camera
-              </Text>
-            </TouchableOpacity>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={handlePickVideo}
-              style={styles.mediaButton}
-              disabled={mediaUris.length >= 4}
-            >
-              <View style={[styles.mediaButtonIcon, { backgroundColor: '#8B5CF620' }]}>
+              <TouchableOpacity
+                onPress={handlePickVideo}
+                style={styles.mediaIconButton}
+                disabled={mediaUris.length >= 4}
+              >
                 <Ionicons
                   name="videocam"
-                  size={20}
-                  color={mediaUris.length >= 4 ? '#9CA3AF' : '#8B5CF6'}
+                  size={24}
+                  color={mediaUris.length >= 4 ? '#D1D5DB' : '#8B5CF6'}
                 />
-              </View>
-              <Text style={[styles.mediaButtonText, mediaUris.length >= 4 && { color: '#9CA3AF' }]}>
-                Video
-              </Text>
-            </TouchableOpacity>
+              </TouchableOpacity>
 
-            <TouchableOpacity style={styles.mediaButton}>
-              <View style={[styles.mediaButtonIcon, { backgroundColor: '#0EA5E920' }]}>
-                <Ionicons name="document" size={20} color="#0EA5E9" />
-              </View>
-              <Text style={styles.mediaButtonText}>File</Text>
-            </TouchableOpacity>
+              <TouchableOpacity style={styles.mediaIconButton}>
+                <Ionicons name="document" size={24} color="#0EA5E9" />
+              </TouchableOpacity>
+            </View>
+
+            {mediaUris.length > 0 ? (
+              <Text style={styles.mediaIndicatorText}>{mediaUris.length}/4</Text>
+            ) : (
+              <View style={styles.mediaIndicatorEmpty} />
+            )}
           </View>
-
-          {mediaUris.length > 0 && (
-            <Text style={styles.mediaCount}>
-              {mediaUris.length}/4 items
-            </Text>
-          )}
-        </View>
+        </KeyboardAvoidingView>
       </KeyboardAvoidingView>
+
+
+      {/* ─── Modals ─── */}
+      <Modal visible={isTagModalVisible} animationType="slide" transparent={true} onRequestClose={() => setIsTagModalVisible(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsTagModalVisible(false)}>
+          <View style={styles.modalBackdrop} />
+          <TouchableOpacity activeOpacity={1} style={styles.modalContent} onPress={e => e.stopPropagation()}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Topic Tags</Text>
+              <TouchableOpacity onPress={() => setIsTagModalVisible(false)} style={styles.modalCloseButton}>
+                <Ionicons name="close" size={24} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={styles.modalScroll}>
+              <View style={styles.tagInputRow}>
+                <TextInput
+                  style={styles.tagInput}
+                  placeholder="Add a tag..."
+                  placeholderTextColor="#9CA3AF"
+                  value={tagInput}
+                  onChangeText={setTagInput}
+                  onSubmitEditing={() => addTag(tagInput)}
+                  returnKeyType="done"
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => addTag(tagInput)} style={[styles.tagAddButton, !tagInput.trim() && styles.tagAddButtonDisabled]} disabled={!tagInput.trim()}>
+                  <Ionicons name="add" size={20} color="#FFF" />
+                </TouchableOpacity>
+              </View>
+
+              {topicTags.length > 0 && (
+                <View style={styles.activeTagsRow}>
+                  {topicTags.map((tag) => (
+                    <TouchableOpacity key={tag} style={styles.activeTag} onPress={() => removeTag(tag)}>
+                      <Text style={styles.activeTagText}>#{tag}</Text>
+                      <Ionicons name="close" size={14} color="#6366F1" />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              {topicTags.length >= 5 && <Text style={styles.tagsCountLimitText}>Maximum 5 tags allowed.</Text>}
+
+              <View style={{ marginTop: 24 }}>
+                <Text style={styles.suggestedTagsTitle}>Suggested Tags</Text>
+                <View style={styles.suggestedTagsGrid}>
+                  {SUGGESTED_TAGS.filter(t => !topicTags.includes(t.toLowerCase())).slice(0, 10).map((tag) => (
+                    <TouchableOpacity key={tag} style={styles.suggestedTag} onPress={() => addTag(tag)} disabled={topicTags.length >= 5}>
+                      <Text style={styles.suggestedTagText}>{tag}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </ScrollView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={isVisibilityModalVisible} animationType="fade" transparent={true} onRequestClose={() => setIsVisibilityModalVisible(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsVisibilityModalVisible(false)}>
+          <View style={styles.modalBackdrop} />
+          <TouchableOpacity activeOpacity={1} style={styles.modalContent} onPress={e => e.stopPropagation()}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Visibility</Text>
+              <TouchableOpacity onPress={() => setIsVisibilityModalVisible(false)} style={styles.modalCloseButton}>
+                <Ionicons name="close" size={24} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={styles.modalBody}>
+              {VISIBILITY_OPTIONS.map((option) => {
+                const isSelected = visibility === option.value;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[styles.modalOptionRow, isSelected && styles.modalOptionRowSelected]}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setVisibility(option.value);
+                      setTimeout(() => setIsVisibilityModalVisible(false), 200);
+                    }}
+                  >
+                    <View style={[styles.modalOptionIconWrapper, { backgroundColor: option.color + '15' }]}>
+                      <Ionicons name={option.icon as any} size={20} color={option.color} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.modalOptionText, isSelected && { color: '#4F46E5', fontWeight: '600' }]}>{option.label}</Text>
+                      <Text style={styles.modalOptionDescText}>{option.desc}</Text>
+                    </View>
+                    {isSelected && <Ionicons name="checkmark-circle" size={24} color="#4F46E5" />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={isDifficultyModalVisible} animationType="fade" transparent={true} onRequestClose={() => setIsDifficultyModalVisible(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsDifficultyModalVisible(false)}>
+          <View style={styles.modalBackdrop} />
+          <TouchableOpacity activeOpacity={1} style={styles.modalContent} onPress={e => e.stopPropagation()}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Difficulty Limit</Text>
+              <TouchableOpacity onPress={() => setIsDifficultyModalVisible(false)} style={styles.modalCloseButton}>
+                <Ionicons name="close" size={24} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={styles.modalBody}>
+              {DIFFICULTY_LEVELS.map((level) => {
+                const isSelected = difficulty === level.value;
+                return (
+                  <TouchableOpacity
+                    key={level.value}
+                    style={[styles.modalOptionRow, isSelected && styles.modalOptionRowSelected]}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setDifficulty(isSelected ? null : level.value);
+                      setTimeout(() => setIsDifficultyModalVisible(false), 200);
+                    }}
+                  >
+                    <View style={[styles.modalOptionIconWrapper, { backgroundColor: level.bg }]}>
+                      <Ionicons name={level.icon as any} size={20} color={level.color} />
+                    </View>
+                    <Text style={[styles.modalOptionText, isSelected && { color: '#4F46E5', fontWeight: '600' }]}>{level.label}</Text>
+                    {isSelected && <Ionicons name="checkmark-circle" size={24} color="#4F46E5" />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={isDeadlineModalVisible} animationType="fade" transparent={true} onRequestClose={() => setIsDeadlineModalVisible(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsDeadlineModalVisible(false)}>
+          <View style={styles.modalBackdrop} />
+          <TouchableOpacity activeOpacity={1} style={styles.modalContent} onPress={e => e.stopPropagation()}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Deadline</Text>
+              <TouchableOpacity onPress={() => setIsDeadlineModalVisible(false)} style={styles.modalCloseButton}>
+                <Ionicons name="close" size={24} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={styles.modalBody}>
+              {DEADLINE_OPTIONS.map((opt) => {
+                const isSelected = deadlineDays === opt.value;
+                return (
+                  <TouchableOpacity
+                    key={String(opt.value)}
+                    style={[styles.modalOptionRow, isSelected && styles.modalOptionRowSelected]}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setDeadlineDays(opt.value);
+                      setTimeout(() => setIsDeadlineModalVisible(false), 200);
+                    }}
+                  >
+                    <View style={[styles.modalOptionIconWrapper, { backgroundColor: '#F3F4F6' }]}>
+                      <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+                    </View>
+                    <Text style={[styles.modalOptionText, isSelected && { color: '#4F46E5', fontWeight: '600' }]}>{opt.label}</Text>
+                    {isSelected && <Ionicons name="checkmark-circle" size={24} color="#4F46E5" />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -921,91 +999,191 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1F2937',
   },
-  postTypeBadge: {
+  authorSubtitleText: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  postTypeBadgeTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
     marginTop: 4,
-    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    gap: 6,
   },
   postTypeBadgeText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
   },
-  typeSelector: {
-    maxHeight: 50,
-    marginBottom: 16,
-    backgroundColor: '#FFFFFF',
-  },
-  typeSelectorContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    gap: 8,
-  },
-  typeOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    gap: 6,
-  },
-  typeOptionText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-
   // Title
   titleSection: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingHorizontal: 20,
+    paddingTop: 16,
     backgroundColor: '#FFFFFF',
   },
   titleInput: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
     color: '#1F2937',
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E7EB',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    letterSpacing: -0.5,
   },
   titleCounter: {
-    fontSize: 11,
-    color: '#D1D5DB',
-    textAlign: 'right',
-    marginTop: 4,
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginLeft: 16,
   },
-
   contentInput: {
     flex: 1,
     fontSize: 16,
     color: '#1F2937',
-    paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingHorizontal: 20,
+    paddingTop: 16,
     minHeight: 120,
     textAlignVertical: 'top',
-    backgroundColor: '#FFFFFF',
+    letterSpacing: 0.2,
+    lineHeight: 24,
   },
 
-  // Topic Tags
-  tagsSection: {
+  /* ─── Post Type Selector (Horizontal) ─── */
+  postTypeContainer: {
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
+  postTypeScrollContent: {
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    gap: 12,
+  },
+  postTypeItem: {
+    alignItems: 'center',
+    width: 68,
+    gap: 6,
+  },
+  postTypeIconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  postTypeIconBoxActive: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+  },
+  postTypeLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  postTypeActiveDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+  },
+
+  /* ─── Advanced Settings Card (Settings Page Replica) ─── */
+  settingsSection: {
+    marginTop: 20,
+    marginBottom: 20,
+    paddingHorizontal: 16,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  sectionTitleIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#9CA3AF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  settingsCard: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    gap: 12,
+  },
+  settingIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingContent: {
+    flex: 1,
+    gap: 2,
+  },
+  settingLabel: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#1F2937',
+    letterSpacing: -0.1,
+  },
+  settingSublabel: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  settingsDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#F1F5F9',
+    marginLeft: 62,
+  },
+
+  // Topic Tags & Advanced Settings
+  settingsToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: '#FFFFFF',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#E5E7EB',
+  },
+  settingsToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  settingsToggleText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#374151',
   },
   tagsSectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
-  },
-  tagsSectionTitle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
   },
   tagsSectionLabel: {
     fontSize: 14,
@@ -1080,9 +1258,9 @@ const styles = StyleSheet.create({
 
   // Difficulty
   difficultySection: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F9FAFB',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#E5E7EB',
   },
@@ -1117,9 +1295,9 @@ const styles = StyleSheet.create({
 
   // Deadline
   deadlineSection: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F9FAFB',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#E5E7EB',
   },
@@ -1197,38 +1375,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  videoDurationBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  advancedFormsContainer: {
+    paddingHorizontal: 0,
+    paddingBottom: 20,
+    backgroundColor: '#F8FAFC',
+    gap: 12,
+  },
   bottomActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#E5E7EB',
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     backgroundColor: '#FFFFFF',
   },
   mediaActions: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  mediaButton: {
     alignItems: 'center',
-    gap: 4,
+    gap: 20,
   },
-  mediaButtonIcon: {
-    width: 44,
-    height: 44,
+  mediaIconButton: {
+    padding: 4,
+  },
+  mediaIndicatorText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6366F1',
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  mediaButtonText: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  mediaCount: {
-    textAlign: 'center',
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginTop: 8,
+  mediaIndicatorEmpty: {
+    width: 20,
   },
   // Poll styles
   pollSection: {
@@ -1274,17 +1460,11 @@ const styles = StyleSheet.create({
   },
   // Visibility styles
   visibilitySection: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-  },
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 12,
+    backgroundColor: '#F9FAFB',
   },
   visibilityGrid: {
     flexDirection: 'row',
@@ -1314,4 +1494,126 @@ const styles = StyleSheet.create({
     bottom: 4,
     left: 44,
   },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    minHeight: '40%',
+    maxHeight: '90%',
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalHandle: {
+    width: 40,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#E5E7EB',
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalBody: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  modalScroll: {
+    padding: 16,
+  },
+  modalOptionRecord: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    marginBottom: 8,
+  },
+  modalOptionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  modalOptionText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#374151',
+  },
+
+  /* ─── Modal Interiors ─── */
+  modalOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 8,
+    backgroundColor: '#F9FAFB',
+    gap: 12,
+  },
+  modalOptionRowSelected: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#C7D2FE',
+    borderWidth: 1,
+  },
+  modalOptionIconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalOptionDescText: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+
+  // Specific tag modal styles
+  tagsCountLimitText: {
+    fontSize: 13,
+    color: '#EF4444',
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  suggestedTagsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 12,
+  },
+  suggestedTagsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+
 });

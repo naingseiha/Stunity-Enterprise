@@ -289,13 +289,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     marginBottom: 16,
-    shadowColor: '#000',
-    
-    shadowOpacity: 0.04,
-    
-    
-    
-    borderColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     overflow: 'hidden',
   },
   cardHeader: {

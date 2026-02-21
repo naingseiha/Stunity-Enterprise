@@ -238,13 +238,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 16,
-    shadowColor: '#000',
-    
-    shadowOpacity: 0.05,
-    
-    
-    
-    borderColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   cardHeader: {
     flexDirection: 'row',
