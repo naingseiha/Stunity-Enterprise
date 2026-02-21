@@ -108,7 +108,7 @@ export default function MediaGallery({
     );
   }
 
-  // Two images
+  // Two images - side by side with better proportions
   if (count === 2) {
     return (
       <div className={`grid grid-cols-2 gap-1 rounded-xl overflow-hidden ${className}`}>
@@ -116,7 +116,7 @@ export default function MediaGallery({
           <div 
             key={index}
             className={`relative cursor-pointer group ${
-              effectiveMode === 'FULL_HEIGHT' ? 'h-[300px] sm:h-[400px]' : 'h-[200px] sm:h-[250px]'
+              effectiveMode === 'FULL_HEIGHT' ? 'h-[350px] sm:h-[450px]' : 'h-[250px] sm:h-[320px]'
             }`}
             onClick={() => handleClick(index)}
           >

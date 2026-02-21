@@ -19,7 +19,7 @@ import UpcomingEventsWidget from '@/components/feed/UpcomingEventsWidget';
 import TopContributorsWidget from '@/components/feed/TopContributorsWidget';
 import LearningStreakWidget from '@/components/feed/LearningStreakWidget';
 import QuickResourcesWidget from '@/components/feed/QuickResourcesWidget';
-import Stories from '@/components/feed/Stories';
+import PerformanceCard from '@/components/feed/PerformanceCard';
 import { useEventStream, SSEEvent } from '@/hooks/useEventStream';
 import {
   Users,
@@ -103,6 +103,13 @@ interface Post {
     score: number;
     passed: boolean;
   };
+  quiz?: {
+    id: string;
+    questions?: { id: string; text: string }[];
+    timeLimit?: number;
+    passingScore?: number;
+    userAttempt?: { score: number; passed: boolean } | null;
+  };
 }
 
 interface Comment {
@@ -126,6 +133,7 @@ const POST_TYPE_FILTERS = [
   { id: 'ACHIEVEMENT', label: 'Achievements', icon: Award },
   { id: 'TUTORIAL', label: 'Tutorials', icon: BookOpen },
   { id: 'RESOURCE', label: 'Resources', icon: FolderOpen },
+  { id: 'QUIZ', label: 'Quizzes', icon: Trophy },
   { id: 'PROJECT', label: 'Projects', icon: Rocket },
   { id: 'RESEARCH', label: 'Research', icon: Microscope },
   { id: 'COLLABORATION', label: 'Collaboration', icon: UsersRound },
@@ -899,8 +907,8 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
               })}
             </div>
 
-            {/* Stories Section */}
-            <Stories currentUser={user} />
+            {/* Performance Card - XP, Level, Streak */}
+            <PerformanceCard user={user} locale={locale} />
 
             {/* Create Post Box - LinkedIn Style */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-3">
@@ -1097,8 +1105,12 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                             votes: opt._count?.votes || 0,
                           })),
                           userVotedOptionId: post.userVotedOptionId,
-                          quizData: post.quizData,
-                          userAttempt: post.userAttempt,
+                          quizData: post.quizData || (post.quiz ? {
+                            questions: post.quiz.questions,
+                            timeLimit: post.quiz.timeLimit,
+                            passingScore: post.quiz.passingScore,
+                          } : undefined),
+                          userAttempt: post.userAttempt || post.quiz?.userAttempt || undefined,
                           comments: comments[post.id]?.map(c => ({
                             id: c.id,
                             content: c.content,
@@ -1231,8 +1243,12 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                             votes: opt._count?.votes || 0,
                           })),
                           userVotedOptionId: post.userVotedOptionId,
-                          quizData: post.quizData,
-                          userAttempt: post.userAttempt,
+                          quizData: post.quizData || (post.quiz ? {
+                            questions: post.quiz.questions,
+                            timeLimit: post.quiz.timeLimit,
+                            passingScore: post.quiz.passingScore,
+                          } : undefined),
+                          userAttempt: post.userAttempt || post.quiz?.userAttempt || undefined,
                           comments: comments[post.id]?.map(c => ({
                             id: c.id,
                             content: c.content,
@@ -1350,8 +1366,12 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                             votes: opt._count?.votes || 0,
                           })),
                           userVotedOptionId: post.userVotedOptionId,
-                          quizData: post.quizData,
-                          userAttempt: post.userAttempt,
+                          quizData: post.quizData || (post.quiz ? {
+                            questions: post.quiz.questions,
+                            timeLimit: post.quiz.timeLimit,
+                            passingScore: post.quiz.passingScore,
+                          } : undefined),
+                          userAttempt: post.userAttempt || post.quiz?.userAttempt || undefined,
                           comments: comments[post.id]?.map(c => ({
                             id: c.id,
                             content: c.content,
