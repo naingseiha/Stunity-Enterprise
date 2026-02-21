@@ -677,15 +677,15 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
   };
 
   // Show zoom loader while loading, then fade in content
-  if (loading || !user || !school || !showContent) {
+  if (loading || !user || !showContent) {
     return (
       <>
         <FeedZoomLoader 
-          isLoading={loading || !user || !school} 
+          isLoading={loading || !user} 
           onAnimationComplete={() => setShowContent(true)}
           minimumDuration={600}
         />
-        {!loading && user && school && (
+        {!loading && user && (
           <div className="opacity-0 pointer-events-none absolute">
             <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
           </div>
