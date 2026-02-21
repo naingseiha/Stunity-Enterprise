@@ -160,3 +160,130 @@ export const TokenManager = {
     return { user: null, school: null };
   },
 };
+
+// ─── Password Reset ──────────────────────────────────────────────────
+
+export async function forgotPassword(email: string): Promise<{ success: boolean; message?: string }> {
+  const response = await fetch(`${AUTH_SERVICE_URL}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  return response.json();
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+  const response = await fetch(`${AUTH_SERVICE_URL}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, newPassword }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: 'Reset failed' }));
+    throw new Error(err.error || 'Reset failed');
+  }
+  return response.json();
+}
+
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+  token: string
+): Promise<{ success: boolean }> {
+  const response = await fetch(`${AUTH_SERVICE_URL}/auth/change-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: 'Change failed' }));
+    throw new Error(err.error || 'Failed to change password');
+  }
+  return response.json();
+}
+
+// ─── Two-Factor Authentication ───────────────────────────────────────
+
+export async function verify2FA(
+  tempToken: string,
+  code: string,
+  isBackupCode = false
+): Promise<LoginResponse> {
+  const response = await fetch(`${AUTH_SERVICE_URL}/auth/2fa/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tempToken, code, isBackupCode }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: 'Verification failed' }));
+    throw new Error(err.error || 'Invalid 2FA code');
+  }
+  return response.json();
+}
+
+export async function setup2FA(token: string): Promise<{ success: boolean; qrCode: string; secret: string }> {
+  const response = await fetch(`${AUTH_SERVICE_URL}/auth/2fa/setup`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error('Failed to setup 2FA');
+  return response.json();
+}
+
+export async function verifySetup2FA(token: string, code: string): Promise<{ success: boolean; backupCodes: string[] }> {
+  const response = await fetch(`${AUTH_SERVICE_URL}/auth/2fa/verify-setup`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ code }),
+  });
+  if (!response.ok) throw new Error('Invalid code');
+  return response.json();
+}
+
+export async function disable2FA(token: string, code: string): Promise<{ success: boolean }> {
+  const response = await fetch(`${AUTH_SERVICE_URL}/auth/2fa/disable`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ code }),
+  });
+  if (!response.ok) throw new Error('Failed to disable 2FA');
+  return response.json();
+}
+
+// ─── Social Authentication ───────────────────────────────────────────
+
+export async function socialLogin(
+  provider: 'google' | 'apple' | 'facebook' | 'linkedin',
+  token: string,
+  claimCode?: string
+): Promise<LoginResponse> {
+  const response = await fetch(`${AUTH_SERVICE_URL}/auth/social/${provider}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, claimCode }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: 'Social login failed' }));
+    throw new Error(err.error || 'Social login failed');
+  }
+  const result = await response.json();
+  if (result.data) {
+    return {
+      success: result.success,
+      message: result.message,
+      user: result.data.user,
+      school: result.data.school,
+      tokens: result.data.tokens,
+    };
+  }
+  return result;
+}

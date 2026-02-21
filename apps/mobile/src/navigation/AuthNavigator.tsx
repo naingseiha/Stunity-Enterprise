@@ -14,6 +14,9 @@ import {
   WelcomeScreen,
   LoginScreen,
   RegisterScreen,
+  ForgotPasswordScreen,
+  ResetPasswordScreen,
+  TwoFactorScreen,
 } from '@/screens/auth';
 
 // Placeholder for screens not yet implemented
@@ -25,9 +28,7 @@ const PlaceholderScreen = ({ title }: { title: string }) => (
   </View>
 );
 
-const ForgotPasswordScreen = () => <PlaceholderScreen title="Forgot Password" />;
 const VerifyOTPScreen = () => <PlaceholderScreen title="Verify OTP" />;
-const ResetPasswordScreen = () => <PlaceholderScreen title="Reset Password" />;
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
@@ -47,6 +48,7 @@ const AuthNavigator: React.FC = () => {
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="VerifyOTP" component={VerifyOTPScreen} />
       <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+      <Stack.Screen name="TwoFactor" component={TwoFactorScreen as any} />
     </Stack.Navigator>
   );
 };
