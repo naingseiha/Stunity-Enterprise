@@ -740,9 +740,13 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                 
                 {/* Avatar - Centered, overlapping cover */}
                 <div className="flex justify-center -mt-8 relative z-10">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#F9A825] to-[#FFB74D] flex items-center justify-center text-white text-xl font-bold border-3 border-white shadow-lg">
-                    {getInitials(user.firstName, user.lastName)}
-                  </div>
+                  {user.profilePictureUrl ? (
+                    <img src={user.profilePictureUrl} alt="" className="w-16 h-16 rounded-full object-cover border-3 border-white shadow-lg" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#F9A825] to-[#FFB74D] flex items-center justify-center text-white text-xl font-bold border-3 border-white shadow-lg">
+                      {getInitials(user.firstName, user.lastName)}
+                    </div>
+                  )}
                 </div>
                 
                 {/* User Info - Centered */}
@@ -913,9 +917,13 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
             {/* Create Post Box - LinkedIn Style */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#F9A825] to-[#FFB74D] flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
-                  {getInitials(user.firstName, user.lastName)}
-                </div>
+                {user.profilePictureUrl ? (
+                  <img src={user.profilePictureUrl} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#F9A825] to-[#FFB74D] flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+                    {getInitials(user.firstName, user.lastName)}
+                  </div>
+                )}
                 <button 
                   onClick={() => setShowCreateModal(true)}
                   className="flex-1 text-left px-4 py-2.5 bg-white rounded-full text-gray-500 hover:bg-gray-100 transition-colors text-sm border border-gray-300"

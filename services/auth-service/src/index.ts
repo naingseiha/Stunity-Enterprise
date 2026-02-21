@@ -309,6 +309,7 @@ app.post(
             firstName: user.firstName,
             lastName: user.lastName,
             role: user.role,
+            profilePictureUrl: user.profilePictureUrl,
             schoolId: user.schoolId,
           },
           school: user.school,
