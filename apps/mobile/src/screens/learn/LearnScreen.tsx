@@ -740,11 +740,6 @@ const styles = StyleSheet.create({
   },
   tabCircleIconActive: {
     backgroundColor: '#0EA5E9',
-    shadowColor: '#0284C7',
-    
-    shadowOpacity: 0.3,
-    
-    
   },
   tabCircleLabel: {
     fontSize: 12,

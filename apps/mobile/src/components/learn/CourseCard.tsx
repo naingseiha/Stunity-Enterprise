@@ -242,11 +242,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 14,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   compactContainer: {
     width: CARD_WIDTH,
@@ -386,11 +383,6 @@ const styles = StyleSheet.create({
   verifiedBadge: {
     borderRadius: 8,
     overflow: 'hidden',
-    
-    
-    shadowOpacity: 0.3,
-    
-    
   },
   verifiedGradient: {
     width: 16,
@@ -461,11 +453,6 @@ const styles = StyleSheet.create({
   enrollMiniBtn: {
     borderRadius: 12,
     overflow: 'hidden',
-    
-    
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    
   },
   enrollMiniBtnGradient: {
     flexDirection: 'row',
