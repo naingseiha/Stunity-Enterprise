@@ -6,9 +6,9 @@
     "orientation": "portrait",
     "scheme": "stunity",
     "userInterfaceStyle": "automatic",
-    "icon": "./assets/Stunity.png",
+    "icon": "./assets/icon.png",
     "splash": {
-      "image": "./assets/Stunity.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#F59E0B"
     },
@@ -31,11 +31,11 @@
       "googleServicesFile": "./google-services.json",
       "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/Stunity.png",
-        "backgroundColor": "#F59E0B"
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#09CFF7"
       },
       "splash": {
-        "image": "./assets/Stunity.png",
+        "image": "./assets/icon.png",
         "resizeMode": "contain",
         "backgroundColor": "#F59E0B"
       },
@@ -58,7 +58,7 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#F59E0B",
-          "image": "./assets/Stunity.png",
+          "image": "./assets/icon.png",
           "imageWidth": 200
         }
       ],
@@ -78,7 +78,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/Stunity.png",
+          "icon": "./assets/icon.png",
           "color": "#F59E0B"
         }
       ]

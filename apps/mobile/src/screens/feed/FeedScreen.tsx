@@ -32,7 +32,6 @@ import Animated, {
   FadeInDown,
   FadeOutUp,
   useAnimatedStyle,
-  useAnimatedProps,
   useSharedValue,
   withTiming,
   withDelay,
@@ -81,16 +80,15 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
   const xpProgress = stats.totalPoints % xpToNext;
   const pct = Math.min((xpProgress / xpToNext) * 100, 100);
   const nextLevel = stats.level + 1;
-  const size = 112;
+  const size = 128;
   const cx = size / 2;
   const cy = size / 2;
 
   const rings = [
-    { r: 48, sw: 8,  pct: Math.min(xpProgress / xpToNext, 1),                                          id: 'xp',     c1: '#38BDF8', c2: '#0284C7', cometDur: 2800, cometDelay: 0   },
-    { r: 37, sw: 7,  pct: Math.min(stats.completedLessons / Math.max(stats.completedLessons + 5, 10), 1), id: 'lesson', c1: '#34D399', c2: '#059669', cometDur: 3400, cometDelay: 400 },
-    { r: 26, sw: 6,  pct: Math.min(stats.currentStreak / 7, 1),                                         id: 'streak', c1: '#FB923C', c2: '#EF4444', cometDur: 4200, cometDelay: 800 },
+    { r: 55, sw: 10, pct: Math.min(xpProgress / xpToNext, 1),                                           id: 'xp',     c1: '#38BDF8', c2: '#0284C7' },
+    { r: 42, sw: 8,  pct: Math.min(stats.completedLessons / Math.max(stats.completedLessons + 5, 10), 1), id: 'lesson', c1: '#34D399', c2: '#059669' },
+    { r: 31, sw: 7,  pct: Math.min(stats.currentStreak / 7, 1),                                          id: 'streak', c1: '#FBBF24', c2: '#F97316' },
   ];
-
 
   // XP bar fill
   const barWidth = useSharedValue(0);
@@ -104,7 +102,7 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
       <View style={perfCardStyles.inner}>
         <View style={perfCardStyles.topRow}>
 
-          {/* ── Activity Rings ── */}
+          {/* ── Activity Rings (matches Profile screen style) ── */}
           <View style={[perfCardStyles.ringWrap, { width: size, height: size }]}>
             <View style={perfCardStyles.ringGlow} />
             <Svg width={size} height={size}>
@@ -120,7 +118,8 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
                 const circ = 2 * Math.PI * ring.r;
                 return (
                   <React.Fragment key={ring.id}>
-                    <SvgCircle cx={cx} cy={cy} r={ring.r} stroke="rgba(14,165,233,0.1)" strokeWidth={ring.sw} fill="none" />
+                    <SvgCircle cx={cx} cy={cy} r={ring.r}
+                      stroke={`${ring.c1}18`} strokeWidth={ring.sw} fill="none" />
                     <SvgCircle cx={cx} cy={cy} r={ring.r}
                       stroke={`url(#g_${ring.id})`}
                       strokeWidth={ring.sw} fill="none"
@@ -133,28 +132,29 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
                 );
               })}
             </Svg>
-            <LinearGradient colors={['#38BDF8', '#0284C7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={perfCardStyles.ringInner}>
+            <View style={perfCardStyles.ringInner}>
               <Text style={perfCardStyles.ringValue}>{stats.level}</Text>
-            </LinearGradient>
+              <Text style={perfCardStyles.ringLabel}>LEVEL</Text>
+            </View>
           </View>
 
           {/* ── Stats ── */}
           <View style={perfCardStyles.stats}>
             <View style={perfCardStyles.statRow}>
               <View style={[perfCardStyles.statIcon, { backgroundColor: '#DBEAFE' }]}>
-                <Ionicons name="diamond" size={12} color="#2563EB" />
+                <Ionicons name="diamond" size={14} color="#2563EB" />
               </View>
               <Text style={perfCardStyles.statVal}>{stats.totalPoints.toLocaleString()} <Text style={perfCardStyles.statLbl}>XP</Text></Text>
             </View>
             <View style={perfCardStyles.statRow}>
               <View style={[perfCardStyles.statIcon, { backgroundColor: '#D1FAE5' }]}>
-                <Ionicons name="checkmark-circle" size={12} color="#059669" />
+                <Ionicons name="checkmark-circle" size={14} color="#059669" />
               </View>
               <Text style={perfCardStyles.statVal}>{stats.completedLessons} <Text style={perfCardStyles.statLbl}>Lessons</Text></Text>
             </View>
             <View style={perfCardStyles.statRow}>
               <View style={[perfCardStyles.statIcon, { backgroundColor: '#FFEDD5' }]}>
-                <Ionicons name="flame" size={12} color="#EA580C" />
+                <Ionicons name="flame" size={14} color="#EA580C" />
               </View>
               <Text style={perfCardStyles.statVal}>{stats.currentStreak} <Text style={perfCardStyles.statLbl}>Day Streak</Text></Text>
             </View>
@@ -169,9 +169,6 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
               gradientBorder="blue"
               showBorder
             />
-            <View style={perfCardStyles.avatarBadge}>
-              <Text style={perfCardStyles.avatarBadgeText}>{stats.level}</Text>
-            </View>
           </View>
 
         </View>
@@ -208,20 +205,17 @@ const perfCardStyles = StyleSheet.create({
   },
   inner:       { padding: 14, borderRadius: 16, overflow: 'hidden' },
   topRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
-  ringWrap:    { alignItems: 'center', justifyContent: 'center' },
-  ringGlow:    { position: 'absolute', width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(59,130,246,0.06)' },
-  ringInner:   { position: 'absolute', alignItems: 'center', justifyContent: 'center', width: 42, height: 42, borderRadius: 21 },
-  ringValue:   { fontSize: 24, fontWeight: '900', color: '#FFFFFF', letterSpacing: -1 },
-  ringLabel:   { fontSize: 10, fontWeight: '700', color: '#0284C7', letterSpacing: 1.5, marginTop: 5 },
+  ringWrap:    { alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  ringGlow:    { position: 'absolute', width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(14,165,233,0.06)' },
+  ringInner:   { position: 'absolute', alignItems: 'center' },
+  ringValue:   { fontSize: 30, fontWeight: '900', color: '#1F2937', letterSpacing: -1 },
+  ringLabel:   { fontSize: 8, fontWeight: '700', color: '#9CA3AF', letterSpacing: 1.2 },
   stats:       { flex: 1, gap: 8 },
   statRow:     { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  statIcon:    { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  statVal:     { fontSize: 13, fontWeight: '700', color: '#1E293B' },
+  statIcon:    { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  statVal:     { fontSize: 14, fontWeight: '700', color: '#1E293B' },
   statLbl:     { fontSize: 11, fontWeight: '400', color: '#64748B' },
-  // Avatar
   avatarWrap:  { alignItems: 'center', position: 'relative' },
-  avatarBadge: { position: 'absolute', bottom: -4, right: -4, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#FFFFFF', backgroundColor: '#0EA5E9' },
-  avatarBadgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
   // XP bar
   barSection:  { gap: 5 },
   barLabels:   { flexDirection: 'row', justifyContent: 'space-between' },
@@ -237,16 +231,8 @@ export default function FeedScreen() {
   const { user } = useAuthStore();
   const { openSidebar } = useNavigationContext();
 
-  // Animated tab indicator
-  const tabIndicatorX = useSharedValue(0);
-  const tabIndicatorStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: tabIndicatorX.value }],
-  }));
-
   // M1 FIX: Granular Zustand selectors — each selector only re-renders when its slice changes.
   // Previously, one big destructure caused the whole screen to re-render on any store change.
-  const feedMode = useFeedStore(s => s.feedMode);
-  const toggleFeedMode = useFeedStore(s => s.toggleFeedMode);
   const posts = useFeedStore(s => s.posts);
   const isLoadingPosts = useFeedStore(s => s.isLoadingPosts);
   const hasMorePosts = useFeedStore(s => s.hasMorePosts);
@@ -289,24 +275,6 @@ export default function FeedScreen() {
 
   // Stable key extractor for FlatList
   const keyExtractor = useCallback((item: Post) => item.id, []);
-
-  // Tab mode uses direct toggle instead of horizontal ScrollView pager
-  const TAB_WIDTH = (SCREEN_WIDTH - 32) / 2; // Each tab half of container minus padding
-  const handleTabPress = useCallback((mode: 'FOR_YOU' | 'FOLLOWING') => {
-    if (feedMode !== mode) {
-      toggleFeedMode(mode);
-      fetchPosts(true);
-    }
-    tabIndicatorX.value = withTiming(
-      mode === 'FOR_YOU' ? 0 : TAB_WIDTH,
-      { duration: 250, easing: Easing.bezier(0.4, 0, 0.2, 1) }
-    );
-  }, [feedMode, toggleFeedMode, fetchPosts, tabIndicatorX]);
-
-  // Set initial indicator position based on current feedMode
-  useEffect(() => {
-    tabIndicatorX.value = feedMode === 'FOR_YOU' ? 0 : TAB_WIDTH;
-  }, []);
 
   useEffect(() => {
     fetchPosts();
@@ -711,7 +679,7 @@ export default function FeedScreen() {
           </TouchableOpacity>
 
           {/* Stunity Logo - Center */}
-          <StunityLogo width={110} height={30} />
+          <StunityLogo width={130} height={36} />
 
           {/* Actions - Right */}
           <View style={styles.headerActions}>
