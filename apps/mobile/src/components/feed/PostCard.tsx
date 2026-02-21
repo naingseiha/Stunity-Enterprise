@@ -922,11 +922,11 @@ export const PostCard = React.memo(PostCardInner, arePostCardPropsEqual);
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
+    marginHorizontal: 12,
     marginBottom: 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E2E8F0',
     position: 'relative',
     paddingTop: 14,
     shadowColor: '#94A3B8',
