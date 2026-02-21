@@ -98,8 +98,8 @@ const createApiClient = (baseURL: string): AxiosInstance => {
         }
       }
 
-      // Handle timeout errors with retry
-      if (error.code === 'ECONNABORTED' && !originalRequest._retry) {
+      // Handle timeout errors with retry (skip if X-No-Retry header is set)
+      if (error.code === 'ECONNABORTED' && !originalRequest._retry && !originalRequest.headers?.['X-No-Retry']) {
         const retryCount = (originalRequest._retryCount || 0) + 1;
 
         if (retryCount <= 3) { // Retry up to 3 times for timeouts

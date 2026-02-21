@@ -92,9 +92,12 @@ export const useAuthStore = create<AuthState>()(
             return;
           }
 
-          // Verify token with backend
+          // Verify token with backend (short timeout to avoid blocking app startup)
           try {
-            const response = await authApi.get('/auth/verify');
+            const response = await authApi.get('/auth/verify', {
+              timeout: 5000,
+              headers: { 'X-No-Retry': 'true' },
+            });
 
             if (response.data.success && response.data.data?.user) {
               const user = mapApiUserToUser(response.data.data.user);
