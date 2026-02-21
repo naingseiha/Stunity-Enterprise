@@ -13,7 +13,6 @@ import {
     View,
     Text,
     StyleSheet,
-    ScrollView,
     TouchableOpacity,
     Switch,
     Alert,
@@ -22,6 +21,7 @@ import {
     Platform,
     Dimensions,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -42,6 +42,7 @@ import Animated, {
 
 import { Avatar } from '@/components/common';
 import { useAuthStore } from '@/stores';
+import StunityLogo from '../../../assets/Stunity.svg';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -93,61 +94,55 @@ function SettingRow({ item, index, sectionDelay }: { item: SettingItem; index: n
         item.onPress?.();
     };
 
-    const enterDelay = sectionDelay + index * 40;
-
     return (
-        <Animated.View
-            entering={FadeInDown.delay(enterDelay).duration(350).springify().damping(18).stiffness(200)}
+        <AnimatedTouchable
+            style={[styles.settingRow, animStyle]}
+            activeOpacity={item.type === 'toggle' ? 1 : 0.7}
+            onPress={handlePress}
+            onPressIn={item.type !== 'toggle' && item.type !== 'info' ? handlePressIn : undefined}
+            onPressOut={item.type !== 'toggle' && item.type !== 'info' ? handlePressOut : undefined}
+            disabled={item.type === 'info'}
         >
-            <AnimatedTouchable
-                style={[styles.settingRow, animStyle]}
-                activeOpacity={item.type === 'toggle' ? 1 : 0.7}
-                onPress={handlePress}
-                onPressIn={item.type !== 'toggle' && item.type !== 'info' ? handlePressIn : undefined}
-                onPressOut={item.type !== 'toggle' && item.type !== 'info' ? handlePressOut : undefined}
-                disabled={item.type === 'info'}
-            >
-                {/* Icon */}
-                <View style={[styles.settingIcon, { backgroundColor: item.iconBg }]}>
-                    <Ionicons name={item.icon} size={18} color={item.iconColor} />
-                </View>
+            {/* Icon */}
+            <View style={[styles.settingIcon, { backgroundColor: item.iconBg }]}>
+                <Ionicons name={item.icon} size={18} color={item.iconColor} />
+            </View>
 
-                {/* Label */}
-                <View style={styles.settingContent}>
-                    <Text style={[styles.settingLabel, item.danger && styles.settingLabelDanger]}>
-                        {item.label}
-                    </Text>
-                    {item.sublabel && (
-                        <Text style={styles.settingSublabel} numberOfLines={1}>{item.sublabel}</Text>
-                    )}
-                </View>
+            {/* Label */}
+            <View style={styles.settingContent}>
+                <Text style={[styles.settingLabel, item.danger && styles.settingLabelDanger]}>
+                    {item.label}
+                </Text>
+                {item.sublabel && (
+                    <Text style={styles.settingSublabel} numberOfLines={1}>{item.sublabel}</Text>
+                )}
+            </View>
 
-                {/* Right Side */}
-                {item.type === 'toggle' && (
-                    <Switch
-                        value={item.value}
-                        onValueChange={item.onToggle}
-                        trackColor={{ false: '#E5E7EB', true: '#7DD3FC' }}
-                        thumbColor={item.value ? '#0EA5E9' : '#FAFAFA'}
-                        ios_backgroundColor="#E5E7EB"
-                        style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
-                    />
-                )}
-                {item.type === 'navigate' && (
-                    <View style={styles.chevronCircle}>
-                        <Ionicons name="chevron-forward" size={14} color="#C7D2FE" />
-                    </View>
-                )}
-                {item.type === 'action' && !item.danger && (
-                    <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
-                )}
-                {item.badge && (
-                    <View style={styles.badge}>
-                        <Text style={styles.badgeText}>{item.badge}</Text>
-                    </View>
-                )}
-            </AnimatedTouchable>
-        </Animated.View>
+            {/* Right Side */}
+            {item.type === 'toggle' && (
+                <Switch
+                    value={item.value}
+                    onValueChange={item.onToggle}
+                    trackColor={{ false: '#E5E7EB', true: '#7DD3FC' }}
+                    thumbColor={item.value ? '#0EA5E9' : '#FAFAFA'}
+                    ios_backgroundColor="#E5E7EB"
+                    style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
+                />
+            )}
+            {item.type === 'navigate' && (
+                <View style={styles.chevronCircle}>
+                    <Ionicons name="chevron-forward" size={14} color="#C7D2FE" />
+                </View>
+            )}
+            {item.type === 'action' && !item.danger && (
+                <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+            )}
+            {item.badge && (
+                <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{item.badge}</Text>
+                </View>
+            )}
+        </AnimatedTouchable>
     );
 }
 
@@ -431,7 +426,164 @@ export default function SettingsScreen() {
 
     // ── Render ─────────────────────────────────────────────────────
 
-    let globalItemIndex = 0;
+    // ── Flatten Data for FlashList ─────────────────────────────────
+
+    const listData = useMemo(() => {
+        const data: any[] = [];
+        sections.forEach((section) => {
+            // 1) Push the section header
+            data.push({
+                type: 'header',
+                id: `header-${section.title}`,
+                title: section.title,
+                icon: section.icon,
+                iconColor: section.iconColor,
+            });
+
+            // 2) Push the items
+            section.items.forEach((item, iIdx) => {
+                data.push({
+                    type: 'item',
+                    id: `item-${section.title}-${item.label}`,
+                    item,
+                    index: iIdx,
+                    isFirst: iIdx === 0,
+                    isLast: iIdx === section.items.length - 1,
+                    isDanger: section.title === 'Danger Zone',
+                });
+            });
+        });
+        return data;
+    }, [sections]);
+
+    const renderItem = useCallback(({ item }: any) => {
+        if (item.type === 'header') {
+            return (
+                <View style={styles.sectionTitleRow}>
+                    <View style={[styles.sectionTitleIcon, { backgroundColor: item.iconColor + '15' }]}>
+                        <Ionicons name={item.icon} size={14} color={item.iconColor} />
+                    </View>
+                    <Text style={styles.sectionTitle}>{item.title}</Text>
+                </View>
+            );
+        }
+
+        if (item.type === 'item') {
+            return (
+                <View style={[
+                    styles.sectionCardFlex,
+                    item.isDanger && styles.dangerCard,
+                    item.isFirst && styles.sectionCardTop,
+                    item.isLast && styles.sectionCardBottom,
+                ]}>
+                    {!item.isFirst && <View style={styles.divider} />}
+                    <SettingRow item={item.item} index={item.index} sectionDelay={0} />
+                </View>
+            );
+        }
+
+        return null;
+    }, []);
+
+    const ListHeader = useCallback(() => (
+        <>
+            {/* ─── Profile Card ─────────────────────────────────── */}
+            <Animated.View entering={FadeInDown.delay(50).duration(500).springify().damping(16)}>
+                <View style={styles.profileCard}>
+                    {/* Top: Avatar + Info */}
+                    <View style={styles.profileTop}>
+                        <Avatar
+                            uri={user?.profilePictureUrl}
+                            name={fullName}
+                            size="lg"
+                            showBorder
+                            gradientBorder="blue"
+                        />
+                        <View style={styles.profileInfo}>
+                            <View style={styles.nameRow}>
+                                <Text style={styles.profileName}>{fullName}</Text>
+                                <View style={styles.verifiedDot}>
+                                    <Ionicons name="checkmark" size={10} color="#fff" />
+                                </View>
+                            </View>
+                            <Text style={styles.profileEmail} numberOfLines={1}>{user?.email}</Text>
+                            <View style={styles.metaRow}>
+                                <View style={styles.rolePill}>
+                                    <Text style={styles.roleText}>{user?.role?.replace('_', ' ') || 'Student'}</Text>
+                                </View>
+                                <Text style={styles.memberSince}>Member since {memberSince}</Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Mini Stats */}
+                    <View style={styles.miniStats}>
+                        <View style={styles.miniStatItem}>
+                            <Text style={styles.miniStatValue}>—</Text>
+                            <Text style={styles.miniStatLabel}>Posts</Text>
+                        </View>
+                        <View style={styles.miniStatDivider} />
+                        <View style={styles.miniStatItem}>
+                            <Text style={styles.miniStatValue}>—</Text>
+                            <Text style={styles.miniStatLabel}>Courses</Text>
+                        </View>
+                        <View style={styles.miniStatDivider} />
+                        <View style={styles.miniStatItem}>
+                            <Text style={styles.miniStatValue}>—</Text>
+                            <Text style={styles.miniStatLabel}>Level</Text>
+                        </View>
+                    </View>
+
+                    {/* Actions */}
+                    <View style={styles.profileActions}>
+                        <TouchableOpacity
+                            style={styles.profileActionBtn}
+                            onPress={handleViewProfile}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name="person-outline" size={16} color="#0EA5E9" />
+                            <Text style={styles.profileActionText}>View Profile</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.profileActionBtn, styles.profileActionBtnPrimary]}
+                            onPress={() => navigation.navigate('EditProfile')}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name="create-outline" size={16} color="#fff" />
+                            <Text style={[styles.profileActionText, { color: '#fff' }]}>Edit Profile</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Animated.View>
+
+            {/* ─── Quick Stats Row ──────────────────────────────── */}
+            <Animated.View
+                entering={FadeInDown.delay(120).duration(400).springify().damping(16)}
+                style={styles.quickStatsRow}
+            >
+                <QuickStat icon="bookmark-outline" label="Bookmarks" color="#6366F1" onPress={() => navigation.navigate('Bookmarks')} />
+                <QuickStat icon="document-text-outline" label="My Posts" color="#EC4899" onPress={() => navigation.navigate('MyPosts')} />
+                <QuickStat icon="people-outline" label="Connections" color="#10B981" onPress={() => navigation.navigate('Connections', { type: 'followers' })} />
+                <QuickStat icon="trophy-outline" label="Achievements" color="#F59E0B" onPress={() => Alert.alert('Coming Soon', 'Achievements section will be available soon.')} />
+            </Animated.View>
+        </>
+    ), [user, fullName, memberSince, navigation, handleViewProfile]);
+
+    const ListFooter = useCallback(() => (
+        <Animated.View
+            entering={FadeInDown.delay(800).duration(500).springify()}
+            style={styles.footer}
+        >
+            <View style={styles.footerLogoRow}>
+                <StunityLogo width={140} height={40} />
+            </View>
+            <Text style={styles.footerText}>Stunity Enterprise</Text>
+            <Text style={styles.footerVersion}>Version 1.0.0 · Build 2026.02</Text>
+            <Text style={styles.footerSubtext}>Made with ❤️ for learners everywhere</Text>
+        </Animated.View>
+    ), []);
+
+    // ── FlashList Render ──────────────────────────────────────────
 
     return (
         <View style={styles.container}>
@@ -448,145 +600,18 @@ export default function SettingsScreen() {
                 </SafeAreaView>
             </Animated.View>
 
-            <ScrollView
+            <FlashList
+                data={listData}
+                renderItem={renderItem}
+                keyExtractor={(item: any) => item.id}
+                getItemType={(item: any) => item.type}
+                // @ts-ignore Type constraint bypass
+                estimatedItemSize={60}
                 contentContainerStyle={styles.scrollContent}
+                ListHeaderComponent={ListHeader}
+                ListFooterComponent={ListFooter}
                 showsVerticalScrollIndicator={false}
-                bounces={true}
-            >
-                {/* ─── Profile Card ─────────────────────────────────── */}
-                <Animated.View entering={FadeInDown.delay(50).duration(500).springify().damping(16)}>
-                    <View style={styles.profileCard}>
-                        {/* Top: Avatar + Info */}
-                        <View style={styles.profileTop}>
-                            <Avatar
-                                uri={user?.profilePictureUrl}
-                                name={fullName}
-                                size="lg"
-                                showBorder
-                                gradientBorder="blue"
-                            />
-                            <View style={styles.profileInfo}>
-                                <View style={styles.nameRow}>
-                                    <Text style={styles.profileName}>{fullName}</Text>
-                                    <View style={styles.verifiedDot}>
-                                        <Ionicons name="checkmark" size={10} color="#fff" />
-                                    </View>
-                                </View>
-                                <Text style={styles.profileEmail} numberOfLines={1}>{user?.email}</Text>
-                                <View style={styles.metaRow}>
-                                    <View style={styles.rolePill}>
-                                        <Text style={styles.roleText}>{user?.role?.replace('_', ' ') || 'Student'}</Text>
-                                    </View>
-                                    <Text style={styles.memberSince}>Member since {memberSince}</Text>
-                                </View>
-                            </View>
-                        </View>
-
-                        {/* Mini Stats */}
-                        <View style={styles.miniStats}>
-                            <View style={styles.miniStatItem}>
-                                <Text style={styles.miniStatValue}>—</Text>
-                                <Text style={styles.miniStatLabel}>Posts</Text>
-                            </View>
-                            <View style={styles.miniStatDivider} />
-                            <View style={styles.miniStatItem}>
-                                <Text style={styles.miniStatValue}>—</Text>
-                                <Text style={styles.miniStatLabel}>Courses</Text>
-                            </View>
-                            <View style={styles.miniStatDivider} />
-                            <View style={styles.miniStatItem}>
-                                <Text style={styles.miniStatValue}>—</Text>
-                                <Text style={styles.miniStatLabel}>Level</Text>
-                            </View>
-                        </View>
-
-                        {/* Actions */}
-                        <View style={styles.profileActions}>
-                            <TouchableOpacity
-                                style={styles.profileActionBtn}
-                                onPress={handleViewProfile}
-                                activeOpacity={0.7}
-                            >
-                                <Ionicons name="person-outline" size={16} color="#0EA5E9" />
-                                <Text style={styles.profileActionText}>View Profile</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.profileActionBtn, styles.profileActionBtnPrimary]}
-                                onPress={() => navigation.navigate('EditProfile')}
-                                activeOpacity={0.7}
-                            >
-                                <Ionicons name="create-outline" size={16} color="#fff" />
-                                <Text style={[styles.profileActionText, { color: '#fff' }]}>Edit Profile</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </Animated.View>
-
-                {/* ─── Quick Stats Row ──────────────────────────────── */}
-                <Animated.View
-                    entering={FadeInDown.delay(120).duration(400).springify().damping(16)}
-                    style={styles.quickStatsRow}
-                >
-                    <QuickStat icon="bookmark-outline" label="Bookmarks" color="#6366F1" onPress={() => navigation.navigate('Bookmarks')} />
-                    <QuickStat icon="document-text-outline" label="My Posts" color="#EC4899" onPress={() => navigation.navigate('MyPosts')} />
-                    <QuickStat icon="people-outline" label="Connections" color="#10B981" onPress={() => navigation.navigate('Connections', { type: 'followers' })} />
-                    <QuickStat icon="trophy-outline" label="Achievements" color="#F59E0B" onPress={() => Alert.alert('Coming Soon', 'Achievements section will be available soon.')} />
-                </Animated.View>
-
-                {/* ─── Settings Sections ─────────────────────────────── */}
-                {sections.map((section, sectionIdx) => {
-                    const sectionDelay = 200 + sectionIdx * 80;
-                    const sectionItems = section.items;
-
-                    return (
-                        <View key={section.title}>
-                            {/* Section Title */}
-                            <Animated.View
-                                entering={FadeInDown.delay(sectionDelay - 30).duration(350).springify().damping(18)}
-                                style={styles.sectionTitleRow}
-                            >
-                                <View style={[styles.sectionTitleIcon, { backgroundColor: section.iconColor + '15' }]}>
-                                    <Ionicons name={section.icon} size={14} color={section.iconColor} />
-                                </View>
-                                <Text style={styles.sectionTitle}>{section.title}</Text>
-                            </Animated.View>
-
-                            {/* Section Card */}
-                            <View style={[styles.sectionCard, section.title === 'Danger Zone' && styles.dangerCard]}>
-                                {sectionItems.map((item, itemIdx) => {
-                                    const currentGlobalIdx = globalItemIndex++;
-                                    return (
-                                        <React.Fragment key={item.label}>
-                                            {itemIdx > 0 && <View style={styles.divider} />}
-                                            <SettingRow item={item} index={itemIdx} sectionDelay={sectionDelay} />
-                                        </React.Fragment>
-                                    );
-                                })}
-                            </View>
-                        </View>
-                    );
-                })}
-
-                {/* ─── Footer ───────────────────────────────────────── */}
-                <Animated.View
-                    entering={FadeInDown.delay(800).duration(500).springify()}
-                    style={styles.footer}
-                >
-                    <View style={styles.footerLogoRow}>
-                        <LinearGradient
-                            colors={['#0EA5E9', '#6366F1']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={styles.footerLogo}
-                        >
-                            <Text style={styles.footerLogoText}>S</Text>
-                        </LinearGradient>
-                    </View>
-                    <Text style={styles.footerText}>Stunity Enterprise</Text>
-                    <Text style={styles.footerVersion}>Version 1.0.0 · Build 2026.02</Text>
-                    <Text style={styles.footerSubtext}>Made with ❤️ for learners everywhere</Text>
-                </Animated.View>
-            </ScrollView>
+            />
         </View>
     );
 }
@@ -626,11 +651,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         alignItems: 'center',
         justifyContent: 'center',
-        
-        
-        
-        
-        
+
+
+
+
+
     },
     headerTitle: {
         fontSize: 18,
@@ -647,16 +672,16 @@ const styles = StyleSheet.create({
     // ── Profile Card
     profileCard: {
         backgroundColor: '#fff',
-        
-        
+
+
         borderRadius: 14,
         padding: 18,
         marginBottom: 14,
         shadowColor: '#000',
-        
+
         shadowOpacity: 0.05,
-        
-        
+
+
     },
     profileTop: {
         flexDirection: 'row',
@@ -752,8 +777,8 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         borderRadius: 12,
         backgroundColor: '#FFFFFF',
-        
-        
+
+
     },
     profileActionBtnPrimary: {
         backgroundColor: '#0EA5E9',
@@ -773,17 +798,17 @@ const styles = StyleSheet.create({
     quickStatBtn: {
         flex: 1,
         backgroundColor: '#fff',
-        
-        
+
+
         borderRadius: 14,
         paddingVertical: 14,
         alignItems: 'center',
         gap: 6,
-        
-        
+
+
         shadowOpacity: 0.04,
         shadowRadius: 4,
-        
+
     },
     quickStatIcon: {
         width: 38,
@@ -825,19 +850,25 @@ const styles = StyleSheet.create({
     },
     sectionCard: {
         backgroundColor: '#fff',
-        
-        
         borderRadius: 14,
         overflow: 'hidden',
-        
-        
         shadowOpacity: 0.04,
-        
-        
+    },
+    sectionCardFlex: {
+        backgroundColor: '#fff',
+        overflow: 'hidden',
+        shadowOpacity: 0.04,
+    },
+    sectionCardTop: {
+        borderTopLeftRadius: 14,
+        borderTopRightRadius: 14,
+    },
+    sectionCardBottom: {
+        borderBottomLeftRadius: 14,
+        borderBottomRightRadius: 14,
     },
     dangerCard: {
         backgroundColor: '#FFFBFB',
-        
         borderColor: '#FEE2E2',
     },
 

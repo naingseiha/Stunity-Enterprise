@@ -17,10 +17,12 @@ import {
     StyleSheet,
     TouchableOpacity,
     TextInput,
-    FlatList,
     ActivityIndicator,
     Keyboard,
+    Platform,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -162,7 +164,7 @@ export default function SearchScreen() {
             <Animated.View entering={FadeInDown.delay(30 * Math.min(index, 10)).duration(300)}>
                 <TouchableOpacity
                     style={styles.postResultCard}
-                    activeOpacity={0.7}
+                    activeOpacity={0.9}
                     onPress={() => handlePostPress(item)}
                 >
                     <View style={styles.postResultHeader}>
@@ -277,7 +279,7 @@ export default function SearchScreen() {
             <Animated.View entering={FadeInDown.delay(30 * Math.min(index, 10)).duration(300)}>
                 <TouchableOpacity
                     style={styles.userResultCard}
-                    activeOpacity={0.7}
+                    activeOpacity={0.9}
                     onPress={() => handleUserPress(item.id)}
                 >
                     <Avatar
@@ -381,68 +383,78 @@ export default function SearchScreen() {
     const userCount = userResults.length;
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Search Header */}
-            <View style={styles.header}>
-                <TouchableOpacity
-                    onPress={() => navigation.goBack()}
-                    style={styles.backButton}
-                >
-                    <Ionicons name="chevron-back" size={24} color="#374151" />
-                </TouchableOpacity>
-
-                <View style={styles.searchInputContainer}>
-                    <Ionicons name="search" size={20} color="#9CA3AF" />
-                    <TextInput
-                        ref={inputRef}
-                        style={styles.searchInput}
-                        placeholder="Search posts, people, topics..."
-                        placeholderTextColor="#9CA3AF"
-                        value={query}
-                        onChangeText={handleQueryChange}
-                        returnKeyType="search"
-                        onSubmitEditing={() => performSearch(query)}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                    />
-                    {query.length > 0 && (
+        <View style={styles.container}>
+            {/* Search Header - Sticky and Blurred */}
+            <BlurView intensity={Platform.OS === 'ios' ? 80 : 100} tint="light" style={styles.headerBlur}>
+                <SafeAreaView edges={['top']}>
+                    <View style={styles.header}>
                         <TouchableOpacity
-                            onPress={() => {
-                                setQuery('');
-                                setPostResults([]);
-                                setUserResults([]);
-                                setHasSearched(false);
-                                inputRef.current?.focus();
-                            }}
-                            style={styles.clearButton}
+                            onPress={() => navigation.goBack()}
+                            style={styles.backButton}
                         >
-                            <Ionicons name="close-circle" size={20} color="#9CA3AF" />
+                            <Ionicons name="chevron-back" size={24} color="#374151" />
                         </TouchableOpacity>
-                    )}
-                </View>
-            </View>
 
-            {/* Tabs — only show when there are results */}
-            {hasSearched && (
-                <View style={styles.tabBar}>
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === 'posts' && styles.activeTab]}
-                        onPress={() => setActiveTab('posts')}
-                    >
-                        <Text style={[styles.tabText, activeTab === 'posts' && styles.activeTabText]}>
-                            Posts {postCount > 0 ? `(${postCount})` : ''}
-                        </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === 'people' && styles.activeTab]}
-                        onPress={() => setActiveTab('people')}
-                    >
-                        <Text style={[styles.tabText, activeTab === 'people' && styles.activeTabText]}>
-                            People {userCount > 0 ? `(${userCount})` : ''}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-            )}
+                        <View style={styles.searchInputContainer}>
+                            <Ionicons name="search" size={20} color="#9CA3AF" />
+                            <TextInput
+                                ref={inputRef}
+                                style={styles.searchInput}
+                                placeholder="Search posts, people, topics..."
+                                placeholderTextColor="#9CA3AF"
+                                value={query}
+                                onChangeText={handleQueryChange}
+                                returnKeyType="search"
+                                onSubmitEditing={() => performSearch(query)}
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                            />
+                            {query.length > 0 && (
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        setQuery('');
+                                        setPostResults([]);
+                                        setUserResults([]);
+                                        setHasSearched(false);
+                                        inputRef.current?.focus();
+                                    }}
+                                    style={styles.clearButton}
+                                >
+                                    <Ionicons name="close-circle" size={20} color="#9CA3AF" />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+
+                    {/* Tabs — only show when there are results */}
+                    {hasSearched && (
+                        <View style={styles.tabBar}>
+                            <TouchableOpacity
+                                style={[styles.tab, activeTab === 'posts' && styles.activeTab]}
+                                onPress={() => {
+                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                    setActiveTab('posts');
+                                }}
+                            >
+                                <Text style={[styles.tabText, activeTab === 'posts' && styles.activeTabText]}>
+                                    Posts {postCount > 0 ? `(${postCount})` : ''}
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.tab, activeTab === 'people' && styles.activeTab]}
+                                onPress={() => {
+                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                    setActiveTab('people');
+                                }}
+                            >
+                                <Text style={[styles.tabText, activeTab === 'people' && styles.activeTabText]}>
+                                    People {userCount > 0 ? `(${userCount})` : ''}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </SafeAreaView>
+            </BlurView>
 
             {/* Loading */}
             {isSearching && (
@@ -457,33 +469,44 @@ export default function SearchScreen() {
 
             {/* Results */}
             {!isSearching && hasSearched && (
-                <FlatList
-                    data={currentResults as any[]}
-                    renderItem={activeTab === 'posts' ? renderPostResult as any : renderUserResult as any}
-                    keyExtractor={(item: any) => item.id}
-                    contentContainerStyle={styles.resultsList}
-                    showsVerticalScrollIndicator={false}
-                    ListEmptyComponent={renderEmptyState}
-                    keyboardShouldPersistTaps="handled"
-                />
+                <View style={{ flex: 1, zIndex: 0 }}>
+                    <FlashList
+                        data={currentResults as any[]}
+                        renderItem={activeTab === 'posts' ? renderPostResult as any : renderUserResult as any}
+                        keyExtractor={(item: any) => item.id}
+                        contentContainerStyle={styles.resultsList}
+                        showsVerticalScrollIndicator={false}
+                        ListEmptyComponent={renderEmptyState}
+                        keyboardShouldPersistTaps="handled"
+                        estimatedItemSize={activeTab === 'posts' ? 180 : 80}
+                        getItemType={(item) => activeTab === 'posts' ? (item.postType || 'POST') : 'USER'}
+                    />
+                </View>
             )}
-        </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F0F4F8',
+        backgroundColor: '#F8FAFC',
+    },
+    headerBlur: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 10,
+        backgroundColor: 'rgba(255,255,255,0.85)',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E2E8F0',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: '#FFFFFF',
-        borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
         gap: 12,
     },
     backButton: {
@@ -498,9 +521,9 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F5F3FF',
-        borderRadius: 12,
-        paddingHorizontal: 12,
+        backgroundColor: '#F3F4F6', // slightly darker off-white for contrast
+        borderRadius: 22, // fully rounded
+        paddingHorizontal: 14,
         height: 44,
         gap: 8,
     },
@@ -517,9 +540,6 @@ const styles = StyleSheet.create({
     // Tab Bar
     tabBar: {
         flexDirection: 'row',
-        backgroundColor: '#FFFFFF',
-        borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
         paddingHorizontal: 16,
     },
     tab: {
@@ -555,23 +575,23 @@ const styles = StyleSheet.create({
     // Results List
     resultsList: {
         paddingHorizontal: 16,
-        paddingTop: 12,
+        paddingTop: Platform.OS === 'ios' ? 120 : 130, // Offset for absolute blur header
         paddingBottom: 40,
     },
 
     // Post Result Card
     postResultCard: {
         backgroundColor: '#FFFFFF',
-        
-        
-        borderRadius: 14,
+        borderRadius: 16,
         padding: 14,
         marginBottom: 10,
-        
-        
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.04,
-        
-        
+        shadowRadius: 8,
+        elevation: 1,
     },
     postResultHeader: {
         flexDirection: 'row',
@@ -641,17 +661,17 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#FFFFFF',
-        
-        
-        borderRadius: 14,
+        borderRadius: 16,
         padding: 14,
         marginBottom: 10,
         gap: 14,
-        
-        
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.04,
-        
-        
+        shadowRadius: 8,
+        elevation: 1,
     },
     userResultInfo: {
         flex: 1,
@@ -710,7 +730,7 @@ const styles = StyleSheet.create({
     // Recent Searches
     recentSection: {
         paddingHorizontal: 16,
-        paddingTop: 16,
+        paddingTop: Platform.OS === 'ios' ? 120 : 130, // Account for blurred sticky header
     },
     recentHeader: {
         flexDirection: 'row',
@@ -757,7 +777,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         paddingHorizontal: 16,
         borderRadius: 14,
-        
+
         borderColor: '#E0E7FF',
     },
     suggestionChipText: {
@@ -780,7 +800,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 10,
         marginBottom: 10,
-        
+
         borderColor: '#FDE68A',
         gap: 8,
     },
@@ -825,7 +845,7 @@ const styles = StyleSheet.create({
         padding: 10,
         marginBottom: 10,
         gap: 6,
-        
+
         borderColor: '#EDE9FE',
     },
     pollOptionRow: {

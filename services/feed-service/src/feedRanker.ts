@@ -346,7 +346,7 @@ export class FeedRanker {
             }),
             this.prisma.user.findUnique({
                 where: { id: userId },
-                select: { interests: true, skills: true },
+                select: { interests: true, skills: true, careerGoals: true },
             }),
             // Author affinity: count interactions per author from likes and comments
             this.prisma.like.groupBy({
@@ -399,6 +399,19 @@ export class FeedRanker {
             user.skills.forEach(skill => {
                 const key = skill.toLowerCase();
                 if (!topics[key]) topics[key] = 15;
+            });
+        }
+
+        // Add career goals as a strong learning signal
+        if (user?.careerGoals) {
+            const goals = user.careerGoals.split(',').map(g => g.trim());
+            goals.forEach(goal => {
+                if (goal) {
+                    const key = goal.toLowerCase();
+                    // Career goals are strong signals for what the user wants to learn
+                    if (!topics[key]) topics[key] = 30;
+                    else topics[key] += 15;
+                }
             });
         }
 

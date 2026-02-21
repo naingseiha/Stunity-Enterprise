@@ -16,12 +16,12 @@ import {
   View,
   StyleSheet,
   Dimensions,
-  ScrollView,
   NativeScrollEvent,
   NativeSyntheticEvent,
   TouchableOpacity,
   useWindowDimensions,
 } from 'react-native';
+import { FlashList, ViewToken } from '@shopify/flash-list';
 import { Image, ImageLoadEventData } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { normalizeMediaUrls } from '@/utils';
@@ -87,7 +87,7 @@ function ImageCarouselInner({
   });
   const [modalVisible, setModalVisible] = useState(false);
   const [modalInitialIndex, setModalInitialIndex] = useState(0);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const flashListRef = useRef<any>(null);
 
   // Reset state on cell recycling (when images prop changes)
   useLayoutEffect(() => {
@@ -111,7 +111,7 @@ function ImageCarouselInner({
     setActiveIndex(0);
     // Use setTimeout to skip the current frame and let FlatList mount completely before resetting scroll
     setTimeout(() => {
-      scrollViewRef.current?.scrollTo({ x: 0, animated: false });
+      flashListRef.current?.scrollToOffset({ offset: 0, animated: false });
     }, 0);
   }, [normalizedImages, IMAGE_WIDTH]);
 
@@ -168,17 +168,22 @@ function ImageCarouselInner({
     }
   }, [IMAGE_WIDTH, aspectRatio, mode, imageDimensions, SCREEN_WIDTH]);
 
-  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const scrollPosition = event.nativeEvent.contentOffset.x;
-    const index = Math.round(scrollPosition / IMAGE_WIDTH);
-    if (index !== activeIndex) {
-      setActiveIndex(index);
+  const viewabilityConfig = useMemo(() => ({
+    itemVisiblePercentThreshold: 50,
+  }), []);
+
+  const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken<string>[] }) => {
+    if (viewableItems.length > 0) {
+      const index = viewableItems[0].index;
+      if (index !== null && index !== activeIndex) {
+        setActiveIndex(index);
+      }
     }
-  }, [IMAGE_WIDTH, activeIndex]);
+  }, [activeIndex]);
 
   const scrollToIndex = (index: number) => {
-    scrollViewRef.current?.scrollTo({
-      x: index * IMAGE_WIDTH,
+    flashListRef.current?.scrollToIndex({
+      index,
       animated: true,
     });
     setActiveIndex(index);
@@ -198,7 +203,7 @@ function ImageCarouselInner({
   if (normalizedImages.length === 0) return null;
 
   // Render Item Helper
-  const renderItem = (uri: string, index: number, itemWidth: number | '100%' = IMAGE_WIDTH) => {
+  const renderItem = useCallback(({ item: uri, index }: { item: string, index: number }) => {
     const isVid = isVideo(uri);
 
     return (
@@ -207,7 +212,7 @@ function ImageCarouselInner({
         activeOpacity={isVid ? 1 : 0.95}
         onPress={() => handleImagePress(index)}
         style={[styles.imageContainer, {
-          width: itemWidth,
+          width: IMAGE_WIDTH,
           height: IMAGE_HEIGHT
         }]}
       >
@@ -239,13 +244,13 @@ function ImageCarouselInner({
         )}
       </TouchableOpacity>
     );
-  };
+  }, [activeIndex, handleFirstImageLoad, handleImagePress, IMAGE_HEIGHT, IMAGE_WIDTH, borderRadius, mode]);
 
   // Single item
   if (normalizedImages.length === 1) {
     return (
       <>
-        {renderItem(normalizedImages[0], 0, '100%')}
+        {renderItem({ item: normalizedImages[0], index: 0 })}
         <ImageViewerModal
           visible={modalVisible}
           images={normalizedImages}
@@ -259,20 +264,22 @@ function ImageCarouselInner({
   // Carousel
   return (
     <View style={[styles.container, { height: IMAGE_HEIGHT }]}>
-      <ScrollView
-        ref={scrollViewRef}
+      <FlashList
+        ref={flashListRef}
+        data={normalizedImages}
+        renderItem={renderItem}
+        keyExtractor={(item, index) => `${item}-${index}`}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={100}
+        viewabilityConfig={viewabilityConfig}
+        onViewableItemsChanged={onViewableItemsChanged}
         decelerationRate="fast"
         snapToInterval={IMAGE_WIDTH}
         snapToAlignment="start"
-        style={styles.scrollView}
-      >
-        {normalizedImages.map((uri, index) => renderItem(uri, index))}
-      </ScrollView>
+        // @ts-ignore
+        estimatedItemSize={IMAGE_WIDTH}
+      />
 
       {/* Dot Indicators */}
       <View style={styles.indicatorContainer}>

@@ -18,6 +18,7 @@ import {
   StatusBar,
   Image,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -323,332 +324,323 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      <ScrollView
+      {/* @ts-ignore FlashList array types with react navigation bounds can sometimes complain on strict mode */}
+      <FlashList
+        data={[{ key: 'tabContent', type: activeTab }]}
+        keyExtractor={(item) => item.key}
         showsVerticalScrollIndicator={false}
+        estimatedItemSize={1000}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
-      >
-        {/* Cover Photo Section */}
-        <View style={styles.coverSection}>
-          {(profile as any)?.coverPhotoUrl ? (
-            <Image source={{ uri: (profile as any).coverPhotoUrl }} style={styles.coverGradient} />
-          ) : (
-            <LinearGradient
-              colors={['#BAE6FD', '#E0F2FE', '#F0F9FF']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.coverGradient}
-            />
-          )}
-
-          {/* Header Buttons */}
-          <SafeAreaView edges={['top']} style={styles.headerButtons}>
-            <View style={styles.headerTopRow}>
-              {/* Back Button — only when viewing someone else's profile */}
-              {!isOwnProfile && (
-                <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.goBack()}>
-                  <Ionicons name="chevron-back" size={22} color="#1a1a1a" />
-                </TouchableOpacity>
-              )}
-
-              <View style={{ flex: 1 }} />
-
-              {/* Settings & Camera — own profile only */}
-              {isOwnProfile && (
-                <>
-                  <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.navigate('Settings' as any)}>
-                    <Ionicons name="settings-outline" size={20} color="#1a1a1a" />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.headerCircleBtn, { marginLeft: 8 }]} onPress={handlePickCoverPhoto}>
-                    <Ionicons name="camera-outline" size={20} color="#1a1a1a" />
-                  </TouchableOpacity>
-                </>
-              )}
-
-              {/* More options — other user's profile */}
-              {!isOwnProfile && (
-                <TouchableOpacity style={styles.headerCircleBtn}>
-                  <Ionicons name="ellipsis-horizontal" size={20} color="#1a1a1a" />
-                </TouchableOpacity>
-              )}
-            </View>
-          </SafeAreaView>
-        </View>
-
-        {/* Profile Content */}
-        <View style={styles.contentContainer}>
-          {/* Avatar Section */}
-          <Animated.View entering={FadeInDown.delay(100).duration(500).springify()} style={styles.avatarSection}>
-            <View style={styles.avatarWrapper}>
-              <Avatar
-                uri={profile.profilePictureUrl}
-                name={fullName}
-                size="2xl"
-                gradientBorder="orange"
-                showBorder
-              />
-
-              {/* Edit Avatar Button */}
-              {isOwnProfile && (
-                <TouchableOpacity style={styles.editAvatarButton} onPress={handlePickProfilePhoto}>
-                  <View style={styles.editAvatarCircle}>
-                    <Ionicons name="camera-outline" size={16} color="#0EA5E9" />
-                  </View>
-                </TouchableOpacity>
-              )}
-            </View>
-          </Animated.View>
-
-          {/* Name & Bio Section */}
-          <Animated.View entering={FadeInDown.delay(200).duration(500).springify()} style={styles.nameSection}>
-            <View style={styles.nameRow}>
-              <Text style={styles.name}>{fullName}</Text>
-              {profile.isVerified && (
-                <Ionicons name="checkmark-circle" size={22} color="#3B82F6" />
-              )}
-            </View>
-
-            {/* Level Badge */}
-            <View style={styles.levelBadgeInline}>
-              <LinearGradient
-                colors={['#0EA5E9', '#0284C7']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.levelBadgeGradient}
-              >
-                <Ionicons name="star" size={12} color="#fff" />
-                <Text style={styles.levelTextInline}>Level {profile.level ?? 1}</Text>
-              </LinearGradient>
-            </View>
-
-            <Text style={styles.headline}>{profile.headline || profile.professionalTitle || ''}</Text>
-
-            {/* Open to Opportunities Banner */}
-            {(profile as any).isOpenToOpportunities && (
-              <Animated.View entering={FadeInDown.delay(250).duration(400)} style={styles.openToWorkBanner}>
+        ListHeaderComponent={
+          <>
+            {/* Cover Photo Section */}
+            <View style={styles.coverSection}>
+              {(profile as any)?.coverPhotoUrl ? (
+                <Image source={{ uri: (profile as any).coverPhotoUrl }} style={styles.coverGradient} />
+              ) : (
                 <LinearGradient
-                  colors={['#10B981', '#059669']}
+                  colors={['#BAE6FD', '#E0F2FE', '#F0F9FF']}
                   start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.openToWorkGradient}
-                >
-                  <Ionicons name="briefcase" size={14} color="#fff" />
-                  <Text style={styles.openToWorkText}>Open to Opportunities</Text>
-                </LinearGradient>
-              </Animated.View>
-            )}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.coverGradient}
+                />
+              )}
 
-            {profile.bio ? (
-              <Text style={styles.bio}>{profile.bio}</Text>
-            ) : null}
+              {/* Header Buttons */}
+              <SafeAreaView edges={['top']} style={styles.headerButtons}>
+                <View style={styles.headerTopRow}>
+                  {/* Back Button — only when viewing someone else's profile */}
+                  {!isOwnProfile && (
+                    <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.goBack()}>
+                      <Ionicons name="chevron-back" size={22} color="#1a1a1a" />
+                    </TouchableOpacity>
+                  )}
 
-            {/* Location & Social Links */}
-            <View style={styles.metaRow}>
-              <View style={styles.locationRow}>
-                <Ionicons name="location-outline" size={14} color="#9CA3AF" />
-                <Text style={styles.locationText}>{profile.location || 'No location set'}</Text>
-              </View>
+                  <View style={{ flex: 1 }} />
 
-              <View style={styles.socialLinks}>
-                <TouchableOpacity style={styles.socialIcon}>
-                  <Ionicons name="logo-github" size={16} color="#6B7280" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.socialIcon}>
-                  <Ionicons name="logo-linkedin" size={16} color="#6B7280" />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Animated.View>
-
-          {/* Stats Cards — Premium Canvas Design */}
-          <View style={styles.statsRow}>
-            <Animated.View entering={ZoomIn.delay(250).duration(400)} style={{ flex: 1 }}>
-              <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
-                <View style={styles.statCardGradient}>
-                  <View style={[styles.statIconCircle, { backgroundColor: '#F3E8FF' }]}>
-                    <View style={[styles.statIconInner, { backgroundColor: '#A855F7' }]}>
-                      <Ionicons name="create" size={16} color="#fff" />
-                    </View>
-                  </View>
-                  <Text style={styles.statValue}>{formatNumber(stats.posts)}</Text>
-                  <Text style={styles.statLabel}>Posts</Text>
-                </View>
-              </TouchableOpacity>
-            </Animated.View>
-
-            <Animated.View entering={ZoomIn.delay(350).duration(400)} style={{ flex: 1 }}>
-              <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
-                <View style={styles.statCardGradient}>
-                  <View style={[styles.statIconCircle, { backgroundColor: '#DBEAFE' }]}>
-                    <View style={[styles.statIconInner, { backgroundColor: '#3B82F6' }]}>
-                      <Ionicons name="people" size={16} color="#fff" />
-                    </View>
-                  </View>
-                  <Text style={styles.statValue}>{formatNumber(stats.followers)}</Text>
-                  <Text style={styles.statLabel}>Followers</Text>
-                </View>
-              </TouchableOpacity>
-            </Animated.View>
-
-            <Animated.View entering={ZoomIn.delay(450).duration(400)} style={{ flex: 1 }}>
-              <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
-                <View style={styles.statCardGradient}>
-                  <View style={[styles.statIconCircle, { backgroundColor: '#D1FAE5' }]}>
-                    <View style={[styles.statIconInner, { backgroundColor: '#10B981' }]}>
-                      <Ionicons name="heart" size={16} color="#fff" />
-                    </View>
-                  </View>
-                  <Text style={styles.statValue}>{formatNumber(stats.following)}</Text>
-                  <Text style={styles.statLabel}>Following</Text>
-                </View>
-              </TouchableOpacity>
-            </Animated.View>
-          </View>
-
-          {/* Action Buttons — Compact layout */}
-          <Animated.View entering={FadeInDown.delay(350).duration(500).springify()} style={styles.actionButtons}>
-            {isOwnProfile ? (
-              <>
-                <TouchableOpacity
-                  style={styles.editPill}
-                  onPress={handleEditProfile}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="create-outline" size={16} color="#0284C7" />
-                  <Text style={styles.editPillText}>Edit</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.iconBtn}>
-                  <Ionicons name="share-social-outline" size={18} color="#6B7280" />
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.iconBtn}>
-                  <Ionicons name="qr-code-outline" size={18} color="#6B7280" />
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <TouchableOpacity
-                  style={[styles.followPill, isFollowing && styles.followPillFollowing]}
-                  onPress={handleFollow}
-                  activeOpacity={0.8}
-                >
-                  {isFollowing ? (
+                  {/* Settings & Camera — own profile only */}
+                  {isOwnProfile && (
                     <>
-                      <Ionicons name="checkmark" size={16} color="#6B7280" />
-                      <Text style={styles.followPillTextFollowing}>Following</Text>
+                      <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.navigate('Settings' as any)}>
+                        <Ionicons name="settings-outline" size={20} color="#1a1a1a" />
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.headerCircleBtn, { marginLeft: 8 }]} onPress={handlePickCoverPhoto}>
+                        <Ionicons name="camera-outline" size={20} color="#1a1a1a" />
+                      </TouchableOpacity>
                     </>
-                  ) : (
+                  )}
+
+                  {/* More options — other user's profile */}
+                  {!isOwnProfile && (
+                    <TouchableOpacity style={styles.headerCircleBtn}>
+                      <Ionicons name="ellipsis-horizontal" size={20} color="#1a1a1a" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </SafeAreaView>
+            </View>
+
+            {/* Profile Content */}
+            <View style={styles.contentContainer}>
+              {/* Avatar Section */}
+              <Animated.View entering={FadeInDown.delay(100).duration(500).springify()} style={styles.avatarSection}>
+                <View style={styles.avatarWrapper}>
+                  <Avatar
+                    uri={profile.profilePictureUrl}
+                    name={fullName}
+                    size="2xl"
+                    gradientBorder="orange"
+                    showBorder
+                  />
+
+                  {/* Edit Avatar Button */}
+                  {isOwnProfile && (
+                    <TouchableOpacity style={styles.editAvatarButton} onPress={handlePickProfilePhoto}>
+                      <View style={styles.editAvatarCircle}>
+                        <Ionicons name="camera-outline" size={16} color="#0EA5E9" />
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </Animated.View>
+
+              {/* Name & Bio Section */}
+              <Animated.View entering={FadeInDown.delay(200).duration(500).springify()} style={styles.nameSection}>
+                <View style={styles.nameRow}>
+                  <Text style={styles.name}>{fullName}</Text>
+                  {profile.isVerified && (
+                    <Ionicons name="checkmark-circle" size={22} color="#3B82F6" />
+                  )}
+                </View>
+
+                {/* Level Badge */}
+                <View style={styles.levelBadgeInline}>
+                  <LinearGradient
+                    colors={['#0EA5E9', '#0284C7']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.levelBadgeGradient}
+                  >
+                    <Ionicons name="star" size={12} color="#fff" />
+                    <Text style={styles.levelTextInline}>Level {profile.level ?? 1}</Text>
+                  </LinearGradient>
+                </View>
+
+                <Text style={styles.headline}>{profile.headline || profile.professionalTitle || ''}</Text>
+
+                {/* Open to Opportunities Banner */}
+                {(profile as any).isOpenToOpportunities && (
+                  <Animated.View entering={FadeInDown.delay(250).duration(400)} style={styles.openToWorkBanner}>
                     <LinearGradient
-                      colors={['#7DD3FC', '#0EA5E9', '#0284C7']}
+                      colors={['#10B981', '#059669']}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
-                      style={styles.followPillGradient}
+                      style={styles.openToWorkGradient}
                     >
-                      <Ionicons name="person-add" size={14} color="#fff" />
-                      <Text style={styles.followPillText}>Follow</Text>
+                      <Ionicons name="briefcase" size={14} color="#fff" />
+                      <Text style={styles.openToWorkText}>Open to Opportunities</Text>
                     </LinearGradient>
-                  )}
-                </TouchableOpacity>
+                  </Animated.View>
+                )}
 
-                <TouchableOpacity style={styles.iconBtn}>
-                  <Ionicons name="mail-outline" size={18} color="#6B7280" />
-                </TouchableOpacity>
-              </>
-            )}
-          </Animated.View>
+                {profile.bio ? (
+                  <Text style={styles.bio}>{profile.bio}</Text>
+                ) : null}
 
-          {/* Performance Highlights */}
-          <Animated.View entering={FadeInDown.delay(400).duration(500).springify()} style={styles.highlightsSection}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Performance</Text>
-            </View>
-
-            {/* Hero Progress Card */}
-            <View style={styles.heroCard}>
-              <LinearGradient
-                colors={['#38BDF8', '#0EA5E9', '#0284C7']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.heroGradient}
-              >
-                {/* Decorative */}
-                <View style={[styles.heroDecor, { top: -20, right: -15, width: 80, height: 80 }]} />
-                <View style={[styles.heroDecor, { bottom: -10, left: -10, width: 60, height: 60 }]} />
-
-                <View style={styles.heroHeader}>
-                  <View style={styles.heroIconWrap}>
-                    <Ionicons name="trending-up" size={20} color="#0284C7" />
+                {/* Location & Social Links */}
+                <View style={styles.metaRow}>
+                  <View style={styles.locationRow}>
+                    <Ionicons name="location-outline" size={14} color="#9CA3AF" />
+                    <Text style={styles.locationText}>{profile.location || 'No location set'}</Text>
                   </View>
-                  <Text style={styles.heroTitle}>Your Progress</Text>
-                </View>
 
-                <View style={styles.heroStatsRow}>
-                  <View style={styles.heroStat}>
-                    <Text style={styles.heroStatValue}>{profileStats?.certifications ?? 0}</Text>
-                    <Text style={styles.heroStatLabel}>Courses</Text>
-                  </View>
-                  <View style={styles.heroStatDivider} />
-                  <View style={styles.heroStat}>
-                    <Text style={styles.heroStatValue}>Lv.{profile.level ?? 1}</Text>
-                    <Text style={styles.heroStatLabel}>Level</Text>
-                  </View>
-                  <View style={styles.heroStatDivider} />
-                  <View style={styles.heroStat}>
-                    <Text style={styles.heroStatValue}>{profile.totalLearningHours ?? 0}h</Text>
-                    <Text style={styles.heroStatLabel}>Study Time</Text>
+                  <View style={styles.socialLinks}>
+                    <TouchableOpacity style={styles.socialIcon}>
+                      <Ionicons name="logo-github" size={16} color="#6B7280" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.socialIcon}>
+                      <Ionicons name="logo-linkedin" size={16} color="#6B7280" />
+                    </TouchableOpacity>
                   </View>
                 </View>
-              </LinearGradient>
-            </View>
+              </Animated.View>
 
-            {/* Clean stat grid */}
-            <View style={styles.statGrid}>
-              <StatCard icon="book-outline" value={profileStats?.certifications ?? 0} label="Courses" index={0} />
-              <StatCard icon="star-outline" value={profile.totalPoints ?? 0} label="Points" index={1} />
-              <StatCard icon="time-outline" value={profile.totalLearningHours ?? 0} label="Study Hours" index={2} />
-              <StatCard icon="flame-outline" value={profile.currentStreak ?? 0} label="Day Streak" index={3} />
-              <StatCard icon="trophy-outline" value={profileStats?.achievements ?? 0} label="Achievements" index={4} />
-              <StatCard icon="code-slash-outline" value={profileStats?.projects ?? 0} label="Projects" index={5} />
-            </View>
-          </Animated.View>
-
-          {/* Tabs */}
-          <View style={styles.tabsSection}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.tabsScroll}
-            >
-              {tabs.map((tab) => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <TouchableOpacity
-                    key={tab.id}
-                    style={[styles.tab, isActive && styles.tabActive]}
-                    onPress={() => setActiveTab(tab.id as any)}
-                    activeOpacity={0.7}
-                  >
-                    {isActive ? (
-                      <View style={styles.tabActiveContent}>
-                        <Ionicons name={tab.icon as any} size={18} color="#0EA5E9" />
-                        <Text style={styles.tabTextActive}>{tab.label}</Text>
-                        <View style={styles.tabActiveLine} />
+              {/* Stats Cards — Premium Canvas Design */}
+              <View style={styles.statsRow}>
+                <Animated.View entering={ZoomIn.delay(250).duration(400)} style={{ flex: 1 }}>
+                  <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
+                    <View style={styles.statCardGradient}>
+                      <View style={[styles.statIconCircle, { backgroundColor: '#F3E8FF' }]}>
+                        <View style={[styles.statIconInner, { backgroundColor: '#A855F7' }]}>
+                          <Ionicons name="create" size={16} color="#fff" />
+                        </View>
                       </View>
-                    ) : (
-                      <>
-                        <Ionicons name={tab.icon as any} size={18} color="#9CA3AF" />
-                        <Text style={styles.tabText}>{tab.label}</Text>
-                      </>
-                    )}
+                      <Text style={styles.statValue}>{formatNumber(stats.posts)}</Text>
+                      <Text style={styles.statLabel}>Posts</Text>
+                    </View>
                   </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
+                </Animated.View>
 
-          {/* Tab Content */}
+                <Animated.View entering={ZoomIn.delay(350).duration(400)} style={{ flex: 1 }}>
+                  <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
+                    <View style={styles.statCardGradient}>
+                      <View style={[styles.statIconCircle, { backgroundColor: '#DBEAFE' }]}>
+                        <View style={[styles.statIconInner, { backgroundColor: '#3B82F6' }]}>
+                          <Ionicons name="people" size={16} color="#fff" />
+                        </View>
+                      </View>
+                      <Text style={styles.statValue}>{formatNumber(stats.followers)}</Text>
+                      <Text style={styles.statLabel}>Followers</Text>
+                    </View>
+                  </TouchableOpacity>
+                </Animated.View>
+
+                <Animated.View entering={ZoomIn.delay(450).duration(400)} style={{ flex: 1 }}>
+                  <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
+                    <View style={styles.statCardGradient}>
+                      <View style={[styles.statIconCircle, { backgroundColor: '#D1FAE5' }]}>
+                        <View style={[styles.statIconInner, { backgroundColor: '#10B981' }]}>
+                          <Ionicons name="heart" size={16} color="#fff" />
+                        </View>
+                      </View>
+                      <Text style={styles.statValue}>{formatNumber(stats.following)}</Text>
+                      <Text style={styles.statLabel}>Following</Text>
+                    </View>
+                  </TouchableOpacity>
+                </Animated.View>
+              </View>
+
+              {/* Action Buttons — Compact layout */}
+              <Animated.View entering={FadeInDown.delay(350).duration(500).springify()} style={styles.actionButtons}>
+                {isOwnProfile ? (
+                  <>
+                    <TouchableOpacity
+                      style={styles.editPill}
+                      onPress={handleEditProfile}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="create-outline" size={16} color="#0284C7" />
+                      <Text style={styles.editPillText}>Edit</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.iconBtn}>
+                      <Ionicons name="share-social-outline" size={18} color="#6B7280" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.iconBtn}>
+                      <Ionicons name="qr-code-outline" size={18} color="#6B7280" />
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <TouchableOpacity
+                      style={[styles.followPill, isFollowing && styles.followPillFollowing]}
+                      onPress={handleFollow}
+                      activeOpacity={0.8}
+                    >
+                      {isFollowing ? (
+                        <>
+                          <Ionicons name="checkmark" size={16} color="#6B7280" />
+                          <Text style={styles.followPillTextFollowing}>Following</Text>
+                        </>
+                      ) : (
+                        <LinearGradient
+                          colors={['#7DD3FC', '#0EA5E9', '#0284C7']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={styles.followPillGradient}
+                        >
+                          <Ionicons name="person-add" size={14} color="#fff" />
+                          <Text style={styles.followPillText}>Follow</Text>
+                        </LinearGradient>
+                      )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.iconBtn}>
+                      <Ionicons name="mail-outline" size={18} color="#6B7280" />
+                    </TouchableOpacity>
+                  </>
+                )}
+              </Animated.View>
+
+              {/* Performance Highlights */}
+              <Animated.View entering={FadeInDown.delay(400).duration(500).springify()} style={styles.highlightsSection}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Performance</Text>
+                </View>
+
+                {/* Hero Progress Card */}
+                <View style={styles.heroCard}>
+                  <LinearGradient
+                    colors={['#38BDF8', '#0EA5E9', '#0284C7']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.heroGradient}
+                  >
+                    {/* Decorative */}
+                    <View style={[styles.heroDecor, { top: -20, right: -15, width: 80, height: 80 }]} />
+                    <View style={[styles.heroDecor, { bottom: -10, left: -10, width: 60, height: 60 }]} />
+
+                    <View style={styles.heroHeader}>
+                      <View style={styles.heroIconWrap}>
+                        <Ionicons name="trending-up" size={20} color="#0284C7" />
+                      </View>
+                      <Text style={styles.heroTitle}>Your Progress</Text>
+                    </View>
+
+                  </LinearGradient>
+                </View>
+
+                {/* Clean stat grid */}
+                <View style={styles.statGrid}>
+                  <StatCard icon="book-outline" value={profileStats?.certifications ?? 0} label="Courses" index={0} />
+                  <StatCard icon="star-outline" value={profile.totalPoints ?? 0} label="Points" index={1} />
+                  <StatCard icon="time-outline" value={profile.totalLearningHours ?? 0} label="Study Hours" index={2} />
+                  <StatCard icon="flame-outline" value={profile.currentStreak ?? 0} label="Day Streak" index={3} />
+                  <StatCard icon="trophy-outline" value={profileStats?.achievements ?? 0} label="Achievements" index={4} />
+                  <StatCard icon="code-slash-outline" value={profileStats?.projects ?? 0} label="Projects" index={5} />
+                </View>
+              </Animated.View>
+
+              {/* Tabs */}
+              <View style={styles.tabsSection}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.tabsScroll}
+                >
+                  {tabs.map((tab) => {
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <TouchableOpacity
+                        key={tab.id}
+                        style={[styles.tab, isActive && styles.tabActive]}
+                        onPress={() => setActiveTab(tab.id as any)}
+                        activeOpacity={0.7}
+                      >
+                        {isActive ? (
+                          <View style={styles.tabActiveContent}>
+                            <Ionicons name={tab.icon as any} size={18} color="#0EA5E9" />
+                            <Text style={styles.tabTextActive}>{tab.label}</Text>
+                            <View style={styles.tabActiveLine} />
+                          </View>
+                        ) : (
+                          <>
+                            <Ionicons name={tab.icon as any} size={18} color="#9CA3AF" />
+                            <Text style={styles.tabText}>{tab.label}</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            </View>
+          </>
+        }
+        renderItem={({ item }) => (
           <View style={styles.tabContent}>
             {activeTab === 'performance' && (
               <PerformanceTab
@@ -794,9 +786,9 @@ export default function ProfileScreen() {
               />
             )}
           </View>
-        </View>
-      </ScrollView >
-    </View >
+        )}
+      />
+    </View>
   );
 }
 
@@ -997,13 +989,13 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: '#fff',
-    
-    
+
+
     shadowColor: '#000',
-    
-    
-    
-    
+
+
+
+
   },
   statCardGradient: {
     alignItems: 'center',
@@ -1072,18 +1064,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    
-    
+
+
   },
   // ── Follow pill ──
   followPill: {
     borderRadius: 24,
     overflow: 'hidden',
     shadowColor: '#0284C7',
-    
+
     shadowOpacity: 0.2,
-    
-    
+
+
   },
   followPillFollowing: {
     backgroundColor: '#FFFFFF',
@@ -1134,10 +1126,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: 'hidden',
     shadowColor: '#0284C7',
-    
+
     shadowOpacity: 0.2,
-    
-    
+
+
     marginBottom: 16,
   },
   heroGradient: {
@@ -1214,10 +1206,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     alignItems: 'center',
     shadowColor: '#000',
-    
+
     shadowOpacity: 0.04,
     shadowRadius: 4,
-    
+
   },
   statGridIcon: {
     width: 32,
@@ -1314,8 +1306,8 @@ const styles = StyleSheet.create({
   },
   aboutCard: {
     backgroundColor: '#fff',
-    
-    
+
+
     borderRadius: 14,
     padding: 20,
     ...Shadows.sm,
