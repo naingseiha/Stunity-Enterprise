@@ -102,14 +102,14 @@ const DIFFICULTY_CONFIG: Record<DifficultyLevel, { label: string; labelKh: strin
 
 // Vibrant gradients for Quiz cards to make them pop
 const QUIZ_GRADIENTS: [string, string][] = [
-  ['#EC4899', '#DB2777'], // Pink (Default)
-  ['#8B5CF6', '#7C3AED'], // Violet
-  ['#3B82F6', '#2563EB'], // Blue
-  ['#10B981', '#059669'], // Emerald
-  ['#0EA5E9', '#0284C7'], // Amber
-  ['#6366F1', '#4F46E5'], // Indigo
-  ['#06B6D4', '#0891B2'], // Cyan
-  ['#F97316', '#EA580C'], // Orange
+  ['#F9A8D4', '#F472B6'], // Pink — soft
+  ['#C4B5FD', '#A78BFA'], // Violet — soft
+  ['#93C5FD', '#60A5FA'], // Blue — soft
+  ['#6EE7B7', '#34D399'], // Emerald — soft
+  ['#7DD3FC', '#38BDF8'], // Sky — soft
+  ['#A5B4FC', '#818CF8'], // Indigo — soft
+  ['#67E8F9', '#22D3EE'], // Cyan — soft
+  ['#FDBA74', '#FB923C'], // Orange — soft
 ];
 
 const getQuizGradient = (id: string): [string, string] => {
@@ -213,6 +213,40 @@ const ActionBar = React.memo<ActionBarProps>(({
   </View>
 ));
 
+// LIVE badge — isolated so animation only runs on LIVE posts
+const LiveBadge = React.memo<{ viewers?: number }>(({ viewers }) => {
+  const livePulse = useSharedValue(1);
+  React.useEffect(() => {
+    livePulse.value = withRepeat(
+      withSequence(
+        withTiming(1.2, { duration: 500 }),
+        withTiming(1, { duration: 500 })
+      ),
+      -1,
+      true
+    );
+  }, []);
+  const liveAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: livePulse.value }],
+  }));
+  return (
+    <Animated.View style={[styles.liveBadge, liveAnimatedStyle]}>
+      <LinearGradient
+        colors={['#EF4444', '#DC2626']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.liveBadgeGradient}
+      >
+        <View style={styles.liveDot} />
+        <Text style={styles.liveBadgeText}>LIVE</Text>
+        {viewers != null && (
+          <Text style={styles.liveViewers}>{viewers}</Text>
+        )}
+      </LinearGradient>
+    </Animated.View>
+  );
+});
+
 const PostCardInner: React.FC<PostCardProps> = ({
   post,
   onLike,
@@ -263,21 +297,6 @@ const PostCardInner: React.FC<PostCardProps> = ({
   const likeScale = useSharedValue(1);
   const valueScale = useSharedValue(1);
   const btnScale = useSharedValue(1); // Shared for comment/repost/share
-  const livePulse = useSharedValue(1);
-
-  // Animate live indicator — only for LIVE posts
-  React.useEffect(() => {
-    if (post.learningMeta?.isLive) {
-      livePulse.value = withRepeat(
-        withSequence(
-          withTiming(1.2, { duration: 500 }),
-          withTiming(1, { duration: 500 })
-        ),
-        -1,
-        true
-      );
-    }
-  }, [post.learningMeta?.isLive]);
 
   const likeAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: likeScale.value }],
@@ -290,10 +309,6 @@ const PostCardInner: React.FC<PostCardProps> = ({
   // Single animated style shared by comment/repost/share buttons
   const btnAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: btnScale.value }],
-  }));
-
-  const liveAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: livePulse.value }],
   }));
 
   const handleLike = useCallback(() => {
@@ -487,7 +502,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
   );
 
   return (
-    <View style={styles.container} shouldRasterizeIOS renderToHardwareTextureAndroid>
+    <View style={styles.container}>
 
       {/* Repost Label */}
       {post.repostOfId && (
@@ -499,20 +514,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
 
       {/* LIVE Badge - Top Corner */}
       {learningMeta?.isLive && (
-        <Animated.View style={[styles.liveBadge, liveAnimatedStyle]}>
-          <LinearGradient
-            colors={['#EF4444', '#DC2626']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.liveBadgeGradient}
-          >
-            <View style={styles.liveDot} />
-            <Text style={styles.liveBadgeText}>LIVE</Text>
-            {learningMeta.liveViewers && (
-              <Text style={styles.liveViewers}>{learningMeta.liveViewers}</Text>
-            )}
-          </LinearGradient>
-        </Animated.View>
+        <LiveBadge viewers={learningMeta.liveViewers} />
       )}
 
       {/* Author Header */}
@@ -592,7 +594,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
             style={styles.followBtnWrap}
           >
             {followLoading ? (
-              <ActivityIndicator size={11} color="#0D9488" />
+              <ActivityIndicator size={11} color="#0EA5E9" />
             ) : isFollowing ? (
               <Text style={styles.followBtnTextFollowing}>Following</Text>
             ) : (
@@ -613,8 +615,8 @@ const PostCardInner: React.FC<PostCardProps> = ({
               {isCurrentUser && (
                 <>
                   <TouchableOpacity style={styles.menuItem} onPress={handleEdit}>
-                    <Ionicons name="create-outline" size={18} color="#0066FF" />
-                    <Text style={[styles.menuItemText, { color: '#0066FF' }]}>
+                    <Ionicons name="create-outline" size={18} color="#0EA5E9" />
+                    <Text style={[styles.menuItemText, { color: '#0EA5E9' }]}>
                       Edit Post
                     </Text>
                   </TouchableOpacity>
@@ -1377,180 +1379,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
-  // Quiz Section - Beautiful Quiz Card
-  quizSection: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-  },
-  quizGradientCard: {
-    padding: 20,
-    borderRadius: 20,
-    gap: 16,
-  },
-  quizHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  quizIconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    
-    
-    shadowRadius: 4,
-    
-  },
-  quizHeaderText: {
-    flex: 1,
-  },
-  quizHeaderTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginBottom: 2,
-  },
-  quizHeaderSubtitle: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#FFFFFF',
-    opacity: 0.9,
-  },
-  quizStatsGrid: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 16,
-    padding: 16,
-    gap: 12,
-  },
-  quizStatItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 6,
-  },
-  quizStatIconBg: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FCE7F3',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 2,
-  },
-  quizStatValue: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#111827',
-  },
-  quizStatLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  takeQuizButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 16,
-    borderRadius: 14,
-    gap: 8,
-    shadowColor: '#000',
-    
-    
-    
-    elevation: 4,
-  },
-  takeQuizButtonText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#EC4899',
-  },
-  previousAttempt: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    gap: 8,
-  },
-  attemptIconBg: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  attemptText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    flex: 1,
-  },
-  attemptBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  passedBadge: {
-    backgroundColor: 'rgba(16, 185, 129, 0.2)',
-  },
-  failedBadge: {
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
-  },
-  attemptBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  quizActionButtons: {
-    gap: 10,
-  },
-  attemptInfoBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    gap: 8,
-  },
-  viewResultsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F0FDFA',
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
-  },
-  viewResultsButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0D9488',
-  },
-  retakeQuizButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
-    borderWidth: 1.5,
-    borderColor: '#EC4899',
-  },
-  retakeQuizButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#EC4899',
-  },
+  // Quiz styles now live in PostCardSections.tsx
   // Club announcement banner styles
   clubBanner: {
     marginHorizontal: 16,
@@ -1622,7 +1451,7 @@ const styles = StyleSheet.create({
   followBtnText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#0D9488',
+    color: '#0EA5E9',
   },
   followBtnTextFollowing: {
     fontSize: 13,

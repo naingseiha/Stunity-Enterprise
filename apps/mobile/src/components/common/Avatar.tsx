@@ -117,7 +117,7 @@ const getPostGradientColors = (name: string): [string, string] => {
   return gradients[index];
 };
 
-export const Avatar: React.FC<AvatarProps> = ({
+export const Avatar = React.memo<AvatarProps>(function Avatar({
   uri,
   name = '',
   size = 'md',
@@ -128,7 +128,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   showBorder = true,
   gradientBorder = 'orange',
   variant = 'default',
-}) => {
+}) {
   const dimension = SIZES[size];
   const fontSize = FONT_SIZES[size];
   const borderWidth = BORDER_WIDTH[size];
@@ -248,7 +248,9 @@ export const Avatar: React.FC<AvatarProps> = ({
           source={{ uri }}
           style={styles.image}
           contentFit="cover"
-          transition={300}
+          transition={150}
+          cachePolicy="memory-disk"
+          recyclingKey={uri}
           placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
           placeholderContentFit="cover"
         />
@@ -282,7 +284,7 @@ export const Avatar: React.FC<AvatarProps> = ({
       )}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

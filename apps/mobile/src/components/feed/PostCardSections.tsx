@@ -78,7 +78,7 @@ export const ClubAnnouncement = React.memo<ClubAnnouncementProps>(({ typeConfig,
 ));
 
 // ═══════════════════════════════════════════
-// Quiz Section — Largest extracted section (~160 lines → standalone)
+// Quiz Section — Clean flat design, no inner card
 // ═══════════════════════════════════════════
 
 interface QuizSectionProps {
@@ -113,6 +113,7 @@ export const QuizSection = React.memo<QuizSectionProps>(({
     quizGradient,
 }) => {
     const navigation = useNavigation<any>();
+    const questionCount = quizData.questions?.length || 0;
 
     const handleTakeQuiz = React.useCallback(() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -154,105 +155,111 @@ export const QuizSection = React.memo<QuizSectionProps>(({
 
     return (
         <View style={sectionStyles.quizSection}>
-            <LinearGradient
-                colors={quizGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={sectionStyles.quizGradientCard}
-            >
-                {/* Quiz Header */}
-                <View style={sectionStyles.quizHeader}>
-                    <View style={sectionStyles.quizIconCircle}>
-                        <Ionicons name="rocket" size={24} color={quizThemeColor} />
+            {/* Header with rocket icon */}
+            <View style={sectionStyles.quizHeader}>
+                <View style={[sectionStyles.quizIconCircle, { backgroundColor: quizGradient[0] + '18' }]}>
+                    <Ionicons name="rocket" size={22} color={quizGradient[0]} />
+                </View>
+                <View style={sectionStyles.quizHeaderText}>
+                    <Text style={sectionStyles.quizHeaderTitle}>Test Your Knowledge</Text>
+                    <Text style={sectionStyles.quizHeaderSubtitle}>Complete this quiz to earn points!</Text>
+                </View>
+            </View>
+
+            {/* Three stat cards */}
+            <View style={sectionStyles.quizStatsRow}>
+                <View style={[sectionStyles.quizStatCard, { backgroundColor: quizGradient[0] + '0F' }]}>
+                    <View style={[sectionStyles.quizStatIconBg, { backgroundColor: quizGradient[0] + '1A' }]}>
+                        <Ionicons name="document-text-outline" size={18} color={quizGradient[0]} />
                     </View>
-                    <View style={sectionStyles.quizHeaderText}>
-                        <Text style={sectionStyles.quizHeaderTitle}>Test Your Knowledge</Text>
-                        <Text style={sectionStyles.quizHeaderSubtitle}>Complete this quiz to earn points!</Text>
-                    </View>
+                    <Text style={[sectionStyles.quizStatValue, { color: quizGradient[0] }]}>{questionCount}</Text>
+                    <Text style={sectionStyles.quizStatLabel}>Questions</Text>
                 </View>
 
-                {/* Quiz Stats Grid */}
-                <View style={sectionStyles.quizStatsGrid}>
-                    <View style={sectionStyles.quizStatItem}>
-                        <View style={sectionStyles.quizStatIconBg}>
-                            <Ionicons name="document-text-outline" size={20} color={quizThemeColor} />
-                        </View>
-                        <Text style={sectionStyles.quizStatValue}>{quizData.questions?.length || 0}</Text>
-                        <Text style={sectionStyles.quizStatLabel}>Questions</Text>
+                <View style={[sectionStyles.quizStatCard, { backgroundColor: '#0EA5E9' + '0F' }]}>
+                    <View style={[sectionStyles.quizStatIconBg, { backgroundColor: '#0EA5E9' + '1A' }]}>
+                        <Ionicons name="time-outline" size={18} color="#0EA5E9" />
                     </View>
+                    <Text style={[sectionStyles.quizStatValue, { color: '#0EA5E9' }]}>
+                        {quizData.timeLimit ? `${quizData.timeLimit}m` : '∞'}
+                    </Text>
+                    <Text style={sectionStyles.quizStatLabel}>Time</Text>
+                </View>
 
-                    <View style={sectionStyles.quizStatItem}>
-                        <View style={sectionStyles.quizStatIconBg}>
-                            <Ionicons name="time-outline" size={20} color={quizThemeColor} />
-                        </View>
-                        <Text style={sectionStyles.quizStatValue}>
-                            {quizData.timeLimit ? `${quizData.timeLimit}m` : 'No limit'}
+                <View style={[sectionStyles.quizStatCard, { backgroundColor: '#F59E0B' + '0F' }]}>
+                    <View style={[sectionStyles.quizStatIconBg, { backgroundColor: '#F59E0B' + '1A' }]}>
+                        <Ionicons name="star" size={18} color="#F59E0B" />
+                    </View>
+                    <Text style={[sectionStyles.quizStatValue, { color: '#F59E0B' }]}>{quizData.totalPoints || 100}</Text>
+                    <Text style={sectionStyles.quizStatLabel}>Points</Text>
+                </View>
+            </View>
+
+            {/* Attempted state */}
+            {quizData.userAttempt ? (
+                <View style={sectionStyles.quizAttemptedBlock}>
+                    {/* Score bar */}
+                    <View style={[
+                        sectionStyles.quizScoreBar,
+                        { backgroundColor: quizData.userAttempt.passed ? '#ECFDF5' : '#FEF2F2' },
+                    ]}>
+                        <Ionicons
+                            name={quizData.userAttempt.passed ? 'checkmark-circle' : 'close-circle'}
+                            size={20}
+                            color={quizData.userAttempt.passed ? '#10B981' : '#EF4444'}
+                        />
+                        <Text style={[
+                            sectionStyles.quizScoreText,
+                            { color: quizData.userAttempt.passed ? '#059669' : '#DC2626' },
+                        ]}>
+                            Score: {quizData.userAttempt.score}%
                         </Text>
-                        <Text style={sectionStyles.quizStatLabel}>Time</Text>
+                        <View style={[
+                            sectionStyles.quizPassBadge,
+                            { backgroundColor: quizData.userAttempt.passed ? '#D1FAE5' : '#FEE2E2' },
+                        ]}>
+                            <Text style={[
+                                sectionStyles.quizPassBadgeText,
+                                { color: quizData.userAttempt.passed ? '#059669' : '#DC2626' },
+                            ]}>
+                                {quizData.userAttempt.passed ? 'Passed' : 'Not Passed'}
+                            </Text>
+                        </View>
                     </View>
 
-                    <View style={sectionStyles.quizStatItem}>
-                        <View style={sectionStyles.quizStatIconBg}>
-                            <Ionicons name="star" size={20} color="#0EA5E9" />
-                        </View>
-                        <Text style={sectionStyles.quizStatValue}>{quizData.totalPoints || 100}</Text>
-                        <Text style={sectionStyles.quizStatLabel}>Points</Text>
-                    </View>
-
-                    <View style={sectionStyles.quizStatItem}>
-                        <View style={sectionStyles.quizStatIconBg}>
-                            <Ionicons name="checkmark-circle-outline" size={20} color="#10B981" />
-                        </View>
-                        <Text style={sectionStyles.quizStatValue}>{quizData.passingScore || 70}%</Text>
-                        <Text style={sectionStyles.quizStatLabel}>Pass</Text>
+                    {/* Action buttons */}
+                    <View style={sectionStyles.quizActionRow}>
+                        <TouchableOpacity
+                            onPress={handleViewResults}
+                            style={[sectionStyles.quizRoundedBtn, { backgroundColor: '#6366F1' + '12' }]}
+                        >
+                            <Ionicons name="eye-outline" size={16} color="#6366F1" />
+                            <Text style={[sectionStyles.quizRoundedBtnText, { color: '#6366F1' }]}>View Results</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={handleTakeQuiz}
+                            style={[sectionStyles.quizRoundedBtn, { backgroundColor: quizGradient[0] + '12' }]}
+                        >
+                            <Ionicons name="refresh" size={16} color={quizGradient[0]} />
+                            <Text style={[sectionStyles.quizRoundedBtnText, { color: quizGradient[0] }]}>Retake</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
-
-                {/* Action Buttons */}
-                {quizData.userAttempt ? (
-                    <View style={sectionStyles.quizActionButtons}>
-                        {/* Previous Attempt Info */}
-                        <View style={sectionStyles.attemptInfoBar}>
-                            <View style={sectionStyles.attemptIconBg}>
-                                <Ionicons
-                                    name={quizData.userAttempt.passed ? 'checkmark-circle' : 'close-circle'}
-                                    size={16}
-                                    color={quizData.userAttempt.passed ? '#10B981' : '#EF4444'}
-                                />
-                            </View>
-                            <Text style={sectionStyles.attemptText}>
-                                Previous: {quizData.userAttempt.score}%
-                            </Text>
-                            <View style={[
-                                sectionStyles.attemptBadge,
-                                quizData.userAttempt.passed ? sectionStyles.passedBadge : sectionStyles.failedBadge,
-                            ]}>
-                                <Text style={sectionStyles.attemptBadgeText}>
-                                    {quizData.userAttempt.passed ? 'Passed' : 'Not Passed'}
-                                </Text>
-                            </View>
-                        </View>
-
-                        {/* View Results */}
-                        <TouchableOpacity onPress={handleViewResults} style={sectionStyles.viewResultsButton}>
-                            <Ionicons name="eye-outline" size={20} color="#6366F1" />
-                            <Text style={sectionStyles.viewResultsButtonText}>View Results</Text>
-                        </TouchableOpacity>
-
-                        {/* Retake Quiz */}
-                        <TouchableOpacity onPress={handleTakeQuiz} style={sectionStyles.retakeQuizButton}>
-                            <Ionicons name="refresh" size={20} color={quizThemeColor} />
-                            <Text style={[sectionStyles.retakeQuizButtonText, { color: quizThemeColor }]}>Retake Quiz</Text>
-                        </TouchableOpacity>
-                    </View>
-                ) : (
-                    <TouchableOpacity onPress={handleTakeQuiz} style={sectionStyles.takeQuizButton}>
-                        <Ionicons name="play-circle" size={22} color={quizThemeColor} />
-                        <Text style={[sectionStyles.takeQuizButtonText, { color: quizThemeColor }]}>Take Quiz Now</Text>
-                        <Ionicons name="arrow-forward" size={18} color={quizThemeColor} />
-                    </TouchableOpacity>
-                )}
-            </LinearGradient>
+            ) : (
+                /* CTA button */
+                <TouchableOpacity onPress={handleTakeQuiz} activeOpacity={0.8}>
+                    <LinearGradient
+                        colors={quizGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={sectionStyles.quizCta}
+                    >
+                        <Ionicons name="play-circle" size={20} color="#fff" />
+                        <Text style={sectionStyles.quizCtaText}>Take Quiz Now</Text>
+                        <Ionicons name="arrow-forward" size={16} color="rgba(255,255,255,0.8)" />
+                    </LinearGradient>
+                </TouchableOpacity>
+            )}
         </View>
     );
 });
@@ -337,26 +344,21 @@ const sectionStyles = StyleSheet.create({
         color: '#fff',
     },
 
-    // Quiz
+    // Quiz — clean flat design with stat cards
     quizSection: {
-        marginTop: 4,
-    },
-    quizGradientCard: {
         marginHorizontal: 16,
-        borderRadius: 14,
-        padding: 20,
+        marginTop: 6,
+        gap: 14,
     },
     quizHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
-        marginBottom: 16,
+        gap: 10,
     },
     quizIconCircle: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: 'rgba(255,255,255,0.9)',
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -364,125 +366,96 @@ const sectionStyles = StyleSheet.create({
         flex: 1,
     },
     quizHeaderTitle: {
-        fontSize: 17,
+        fontSize: 15,
         fontWeight: '700',
-        color: '#fff',
+        color: '#111827',
     },
     quizHeaderSubtitle: {
-        fontSize: 13,
-        color: 'rgba(255,255,255,0.8)',
-        marginTop: 2,
+        fontSize: 12,
+        color: '#9CA3AF',
+        marginTop: 1,
     },
-    quizStatsGrid: {
+    quizStatsRow: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-        backgroundColor: 'rgba(255,255,255,0.15)',
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 16,
+        gap: 8,
     },
-    quizStatItem: {
+    quizStatCard: {
+        flex: 1,
         alignItems: 'center',
-        gap: 4,
+        paddingVertical: 12,
+        borderRadius: 14,
+        gap: 6,
     },
     quizStatIconBg: {
-        width: 36,
-        height: 36,
-        borderRadius: 14,
-        backgroundColor: 'rgba(255,255,255,0.9)',
+        width: 34,
+        height: 34,
+        borderRadius: 17,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 4,
     },
     quizStatValue: {
         fontSize: 16,
-        fontWeight: '700',
-        color: '#fff',
+        fontWeight: '800',
     },
     quizStatLabel: {
         fontSize: 11,
-        color: 'rgba(255,255,255,0.8)',
+        fontWeight: '500',
+        color: '#9CA3AF',
     },
-    quizActionButtons: {
-        gap: 8,
-    },
-    attemptInfoBar: {
+    quizCta: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        borderRadius: 10,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
+        justifyContent: 'center',
+        paddingVertical: 14,
+        borderRadius: 50,
         gap: 8,
     },
-    attemptIconBg: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: 'rgba(255,255,255,0.9)',
+    quizCtaText: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#fff',
+        letterSpacing: 0.2,
+    },
+    quizAttemptedBlock: {
+        gap: 10,
+    },
+    quizScoreBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderRadius: 50,
+        gap: 8,
+    },
+    quizScoreText: {
+        flex: 1,
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    quizPassBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 3,
+        borderRadius: 50,
+    },
+    quizPassBadgeText: {
+        fontSize: 11,
+        fontWeight: '700',
+    },
+    quizActionRow: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    quizRoundedBtn: {
+        flex: 1,
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 11,
+        borderRadius: 50,
     },
-    attemptText: {
-        flex: 1,
+    quizRoundedBtnText: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#fff',
-    },
-    attemptBadge: {
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 6,
-    },
-    passedBadge: {
-        backgroundColor: 'rgba(16, 185, 129, 0.3)',
-    },
-    failedBadge: {
-        backgroundColor: 'rgba(239, 68, 68, 0.3)',
-    },
-    attemptBadgeText: {
-        fontSize: 11,
-        fontWeight: '600',
-        color: '#fff',
-    },
-    viewResultsButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(255,255,255,0.95)',
-        borderRadius: 12,
-        paddingVertical: 12,
-        gap: 8,
-    },
-    viewResultsButtonText: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: '#6366F1',
-    },
-    retakeQuizButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        borderRadius: 12,
-        paddingVertical: 10,
-        gap: 6,
-    },
-    retakeQuizButtonText: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    takeQuizButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(255,255,255,0.95)',
-        borderRadius: 14,
-        paddingVertical: 14,
-        gap: 8,
-    },
-    takeQuizButtonText: {
-        fontSize: 16,
-        fontWeight: '700',
     },
 });
