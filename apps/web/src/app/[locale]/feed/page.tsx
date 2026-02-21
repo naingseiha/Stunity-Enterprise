@@ -350,6 +350,21 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
     setUser(userData.user);
     setSchool(userData.school);
     setLoading(false);
+
+    // Refresh user data from server (localStorage may have stale profile picture)
+    const AUTH_API = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'http://localhost:3001';
+    fetch(`${AUTH_API}/auth/verify`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    })
+      .then(res => res.json())
+      .then(res => {
+        if (res.success && res.data?.user) {
+          const freshUser = { ...userData.user, ...res.data.user };
+          setUser(freshUser);
+          TokenManager.setUserData(freshUser, res.data.school || userData.school);
+        }
+      })
+      .catch(() => {}); // silently ignore refresh failures
   }, [locale, router]);
 
   useEffect(() => {
