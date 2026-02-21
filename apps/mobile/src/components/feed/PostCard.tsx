@@ -929,11 +929,6 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     position: 'relative',
     paddingTop: 14,
-    shadowColor: '#94A3B8',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
   },
   // LIVE Badge styles
   liveBadge: {
