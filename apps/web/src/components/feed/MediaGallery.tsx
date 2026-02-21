@@ -19,13 +19,24 @@ interface MediaLightboxProps {
   onClose: () => void;
 }
 
+const FEED_API = process.env.NEXT_PUBLIC_FEED_API || 'http://localhost:3010';
+
+// Resolve relative or stale-IP media URLs to the current feed-service host
+function resolveUrl(url: string): string {
+  if (url.startsWith('/uploads/')) return `${FEED_API}${url}`;
+  const lanMatch = url.match(/^http:\/\/\d+\.\d+\.\d+\.\d+:\d+(\/uploads\/.*)/);
+  if (lanMatch) return `${FEED_API}${lanMatch[1]}`;
+  return url;
+}
+
 // Use native <img> for user-uploaded content to avoid next/image hostname restrictions
 export default function MediaGallery({ 
-  mediaUrls, 
+  mediaUrls: rawMediaUrls, 
   displayMode = 'AUTO',
   onImageClick,
   className = ''
 }: MediaGalleryProps) {
+  const mediaUrls = rawMediaUrls.map(resolveUrl);
   const [imageDimensions, setImageDimensions] = useState<Record<number, { width: number; height: number }>>({});
   
   const getAspectInfo = (index: number) => {

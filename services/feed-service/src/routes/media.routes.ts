@@ -101,10 +101,9 @@ router.post('/upload', authenticateToken, (req: AuthRequest, res: Response, next
                 }));
                 console.log('✅ Files uploaded to R2:', results.map(r => `${r.url} (${r.width}x${r.height})`));
             } else {
-                // Fallback: use local disk paths
-                const baseUrl = `${req.protocol}://${req.get('host')}`;
+                // Fallback: store relative paths (resolved to absolute on read)
                 results = files.map(f => ({
-                    url: `${baseUrl}/uploads/images/${f.filename}`,
+                    url: `/uploads/images/${f.filename}`,
                     key: `uploads/images/${f.filename}`,
                     filename: f.filename || f.originalname,
                 }));

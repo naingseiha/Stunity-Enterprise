@@ -35,7 +35,19 @@ export const normalizeMediaUrl = (url: string | undefined | null): string | null
       const mediaBaseUrl = Config.mediaUrl;
       return `${mediaBaseUrl}${localhostMatch[1]}`;
     }
+    // Rewrite stale LAN IP URLs to configured media host
+    const lanMatch = url.match(/^http:\/\/\d+\.\d+\.\d+\.\d+:\d+(\/uploads\/.*)/);
+    if (lanMatch) {
+      const mediaBaseUrl = Config.mediaUrl;
+      return `${mediaBaseUrl}${lanMatch[1]}`;
+    }
     return url;
+  }
+
+  // Relative path (e.g. /uploads/images/...) — prepend media base URL
+  if (url.startsWith('/uploads/')) {
+    const mediaBaseUrl = Config.mediaUrl;
+    return `${mediaBaseUrl}${url}`;
   }
 
   // It's a relative R2 key - construct full URL

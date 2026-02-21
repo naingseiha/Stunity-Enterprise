@@ -12,6 +12,16 @@ import { feedCache, EventPublisher } from '../redis';
 
 const router = Router();
 
+// Resolve relative media URLs (e.g. /uploads/...) to absolute URLs using request host
+function resolveMediaUrls(urls: string[], req: AuthRequest): string[] {
+  if (!urls || urls.length === 0) return [];
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  return urls.map(url => {
+    if (url.startsWith('/')) return `${baseUrl}${url}`;
+    return url;
+  });
+}
+
 // ========================================
 // POSTS ENDPOINTS
 // ========================================
@@ -250,6 +260,12 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
     }));
 
     const outputPosts = minimal ? formattedPosts.map(stripToMinimal) : formattedPosts;
+    
+    // Resolve relative media URLs to absolute
+    outputPosts.forEach((p: any) => {
+      if (p.mediaUrls) p.mediaUrls = resolveMediaUrls(p.mediaUrls, req as AuthRequest);
+    });
+
     const hasMore = posts.length === Number(limit);
 
     // ETag for 304 Not Modified
@@ -397,11 +413,14 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
 
     const outputPosts = minimal ? formattedPosts.map(stripToMinimal) : formattedPosts;
 
+    // Resolve relative media URLs to absolute
+    outputPosts.forEach((p: any) => {
+      if (p.mediaUrls) p.mediaUrls = resolveMediaUrls(p.mediaUrls, req as AuthRequest);
+    });
+
     // ETag for 304 Not Modified
     const etag = createETag(outputPosts);
     res.setHeader('ETag', etag);
-    
-    // Cache-Control: Personalized feed caches for 15 minutes
     res.setHeader('Cache-Control', 'private, max-age=900, stale-while-revalidate=1800');
     
     if (req.headers['if-none-match'] === etag) {
