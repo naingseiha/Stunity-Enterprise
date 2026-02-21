@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight, ZoomIn, Download, Maximize2 } from 'lucide-react';
-import Image from 'next/image';
 
 type DisplayMode = 'AUTO' | 'FIXED_HEIGHT' | 'FULL_HEIGHT';
 
@@ -20,7 +19,7 @@ interface MediaLightboxProps {
   onClose: () => void;
 }
 
-// Media Gallery Component - Displays images in feed
+// Use native <img> for user-uploaded content to avoid next/image hostname restrictions
 export default function MediaGallery({ 
   mediaUrls, 
   displayMode = 'AUTO',
@@ -29,7 +28,6 @@ export default function MediaGallery({
 }: MediaGalleryProps) {
   const [imageDimensions, setImageDimensions] = useState<Record<number, { width: number; height: number }>>({});
   
-  // Determine if images are mostly portrait or landscape
   const getAspectInfo = (index: number) => {
     const dims = imageDimensions[index];
     if (!dims) return { isPortrait: false, ratio: 1.5 };
@@ -37,7 +35,6 @@ export default function MediaGallery({
     return { isPortrait: ratio < 0.9, ratio };
   };
 
-  // Load image dimensions for AUTO mode
   useEffect(() => {
     if (displayMode === 'AUTO') {
       mediaUrls.forEach((url, index) => {
@@ -57,16 +54,11 @@ export default function MediaGallery({
     onImageClick?.(index);
   };
 
-  // Calculate effective display mode
   const getEffectiveMode = (): DisplayMode => {
     if (displayMode !== 'AUTO') return displayMode;
-    
-    // For AUTO mode, analyze images
     const portraitCount = Object.entries(imageDimensions).filter(([, dims]) => 
       dims.width / dims.height < 0.9
     ).length;
-    
-    // If more than half are portrait, use full height
     if (portraitCount > mediaUrls.length / 2) return 'FULL_HEIGHT';
     return 'FIXED_HEIGHT';
   };
@@ -91,12 +83,10 @@ export default function MediaGallery({
           }`}
           onClick={() => handleClick(0)}
         >
-          <Image
+          <img
             src={mediaUrls[0]}
             alt="Post media"
-            fill
-            className={`${isFullHeight ? 'object-contain bg-gray-100' : 'object-cover'} transition-transform group-hover:scale-[1.02]`}
-            sizes="(max-width: 768px) 100vw, 600px"
+            className={`w-full h-full ${isFullHeight ? 'object-contain bg-gray-100' : 'object-cover'} transition-transform group-hover:scale-[1.02]`}
           />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
             <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 rounded-full p-3">
@@ -108,7 +98,7 @@ export default function MediaGallery({
     );
   }
 
-  // Two images - side by side with better proportions
+  // Two images
   if (count === 2) {
     return (
       <div className={`grid grid-cols-2 gap-1 rounded-xl overflow-hidden ${className}`}>
@@ -120,12 +110,10 @@ export default function MediaGallery({
             }`}
             onClick={() => handleClick(index)}
           >
-            <Image
+            <img
               src={url}
               alt={`Post media ${index + 1}`}
-              fill
-              className="object-cover transition-transform group-hover:scale-[1.02]"
-              sizes="(max-width: 768px) 50vw, 300px"
+              className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]"
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
           </div>
@@ -144,12 +132,10 @@ export default function MediaGallery({
           }`}
           onClick={() => handleClick(0)}
         >
-          <Image
+          <img
             src={mediaUrls[0]}
             alt="Post media 1"
-            fill
-            className="object-cover transition-transform group-hover:scale-[1.02]"
-            sizes="(max-width: 768px) 50vw, 300px"
+            className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]"
           />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
         </div>
@@ -162,12 +148,10 @@ export default function MediaGallery({
               }`}
               onClick={() => handleClick(index + 1)}
             >
-              <Image
+              <img
                 src={url}
                 alt={`Post media ${index + 2}`}
-                fill
-                className="object-cover transition-transform group-hover:scale-[1.02]"
-                sizes="(max-width: 768px) 50vw, 300px"
+                className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]"
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
             </div>
@@ -188,12 +172,10 @@ export default function MediaGallery({
           }`}
           onClick={() => handleClick(index)}
         >
-          <Image
+          <img
             src={url}
             alt={`Post media ${index + 1}`}
-            fill
-            className="object-cover transition-transform group-hover:scale-[1.02]"
-            sizes="(max-width: 768px) 50vw, 300px"
+            className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]"
           />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
           {index === 3 && count > 4 && (
@@ -229,7 +211,6 @@ export function MediaLightbox({ mediaUrls, initialIndex, isOpen, onClose }: Medi
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, currentIndex]);
 
-  // Prevent body scroll when open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -275,7 +256,6 @@ export function MediaLightbox({ mediaUrls, initialIndex, isOpen, onClose }: Medi
       className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      {/* Close button */}
       <button
         onClick={onClose}
         className="absolute top-4 right-4 z-50 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
@@ -283,7 +263,6 @@ export function MediaLightbox({ mediaUrls, initialIndex, isOpen, onClose }: Medi
         <X className="w-6 h-6 text-white" />
       </button>
 
-      {/* Top toolbar */}
       <div className="absolute top-4 left-4 flex items-center gap-4 z-50">
         <span className="text-white/80 text-sm font-medium">
           {currentIndex + 1} / {mediaUrls.length}
@@ -304,7 +283,6 @@ export function MediaLightbox({ mediaUrls, initialIndex, isOpen, onClose }: Medi
         </button>
       </div>
 
-      {/* Navigation arrows */}
       {mediaUrls.length > 1 && (
         <>
           <button
@@ -329,14 +307,11 @@ export function MediaLightbox({ mediaUrls, initialIndex, isOpen, onClose }: Medi
         }`}
         onClick={() => setIsZoomed(!isZoomed)}
       >
-        <div className={`relative w-full h-full transition-all duration-300 ${isZoomed ? 'scale-150' : 'scale-100'}`}>
-          <Image
+        <div className={`transition-all duration-300 ${isZoomed ? 'scale-150' : 'scale-100'} max-w-full max-h-full`}>
+          <img
             src={mediaUrls[currentIndex]}
             alt={`Image ${currentIndex + 1}`}
-            fill
-            className="object-contain"
-            sizes="100vw"
-            priority
+            className="max-w-full max-h-[85vh] object-contain"
           />
         </div>
       </div>
@@ -354,12 +329,10 @@ export function MediaLightbox({ mediaUrls, initialIndex, isOpen, onClose }: Medi
                   : 'opacity-60 hover:opacity-100'
               }`}
             >
-              <Image
+              <img
                 src={url}
                 alt={`Thumbnail ${index + 1}`}
-                fill
-                className="object-cover"
-                sizes="48px"
+                className="w-full h-full object-cover"
               />
             </button>
           ))}

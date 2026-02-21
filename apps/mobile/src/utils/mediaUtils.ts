@@ -29,6 +29,12 @@ export const normalizeMediaUrl = (url: string | undefined | null): string | null
 
   // Already a complete URL (http/https) or data URL
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    // Rewrite localhost URLs to configured media host (mobile can't reach localhost)
+    const localhostMatch = url.match(/^http:\/\/localhost:\d+(\/.*)/);
+    if (localhostMatch) {
+      const mediaBaseUrl = Config.mediaUrl;
+      return `${mediaBaseUrl}${localhostMatch[1]}`;
+    }
     return url;
   }
 
