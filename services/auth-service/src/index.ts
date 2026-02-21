@@ -9,6 +9,9 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { body, validationResult } from 'express-validator';
 import ClaimCodeGenerator from './utils/claimCodeGenerator';
+import passwordResetRoutes from './routes/passwordReset.routes';
+import socialAuthRoutes from './routes/socialAuth.routes';
+import twoFactorRoutes from './routes/twoFactor.routes';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
@@ -239,6 +242,11 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
     });
   }
 };
+
+// ─── Mount modular route files ───────────────────────────────────────
+app.use('/auth', passwordResetRoutes(prisma));
+app.use('/auth/social', socialAuthRoutes(prisma));
+app.use('/auth/2fa', twoFactorRoutes(prisma));
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {
@@ -1995,6 +2003,26 @@ app.listen(PORT, () => {
   console.log('   PUT  /notifications/read-all    - Mark all as read');
   console.log('   POST /notifications             - Create notification');
   console.log('   POST /notifications/parent      - Notify parent(s)');
+  console.log('');
+  console.log('🔑 Password Reset:');
+  console.log('   POST /auth/forgot-password       - Request reset email');
+  console.log('   POST /auth/reset-password         - Reset with token');
+  console.log('   POST /auth/change-password        - Change (authenticated)');
+  console.log('');
+  console.log('🌐 Social Login (OAuth2):');
+  console.log('   POST /auth/social/google          - Google login');
+  console.log('   POST /auth/social/apple           - Apple login');
+  console.log('   POST /auth/social/facebook        - Facebook login');
+  console.log('   POST /auth/social/linkedin        - LinkedIn login');
+  console.log('   POST /auth/social/link            - Link provider (auth)');
+  console.log('   DELETE /auth/social/unlink/:prov   - Unlink provider (auth)');
+  console.log('');
+  console.log('🔐 Two-Factor Auth:');
+  console.log('   POST /auth/2fa/setup              - Generate QR (auth)');
+  console.log('   POST /auth/2fa/verify-setup       - Enable 2FA (auth)');
+  console.log('   POST /auth/2fa/verify             - Verify during login');
+  console.log('   POST /auth/2fa/disable            - Disable 2FA (auth)');
+  console.log('   POST /auth/2fa/backup-codes       - Regenerate codes (auth)');
   console.log('');
   console.log('Press Ctrl+C to stop');
   console.log('');

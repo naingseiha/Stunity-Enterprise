@@ -629,6 +629,8 @@ model User {
   student                 Student?                   @relation(fields: [studentId], references: [id], onDelete: Cascade)
   teacher                 Teacher?                   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   claimedCode             ClaimCode?
+  socialAccounts          SocialAccount[]
+  twoFactorSecret         TwoFactorSecret?
 
   @@index([email, isActive])
   @@index([phone, isActive])
@@ -3143,4 +3145,69 @@ model WeeklyLeaderboard {
   @@unique([userId, weekStart])
   @@index([weekStart])
   @@index([rank])
+}
+
+// ============================================
+// OAUTH2 & SECURITY MODELS
+// ============================================
+
+enum SocialProvider {
+  GOOGLE
+  APPLE
+  FACEBOOK
+  LINKEDIN
+}
+
+// Social Account (OAuth2 Provider Link)
+model SocialAccount {
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider       SocialProvider
+  providerUserId String
+  email          String?
+  displayName    String?
+  avatarUrl      String?
+  accessToken    String?
+  refreshToken   String?
+  tokenExpiresAt DateTime?
+  rawProfile     Json?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([provider, providerUserId])
+  @@unique([provider, userId])
+  @@index([userId])
+  @@map("social_accounts")
+}
+
+// Two-Factor Authentication
+model TwoFactorSecret {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secret      String
+  isEnabled   Boolean   @default(false)
+  backupCodes String[]
+  verifiedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("two_factor_secrets")
+}
+
+// Login Attempt Tracking (Brute Force Protection & Audit)
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String?
+  phone     String?
+  ipAddress String
+  userAgent String?
+  success   Boolean
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@index([ipAddress, createdAt])
+  @@map("login_attempts")
 }
