@@ -94,6 +94,15 @@ interface Post {
   likes?: { userId: string }[];
   pollOptions?: { id: string; text: string; _count?: { votes: number } }[];
   userVotedOptionId?: string;
+  quizData?: {
+    questions?: { id: string; text: string }[];
+    timeLimit?: number;
+    passingScore?: number;
+  };
+  userAttempt?: {
+    score: number;
+    passed: boolean;
+  };
 }
 
 interface Comment {
@@ -179,7 +188,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
         break;
         
       case 'NEW_COMMENT':
-        // Update comment count for the post
+        // Update comment count and refresh comments if expanded
         if (event.data.postId) {
           setPosts(prev => prev.map(post => {
             if (post.id === event.data.postId) {
@@ -187,6 +196,10 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
             }
             return post;
           }));
+          // Refresh comments in real-time if this post's comments are expanded
+          if (event.data.authorId !== user?.id) {
+            fetchComments(event.data.postId);
+          }
         }
         break;
         
@@ -369,6 +382,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
         pollOptions: data.pollOptions,
         mediaUrls: data.mediaUrls,
         mediaDisplayMode: data.mediaDisplayMode,
+        quizData: data.quizData,
       })
     });
     const result = await res.json();
@@ -418,6 +432,31 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
       });
     } catch (error) {
       console.error('Share error:', error);
+    }
+  };
+
+  const handleRepost = async (postId: string) => {
+    const token = TokenManager.getAccessToken();
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${FEED_API}/posts/${postId}/repost`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ type: 'REPOST' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPosts(prev => prev.map(p =>
+          p.id === postId ? { ...p, sharesCount: p.sharesCount + 1 } : p
+        ));
+        fetchPosts();
+      }
+    } catch (error) {
+      console.error('Repost error:', error);
     }
   };
 
@@ -1058,6 +1097,8 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                             votes: opt._count?.votes || 0,
                           })),
                           userVotedOptionId: post.userVotedOptionId,
+                          quizData: post.quizData,
+                          userAttempt: post.userAttempt,
                           comments: comments[post.id]?.map(c => ({
                             id: c.id,
                             content: c.content,
@@ -1106,6 +1147,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                         onVote={handleVote}
                         onBookmark={handleBookmark}
                         onShare={handleShare}
+                        onRepost={handleRepost}
                         onEdit={handleEditPost}
                         onDelete={handleDeletePost}
                         onViewAnalytics={handleViewAnalytics}
@@ -1189,6 +1231,8 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                             votes: opt._count?.votes || 0,
                           })),
                           userVotedOptionId: post.userVotedOptionId,
+                          quizData: post.quizData,
+                          userAttempt: post.userAttempt,
                           comments: comments[post.id]?.map(c => ({
                             id: c.id,
                             content: c.content,
@@ -1235,6 +1279,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                         onVote={handleVote}
                         onBookmark={handleBookmark}
                         onShare={handleShare}
+                        onRepost={handleRepost}
                         onEdit={handleEditPost}
                         onDelete={handleDeletePost}
                         onViewAnalytics={handleViewAnalytics}
@@ -1305,6 +1350,8 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                             votes: opt._count?.votes || 0,
                           })),
                           userVotedOptionId: post.userVotedOptionId,
+                          quizData: post.quizData,
+                          userAttempt: post.userAttempt,
                           comments: comments[post.id]?.map(c => ({
                             id: c.id,
                             content: c.content,
@@ -1351,6 +1398,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                         onVote={handleVote}
                         onBookmark={handleBookmark}
                         onShare={handleShare}
+                        onRepost={handleRepost}
                         onEdit={handleEditPost}
                         onDelete={handleDeletePost}
                         onViewAnalytics={handleViewAnalytics}

@@ -46,6 +46,7 @@ import {
   GraduationCap,
   BadgeCheck,
   ShieldCheck,
+  Repeat2,
 } from 'lucide-react';
 
 interface PollOption {
@@ -105,6 +106,15 @@ export interface PostData {
   userVotedOptionId?: string;
   comments?: Comment[];
   studyClubId?: string; // For CLUB_CREATED posts - link to club
+  quizData?: {
+    questions?: { id: string; text: string }[];
+    timeLimit?: number;
+    passingScore?: number;
+  };
+  userAttempt?: {
+    score: number;
+    passed: boolean;
+  };
 }
 
 interface PostCardProps {
@@ -116,6 +126,7 @@ interface PostCardProps {
   onVote?: (postId: string, optionId: string) => void;
   onBookmark?: (postId: string) => void;
   onShare?: (postId: string) => void;
+  onRepost?: (postId: string) => void;
   onEdit?: (postId: string, content: string) => void;
   onDelete?: (postId: string) => void;
   onViewAnalytics?: (postId: string) => void;
@@ -158,6 +169,7 @@ export default function PostCard({
   onVote, 
   onBookmark,
   onShare,
+  onRepost,
   onEdit,
   onDelete,
   onViewAnalytics,
@@ -192,6 +204,7 @@ export default function PostCard({
   
   // Collapsible comments - show only first 3 by default
   const [showAllComments, setShowAllComments] = useState(false);
+  const [showRepostMenu, setShowRepostMenu] = useState(false);
   const INITIAL_COMMENTS_SHOWN = 3;
   
   // Sync local state with props when post updates from server
@@ -619,6 +632,29 @@ export default function PostCard({
           </div>
         )}
 
+        {/* Quiz Card */}
+        {post.postType === 'QUIZ' && post.quizData && (
+          <div className="mb-3 rounded-xl border border-purple-200 bg-purple-50 p-4">
+            <div className="flex flex-wrap gap-4 text-sm text-purple-700 mb-3">
+              <span className="flex items-center gap-1">📝 {post.quizData.questions?.length ?? 0} questions</span>
+              <span className="flex items-center gap-1">⏱ {post.quizData.timeLimit ?? 0} min</span>
+              <span className="flex items-center gap-1">🎯 Pass: {post.quizData.passingScore ?? 0}%</span>
+            </div>
+            {post.userAttempt && (
+              <div className={`flex items-center gap-2 mb-3 text-sm font-medium ${post.userAttempt.passed ? 'text-green-700' : 'text-red-600'}`}>
+                {post.userAttempt.passed ? <CheckCircle className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                <span>Previous: {post.userAttempt.score}% — {post.userAttempt.passed ? 'Passed ✅' : 'Failed'}</span>
+              </div>
+            )}
+            <Link
+              href={`/${locale}/feed/post/${post.id}`}
+              className="block text-center bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors"
+            >
+              {post.userAttempt ? '🔄 Retake Quiz' : '🚀 Take Quiz'}
+            </Link>
+          </div>
+        )}
+
         {/* Media Gallery */}
         {post.mediaUrls && post.mediaUrls.length > 0 && (
           <MediaGallery
@@ -676,14 +712,43 @@ export default function PostCard({
             <span className="text-xs font-medium">{post.commentsCount > 0 ? post.commentsCount : ''}</span>
           </button>
           
-          {/* Share */}
-          <button 
-            onClick={() => setShowShareModal(true)}
-            className="flex-1 flex items-center justify-center gap-1 py-2 text-gray-500 hover:bg-gray-100 rounded transition-colors"
-          >
-            <Share2 className="w-4 h-4" />
-            <span className="text-xs font-medium">{localSharesCount > 0 ? localSharesCount : ''}</span>
-          </button>
+          {/* Repost / Share */}
+          <div className="flex-1 relative">
+            <button 
+              onClick={() => setShowRepostMenu(!showRepostMenu)}
+              className={`w-full flex items-center justify-center gap-1 py-2 rounded transition-colors ${
+                showRepostMenu ? 'text-green-600 bg-green-50' : 'text-gray-500 hover:bg-gray-100'
+              }`}
+            >
+              <Repeat2 className="w-4 h-4" />
+              <span className="text-xs font-medium">{localSharesCount > 0 ? localSharesCount : ''}</span>
+            </button>
+            {showRepostMenu && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                <button
+                  onClick={() => {
+                    onRepost?.(post.id);
+                    setLocalSharesCount(prev => prev + 1);
+                    setShowRepostMenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Repeat2 className="w-4 h-4" />
+                  <span>Repost</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowRepostMenu(false);
+                    setShowShareModal(true);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>Share link</span>
+                </button>
+              </div>
+            )}
+          </div>
           
           {/* Save */}
           <button

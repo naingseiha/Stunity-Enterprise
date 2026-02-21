@@ -46,6 +46,11 @@ export interface CreatePostData {
   pollOptions?: string[];
   mediaUrls?: string[];
   mediaDisplayMode?: 'AUTO' | 'FIXED_HEIGHT' | 'FULL_HEIGHT';
+  quizData?: {
+    questions: { text: string; options: string[]; correctAnswer: number }[];
+    timeLimit: number;
+    passingScore: number;
+  };
 }
 
 const POST_TYPES = [
@@ -59,6 +64,7 @@ const POST_TYPES = [
   { id: 'PROJECT', label: 'Project', icon: Rocket, description: 'Showcase your work', color: 'orange' },
   { id: 'RESEARCH', label: 'Research', icon: Microscope, description: 'Share findings', color: 'cyan' },
   { id: 'COLLABORATION', label: 'Collaboration', icon: UsersRound, description: 'Find study partners', color: 'pink' },
+  { id: 'QUIZ', label: 'Quiz', icon: HelpCircle, description: 'Test knowledge', color: 'purple' },
 ];
 
 const VISIBILITY_OPTIONS = [
@@ -79,6 +85,9 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
   const [postType, setPostType] = useState('ARTICLE');
   const [visibility, setVisibility] = useState('SCHOOL');
   const [pollOptions, setPollOptions] = useState(['', '']);
+  const [quizQuestions, setQuizQuestions] = useState([{ text: '', options: ['', ''], correctAnswer: 0 }]);
+  const [quizTimeLimit, setQuizTimeLimit] = useState(10);
+  const [quizPassingScore, setQuizPassingScore] = useState(70);
   const [creating, setCreating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
@@ -128,6 +137,14 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
       }
     }
 
+    if (postType === 'QUIZ') {
+      const validQuestions = quizQuestions.filter(q => q.text.trim() && q.options.filter(o => o.trim()).length >= 2);
+      if (validQuestions.length === 0) {
+        alert('Please add at least 1 question with 2+ options');
+        return;
+      }
+    }
+
     setCreating(true);
     try {
       let uploadedMediaUrls: string[] = [];
@@ -165,12 +182,24 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
         pollOptions: postType === 'POLL' ? pollOptions.filter(o => o.trim()) : undefined,
         mediaUrls: uploadedMediaUrls.length > 0 ? uploadedMediaUrls : undefined,
         mediaDisplayMode: uploadedMediaUrls.length > 0 ? mediaDisplayMode : undefined,
+        quizData: postType === 'QUIZ' ? {
+          questions: quizQuestions.filter(q => q.text.trim()).map(q => ({
+            text: q.text,
+            options: q.options.filter(o => o.trim()),
+            correctAnswer: q.correctAnswer,
+          })),
+          timeLimit: quizTimeLimit,
+          passingScore: quizPassingScore,
+        } : undefined,
       });
       // Reset form
       setContent('');
       setPostType('ARTICLE');
       setVisibility('SCHOOL');
       setPollOptions(['', '']);
+      setQuizQuestions([{ text: '', options: ['', ''], correctAnswer: 0 }]);
+      setQuizTimeLimit(10);
+      setQuizPassingScore(70);
       setMediaFiles([]);
       setMediaPreviews([]);
       setMediaUrls([]);
@@ -238,6 +267,8 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
         return 'Share your research findings...';
       case 'COLLABORATION':
         return 'What do you want to collaborate on?';
+      case 'QUIZ':
+        return 'Describe your quiz (topic, difficulty, etc.)...';
       default:
         return `What's on your mind, ${user.firstName}?`;
     }
@@ -255,6 +286,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
       orange: 'from-orange-500 to-red-500',
       cyan: 'from-cyan-500 to-teal-500',
       pink: 'from-pink-500 to-rose-500',
+      purple: 'from-purple-500 to-fuchsia-500',
     };
     return colors[type] || colors.green;
   };
@@ -496,6 +528,132 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             </div>
           )}
 
+          {/* Quiz Builder (only for QUIZ type) */}
+          {postType === 'QUIZ' && (
+            <div className="mt-4 space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Time Limit (min)</label>
+                  <input
+                    type="number"
+                    value={quizTimeLimit}
+                    onChange={(e) => setQuizTimeLimit(Math.max(1, parseInt(e.target.value) || 1))}
+                    min={1}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Passing Score (%)</label>
+                  <input
+                    type="number"
+                    value={quizPassingScore}
+                    onChange={(e) => setQuizPassingScore(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+                    min={0}
+                    max={100}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              <p className="text-sm font-medium text-gray-700">Questions</p>
+              {quizQuestions.map((question, qIdx) => (
+                <div key={qIdx} className="p-3 border border-purple-200 bg-purple-50/50 rounded-xl space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-bold">{qIdx + 1}</span>
+                    <input
+                      type="text"
+                      value={question.text}
+                      onChange={(e) => {
+                        const updated = [...quizQuestions];
+                        updated[qIdx].text = e.target.value;
+                        setQuizQuestions(updated);
+                      }}
+                      placeholder={`Question ${qIdx + 1}`}
+                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    {quizQuestions.length > 1 && (
+                      <button
+                        onClick={() => setQuizQuestions(quizQuestions.filter((_, i) => i !== qIdx))}
+                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  {question.options.map((opt, oIdx) => (
+                    <div key={oIdx} className="flex items-center gap-2 ml-8">
+                      <button
+                        onClick={() => {
+                          const updated = [...quizQuestions];
+                          updated[qIdx].correctAnswer = oIdx;
+                          setQuizQuestions(updated);
+                        }}
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                          question.correctAnswer === oIdx
+                            ? 'border-green-500 bg-green-500'
+                            : 'border-gray-300 hover:border-green-400'
+                        }`}
+                      >
+                        {question.correctAnswer === oIdx && (
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </button>
+                      <input
+                        type="text"
+                        value={opt}
+                        onChange={(e) => {
+                          const updated = [...quizQuestions];
+                          updated[qIdx].options[oIdx] = e.target.value;
+                          setQuizQuestions(updated);
+                        }}
+                        placeholder={`Option ${oIdx + 1}`}
+                        className="flex-1 px-3 py-1.5 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                      {question.options.length > 2 && (
+                        <button
+                          onClick={() => {
+                            const updated = [...quizQuestions];
+                            updated[qIdx].options = updated[qIdx].options.filter((_, i) => i !== oIdx);
+                            if (updated[qIdx].correctAnswer >= updated[qIdx].options.length) {
+                              updated[qIdx].correctAnswer = 0;
+                            }
+                            setQuizQuestions(updated);
+                          }}
+                          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {question.options.length < 6 && (
+                    <button
+                      onClick={() => {
+                        const updated = [...quizQuestions];
+                        updated[qIdx].options.push('');
+                        setQuizQuestions(updated);
+                      }}
+                      className="ml-8 flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 font-medium transition-colors"
+                    >
+                      <Plus className="w-3 h-3" /> Add Option
+                    </button>
+                  )}
+                </div>
+              ))}
+              {quizQuestions.length < 20 && (
+                <button
+                  onClick={() => setQuizQuestions([...quizQuestions, { text: '', options: ['', ''], correctAnswer: 0 }])}
+                  className="flex items-center gap-2 px-3 py-2 text-purple-600 hover:bg-purple-50 rounded-full transition-colors text-sm font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Question
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Media Upload Section */}
           <div className="mt-4 space-y-3">
             {/* Hidden file input */}
@@ -629,7 +787,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             className={`px-5 py-2 bg-gradient-to-r ${getTypeColor(selectedType.color)} text-white rounded-full font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
           >
             {(creating || uploading) && <Loader2 className="w-4 h-4 animate-spin" />}
-            {uploading ? 'Uploading...' : postType === 'POLL' ? 'Create Poll' : postType === 'ANNOUNCEMENT' ? 'Announce' : 'Post'}
+            {uploading ? 'Uploading...' : postType === 'POLL' ? 'Create Poll' : postType === 'QUIZ' ? 'Create Quiz' : postType === 'ANNOUNCEMENT' ? 'Announce' : 'Post'}
           </button>
         </div>
       </div>
