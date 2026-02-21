@@ -1,5 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import hpp from 'hpp';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
@@ -13,8 +16,9 @@ dotenv.config({ path: '../../.env' });
 const app = express();
 const PORT = process.env.AUTH_SERVICE_PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
-const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '7d';
-const REFRESH_TOKEN_EXPIRATION = '30d';
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '1h';
+const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '7d';
+const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
 
 // ✅ Singleton pattern to prevent multiple Prisma instances
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
@@ -59,7 +63,105 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-app.use(express.json());
+
+// Security headers
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
+app.use(hpp());
+app.use(express.json({ limit: '10kb' }));
+
+// Rate limiters (in-memory — sufficient for single-instance / solo dev)
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many requests. Try again later.' },
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  skipSuccessfulRequests: true,
+  message: { success: false, error: 'Too many login attempts. Try again in 15 minutes.' },
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { success: false, error: 'Too many accounts created. Try again later.' },
+});
+
+app.use('/auth', globalLimiter);
+app.use('/auth/login', authLimiter);
+app.use('/auth/parent/login', authLimiter);
+app.use('/auth/register', registerLimiter);
+app.use('/auth/parent/register', registerLimiter);
+
+// ─── Password Policy ─────────────────────────────────────────────────
+const COMMON_PASSWORDS = new Set([
+  'password', '123456', '12345678', 'qwerty', 'abc123', 'password1',
+  'iloveyou', 'admin', 'letmein', 'welcome', 'monkey', 'master',
+  'dragon', 'login', 'princess', 'football', 'shadow', 'sunshine',
+  'trustno1', 'password123', 'stunity', 'stunity123',
+]);
+
+function validatePassword(password: string): { isValid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  if (password.length < 8) errors.push('At least 8 characters required');
+  if (password.length > 128) errors.push('Maximum 128 characters');
+  if (!/[A-Z]/.test(password)) errors.push('At least 1 uppercase letter');
+  if (!/[a-z]/.test(password)) errors.push('At least 1 lowercase letter');
+  if (!/[0-9]/.test(password)) errors.push('At least 1 number');
+  if (!/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password)) errors.push('At least 1 special character');
+  if (COMMON_PASSWORDS.has(password.toLowerCase())) errors.push('This password is too common');
+  return { isValid: errors.length === 0, errors };
+}
+
+// ─── Brute Force Protection ──────────────────────────────────────────
+async function checkAccountLock(user: any): Promise<{ locked: boolean; message?: string }> {
+  if (user.lockedUntil && new Date(user.lockedUntil) > new Date()) {
+    const minutesLeft = Math.ceil((new Date(user.lockedUntil).getTime() - Date.now()) / 60000);
+    return { locked: true, message: `Account locked. Try again in ${minutesLeft} minutes.` };
+  }
+  if (user.lockedUntil && new Date(user.lockedUntil) <= new Date()) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { failedAttempts: 0, lockedUntil: null },
+    });
+  }
+  return { locked: false };
+}
+
+async function recordFailedAttempt(user: any) {
+  const attempts = (user.failedAttempts || 0) + 1;
+  let lockMinutes: number | null = null;
+  if (attempts >= 15) lockMinutes = 24 * 60;
+  else if (attempts >= 10) lockMinutes = 60;
+  else if (attempts >= 5) lockMinutes = 15;
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      failedAttempts: attempts,
+      lockedUntil: lockMinutes ? new Date(Date.now() + lockMinutes * 60 * 1000) : null,
+    },
+  });
+}
+
+async function recordSuccessfulLogin(userId: string) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      failedAttempts: 0,
+      lockedUntil: null,
+      lastLogin: new Date(),
+      loginCount: { increment: 1 },
+    },
+  });
+}
 
 // Types
 interface AuthRequest extends Request {
@@ -96,6 +198,17 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
         success: false,
         error: 'User not found or inactive',
       });
+    }
+
+    // Invalidate tokens issued before password change
+    if (user.passwordChangedAt && decoded.iat) {
+      const changedTimestamp = Math.floor(new Date(user.passwordChangedAt).getTime() / 1000);
+      if (decoded.iat < changedTimestamp) {
+        return res.status(401).json({
+          success: false,
+          error: 'Password changed. Please log in again.',
+        });
+      }
     }
 
     if (user.school && !user.school.isActive) {
@@ -218,6 +331,15 @@ app.post(
         });
       }
 
+      // Check account lockout (brute force protection)
+      const lockCheck = await checkAccountLock(user);
+      if (lockCheck.locked) {
+        return res.status(423).json({
+          success: false,
+          error: lockCheck.message,
+        });
+      }
+
       // Check if school is active
       if (user.school && !user.school.isActive) {
         return res.status(403).json({
@@ -247,6 +369,7 @@ app.post(
 
       if (!isPasswordValid) {
         console.log('❌ Invalid password for:', user.email);
+        await recordFailedAttempt(user);
         return res.status(401).json({
           success: false,
           error: 'Invalid email or password',
@@ -255,14 +378,8 @@ app.post(
 
       console.log('✅ Login successful for:', user.email);
 
-      // Update last login
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          lastLogin: new Date(),
-          loginCount: { increment: 1 },
-        },
-      });
+      // Reset failed attempts + update last login
+      await recordSuccessfulLogin(user.id);
 
       // Generate tokens (include school data to avoid DB queries on every request)
       const accessToken = jwt.sign(
@@ -344,7 +461,7 @@ app.post(
   '/auth/register',
   [
     body('email').isEmail().withMessage('Valid email is required'),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
     body('firstName').notEmpty().withMessage('First name is required'),
     body('lastName').notEmpty().withMessage('Last name is required'),
   ],
@@ -359,6 +476,16 @@ app.post(
       }
 
       const { email, password, firstName, lastName, phone, role = 'STUDENT' } = req.body;
+
+      // Enforce password policy
+      const passwordCheck = validatePassword(password);
+      if (!passwordCheck.isValid) {
+        return res.status(400).json({
+          success: false,
+          error: 'Password does not meet requirements',
+          details: passwordCheck.errors,
+        });
+      }
 
       console.log('📝 Registration attempt:', {
         email,
@@ -381,7 +508,7 @@ app.post(
       }
 
       // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
       // Create user
       const user = await prisma.user.create({
@@ -637,7 +764,7 @@ app.post(
       }
 
       // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
       // Create parent and user in transaction
       const result = await prisma.$transaction(async (tx) => {
@@ -780,11 +907,21 @@ app.post(
         });
       }
 
+      // Check account lockout (brute force protection)
+      const parentLockCheck = await checkAccountLock(user);
+      if (parentLockCheck.locked) {
+        return res.status(423).json({
+          success: false,
+          error: parentLockCheck.message,
+        });
+      }
+
       // Verify password
       const isPasswordValid = await bcrypt.compare(password, user.password);
 
       if (!isPasswordValid) {
         console.log('❌ Invalid password for parent:', phone);
+        await recordFailedAttempt(user);
         return res.status(401).json({
           success: false,
           error: 'Invalid phone number or password',
@@ -793,14 +930,8 @@ app.post(
 
       console.log('✅ Parent login successful:', phone);
 
-      // Update last login
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          lastLogin: new Date(),
-          loginCount: { increment: 1 },
-        },
-      });
+      // Reset failed attempts + update last login
+      await recordSuccessfulLogin(user.id);
 
       // Get children info
       const children = user.parent?.studentParents.map(sp => ({
@@ -1596,7 +1727,7 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
     // Create user and link account in transaction
     const result = await prisma.$transaction(async (tx) => {
@@ -1834,7 +1965,8 @@ app.post('/auth/login/claim-code', async (req: Request, res: Response) => {
 app.listen(PORT, () => {
   console.log('');
   console.log('╔════════════════════════════════════════════════╗');
-  console.log('║   🔐 Auth Service - Stunity Enterprise v2.3   ║');
+  console.log('║   🔐 Auth Service - Stunity Enterprise v3.0   ║');
+  console.log('║   🛡️  Security: helmet + rate-limit + lockout  ║');
   console.log('╚════════════════════════════════════════════════╝');
   console.log('');
   console.log(`✅ Server running on port ${PORT}`);
