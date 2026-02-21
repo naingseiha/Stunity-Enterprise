@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { TokenManager } from '@/lib/api/auth';
 
 // Event types matching backend
 export type EventType =
@@ -106,7 +107,8 @@ export function useEventStream(userId: string | undefined, options: UseEventStre
     }
 
     try {
-      const url = `${FEED_API}/api/events/stream?userId=${userId}`;
+      const token = TokenManager.getAccessToken();
+      const url = `${FEED_API}/api/events/stream?userId=${userId}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
       const eventSource = new EventSource(url);
       eventSourceRef.current = eventSource;
 
@@ -164,8 +166,12 @@ export function useEventStream(userId: string | undefined, options: UseEventStre
         setIsConnected(false);
         onError?.(error);
         
-        // Reconnect with exponential backoff
+        // Reconnect with exponential backoff, max 10 attempts
         eventSource.close();
+        if (reconnectAttempts.current >= 10) {
+          console.warn('📡 SSE Max reconnect attempts reached, stopping');
+          return;
+        }
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
         reconnectAttempts.current++;
         

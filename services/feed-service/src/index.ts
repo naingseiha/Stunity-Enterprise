@@ -244,7 +244,13 @@ app.use('/', experienceRouter);
 app.use('/', achievementsRouter);
 
 // ─── Feature Modules (existing routers) ────────────────────────────
-app.use('/api/events', authenticateToken as any, sseRouter);
+// SSE: EventSource can't send headers, so accept token via query param
+app.use('/api/events', (req, res, next) => {
+  if (!req.headers['authorization'] && req.query.token) {
+    req.headers['authorization'] = `Bearer ${req.query.token}`;
+  }
+  next();
+}, authenticateToken as any, sseRouter);
 initDMRoutes(prisma);
 app.use('/dm', authenticateToken as any, dmRouter);
 initClubsRoutes(prisma);
