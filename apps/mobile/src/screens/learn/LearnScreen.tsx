@@ -758,15 +758,10 @@ const styles = StyleSheet.create({
 
   // ── Hero Learning Card ──
   heroCardWrapper: {
-    marginHorizontal: 16,
+    marginHorizontal: 12,
     marginTop: 16,
     borderRadius: 22,
     overflow: 'hidden',
-    shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    
   },
   heroCard: {
     flexDirection: 'row',
@@ -866,11 +861,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: Platform.OS === 'ios' ? 12 : 6,
     gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   filterButton: {
     width: 36,
@@ -961,11 +953,6 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH * 0.72,
     borderRadius: 14,
     overflow: 'hidden',
-    shadowColor: '#0284C7',
-    
-    
-    
-    
   },
   featuredGradient: {
     padding: 20,
@@ -1075,11 +1062,6 @@ const styles = StyleSheet.create({
     marginTop: 14,
     borderRadius: 22,
     overflow: 'hidden',
-    shadowColor: '#0284C7',
-    
-    
-    shadowRadius: 14,
-    
   },
   pathCard: {
     padding: 22,
@@ -1194,11 +1176,6 @@ const styles = StyleSheet.create({
   createCourseBtn: {
     borderRadius: 14,
     overflow: 'hidden',
-    shadowColor: '#0284C7',
-    
-    shadowOpacity: 0.2,
-    
-    
   },
   createGradient: {
     flexDirection: 'row',
