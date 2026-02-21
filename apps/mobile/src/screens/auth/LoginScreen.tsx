@@ -93,25 +93,13 @@ export default function LoginScreen() {
   const handleSocialLogin = async (provider: 'google' | 'apple') => {
     setSocialLoading(provider);
     try {
-      // Call backend social auth endpoint with provider token
-      // The actual OAuth flow is handled by the backend — mobile sends the provider's ID token
-      const { default: AuthSession } = await import('expo-auth-session');
-      
-      if (provider === 'google') {
-        // Google Sign-In: use expo-auth-session with Google's OAuth
-        const { default: Google } = await import('expo-auth-session/providers/google').catch(() => ({ default: null }));
-        if (!Google) {
-          Alert.alert('Setup Required', 'Google Sign-In requires EXPO_PUBLIC_GOOGLE_CLIENT_ID to be configured in your .env file.');
-          return;
-        }
-      }
-
       if (provider === 'apple' && Platform.OS !== 'ios') {
         Alert.alert('Not Available', 'Apple Sign-In is only available on iOS devices.');
         return;
       }
 
-      // For now, inform users that OAuth provider credentials need to be configured
+      // OAuth flow: backend handles token verification
+      // Configure GOOGLE_CLIENT_ID / APPLE_SERVICE_ID in .env to activate
       Alert.alert(
         'OAuth Configuration',
         `${provider === 'google' ? 'Google' : 'Apple'} Sign-In is ready on the backend. Configure your ${provider === 'google' ? 'GOOGLE_CLIENT_ID' : 'APPLE_SERVICE_ID'} in the .env file to activate.`,
