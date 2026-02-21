@@ -10,7 +10,7 @@
  * - Handles CloudFlare R2 URLs and relative keys
  */
 
-import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect, useLayoutEffect } from 'react';
 import {
   Text,
   View,
@@ -45,6 +45,9 @@ const isVideo = (uri: string) => {
   return ext === 'mp4' || ext === 'mov' || ext === 'avi' || ext === 'mkv';
 };
 
+// Global cache for image dimensions to prevent layout jumps during fast scrolling
+const globalImageDimensionsCache: Record<string, { width: number; height: number }> = {};
+
 function ImageCarouselInner({
   images,
   onImagePress,
@@ -59,18 +62,59 @@ function ImageCarouselInner({
     return borderRadius === 0 ? SCREEN_WIDTH : SCREEN_WIDTH - 28;
   }, [SCREEN_WIDTH, borderRadius]);
 
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
-  const [isCropped, setIsCropped] = useState(false); // Track if image is height-limited
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalInitialIndex, setModalInitialIndex] = useState(0);
-  const scrollViewRef = useRef<ScrollView>(null);
-
   // Normalize image URLs (handle R2 keys and relative paths)
   const normalizedImages = useMemo(() => {
     const normalized = normalizeMediaUrls(images);
     return normalized;
   }, [images]);
+
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(() => {
+    if (normalizedImages.length > 0 && globalImageDimensionsCache[normalizedImages[0]]) {
+      return globalImageDimensionsCache[normalizedImages[0]];
+    }
+    return null;
+  });
+  const [isCropped, setIsCropped] = useState(() => {
+    if (normalizedImages.length > 0 && globalImageDimensionsCache[normalizedImages[0]]) {
+      const dims = globalImageDimensionsCache[normalizedImages[0]];
+      const imageAspectRatio = dims.height / dims.width;
+      const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
+      const maxHeight = IMAGE_WIDTH * 1.4;
+      return calculatedHeight > maxHeight;
+    }
+    return false;
+  });
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalInitialIndex, setModalInitialIndex] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Reset state on cell recycling (when images prop changes)
+  useLayoutEffect(() => {
+    if (normalizedImages.length > 0) {
+      const firstImg = normalizedImages[0];
+      if (globalImageDimensionsCache[firstImg]) {
+        const dims = globalImageDimensionsCache[firstImg];
+        setImageDimensions(dims);
+        const imageAspectRatio = dims.height / dims.width;
+        const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
+        const maxHeight = IMAGE_WIDTH * 1.4;
+        setIsCropped(calculatedHeight > maxHeight);
+      } else {
+        setImageDimensions(null);
+        setIsCropped(false);
+      }
+    } else {
+      setImageDimensions(null);
+      setIsCropped(false);
+    }
+    setActiveIndex(0);
+    // Use setTimeout to skip the current frame and let FlatList mount completely before resetting scroll
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ x: 0, animated: false });
+    }, 0);
+  }, [normalizedImages, IMAGE_WIDTH]);
+
 
   // For videos in auto mode, default to 16:9 since we can't use onLoad
   useEffect(() => {
@@ -82,16 +126,22 @@ function ImageCarouselInner({
 
   // Handle first image load to detect natural dimensions for auto mode
   const handleFirstImageLoad = useCallback((event: ImageLoadEventData) => {
-    if (mode !== 'auto' || imageDimensions) return;
+    if (mode !== 'auto') return;
     const { width, height } = event.source;
     if (width && height) {
-      setImageDimensions({ width, height });
-      const imageAspectRatio = height / width;
-      const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
-      const maxHeight = IMAGE_WIDTH * 1.4;
-      setIsCropped(calculatedHeight > maxHeight);
+      if (normalizedImages.length > 0) {
+        globalImageDimensionsCache[normalizedImages[0]] = { width, height };
+      }
+      // Only set state if we don't already have these dimensions
+      if (!imageDimensions || imageDimensions.width !== width || imageDimensions.height !== height) {
+        setImageDimensions({ width, height });
+        const imageAspectRatio = height / width;
+        const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
+        const maxHeight = IMAGE_WIDTH * 1.4;
+        setIsCropped(calculatedHeight > maxHeight);
+      }
     }
-  }, [mode, imageDimensions, IMAGE_WIDTH]);
+  }, [mode, imageDimensions, IMAGE_WIDTH, normalizedImages]);
 
   // Calculate image height based on mode and dimensions
   const IMAGE_HEIGHT = useMemo(() => {
@@ -148,7 +198,7 @@ function ImageCarouselInner({
   if (normalizedImages.length === 0) return null;
 
   // Render Item Helper
-  const renderItem = (uri: string, index: number) => {
+  const renderItem = (uri: string, index: number, itemWidth: number | '100%' = IMAGE_WIDTH) => {
     const isVid = isVideo(uri);
 
     return (
@@ -157,7 +207,7 @@ function ImageCarouselInner({
         activeOpacity={isVid ? 1 : 0.95}
         onPress={() => handleImagePress(index)}
         style={[styles.imageContainer, {
-          width: IMAGE_WIDTH,
+          width: itemWidth,
           height: IMAGE_HEIGHT
         }]}
       >
@@ -195,7 +245,7 @@ function ImageCarouselInner({
   if (normalizedImages.length === 1) {
     return (
       <>
-        {renderItem(normalizedImages[0], 0)}
+        {renderItem(normalizedImages[0], 0, '100%')}
         <ImageViewerModal
           visible={modalVisible}
           images={normalizedImages}

@@ -103,19 +103,30 @@ export function TakeQuizScreen() {
 
   // Progress bar animation
   useEffect(() => {
-    const progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
+    if (questions.length === 0) return;
+    const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
     RNAnimated.timing(progressAnim, {
       toValue: progress,
       duration: 300,
       useNativeDriver: false, // Can't use native driver for width animation
     }).start();
-  }, [currentQuestionIndex]);
+  }, [currentQuestionIndex, questions.length]);
 
-  if (!quiz) {
-    return null;
+  if (!quiz || questions.length === 0) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Ionicons name="alert-circle-outline" size={48} color="#9CA3AF" />
+        <Text style={{ marginTop: 16, fontSize: 16, color: '#6B7280' }}>
+          No questions available for this quiz.
+        </Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 24, padding: 12, backgroundColor: '#6366F1', borderRadius: 8 }}>
+          <Text style={{ color: 'white', fontWeight: '600' }}>Go Back</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
   }
 
-  const currentQuestion = quiz.questions[currentQuestionIndex];
+  const currentQuestion = questions[currentQuestionIndex];
   const currentAnswer = answers.find((a) => a.questionId === currentQuestion.id)?.answer || '';
 
   const handleAnswerChange = (answer: string) => {
@@ -141,7 +152,7 @@ export function TakeQuizScreen() {
   };
 
   const handleNext = () => {
-    if (currentQuestionIndex < quiz.questions.length - 1) {
+    if (currentQuestionIndex < questions.length - 1) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
       // Celebrate progress milestone
@@ -185,7 +196,7 @@ export function TakeQuizScreen() {
   };
 
   const handleSubmit = async () => {
-    const unansweredCount = quiz.questions.length - answers.length;
+    const unansweredCount = questions.length - answers.length;
 
     if (unansweredCount > 0) {
       Alert.alert(
@@ -256,9 +267,9 @@ export function TakeQuizScreen() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const isLastQuestion = currentQuestionIndex === quiz.questions.length - 1;
+  const isLastQuestion = currentQuestionIndex === questions.length - 1;
   const answeredCount = answers.length;
-  const progressPercent = (answeredCount / quiz.questions.length) * 100;
+  const progressPercent = (answeredCount / questions.length) * 100;
   const isMarkedForReview = markedForReview.has(currentQuestion.id);
 
   // Render Review Screen
@@ -291,7 +302,7 @@ export function TakeQuizScreen() {
                 </View>
                 <View style={styles.summaryItem}>
                   <Ionicons name="alert-circle" size={32} color="#EF4444" />
-                  <Text style={styles.summaryNumber}>{quiz.questions.length - answeredCount}</Text>
+                  <Text style={styles.summaryNumber}>{questions.length - answeredCount}</Text>
                   <Text style={styles.summaryLabel}>Unanswered</Text>
                 </View>
                 <View style={styles.summaryItem}>
@@ -304,7 +315,7 @@ export function TakeQuizScreen() {
 
             {/* Questions Review List */}
             <View style={styles.reviewList}>
-              {quiz.questions.map((q, index) => {
+              {questions.map((q, index) => {
                 const answer = answers.find(a => a.questionId === q.id);
                 const isAnswered = !!answer;
                 const isFlagged = markedForReview.has(q.id);
@@ -434,7 +445,7 @@ export function TakeQuizScreen() {
             />
           </View>
           <Text style={styles.progressText}>
-            Question {currentQuestionIndex + 1} of {quiz.questions.length}
+            Question {currentQuestionIndex + 1} of {questions.length}
           </Text>
         </View>
 
@@ -683,7 +694,7 @@ export function TakeQuizScreen() {
           <View style={styles.answerGrid}>
             <Text style={styles.answerGridTitle}>Answer Status</Text>
             <View style={styles.gridContainer}>
-              {quiz.questions.map((q, index) => {
+              {questions.map((q, index) => {
                 const isAnswered = answers.some((a) => a.questionId === q.id);
                 const isCurrent = index === currentQuestionIndex;
                 return (
@@ -713,7 +724,7 @@ export function TakeQuizScreen() {
               })}
             </View>
             <Text style={styles.answeredCount}>
-              {answeredCount} of {quiz.questions.length} answered ({Math.round(progressPercent)}%)
+              {answeredCount} of {questions.length} answered ({Math.round(progressPercent || 0)}%)
             </Text>
           </View>
         </ScrollView>
@@ -895,8 +906,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     padding: 20,
     borderRadius: 14,
-    
-    
+
+
   },
   questionHeader: {
     flexDirection: 'row',
@@ -955,18 +966,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     borderWidth: 2,
-    
+
     gap: 14,
     minHeight: 64,
   },
   optionButtonSelected: {
     backgroundColor: '#EEF2FF',
     borderColor: '#6366F1',
-    
-    
-    
-    
-    
+
+
+
+
+
   },
   optionLetter: {
     width: 36,
@@ -1014,7 +1025,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 2,
-    
+
     gap: 8,
   },
   trueButtonSelected: {
@@ -1036,7 +1047,7 @@ const styles = StyleSheet.create({
   textInput: {
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
-    
+
     borderRadius: 12,
     padding: 16,
     fontSize: 15,
@@ -1049,8 +1060,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
     padding: 20,
     borderRadius: 16,
-    
-    
+
+
   },
   answerGridTitle: {
     fontSize: 15,
@@ -1071,8 +1082,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
-    
-    
+
+
   },
   gridItemAnswered: {
     backgroundColor: '#D1FAE5',
@@ -1133,7 +1144,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   navButtonDisabled: {
-    
+
   },
   navButtonText: {
     fontSize: 15,
@@ -1207,8 +1218,8 @@ const styles = StyleSheet.create({
     margin: 16,
     padding: 20,
     borderRadius: 16,
-    
-    
+
+
   },
   reviewTitle: {
     fontSize: 18,
@@ -1245,8 +1256,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     padding: 16,
     borderRadius: 12,
-    
-    
+
+
     marginBottom: 12,
   },
   reviewItemLeft: {
@@ -1357,8 +1368,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     padding: 12,
     borderRadius: 12,
-    
-    
+
+
     gap: 12,
   },
   orderingNumber: {
@@ -1403,7 +1414,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     padding: 12,
     borderRadius: 12,
-    
+
     borderColor: '#F3F4F6',
   },
   matchLeft: {
@@ -1422,8 +1433,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 14,
     backgroundColor: '#FFFFFF',
-    
-    
+
+
     marginRight: 8,
   },
   matchChipSelected: {
