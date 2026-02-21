@@ -618,6 +618,128 @@ app.post('/auth/logout', async (req: Request, res: Response) => {
 });
 
 // ============================================
+// REFRESH TOKEN ENDPOINT
+// ============================================
+
+/**
+ * POST /auth/refresh
+ * Validates a refresh token and returns a new token pair
+ */
+app.post('/auth/refresh', async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        success: false,
+        error: 'Refresh token is required',
+      });
+    }
+
+    // Verify token
+    let decoded: any;
+    try {
+      decoded = jwt.verify(refreshToken, JWT_SECRET);
+    } catch (err: any) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid or expired refresh token',
+      });
+    }
+
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      include: {
+        school: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            subscriptionTier: true,
+            subscriptionEnd: true,
+            isTrial: true,
+            isActive: true,
+          },
+        },
+      },
+    });
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not found or inactive',
+      });
+    }
+
+    // Check password change invalidation
+    if (user.passwordChangedAt && decoded.iat) {
+      const changedTimestamp = Math.floor(new Date(user.passwordChangedAt).getTime() / 1000);
+      if (decoded.iat < changedTimestamp) {
+        return res.status(401).json({
+          success: false,
+          error: 'Password changed. Please log in again.',
+        });
+      }
+    }
+
+    // Check school active status
+    if (user.school && !user.school.isActive) {
+      return res.status(403).json({
+        success: false,
+        error: 'School subscription is inactive',
+      });
+    }
+
+    // Generate new tokens
+    const newAccessToken = jwt.sign(
+      {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        schoolId: user.schoolId,
+        school: user.school ? {
+          id: user.school.id,
+          name: user.school.name,
+          slug: user.school.slug,
+          subscriptionTier: user.school.subscriptionTier,
+          subscriptionEnd: user.school.subscriptionEnd,
+          isTrial: user.school.isTrial,
+          isActive: user.school.isActive,
+        } : null,
+      },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
+    );
+
+    const newRefreshToken = jwt.sign(
+      { userId: user.id },
+      JWT_SECRET,
+      { expiresIn: REFRESH_TOKEN_EXPIRATION } as jwt.SignOptions
+    );
+
+    console.log('🔄 Token refreshed successfully for:', user.email);
+
+    res.json({
+      success: true,
+      data: {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+        expiresIn: JWT_EXPIRATION,
+      },
+    });
+
+  } catch (error: any) {
+    console.error('Token refresh error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to refresh token',
+      details: error.message,
+    });
+  }
+});
+
+// ============================================
 // PARENT PORTAL ENDPOINTS
 // ============================================
 
