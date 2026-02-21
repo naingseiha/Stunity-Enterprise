@@ -26,7 +26,11 @@ if (__DEV__) {
 }
 
 // Prevent auto-hide expo splash screen
-ExpoSplashScreen.preventAutoHideAsync().catch(() => { });
+ExpoSplashScreen.preventAutoHideAsync().catch((error) => {
+  console.warn('Failed to prevent native splash auto-hide:', error);
+});
+
+const APP_INIT_TIMEOUT_MS = 15000;
 
 export default function App() {
   const [appIsReady, setAppIsReady] = useState(false);
@@ -37,7 +41,12 @@ export default function App() {
     async function prepare() {
       try {
         // Initialize auth - this will restore persisted state
-        await initialize();
+        await Promise.race([
+          initialize(),
+          new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('App initialization timed out')), APP_INIT_TIMEOUT_MS);
+          }),
+        ]);
       } catch (e) {
         console.warn('App init error:', e);
         useAuthStore.setState({
@@ -46,13 +55,19 @@ export default function App() {
         });
       } finally {
         setAppIsReady(true);
-        // Hide expo's native splash screen
-        ExpoSplashScreen.hideAsync().catch(() => { });
       }
     }
 
     prepare();
   }, []);
+
+  useEffect(() => {
+    if (!appIsReady) return;
+
+    ExpoSplashScreen.hideAsync().catch((error) => {
+      console.warn('Failed to hide native splash screen:', error);
+    });
+  }, [appIsReady]);
 
   const handleSplashComplete = () => {
     setShowSplash(false);

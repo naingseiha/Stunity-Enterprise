@@ -31,10 +31,14 @@ const createApiClient = (baseURL: string): AxiosInstance => {
   // Request interceptor
   client.interceptors.request.use(
     async (config: InternalAxiosRequestConfig) => {
-      // Add auth token
-      const token = await tokenService.getAccessToken();
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+      const isTokenRefreshRequest = config.url?.includes('/auth/refresh');
+
+      // Add auth token (skip refresh endpoint to avoid refresh recursion/deadlock)
+      if (!isTokenRefreshRequest) {
+        const token = await tokenService.getAccessToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
       }
 
       // Add request ID for tracing

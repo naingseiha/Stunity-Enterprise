@@ -23,7 +23,7 @@ class TokenService {
   private refreshToken: string | null = null;
   private tokenExpiry: number | null = null;
   private isRefreshing = false;
-  private refreshSubscribers: ((token: string) => void)[] = [];
+  private refreshSubscribers: ((token: string | null) => void)[] = [];
 
   /**
    * Initialize tokens from secure storage
@@ -86,13 +86,18 @@ class TokenService {
     return now >= this.tokenExpiry - APP_CONFIG.TOKEN_REFRESH_THRESHOLD;
   }
 
+  private notifyRefreshSubscribers(token: string | null): void {
+    this.refreshSubscribers.forEach(callback => callback(token));
+    this.refreshSubscribers = [];
+  }
+
   /**
    * Refresh the access token
    */
   async refreshAccessToken(): Promise<string | null> {
     // Prevent concurrent refresh requests
     if (this.isRefreshing) {
-      return new Promise<string>((resolve) => {
+      return new Promise<string | null>((resolve) => {
         this.refreshSubscribers.push(resolve);
       });
     }
@@ -118,8 +123,7 @@ class TokenService {
         await this.setTokens(tokens);
         
         // Notify all subscribers
-        this.refreshSubscribers.forEach(callback => callback(tokens.accessToken));
-        this.refreshSubscribers = [];
+        this.notifyRefreshSubscribers(tokens.accessToken);
         
         return tokens.accessToken;
       }
@@ -127,6 +131,7 @@ class TokenService {
       throw new Error('Token refresh failed');
     } catch (error) {
       console.error('Failed to refresh token:', error);
+      this.notifyRefreshSubscribers(null);
       await this.clearTokens();
       return null;
     } finally {
