@@ -312,70 +312,118 @@ export class FeedRanker {
 
     // ─── Suggested Content Injectors ──────────────────────────────────────
     private async getSuggestedUsers(userId: string, signals: UserSignals): Promise<Partial<User>[]> {
-        // Find verified teachers or users sharing same interests
+        // Suggest users who share interests, teachers, or anyone active the user isn't already following.
+        // Intentionally permissive — we only exclude the current user and already-followed users.
         const userTopics = Object.keys(signals.topics).slice(0, 5);
         const excludeIds = [userId, ...signals.followingIds];
 
-        const where: any = {
+        const baseWhere: any = {
             id: { notIn: excludeIds },
-            isActive: true,
         };
 
-        // Build OR filter: verified users OR shared interests (only if topics exist)
-        const orConditions: any[] = [
-            { isEmailVerified: true }, // Verified users always show
-        ];
-        if (userTopics.length > 0) {
-            orConditions.push({ interests: { hasSome: userTopics } });
-        }
-        where.OR = orConditions;
+        // Primary: shared interests or teacher/admin roles
+        const primaryWhere: any = {
+            ...baseWhere,
+            OR: [
+                { role: { in: ['TEACHER', 'ADMIN', 'STAFF'] } },
+                ...(userTopics.length > 0 ? [{ interests: { hasSome: userTopics } }] : []),
+            ],
+        };
 
-        const suggested = await this.prisma.user.findMany({
-            where,
-            select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                profilePictureUrl: true,
-                role: true,
-                headline: true,
-                isEmailVerified: true,
-            },
+        const selectFields = {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true,
+            role: true,
+            headline: true,
+            isEmailVerified: true,
+        };
+
+        let suggested = await this.prisma.user.findMany({
+            where: primaryWhere,
+            select: selectFields,
             orderBy: { createdAt: 'desc' },
-            take: 10
+            take: 10,
         });
+
+        // Fallback: if not enough primary suggestions, fill with any other users
+        if (suggested.length < 3) {
+            suggested = await this.prisma.user.findMany({
+                where: baseWhere,
+                select: selectFields,
+                orderBy: { createdAt: 'desc' },
+                take: 10,
+            });
+        }
 
         return suggested;
     }
 
     private async getSuggestedCourses(userId: string, signals: UserSignals): Promise<any[]> {
-        // Surface high-engagement courses matching user interests (or any if new user)
+        // Surface courses matching user interests. Permissive fallback so carousels always show.
         const userTopics = Object.keys(signals.topics).slice(0, 5);
 
-        const where: any = {
+        const includeFields = {
+            instructor: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, isEmailVerified: true } },
+        };
+        const orderBy: any = [
+            { rating: 'desc' },
+            { enrolledCount: 'desc' },
+            { createdAt: 'desc' },
+        ];
+
+        // Primary: published courses the user isn't enrolled in, matching their topics
+        const primaryWhere: any = {
             instructorId: { not: userId },
             isPublished: true,
-            enrollments: {
-                none: { userId } // Only courses not yet enrolled in
-            }
+            enrollments: { none: { userId } },
+            ...(userTopics.length > 0 && { tags: { hasSome: userTopics } }),
         };
 
-        // Only apply topic filter if user has a history — otherwise show popular courses
-        if (userTopics.length > 0) {
-            where.tags = { hasSome: userTopics };
+        let suggested = await this.prisma.course.findMany({
+            where: primaryWhere,
+            include: includeFields,
+            orderBy,
+            take: 8,
+        });
+
+        // Fallback 1: drop topic filter but keep published + not enrolled
+        if (suggested.length < 2) {
+            suggested = await this.prisma.course.findMany({
+                where: {
+                    instructorId: { not: userId },
+                    isPublished: true,
+                    enrollments: { none: { userId } },
+                },
+                include: includeFields,
+                orderBy,
+                take: 8,
+            });
         }
 
-        const suggested = await this.prisma.course.findMany({
-            where,
-            include: {
-                instructor: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, isEmailVerified: true } },
-            },
-            orderBy: [
-                { rating: 'desc' },
-                { enrolledCount: 'desc' }
-            ],
-            take: 8
-        });
+        // Fallback 2: any published courses (even if enrolled, they serve as discovery)
+        if (suggested.length < 2) {
+            suggested = await this.prisma.course.findMany({
+                where: {
+                    instructorId: { not: userId },
+                    isPublished: true,
+                },
+                include: includeFields,
+                orderBy,
+                take: 8,
+            });
+        }
+
+        // Fallback 3: any courses at all (even unpublished, for dev environments)
+        if (suggested.length < 2) {
+            suggested = await this.prisma.course.findMany({
+                where: { instructorId: { not: userId } },
+                include: includeFields,
+                orderBy,
+                take: 8,
+            });
+        }
 
         return suggested.map(course => ({
             ...course,
@@ -797,6 +845,14 @@ export class FeedRanker {
         // Title presence (structured content)
         if (post.title) score += 0.05;
 
+        // 💎 Q&A Bounty Boost (Max +0.3 for very high bounties)
+        if (post.postType === 'QUESTION' && (post as any).questionBounty > 0) {
+            const bounty = (post as any).questionBounty;
+            // 10 diamonds = 0.05, 50 = 0.15, 100+ = 0.3
+            const bountyBoost = Math.min(bounty / 300, 0.3);
+            score += bountyBoost;
+        }
+
         return Math.min(score, 1.0);
     }
 
@@ -1060,6 +1116,10 @@ export class FeedRanker {
 
             if (ops.length > 0) {
                 await this.prisma.$transaction(ops);
+
+                // Immediately invalidate feed cache so the next pull-to-refresh
+                // uses the newly updated topic/interest weights.
+                await feedCache.invalidateUser(userId);
             }
         } catch (error) {
             console.error('❌ [FeedRanker] trackAction error:', error);

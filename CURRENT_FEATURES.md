@@ -253,7 +253,7 @@
 - Achievement badges (academic + social milestones)
 - Learning streaks
 - Attendance streaks
-- Leaderboard by school/global
+- Reputation Leaderboard (Top Scholars podium UI and global ranking)
 - Quiz challenge duels
 
 ---

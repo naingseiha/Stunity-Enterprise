@@ -16,6 +16,58 @@ const router = Router();
 // PROFILE ENDPOINTS
 // ========================================
 
+// GET /users/suggested - Suggested users for feed carousel (no query required)
+router.get('/users/suggested', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const currentUserId = req.user?.id;
+    const { limit = 10 } = req.query;
+
+    // Get IDs the user is already following (to exclude them)
+    const following = await prisma.follow.findMany({
+      where: { followerId: currentUserId },
+      select: { followingId: true },
+    });
+    const followingIds = following.map(f => f.followingId);
+    const excludeIds = [currentUserId!, ...followingIds];
+
+    const selectFields = {
+      id: true,
+      firstName: true,
+      lastName: true,
+      profilePictureUrl: true,
+      role: true,
+      headline: true,
+      isEmailVerified: true,
+    };
+
+    // Primary: teachers and admins the user isn't following
+    let users: any[] = await prisma.user.findMany({
+      where: {
+        id: { notIn: excludeIds },
+        role: { in: ['TEACHER', 'ADMIN', 'STAFF'] as any[] },
+      },
+      select: selectFields,
+      orderBy: { createdAt: 'desc' },
+      take: Number(limit),
+    });
+
+    // Fallback: any other users if not enough teachers/admins
+    if (users.length < 3) {
+      users = await prisma.user.findMany({
+        where: { id: { notIn: excludeIds } },
+        select: selectFields,
+        orderBy: { createdAt: 'desc' },
+        take: Number(limit),
+      });
+    }
+
+    res.json({ success: true, users });
+  } catch (error: any) {
+    console.error('Suggested users error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get suggested users' });
+  }
+});
+
 // GET /users/search - Search users for DM
 router.get('/users/search', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -51,6 +103,37 @@ router.get('/users/search', authenticateToken, async (req: AuthRequest, res: Res
   } catch (error: any) {
     console.error('User search error:', error);
     res.status(500).json({ success: false, error: 'Failed to search users' });
+  }
+});
+
+// GET /users/leaderboard - Get top 50 users by totalPoints (Reputation Leaderboard)
+router.get('/users/leaderboard', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const limit = Number(req.query.limit) || 50;
+
+    // In a real app we might cache this in Redis, but we'll query DB for now
+    const users = await prisma.user.findMany({
+      where: {
+        isActive: true,
+        role: { in: ['STUDENT', 'TEACHER'] as any[] }, // Exclude admins if appropriate, or keep them
+      },
+      orderBy: { totalPoints: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        profilePictureUrl: true,
+        totalPoints: true,
+        level: true,
+        isVerified: true,
+      },
+    });
+
+    res.json({ success: true, leaderboard: users });
+  } catch (error: any) {
+    console.error('Leaderboard fetch error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch leaderboard' });
   }
 });
 

@@ -52,7 +52,7 @@ export default function CommentsScreen() {
   const { user } = useAuthStore();
 
   const {
-    posts,
+    feedItems,
     comments,
     isLoadingComments,
     isSubmittingComment,
@@ -64,7 +64,8 @@ export default function CommentsScreen() {
   const [newComment, setNewComment] = useState('');
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
 
-  const post = posts.find((p) => p.id === postId);
+  const postItem = feedItems.find((p) => p.type === 'POST' && p.data.id === postId) as { type: 'POST', data: any } | undefined;
+  const post = postItem?.data;
   const postComments = comments[postId] || [];
   const isLoading = isLoadingComments[postId] || false;
   const isSubmitting = isSubmittingComment[postId] || false;
@@ -138,8 +139,16 @@ export default function CommentsScreen() {
     setDeletingCommentId(null);
   };
 
+  const handleVerifyAnswer = async (commentId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await feedStore.getState().verifyAnswer(postId, commentId);
+  };
+
   const renderComment = ({ item: comment, index }: { item: Comment; index: number }) => {
     const isOwnComment = user?.id === comment.author.id;
+    const isPostAuthor = user?.id === post?.author.id;
+    const isTeacher = user?.role === 'TEACHER';
+    const canVerify = (isPostAuthor || isTeacher) && post?.postType === 'QUESTION' && !post.learningMeta?.isAnswered;
     const isDeleting = deletingCommentId === comment.id;
 
     return (
@@ -158,7 +167,11 @@ export default function CommentsScreen() {
           />
 
           <View style={styles.commentBubbleContainer}>
-            <View style={[styles.commentBubble, isOwnComment && styles.ownCommentBubble]}>
+            <View style={[
+              styles.commentBubble,
+              isOwnComment && styles.ownCommentBubble,
+              comment.isVerifiedAnswer && styles.verifiedAnswerBubble
+            ]}>
               <View style={styles.commentHeader}>
                 <Text style={styles.commentAuthor}>
                   {comment.author.firstName} {comment.author.lastName}
@@ -173,28 +186,47 @@ export default function CommentsScreen() {
                     <Text style={styles.teacherBadgeText}>Teacher</Text>
                   </View>
                 )}
+
+                {/* Golden Checkmark for Verified Answers */}
+                {comment.isVerifiedAnswer && (
+                  <View style={styles.goldenCheckmarkContainer}>
+                    <Ionicons name="checkmark-circle" size={16} color="#F59E0B" />
+                    <Text style={styles.goldenCheckmarkText}>Verified Answer</Text>
+                  </View>
+                )}
               </View>
 
               <Text style={styles.commentText}>{comment.content}</Text>
 
               <View style={styles.commentFooter}>
                 <Text style={styles.commentTime}>{formatRelativeTime(comment.createdAt)}</Text>
-                {isOwnComment && (
-                  <TouchableOpacity
-                    onPress={() => handleDeleteComment(comment.id)}
-                    style={styles.deleteButton}
-                    disabled={isDeleting}
-                  >
-                    {isDeleting ? (
-                      <ActivityIndicator size="small" color="#EF4444" />
-                    ) : (
-                      <>
-                        <Ionicons name="trash-outline" size={14} color="#EF4444" />
-                        <Text style={styles.deleteText}>Delete</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                )}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  {canVerify && !isOwnComment && (
+                    <TouchableOpacity
+                      onPress={() => handleVerifyAnswer(comment.id)}
+                      style={styles.verifyButton}
+                    >
+                      <Ionicons name="checkmark-circle-outline" size={14} color="#10B981" />
+                      <Text style={styles.verifyText}>Mark Verified</Text>
+                    </TouchableOpacity>
+                  )}
+                  {isOwnComment && (
+                    <TouchableOpacity
+                      onPress={() => handleDeleteComment(comment.id)}
+                      style={styles.deleteButton}
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? (
+                        <ActivityIndicator size="small" color="#EF4444" />
+                      ) : (
+                        <>
+                          <Ionicons name="trash-outline" size={14} color="#EF4444" />
+                          <Text style={styles.deleteText}>Delete</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             </View>
           </View>
@@ -408,7 +440,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
-    
+
     borderColor: '#DBEAFE',
   },
   commentCountText: {
@@ -428,7 +460,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     padding: 14,
     borderRadius: 12,
-    
+
     borderColor: '#F0F0F0',
   },
   postPreviewHeader: {
@@ -482,12 +514,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderTopLeftRadius: 4,
     padding: 12,
-    
+
     borderColor: '#F0F0F0',
   },
   ownCommentBubble: {
     backgroundColor: '#FFFFFF',
     borderColor: '#E3F2FD',
+  },
+  verifiedAnswerBubble: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+    borderWidth: 1,
   },
   commentHeader: {
     flexDirection: 'row',
@@ -513,13 +550,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
-    
     borderColor: '#FFE4C4',
   },
   teacherBadgeText: {
     fontSize: 10,
     fontWeight: '600',
     color: '#0284C7',
+  },
+  goldenCheckmarkContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    marginLeft: 'auto',
+  },
+  goldenCheckmarkText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#D97706',
   },
   commentText: {
     fontSize: 14,
@@ -535,6 +588,20 @@ const styles = StyleSheet.create({
   commentTime: {
     fontSize: 12,
     color: '#8E8E93',
+  },
+  verifyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: '#ECFDF5',
+  },
+  verifyText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#10B981',
   },
   deleteButton: {
     flexDirection: 'row',
@@ -630,7 +697,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9F9F9',
     borderRadius: 22,
     padding: 8,
-    
+
     borderColor: '#E8E8E8',
   },
   inputField: {
@@ -660,9 +727,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#0066FF',
-    
+
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    
+
   },
 });

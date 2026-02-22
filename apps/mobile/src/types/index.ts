@@ -286,6 +286,8 @@ export interface Post {
       results?: any[]; // Array of result details
     };
   };
+  // Q&A Bounty
+  questionBounty?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -304,6 +306,7 @@ export interface Comment {
   likes: number;
   isLiked: boolean;
   replies: Comment[];
+  isVerifiedAnswer?: boolean;
   createdAt: string;
 }
 

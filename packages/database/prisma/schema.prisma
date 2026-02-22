@@ -709,6 +709,7 @@ model Post {
   projectTeamSize          Int?
   topicTags                String[]       // Tags for topic matching / personalization
   mediaDisplayMode         String?        @default("AUTO") // AUTO, FIXED_HEIGHT, FULL_HEIGHT
+  questionBounty           Int            @default(0) // Amount of diamonds offered for an answer
   trendingScore            Float          @default(0) // Precomputed trending score for fast queries
   studyClubId              String? // If posted in a study club
   comments                 Comment[]
@@ -749,7 +750,8 @@ model Comment {
   authorId  String
   content   String
   parentId  String?
-  createdAt DateTime          @default(now())
+  isVerifiedAnswer Boolean  @default(false)
+  createdAt DateTime        @default(now())
   updatedAt DateTime          @updatedAt
   reactions CommentReaction[]
   author    User              @relation(fields: [authorId], references: [id], onDelete: Cascade)

@@ -124,7 +124,7 @@ interface FeedState {
   fetchPosts: (refresh?: boolean, subject?: string) => Promise<void>;
   fetchPostById: (postId: string) => Promise<Post | null>;
   fetchStories: () => Promise<void>;
-  createPost: (content: string, mediaUrls?: string[], postType?: string, pollOptions?: string[], quizData?: any, title?: string, visibility?: string, pollSettings?: any, courseData?: any, projectData?: any, topicTags?: string[], deadline?: string) => Promise<boolean>;
+  createPost: (content: string, mediaUrls?: string[], postType?: string, pollOptions?: string[], quizData?: any, title?: string, visibility?: string, pollSettings?: any, courseData?: any, projectData?: any, topicTags?: string[], deadline?: string, questionBounty?: number) => Promise<boolean>;
   updatePost: (postId: string, data: { content: string; visibility?: string; mediaUrls?: string[]; mediaDisplayMode?: string; pollOptions?: string[]; quizData?: any; pollSettings?: any; deadline?: string }) => Promise<boolean>;
   likePost: (postId: string) => Promise<void>;
   unlikePost: (postId: string) => Promise<void>;
@@ -135,6 +135,7 @@ interface FeedState {
   fetchComments: (postId: string) => Promise<void>;
   addComment: (postId: string, content: string) => Promise<boolean>;
   deleteComment: (commentId: string, postId: string) => Promise<void>;
+  verifyAnswer: (postId: string, commentId: string) => Promise<boolean>;
 
   // Engagement actions
   voteOnPoll: (postId: string, optionId: string) => Promise<void>;
@@ -378,6 +379,86 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           cacheFeedPosts(optimizedPostsOnly).catch(() => { });
         }
 
+        // ── Client-side suggestion carousel fallback ──────────────────────────
+        // If the backend didn't inject SUGGESTED_USERS or SUGGESTED_COURSES rows
+        // (e.g. seed data is sparse or user is new), fetch and inject them ourselves.
+        // This runs in the background so it never blocks the feed render.
+        if (page === 1) {
+          const hasSuggestedUsers = optimizedFeedItems.some(i => i.type === 'SUGGESTED_USERS');
+          const hasSuggestedCourses = optimizedFeedItems.some(i => i.type === 'SUGGESTED_COURSES');
+
+          if (!hasSuggestedUsers || !hasSuggestedCourses) {
+            (async () => {
+              try {
+                const [usersResp, coursesResp] = await Promise.allSettled([
+                  !hasSuggestedUsers
+                    ? feedApi.get('/users/suggested', { params: { limit: 10 }, timeout: 5000 })
+                    : Promise.resolve(null),
+                  !hasSuggestedCourses
+                    ? feedApi.get('/courses', { params: { limit: 8, page: 1 }, timeout: 5000 })
+                    : Promise.resolve(null),
+                ]);
+
+                // /users/search returns { success: true, users: [...] }
+                const users: any[] =
+                  usersResp.status === 'fulfilled' && usersResp.value?.data?.users
+                    ? usersResp.value.data.users
+                    : [];
+
+                // /courses returns { courses: [...], pagination: {...} }
+                // Map thumbnail → thumbnailUrl to match SuggestedCoursesCarousel's Course type
+                const courses: any[] = (
+                  coursesResp.status === 'fulfilled' && coursesResp.value?.data?.courses
+                    ? coursesResp.value.data.courses
+                    : []
+                ).map((c: any) => ({
+                  ...c,
+                  thumbnailUrl: c.thumbnailUrl || c.thumbnail,
+                  instructor: c.instructor ? {
+                    id: c.instructor.id,
+                    firstName: c.instructor.name?.split(' ')[0] || '',
+                    lastName: c.instructor.name?.split(' ').slice(1).join(' ') || '',
+                    profilePictureUrl: c.instructor.avatar || c.instructor.profilePictureUrl,
+                    isEmailVerified: false,
+                  } : undefined,
+                }));
+
+                if (users.length === 0 && courses.length === 0) return;
+
+                set(state => {
+                  // Re-check after async gap in case another fetch already injected them
+                  const alreadyHasUsers = state.feedItems.some(i => i.type === 'SUGGESTED_USERS');
+                  const alreadyHasCourses = state.feedItems.some(i => i.type === 'SUGGESTED_COURSES');
+
+                  const items = [...state.feedItems];
+
+                  // Inject suggested users at position 6 (after first 6 posts)
+                  if (!alreadyHasUsers && users.length > 0) {
+                    const insertAt = Math.min(6, items.length);
+                    items.splice(insertAt, 0, { type: 'SUGGESTED_USERS', data: users });
+                  }
+
+                  // Inject suggested courses at position 14 (after suggested users insert)
+                  if (!alreadyHasCourses && courses.length > 0) {
+                    const insertAt = Math.min(14, items.length);
+                    items.splice(insertAt, 0, { type: 'SUGGESTED_COURSES', data: courses });
+                  }
+
+                  return { feedItems: items };
+                });
+
+                if (__DEV__) {
+                  console.log(`✅ [FeedStore] Client-side carousels injected: ${users.length} users, ${courses.length} courses`);
+                }
+              } catch (err) {
+                // Silent — carousels are an enhancement, not critical
+                if (__DEV__) console.log('⚠️ [FeedStore] Carousel fallback skipped:', err);
+              }
+            })();
+          }
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         // Background: Prefetch first media URL for smooth scrolling
         const urlsToPrefetch = optimizedPostsOnly
           .flatMap((p: Post) => p.mediaUrls?.slice(0, 1) || [])
@@ -464,7 +545,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   },
 
   // Create a new post
-  createPost: async (content, mediaUrls = [], postType = 'ARTICLE', pollOptions = [], quizData, title, visibility = 'PUBLIC', pollSettings, courseData, projectData, topicTags, deadline) => {
+  createPost: async (content, mediaUrls = [], postType = 'ARTICLE', pollOptions = [], quizData, title, visibility = 'PUBLIC', pollSettings, courseData, projectData, topicTags, deadline, questionBounty = 0) => {
     try {
       // Upload local images to R2 before creating post
       let uploadedMediaUrls = mediaUrls;
@@ -521,11 +602,11 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       }
 
       // Calculate poll deadline if duration provided
-      let deadline = undefined;
+      let resolvedDeadline = deadline;
       if (postType === 'POLL' && pollSettings?.duration) {
         const now = new Date();
         now.setHours(now.getHours() + pollSettings.duration);
-        deadline = now.toISOString();
+        resolvedDeadline = now.toISOString();
       }
 
       // Now create post with uploaded URLs
@@ -538,11 +619,12 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         mediaDisplayMode: 'AUTO',
         pollOptions: postType === 'POLL' ? pollOptions : undefined,
         pollSettings: postType === 'POLL' ? pollSettings : undefined, // Send full settings
-        deadline, // Send deadline for backend to handle
+        deadline: resolvedDeadline, // Send deadline for backend to handle
         quizData: postType === 'QUIZ' ? quizData : undefined,
         courseData: postType === 'COURSE' ? courseData : undefined,
         projectData: postType === 'PROJECT' ? projectData : undefined,
         topicTags: topicTags || [],
+        questionBounty: postType === 'QUESTION' ? questionBounty : undefined,
       });
 
       if (response.data.success) {
@@ -969,6 +1051,48 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       }));
     } catch (error) {
       console.error('Failed to delete comment:', error);
+    }
+  },
+
+  // Verify an answer (Q&A Bounty)
+  verifyAnswer: async (postId, commentId) => {
+    try {
+      const response = await feedApi.post(`/posts/${postId}/comments/${commentId}/verify`);
+      if (response.data.success) {
+        // Update the comment's verified status locally
+        set((state) => {
+          const postComments = state.comments[postId] || [];
+          return {
+            comments: {
+              ...state.comments,
+              [postId]: postComments.map((c) =>
+                c.id === commentId ? { ...c, isVerifiedAnswer: true } : c
+              ),
+            },
+            // Also update the post's learningMeta to show it's answered
+            feedItems: state.feedItems.map((item) =>
+              item.type === 'POST' && item.data.id === postId
+                ? {
+                  ...item,
+                  data: {
+                    ...item.data,
+                    learningMeta: {
+                      ...(item.data.learningMeta || {}),
+                      isAnswered: true,
+                      acceptedAnswerId: commentId,
+                    }
+                  }
+                }
+                : item
+            ),
+          };
+        });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to verify answer:', error);
+      return false;
     }
   },
 

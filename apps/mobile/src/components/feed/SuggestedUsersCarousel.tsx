@@ -17,7 +17,12 @@ export const SuggestedUsersCarousel: React.FC<Props> = ({ users }) => {
 
     const renderItem = ({ item }: { item: Partial<User> }) => {
         if (!item) return null;
-        const name = item.name || `${item.firstName} ${item.lastName}`;
+        const name = item.name || `${item.firstName || ''} ${item.lastName || ''}`.trim();
+        const subtitle = item.headline || (
+            item.role === 'TEACHER' ? 'Teacher' :
+                item.role === 'ADMIN' || item.role === 'SCHOOL_ADMIN' ? 'Admin' :
+                    'Student'
+        );
         return (
             <TouchableOpacity
                 style={[styles.card, Shadows.sm]}
@@ -26,9 +31,7 @@ export const SuggestedUsersCarousel: React.FC<Props> = ({ users }) => {
             >
                 <Avatar uri={item.profilePictureUrl} name={name} size="lg" />
                 <Text style={styles.name} numberOfLines={1}>{name}</Text>
-                <Text style={styles.role} numberOfLines={1}>
-                    {item.role === 'TEACHER' ? 'Teacher' : item.role === 'ADMIN' ? 'Admin' : 'Student'}
-                </Text>
+                <Text style={styles.role} numberOfLines={1}>{subtitle}</Text>
                 <TouchableOpacity style={styles.followBtn}>
                     <Text style={styles.followBtnText}>Follow</Text>
                 </TouchableOpacity>

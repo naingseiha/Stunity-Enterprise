@@ -343,6 +343,9 @@ export default function CreatePostScreen() {
         finalTags.push(difficulty.toLowerCase());
       }
 
+      // Resolve question bounty if it's a question post
+      const questionBounty = postType === 'QUESTION' && questionData ? questionData.bounty : 0;
+
       // Upload images and create post
       const success = await createPost(
         content,
@@ -356,7 +359,8 @@ export default function CreatePostScreen() {
         courseData,
         projectData,
         finalTags,
-        deadlineISO
+        deadlineISO,
+        questionBounty
       );
 
       if (success) {
@@ -374,7 +378,7 @@ export default function CreatePostScreen() {
     } finally {
       setIsPosting(false);
     }
-  }, [content, postType, postTitle, mediaUris, pollOptions, quizData, courseData, projectData, navigation, createPost, visibility, topicTags, difficulty, deadlineDays]);
+  }, [content, postType, postTitle, mediaUris, pollOptions, quizData, courseData, projectData, questionData, navigation, createPost, visibility, topicTags, difficulty, deadlineDays]);
 
   const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
   const canPost = content.trim().length > 0;

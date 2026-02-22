@@ -50,6 +50,24 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
       else if (postType === 'ASSIGNMENT') deadlineFields.assignmentDueDate = deadlineDate;
     }
 
+    // Handle Question Bounties
+    let resolvedBounty = 0;
+    const requestedBounty = req.body.questionBounty ? parseInt(req.body.questionBounty, 10) : 0;
+
+    if (postType === 'QUESTION' && requestedBounty > 0) {
+      // Fetch user to check balance
+      const user = await prisma.user.findUnique({
+        where: { id: req.user!.id },
+        select: { totalPoints: true }
+      });
+
+      if (!user || user.totalPoints < requestedBounty) {
+        return res.status(400).json({ success: false, error: 'Insufficient Diamonds for this bounty' });
+      }
+
+      resolvedBounty = requestedBounty;
+    }
+
     const postData: any = {
       authorId: req.user!.id,
       content: content.trim(),
@@ -59,11 +77,13 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
       mediaUrls,
       mediaDisplayMode,
       topicTags: topicTags || [],
+      questionBounty: resolvedBounty,
       ...deadlineFields,
     };
 
-    // Create post with poll options if it's a poll, OR quiz if it's a quiz
-    const post = await prisma.post.create({
+    // Use transaction if deducting bounties, otherwise create directly
+    let post;
+    const postCreateArgs = {
       data: {
         ...postData,
         pollOptions: postType === 'POLL' && pollOptions?.length > 0 ? {
@@ -101,7 +121,20 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
         quiz: true,
         _count: { select: { comments: true, likes: true } },
       },
-    });
+    };
+
+    if (resolvedBounty > 0) {
+      const [deductedUser, createdPost] = await prisma.$transaction([
+        prisma.user.update({
+          where: { id: req.user!.id },
+          data: { totalPoints: { decrement: resolvedBounty } }
+        }),
+        prisma.post.create(postCreateArgs)
+      ]);
+      post = createdPost;
+    } else {
+      post = await prisma.post.create(postCreateArgs);
+    }
 
     console.log('✅ Post created:', {
       id: post.id,
@@ -209,10 +242,10 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
         : Promise.resolve(null),
       post.postType === 'QUIZ' && postWithQuiz.quiz
         ? prisma.quizAttempt.findFirst({
-            where: { quizId: postWithQuiz.quiz.id, userId: req.user!.id },
-            orderBy: { submittedAt: 'desc' },
-            select: { id: true, quizId: true, score: true, passed: true, pointsEarned: true, submittedAt: true },
-          })
+          where: { quizId: postWithQuiz.quiz.id, userId: req.user!.id },
+          orderBy: { submittedAt: 'desc' },
+          select: { id: true, quizId: true, score: true, passed: true, pointsEarned: true, submittedAt: true },
+        })
         : Promise.resolve(null),
     ]);
 
@@ -483,6 +516,104 @@ router.post('/posts/:id/comments', authenticateToken, async (req: AuthRequest, r
   } catch (error: any) {
     console.error('Create comment error:', error);
     res.status(500).json({ success: false, error: 'Failed to create comment' });
+  }
+});
+
+// POST /posts/:postId/comments/:commentId/verify - Verify answer and release bounty
+router.post('/posts/:postId/comments/:commentId/verify', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { postId, commentId } = req.params;
+    const userId = req.user!.id;
+
+    // 1. Get post and verify authorization / state
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { authorId: true, postType: true, questionBounty: true },
+    });
+
+    if (!post) {
+      return res.status(404).json({ success: false, error: 'Post not found' });
+    }
+
+    if (post.postType !== 'QUESTION') {
+      return res.status(400).json({ success: false, error: 'Only questions can have verified answers' });
+    }
+
+    if (post.authorId !== userId && req.user!.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, error: 'Only the author can verify an answer' });
+    }
+
+    // 2. Get comment and verify it belongs to this post
+    const comment = await prisma.comment.findUnique({
+      where: { id: commentId },
+      select: { postId: true, authorId: true, isVerifiedAnswer: true },
+    });
+
+    if (!comment || comment.postId !== postId) {
+      return res.status(400).json({ success: false, error: 'Invalid comment' });
+    }
+
+    if (comment.isVerifiedAnswer) {
+      return res.status(400).json({ success: false, error: 'Comment is already verified' });
+    }
+
+    // Prevent author from verifying their own comment to farm diamonds
+    if (comment.authorId === post.authorId) {
+      return res.status(400).json({ success: false, error: 'You cannot verify your own answer' });
+    }
+
+    // 3. Prevent verifying multiple answers
+    const existingVerified = await prisma.comment.findFirst({
+      where: { postId: postId, isVerifiedAnswer: true }
+    });
+
+    if (existingVerified) {
+      return res.status(400).json({ success: false, error: 'This question already has a verified answer' });
+    }
+
+    // 4. Mark comment as verified and transfer bounty (transaction)
+    const transaction = [
+      prisma.comment.update({
+        where: { id: commentId },
+        data: { isVerifiedAnswer: true },
+      })
+    ];
+
+    if (post.questionBounty && post.questionBounty > 0) {
+      transaction.push(
+        prisma.user.update({
+          where: { id: comment.authorId },
+          data: { totalPoints: { increment: post.questionBounty } }
+        }) as any
+      );
+    }
+
+    await prisma.$transaction(transaction);
+
+    // 5. Send notification to the comment author
+    const postAuthor = await prisma.user.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true } });
+    const authorName = postAuthor ? `${postAuthor.firstName} ${postAuthor.lastName}` : 'Someone';
+    const message = post.questionBounty && post.questionBounty > 0
+      ? `${authorName} verified your answer and awarded you ${post.questionBounty} Diamonds! 💎`
+      : `${authorName} marked your answer as verified! ✅`;
+
+    await prisma.notification.create({
+      data: {
+        recipientId: comment.authorId,
+        actorId: userId,
+        type: 'ACHIEVEMENT_EARNED', // Reusing ACHIEVEMENT_EARNED type for positive gamification events
+        title: 'Answer Verified!',
+        message: message,
+        postId: postId,
+        commentId: commentId,
+        link: `/posts/${postId}`,
+      }
+    }).catch(err => console.error('Failed to create verification notification:', err));
+
+    res.json({ success: true, message: 'Answer verified successfully' });
+  } catch (error: any) {
+    console.error('Verify answer error:', error);
+    res.status(500).json({ success: false, error: 'Failed to verify answer' });
   }
 });
 

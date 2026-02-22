@@ -20,13 +20,13 @@ class LRUCache<T> {
   get(key: string): T | null {
     const entry = this.cache.get(key);
     if (!entry) return null;
-    
+
     // Check if expired
     if (Date.now() - entry.timestamp > this.ttlMs) {
       this.cache.delete(key);
       return null;
     }
-    
+
     // Move to end (LRU)
     this.cache.delete(key);
     this.cache.set(key, entry);
@@ -39,7 +39,7 @@ class LRUCache<T> {
       const firstKey = this.cache.keys().next().value;
       this.cache.delete(firstKey);
     }
-    
+
     this.cache.set(key, { data, timestamp: Date.now() });
   }
 
@@ -280,7 +280,7 @@ export const feedCache = {
     // Try memory cache first (instant, works without Redis)
     const memCached = memoryCache.get(key);
     if (memCached) return memCached;
-    
+
     // Fall back to Redis if available
     if (!publisher || !isRedisConnected) return null;
     try {
@@ -300,7 +300,7 @@ export const feedCache = {
   async set(key: string, data: any): Promise<void> {
     // Always set in memory cache (works without Redis)
     memoryCache.set(key, data);
-    
+
     // Also cache in Redis if available
     if (!publisher || !isRedisConnected) return;
     try {
@@ -312,15 +312,15 @@ export const feedCache = {
 
   async invalidateUser(userId: string): Promise<void> {
     // Clear memory cache
-    memoryCache.deleteByPattern(`${userId}:*`);
-    
+    memoryCache.deleteByPattern(`feedranker:session:${userId}:*`);
+
     // Clear Redis if available — use SCAN (non-blocking) instead of KEYS (blocks Redis)
     if (!publisher || !isRedisConnected) return;
     try {
       const keysToDelete: string[] = [];
       let cursor = '0';
       do {
-        const [nextCursor, keys] = await publisher.scan(cursor, 'MATCH', `feed:${userId}:*`, 'COUNT', 100);
+        const [nextCursor, keys] = await publisher.scan(cursor, 'MATCH', `feed:feedranker:session:${userId}:*`, 'COUNT', 100);
         cursor = nextCursor;
         keysToDelete.push(...keys);
       } while (cursor !== '0');

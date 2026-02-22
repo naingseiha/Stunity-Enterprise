@@ -138,11 +138,18 @@ export async function deleteCoverPhoto() {
     return data;
 }
 
+/** Fetch top users by reputation points */
+export async function fetchLeaderboard(limit = 50) {
+    const { data } = await feedApi.get<{ success: boolean; leaderboard: User[] }>(`/users/leaderboard?limit=${limit}`);
+    return data.leaderboard;
+}
+
 export default {
     fetchProfile,
     fetchEducation,
     fetchExperiences,
     fetchCertifications,
+    fetchLeaderboard,
     followUser,
     unfollowUser,
     updateProfile,

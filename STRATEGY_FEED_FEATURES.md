@@ -91,7 +91,7 @@ By combining these three elements, you create a powerful **Flywheel Effect**:
 |---|---|---|
 | 🔴 High | Interest Graph feed weighting (Redis) | M |
 | 🔴 High | Q&A Bounty escrow system | M |
-| 🟡 Medium | Reputation leaderboard screen | S |
+| ✅ Done | Reputation leaderboard screen | S |
 | 🟡 Medium | Teacher endorsement / golden checkmark | S |
 | 🟢 Low | Live Quiz WebSocket infrastructure | XL |
 | 🟢 Low | Post-quiz analytics auto-post | M |

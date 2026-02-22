@@ -99,7 +99,7 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 - New message screen
 
 ### 🏆 Gamification
-- XP system + leaderboard
+- XP system + Reputation Leaderboard (Premium Podium UI)
 - Achievement badges (academic + social milestones)
 - Streaks (learning, attendance)
 - Challenge system (quiz duels)

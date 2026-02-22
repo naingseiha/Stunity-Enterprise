@@ -659,6 +659,12 @@ export default function FeedScreen() {
           <View style={styles.headerActions}>
             <TouchableOpacity
               style={styles.headerButton}
+              onPress={() => navigation.navigate('Leaderboard' as any)}
+            >
+              <Ionicons name="trophy-outline" size={24} color="#374151" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.headerButton}
               onPress={() => navigation.navigate('Notifications' as any)}
             >
               <Ionicons name="notifications-outline" size={24} color="#374151" />

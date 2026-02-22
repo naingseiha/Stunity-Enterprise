@@ -181,16 +181,27 @@ const PostContent = ({
       {/* Q&A Section */}
       {isQuestion && (
         <View style={styles.qaSection}>
-          <View style={[styles.qaBadge, learningMeta?.isAnswered && styles.qaBadgeAnswered]}>
-            <Ionicons
-              name={learningMeta?.isAnswered ? 'checkmark-circle' : 'help-circle'}
-              size={16}
-              color={learningMeta?.isAnswered ? '#10B981' : '#0EA5E9'}
-            />
-            <Text style={[styles.qaBadgeText, learningMeta?.isAnswered && styles.qaBadgeTextAnswered]}>
-              {learningMeta?.isAnswered ? 'Answered' : 'Awaiting Answer'}
-            </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={[styles.qaBadge, learningMeta?.isAnswered && styles.qaBadgeAnswered]}>
+              <Ionicons
+                name={learningMeta?.isAnswered ? 'checkmark-circle' : 'help-circle'}
+                size={16}
+                color={learningMeta?.isAnswered ? '#10B981' : '#0EA5E9'}
+              />
+              <Text style={[styles.qaBadgeText, learningMeta?.isAnswered && styles.qaBadgeTextAnswered]}>
+                {learningMeta?.isAnswered ? 'Answered' : 'Awaiting Answer'}
+              </Text>
+            </View>
+
+            {/* Bounty Badge */}
+            {post.questionBounty ? (
+              <View style={styles.bountyBadge}>
+                <Ionicons name="diamond" size={14} color="#8B5CF6" />
+                <Text style={styles.bountyBadgeText}>{post.questionBounty} Bounty</Text>
+              </View>
+            ) : null}
           </View>
+
           <View style={styles.answerCount}>
             <Ionicons name="chatbubbles-outline" size={14} color="#6B7280" />
             <Text style={styles.answerCountText}>
@@ -416,6 +427,20 @@ const styles = StyleSheet.create({
   },
   qaBadgeTextAnswered: {
     color: '#065F46',
+  },
+  bountyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EDE9FE',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  bountyBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6D28D9',
   },
   answerCount: {
     flexDirection: 'row',
