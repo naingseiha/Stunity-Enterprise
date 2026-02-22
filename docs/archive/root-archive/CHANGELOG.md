@@ -2,6 +2,28 @@
 
 All notable changes to Stunity Enterprise will be documented in this file.
 
+## [2.8.1] - 2026-02-22
+
+### Fixed — Build, Services & Mobile Compatibility
+
+#### Build & TypeScript Fixes
+- **class-service & teacher-service** — Removed `extends: "../../tsconfig.json"` to fix `customConditions` + `moduleResolution: node` conflict
+- **messaging-service** — Added `express.d.ts` to augment `Express.Request` with auth user; replaced `AuthRequest` with `Request`; set `strict: false`, `noImplicitAny: false` in tsconfig
+
+#### Web App
+- **eslint-config-next** — Downgraded from 16.1.6 to 14.2.0 to match Next.js 14
+- **react-is** — Downgraded from ^19.2.4 to ^18.2.0 at root
+- **React/ReactDOM** — Added `overrides` in root `package.json` to pin `react` and `react-dom` to 18.3.1 (resolves monorepo React version conflict)
+
+#### Mobile App
+- **semver** — Added `semver@^7.5.0` to fix `Unable to resolve "semver/functions/satisfies"` from react-native-reanimated (Android bundling)
+
+#### Documentation
+- **PROJECT_EVALUATION_REPORT.md** — Full project evaluation; strategy alignment; build status; recommendations
+- **STRATEGY_FEED_FEATURES_COPY.md** — Duplicate of strategy document for reference
+
+---
+
 ## [2.8.0] - 2026-02-19
 
 ### Added — Brand Color Migration (Sky Blue) & Profile Screen Enhancements

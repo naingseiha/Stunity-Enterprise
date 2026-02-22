@@ -1,5 +1,4 @@
 {
-  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
@@ -7,7 +6,8 @@
     "target": "ES2020",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "strict": false, "noImplicitAny": false,
+    "strict": false,
+    "noImplicitAny": false,
     "resolveJsonModule": true,
     "moduleResolution": "node"
   },

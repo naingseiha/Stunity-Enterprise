@@ -1,3 +1,4 @@
+/// <reference path="./express.d.ts" />
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -56,22 +57,8 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Types
-interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email?: string;
-    phone?: string;
-    role: string;
-    schoolId: string;
-    teacherId?: string;
-    parentId?: string;
-    children?: Array<{ id: string; firstName: string; lastName: string }>;
-  };
-}
-
-// Auth Middleware
-const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
+// Auth Middleware (Request.user augmented via express.d.ts)
+const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -115,7 +102,7 @@ app.get('/health', (req: Request, res: Response) => {
 // ========================================
 
 // GET /conversations - Get user's conversations
-app.get('/conversations', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.get('/conversations', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { role, teacherId, parentId } = req.user!;
     const { page = 1, limit = 20 } = req.query;
@@ -221,7 +208,7 @@ app.get('/conversations', authenticateToken, async (req: AuthRequest, res: Respo
 });
 
 // POST /conversations - Create or get existing conversation
-app.post('/conversations', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/conversations', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { role, teacherId, parentId, schoolId } = req.user!;
     const { targetTeacherId, targetParentId, studentId } = req.body;
@@ -335,7 +322,7 @@ app.post('/conversations', authenticateToken, async (req: AuthRequest, res: Resp
 });
 
 // GET /conversations/:id - Get conversation with messages
-app.get('/conversations/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.get('/conversations/:id', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { role, teacherId, parentId } = req.user!;
     const conversationId = req.params.id;
@@ -397,7 +384,7 @@ app.get('/conversations/:id', authenticateToken, async (req: AuthRequest, res: R
 });
 
 // PUT /conversations/:id/archive - Archive conversation
-app.put('/conversations/:id/archive', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.put('/conversations/:id/archive', authenticateToken, async (req: Request, res: Response) => {
   try {
     const conversationId = req.params.id;
     const { role, teacherId, parentId } = req.user!;
@@ -434,7 +421,7 @@ app.put('/conversations/:id/archive', authenticateToken, async (req: AuthRequest
 // ========================================
 
 // GET /conversations/:id/messages - Get messages for a conversation
-app.get('/conversations/:id/messages', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.get('/conversations/:id/messages', authenticateToken, async (req: Request, res: Response) => {
   try {
     const conversationId = req.params.id;
     const { role, teacherId, parentId } = req.user!;
@@ -498,7 +485,7 @@ app.get('/conversations/:id/messages', authenticateToken, async (req: AuthReques
 });
 
 // POST /conversations/:id/messages - Send a message
-app.post('/conversations/:id/messages', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/conversations/:id/messages', authenticateToken, async (req: Request, res: Response) => {
   try {
     const conversationId = req.params.id;
     const { content } = req.body;
@@ -563,7 +550,7 @@ app.post('/conversations/:id/messages', authenticateToken, async (req: AuthReque
 });
 
 // PUT /messages/:id/read - Mark a message as read
-app.put('/messages/:id/read', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.put('/messages/:id/read', authenticateToken, async (req: Request, res: Response) => {
   try {
     const messageId = req.params.id;
 
@@ -582,7 +569,7 @@ app.put('/messages/:id/read', authenticateToken, async (req: AuthRequest, res: R
 });
 
 // PUT /conversations/:id/read-all - Mark all messages in conversation as read
-app.put('/conversations/:id/read-all', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.put('/conversations/:id/read-all', authenticateToken, async (req: Request, res: Response) => {
   try {
     const conversationId = req.params.id;
     const { role, teacherId, parentId } = req.user!;
@@ -618,7 +605,7 @@ app.put('/conversations/:id/read-all', authenticateToken, async (req: AuthReques
 });
 
 // GET /conversations/unread-count - Get total unread message count
-app.get('/unread-count', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.get('/unread-count', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { role, teacherId, parentId } = req.user!;
 
@@ -653,7 +640,7 @@ app.get('/unread-count', authenticateToken, async (req: AuthRequest, res: Respon
 });
 
 // GET /teachers - Get teachers for parent to message
-app.get('/teachers', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.get('/teachers', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { role, children, schoolId } = req.user!;
 
@@ -716,7 +703,7 @@ app.get('/teachers', authenticateToken, async (req: AuthRequest, res: Response) 
 });
 
 // GET /parents - Get parents for teacher to message
-app.get('/parents', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.get('/parents', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { role, teacherId } = req.user!;
     const { classId, search } = req.query;
