@@ -312,17 +312,26 @@ export class FeedRanker {
 
     // ─── Suggested Content Injectors ──────────────────────────────────────
     private async getSuggestedUsers(userId: string, signals: UserSignals): Promise<Partial<User>[]> {
-        // Find highly rated teachers or highly active students sharing the same interests
+        // Find verified teachers or users sharing same interests
         const userTopics = Object.keys(signals.topics).slice(0, 5);
+        const excludeIds = [userId, ...signals.followingIds];
+
+        const where: any = {
+            id: { notIn: excludeIds },
+            isActive: true,
+        };
+
+        // Build OR filter: verified users OR shared interests (only if topics exist)
+        const orConditions: any[] = [
+            { isEmailVerified: true }, // Verified users always show
+        ];
+        if (userTopics.length > 0) {
+            orConditions.push({ interests: { hasSome: userTopics } });
+        }
+        where.OR = orConditions;
 
         const suggested = await this.prisma.user.findMany({
-            where: {
-                id: { notIn: [userId, ...signals.followingIds] },
-                OR: [
-                    { isVerified: true }, // Verified teachers/creators
-                    { interests: { hasSome: userTopics } } // Or shares top interests
-                ]
-            },
+            where,
             select: {
                 id: true,
                 firstName: true,
@@ -330,10 +339,9 @@ export class FeedRanker {
                 profilePictureUrl: true,
                 role: true,
                 headline: true,
-                isVerified: true,
-                professionalTitle: true
+                isEmailVerified: true,
             },
-            orderBy: { level: 'desc' },
+            orderBy: { createdAt: 'desc' },
             take: 10
         });
 
@@ -341,20 +349,26 @@ export class FeedRanker {
     }
 
     private async getSuggestedCourses(userId: string, signals: UserSignals): Promise<any[]> {
-        // Surface high-engagement courses intersecting with user interests
+        // Surface high-engagement courses matching user interests (or any if new user)
         const userTopics = Object.keys(signals.topics).slice(0, 5);
 
+        const where: any = {
+            instructorId: { not: userId },
+            isPublished: true,
+            enrollments: {
+                none: { userId } // Only courses not yet enrolled in
+            }
+        };
+
+        // Only apply topic filter if user has a history — otherwise show popular courses
+        if (userTopics.length > 0) {
+            where.tags = { hasSome: userTopics };
+        }
+
         const suggested = await this.prisma.course.findMany({
-            where: {
-                instructorId: { not: userId },
-                isPublished: true,
-                tags: { hasSome: userTopics },
-                enrollments: {
-                    none: { userId } // Only courses not yet enrolled in
-                }
-            },
+            where,
             include: {
-                instructor: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, isVerified: true } },
+                instructor: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, isEmailVerified: true } },
             },
             orderBy: [
                 { rating: 'desc' },

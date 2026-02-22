@@ -17,7 +17,9 @@
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
     "clean": "turbo run clean && rm -rf node_modules",
     "type-check": "turbo run type-check",
-    "seed:test-data": "tsx scripts/seed-complete-test-data.ts"
+    "seed:test-data": "tsx scripts/seed-complete-test-data.ts",
+    "seed:courses": "tsx scripts/seed-courses.ts",
+    "seed:feed": "tsx scripts/seed-feed.ts"
   },
   "devDependencies": {
     "@prisma/client": "^5.22.0",

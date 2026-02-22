@@ -8,6 +8,17 @@ Here is the strategic masterplan for implementing our three core hooks to guaran
 
 ---
 
+## ✅ Foundation: Polymorphic Mixed-Media Feed (DONE)
+> **Commit:** `4bc09c6` — merged to `main` (2026-02-22)
+
+The feed now supports mixed `FeedItem` types: `POST`, `SUGGESTED_USERS`, `SUGGESTED_COURSES`.
+- `feedRanker.ts` injects suggested users after post #3 and courses after post #7
+- `SuggestedUsersCarousel` and `SuggestedCoursesCarousel` render horizontally in feed
+- `FlashList` uses `getItemType` for cell-type bucketing and `estimatedItemSize` for 120Hz scroll
+- All crash fixes resolved: FlashList recycling null guards, AppState foreground refresh, `overflow: hidden` on card
+
+---
+
 ## 1. The Gamified Learning Feed (The "TikTok for Education")
 
 TikTok's success comes from its **For You Page (FYP)**. It doesn't rely on who you follow; it relies on an algorithm that calculates **what keeps your attention**. We will build the "For You" Feed for learning.
@@ -20,8 +31,9 @@ Our ranking algorithm (`feedRanker.ts`) must weight actions that signal deep edu
 *   **Difficulty Matching:** The feed learns the student's level. If they are failing Calculus, the feed surfaces `BEGINNER` level Calculus tutorials and study group announcements. If they are acing it, it surfaces `ADVANCED` challenge questions.
 
 ### The Execution Plan
-*   [ ] **Action Tracking:** Implement frontend telemetry to silently track how long a user pauses scrolling on specific post types.
-*   [ ] **Interest Graph, Not Social Graph:** Update the Redis feed cache to prioritize topics/hashtags the user interacts with, overriding chronological following.
+*   [x] **Feed Infrastructure:** Polymorphic FeedItem types, mixed-media feed rendering ✅
+*   [x] **Dwell Time Tracking:** `onViewableItemsChanged` hook tracks 2s+ views per post ✅
+*   [ ] **Interest Graph, Not Social Graph:** Update Redis feed cache to prioritize topics/hashtags the user interacts with, overriding chronological following.
 *   [ ] **Micro-Learning Format:** Encourage Teachers to post 60-second video explanations directly into the feed, rather than locking them away in 2-hour long Course modules.
 
 ---
@@ -70,3 +82,17 @@ By combining these three elements, you create a powerful **Flywheel Effect**:
 6.  Struggling students finally understand the material.
 
 **Everyone wins. You have built an addictive learning ecosystem.**
+
+---
+
+## 🔲 Next Up (Phase 4)
+
+| Priority | Feature | Effort |
+|---|---|---|
+| 🔴 High | Interest Graph feed weighting (Redis) | M |
+| 🔴 High | Q&A Bounty escrow system | M |
+| 🟡 Medium | Reputation leaderboard screen | S |
+| 🟡 Medium | Teacher endorsement / golden checkmark | S |
+| 🟢 Low | Live Quiz WebSocket infrastructure | XL |
+| 🟢 Low | Post-quiz analytics auto-post | M |
+| 🟢 Low | 60-second micro-learning video format | L |
