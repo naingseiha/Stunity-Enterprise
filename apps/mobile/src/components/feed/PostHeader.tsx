@@ -16,7 +16,7 @@ interface PostHeaderProps {
     role?: string;
   };
   createdAt: string;
-  visibility: 'PUBLIC' | 'SCHOOL' | 'CLASS' | 'FOLLOWERS'; // Adjusted type
+  visibility: 'PUBLIC' | 'SCHOOL' | 'CLASS' | 'FOLLOWERS' | 'PRIVATE';
   learningMeta?: {
     studyGroupName?: string;
     isLive?: boolean;
@@ -46,7 +46,7 @@ const PostHeader = ({
   showMenu,
   menuContent,
 }: PostHeaderProps) => {
-  
+
   const authorName = author.name || `${author.firstName} ${author.lastName}`;
 
   // Role Badge Logic
@@ -72,7 +72,7 @@ const PostHeader = ({
         <View style={styles.authorInfo}>
           <View style={styles.authorRow}>
             <Text style={styles.authorName} numberOfLines={1}>{authorName}</Text>
-            
+
             {/* Verified Badge */}
             {(author.isVerified || isCurrentUser) && (
               <View style={styles.verifiedBadge}>

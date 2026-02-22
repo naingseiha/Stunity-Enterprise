@@ -24,8 +24,8 @@ import mediaRouter from './routes/media.routes';
 import { authenticateToken } from './middleware/auth';
 
 // ─── Phase 1 Day 7: Performance Monitoring ─────────────────────────
-import { 
-  performanceMonitoring, 
+import {
+  performanceMonitoring,
   requestSizeTracking,
   errorLogger
 } from './middleware/monitoring';
@@ -120,11 +120,11 @@ if (runBackgroundJobs) {
       for (const { userId } of activeUsers) {
         try {
           const rankedFeed = await feedRanker.generateFeed(userId, { page: 1, limit: 20 });
-          if (rankedFeed.posts.length > 0) {
+          if (rankedFeed.items.length > 0) {
             const { feedCache: cache } = require('./redis');
             await cache.set(
               `feed:precomputed:${userId}`,
-              JSON.stringify(rankedFeed.posts.map((p: any) => p.id)),
+              JSON.stringify(rankedFeed.items.map((item: any) => item.type === 'POST' ? item.data.post.id : item.type)),
               300 // 5min TTL
             );
             cached++;

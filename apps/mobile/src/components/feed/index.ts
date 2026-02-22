@@ -10,4 +10,5 @@ export { EducationalValueModal, type EducationalValue } from './EducationalValue
 export { default as QuickActionBar } from './QuickActionBar';
 export { default as SubjectFilters } from './SubjectFilters';
 export { default as FloatingActionButton } from './FloatingActionButton';
-
+export { SuggestedUsersCarousel } from './SuggestedUsersCarousel';
+export { SuggestedCoursesCarousel } from './SuggestedCoursesCarousel';

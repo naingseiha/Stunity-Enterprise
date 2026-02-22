@@ -44,12 +44,14 @@ import {
   SubjectFilters,
   EducationalValueModal,
   type EducationalValue,
+  SuggestedUsersCarousel,
+  SuggestedCoursesCarousel,
 } from '@/components/feed';
 import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore, useNotificationStore } from '@/stores';
 import { feedApi } from '@/api/client';
-import { Post } from '@/types';
+import { Post, FeedItem } from '@/types';
 import { transformPosts } from '@/utils/transformPost';
 import { FeedStackScreenProps } from '@/navigation/types';
 import { useNavigationContext } from '@/contexts';
@@ -229,7 +231,7 @@ export default function FeedScreen() {
 
   // M1 FIX: Granular Zustand selectors — each selector only re-renders when its slice changes.
   // Previously, one big destructure caused the whole screen to re-render on any store change.
-  const posts = useFeedStore(s => s.posts);
+  const feedItems = useFeedStore(s => s.feedItems);
   const isLoadingPosts = useFeedStore(s => s.isLoadingPosts);
   const hasMorePosts = useFeedStore(s => s.hasMorePosts);
   const fetchPosts = useFeedStore(s => s.fetchPosts);
@@ -263,14 +265,18 @@ export default function FeedScreen() {
   });
 
   // Refs for stable polling (avoid re-creating interval on every posts change)
-  const flatListRef = React.useRef<FlashListRef<Post>>(null);
-  const postsRef = useRef(posts);
+  const flatListRef = React.useRef<FlashListRef<FeedItem>>(null);
+  const postsRef = useRef(feedItems);
   const pendingPostsRef = useRef(pendingPosts);
-  postsRef.current = posts;
+  postsRef.current = feedItems;
   pendingPostsRef.current = pendingPosts;
 
   // Stable key extractor for FlatList
-  const keyExtractor = useCallback((item: Post) => item.id, []);
+  const keyExtractor = useCallback((item: FeedItem, index: number) => {
+    if (item?.type === 'POST') return item.data?.id || `post-${index}`;
+    if (item?.type) return `${item.type}-${index}`;
+    return `item-${index}`;
+  }, []);
 
   useEffect(() => {
     fetchPosts();
@@ -303,8 +309,9 @@ export default function FeedScreen() {
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
         // App came to foreground — check for new posts
-        const { lastFeedTimestamp, posts: currentPosts, pendingPosts: currentPending } = useFeedStore.getState();
-        const latestCreatedAt = lastFeedTimestamp || currentPosts[0]?.createdAt;
+        const { lastFeedTimestamp, feedItems: currentFeedItems, pendingPosts: currentPending } = useFeedStore.getState();
+        const firstPost = currentFeedItems.find(i => i.type === 'POST');
+        const latestCreatedAt = lastFeedTimestamp || (firstPost?.type === 'POST' ? firstPost.data.createdAt : undefined);
         if (!latestCreatedAt) return;
 
         feedApi.get('/posts/feed', {
@@ -312,17 +319,22 @@ export default function FeedScreen() {
         }).then((response) => {
           if (response.data?.success && response.data.data) {
             const existingIds = new Set([
-              ...currentPosts.map(p => p.id),
+              ...currentFeedItems.filter(i => i.type === 'POST').map(p => (p.data as Post).id),
               ...currentPending.map(p => p.id),
             ]);
 
-            const newPosts = response.data.data.filter(
-              (p: any) => new Date(p.createdAt) > new Date(latestCreatedAt) &&
-                !existingIds.has(p.id)
-            );
+            // /posts/feed returns FeedItem[] — extract only POST items and unwrap data
+            const feedItemsFromApi: any[] = response.data.data;
+            const rawNewPosts = feedItemsFromApi
+              .filter((p: any) => p.type === 'POST' && p.data)
+              .map((p: any) => p.data)
+              .filter(
+                (p: any) => new Date(p.createdAt) > new Date(latestCreatedAt) &&
+                  !existingIds.has(p.id)
+              );
 
-            if (newPosts.length > 0) {
-              const transformed = transformPosts(newPosts);
+            if (rawNewPosts.length > 0) {
+              const transformed = transformPosts(rawNewPosts);
               useFeedStore.setState(state => ({
                 pendingPosts: [...transformed, ...state.pendingPosts],
               }));
@@ -344,7 +356,7 @@ export default function FeedScreen() {
     const memSub = AppState.addEventListener('memoryWarning', () => {
       const currentPosts = postsRef.current;
       if (currentPosts.length > 20) {
-        useFeedStore.setState({ posts: currentPosts.slice(0, 20) });
+        useFeedStore.setState({ feedItems: currentPosts.slice(0, 20) });
         if (__DEV__) {
           console.log('⚠️ [FeedScreen] Memory pressure — trimmed posts to 20');
         }
@@ -382,7 +394,7 @@ export default function FeedScreen() {
           timers.delete(item.id);
 
           // Only count views of 2+ seconds AND only once per post per session
-          if (durationSec >= 2 && !tracked.has(item.id)) {
+          if (durationSec >= 2 && !tracked.has(item.id) && item.postType) {
             tracked.add(item.id);
             trackPostView(item.id);
           }
@@ -571,12 +583,24 @@ export default function FeedScreen() {
     };
   });
 
-  const renderPost = useCallback(({ item }: { item: Post }) => {
+  const renderPost = useCallback(({ item }: { item: FeedItem }) => {
+    if (!item) return null;
+
+    if (item.type === 'SUGGESTED_USERS') {
+      return <SuggestedUsersCarousel users={item.data} />;
+    }
+    if (item.type === 'SUGGESTED_COURSES') {
+      return <SuggestedCoursesCarousel courses={item.data} />;
+    }
+
+    if (item.type === 'POST' && !item.data) return null;
+
+    // Fallback to regular POST render
     return (
       <RenderPostItem
-        item={item}
+        item={item.data}
         handlersRef={handlersRef}
-        isValued={valuedPostIds.has(item.id)}
+        isValued={item.data?.id ? valuedPostIds.has(item.data.id) : false}
         setAnalyticsPostId={setAnalyticsPostId}
       />
     );
@@ -695,7 +719,7 @@ export default function FeedScreen() {
       {/* FlashList — cell recycling for smooth 60fps scrolling */}
       <FlashList
         ref={flatListRef}
-        data={posts}
+        data={feedItems}
         renderItem={renderPost}
         keyExtractor={keyExtractor}
         ListHeaderComponent={renderHeader}
@@ -716,12 +740,17 @@ export default function FeedScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         // ── FlashList performance props for 120Hz smooth scrolling ──
+        // @ts-ignore - The types for FlashList in this version omit estimatedItemSize, but it is supported and critical for performance.
+        estimatedItemSize={350}
         drawDistance={800}        // Pre-render 2 screens off-screen — eliminates blank cells on fast scroll
         getItemType={(item) => {
+          if (item.type === 'SUGGESTED_USERS') return 'suggested_users';
+          if (item.type === 'SUGGESTED_COURSES') return 'suggested_courses';
           // Type-bucketed recycling — cells of similar height are reused together
-          if (item.postType === 'QUIZ') return 'quiz';
-          if (item.postType === 'POLL') return 'poll';
-          if (item.mediaUrls && item.mediaUrls.length > 0) return 'media';
+          const postData = (item as any).data || item;
+          if (postData.postType === 'QUIZ') return 'quiz';
+          if (postData.postType === 'POLL') return 'poll';
+          if (postData.mediaUrls && postData.mediaUrls.length > 0) return 'media';
           return 'text';
         }}
         // iOS: removeClippedSubviews causes native layer hide/show jank — Android only

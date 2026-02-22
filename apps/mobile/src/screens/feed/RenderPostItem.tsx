@@ -12,7 +12,10 @@ interface RenderPostItemProps {
 
 const RenderPostItem = ({ item, handlersRef, isValued, setAnalyticsPostId }: RenderPostItemProps) => {
   const h = handlersRef.current;
-  
+
+  // Guard: FlashList can pass undefined item during cell recycling transitions
+  if (!item) return null;
+
   return (
     <View style={styles.postWrapper}>
       <PostCard
@@ -24,7 +27,7 @@ const RenderPostItem = ({ item, handlersRef, isValued, setAnalyticsPostId }: Ren
         onBookmark={() => h.bookmarkPost(item.id)}
         onValue={() => h.handleValuePost(item)}
         isValued={isValued}
-        onUserPress={() => h.navigation.navigate('UserProfile', { userId: item.author.id })}
+        onUserPress={() => h.navigation.navigate('UserProfile', { userId: item.author?.id })}
         onPress={() => h.handlePostPress(item)}
         onVote={(optionId) => h.handleVoteOnPoll(item.id, optionId)}
         onViewAnalytics={() => setAnalyticsPostId(item.id)}
@@ -42,7 +45,7 @@ const styles = StyleSheet.create({
 
 export default memo(RenderPostItem, (prev, next) => {
   return (
-    prev.item === next.item && 
+    prev.item === next.item &&
     prev.isValued === next.isValued
     // handlersRef and setAnalyticsPostId are stable
   );

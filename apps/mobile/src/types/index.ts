@@ -290,6 +290,11 @@ export interface Post {
   updatedAt: string;
 }
 
+export type FeedItem =
+  | { type: 'POST'; data: Post }
+  | { type: 'SUGGESTED_USERS'; data: Partial<User>[] }
+  | { type: 'SUGGESTED_COURSES'; data: Course[] };
+
 export interface Comment {
   id: string;
   content: string;

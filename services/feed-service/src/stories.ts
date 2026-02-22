@@ -1,10 +1,10 @@
-import { Router, Response } from 'express';
+import { Router, Response, Request } from 'express';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 const router = Router();
 
-interface AuthRequest {
+interface AuthRequest extends Request {
   user?: {
     id: string;
     email: string;
@@ -88,7 +88,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 
       const group = storyGroups.get(authorId);
       const isViewed = story.views.length > 0;
-      
+
       group.stories.push({
         id: story.id,
         type: story.type,

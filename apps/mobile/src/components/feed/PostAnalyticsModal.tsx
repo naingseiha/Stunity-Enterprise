@@ -91,12 +91,13 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
   onClose,
   postId,
 }) => {
-  const { fetchPostAnalytics, postAnalytics, isLoadingAnalytics, posts } = useFeedStore();
+  const { fetchPostAnalytics, postAnalytics, isLoadingAnalytics, feedItems } = useFeedStore();
   const [analytics, setAnalytics] = useState<PostAnalytics | null>(null);
   const [algoScore, setAlgoScore] = useState<any>(null);
   const [period, setPeriod] = useState<Period>('7d');
 
-  const post = posts.find(p => p.id === postId);
+  const postItem = feedItems.find(i => i.type === 'POST' && (i.data as any).id === postId);
+  const post = postItem?.type === 'POST' ? postItem.data : undefined;
 
   useEffect(() => {
     if (post) {
@@ -419,7 +420,7 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     flex: 1, minWidth: 80, borderRadius: 14, padding: 12, alignItems: 'center',
-     borderColor: 'transparent',
+    borderColor: 'transparent',
   },
   heroIconWrap: {
     width: 40, height: 40, borderRadius: 14,
@@ -435,7 +436,7 @@ const styles = StyleSheet.create({
   engagementGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   engagCard: {
     flex: 1, minWidth: 130, backgroundColor: '#fff', borderRadius: 14,
-    padding: 14, alignItems: 'center',  borderColor: '#F3F4F6',
+    padding: 14, alignItems: 'center', borderColor: '#F3F4F6',
   },
   engagIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   engagValue: { fontSize: 22, fontWeight: '800', color: '#111827' },
@@ -445,7 +446,7 @@ const styles = StyleSheet.create({
   // Chart
   chartCard: {
     backgroundColor: '#fff', borderRadius: 16, padding: 16,
-     borderColor: '#F3F4F6', height: 200,
+    borderColor: '#F3F4F6', height: 200,
   },
   chartMaxLabel: { fontSize: 10, color: '#9CA3AF', marginBottom: 4, alignSelf: 'flex-end' },
   chartBars: {
@@ -461,7 +462,7 @@ const styles = StyleSheet.create({
   sourceRow: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff',
     borderRadius: 12, padding: 12, marginBottom: 8,
-     borderColor: '#F3F4F6', gap: 10,
+    borderColor: '#F3F4F6', gap: 10,
   },
   sourceLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, width: 80 },
   sourceLabel: { fontSize: 13, fontWeight: '600', color: '#374151' },
@@ -472,7 +473,7 @@ const styles = StyleSheet.create({
   sourceViews: { fontSize: 13, fontWeight: '700', color: '#0EA5E9', width: 40, textAlign: 'right' },
 
   // Algorithm score
-  algoCard: { borderRadius: 16, padding: 16,  borderColor: '#E0F2FE' },
+  algoCard: { borderRadius: 16, padding: 16, borderColor: '#E0F2FE' },
   algoTop: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 20 },
   algoScoreCircle: {
     width: 60, height: 60, borderRadius: 30,

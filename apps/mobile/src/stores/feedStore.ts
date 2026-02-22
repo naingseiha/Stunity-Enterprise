@@ -5,7 +5,7 @@
  */
 
 import { create } from 'zustand';
-import { Post, Story, StoryGroup, PaginationParams, Comment } from '@/types';
+import { Post, Story, StoryGroup, PaginationParams, Comment, FeedItem } from '@/types';
 import { transformPost, transformPosts } from '@/utils/transformPost';
 import { feedApi } from '@/api/client';
 import { Image } from 'react-native';
@@ -81,7 +81,8 @@ export type TrendingPeriod = '24h' | '7d' | '30d';
 interface FeedState {
   // Posts
 
-  posts: Post[];
+  // Feed Items
+  feedItems: FeedItem[];
   isLoadingPosts: boolean;
   hasMorePosts: boolean;
   postsPage: number;
@@ -180,7 +181,7 @@ const initialState = {
   hasMorePosts: true,
   postsPage: 1,
   nextCursor: null,
-  posts: [],
+  feedItems: [],
   userInterestProfile: null,
   feedMode: 'FOR_YOU' as const,
   myPosts: [],
@@ -215,14 +216,17 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         const transformed = transformPost(response.data.data);
         if (!transformed) return null;
         // Upsert into local posts array
-        const { posts } = get();
-        const idx = posts.findIndex(p => p.id === postId);
+        const { feedItems } = get();
+
+        // Find if post exists inside a POST feedItem
+        const idx = feedItems.findIndex(i => i.type === 'POST' && i.data.id === postId);
+
         if (idx >= 0) {
-          const updated = [...posts];
-          updated[idx] = transformed;
-          set({ posts: updated });
+          const updated = [...feedItems];
+          updated[idx] = { type: 'POST', data: transformed };
+          set({ feedItems: updated });
         } else {
-          set({ posts: [transformed, ...posts] });
+          set({ feedItems: [{ type: 'POST', data: transformed }, ...feedItems] });
         }
         return transformed;
       }
@@ -236,7 +240,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   // Fetch posts with pagination
   fetchPosts: async (refresh = false, subject?: string) => {
 
-    const { isLoadingPosts, postsPage, posts, hasMorePosts } = get();
+    const { isLoadingPosts, postsPage, feedItems, hasMorePosts } = get();
 
     if (isLoadingPosts || (!refresh && !hasMorePosts)) return;
 
@@ -245,10 +249,10 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     set({ isLoadingPosts: true });
 
     // Stale-while-revalidate: show cached feed instantly on cold-start
-    if (page === 1 && posts.length === 0) {
+    if (page === 1 && feedItems.length === 0) {
       const cached = await loadCachedFeed();
       if (cached && cached.length > 0) {
-        set({ posts: cached });
+        set({ feedItems: cached.map(p => ({ type: 'POST' as const, data: p })) });
       }
     }
 
@@ -294,50 +298,72 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       });
 
       if (response.data.success) {
-        // Backend returns { success, data: posts[], pagination }
-        const newPosts = response.data.data || response.data.posts || [];
+        // Backend returns { success, data: feedItems[], pagination }
+        const newFeedItems: FeedItem[] = response.data.data || response.data.posts || [];
         const pagination = response.data.pagination;
-        const hasMore = pagination?.hasMore ?? newPosts.length === 20;
+        const hasMore = pagination?.hasMore ?? newFeedItems.length === 20;
         const newCursor = pagination?.nextCursor || null;
 
         if (__DEV__) {
-          console.log('📥 [FeedStore] Received', newPosts.length, 'posts');
+          console.log('📥 [FeedStore] Received', newFeedItems.length, 'items');
         }
 
-        // Transform posts using shared utility
-        const transformedPosts = transformPosts(newPosts);
+        // Transform posts using shared utility (but ONLY for POST types)
+        const transformedFeedItems: FeedItem[] = newFeedItems.map(item => {
+          if (item.type === 'POST') {
+            const transformed = transformPost(item.data);
+            if (!transformed) return null;
+            return { type: 'POST', data: transformed as Post };
+          }
+          return item;
+        }).filter(Boolean) as FeedItem[];
 
         // Apply recommendations if in FOR_YOU mode (only for /posts fallback)
-        let combinedPosts = refresh ? transformedPosts : [...posts, ...transformedPosts];
+        let combinedFeedItems = refresh ? transformedFeedItems : [...get().feedItems, ...transformedFeedItems];
 
         if (get().feedMode === 'FOR_YOU' && !usePersonalizedFeed) {
           // Fallback: client-side ranking only if server endpoint was not used
-          combinedPosts = recommendationEngine.generateFeed(combinedPosts);
+          // Recommendation engine requires Post[], so we temporarily extract, sort, and recombine
+          const extractPosts = combinedFeedItems.filter(i => i.type === 'POST').map(i => i.data as Post);
+          const sortedPosts = recommendationEngine.generateFeed(extractPosts);
+
+          let sortedIdx = 0;
+          combinedFeedItems = combinedFeedItems.map(item => {
+            if (item.type === 'POST' && sortedIdx < sortedPosts.length) {
+              return { type: 'POST', data: sortedPosts[sortedIdx++] };
+            }
+            return item;
+          });
         }
 
         // Deduplicate posts by ID to prevent FlashList layout issues
-        const seenIds = new Set();
-        let finalPosts = combinedPosts.filter(p => {
-          if (seenIds.has(p.id)) return false;
-          seenIds.add(p.id);
+        const seenIds = new Set<string>();
+        let finalFeedItems = combinedFeedItems.filter(item => {
+          if (item?.type === 'POST') {
+            const postId = item.data?.id;
+            if (!postId) return false; // Filter out corrupted POST items
+            if (seenIds.has(postId)) return false;
+            seenIds.add(postId);
+          }
           return true;
         });
 
         // Performance optimization: Limit total posts in memory
         // V2 scale limit: 500 posts (~1MB memory, safe for RN). Keeps infinite scroll history intact.
         const maxPostsInMemory = 500;
-        const optimizedPosts = finalPosts.slice(0, maxPostsInMemory);
+        const optimizedFeedItems = finalFeedItems.slice(0, maxPostsInMemory);
 
         // Track timestamp of newest post for real-time dedup
-        const newestTimestamp = optimizedPosts.length > 0
-          ? optimizedPosts.reduce((latest, p) =>
+        const optimizedPostsOnly = optimizedFeedItems.filter(i => i.type === 'POST').map(i => i.data as Post);
+        const newestTimestamp = optimizedPostsOnly.length > 0
+          ? optimizedPostsOnly.reduce((latest, p) =>
             new Date(p.createdAt) > new Date(latest) ? p.createdAt : latest,
-            optimizedPosts[0].createdAt
+            optimizedPostsOnly[0].createdAt
           )
           : get().lastFeedTimestamp;
 
         set({
-          posts: optimizedPosts,
+          feedItems: optimizedFeedItems,
           postsPage: page + 1,
           nextCursor: newCursor,
           hasMorePosts: hasMore,
@@ -349,15 +375,15 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
         // Write to offline cache on page 1 (most recent posts)
         if (page === 1) {
-          cacheFeedPosts(optimizedPosts).catch(() => { });
+          cacheFeedPosts(optimizedPostsOnly).catch(() => { });
         }
 
         // Background: Prefetch first media URL for smooth scrolling
-        const urlsToPrefetch = transformedPosts
-          .flatMap(p => p.mediaUrls?.slice(0, 1) || [])
+        const urlsToPrefetch = optimizedPostsOnly
+          .flatMap((p: Post) => p.mediaUrls?.slice(0, 1) || [])
           .filter(Boolean)
           .slice(0, 10); // Max 10 images to avoid flooding
-        urlsToPrefetch.forEach(url => Image.prefetch(url).catch(() => { }));
+        urlsToPrefetch.forEach((url: string) => Image.prefetch(url).catch(() => { }));
       } else {
         set({ isLoadingPosts: false });
       }
@@ -368,7 +394,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       if (__DEV__ && error.code === 'TIMEOUT_ERROR') {
         console.log('📦 Using mock data for offline development');
         set({
-          posts: refresh ? mockPosts : [...posts, ...mockPosts],
+          feedItems: refresh ? mockPosts.map(p => ({ type: 'POST' as const, data: p })) : [...get().feedItems, ...mockPosts.map(p => ({ type: 'POST' as const, data: p }))],
           postsPage: page + 1,
           hasMorePosts: false,
           isLoadingPosts: false,
@@ -580,7 +606,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
         // Add to top of feed with optimistic update
         set((state) => ({
-          posts: [newPost, ...state.posts],
+          feedItems: [{ type: 'POST', data: newPost }, ...state.feedItems],
         }));
 
         return true;
@@ -597,17 +623,17 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   likePost: async (postId) => {
     // Optimistic update
     set((state) => ({
-      posts: state.posts.map((post) =>
-        post.id === postId
-          ? { ...post, isLiked: true, likes: post.likes + 1 }
-          : post
+      feedItems: state.feedItems.map((item) =>
+        item.type === 'POST' && item.data.id === postId
+          ? { ...item, data: { ...item.data, isLiked: true, likes: item.data.likes + 1 } }
+          : item
       ),
     }));
 
     // Track for recommendation engine (local)
-    const post = get().posts.find(p => p.id === postId);
-    if (post) {
-      recommendationEngine.trackAction('LIKE', post);
+    const postItem = get().feedItems.find(i => i.type === 'POST' && i.data.id === postId) as { type: 'POST', data: Post } | undefined;
+    if (postItem) {
+      recommendationEngine.trackAction('LIKE', postItem.data);
       set({ userInterestProfile: recommendationEngine.getUserProfile() });
     }
 
@@ -618,10 +644,10 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     } catch (error) {
       // Revert on error
       set((state) => ({
-        posts: state.posts.map((post) =>
-          post.id === postId
-            ? { ...post, isLiked: false, likes: post.likes - 1 }
-            : post
+        feedItems: state.feedItems.map((item) =>
+          item.type === 'POST' && item.data.id === postId
+            ? { ...item, data: { ...item.data, isLiked: false, likes: item.data.likes - 1 } }
+            : item
         ),
       }));
     }
@@ -631,10 +657,10 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   unlikePost: async (postId) => {
     // Optimistic update
     set((state) => ({
-      posts: state.posts.map((post) =>
-        post.id === postId
-          ? { ...post, isLiked: false, likes: post.likes - 1 }
-          : post
+      feedItems: state.feedItems.map((item) =>
+        item.type === 'POST' && item.data.id === postId
+          ? { ...item, data: { ...item.data, isLiked: false, likes: item.data.likes - 1 } }
+          : item
       ),
     }));
 
@@ -644,10 +670,10 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     } catch (error) {
       // Revert on error
       set((state) => ({
-        posts: state.posts.map((post) =>
-          post.id === postId
-            ? { ...post, isLiked: true, likes: post.likes + 1 }
-            : post
+        feedItems: state.feedItems.map((item) =>
+          item.type === 'POST' && item.data.id === postId
+            ? { ...item, data: { ...item.data, isLiked: true, likes: item.data.likes + 1 } }
+            : item
         ),
       }));
     }
@@ -655,15 +681,16 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
   // Bookmark a post (toggle)
   bookmarkPost: async (postId) => {
-    const post = get().posts.find((p) => p.id === postId);
-    if (!post) return;
+    const postItem = get().feedItems.find(i => i.type === 'POST' && i.data.id === postId) as { type: 'POST', data: Post } | undefined;
+    if (!postItem) return;
 
+    const post = postItem.data;
     const wasBookmarked = post.isBookmarked;
 
     // Optimistic update
     set((state) => ({
-      posts: state.posts.map((p) =>
-        p.id === postId ? { ...p, isBookmarked: !wasBookmarked } : p
+      feedItems: state.feedItems.map((item) =>
+        item.type === 'POST' && item.data.id === postId ? { ...item, data: { ...item.data, isBookmarked: !wasBookmarked } } : item
       ),
     }));
 
@@ -683,8 +710,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     } catch (error) {
       // Revert on error
       set((state) => ({
-        posts: state.posts.map((p) =>
-          p.id === postId ? { ...p, isBookmarked: wasBookmarked } : p
+        feedItems: state.feedItems.map((item) =>
+          item.type === 'POST' && item.data.id === postId ? { ...item, data: { ...item.data, isBookmarked: wasBookmarked } } : item
         ),
       }));
     }
@@ -692,11 +719,12 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
   // Delete a post
   deletePost: async (postId) => {
-    const post = get().posts.find((p) => p.id === postId);
+    const postItem = get().feedItems.find((i) => i.type === 'POST' && i.data.id === postId) as { type: 'POST', data: Post };
+    const post = postItem?.data;
 
     // Optimistic update
     set((state) => ({
-      posts: state.posts.filter((p) => p.id !== postId),
+      feedItems: state.feedItems.filter((i) => !(i.type === 'POST' && i.data.id === postId)),
     }));
 
     try {
@@ -705,7 +733,10 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       // Revert on error
       if (post) {
         set((state) => ({
-          posts: [post, ...state.posts],
+          feedItems: [
+            { type: 'POST', data: post },
+            ...state.feedItems
+          ],
         }));
       }
     }
@@ -852,9 +883,9 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     }));
 
     // Track for recommendation engine
-    const post = get().posts.find(p => p.id === postId);
-    if (post) {
-      recommendationEngine.trackAction('COMMENT', post);
+    const postItem = get().feedItems.find((i) => i.type === 'POST' && i.data.id === postId) as { type: 'POST', data: Post } | undefined;
+    if (postItem) {
+      recommendationEngine.trackAction('COMMENT', postItem.data);
       set({ userInterestProfile: recommendationEngine.getUserProfile() });
     }
 
@@ -899,8 +930,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           },
           isSubmittingComment: { ...state.isSubmittingComment, [postId]: false },
           // Update post comment count
-          posts: state.posts.map((post) =>
-            post.id === postId ? { ...post, comments: post.comments + 1 } : post
+          feedItems: state.feedItems.map((item) =>
+            item.type === 'POST' && item.data.id === postId ? { ...item, data: { ...item.data, comments: item.data.comments + 1 } } : item
           ),
         }));
 
@@ -932,8 +963,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           [postId]: (state.comments[postId] || []).filter((c) => c.id !== commentId),
         },
         // Update post comment count
-        posts: state.posts.map((post) =>
-          post.id === postId ? { ...post, comments: Math.max(0, post.comments - 1) } : post
+        feedItems: state.feedItems.map((item) =>
+          item.type === 'POST' && item.data.id === postId ? { ...item, data: { ...item.data, comments: item.data.comments - 1 } } : item
         ),
       }));
     } catch (error) {
@@ -944,7 +975,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   // Vote on a poll
   voteOnPoll: async (postId, optionId) => {
     const state = get();
-    const post = state.posts.find(p => p.id === postId);
+    const postItem = state.feedItems.find(i => i.type === 'POST' && i.data.id === postId) as { type: 'POST', data: Post } | undefined;
+    const post = postItem?.data;
 
     if (!post || !post.pollOptions) {
       console.error('❌ Cannot vote: Post or poll options not found');
@@ -995,14 +1027,17 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
     // Apply optimistic update immediately
     set((state) => ({
-      posts: state.posts.map((p) =>
-        p.id === postId
+      feedItems: state.feedItems.map((item) =>
+        item.type === 'POST' && item.data.id === postId
           ? {
-            ...p,
-            pollOptions: updatedOptions,
-            userVotedOptionId: optionId,
+            ...item,
+            data: {
+              ...item.data,
+              pollOptions: updatedOptions,
+              userVotedOptionId: optionId,
+            }
           }
-          : p
+          : item
       ),
     }));
 
@@ -1022,13 +1057,16 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         const serverUserVotedOptionId = response.data.userVotedOptionId || response.data.data?.userVotedOptionId || optionId;
 
         set((state) => ({
-          posts: state.posts.map((p) =>
-            p.id === postId
+          feedItems: state.feedItems.map((item) =>
+            item.type === 'POST' && item.data.id === postId
               ? {
-                ...p,
-                userVotedOptionId: serverUserVotedOptionId,
+                ...item,
+                data: {
+                  ...item.data,
+                  userVotedOptionId: serverUserVotedOptionId,
+                }
               }
-              : p
+              : item
           ),
         }));
 
@@ -1049,14 +1087,17 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
       // Rollback on error
       set((state) => ({
-        posts: state.posts.map((p) =>
-          p.id === postId
+        feedItems: state.feedItems.map((item) =>
+          item.type === 'POST' && item.data.id === postId
             ? {
-              ...p,
-              pollOptions: previousOptions,
-              userVotedOptionId: previousVote,
+              ...item,
+              data: {
+                ...item.data,
+                pollOptions: previousOptions,
+                userVotedOptionId: previousVote,
+              }
             }
-            : p
+            : item
         ),
       }));
 
@@ -1073,8 +1114,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
       // Update share count locally
       set((state) => ({
-        posts: state.posts.map((post) =>
-          post.id === postId ? { ...post, shares: post.shares + 1 } : post
+        feedItems: state.feedItems.map((item) =>
+          item.type === 'POST' && item.data.id === postId ? { ...item, data: { ...item.data, shares: item.data.shares + 1 } } : item
         ),
       }));
 
@@ -1091,7 +1132,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   // Probabilistic sampling: Only track 20% of views for 80% write reduction.
   trackPostView: async (postId) => {
     // Recommendation Engine tracking (local, synchronous - always track for personalization)
-    const post = get().posts.find(p => p.id === postId);
+    const postItem = get().feedItems.find((i) => i.type === 'POST' && i.data.id === postId) as { type: 'POST', data: Post } | undefined;
+    const post = postItem?.data;
     if (post) {
       recommendationEngine.trackAction('VIEW', post);
     }
@@ -1203,8 +1245,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
       // Update post in state
       set((state) => ({
-        posts: state.posts.map((post) =>
-          post.id === postId ? transformedPost : post
+        feedItems: state.feedItems.map((item) =>
+          item.type === 'POST' && item.data.id === postId ? { ...item, data: transformedPost } : item
         ),
       }));
 
@@ -1314,19 +1356,19 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     // Unsubscribe existing if any
     unsubscribeFromFeed();
 
-    // Helper: check if a post is truly new (not an old post receiving updates)
     const isActuallyNewPost = (postCreatedAt: string): boolean => {
-      const { lastFeedTimestamp, posts } = get();
+      const { lastFeedTimestamp, feedItems } = get();
       // Use lastFeedTimestamp if available, else fall back to most recent post
-      const referenceTime = lastFeedTimestamp || posts[0]?.createdAt;
+      const firstPost = feedItems.find(i => i.type === 'POST');
+      const referenceTime = lastFeedTimestamp || (firstPost?.type === 'POST' ? firstPost.data.createdAt : undefined);
       if (!referenceTime) return true; // No reference = treat as new
       return new Date(postCreatedAt) > new Date(referenceTime);
     };
 
     // Helper: check if post ID is already known (dedup)
     const isKnownPostId = (postId: string): boolean => {
-      const { posts, pendingPosts } = get();
-      return posts.some(p => p.id === postId) || pendingPosts.some(p => p.id === postId);
+      const { feedItems, pendingPosts } = get();
+      return feedItems.some(i => i.type === 'POST' && i.data.id === postId) || pendingPosts.some(p => p.id === postId);
     };
 
     // Helper: get current user ID (skip own posts — they're added optimistically)
@@ -1392,25 +1434,28 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           if (!updated?.id) return;
 
           // Check if we already have this post in our feed or pending
-          const { posts, pendingPosts } = get();
-          const isInFeed = posts.some(p => p.id === updated.id);
+          const { feedItems, pendingPosts } = get();
+          const isInFeed = feedItems.some(i => i.type === 'POST' && i.data.id === updated.id);
           const isInPending = pendingPosts.some(p => p.id === updated.id);
 
           if (isInFeed) {
             // Known post in feed → just update counts inline (NO "New Posts" button)
             console.log('🔔 [FeedStore] Post updated:', updated.id, 'likes:', updated.likesCount);
             set(state => ({
-              posts: state.posts.map(p =>
-                p.id === updated.id
+              feedItems: state.feedItems.map(item =>
+                item.type === 'POST' && item.data.id === updated.id
                   ? {
-                    ...p,
-                    content: updated.content ?? p.content,
-                    title: updated.title ?? p.title,
-                    likes: updated.likesCount ?? p.likes,
-                    comments: updated.commentsCount ?? p.comments,
-                    shares: updated.sharesCount ?? p.shares,
+                    ...item,
+                    data: {
+                      ...item.data,
+                      content: updated.content ?? item.data.content,
+                      title: updated.title ?? item.data.title,
+                      likes: updated.likesCount ?? item.data.likes,
+                      comments: updated.commentsCount ?? item.data.comments,
+                      shares: updated.sharesCount ?? item.data.shares,
+                    }
                   }
-                  : p
+                  : item
               ),
             }));
           } else if (isInPending) {
@@ -1469,7 +1514,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           if (!deletedId) return;
 
           set(state => ({
-            posts: state.posts.filter(p => p.id !== deletedId),
+            feedItems: state.feedItems.filter(i => !(i.type === 'POST' && i.data.id === deletedId)),
             pendingPosts: state.pendingPosts.filter(p => p.id !== deletedId),
           }));
         }
@@ -1544,14 +1589,14 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   // Add optimistic post
   addOptimisticPost: (post) => {
     set((state) => ({
-      posts: [post, ...state.posts],
+      feedItems: [{ type: 'POST', data: post }, ...state.feedItems],
     }));
   },
 
   // Remove optimistic post
   removeOptimisticPost: (tempId) => {
     set((state) => ({
-      posts: state.posts.filter((p) => p.id !== tempId),
+      feedItems: state.feedItems.filter((i) => !(i.type === 'POST' && i.data.id === tempId)),
     }));
   },
 
@@ -1566,19 +1611,27 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   },
 
   applyPendingPosts: () => {
-    const { pendingPosts, posts } = get();
+    const { pendingPosts, feedItems } = get();
     if (pendingPosts.length === 0) return 0;
 
     // Dedup: only add pending posts not already in the feed
-    const existingIds = new Set(posts.map(p => p.id));
-    const uniqueNewPosts = pendingPosts.filter(p => !existingIds.has(p.id));
+    const existingIds = new Set(
+      feedItems
+        .filter(item => item.type === 'POST' && item.data)
+        .map(item => (item.data as Post).id)
+        .filter(Boolean)
+    );
+    const uniqueNewPosts = pendingPosts.filter(p => p.id && !existingIds.has(p.id));
 
     if (uniqueNewPosts.length === 0) {
       set({ pendingPosts: [] });
       return 0;
     }
 
-    const mergedPosts = [...uniqueNewPosts, ...posts];
+    const mergedItems: FeedItem[] = [
+      ...uniqueNewPosts.map(p => ({ type: 'POST' as const, data: p })),
+      ...feedItems
+    ];
 
     // Update lastFeedTimestamp with the newest timestamp
     const newestTimestamp = uniqueNewPosts.reduce((latest, p) =>
@@ -1587,13 +1640,14 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     );
 
     set({
-      posts: mergedPosts,
+      feedItems: mergedItems,
       pendingPosts: [],
       lastFeedTimestamp: newestTimestamp,
     });
 
     // Persist to cache so reopening the app shows the latest posts
-    cacheFeedPosts(mergedPosts.slice(0, 50)).catch(() => { });
+    const mergedPostsOnly = mergedItems.filter(i => i.type === 'POST').map(i => i.data as Post);
+    cacheFeedPosts(mergedPostsOnly.slice(0, 50)).catch(() => { });
 
     return uniqueNewPosts.length;
   },

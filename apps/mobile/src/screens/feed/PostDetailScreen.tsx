@@ -162,7 +162,7 @@ export default function PostDetailScreen() {
 
   const { user } = useAuthStore();
   const {
-    posts,
+    feedItems,
     fetchPostById,
     likePost,
     unlikePost,
@@ -192,7 +192,8 @@ export default function PostDetailScreen() {
   const bookmarkScale = useSharedValue(1);
 
   // Try to find post in store, or fetch from API
-  const post = posts.find(p => p.id === postId);
+  const postItem = feedItems.find(i => i.type === 'POST' && (i.data as Post).id === postId);
+  const post = postItem?.type === 'POST' ? postItem.data as Post : undefined;
   const postComments = storeComments[postId] || [];
   const isSubmitting = isSubmittingComment[postId] || false;
 
@@ -830,8 +831,8 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 56, right: 16,
     backgroundColor: '#fff', borderRadius: 14, paddingVertical: 6,
     minWidth: 180,
-    shadowColor: '#000',   shadowRadius: 16,
-     zIndex: 1000,
+    shadowColor: '#000', shadowRadius: 16,
+    zIndex: 1000,
   },
   menuItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
   menuText: { fontSize: 15, fontWeight: '500', color: '#374151' },
@@ -964,12 +965,12 @@ const styles = StyleSheet.create({
 
   // Progress
   progressCard: {
-    backgroundColor: '#fff',    
-    
- marginTop: 6, paddingHorizontal: 16, paddingVertical: 16,
+    backgroundColor: '#fff',
+
+    marginTop: 6, paddingHorizontal: 16, paddingVertical: 16,
     borderRadius: 14, marginHorizontal: 12,
-       
-    
+
+
   },
   progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   progressLabel: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
@@ -1013,7 +1014,7 @@ const styles = StyleSheet.create({
   commentBubble: {
     backgroundColor: '#FFFFFF', borderRadius: 16, borderTopLeftRadius: 4,
     paddingHorizontal: 14, paddingVertical: 10,
-     borderColor: '#F3F4F6',
+    borderColor: '#F3F4F6',
   },
   commentHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   commentAuthor: { fontSize: 13, fontWeight: '700', color: '#111827' },

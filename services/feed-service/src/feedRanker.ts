@@ -134,6 +134,11 @@ export interface ScoredPost {
     };
 }
 
+export type FeedItem =
+    | { type: 'POST'; data: ScoredPost }
+    | { type: 'SUGGESTED_USERS'; data: Partial<User>[] }
+    | { type: 'SUGGESTED_COURSES'; data: any[] };
+
 // ─── Feed Ranker ───────────────────────────────────────────────────
 export class FeedRanker {
     private prisma: PrismaClient;
@@ -148,15 +153,15 @@ export class FeedRanker {
      */
     async generateFeed(
         userId: string,
-        options: {
+        options?: {
             mode?: 'FOR_YOU' | 'FOLLOWING' | 'RECENT';
             page?: number;
             limit?: number;
             excludeIds?: string[];
             subject?: string;
-        } = {}
-    ): Promise<{ posts: ScoredPost[]; total: number; hasMore: boolean }> {
-        const { mode = 'FOR_YOU', page = 1, limit = 20, excludeIds = [], subject } = options;
+        }
+    ): Promise<{ items: FeedItem[]; total: number; hasMore: boolean }> {
+        const { mode = 'FOR_YOU', page = 1, limit = 20, excludeIds = [], subject } = options || {};
 
         // Short-circuit for simple modes
         if (mode === 'RECENT') {
@@ -167,7 +172,7 @@ export class FeedRanker {
 
         // Phase 1 Optimization: If page > 1, pull from the cached feed sequence session
         if (page > 1) {
-            const cachedSequence = await feedCache.get(feedSessionKey) as ScoredPost[] | null;
+            const cachedSequence = await feedCache.get(feedSessionKey) as FeedItem[] | null;
             if (cachedSequence && Array.isArray(cachedSequence)) {
                 if (process.env.NODE_ENV !== 'production') {
                     console.log(`🧠 [FeedRanker] Cache HIT for session ${feedSessionKey}, page ${page}`);
@@ -175,7 +180,7 @@ export class FeedRanker {
                 const start = (page - 1) * limit;
                 const paged = cachedSequence.slice(start, start + limit);
                 return {
-                    posts: paged,
+                    items: paged,
                     total: cachedSequence.length,
                     hasMore: start + limit < cachedSequence.length,
                 };
@@ -190,15 +195,17 @@ export class FeedRanker {
             const candidates = await this.getCandidates(userId, userSignals, 'FOLLOWING', excludeIds, subject);
             const scored = candidates.map(post => this.scorePost(post, userSignals));
             const diversified = this.applyDiversity(scored);
+
+            const items: FeedItem[] = diversified.map(p => ({ type: 'POST', data: p }));
             const start = (page - 1) * limit;
-            const paged = diversified.slice(start, start + limit);
+            const paged = items.slice(start, start + limit);
 
             // Cache the generated sequence for page > 1
             if (page === 1) {
-                feedCache.set(feedSessionKey, diversified).catch(() => { });
+                feedCache.set(feedSessionKey, items).catch(() => { });
             }
 
-            return { posts: paged, total: diversified.length, hasMore: start + limit < diversified.length };
+            return { items: paged, total: items.length, hasMore: start + limit < items.length };
         }
 
         // FOR_YOU: Content-mixing strategy (Facebook/TikTok-style)
@@ -263,20 +270,103 @@ export class FeedRanker {
         mixed.sort((a, b) => b.score - a.score);
         const diversified = this.applyDiversity(mixed);
 
+        // Inject Mixed Media (Suggested Users & Courses) every ~7 items
+        const rawFeedItems: FeedItem[] = diversified.map(p => ({ type: 'POST', data: p }));
+
+        // Only fetch suggestions if we are generating page 1
+        if (page === 1) {
+            const [suggestedUsers, suggestedCourses] = await Promise.all([
+                this.getSuggestedUsers(userId, userSignals),
+                this.getSuggestedCourses(userId, userSignals)
+            ]);
+
+            let injectionIndex = 6;
+
+            // Inject Users
+            if (suggestedUsers.length > 0 && rawFeedItems.length >= injectionIndex) {
+                rawFeedItems.splice(injectionIndex, 0, { type: 'SUGGESTED_USERS', data: suggestedUsers });
+                injectionIndex += 8; // Next injection 8 items later
+            }
+
+            // Inject Courses
+            if (suggestedCourses.length > 0 && rawFeedItems.length >= injectionIndex) {
+                rawFeedItems.splice(injectionIndex, 0, { type: 'SUGGESTED_COURSES', data: suggestedCourses });
+            }
+        }
+
         // Paginate
         const start = (page - 1) * limit;
-        const paged = diversified.slice(start, start + limit);
+        const paged = rawFeedItems.slice(start, start + limit);
 
         // Cache the generated sequence for page > 1
         if (page === 1) {
-            feedCache.set(feedSessionKey, diversified).catch(() => { });
+            feedCache.set(feedSessionKey, rawFeedItems).catch(() => { });
         }
 
         return {
-            posts: paged,
-            total: diversified.length,
-            hasMore: start + limit < diversified.length,
+            items: paged,
+            total: rawFeedItems.length,
+            hasMore: start + limit < rawFeedItems.length,
         };
+    }
+
+    // ─── Suggested Content Injectors ──────────────────────────────────────
+    private async getSuggestedUsers(userId: string, signals: UserSignals): Promise<Partial<User>[]> {
+        // Find highly rated teachers or highly active students sharing the same interests
+        const userTopics = Object.keys(signals.topics).slice(0, 5);
+
+        const suggested = await this.prisma.user.findMany({
+            where: {
+                id: { notIn: [userId, ...signals.followingIds] },
+                OR: [
+                    { isVerified: true }, // Verified teachers/creators
+                    { interests: { hasSome: userTopics } } // Or shares top interests
+                ]
+            },
+            select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                profilePictureUrl: true,
+                role: true,
+                headline: true,
+                isVerified: true,
+                professionalTitle: true
+            },
+            orderBy: { level: 'desc' },
+            take: 10
+        });
+
+        return suggested;
+    }
+
+    private async getSuggestedCourses(userId: string, signals: UserSignals): Promise<any[]> {
+        // Surface high-engagement courses intersecting with user interests
+        const userTopics = Object.keys(signals.topics).slice(0, 5);
+
+        const suggested = await this.prisma.course.findMany({
+            where: {
+                instructorId: { not: userId },
+                isPublished: true,
+                tags: { hasSome: userTopics },
+                enrollments: {
+                    none: { userId } // Only courses not yet enrolled in
+                }
+            },
+            include: {
+                instructor: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, isVerified: true } },
+            },
+            orderBy: [
+                { rating: 'desc' },
+                { enrolledCount: 'desc' }
+            ],
+            take: 8
+        });
+
+        return suggested.map(course => ({
+            ...course,
+            enrollmentCount: course.enrolledCount,
+        }));
     }
 
     // ─── Trending Content (high engagement velocity) ──────────────────
@@ -815,7 +905,7 @@ export class FeedRanker {
         page: number,
         limit: number,
         subject?: string
-    ): Promise<{ posts: ScoredPost[]; total: number; hasMore: boolean }> {
+    ): Promise<{ items: FeedItem[]; total: number; hasMore: boolean }> {
         const skip = (page - 1) * limit;
 
         const where: any = {
@@ -888,8 +978,10 @@ export class FeedRanker {
             },
         }));
 
+        const items: FeedItem[] = scored.map(s => ({ type: 'POST', data: s }));
+
         return {
-            posts: scored,
+            items,
             total,
             hasMore: skip + limit < total,
         };

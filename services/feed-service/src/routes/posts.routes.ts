@@ -138,72 +138,72 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
 
     // B4 FIX: Remove expensive COUNT(*) — derive hasMore from posts.length === limit
     const posts = await prisma.post.findMany({
-        where,
-        include: {
-          author: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              profilePictureUrl: true,
-              role: true,
-              isVerified: true,
-              professionalTitle: true,
-              level: true,
-            },
+      where,
+      include: {
+        author: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true,
+            role: true,
+            isVerified: true,
+            professionalTitle: true,
+            level: true,
           },
-          pollOptions: {
-            include: {
-              _count: { select: { votes: true } },
-            },
+        },
+        pollOptions: {
+          include: {
+            _count: { select: { votes: true } },
           },
-          quiz: {
-            select: {
-              id: true,
-              timeLimit: true,
-              passingScore: true,
-              totalPoints: true,
-              resultsVisibility: true,
-            },
+        },
+        quiz: {
+          select: {
+            id: true,
+            timeLimit: true,
+            passingScore: true,
+            totalPoints: true,
+            resultsVisibility: true,
           },
-          _count: {
-            select: { comments: true, likes: true },
-          },
-          repostOf: {
-            select: {
-              id: true,
-              content: true,
-              title: true,
-              postType: true,
-              mediaUrls: true,
-              createdAt: true,
-              likesCount: true,
-              commentsCount: true,
-              author: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                  profilePictureUrl: true,
-                  role: true,
-                  isVerified: true,
-                },
+        },
+        _count: {
+          select: { comments: true, likes: true },
+        },
+        repostOf: {
+          select: {
+            id: true,
+            content: true,
+            title: true,
+            postType: true,
+            mediaUrls: true,
+            createdAt: true,
+            likesCount: true,
+            commentsCount: true,
+            author: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                profilePictureUrl: true,
+                role: true,
+                isVerified: true,
               },
             },
           },
         },
-        orderBy: [
-          { isPinned: 'desc' },
-          { createdAt: 'desc' },
-        ],
-        ...(useCursor ? {
-          cursor: { id: cursor as string },
-          skip: 1,
-        } : {
-          skip: (Number(page) - 1) * Number(limit),
-        }),
-        take: Number(limit),
-      });
+      },
+      orderBy: [
+        { isPinned: 'desc' },
+        { createdAt: 'desc' },
+      ],
+      ...(useCursor ? {
+        cursor: { id: cursor as string },
+        skip: 1,
+      } : {
+        skip: (Number(page) - 1) * Number(limit),
+      }),
+      take: Number(limit),
+    });
 
     if (process.env.NODE_ENV !== 'production') {
       console.log('📊 [GET /posts] Query results:', {
@@ -229,11 +229,11 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
         : Promise.resolve([]),
       quizPostIds.length > 0
         ? prisma.quizAttempt.findMany({
-            where: { quizId: { in: quizPostIds }, userId: req.user!.id },
-            orderBy: { submittedAt: 'desc' },
-            distinct: ['quizId'],
-            select: { id: true, quizId: true, score: true, passed: true, pointsEarned: true, submittedAt: true },
-          })
+          where: { quizId: { in: quizPostIds }, userId: req.user!.id },
+          orderBy: { submittedAt: 'desc' },
+          distinct: ['quizId'],
+          select: { id: true, quizId: true, score: true, passed: true, pointsEarned: true, submittedAt: true },
+        })
         : Promise.resolve([]),
     ]);
 
@@ -260,7 +260,7 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
     }));
 
     const outputPosts = minimal ? formattedPosts.map(stripToMinimal) : formattedPosts;
-    
+
     // Resolve relative media URLs to absolute
     outputPosts.forEach((p: any) => {
       if (p.mediaUrls) p.mediaUrls = resolveMediaUrls(p.mediaUrls, req as AuthRequest);
@@ -334,13 +334,14 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
       excludeIds: excludeIds ? String(excludeIds).split(',') : [],
     });
 
-    // B1 FIX: All 5 user-state queries run in PARALLEL (was 3 sequential round-trips after likes+bookmarks)
-    const postIds = result.posts.map(sp => sp.post.id);
-    const feedAuthorIds = [...new Set(result.posts.map(sp => sp.post.authorId).filter(id => id !== userId))];
-    const pollPostIds = result.posts.filter(sp => sp.post.postType === 'POLL').map(sp => sp.post.id);
-    const quizPostIds = result.posts
-      .filter(sp => sp.post.postType === 'QUIZ' && (sp.post as any).quiz)
-      .map(sp => (sp.post as any).quiz?.id)
+    // Extract just the post IDs from the FeedItems (ignoring Suggested Users/Courses for this lookup)
+    const feedPosts = result.items.filter(i => i.type === 'POST').map(i => i.data as any);
+    const postIds = feedPosts.map((sp: any) => sp.post.id);
+    const feedAuthorIds = [...new Set(feedPosts.map((sp: any) => sp.post.authorId).filter((id: string) => id !== userId))];
+    const pollPostIds = feedPosts.filter((sp: any) => sp.post.postType === 'POLL').map((sp: any) => sp.post.id);
+    const quizPostIds = feedPosts
+      .filter((sp: any) => sp.post.postType === 'QUIZ' && sp.post.quiz)
+      .map((sp: any) => sp.post.quiz?.id)
       .filter(Boolean) as string[];
 
     const [userLikes, userBookmarks, feedFollows, userVotes, userQuizAttempts] = await Promise.all([
@@ -354,11 +355,11 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
         : Promise.resolve([]),
       quizPostIds.length > 0
         ? prisma.quizAttempt.findMany({
-            where: { quizId: { in: quizPostIds }, userId },
-            orderBy: { submittedAt: 'desc' },
-            distinct: ['quizId'],
-            select: { id: true, quizId: true, score: true, passed: true, pointsEarned: true, submittedAt: true },
-          })
+          where: { quizId: { in: quizPostIds }, userId },
+          orderBy: { submittedAt: 'desc' },
+          distinct: ['quizId'],
+          select: { id: true, quizId: true, score: true, passed: true, pointsEarned: true, submittedAt: true },
+        })
         : Promise.resolve([]),
     ]);
 
@@ -368,61 +369,84 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
     const votedOptions = new Map(userVotes.map(v => [v.postId, v.optionId]));
     const quizAttempts = new Map(userQuizAttempts.map(a => [a.quizId, a]));
 
-    // Format response to match existing mobile expectations
-    const formattedPosts = result.posts.map(sp => ({
-      id: sp.post.id,
-      content: sp.post.content,
-      title: sp.post.title,
-      postType: sp.post.postType,
-      visibility: sp.post.visibility,
-      mediaUrls: sp.post.mediaUrls,
-      mediaKeys: sp.post.mediaKeys,
-      mediaDisplayMode: sp.post.mediaDisplayMode,
-      likesCount: sp.post.likesCount,
-      commentsCount: sp.post.commentsCount,
-      sharesCount: sp.post.sharesCount,
-      isPinned: sp.post.isPinned,
-      isEdited: sp.post.isEdited,
-      createdAt: sp.post.createdAt,
-      updatedAt: sp.post.updatedAt,
-      topicTags: (sp.post as any).topicTags || [],
-      repostOfId: (sp.post as any).repostOfId,
-      repostComment: (sp.post as any).repostComment,
-      repostOf: (sp.post as any).repostOf,
-      author: sp.post.author,
-      _count: sp.post._count,
-      isLikedByMe: likedSet.has(sp.post.id),
-      isBookmarked: bookmarkedSet.has(sp.post.id),
-      isFollowingAuthor: feedFollowingSet.has(sp.post.authorId),
-      // Poll data
-      pollOptions: (sp.post as any).pollOptions,
-      ...(sp.post.postType === 'POLL' && {
-        userVotedOptionId: votedOptions.get(sp.post.id) || null,
-      }),
-      // Quiz data
-      ...((sp.post.postType === 'QUIZ' && (sp.post as any).quiz) && {
-        quiz: {
-          ...(sp.post as any).quiz,
-          userAttempt: quizAttempts.get((sp.post as any).quiz.id) || null,
-        },
-      }),
-      // Score metadata (useful for debugging / transparency)
-      _score: sp.score,
-      _scoreBreakdown: sp.breakdown,
-    }));
+    // Format response to match existing mobile expectations, now supporting mixed media
+    const formattedFeed = result.items.map(item => {
+      if (item.type !== 'POST') return item; // Return SUGGESTED_USERS etc unchanged
 
-    const outputPosts = minimal ? formattedPosts.map(stripToMinimal) : formattedPosts;
+      const sp = item.data as any;
+      return {
+        type: 'POST',
+        data: {
+          id: sp.post.id,
+          content: sp.post.content,
+          title: sp.post.title,
+          postType: sp.post.postType,
+          visibility: sp.post.visibility,
+          mediaUrls: sp.post.mediaUrls,
+          mediaKeys: sp.post.mediaKeys,
+          mediaDisplayMode: sp.post.mediaDisplayMode,
+          likesCount: sp.post.likesCount,
+          commentsCount: sp.post.commentsCount,
+          sharesCount: sp.post.sharesCount,
+          isPinned: sp.post.isPinned,
+          isEdited: sp.post.isEdited,
+          createdAt: sp.post.createdAt,
+          updatedAt: sp.post.updatedAt,
+          topicTags: sp.post.topicTags || [],
+          repostOfId: sp.post.repostOfId,
+          repostComment: sp.post.repostComment,
+          repostOf: sp.post.repostOf,
+          author: sp.post.author,
+          _count: sp.post._count,
+          isLikedByMe: likedSet.has(sp.post.id),
+          isBookmarked: bookmarkedSet.has(sp.post.id),
+          isFollowingAuthor: feedFollowingSet.has(sp.post.authorId),
+          pollOptions: sp.post.pollOptions,
+          ...(sp.post.postType === 'POLL' && {
+            userVotedOptionId: votedOptions.get(sp.post.id) || null,
+          }),
+          ...(sp.post.postType === 'QUIZ' && sp.post.quiz && {
+            quiz: {
+              ...sp.post.quiz,
+              userAttempt: quizAttempts.get(sp.post.quiz.id) || null,
+            },
+          }),
+          _score: sp.score,
+          _scoreBreakdown: sp.breakdown,
+        }
+      };
+    });
+
+    const outputPosts = minimal ? formattedFeed.map(f => f.type === 'POST' ? { type: 'POST', data: stripToMinimal(f.data) } : f) : formattedFeed;
 
     // Resolve relative media URLs to absolute
     outputPosts.forEach((p: any) => {
-      if (p.mediaUrls) p.mediaUrls = resolveMediaUrls(p.mediaUrls, req as AuthRequest);
+      if (p.type === 'POST' && p.data.mediaUrls) p.data.mediaUrls = resolveMediaUrls(p.data.mediaUrls, req as AuthRequest);
+      // Also resolve profile pictures for suggested users
+      if (p.type === 'SUGGESTED_USERS' && p.data) {
+        p.data.forEach((u: any) => {
+          if (u.profilePictureUrl) {
+            const resolved = resolveMediaUrls([u.profilePictureUrl], req as AuthRequest);
+            u.profilePictureUrl = resolved.length > 0 ? resolved[0] : u.profilePictureUrl;
+          }
+        });
+      }
+      if (p.type === 'SUGGESTED_COURSES' && p.data) {
+        p.data.forEach((c: any) => {
+          if (c.thumbnailUrl) {
+            const resolved = resolveMediaUrls([c.thumbnailUrl], req as AuthRequest);
+            c.thumbnailUrl = resolved.length > 0 ? resolved[0] : c.thumbnailUrl;
+          }
+        });
+      }
     });
 
     // ETag for 304 Not Modified
-    const etag = createETag(outputPosts);
+    // @ts-ignore
+    const etag = createETag(outputPosts.filter(p => p.type === 'POST').map(p => p.data));
     res.setHeader('ETag', etag);
     res.setHeader('Cache-Control', 'private, max-age=900, stale-while-revalidate=1800');
-    
+
     if (req.headers['if-none-match'] === etag) {
       return res.status(304).end();
     }
@@ -446,7 +470,7 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
     // Cache response in background (don't block response)
     const responseData = {
       success: true,
-      data: formattedPosts,
+      data: formattedFeed,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -512,7 +536,7 @@ router.post('/feed/track-views', authenticateToken, async (req: AuthRequest, res
           source: v.source || 'feed',
         })),
       skipDuplicates: true,
-    }).catch(() => {}); // Non-critical — analytics, not user-facing
+    }).catch(() => { }); // Non-critical — analytics, not user-facing
 
     // Track feed ranker signals in parallel (fire-and-forget)
     Promise.allSettled(

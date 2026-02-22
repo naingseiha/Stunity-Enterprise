@@ -268,7 +268,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
 
   // Narrow selector — only subscribe to user ID, not entire auth store
   const currentUserId2 = useAuthStore(s => s.user?.id);
-  const isCurrentUser = currentUserId ? post.author.id === currentUserId : post.author.id === currentUserId2;
+  const isCurrentUser = currentUserId ? post.author?.id === currentUserId : post.author?.id === currentUserId2;
 
   // Derive directly from props — no useEffect sync needed
   // We use key={post.id} on the component itself (in the parent list) to force remounting
@@ -649,6 +649,8 @@ const PostCardInner: React.FC<PostCardProps> = ({
 
 // React.memo with custom comparator — only re-render when meaningful post data changes
 function arePostCardPropsEqual(prev: PostCardProps, next: PostCardProps): boolean {
+  // Guard: FlashList cell recycling can pass undefined during transitions
+  if (!prev.post || !next.post) return prev.post === next.post;
   return (
     prev.post.id === next.post.id &&
     prev.post.isLiked === next.post.isLiked &&
@@ -675,6 +677,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     position: 'relative',
     paddingTop: 14,
+    overflow: 'hidden',      // Required: clips images and media to card's borderRadius
   },
   // LIVE Badge styles
   liveBadge: {
@@ -1286,11 +1289,10 @@ export default React.memo(PostCard, (prevProps, nextProps) => {
     // Re-render if the post object itself changes deeply. We specifically check
     // properties that update during interactions:
     prevProps.post.id === nextProps.post.id &&
-    prevProps.post.likesCount === nextProps.post.likesCount &&
-    prevProps.post.commentsCount === nextProps.post.commentsCount &&
-    prevProps.post.sharesCount === nextProps.post.sharesCount &&
+    prevProps.post.likes === nextProps.post.likes &&
+    prevProps.post.comments === nextProps.post.comments &&
+    prevProps.post.shares === nextProps.post.shares &&
     prevProps.post.isLiked === nextProps.post.isLiked &&
-    prevProps.post.isLikedByMe === nextProps.post.isLikedByMe &&
     prevProps.post.isBookmarked === nextProps.post.isBookmarked &&
     prevProps.post.content === nextProps.post.content && // for edits
     // Check if the user has valued it changes
