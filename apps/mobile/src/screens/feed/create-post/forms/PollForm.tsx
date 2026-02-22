@@ -281,14 +281,15 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    paddingHorizontal: 12,
+    paddingTop: 16,
     paddingBottom: 40,
   },
   // Card
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    marginBottom: 16,
+    borderRadius: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     overflow: 'hidden',
@@ -375,15 +376,20 @@ const styles = StyleSheet.create({
   },
   optionInput: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
-    
-    
+    backgroundColor: '#F9FAFB',
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
     color: '#1F2937',
     fontWeight: '500',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   removeButton: {
     width: 36,
@@ -392,7 +398,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF2F2',
     alignItems: 'center',
     justifyContent: 'center',
-    
+
     borderColor: '#FEE2E2',
   },
   addButton: {
@@ -403,7 +409,7 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#F5F3FF',
     borderRadius: 14,
-    
+
     borderColor: '#C7D2FE',
     borderStyle: 'dashed',
     marginTop: 8,
@@ -441,14 +447,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 14,
     backgroundColor: '#FFFFFF',
-    
-    
+
+
   },
   capsuleSelected: {
     backgroundColor: '#4F46E5',
     borderColor: '#4F46E5',
     shadowColor: '#4F46E5',
-    
+
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
@@ -474,10 +480,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
-    borderRadius: 14,
-    
-    
-    backgroundColor: '#FAFAFA',
+    borderRadius: 16,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
     gap: 14,
   },
   visibilityCardSelected: {

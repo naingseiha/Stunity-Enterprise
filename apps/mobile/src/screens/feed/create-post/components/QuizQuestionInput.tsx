@@ -506,13 +506,13 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    marginBottom: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     overflow: 'hidden',
   },
   cardExpanded: {
-    borderWidth: 1,
+    // Keep it explicitly without border, or you can add a colored shadow later.
   },
   header: {
     flexDirection: 'row',
@@ -599,10 +599,10 @@ const styles = StyleSheet.create({
     color: '#111827',
     minHeight: 100,
     textAlignVertical: 'top',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F9FAFB',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#F3F4F6',
     padding: 16,
     fontWeight: '500',
   },
@@ -619,7 +619,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: '#F3F4F6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
   },
   typeChipText: {
     fontSize: 13,
@@ -683,10 +688,10 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     fontWeight: '500',
     shadowColor: '#000',
-    
+
     shadowOpacity: 0.02,
     shadowRadius: 2,
-    
+
   },
   removeOptionBtn: {
     padding: 8,

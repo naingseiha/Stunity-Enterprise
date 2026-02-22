@@ -256,11 +256,11 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       // Network-adaptive batch size (Phase 1 Day 5 optimization)
       // TEMPORARY: Use static batch size until native module is rebuilt
       const adaptiveBatchSize = 20; // networkQualityService.getConfig().batchSize;
-      
+
       // Performance optimization: Use smaller page size for initial load (faster perceived speed)
       // Adapt to network quality: excellent/good = 20, poor = 10, offline = skip
       const limit = page === 1 ? 10 : Math.max(10, adaptiveBatchSize);
-      
+
       console.log('📶 [FeedStore] Network: excellent (static) | Batch size:', limit);
 
       const params: any = { page, limit };
@@ -308,16 +308,24 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         const transformedPosts = transformPosts(newPosts);
 
         // Apply recommendations if in FOR_YOU mode (only for /posts fallback)
-        let finalPosts = refresh ? transformedPosts : [...posts, ...transformedPosts];
+        let combinedPosts = refresh ? transformedPosts : [...posts, ...transformedPosts];
 
         if (get().feedMode === 'FOR_YOU' && !usePersonalizedFeed) {
           // Fallback: client-side ranking only if server endpoint was not used
-          finalPosts = recommendationEngine.generateFeed(finalPosts);
+          combinedPosts = recommendationEngine.generateFeed(combinedPosts);
         }
 
+        // Deduplicate posts by ID to prevent FlashList layout issues
+        const seenIds = new Set();
+        let finalPosts = combinedPosts.filter(p => {
+          if (seenIds.has(p.id)) return false;
+          seenIds.add(p.id);
+          return true;
+        });
+
         // Performance optimization: Limit total posts in memory
-        // Phase 1 Day 5: Increased from 50 to 100 (modern phones can handle more)
-        const maxPostsInMemory = 100;
+        // V2 scale limit: 500 posts (~1MB memory, safe for RN). Keeps infinite scroll history intact.
+        const maxPostsInMemory = 500;
         const optimizedPosts = finalPosts.slice(0, maxPostsInMemory);
 
         // Track timestamp of newest post for real-time dedup

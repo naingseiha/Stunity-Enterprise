@@ -321,16 +321,18 @@ export function AnnouncementForm({ onDataChange }: AnnouncementFormProps) {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    paddingHorizontal: 12,
+    paddingTop: 16,
     paddingBottom: 40,
     gap: 16,
   },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    padding: 16,
+    marginBottom: 12,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -363,11 +365,11 @@ const styles = StyleSheet.create({
   },
   importanceCard: {
     width: '48%',
-    padding: 12,
-    borderRadius: 12,
+    padding: 14,
+    borderRadius: 16,
     gap: 8,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#F3F4F6',
   },
   importanceCardSelected: {
     shadowColor: '#000',
@@ -404,12 +406,12 @@ const styles = StyleSheet.create({
   },
   // Settings
   settingTile: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    padding: 12,
-    marginBottom: 10,
+    borderColor: '#F3F4F6',
+    padding: 14,
+    marginBottom: 12,
   },
   settingTileLeft: {
     flexDirection: 'row',
@@ -511,12 +513,12 @@ const styles = StyleSheet.create({
   audienceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: '#F9FAFB',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    gap: 10,
+    borderColor: '#F3F4F6',
+    gap: 12,
   },
   audienceIconWrap: {
     width: 34,

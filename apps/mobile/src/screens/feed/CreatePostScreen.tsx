@@ -33,6 +33,7 @@ import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeOut, Layout, ZoomIn, ZoomOut } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ResizeMode } from 'expo-av';
+import { BlurView } from 'expo-blur';
 
 import { Avatar } from '@/components/common';
 import { useAuthStore, useFeedStore } from '@/stores';
@@ -382,38 +383,40 @@ export default function CreatePostScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Premium Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color="#374151" />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Create Post</Text>
-          <View style={[styles.headerBadge, { backgroundColor: currentTypeConfig.color + '20' }]}>
-            <Ionicons name={currentTypeConfig.icon as any} size={12} color={currentTypeConfig.color} />
-            <Text style={[styles.headerBadgeText, { color: currentTypeConfig.color }]}>{currentTypeConfig.label}</Text>
+      <BlurView style={styles.headerBlur} intensity={80} tint="light">
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+            <Ionicons name="close" size={24} color="#374151" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>Create Post</Text>
+            <View style={[styles.headerBadge, { backgroundColor: currentTypeConfig.color + '20' }]}>
+              <Ionicons name={currentTypeConfig.icon as any} size={12} color={currentTypeConfig.color} />
+              <Text style={[styles.headerBadgeText, { color: currentTypeConfig.color }]}>{currentTypeConfig.label}</Text>
+            </View>
           </View>
-        </View>
-        <TouchableOpacity
-          onPress={handlePost}
-          disabled={!canPost || isPosting}
-          onPressIn={() => !(!canPost || isPosting) && Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-        >
-          <LinearGradient
-            colors={canPost && !isPosting ? ['#6366F1', '#8B5CF6'] : ['#E5E7EB', '#E5E7EB']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.postButton}
+          <TouchableOpacity
+            onPress={handlePost}
+            disabled={!canPost || isPosting}
+            onPressIn={() => !(!canPost || isPosting) && Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
           >
-            {isPosting ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={[styles.postButtonText, !canPost && styles.postButtonTextDisabled]}>
-                Post
-              </Text>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
+            <LinearGradient
+              colors={canPost && !isPosting ? ['#4F46E5', '#6366F1'] : ['#F3F4F6', '#F3F4F6']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.postButton}
+            >
+              {isPosting ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={[styles.postButtonText, !canPost && styles.postButtonTextDisabled]}>
+                  Post
+                </Text>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </BlurView>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -451,16 +454,15 @@ export default function CreatePostScreen() {
                       setPostType(typeObj.type);
                     }}
                     activeOpacity={0.75}
-                    style={styles.postTypeItem}
+                    style={[styles.postTypeItem, isActive && styles.postTypeItemActive]}
                   >
-                    <LinearGradient
-                      colors={typeObj.gradient}
-                      style={[styles.postTypeIconBox, isActive && styles.postTypeIconBoxActive]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                    >
-                      <Ionicons name={typeObj.icon as any} size={20} color="#fff" />
-                    </LinearGradient>
+                    <View style={[styles.postTypeIconBox, isActive ? { backgroundColor: typeObj.color + '15' } : null]}>
+                      <Ionicons
+                        name={typeObj.icon as any}
+                        size={20}
+                        color={isActive ? typeObj.color : "#9CA3AF"}
+                      />
+                    </View>
                     <Text
                       style={[
                         styles.postTypeLabel,
@@ -470,7 +472,7 @@ export default function CreatePostScreen() {
                     >
                       {typeObj.label}
                     </Text>
-                    {isActive && <View style={[styles.postTypeActiveDot, { backgroundColor: typeObj.color }]} />}
+                    {isActive && <View style={[styles.postTypeActiveIndicator, { backgroundColor: typeObj.color }]} />}
                   </TouchableOpacity>
                 );
               })}
@@ -922,7 +924,12 @@ export default function CreatePostScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
+  },
+  headerBlur: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E7EB',
+    zIndex: 10,
   },
   header: {
     flexDirection: 'row',
@@ -930,9 +937,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E7EB',
   },
   closeButton: {
     width: 36,
@@ -947,9 +951,10 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
     color: '#1F2937',
+    letterSpacing: -0.3,
   },
   headerBadge: {
     flexDirection: 'row',
@@ -961,7 +966,9 @@ const styles = StyleSheet.create({
   },
   headerBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   postButton: {
     paddingHorizontal: 20,
@@ -971,7 +978,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   postButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     color: '#fff',
   },
@@ -1021,105 +1028,113 @@ const styles = StyleSheet.create({
   },
   // Title
   titleSection: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 16,
+    paddingBottom: 4,
     backgroundColor: '#FFFFFF',
   },
   titleInput: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1F2937',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#111827',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     letterSpacing: -0.5,
   },
   titleCounter: {
     fontSize: 12,
     color: '#9CA3AF',
-    marginLeft: 16,
+    marginLeft: 8,
+    marginTop: 4,
+    fontWeight: '500',
   },
   contentInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 17,
     color: '#1F2937',
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingTop: 16,
-    minHeight: 120,
+    minHeight: 140,
     textAlignVertical: 'top',
     letterSpacing: 0.2,
-    lineHeight: 24,
+    lineHeight: 26,
   },
 
   /* ─── Post Type Selector (Horizontal) ─── */
   postTypeContainer: {
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#F3F4F6',
     backgroundColor: '#FFFFFF',
   },
   postTypeScrollContent: {
-    paddingHorizontal: 16,
-    gap: 12,
+    paddingHorizontal: 20,
+    gap: 16,
   },
   postTypeItem: {
     alignItems: 'center',
-    width: 68,
-    gap: 6,
+    width: 72,
+    gap: 8,
+    opacity: 0.6,
+  },
+  postTypeItemActive: {
+    opacity: 1,
   },
   postTypeIconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  postTypeIconBoxActive: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   postTypeLabel: {
     fontSize: 12,
     fontWeight: '500',
     color: '#6B7280',
     textAlign: 'center',
+    letterSpacing: -0.2,
   },
-  postTypeActiveDot: {
-    width: 4,
-    height: 4,
+  postTypeActiveIndicator: {
+    position: 'absolute',
+    bottom: -16,
+    width: 16,
+    height: 3,
     borderRadius: 2,
   },
 
   /* ─── Advanced Settings Card (Settings Page Replica) ─── */
   settingsSection: {
-    marginTop: 20,
-    marginBottom: 20,
-    paddingHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 24,
+    paddingHorizontal: 12,
   },
   sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 10,
     marginLeft: 4,
   },
   sectionTitleIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 7,
+    width: 26,
+    height: 26,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#9CA3AF',
+    color: '#6B7280',
     textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    letterSpacing: 0.8,
   },
   settingsCard: {
     backgroundColor: '#fff',
-    borderRadius: 14,
+    borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -1127,35 +1142,35 @@ const styles = StyleSheet.create({
   settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 14,
   },
   settingIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 11,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   settingContent: {
     flex: 1,
-    gap: 2,
+    gap: 4,
   },
   settingLabel: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
     color: '#1F2937',
-    letterSpacing: -0.1,
+    letterSpacing: -0.2,
   },
   settingSublabel: {
-    fontSize: 12,
-    color: '#9CA3AF',
+    fontSize: 13,
+    color: '#6B7280',
   },
   settingsDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#F1F5F9',
-    marginLeft: 62,
+    backgroundColor: '#F3F4F6',
+    marginLeft: 68,
   },
 
   // Topic Tags & Advanced Settings
@@ -1336,17 +1351,19 @@ const styles = StyleSheet.create({
   mediaPreview: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    padding: 16,
-    gap: 8,
+    paddingHorizontal: 12,
+    paddingTop: 20,
+    gap: 12,
     backgroundColor: '#FFFFFF',
+    paddingBottom: 40,
   },
   mediaItem: {
     position: 'relative',
     width: '48%',
     aspectRatio: 1,
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#000',
+    backgroundColor: '#F9FAFB',
   },
   mediaImage: {
     width: '100%',
@@ -1354,36 +1371,39 @@ const styles = StyleSheet.create({
   },
   removeMediaButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    top: 10,
+    right: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)'
   },
   videoIndicator: {
     position: 'absolute',
-    bottom: 8,
-    left: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    bottom: 10,
+    left: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)'
   },
   videoDurationBadgeText: {
     color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   advancedFormsContainer: {
     paddingHorizontal: 0,
-    paddingBottom: 20,
-    backgroundColor: '#F8FAFC',
+    paddingBottom: 10,
     gap: 12,
   },
   bottomActions: {
@@ -1392,26 +1412,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#E5E7EB',
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
   },
   mediaActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 20,
+    gap: 24,
   },
   mediaIconButton: {
     padding: 4,
   },
   mediaIndicatorText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#6366F1',
+    fontWeight: '700',
+    color: '#4F46E5',
     backgroundColor: '#EEF2FF',
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
+    overflow: 'hidden',
   },
   mediaIndicatorEmpty: {
     width: 20,

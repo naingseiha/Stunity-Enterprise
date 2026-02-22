@@ -229,17 +229,18 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    paddingHorizontal: 12,
+    paddingTop: 16,
     paddingBottom: 40,
     gap: 16,
   },
-  // Card
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    marginBottom: 12,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -280,15 +281,16 @@ const styles = StyleSheet.create({
   bountyCardSelected: {
     backgroundColor: '#FFFFFF',
     borderColor: '#0EA5E9',
+    borderWidth: 1,
     shadowColor: '#0EA5E9',
-    
-    shadowOpacity: 0.2,
-    
-    
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
   },
   bountyCardNone: {
-    backgroundColor: '#FFFFFF',
-    
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   bountyIcon: {
     width: 36,
@@ -328,10 +330,10 @@ const styles = StyleSheet.create({
   tagInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    
-    
+    backgroundColor: '#F9FAFB',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
     paddingHorizontal: 12,
     height: 48,
   },
@@ -382,9 +384,9 @@ const styles = StyleSheet.create({
     width: '48%',
     padding: 12,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    
-    
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,

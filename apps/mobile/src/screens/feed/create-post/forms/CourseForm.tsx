@@ -341,16 +341,18 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    paddingHorizontal: 12,
+    paddingTop: 16,
     paddingBottom: 40,
     gap: 16,
   },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    padding: 16,
+    marginBottom: 12,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -383,12 +385,12 @@ const styles = StyleSheet.create({
   scheduleCard: {
     flex: 1,
     padding: 12,
-    borderRadius: 12,
-    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    backgroundColor: '#F9FAFB',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#F3F4F6',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   scheduleCardSelected: {
     backgroundColor: '#ECFDF5',
@@ -463,10 +465,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sectionCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#F3F4F6',
     overflow: 'hidden',
   },
   sectionCardExpanded: {

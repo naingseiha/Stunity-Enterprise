@@ -20,6 +20,7 @@
  */
 
 import { PrismaClient, Post, User, PostType } from '@prisma/client';
+import { feedCache } from './redis';
 
 // ─── Scoring Weights (v2 — dynamic per post type) ──────────────────
 interface ScoringWeights {
@@ -162,6 +163,28 @@ export class FeedRanker {
             return this.getRecentFeed(userId, page, limit, subject);
         }
 
+        const feedSessionKey = `feedranker:session:${userId}:${mode}:${subject || 'ALL'}`;
+
+        // Phase 1 Optimization: If page > 1, pull from the cached feed sequence session
+        if (page > 1) {
+            const cachedSequence = await feedCache.get(feedSessionKey) as ScoredPost[] | null;
+            if (cachedSequence && Array.isArray(cachedSequence)) {
+                if (process.env.NODE_ENV !== 'production') {
+                    console.log(`🧠 [FeedRanker] Cache HIT for session ${feedSessionKey}, page ${page}`);
+                }
+                const start = (page - 1) * limit;
+                const paged = cachedSequence.slice(start, start + limit);
+                return {
+                    posts: paged,
+                    total: cachedSequence.length,
+                    hasMore: start + limit < cachedSequence.length,
+                };
+            }
+            if (process.env.NODE_ENV !== 'production') {
+                console.log(`⚠️ [FeedRanker] Cache MISS for session ${feedSessionKey}, page ${page}. Regenerating.`);
+            }
+        }
+
         if (mode === 'FOLLOWING') {
             const userSignals = await this.getUserSignals(userId);
             const candidates = await this.getCandidates(userId, userSignals, 'FOLLOWING', excludeIds, subject);
@@ -169,6 +192,12 @@ export class FeedRanker {
             const diversified = this.applyDiversity(scored);
             const start = (page - 1) * limit;
             const paged = diversified.slice(start, start + limit);
+
+            // Cache the generated sequence for page > 1
+            if (page === 1) {
+                feedCache.set(feedSessionKey, diversified).catch(() => { });
+            }
+
             return { posts: paged, total: diversified.length, hasMore: start + limit < diversified.length };
         }
 
@@ -204,7 +233,8 @@ export class FeedRanker {
         console.log(`🧠 [FeedRanker] Pools: relevance=${relevanceScored.length} trending=${trendingScored.length} explore=${exploreScored.length}`);
 
         // Mix: interleave pools with target ratios
-        const totalTarget = limit * 3; // Over-generate, then paginate
+        // Phase 1 Optimization: Generate enough posts for ~10 pages of scrolling to cache
+        const totalTarget = Math.max(limit * 10, 200);
         const relevanceCount = Math.ceil(totalTarget * 0.60);
         const trendingCount = Math.ceil(totalTarget * 0.25);
         const exploreCount = Math.ceil(totalTarget * 0.15);
@@ -236,6 +266,11 @@ export class FeedRanker {
         // Paginate
         const start = (page - 1) * limit;
         const paged = diversified.slice(start, start + limit);
+
+        // Cache the generated sequence for page > 1
+        if (page === 1) {
+            feedCache.set(feedSessionKey, diversified).catch(() => { });
+        }
 
         return {
             posts: paged,

@@ -286,8 +286,9 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
-    paddingBottom: 100,
+    paddingHorizontal: 12,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
   // Card Styles
   card: {
@@ -295,7 +296,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginBottom: 24,
+    marginBottom: 12,
     overflow: 'hidden',
   },
   cardHeader: {
@@ -392,11 +393,11 @@ const styles = StyleSheet.create({
   },
   // Toggles Grid
   toggleList: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 12,
+    borderColor: '#F3F4F6',
+    paddingHorizontal: 16,
   },
   toggleRow: {
     flexDirection: 'row',
@@ -466,29 +467,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: 24,
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: '#BAE6FD',
     borderStyle: 'dashed',
     marginTop: 12,
-    gap: 12,
+    gap: 16,
   },
   addCardIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#38BDF8',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#38BDF8',
-    
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    
+    shadowRadius: 8,
   },
   addCardTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     color: '#0369A1',
   },
