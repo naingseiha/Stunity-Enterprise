@@ -19,6 +19,7 @@ import achievementRoutes from './gamification/routes/achievements.routes';
 import challengeRoutes from './gamification/routes/challenges.routes';
 import leaderboardRoutes from './gamification/routes/leaderboards.routes';
 import teamChallengeRoutes from './gamification/routes/team-challenges.routes';
+import shopRoutes from './gamification/routes/shop.routes';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
@@ -1137,6 +1138,7 @@ app.use('/api/v1/gamification/achievements', authenticateToken, achievementRoute
 app.use('/api/v1/gamification/challenges', authenticateToken, challengeRoutes);
 app.use('/api/v1/gamification/leaderboards', authenticateToken, leaderboardRoutes);
 app.use('/api/v1/gamification/team-challenges', authenticateToken, teamChallengeRoutes);
+app.use('/api/v1/gamification/shop', authenticateToken, shopRoutes);
 
 app.listen(PORT, () => {
   console.log('');
