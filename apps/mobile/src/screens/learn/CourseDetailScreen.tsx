@@ -113,11 +113,11 @@ const SAMPLE_COURSE = {
 
 // Review avatar gradient colors
 const AVATAR_GRADIENTS: [string, string][] = [
-  ['#818CF8', '#6366F1'],
+  ['#1A73E8', '#1557B0'],
   ['#F472B6', '#EC4899'],
   ['#34D399', '#10B981'],
-  ['#38BDF8', '#0EA5E9'],
-  ['#60A5FA', '#3B82F6'],
+  ['#60A5FA', '#2563EB'],
+  ['#818CF8', '#6366F1'],
 ];
 
 type RouteParams = RouteProp<LearnStackParamList, 'CourseDetail'>;
@@ -206,8 +206,8 @@ export default function CourseDetailScreen() {
       <Animated.View entering={FadeInDown.delay(100).duration(400)}>
         <View style={styles.quickStatsRow}>
           <View style={styles.quickStat}>
-            <View style={[styles.quickStatIconBg, { backgroundColor: '#EEF2FF' }]}>
-              <Ionicons name="people" size={18} color="#6366F1" />
+            <View style={[styles.quickStatIconBg, { backgroundColor: '#E8F0FE' }]}>
+              <Ionicons name="people" size={18} color="#1A73E8" />
             </View>
             <Text style={styles.quickStatValue}>{SAMPLE_COURSE.enrolledCount.toLocaleString()}</Text>
             <Text style={styles.quickStatLabel}>Students</Text>
@@ -265,7 +265,7 @@ export default function CourseDetailScreen() {
                   <Text style={styles.instructorName}>{SAMPLE_COURSE.instructor.name}</Text>
                   <View style={styles.verifiedBadge}>
                     <LinearGradient
-                      colors={['#818CF8', '#6366F1']}
+                      colors={['#1A73E8', '#1557B0']}
                       style={styles.verifiedGradient}
                     >
                       <Ionicons name="checkmark" size={10} color="#fff" />
@@ -275,12 +275,12 @@ export default function CourseDetailScreen() {
                 <Text style={styles.instructorTitle}>{SAMPLE_COURSE.instructor.title}</Text>
                 <View style={styles.instructorStats}>
                   <View style={styles.instructorStat}>
-                    <Ionicons name="star" size={12} color="#0EA5E9" />
+                    <Ionicons name="star" size={12} color="#1A73E8" />
                     <Text style={styles.instructorStatText}>{SAMPLE_COURSE.instructor.rating}</Text>
                   </View>
                   <View style={styles.instructorStatDot} />
                   <View style={styles.instructorStat}>
-                    <Ionicons name="people" size={12} color="#6366F1" />
+                    <Ionicons name="people" size={12} color="#1A73E8" />
                     <Text style={styles.instructorStatText}>{SAMPLE_COURSE.instructor.students.toLocaleString()} Students</Text>
                   </View>
                   <View style={styles.instructorStatDot} />
@@ -294,7 +294,7 @@ export default function CourseDetailScreen() {
             <Text style={styles.instructorBio}>{SAMPLE_COURSE.instructor.bio}</Text>
             <TouchableOpacity style={styles.followBtn} activeOpacity={0.8}>
               <LinearGradient
-                colors={['#818CF8', '#6366F1']}
+                colors={['#1A73E8', '#1557B0']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.followBtnGradient}
@@ -311,8 +311,8 @@ export default function CourseDetailScreen() {
       <Animated.View entering={FadeInDown.delay(400).duration(400)}>
         <View style={styles.infoGrid}>
           <View style={styles.infoItem}>
-            <View style={[styles.infoIconBg, { backgroundColor: '#EEF2FF' }]}>
-              <Ionicons name="layers-outline" size={22} color="#6366F1" />
+            <View style={[styles.infoIconBg, { backgroundColor: '#E8F0FE' }]}>
+              <Ionicons name="layers-outline" size={22} color="#1A73E8" />
             </View>
             <Text style={styles.infoLabel}>Level</Text>
             <Text style={styles.infoValue}>{SAMPLE_COURSE.level}</Text>
@@ -341,9 +341,9 @@ export default function CourseDetailScreen() {
     <Animated.View entering={FadeInDown.duration(400)} style={styles.tabContent}>
       <View style={styles.curriculumHeader}>
         <View style={styles.curriculumStatsRow}>
-          <View style={[styles.curriculumStatBadge, { backgroundColor: '#EEF2FF' }]}>
-            <Ionicons name="folder-open" size={14} color="#6366F1" />
-            <Text style={[styles.curriculumStatText, { color: '#6366F1' }]}>
+          <View style={[styles.curriculumStatBadge, { backgroundColor: '#E8F0FE' }]}>
+            <Ionicons name="folder-open" size={14} color="#1A73E8" />
+            <Text style={[styles.curriculumStatText, { color: '#1A73E8' }]}>
               {SAMPLE_COURSE.curriculum.length} Sections
             </Text>
           </View>
@@ -377,7 +377,7 @@ export default function CourseDetailScreen() {
               >
                 <View style={styles.accordionLeft}>
                   <LinearGradient
-                    colors={['#818CF8', '#6366F1']}
+                    colors={['#1A73E8', '#1557B0']}
                     style={styles.sectionIndex}
                   >
                     <Text style={styles.sectionIndexText}>{index + 1}</Text>
@@ -391,7 +391,7 @@ export default function CourseDetailScreen() {
                   <Ionicons
                     name={isExpanded ? 'chevron-up' : 'chevron-down'}
                     size={16}
-                    color={isExpanded ? '#6366F1' : '#9CA3AF'}
+                    color={isExpanded ? '#1A73E8' : '#9CA3AF'}
                   />
                 </View>
               </TouchableOpacity>
@@ -403,12 +403,12 @@ export default function CourseDetailScreen() {
                       <View style={styles.lessonIconContainer}>
                         {lesson.type === 'video' ? (
                           <View style={[styles.lessonIconBg, {
-                            backgroundColor: lesson.isFree ? '#EEF2FF' : '#F4F6F9'
+                            backgroundColor: lesson.isFree ? '#E8F0FE' : '#F4F6F9'
                           }]}>
                             <Ionicons
                               name="play"
                               size={14}
-                              color={lesson.isFree ? '#6366F1' : '#9CA3AF'}
+                              color={lesson.isFree ? '#1A73E8' : '#9CA3AF'}
                             />
                           </View>
                         ) : (
@@ -489,7 +489,7 @@ export default function CourseDetailScreen() {
               </View>
               <View style={styles.reviewRating}>
                 <View style={styles.reviewRatingBadge}>
-                  <Ionicons name="star" size={12} color="#0EA5E9" />
+                  <Ionicons name="star" size={12} color="#1A73E8" />
                   <Text style={styles.reviewRatingText}>{review.rating}</Text>
                 </View>
               </View>
@@ -550,14 +550,14 @@ export default function CourseDetailScreen() {
         <Animated.View style={[styles.heroContent, imageStyle]}>
           <View style={styles.badgeContainer}>
             <LinearGradient
-              colors={['#6366F1', '#4F46E5']}
+              colors={['#1A73E8', '#1557B0']}
               style={styles.levelBadge}
             >
               <Ionicons name="flame" size={12} color="#fff" style={{ marginRight: 4 }} />
               <Text style={styles.levelBadgeText}>{SAMPLE_COURSE.level}</Text>
             </LinearGradient>
             <View style={styles.ratingBadge}>
-              <Ionicons name="star" size={12} color="#0EA5E9" style={{ marginRight: 4 }} />
+              <Ionicons name="star" size={12} color="#1A73E8" style={{ marginRight: 4 }} />
               <Text style={styles.ratingBadgeText}>{SAMPLE_COURSE.rating} ({SAMPLE_COURSE.reviewCount})</Text>
             </View>
           </View>
@@ -594,7 +594,7 @@ export default function CourseDetailScreen() {
         </View>
         <TouchableOpacity style={styles.enrollButton} onPress={handleEnroll} activeOpacity={0.8}>
           <LinearGradient
-            colors={['#818CF8', '#6366F1', '#4F46E5']}
+            colors={['#1A73E8', '#1557B0']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.enrollButtonGradient}
@@ -611,7 +611,7 @@ export default function CourseDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F8F9FA',
   },
 
   // ── Sticky Header ──
@@ -621,7 +621,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 100,
-    backgroundColor: '#1F2937',
+    backgroundColor: '#0D1117',
     overflow: 'hidden',
   },
   stickyHeaderImageContainer: {
@@ -724,28 +724,28 @@ const styles = StyleSheet.create({
 
   // ── Content Container ──
   contentContainer: {
-    backgroundColor: '#F5F3FF',
+    backgroundColor: '#F8F9FA',
     minHeight: SCREEN_HEIGHT - HEADER_HEIGHT,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     marginTop: -28,
-    paddingTop: 8,
+    paddingTop: 28,
   },
 
   // ── Tab Bar — Pill Style ──
   tabBar: {
     flexDirection: 'row',
     marginHorizontal: 16,
-    marginBottom: 8,
-    marginTop: 10,
+    marginBottom: 12,
+    marginTop: 4,
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 4,
-    
-    
-    
-    
-    
+
+
+
+
+
   },
   tabPill: {
     flex: 1,
@@ -757,12 +757,12 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   tabPillActive: {
-    backgroundColor: '#6366F1',
-    
-    
-    shadowOpacity: 0.3,
-    
-    
+    backgroundColor: '#1A73E8',
+    shadowColor: '#1A73E8',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   tabPillText: {
     fontSize: 13,
@@ -782,17 +782,17 @@ const styles = StyleSheet.create({
   quickStatsRow: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    
-    
+
+
     borderRadius: 14,
     padding: 16,
     justifyContent: 'space-between',
     marginBottom: 20,
-    
-    
-    
-    
-    
+
+
+
+
+
   },
   quickStat: {
     alignItems: 'center',
@@ -801,14 +801,14 @@ const styles = StyleSheet.create({
   quickStatIconBg: {
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
   quickStatValue: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#111827',
   },
   quickStatLabel: {
     fontSize: 11,
@@ -839,32 +839,30 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tag: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E8F0FE',
     paddingHorizontal: 14,
     paddingVertical: 7,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#E0E7FF',
+    borderRadius: 50,
   },
   tagText: {
     fontSize: 13,
-    color: '#4F46E5',
+    color: '#1A73E8',
     fontWeight: '600',
   },
 
   // ── Instructor ──
   instructorCard: {
     backgroundColor: '#FFFFFF',
-    
-    
+
+
     borderRadius: 14,
     padding: 18,
     overflow: 'hidden',
-    
-    
-    
-    
-    
+
+
+
+
+
   },
   instructorGradientAccent: {
     position: 'absolute',
@@ -872,7 +870,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 4,
-    backgroundColor: '#6366F1',
+    backgroundColor: '#1A73E8',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
@@ -903,11 +901,11 @@ const styles = StyleSheet.create({
   verifiedBadge: {
     borderRadius: 9,
     overflow: 'hidden',
-    
-    
+
+
     shadowOpacity: 0.3,
-    
-    
+
+
   },
   verifiedGradient: {
     width: 18,
@@ -951,15 +949,15 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   followBtn: {
-    borderRadius: 12,
+    borderRadius: 50,
     overflow: 'hidden',
     alignSelf: 'flex-start',
   },
   followBtnGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingVertical: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 9,
     gap: 6,
   },
   followBtnText: {
@@ -972,17 +970,17 @@ const styles = StyleSheet.create({
   infoGrid: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    
-    
+
+
     borderRadius: 14,
     padding: 20,
     justifyContent: 'space-between',
     marginBottom: 20,
-    
-    
-    
-    
-    
+
+
+
+
+
   },
   infoItem: {
     alignItems: 'center',
@@ -1029,16 +1027,16 @@ const styles = StyleSheet.create({
   },
   accordionItem: {
     backgroundColor: '#FFFFFF',
-    
-    
+
+
     borderRadius: 14,
     marginBottom: 12,
     overflow: 'hidden',
-    
-    
+
+
     shadowOpacity: 0.05,
-    
-    
+
+
   },
   accordionHeader: {
     flexDirection: 'row',
@@ -1047,9 +1045,9 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   accordionHeaderExpanded: {
-    backgroundColor: '#FAFAFF',
+    backgroundColor: '#F0F7FF',
     borderBottomWidth: 1,
-    borderBottomColor: '#EDE9FE',
+    borderBottomColor: '#DAEBFF',
   },
   accordionLeft: {
     flexDirection: 'row',
@@ -1092,7 +1090,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chevronCircleExpanded: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#E8F0FE',
   },
   lessonsList: {
     backgroundColor: '#FFFFFF',
@@ -1166,15 +1164,15 @@ const styles = StyleSheet.create({
     gap: 16,
     marginBottom: 20,
     backgroundColor: '#FFFFFF',
-    
-    
+
+
     padding: 18,
     borderRadius: 14,
-    
-    
-    
-    
-    
+
+
+
+
+
   },
   reviewScoreContainer: {
     alignItems: 'center',
@@ -1206,16 +1204,16 @@ const styles = StyleSheet.create({
   },
   reviewCard: {
     backgroundColor: '#FFFFFF',
-    
-    
+
+
     padding: 16,
     borderRadius: 14,
     marginBottom: 12,
-    
-    
+
+
     shadowOpacity: 0.04,
-    
-    
+
+
   },
   reviewHeader: {
     flexDirection: 'row',
@@ -1254,16 +1252,16 @@ const styles = StyleSheet.create({
   reviewRatingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#E8F0FE',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 50,
     gap: 4,
   },
   reviewRatingText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#0284C7',
+    color: '#1A73E8',
   },
   reviewComment: {
     fontSize: 14,
@@ -1279,17 +1277,17 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#EDE9FE',
+    borderTopColor: '#E8EAED',
     paddingHorizontal: 20,
     paddingTop: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
-    
+    shadowOpacity: 0.06,
     shadowRadius: 16,
-    
+    elevation: 10,
   },
   priceContainer: {},
   priceLabel: {
@@ -1315,13 +1313,13 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   enrollButton: {
-    borderRadius: 14,
+    borderRadius: 50,
     overflow: 'hidden',
-    shadowColor: '#4F46E5',
-    
+    shadowColor: '#1A73E8',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    
-    
+    shadowRadius: 10,
+    elevation: 6,
   },
   enrollButtonGradient: {
     flexDirection: 'row',

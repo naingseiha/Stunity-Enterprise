@@ -1,14 +1,13 @@
 /**
- * Course Card Component — Premium Enterprise Design
- * 
- * Elevated card design matching enterprise design language:
- * - Rich gradient thumbnail placeholders with decorative elements
- * - Floating glassmorphic level badge
- * - Colored stat icons with mini circle backgrounds
- * - Refined instructor row with glow verified badge
- * - Gradient price/enroll button
- * - Bookmark overlay icon
- * - Indigo-tinted card shadows
+ * Course Card Component — Play Store Inspired Design
+ *
+ * Clean, professional card design:
+ * - Gradient thumbnail placeholder with icon
+ * - Level badge
+ * - Clean title and description
+ * - Instructor row with verified badge
+ * - Stats row (students, rating, lessons)
+ * - Price / Enroll button
  */
 
 import React, { useState } from 'react';
@@ -31,25 +30,30 @@ import { formatNumber } from '@/utils';
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
 
-// Level badge colors with gradient pairs
-const LEVEL_CONFIG: Record<string, { bg: string; text: string; gradient: [string, string]; icon: keyof typeof Ionicons.glyphMap }> = {
-  BEGINNER: { bg: 'rgba(16, 185, 129, 0.15)', text: '#059669', gradient: ['#34D399', '#059669'], icon: 'leaf' },
-  INTERMEDIATE: { bg: 'rgba(59, 130, 246, 0.15)', text: '#2563EB', gradient: ['#60A5FA', '#2563EB'], icon: 'trending-up' },
-  ADVANCED: { bg: 'rgba(239, 68, 68, 0.15)', text: '#DC2626', gradient: ['#F87171', '#DC2626'], icon: 'flame' },
-  ALL_LEVELS: { bg: 'rgba(99, 102, 241, 0.15)', text: '#6366F1', gradient: ['#818CF8', '#6366F1'], icon: 'layers' },
+// Level config
+const LEVEL_CONFIG: Record<string, { gradient: [string, string]; icon: keyof typeof Ionicons.glyphMap; label: string }> = {
+  BEGINNER: { gradient: ['#34D399', '#059669'], icon: 'leaf', label: 'Beginner' },
+  INTERMEDIATE: { gradient: ['#60A5FA', '#2563EB'], icon: 'trending-up', label: 'Intermediate' },
+  ADVANCED: { gradient: ['#F87171', '#DC2626'], icon: 'flame', label: 'Advanced' },
+  ALL_LEVELS: { gradient: ['#818CF8', '#6366F1'], icon: 'layers', label: 'All Levels' },
 };
 
-// Gradient pairs for placeholder thumbnails
+// Thumbnail gradients
 const THUMB_GRADIENTS: [string, string, string][] = [
   ['#818CF8', '#6366F1', '#4F46E5'],
   ['#F472B6', '#EC4899', '#DB2777'],
   ['#34D399', '#10B981', '#059669'],
+  ['#60A5FA', '#3B82F6', '#2563EB'],
+];
+
+const THUMB_ICONS: (keyof typeof Ionicons.glyphMap)[] = [
+  'code-slash', 'analytics', 'bulb', 'color-palette', 'globe',
 ];
 
 interface CourseCardProps {
   course: Course;
   onPress: () => void;
-  variant?: 'full' | 'compact';
+  variant?: 'full' | 'compact' | 'row';
 }
 
 export const CourseCard: React.FC<CourseCardProps> = ({
@@ -58,26 +62,71 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   variant = 'full',
 }) => {
   const isCompact = variant === 'compact';
+  const isRow = variant === 'row';
   const levelConfig = LEVEL_CONFIG[course.level] || LEVEL_CONFIG.ALL_LEVELS;
   const [isBookmarked, setIsBookmarked] = useState(false);
 
-  // Deterministic gradient based on course id
   const gradientIndex = parseInt(course.id, 10) % THUMB_GRADIENTS.length || 0;
   const thumbGradient = THUMB_GRADIENTS[gradientIndex];
-
-  const THUMB_ICONS: (keyof typeof Ionicons.glyphMap)[] = [
-    'code-slash', 'analytics', 'bulb', 'color-palette', 'globe',
-  ];
   const thumbIcon = THUMB_ICONS[gradientIndex % THUMB_ICONS.length];
+
+  // ── Row variant (horizontal compact list item) ──────────────────
+  if (isRow) {
+    return (
+      <Animated.View entering={FadeIn.duration(300)}>
+        <TouchableOpacity onPress={onPress} activeOpacity={0.72} style={styles.rowContainer}>
+          {/* Small square thumbnail */}
+          <LinearGradient
+            colors={thumbGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.rowThumb}
+          >
+            <Ionicons name={thumbIcon} size={22} color="rgba(255,255,255,0.9)" />
+          </LinearGradient>
+
+          {/* Content */}
+          <View style={styles.rowBody}>
+            <Text style={styles.rowTitle} numberOfLines={1}>{course.title}</Text>
+            <Text style={styles.rowSub} numberOfLines={1}>
+              {course.instructor?.firstName} {course.instructor?.lastName}  ·  {course.category}
+            </Text>
+            <View style={styles.rowMeta}>
+              <Ionicons name="star" size={11} color="#F9AB00" />
+              <Text style={styles.rowRating}>{course.rating?.toFixed(1)}</Text>
+              <Text style={styles.rowDot}>  ·  </Text>
+              <Text style={styles.rowLessons}>{course.totalLessons} lessons</Text>
+              <Text style={styles.rowDot}>  ·  </Text>
+              <Text style={[styles.rowPrice, course.price === 0 && styles.rowFree]}>
+                {course.price && course.price > 0 ? `$${course.price}` : 'FREE'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Bookmark */}
+          <TouchableOpacity
+            onPress={(e) => { e.stopPropagation(); setIsBookmarked(!isBookmarked); }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons
+              name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
+              size={18}
+              color={isBookmarked ? '#1A73E8' : '#BDBDBD'}
+            />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  }
 
   return (
     <Animated.View entering={FadeIn.duration(300)}>
       <TouchableOpacity
         onPress={onPress}
-        activeOpacity={0.7}
+        activeOpacity={0.72}
         style={[styles.container, isCompact && styles.compactContainer]}
       >
-        {/* Thumbnail */}
+        {/* ── Thumbnail ── */}
         <View style={[styles.thumbnailContainer, isCompact && styles.compactThumbnail]}>
           {course.thumbnailUrl ? (
             <Image
@@ -93,40 +142,38 @@ export const CourseCard: React.FC<CourseCardProps> = ({
               end={{ x: 1, y: 1 }}
               style={styles.thumbnailPlaceholder}
             >
+              <View style={styles.thumbDecor1} />
+              <View style={styles.thumbDecor2} />
               <View style={styles.thumbIconCircle}>
-                <Ionicons name={thumbIcon} size={isCompact ? 22 : 32} color="rgba(255,255,255,0.9)" />
+                <Ionicons name={thumbIcon} size={isCompact ? 22 : 30} color="rgba(255,255,255,0.9)" />
               </View>
-              {/* Decorative elements on thumbnail */}
-              <View style={[styles.thumbDecor, { top: -15, right: -10, width: 60, height: 60 }]} />
-              <View style={[styles.thumbDecor, { bottom: -10, left: 20, width: 40, height: 40 }]} />
-              <View style={[styles.thumbDecor, { top: 20, left: -8, width: 30, height: 30 }]} />
             </LinearGradient>
           )}
 
-          {/* Level Badge — glassmorphic style */}
+          {/* Level Badge */}
           <View style={styles.levelBadge}>
             <LinearGradient
-              colors={[levelConfig.gradient[0] + 'DD', levelConfig.gradient[1] + 'DD']}
+              colors={[levelConfig.gradient[0] + 'EE', levelConfig.gradient[1] + 'EE']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.levelBadgeGradient}
             >
-              <Ionicons name={levelConfig.icon} size={10} color="#fff" />
-              <Text style={styles.levelText}>{course.level}</Text>
+              <Ionicons name={levelConfig.icon} size={9} color="#fff" />
+              <Text style={styles.levelText}>{levelConfig.label}</Text>
             </LinearGradient>
           </View>
 
           {/* Duration */}
           {course.duration && (
             <View style={styles.durationBadge}>
-              <Ionicons name="time-outline" size={11} color="#fff" />
+              <Ionicons name="time-outline" size={10} color="#fff" />
               <Text style={styles.durationText}>
                 {Math.floor(course.duration / 60)}h {course.duration % 60}m
               </Text>
             </View>
           )}
 
-          {/* Bookmark overlay */}
+          {/* Bookmark */}
           <TouchableOpacity
             style={styles.bookmarkBtn}
             onPress={(e) => {
@@ -138,14 +185,14 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             <View style={styles.bookmarkCircle}>
               <Ionicons
                 name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
-                size={16}
-                color={isBookmarked ? '#0EA5E9' : '#fff'}
+                size={14}
+                color={isBookmarked ? '#1A73E8' : '#fff'}
               />
             </View>
           </TouchableOpacity>
         </View>
 
-        {/* Content */}
+        {/* ── Content ── */}
         <View style={[styles.content, isCompact && styles.compactContent]}>
           <Text style={[styles.title, isCompact && styles.compactTitle]} numberOfLines={2}>
             {course.title}
@@ -171,7 +218,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
               {course.instructor.isVerified && (
                 <View style={styles.verifiedBadge}>
                   <LinearGradient
-                    colors={['#818CF8', '#6366F1']}
+                    colors={['#1A73E8', '#0D47A1']}
                     style={styles.verifiedGradient}
                   >
                     <Ionicons name="checkmark" size={8} color="#fff" />
@@ -181,51 +228,43 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             </View>
           )}
 
-          {/* Stats Row with colored icon backgrounds */}
+          {/* Stats Row */}
           <View style={styles.statsRow}>
             <View style={styles.stat}>
-              <View style={[styles.statIconBg, { backgroundColor: '#EEF2FF' }]}>
-                <Ionicons name="people" size={11} color="#6366F1" />
-              </View>
+              <Ionicons name="people-outline" size={12} color="#5F6368" />
               <Text style={styles.statText}>{formatNumber(course.enrollmentCount || 0)}</Text>
             </View>
             {course.rating && (
               <View style={styles.stat}>
-                <View style={[styles.statIconBg, { backgroundColor: '#E0F2FE' }]}>
-                  <Ionicons name="star" size={11} color="#0EA5E9" />
-                </View>
-                <Text style={styles.statText}>{course.rating.toFixed(1)}</Text>
+                <Ionicons name="star" size={12} color="#F9AB00" />
+                <Text style={[styles.statText, { color: '#F9AB00', fontWeight: '700' }]}>{course.rating.toFixed(1)}</Text>
               </View>
             )}
             <View style={styles.stat}>
-              <View style={[styles.statIconBg, { backgroundColor: '#D1FAE5' }]}>
-                <Ionicons name="play-circle" size={11} color="#10B981" />
-              </View>
+              <Ionicons name="play-circle-outline" size={12} color="#5F6368" />
               <Text style={styles.statText}>{course.totalLessons || 0} lessons</Text>
             </View>
           </View>
 
-          {/* Price / Free Badge + Enroll */}
+          {/* Price + Enroll */}
           <View style={styles.priceRow}>
             {course.price && course.price > 0 ? (
-              <View style={styles.priceContainer}>
-                <Text style={styles.price}>${course.price}</Text>
-              </View>
+              <Text style={styles.price}>${course.price}</Text>
             ) : (
               <View style={styles.freeBadge}>
-                <Ionicons name="gift-outline" size={12} color="#059669" />
+                <Ionicons name="gift-outline" size={11} color="#059669" />
                 <Text style={styles.freeText}>FREE</Text>
               </View>
             )}
-            <TouchableOpacity style={styles.enrollMiniBtn} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.enrollBtn} activeOpacity={0.8}>
               <LinearGradient
-                colors={['#818CF8', '#6366F1']}
+                colors={['#1A73E8', '#0D47A1']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={styles.enrollMiniBtnGradient}
+                style={styles.enrollBtnGradient}
               >
-                <Text style={styles.enrollMiniText}>Enroll</Text>
-                <Ionicons name="arrow-forward" size={12} color="#fff" />
+                <Text style={styles.enrollBtnText}>Enroll</Text>
+                <Ionicons name="arrow-forward" size={11} color="#fff" />
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -238,24 +277,25 @@ export const CourseCard: React.FC<CourseCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    marginBottom: 16,
+    borderRadius: 14,
+    marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#DADCE0',
+    overflow: 'hidden',
   },
   compactContainer: {
     width: CARD_WIDTH,
     marginBottom: 0,
   },
+
+  // Thumbnail
   thumbnailContainer: {
-    height: 175,
+    height: 170,
     position: 'relative',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
     overflow: 'hidden',
   },
   compactThumbnail: {
-    height: 110,
+    height: 105,
   },
   thumbnail: {
     width: '100%',
@@ -269,58 +309,71 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
   },
+  thumbDecor1: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    top: -20,
+    right: -20,
+  },
+  thumbDecor2: {
+    position: 'absolute',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    bottom: -10,
+    left: 10,
+  },
   thumbIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  thumbDecor: {
-    position: 'absolute',
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.1)',
   },
 
   // Level Badge
   levelBadge: {
     position: 'absolute',
-    top: 12,
-    left: 12,
-    borderRadius: 10,
+    top: 10,
+    left: 10,
+    borderRadius: 20,
     overflow: 'hidden',
   },
   levelBadgeGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
     gap: 4,
   },
   levelText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
     color: '#fff',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
 
   // Duration
   durationBadge: {
     position: 'absolute',
-    bottom: 12,
-    right: 12,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    bottom: 10,
+    right: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    gap: 3,
   },
   durationText: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#fff',
     fontWeight: '600',
   },
@@ -328,55 +381,55 @@ const styles = StyleSheet.create({
   // Bookmark
   bookmarkBtn: {
     position: 'absolute',
-    top: 12,
-    right: 12,
+    top: 10,
+    right: 10,
   },
   bookmarkCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(0,0,0,0.28)',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   // Content
   content: {
-    padding: 16,
+    padding: 14,
   },
   compactContent: {
     padding: 10,
   },
   title: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#1F2937',
-    lineHeight: 22,
+    color: '#202124',
+    lineHeight: 21,
     letterSpacing: -0.2,
   },
   compactTitle: {
-    fontSize: 14,
-    lineHeight: 19,
+    fontSize: 13,
+    lineHeight: 18,
   },
   description: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginTop: 6,
-    lineHeight: 19,
+    fontSize: 12,
+    color: '#5F6368',
+    marginTop: 5,
+    lineHeight: 18,
   },
 
   // Instructor
   instructorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
-    gap: 8,
+    marginTop: 10,
+    gap: 7,
   },
   instructorName: {
     flex: 1,
     fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '600',
+    color: '#5F6368',
+    fontWeight: '500',
   },
   verifiedBadge: {
     borderRadius: 8,
@@ -393,76 +446,126 @@ const styles = StyleSheet.create({
   // Stats
   statsRow: {
     flexDirection: 'row',
-    marginTop: 12,
+    marginTop: 10,
     gap: 12,
+    flexWrap: 'wrap',
   },
   stat: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-  },
-  statIconBg: {
-    width: 22,
-    height: 22,
-    borderRadius: 7,
-    alignItems: 'center',
-    justifyContent: 'center',
+    gap: 4,
   },
   statText: {
     fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '600',
+    color: '#5F6368',
+    fontWeight: '500',
   },
 
   // Price
   priceRow: {
-    marginTop: 14,
+    marginTop: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
   price: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
-    color: '#6366F1',
+    color: '#1A73E8',
     letterSpacing: -0.3,
   },
   freeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ECFDF5',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    gap: 5,
-
-    borderColor: '#D1FAE5',
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#A5D6A7',
   },
   freeText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
     color: '#059669',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
-  enrollMiniBtn: {
-    borderRadius: 12,
+  enrollBtn: {
+    borderRadius: 20,
     overflow: 'hidden',
   },
-  enrollMiniBtnGradient: {
+  enrollBtnGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     gap: 4,
   },
-  enrollMiniText: {
+  enrollBtnText: {
     fontSize: 12,
     fontWeight: '700',
     color: '#fff',
+  },
+
+  // ── Row variant ────────────────────────────────────────────────
+  rowContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F3F4',
+  },
+  rowThumb: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  rowBody: {
+    flex: 1,
+    gap: 3,
+  },
+  rowTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#202124',
+  },
+  rowSub: {
+    fontSize: 12,
+    color: '#5F6368',
+    fontWeight: '400',
+  },
+  rowMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  rowRating: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#F9AB00',
+    marginLeft: 3,
+  },
+  rowDot: {
+    fontSize: 11,
+    color: '#BDBDBD',
+  },
+  rowLessons: {
+    fontSize: 11,
+    color: '#5F6368',
+    fontWeight: '500',
+  },
+  rowPrice: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1A73E8',
+  },
+  rowFree: {
+    color: '#059669',
   },
 });
 
