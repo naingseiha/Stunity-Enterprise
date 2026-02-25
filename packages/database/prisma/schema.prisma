@@ -624,6 +624,15 @@ model User {
   learningStreak          LearningStreak?
   weeklyLeaderboards      WeeklyLeaderboard[]
   feedSignals             UserFeedSignal[]
+  // Enhanced Gamification relations
+  achievementProgress     UserAchievementProgress[]
+  userChallenges          Challenge[]
+  currency                VirtualCurrency?
+  currencyTransactions    VirtualCurrencyTransaction[]
+  unlockables             UserUnlockable[]
+  teamChallengeParticipations TeamChallengeParticipant[]
+  attendanceStreak        AttendanceStreak?
+  milestoneEvents         MilestoneEvent[]
   academicProfile         UserAcademicProfile?
   deadlines               UserDeadline[]
   parent                  Parent?                    @relation(fields: [parentId], references: [id], onDelete: Cascade)
@@ -3229,6 +3238,289 @@ model UserAcademicProfile {
 
   @@index([userId])
   @@map("user_academic_profiles")
+}
+
+// ============================================
+// ENHANCED GAMIFICATION MODELS
+// ============================================
+
+enum AchievementCategory {
+  ACADEMIC
+  SOCIAL
+  CHALLENGE
+  ATTENDANCE
+  COMPOSITE
+}
+
+enum AchievementTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+enum ChallengeType {
+  DAILY
+  WEEKLY
+  SPECIAL
+  TEAM
+}
+
+enum ChallengeDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum ChallengeStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+}
+
+enum UnlockableType {
+  AVATAR
+  THEME
+  BADGE_FRAME
+  PROFILE_EFFECT
+}
+
+enum TeamChallengeStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  EXPIRED
+}
+
+enum LeaderboardCategory {
+  TOTAL_XP
+  ACADEMIC_PERFORMANCE
+  SOCIAL_ENGAGEMENT
+  ATTENDANCE_RATE
+  CHALLENGE_COMPLETION
+}
+
+enum LeaderboardScope {
+  SCHOOL_WIDE
+  GRADE_LEVEL
+  CLASS_SPECIFIC
+}
+
+enum LeaderboardPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  ALL_TIME
+}
+
+enum MilestoneType {
+  LEVEL_UP
+  ACHIEVEMENT_UNLOCK
+  STREAK_MILESTONE
+  CHALLENGE_COMPLETION
+  LEADERBOARD_TOP_10
+}
+
+model GamificationAchievement {
+  id           String              @id @default(cuid())
+  category     AchievementCategory
+  tier         AchievementTier
+  name         String
+  description  String
+  icon         String
+  criteria     Json
+  xpReward     Int
+  coinReward   Int
+  requiredId   String? // For chained achievements
+  isActive     Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  userProgress UserAchievementProgress[]
+
+  @@map("gamification_achievements")
+}
+
+model UserAchievementProgress {
+  id            String                  @id @default(cuid())
+  userId        String
+  achievementId String
+  progress      Int                     @default(0)
+  isUnlocked    Boolean                 @default(false)
+  unlockedAt    DateTime?
+  lastUpdated   DateTime                @default(now())
+  user          User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   GamificationAchievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@map("user_achievement_progress")
+}
+
+model ChallengeTemplate {
+  id          String              @id @default(cuid())
+  type        ChallengeType
+  difficulty  ChallengeDifficulty
+  name        String
+  description String
+  targetValue Int
+  xpReward    Int
+  coinReward  Int
+  criteria    Json
+  weight      Int                 @default(1)
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+
+  challenges Challenge[]
+  @@map("challenge_templates")
+}
+
+model Challenge {
+  id         String          @id @default(cuid())
+  userId     String
+  templateId String
+  status     ChallengeStatus @default(ACTIVE)
+  progress   Int             @default(0)
+  expiresAt  DateTime
+  createdAt  DateTime        @default(now())
+  completedAt DateTime?
+
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template ChallengeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("challenges")
+}
+
+model VirtualCurrency {
+  userId    String   @id
+  balance   Int      @default(0)
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("virtual_currency")
+}
+
+model VirtualCurrencyTransaction {
+  id        String          @id @default(cuid())
+  userId    String
+  amount    Int
+  type      TransactionType
+  source    String // 'challenge', 'achievement', 'purchase', 'bonus'
+  sourceId  String?
+  createdAt DateTime        @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("virtual_currency_transactions")
+}
+
+model Unlockable {
+  id          String         @id @default(cuid())
+  type        UnlockableType
+  name        String
+  description String
+  cost        Int
+  metadata    Json?
+  requiredAchievementId String?
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+
+  owners UserUnlockable[]
+  @@map("unlockables")
+}
+
+model UserUnlockable {
+  id           String     @id @default(cuid())
+  userId       String
+  unlockableId String
+  isEquipped   Boolean    @default(false)
+  unlockedAt   DateTime   @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  unlockable Unlockable @relation(fields: [unlockableId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, unlockableId])
+  @@index([userId])
+  @@map("user_unlockables")
+}
+
+model TeamChallenge {
+  id          String              @id @default(cuid())
+  name        String
+  description String
+  targetValue Int
+  currentValue Int                @default(0)
+  status      TeamChallengeStatus @default(PENDING)
+  deadline    DateTime
+  xpReward    Int
+  coinReward  Int
+  createdAt   DateTime            @default(now())
+  completedAt DateTime?
+
+  participants TeamChallengeParticipant[]
+  @@map("team_challenges")
+}
+
+model TeamChallengeParticipant {
+  id           String   @id @default(cuid())
+  teamChallengeId String
+  userId       String
+  contribution Int      @default(0)
+  joinedAt     DateTime @default(now())
+
+  teamChallenge TeamChallenge @relation(fields: [teamChallengeId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamChallengeId, userId])
+  @@index([userId])
+  @@map("team_challenge_participants")
+}
+
+model Leaderboard {
+  id         String              @id @default(cuid())
+  category   LeaderboardCategory
+  scope      LeaderboardScope
+  period     LeaderboardPeriod
+  periodStart DateTime
+  entries    Json // Array of { userId, rank, value }
+  createdAt  DateTime            @default(now())
+
+  @@index([category, scope, period])
+  @@map("leaderboards")
+}
+
+model AttendanceStreak {
+  userId        String   @id
+  currentStreak Int      @default(0)
+  longestStreak Int      @default(0)
+  lastPresentAt DateTime?
+  graceActive   Boolean  @default(false)
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("attendance_streaks")
+}
+
+model MilestoneEvent {
+  id          String        @id @default(cuid())
+  userId      String
+  type        MilestoneType
+  title       String
+  description String
+  metadata    Json?
+  isViewed    Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isViewed])
+  @@map("milestone_events")
 }
 
 model UserDeadline {

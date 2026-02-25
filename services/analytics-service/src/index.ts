@@ -14,6 +14,9 @@ import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import currencyRoutes from './gamification/routes/currency.routes';
+import achievementRoutes from './gamification/routes/achievements.routes';
+import challengeRoutes from './gamification/routes/challenges.routes';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
@@ -1122,6 +1125,14 @@ app.post('/challenge/:id/submit', authenticateToken, async (req: AuthRequest, re
 // ========================================
 // Server Start
 // ========================================
+
+// ========================================
+// Enhanced Gamification - Phase 1 Foundation
+// ========================================
+
+app.use('/api/v1/gamification/currency', authenticateToken, currencyRoutes);
+app.use('/api/v1/gamification/achievements', authenticateToken, achievementRoutes);
+app.use('/api/v1/gamification/challenges', authenticateToken, challengeRoutes);
 
 app.listen(PORT, () => {
   console.log('');
