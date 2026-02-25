@@ -56,6 +56,7 @@ import { transformPosts } from '@/utils/transformPost';
 import { FeedStackScreenProps } from '@/navigation/types';
 import { useNavigationContext } from '@/contexts';
 import RenderPostItem from './RenderPostItem';
+import { statsAPI } from '@/services/stats';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -283,16 +284,47 @@ export default function FeedScreen() {
     initializeRecommendations();
 
     // Fetch learning stats for performance card
-    feedApi.get('/courses/stats/my-learning').then(res => {
-      if (res.data) {
-        setLearningStats({
-          currentStreak: res.data.currentStreak || 0,
-          totalPoints: res.data.totalPoints || 0,
-          completedLessons: res.data.completedLessons || 0,
-          level: res.data.level || 1,
-        });
+    const fetchLearningStats = async () => {
+      try {
+        const userId = useAuthStore.getState().user?.id;
+        if (!userId) return;
+
+        // Try getting stats from main API first
+        try {
+          const res = await feedApi.get('/courses/stats/my-learning');
+          if (res.data) {
+            setLearningStats({
+              currentStreak: res.data.currentStreak || 0,
+              totalPoints: res.data.totalPoints || 0,
+              completedLessons: res.data.completedLessons || 0,
+              level: res.data.level || 1,
+            });
+            return;
+          }
+        } catch (e) {
+          // Fallback to real analytics api
+        }
+
+        // Fetch using statsAPI
+        const [stats, streak] = await Promise.all([
+          statsAPI.getUserStats(userId).catch(() => null),
+          statsAPI.getStreak(userId).catch(() => null),
+        ]);
+
+        if (stats || streak) {
+          setLearningStats({
+            currentStreak: streak?.currentStreak || 0,
+            totalPoints: stats?.totalPoints || 0,
+            completedLessons: stats?.totalQuizzes || 0,
+            level: stats?.level || 1,
+          });
+        }
+      } catch (err) {
+        // Silent fail
       }
-    }).catch(() => { /* Silent — card shows 0s on failure */ });
+    };
+
+    fetchLearningStats();
   }, []);
 
   // No useFocusEffect re-fetch — polling + realtime handle freshness

@@ -1,16 +1,15 @@
 /**
- * Learn Hub Screen — Premium Enterprise Design
- * 
- * Matching feed design language:
- * - Indigo gradient hero learning progress card
- * - Search bar with rounded styling
- * - Circular category filters with gradient active rings
- * - Featured course carousel
- * - Premium course card list
- * - Decorative circles, soft purple background
+ * Learn Hub Screen — Complete Redesign v2
+ *
+ * Clean, modern enterprise design:
+ * - White top header with search
+ * - Flat horizontal tab bar (no circles)
+ * - Clean chip category selectors
+ * - Featured cards with rich thumbnail gradients
+ * - Standard course list with compact cards
  */
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -20,7 +19,6 @@ import {
   RefreshControl,
   Dimensions,
   StatusBar,
-  Image,
   TextInput,
   Platform,
 } from 'react-native';
@@ -28,10 +26,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown, FadeInRight, FadeIn } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 
 import StunityLogo from '../../../assets/Stunity.svg';
-
 import { CourseCard } from '@/components/learn';
 import { useAuthStore } from '@/stores';
 import { Course, LearningPath } from '@/types';
@@ -39,48 +36,34 @@ import { LearnStackScreenProps } from '@/navigation/types';
 import { useNavigationContext } from '@/contexts';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 type NavigationProp = LearnStackScreenProps<'LearnHub'>['navigation'];
 type TabType = 'explore' | 'enrolled' | 'created' | 'paths';
 
-const TABS: { id: TabType; label: string; icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }[] = [
-  { id: 'explore', label: 'Explore', icon: 'compass', color: '#0EA5E9', bg: '#E0F2FE' },
-  { id: 'enrolled', label: 'My Courses', icon: 'book', color: '#3B82F6', bg: '#DBEAFE' },
-  { id: 'created', label: 'Created', icon: 'create', color: '#10B981', bg: '#D1FAE5' },
-  { id: 'paths', label: 'Paths', icon: 'git-branch', color: '#0EA5E9', bg: '#E0F2FE' },
+const TABS: { id: TabType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { id: 'explore', label: 'Explore', icon: 'compass-outline' },
+  { id: 'enrolled', label: 'My Courses', icon: 'book-outline' },
+  { id: 'created', label: 'Created', icon: 'create-outline' },
+  { id: 'paths', label: 'Paths', icon: 'git-branch-outline' },
 ];
 
-// Category filters with gradient rings
-const CATEGORIES = [
-  { id: 'all', name: 'All', icon: 'apps' as const, color: '#0EA5E9', bg: '#E0F2FE', gradient: ['#7DD3FC', '#0EA5E9'] as [string, string] },
-  { id: 'dev', name: 'Dev', icon: 'code-slash' as const, color: '#3B82F6', bg: '#DBEAFE', gradient: ['#60A5FA', '#3B82F6'] as [string, string] },
-  { id: 'design', name: 'Design', icon: 'color-palette' as const, color: '#EC4899', bg: '#FCE7F3', gradient: ['#F472B6', '#EC4899'] as [string, string] },
-  { id: 'data', name: 'Data', icon: 'analytics' as const, color: '#10B981', bg: '#D1FAE5', gradient: ['#34D399', '#10B981'] as [string, string] },
-  { id: 'business', name: 'Business', icon: 'briefcase' as const, color: '#0EA5E9', bg: '#E0F2FE', gradient: ['#7DD3FC', '#0EA5E9'] as [string, string] },
-  { id: 'language', name: 'Language', icon: 'globe' as const, color: '#8B5CF6', bg: '#EDE9FE', gradient: ['#A78BFA', '#8B5CF6'] as [string, string] },
+const CATEGORIES = ['All', 'Design', 'Development', 'Data Science', 'Business', 'Language'];
+
+const FEATURED_GRADIENTS: [string, string][] = [
+  ['#818CF8', '#4F46E5'],
+  ['#F472B6', '#DB2777'],
+  ['#34D399', '#059669'],
 ];
 
-// Mock data
 const MOCK_COURSES: Course[] = [
   {
     id: '1',
     title: 'Complete React Native Development',
-    description: 'Build mobile apps with React Native from scratch',
-    level: 'BEGINNER',
-    category: 'Development',
-    enrollmentCount: 12500,
-    rating: 4.8,
-    totalLessons: 42,
-    duration: 480,
-    price: 0,
-    currency: 'USD',
-    reviewCount: 850,
-    isPublished: true,
-    tags: ['react-native', 'mobile'],
-    requirements: [],
-    learningOutcomes: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    description: 'Build mobile apps with React Native from scratch. Covers navigation, state, and deployment.',
+    level: 'BEGINNER', category: 'Development',
+    enrollmentCount: 12500, rating: 4.8, totalLessons: 42, duration: 480,
+    price: 0, currency: 'USD', reviewCount: 850, isPublished: true,
+    tags: ['react-native', 'mobile'], requirements: [], learningOutcomes: [],
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     instructor: {
       id: '1', firstName: 'John', lastName: 'Doe', username: 'johndoe', email: 'john@example.com',
       role: 'TEACHER', isVerified: true, isOnline: false, languages: [], interests: [],
@@ -90,22 +73,12 @@ const MOCK_COURSES: Course[] = [
   {
     id: '2',
     title: 'Machine Learning Fundamentals',
-    description: 'Introduction to ML concepts and algorithms',
-    level: 'INTERMEDIATE',
-    category: 'Data Science',
-    enrollmentCount: 8300,
-    rating: 4.6,
-    totalLessons: 35,
-    duration: 360,
-    price: 49.99,
-    currency: 'USD',
-    reviewCount: 520,
-    isPublished: true,
-    tags: ['machine-learning', 'python'],
-    requirements: [],
-    learningOutcomes: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    description: 'Introduction to ML concepts and algorithms with Python.',
+    level: 'INTERMEDIATE', category: 'Data Science',
+    enrollmentCount: 8300, rating: 4.6, totalLessons: 35, duration: 360,
+    price: 49.99, currency: 'USD', reviewCount: 520, isPublished: true,
+    tags: ['machine-learning', 'python'], requirements: [], learningOutcomes: [],
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     instructor: {
       id: '2', firstName: 'Jane', lastName: 'Smith', username: 'janesmith', email: 'jane@example.com',
       role: 'TEACHER', isVerified: true, isOnline: false, languages: [], interests: [],
@@ -115,22 +88,12 @@ const MOCK_COURSES: Course[] = [
   {
     id: '3',
     title: 'Advanced TypeScript Patterns',
-    description: 'Master advanced TypeScript features',
-    level: 'ADVANCED',
-    category: 'Development',
-    enrollmentCount: 5600,
-    rating: 4.9,
-    totalLessons: 28,
-    duration: 240,
-    price: 0,
-    currency: 'USD',
-    reviewCount: 340,
-    isPublished: true,
-    tags: ['typescript', 'javascript'],
-    requirements: [],
-    learningOutcomes: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    description: 'Master advanced TypeScript features and design patterns.',
+    level: 'ADVANCED', category: 'Development',
+    enrollmentCount: 5600, rating: 4.9, totalLessons: 28, duration: 240,
+    price: 0, currency: 'USD', reviewCount: 340, isPublished: true,
+    tags: ['typescript', 'javascript'], requirements: [], learningOutcomes: [],
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     instructor: {
       id: '1', firstName: 'John', lastName: 'Doe', username: 'johndoe', email: 'john@example.com',
       role: 'TEACHER', isVerified: true, isOnline: false, languages: [], interests: [],
@@ -140,22 +103,12 @@ const MOCK_COURSES: Course[] = [
   {
     id: '4',
     title: 'UX Design Masterclass',
-    description: 'Create stunning user interfaces and experiences',
-    level: 'INTERMEDIATE',
-    category: 'Design',
-    enrollmentCount: 6700,
-    rating: 4.7,
-    totalLessons: 38,
-    duration: 420,
-    price: 39.99,
-    currency: 'USD',
-    reviewCount: 410,
-    isPublished: true,
-    tags: ['design', 'ux', 'figma'],
-    requirements: [],
-    learningOutcomes: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    description: 'Create stunning user interfaces with Figma and modern design principles.',
+    level: 'INTERMEDIATE', category: 'Design',
+    enrollmentCount: 6700, rating: 4.7, totalLessons: 38, duration: 420,
+    price: 39.99, currency: 'USD', reviewCount: 410, isPublished: true,
+    tags: ['design', 'ux', 'figma'], requirements: [], learningOutcomes: [],
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     instructor: {
       id: '3', firstName: 'Emily', lastName: 'Chen', username: 'emilychen', email: 'emily@example.com',
       role: 'TEACHER', isVerified: true, isOnline: true, languages: [], interests: [],
@@ -173,27 +126,14 @@ const MOCK_PATHS: LearningPath[] = [
   },
   {
     id: '2', title: 'Data Science Professional',
-    description: 'From Python basics to machine learning and data visualization',
+    description: 'From Python basics to machine learning and data visualisation',
     courseIds: ['2'], level: 'INTERMEDIATE', estimatedDuration: 600,
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
   },
-  {
-    id: '3', title: 'Mobile App Expert',
-    description: 'Master cross-platform mobile development with React Native and Flutter',
-    courseIds: ['1', '4'], level: 'ADVANCED', estimatedDuration: 900,
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-  },
-];
-
-const PATH_GRADIENTS: [string, string, string][] = [
-  ['#7DD3FC', '#0EA5E9', '#0284C7'],
-  ['#F472B6', '#EC4899', '#DB2777'],
-  ['#34D399', '#10B981', '#059669'],
 ];
 
 const PATH_ICONS: (keyof typeof Ionicons.glyphMap)[] = ['code-slash', 'bar-chart', 'phone-portrait'];
 
-// Time-based greeting
 const getGreeting = (): string => {
   const hour = new Date().getHours();
   if (hour < 12) return 'Good morning';
@@ -232,211 +172,148 @@ export default function LearnScreen() {
     (selectedCategory === 'All' || course.category === selectedCategory)
   );
 
-  // ── Hero Learning Progress Card ──
-  const renderHeroCard = () => (
-    <Animated.View entering={FadeInDown.duration(500)} style={styles.heroCardWrapper}>
-      <TouchableOpacity activeOpacity={0.9}>
-        <LinearGradient
-          colors={['#7DD3FC', '#0EA5E9', '#0284C7']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.heroCard}
-        >
-          <View style={styles.heroLeft}>
-            <Text style={styles.heroGreeting}>{getGreeting()}, {user?.firstName || 'Learner'}!</Text>
-            <Text style={styles.heroTitle}>Continue Learning 📚</Text>
-
-            <View style={styles.heroStats}>
-              <View style={styles.heroStat}>
-                <Text style={styles.heroStatValue}>3</Text>
-                <Text style={styles.heroStatLabel}>In Progress</Text>
-              </View>
-              <View style={styles.heroStatDivider} />
-              <View style={styles.heroStat}>
-                <Text style={styles.heroStatValue}>24h</Text>
-                <Text style={styles.heroStatLabel}>Learned</Text>
-              </View>
-              <View style={styles.heroStatDivider} />
-              <View style={styles.heroStat}>
-                <Text style={styles.heroStatValue}>5</Text>
-                <Text style={styles.heroStatLabel}>Completed</Text>
-              </View>
-            </View>
-
-            <TouchableOpacity style={styles.heroCTA} activeOpacity={0.8}>
-              <Text style={styles.heroCTAText}>View Progress</Text>
-              <Ionicons name="arrow-forward" size={14} color="#0284C7" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.heroRight}>
-            <View style={styles.heroIconCircle}>
-              <Ionicons name="school" size={40} color="rgba(255,255,255,0.9)" />
-            </View>
-          </View>
-
-          {/* Decorative circles */}
-          <View style={[styles.decorCircle, { top: -25, right: -15, width: 90, height: 90 }]} />
-          <View style={[styles.decorCircle, { bottom: -15, left: -10, width: 65, height: 65 }]} />
-          <View style={[styles.decorCircle, { top: 30, right: 50, width: 30, height: 30 }]} />
-        </LinearGradient>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-
-  // ── Tab Circles (scrollable inside content, not fixed) ──
-  const renderTabCircles = () => (
-    <Animated.View entering={FadeInDown.duration(400)} style={styles.tabCirclesSection}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tabCirclesScroll}
-      >
-        {TABS.map((tab, index) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <Animated.View key={tab.id} entering={FadeInRight.delay(50 * index).duration(300)}>
-              <TouchableOpacity
-                style={styles.tabCircleItem}
-                onPress={() => setActiveTab(tab.id)}
-                activeOpacity={0.7}
-              >
-                <View style={[
-                  styles.tabCircleIcon,
-                  { backgroundColor: tab.bg },
-                  isActive && styles.tabCircleIconActive,
-                ]}>
-                  <Ionicons name={tab.icon} size={24} color={isActive ? '#fff' : tab.color} />
-                </View>
-                <Text style={[
-                  styles.tabCircleLabel,
-                  isActive && { color: tab.color, fontWeight: '700' },
-                ]}>{tab.label}</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          );
-        })}
-      </ScrollView>
-    </Animated.View>
-  );
-
-  // ── Search Bar — Flat Design ──
+  // ─── Search Bar ────────────────────────────────────────────
   const renderSearchBar = () => (
-    <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.searchWrapper}>
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={22} color="#9CA3AF" />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search courses, topics..."
-          placeholderTextColor="#9CA3AF"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        {searchQuery.length > 0 ? (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={20} color="#9CA3AF" />
+    <View style={styles.searchBar}>
+      <Ionicons name="search-outline" size={18} color="#9CA3AF" />
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Search courses, topics..."
+        placeholderTextColor="#9CA3AF"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
+      {searchQuery.length > 0 && (
+        <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
+  // ─── Hero Progress Card ────────────────────────────────────
+  const renderHeroCard = () => (
+    <Animated.View entering={FadeInDown.duration(400)} style={styles.heroWrapper}>
+      <LinearGradient
+        colors={['#6366F1', '#4F46E5']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.heroCard}
+      >
+        {/* Subtle decorative rings */}
+        <View style={[styles.heroRing, { width: 120, height: 120, right: -30, top: -30 }]} />
+        <View style={[styles.heroRing, { width: 70, height: 70, right: 50, bottom: -25 }]} />
+
+        <View style={styles.heroLeft}>
+          <Text style={styles.heroGreeting}>{getGreeting()}, {user?.firstName || 'Learner'} 👋</Text>
+          <Text style={styles.heroTitle}>Continue your journey</Text>
+          <View style={styles.heroStatsRow}>
+            <View style={styles.heroStatItem}>
+              <Text style={styles.heroStatVal}>3</Text>
+              <Text style={styles.heroStatLbl}>In Progress</Text>
+            </View>
+            <View style={styles.heroStatDivider} />
+            <View style={styles.heroStatItem}>
+              <Text style={styles.heroStatVal}>5</Text>
+              <Text style={styles.heroStatLbl}>Completed</Text>
+            </View>
+            <View style={styles.heroStatDivider} />
+            <View style={styles.heroStatItem}>
+              <Text style={styles.heroStatVal}>24h</Text>
+              <Text style={styles.heroStatLbl}>Learned</Text>
+            </View>
+          </View>
+          <TouchableOpacity style={styles.heroCTA} activeOpacity={0.85}>
+            <Text style={styles.heroCTAText}>View all progress</Text>
+            <Ionicons name="arrow-forward" size={13} color="#6366F1" />
           </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={styles.filterButton}>
-            <Ionicons name="options-outline" size={22} color="#6B7280" />
-          </TouchableOpacity>
-        )}
-      </View>
+        </View>
+        <View style={styles.heroRight}>
+          <View style={styles.heroIconBg}>
+            <Ionicons name="school-outline" size={34} color="rgba(255,255,255,0.9)" />
+          </View>
+        </View>
+      </LinearGradient>
     </Animated.View>
   );
 
-  // ── Category Filters with Gradient Active Ring ──
+  // ─── Categories (flat pills) ───────────────────────────────
   const renderCategories = () => (
-    <View style={styles.categoriesSection}>
+    <View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoriesScroll}
+        contentContainerStyle={styles.categoryScroll}
       >
-        {CATEGORIES.map((cat, index) => {
-          const isSelected = selectedCategory === cat.name || (cat.name === 'All' && selectedCategory === 'All');
+        {CATEGORIES.map((cat) => {
+          const isActive = selectedCategory === cat;
           return (
-            <Animated.View key={cat.id} entering={FadeInRight.delay(50 * index).duration(300)}>
-              <TouchableOpacity
-                style={styles.categoryItem}
-                onPress={() => setSelectedCategory(cat.name === 'All' ? 'All' : cat.name)}
-                activeOpacity={0.7}
-              >
-                {isSelected ? (
-                  <LinearGradient
-                    colors={cat.gradient}
-                    style={styles.categoryActiveRing}
-                  >
-                    <View style={styles.categoryIconInner}>
-                      <Ionicons name={cat.icon} size={22} color={cat.color} />
-                    </View>
-                  </LinearGradient>
-                ) : (
-                  <View style={[styles.categoryIconCircle, { backgroundColor: cat.bg }]}>
-                    <Ionicons name={cat.icon} size={22} color={cat.color} />
-                  </View>
-                )}
-                <Text style={[styles.categoryLabel, isSelected && { color: cat.color, fontWeight: '700' }]}>
-                  {cat.name}
-                </Text>
-              </TouchableOpacity>
-            </Animated.View>
+            <TouchableOpacity
+              key={cat}
+              onPress={() => setSelectedCategory(cat)}
+              activeOpacity={0.7}
+              style={[styles.categoryChip, isActive && styles.categoryChipActive]}
+            >
+              <Text style={[styles.categoryChipText, isActive && styles.categoryChipTextActive]}>
+                {cat}
+              </Text>
+            </TouchableOpacity>
           );
         })}
       </ScrollView>
     </View>
   );
 
-  // ── Featured Courses Carousel ──
-  const renderFeaturedCourses = () => (
-    <View style={styles.featuredSection}>
+  // ─── Featured Carousel ─────────────────────────────────────
+  const renderFeatured = () => (
+    <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>🔥 Trending Courses</Text>
+        <Text style={styles.sectionTitle}>Trending Now</Text>
         <TouchableOpacity>
-          <Text style={styles.seeAll}>See All</Text>
+          <Text style={styles.seeAll}>See all</Text>
         </TouchableOpacity>
       </View>
-
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.featuredScroll}
         decelerationRate="fast"
-        snapToInterval={SCREEN_WIDTH * 0.72 + 12}
+        snapToInterval={SCREEN_WIDTH * 0.70 + 14}
+        snapToAlignment="start"
       >
-        {courses.slice(0, 3).map((course, index) => (
-          <Animated.View
-            key={course.id}
-            entering={FadeInRight.delay(80 * index).duration(400)}
-          >
+        {courses.slice(0, 3).map((course, i) => (
+          <Animated.View key={course.id} entering={FadeInRight.delay(60 * i).duration(350)}>
             <TouchableOpacity
-              activeOpacity={0.9}
+              activeOpacity={0.88}
               onPress={() => handleCoursePress(course)}
               style={styles.featuredCard}
             >
               <LinearGradient
-                colors={PATH_GRADIENTS[index % PATH_GRADIENTS.length]}
+                colors={FEATURED_GRADIENTS[i % FEATURED_GRADIENTS.length]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.featuredGradient}
               >
-                <View style={styles.featuredBadgeRow}>
+                {/* Decorative ring */}
+                <View style={[styles.heroRing, { width: 100, height: 100, right: -25, top: -25, opacity: 0.15 }]} />
+
+                <View style={styles.featuredTopRow}>
                   <View style={styles.featuredLevelBadge}>
                     <Text style={styles.featuredLevelText}>{course.level}</Text>
                   </View>
                   <View style={styles.featuredRatingBadge}>
-                    <Ionicons name="star" size={12} color="#0EA5E9" />
+                    <Ionicons name="star" size={11} color="#FCD34D" />
                     <Text style={styles.featuredRatingText}>{course.rating?.toFixed(1)}</Text>
                   </View>
                 </View>
 
                 <Text style={styles.featuredTitle} numberOfLines={2}>{course.title}</Text>
-                <Text style={styles.featuredDescription} numberOfLines={2}>{course.description}</Text>
+                <Text style={styles.featuredDesc} numberOfLines={2}>{course.description}</Text>
 
                 <View style={styles.featuredBottom}>
                   <View style={styles.featuredInstructor}>
-                    <View style={styles.featuredAvatarCircle}>
-                      <Text style={styles.featuredAvatarText}>
+                    <View style={styles.featuredAvatar}>
+                      <Text style={styles.featuredAvatarLetter}>
                         {course.instructor?.firstName?.charAt(0)}
                       </Text>
                     </View>
@@ -444,16 +321,12 @@ export default function LearnScreen() {
                       {course.instructor?.firstName} {course.instructor?.lastName}
                     </Text>
                   </View>
-                  <View style={styles.featuredEnrollBtn}>
-                    <Text style={styles.featuredEnrollText}>
+                  <View style={styles.featuredPriceBadge}>
+                    <Text style={styles.featuredPriceText}>
                       {course.price && course.price > 0 ? `$${course.price}` : 'FREE'}
                     </Text>
                   </View>
                 </View>
-
-                {/* Decorative */}
-                <View style={[styles.decorCircle, { top: -20, right: -15, width: 70, height: 70 }]} />
-                <View style={[styles.decorCircle, { bottom: -10, left: -10, width: 50, height: 50 }]} />
               </LinearGradient>
             </TouchableOpacity>
           </Animated.View>
@@ -462,76 +335,74 @@ export default function LearnScreen() {
     </View>
   );
 
-  // ── Course List Section ──
-  const renderExploreCourses = () => (
-    <View style={styles.coursesSection}>
+  // ─── Course List ───────────────────────────────────────────
+  const renderCourseList = () => (
+    <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>📖 Popular Courses</Text>
+        <Text style={styles.sectionTitle}>Popular Courses</Text>
         <TouchableOpacity>
-          <Text style={styles.seeAll}>See All</Text>
+          <Text style={styles.seeAll}>See all</Text>
         </TouchableOpacity>
       </View>
-
-      {filteredCourses.map((course, index) => (
-        <Animated.View
-          key={course.id}
-          entering={FadeInDown.delay(50 * Math.min(index, 3)).duration(300)}
-        >
-          <CourseCard course={course} onPress={() => handleCoursePress(course)} />
-        </Animated.View>
-      ))}
+      {filteredCourses.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Ionicons name="search-outline" size={40} color="#D1D5DB" />
+          <Text style={styles.emptyTitle}>No courses found</Text>
+          <Text style={styles.emptySubtitle}>Try searching with different keywords</Text>
+        </View>
+      ) : (
+        filteredCourses.map((course, i) => (
+          <Animated.View key={course.id} entering={FadeInDown.delay(40 * i).duration(300)}>
+            <CourseCard course={course} onPress={() => handleCoursePress(course)} />
+          </Animated.View>
+        ))
+      )}
     </View>
   );
 
-  // ── Learning Paths ──
-  const renderLearningPaths = () => (
-    <View style={styles.pathsSection}>
+  // ─── Learning Paths ────────────────────────────────────────
+  const renderPaths = () => (
+    <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>🛤️ Learning Paths</Text>
+        <Text style={styles.sectionTitle}>Learning Paths</Text>
         <TouchableOpacity>
-          <Text style={styles.seeAll}>Browse All</Text>
+          <Text style={styles.seeAll}>Browse all</Text>
         </TouchableOpacity>
       </View>
-
-      {paths.map((path, index) => (
-        <Animated.View key={path.id} entering={FadeInDown.delay(80 * index).duration(400)}>
-          <TouchableOpacity activeOpacity={0.9} style={styles.pathCardWrapper}>
+      {paths.map((path, i) => (
+        <Animated.View key={path.id} entering={FadeInDown.delay(60 * i).duration(350)}>
+          <TouchableOpacity activeOpacity={0.88} style={styles.pathCard}>
             <LinearGradient
-              colors={PATH_GRADIENTS[index % PATH_GRADIENTS.length]}
+              colors={FEATURED_GRADIENTS[i % FEATURED_GRADIENTS.length]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.pathCard}
+              style={styles.pathGradient}
             >
+              <View style={[styles.heroRing, { width: 90, height: 90, right: -20, top: -20, opacity: 0.15 }]} />
               <View style={styles.pathHeader}>
-                <View style={styles.pathIconCircle}>
-                  <Ionicons name={PATH_ICONS[index % PATH_ICONS.length]} size={22} color="rgba(255,255,255,0.95)" />
+                <View style={styles.pathIconBg}>
+                  <Ionicons name={PATH_ICONS[i % PATH_ICONS.length]} size={20} color="rgba(255,255,255,0.9)" />
                 </View>
                 <View style={styles.pathLevelBadge}>
                   <Text style={styles.pathLevelText}>{path.level}</Text>
                 </View>
               </View>
-
               <Text style={styles.pathTitle}>{path.title}</Text>
-              <Text style={styles.pathDescription} numberOfLines={2}>{path.description}</Text>
-
-              <View style={styles.pathStats}>
+              <Text style={styles.pathDesc} numberOfLines={2}>{path.description}</Text>
+              <View style={styles.pathFooter}>
                 <View style={styles.pathStat}>
-                  <Ionicons name="book-outline" size={14} color="rgba(255,255,255,0.8)" />
+                  <Ionicons name="book-outline" size={13} color="rgba(255,255,255,0.8)" />
                   <Text style={styles.pathStatText}>{path.courseIds.length} courses</Text>
                 </View>
                 <View style={styles.pathStat}>
-                  <Ionicons name="time-outline" size={14} color="rgba(255,255,255,0.8)" />
+                  <Ionicons name="time-outline" size={13} color="rgba(255,255,255,0.8)" />
                   <Text style={styles.pathStatText}>{Math.floor(path.estimatedDuration / 60)}h</Text>
                 </View>
-                <View style={styles.pathStartBtn}>
+                <View style={[styles.pathStat, { marginLeft: 'auto' }]}>
                   <Text style={styles.pathStartText}>Start Path</Text>
-                  <Ionicons name="arrow-forward" size={14} color="#0284C7" />
+                  <Ionicons name="arrow-forward" size={13} color="#fff" />
                 </View>
               </View>
-
-              {/* Decorative circles */}
-              <View style={[styles.decorCircle, { top: -20, right: -15, width: 80, height: 80 }]} />
-              <View style={[styles.decorCircle, { bottom: -10, left: -10, width: 60, height: 60 }]} />
             </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
@@ -539,119 +410,111 @@ export default function LearnScreen() {
     </View>
   );
 
-  // ── Empty State ──
-  const renderEmptyState = (message: string, icon: keyof typeof Ionicons.glyphMap, subtitle?: string) => (
-    <Animated.View entering={FadeIn.duration(500)} style={styles.emptyState}>
-      <LinearGradient
-        colors={['#EEF2FF', '#E0E7FF']}
-        style={styles.emptyIconBg}
-      >
-        <Ionicons name={icon} size={40} color="#0284C7" />
-      </LinearGradient>
-      <Text style={styles.emptyTitle}>{message}</Text>
-      {subtitle && <Text style={styles.emptySubtitle}>{subtitle}</Text>}
-    </Animated.View>
-  );
-
-  // ── Tab Content ──
-  const renderTabContent = () => {
+  // ─── Tab Content ───────────────────────────────────────────
+  const renderContent = () => {
     switch (activeTab) {
       case 'explore':
         return (
           <>
-            {renderTabCircles()}
-            {renderSearchBar()}
             {renderHeroCard()}
-            {renderCategories()}
-            {renderFeaturedCourses()}
-            {renderExploreCourses()}
+            <View style={styles.categorySection}>
+              {renderCategories()}
+            </View>
+            {renderFeatured()}
+            {renderCourseList()}
           </>
         );
       case 'enrolled':
         return (
-          <>
-            {renderTabCircles()}
-            {renderSearchBar()}
-            {renderHeroCard()}
-            {renderEmptyState('No enrolled courses', 'book-outline', 'Start learning by enrolling in courses')}
-          </>
+          <View style={styles.emptyState}>
+            <Ionicons name="book-outline" size={48} color="#D1D5DB" />
+            <Text style={styles.emptyTitle}>No enrolled courses</Text>
+            <Text style={styles.emptySubtitle}>Discover and enroll in courses from the Explore tab</Text>
+          </View>
         );
       case 'created':
         return (
           <>
-            {renderTabCircles()}
-            {renderSearchBar()}
-            <View style={styles.createdSection}>
-              <Animated.View entering={FadeInDown.duration(400)}>
-                <TouchableOpacity
-                  style={styles.createCourseBtn}
-                  onPress={handleCreateCourse}
-                  activeOpacity={0.8}
-                >
-                  <LinearGradient
-                    colors={['#7DD3FC', '#0EA5E9', '#0284C7']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.createGradient}
-                  >
-                    <View style={styles.createIconCircle}>
-                      <Ionicons name="add" size={28} color="#0284C7" />
-                    </View>
-                    <View style={styles.createTextContainer}>
-                      <Text style={styles.createCourseTitle}>Create New Course</Text>
-                      <Text style={styles.createCourseSubtitle}>Share your knowledge with the world</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.7)" />
-
-                    {/* Decorative circles */}
-                    <View style={[styles.decorCircle, { top: -15, right: -10, width: 60, height: 60 }]} />
-                    <View style={[styles.decorCircle, { bottom: -8, left: 20, width: 40, height: 40 }]} />
-                  </LinearGradient>
-                </TouchableOpacity>
-              </Animated.View>
-              {renderEmptyState('No courses created yet', 'create-outline', 'Share your knowledge by creating courses')}
+            <TouchableOpacity style={styles.createBanner} onPress={handleCreateCourse} activeOpacity={0.88}>
+              <LinearGradient
+                colors={['#6366F1', '#4F46E5']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.createBannerGradient}
+              >
+                <View style={styles.createBannerIcon}>
+                  <Ionicons name="add" size={24} color="#6366F1" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.createBannerTitle}>Create New Course</Text>
+                  <Text style={styles.createBannerSub}>Share your knowledge with others</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.7)" />
+                <View style={[styles.heroRing, { width: 80, height: 80, right: -20, top: -20, opacity: 0.15 }]} />
+              </LinearGradient>
+            </TouchableOpacity>
+            <View style={styles.emptyState}>
+              <Ionicons name="create-outline" size={48} color="#D1D5DB" />
+              <Text style={styles.emptyTitle}>No courses created yet</Text>
+              <Text style={styles.emptySubtitle}>Create your first course and share your expertise</Text>
             </View>
           </>
         );
       case 'paths':
-        return (
-          <>
-            {renderTabCircles()}
-            {renderSearchBar()}
-            {renderLearningPaths()}
-          </>
-        );
+        return renderPaths();
       default:
         return null;
     }
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.root}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Header — matching Feed */}
+      {/* Header */}
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={openSidebar} style={styles.menuButton}>
-            <Ionicons name="menu" size={28} color="#374151" />
+          <TouchableOpacity onPress={openSidebar} style={styles.headerBtn}>
+            <Ionicons name="menu-outline" size={26} color="#374151" />
           </TouchableOpacity>
           <StunityLogo width={110} height={30} />
-          <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.headerButton}>
+          <View style={styles.headerRight}>
+            <TouchableOpacity style={styles.headerBtn}>
               <Ionicons name="notifications-outline" size={24} color="#374151" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.headerButton}>
-              <Ionicons name="search-outline" size={24} color="#374151" />
             </TouchableOpacity>
           </View>
         </View>
-        <View style={styles.headerDivider} />
+
+        {/* Search */}
+        <View style={styles.searchWrapper}>
+          {renderSearchBar()}
+        </View>
+
+        {/* Tab bar */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabBarScroll}
+          style={styles.tabBar}
+        >
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                onPress={() => setActiveTab(tab.id)}
+                style={[styles.tabItem, isActive && styles.tabItemActive]}
+                activeOpacity={0.7}
+              >
+                <Ionicons name={tab.icon} size={16} color={isActive ? '#6366F1' : '#9CA3AF'} />
+                <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{tab.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </SafeAreaView>
 
-
-
-      {/* Content */}
+      {/* Scrollable content */}
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
@@ -659,12 +522,11 @@ export default function LearnScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor="#0EA5E9"
-            colors={['#0EA5E9']}
+            tintColor="#6366F1"
           />
         }
       >
-        {renderTabContent()}
+        {renderContent()}
         <View style={{ height: 100 }} />
       </ScrollView>
     </View>
@@ -672,140 +534,159 @@ export default function LearnScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
 
-  // ── Header ──
+  // ── Header ──────────────────────────────────────────────────
   headerSafe: {
     backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  headerDivider: {
-    height: 1,
-    backgroundColor: '#EDE9FE',
-  },
-  headerLogo: {
-    height: 30,
-    width: 110,
-  },
-  menuButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#F5F3FF',
+  headerBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerActions: {
+  headerRight: {
     flexDirection: 'row',
-    gap: 6,
-  },
-  headerButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#F5F3FF',
-    alignItems: 'center',
-    justifyContent: 'center',
+    gap: 8,
   },
 
-  // ── Tab Circles ──
-  tabCirclesSection: {
-    paddingTop: 14,
-    paddingBottom: 4,
+  // ── Search ──────────────────────────────────────────────────
+  searchWrapper: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    paddingTop: 4,
   },
-  tabCirclesScroll: {
-    paddingHorizontal: 20,
-    gap: 16,
-  },
-  tabCircleItem: {
+  searchBar: {
+    flexDirection: 'row',
     alignItems: 'center',
-    width: 72,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === 'ios' ? 11 : 7,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 10,
   },
-  tabCircleIcon: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#111827',
+    fontWeight: '500',
+  },
+
+  // ── Tab Bar ─────────────────────────────────────────────────
+  tabBar: {
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  tabBarScroll: {
+    paddingHorizontal: 16,
+    paddingVertical: 0,
+    gap: 4,
+  },
+  tabItem: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
   },
-  tabCircleIconActive: {
-    backgroundColor: '#0EA5E9',
+  tabItemActive: {
+    borderBottomColor: '#6366F1',
   },
-  tabCircleLabel: {
-    fontSize: 12,
+  tabLabel: {
+    fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
-    textAlign: 'center',
+    color: '#9CA3AF',
   },
+  tabLabelActive: {
+    color: '#6366F1',
+  },
+
   content: {
     flex: 1,
   },
 
-  // ── Hero Learning Card ──
-  heroCardWrapper: {
-    marginHorizontal: 12,
-    marginTop: 16,
-    borderRadius: 22,
+  // ── Hero Card ────────────────────────────────────────────────
+  heroWrapper: {
+    marginHorizontal: 16,
+    marginTop: 20,
+    borderRadius: 20,
     overflow: 'hidden',
   },
   heroCard: {
     flexDirection: 'row',
     padding: 22,
-    borderRadius: 22,
+    borderRadius: 20,
     overflow: 'hidden',
     position: 'relative',
   },
+  heroRing: {
+    position: 'absolute',
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
   heroLeft: {
     flex: 1,
-    paddingRight: 10,
+    paddingRight: 8,
   },
   heroGreeting: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.8)',
+    color: 'rgba(255,255,255,0.75)',
     marginBottom: 4,
   },
   heroTitle: {
     fontSize: 20,
     fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
     marginBottom: 16,
   },
-  heroStats: {
+  heroStatsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
+    gap: 0,
   },
-  heroStat: {
+  heroStatItem: {
     alignItems: 'center',
   },
-  heroStatValue: {
-    fontSize: 18,
+  heroStatVal: {
+    fontSize: 17,
     fontWeight: '800',
     color: '#FFFFFF',
   },
-  heroStatLabel: {
+  heroStatLbl: {
     fontSize: 10,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.65)',
     marginTop: 2,
   },
   heroStatDivider: {
     width: 1,
-    height: 28,
+    height: 24,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    marginHorizontal: 14,
+    marginHorizontal: 12,
   },
   heroCTA: {
     flexDirection: 'row',
@@ -814,113 +695,59 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 14,
     paddingVertical: 7,
-    borderRadius: 14,
-    gap: 6,
+    borderRadius: 20,
+    gap: 5,
   },
   heroCTAText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0284C7',
+    color: '#6366F1',
   },
   heroRight: {
     justifyContent: 'center',
     alignItems: 'center',
   },
-  heroIconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  heroIconBg: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  // ── Decorative Circles ──
-  decorCircle: {
-    position: 'absolute',
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+  // ── Category Section ─────────────────────────────────────────
+  categorySection: {
+    marginTop: 20,
   },
-
-  // ── Search Bar — Flat ──
-  searchWrapper: {
+  categoryScroll: {
     paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 8,
+    gap: 8,
   },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  categoryChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 6,
-    gap: 10,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#E5E7EB',
   },
-  filterButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
+  categoryChipActive: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#C7D2FE',
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: '#1F2937',
-    fontWeight: '500',
-  },
-
-  // ── Categories ──
-  categoriesSection: {
-    paddingTop: 16,
-    paddingBottom: 6,
-  },
-  categoriesScroll: {
-    paddingHorizontal: 16,
-    gap: 6,
-  },
-  categoryItem: {
-    alignItems: 'center',
-    width: 68,
-  },
-  categoryActiveRing: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 3,
-  },
-  categoryIconInner: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  categoryIconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  categoryLabel: {
-    fontSize: 11,
-    color: '#6B7280',
+  categoryChipText: {
+    fontSize: 13,
     fontWeight: '600',
-    textAlign: 'center',
-    marginTop: 6,
+    color: '#6B7280',
+  },
+  categoryChipTextActive: {
+    color: '#6366F1',
   },
 
-  // ── Featured Courses ──
-  featuredSection: {
-    paddingTop: 20,
+  // ── Section ─────────────────────────────────────────────────
+  section: {
+    marginTop: 24,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -930,47 +757,50 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1F2937',
-    letterSpacing: -0.3,
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#111827',
+    letterSpacing: -0.2,
   },
   seeAll: {
-    fontSize: 14,
-    color: '#0284C7',
+    fontSize: 13,
     fontWeight: '600',
+    color: '#6366F1',
   },
+
+  // ── Featured Cards ───────────────────────────────────────────
   featuredScroll: {
     paddingHorizontal: 16,
-    gap: 12,
+    gap: 14,
   },
   featuredCard: {
-    width: SCREEN_WIDTH * 0.72,
-    borderRadius: 14,
+    width: SCREEN_WIDTH * 0.70,
+    borderRadius: 16,
     overflow: 'hidden',
   },
   featuredGradient: {
     padding: 20,
-    borderRadius: 14,
+    borderRadius: 16,
+    minHeight: 190,
+    justifyContent: 'space-between',
     overflow: 'hidden',
     position: 'relative',
-    minHeight: 200,
-    justifyContent: 'space-between',
   },
-  featuredBadgeRow: {
+  featuredTopRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 14,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   featuredLevelBadge: {
     backgroundColor: 'rgba(255,255,255,0.2)',
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: 8,
   },
   featuredLevelText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#fff',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -978,9 +808,9 @@ const styles = StyleSheet.create({
   featuredRatingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(0,0,0,0.2)',
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: 8,
     gap: 4,
   },
@@ -990,77 +820,69 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   featuredTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
     color: '#FFFFFF',
-    lineHeight: 26,
-    marginBottom: 6,
+    lineHeight: 24,
+    letterSpacing: -0.2,
   },
-  featuredDescription: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.75)',
-    lineHeight: 18,
-    marginBottom: 16,
+  featuredDesc: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 6,
+    lineHeight: 17,
   },
   featuredBottom: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 12,
   },
   featuredInstructor: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 7,
   },
-  featuredAvatarCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  featuredAvatar: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: 'rgba(255,255,255,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  featuredAvatarText: {
-    fontSize: 12,
-    fontWeight: '700',
+  featuredAvatarLetter: {
+    fontSize: 11,
+    fontWeight: '800',
     color: '#fff',
   },
   featuredInstructorName: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: 'rgba(255,255,255,0.85)',
   },
-  featuredEnrollBtn: {
+  featuredPriceBadge: {
     backgroundColor: '#fff',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 10,
   },
-  featuredEnrollText: {
-    fontSize: 13,
+  featuredPriceText: {
+    fontSize: 12,
     fontWeight: '800',
-    color: '#0284C7',
+    color: '#6366F1',
   },
 
-  // ── Courses Section ──
-  coursesSection: {
-    paddingHorizontal: 16,
-    paddingTop: 24,
-  },
-
-  // ── Learning Paths ──
-  pathsSection: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  pathCardWrapper: {
-    marginTop: 14,
-    borderRadius: 22,
+  // ── Learning Paths ───────────────────────────────────────────
+  pathCard: {
+    marginHorizontal: 16,
+    marginBottom: 14,
+    borderRadius: 16,
     overflow: 'hidden',
   },
-  pathCard: {
-    padding: 22,
-    borderRadius: 22,
+  pathGradient: {
+    padding: 20,
+    borderRadius: 16,
     overflow: 'hidden',
     position: 'relative',
   },
@@ -1070,9 +892,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 14,
   },
-  pathIconCircle: {
-    width: 44,
-    height: 44,
+  pathIconBg: {
+    width: 42,
+    height: 42,
     borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
@@ -1085,123 +907,99 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   pathLevelText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: '#fff',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   pathTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
     color: '#fff',
+    letterSpacing: -0.2,
     marginBottom: 6,
-    letterSpacing: -0.3,
   },
-  pathDescription: {
+  pathDesc: {
     fontSize: 13,
     color: 'rgba(255,255,255,0.75)',
-    lineHeight: 19,
+    lineHeight: 18,
     marginBottom: 16,
   },
-  pathStats: {
+  pathFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 14,
   },
   pathStat: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
   },
   pathStatText: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.85)',
     fontWeight: '600',
-  },
-  pathStartBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 14,
-    gap: 4,
-    marginLeft: 'auto',
+    color: 'rgba(255,255,255,0.85)',
   },
   pathStartText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0284C7',
+    color: '#fff',
+    marginRight: 4,
   },
 
-  // ── Empty State ──
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 32,
-  },
-  emptyIconBg: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 18,
-  },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#374151',
-    marginBottom: 6,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-
-  // ── Created Section ──
-  createdSection: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  createCourseBtn: {
-    borderRadius: 14,
+  // ── Create Banner ────────────────────────────────────────────
+  createBanner: {
+    marginHorizontal: 16,
+    marginTop: 20,
+    borderRadius: 16,
     overflow: 'hidden',
   },
-  createGradient: {
+  createBannerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 20,
+    padding: 18,
     gap: 14,
-    position: 'relative',
     overflow: 'hidden',
+    position: 'relative',
   },
-  createIconCircle: {
-    width: 48,
-    height: 48,
+  createBannerIcon: {
+    width: 44,
+    height: 44,
     borderRadius: 14,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  createTextContainer: {
-    flex: 1,
-  },
-  createCourseTitle: {
-    fontSize: 16,
-    fontWeight: '800',
+  createBannerTitle: {
+    fontSize: 15,
+    fontWeight: '700',
     color: '#fff',
-    letterSpacing: -0.2,
   },
-  createCourseSubtitle: {
+  createBannerSub: {
     fontSize: 12,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.75)',
     marginTop: 2,
+  },
+
+  // ── Empty States ─────────────────────────────────────────────
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 40,
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#374151',
+    marginTop: 8,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });

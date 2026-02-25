@@ -44,8 +44,6 @@ const THUMB_GRADIENTS: [string, string, string][] = [
   ['#818CF8', '#6366F1', '#4F46E5'],
   ['#F472B6', '#EC4899', '#DB2777'],
   ['#34D399', '#10B981', '#059669'],
-  ['#38BDF8', '#0EA5E9', '#0284C7'],
-  ['#60A5FA', '#3B82F6', '#2563EB'],
 ];
 
 interface CourseCardProps {
@@ -240,7 +238,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
-    borderRadius: 14,
+    borderRadius: 16,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -252,8 +250,8 @@ const styles = StyleSheet.create({
   thumbnailContainer: {
     height: 175,
     position: 'relative',
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     overflow: 'hidden',
   },
   compactThumbnail: {
@@ -430,7 +428,7 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#4F46E5',
+    color: '#6366F1',
     letterSpacing: -0.3,
   },
   freeBadge: {
@@ -441,7 +439,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 10,
     gap: 5,
-    
+
     borderColor: '#D1FAE5',
   },
   freeText: {

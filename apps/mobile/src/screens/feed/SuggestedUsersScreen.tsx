@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { Avatar } from '@/components/common/Avatar';
 import { feedApi } from '@/api/client';
@@ -20,6 +19,7 @@ import { Shadows } from '@/config';
 
 interface SuggestedUser extends Partial<User> {
     isFollowing?: boolean;
+    mutualConnectionsCount?: number;
 }
 
 export const SuggestedUsersScreen: React.FC = () => {
@@ -34,8 +34,8 @@ export const SuggestedUsersScreen: React.FC = () => {
         try {
             isRefresh ? setRefreshing(true) : setLoading(true);
             setError(null);
-            const res = await feedApi.get('/suggestions/users?limit=50');
-            setUsers(res.data?.data || []);
+            const res = await feedApi.get('/users/suggested?limit=50');
+            setUsers(res.data?.users || []);
         } catch (e: any) {
             setError('Could not load suggestions. Pull down to retry.');
         } finally {
@@ -111,25 +111,23 @@ export const SuggestedUsersScreen: React.FC = () => {
 
     return (
         <View style={styles.root}>
-            <StatusBar barStyle="light-content" />
+            <StatusBar barStyle="dark-content" />
 
             {/* Header */}
-            <LinearGradient colors={['#1E40AF', '#3B82F6']} style={styles.header}>
-                <SafeAreaView edges={['top']}>
-                    <View style={styles.headerContent}>
-                        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                            <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
-                        </TouchableOpacity>
-                        <View>
-                            <Text style={styles.headerTitle}>People You May Know</Text>
-                            {users.length > 0 && (
-                                <Text style={styles.headerSub}>{users.length} suggestions</Text>
-                            )}
-                        </View>
-                        <View style={{ width: 38 }} />
+            <SafeAreaView edges={['top']} style={styles.headerSafe}>
+                <View style={styles.header}>
+                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                        <Ionicons name="chevron-back" size={22} color="#374151" />
+                    </TouchableOpacity>
+                    <View style={styles.headerCenter}>
+                        <Text style={styles.headerTitle}>People You May Know</Text>
+                        {users.length > 0 && (
+                            <Text style={styles.headerSub}>{users.length} suggestions</Text>
+                        )}
                     </View>
-                </SafeAreaView>
-            </LinearGradient>
+                    <View style={{ width: 36 }} />
+                </View>
+            </SafeAreaView>
 
             {/* Content */}
             {loading ? (
@@ -172,34 +170,40 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#F8FAFC',
     },
-    header: {
-        paddingBottom: 16,
+    headerSafe: {
+        backgroundColor: '#FFFFFF',
+        borderBottomWidth: 1,
+        borderBottomColor: '#F3F4F6',
     },
-    headerContent: {
+    header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingTop: Platform.OS === 'android' ? 12 : 4,
-        paddingBottom: 4,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+    },
+    headerCenter: {
+        flex: 1,
+        alignItems: 'center',
     },
     backBtn: {
-        width: 38,
-        height: 38,
-        borderRadius: 19,
-        backgroundColor: 'rgba(255,255,255,0.15)',
+        width: 36,
+        height: 36,
+        borderRadius: 12,
+        backgroundColor: '#FFFFFF',
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
-        fontSize: 18,
+        fontSize: 17,
         fontWeight: '700',
-        color: '#FFFFFF',
+        color: '#1F2937',
         textAlign: 'center',
     },
     headerSub: {
         fontSize: 12,
-        color: 'rgba(255,255,255,0.75)',
+        fontWeight: '500',
+        color: '#6B7280',
         textAlign: 'center',
         marginTop: 2,
     },
@@ -214,6 +218,8 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 14,
         gap: 12,
+        borderWidth: 1,
+        borderColor: '#F3F4F6',
     },
     info: {
         flex: 1,
@@ -222,7 +228,7 @@ const styles = StyleSheet.create({
     name: {
         fontSize: 15,
         fontWeight: '700',
-        color: '#111827',
+        color: '#1F2937',
     },
     subtitle: {
         fontSize: 13,
@@ -234,27 +240,27 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     followBtn: {
-        backgroundColor: '#EFF6FF',
-        borderWidth: 1.5,
-        borderColor: '#BFDBFE',
+        backgroundColor: '#EEF2FF',
+        borderWidth: 1,
+        borderColor: '#E0E7FF',
         borderRadius: 20,
         paddingHorizontal: 18,
         paddingVertical: 7,
     },
     followingBtn: {
-        backgroundColor: '#3B82F6',
-        borderColor: '#3B82F6',
+        backgroundColor: '#F3F4F6',
+        borderColor: '#E5E7EB',
     },
     followBtnText: {
         fontSize: 13,
         fontWeight: '700',
-        color: '#2563EB',
+        color: '#6366F1',
     },
     followingBtnText: {
-        color: '#FFFFFF',
+        color: '#4B5563',
     },
     separator: {
-        height: 10,
+        height: 12,
     },
     center: {
         flex: 1,
@@ -275,7 +281,7 @@ const styles = StyleSheet.create({
         lineHeight: 20,
     },
     retryBtn: {
-        backgroundColor: '#3B82F6',
+        backgroundColor: '#6366F1',
         paddingHorizontal: 24,
         paddingVertical: 10,
         borderRadius: 20,

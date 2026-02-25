@@ -424,7 +424,7 @@ export default function ProfileScreen() {
                     style={styles.levelBadgeGradient}
                   >
                     <Ionicons name="star" size={12} color="#fff" />
-                    <Text style={styles.levelTextInline}>Level {profile.level ?? 1}</Text>
+                    <Text style={styles.levelTextInline}>Level {quizStats?.level ?? profile.level ?? 1}</Text>
                   </LinearGradient>
                 </View>
 
@@ -595,11 +595,11 @@ export default function ProfileScreen() {
 
                 {/* Clean stat grid */}
                 <View style={styles.statGrid}>
-                  <StatCard icon="book-outline" value={profileStats?.certifications ?? 0} label="Courses" index={0} />
-                  <StatCard icon="star-outline" value={profile.totalPoints ?? 0} label="Points" index={1} />
+                  <StatCard icon="book-outline" value={profileStats?.certifications ?? quizStats?.totalQuizzes ?? 0} label="Courses" index={0} />
+                  <StatCard icon="star-outline" value={quizStats?.totalPoints ?? profile.totalPoints ?? 0} label="Points" index={1} />
                   <StatCard icon="time-outline" value={profile.totalLearningHours ?? 0} label="Study Hours" index={2} />
-                  <StatCard icon="flame-outline" value={profile.currentStreak ?? 0} label="Day Streak" index={3} />
-                  <StatCard icon="trophy-outline" value={profileStats?.achievements ?? 0} label="Achievements" index={4} />
+                  <StatCard icon="flame-outline" value={streak?.currentStreak ?? profile.currentStreak ?? 0} label="Day Streak" index={3} />
+                  <StatCard icon="trophy-outline" value={userAchievements?.length || profileStats?.achievements || 0} label="Achievements" index={4} />
                   <StatCard icon="code-slash-outline" value={profileStats?.projects ?? 0} label="Projects" index={5} />
                 </View>
               </Animated.View>
@@ -648,8 +648,8 @@ export default function ProfileScreen() {
                 streak={streak}
                 achievements={userAchievements}
                 totalAchievements={allAchievements.length || 12}
-                level={profile.level ?? 1}
-                totalPoints={profile.totalPoints ?? 0}
+                level={quizStats?.level ?? profile.level ?? 1}
+                totalPoints={quizStats?.totalPoints ?? profile.totalPoints ?? 0}
                 onViewAchievements={() => navigation.navigate('Achievements' as any)}
                 onViewLeaderboard={() => navigation.navigate('Leaderboard' as any)}
                 onViewStats={() => navigation.navigate('Stats' as any)}
