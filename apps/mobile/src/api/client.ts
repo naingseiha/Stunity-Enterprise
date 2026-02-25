@@ -175,6 +175,7 @@ export const mediaApi = createApiClient(Config.mediaUrl);
 export const clubsApi = createApiClient(Config.clubUrl);
 export const quizApi = createApiClient(Config.quizUrl);
 export const notificationApi = createApiClient(Config.notificationUrl);
+export const analyticsApi = createApiClient(Config.analyticsUrl);
 
 // Helper functions
 const generateRequestId = (): string => {
@@ -285,4 +286,4 @@ const isRetryableError = (error: unknown): boolean => {
   return false;
 };
 
-export default { authApi, feedApi, mediaApi, clubsApi, quizApi };
+export default { authApi, feedApi, mediaApi, clubsApi, quizApi, notificationApi, analyticsApi };

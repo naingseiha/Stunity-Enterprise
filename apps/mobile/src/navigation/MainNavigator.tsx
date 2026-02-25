@@ -28,7 +28,7 @@ import { NavigationProvider, useNavigationContext } from '@/contexts';
 // Implemented Screens
 import { FeedScreen, CreatePostScreen, EditPostScreen, PostDetailScreen, CommentsScreen, BookmarksScreen, MyPostsScreen, SearchScreen } from '@/screens/feed';
 import { LearnScreen, CourseDetailScreen } from '@/screens/learn';
-import { ProfileScreen, EditProfileScreen, SettingsScreen } from '@/screens/profile';
+import { ProfileScreen, EditProfileScreen, SettingsScreen, AcademicProfileScreen, ManageDeadlinesScreen } from '@/screens/profile';
 import { ConversationsScreen, ChatScreen, NewMessageScreen } from '@/screens/messages';
 import { ClubsScreen, ClubDetailsScreen, CreateClubScreen } from '@/screens/clubs';
 import {
@@ -49,10 +49,10 @@ import {
 } from '@/screens/live-quiz';
 import {
   StatsScreen,
-  LeaderboardScreen,
   ChallengeScreen,
   ChallengeResultScreen,
 } from '@/screens/stats';
+import { LeaderboardScreen } from '@/screens/gamification/LeaderboardScreen';
 import { AchievementsScreen } from '@/screens/achievements';
 import { NotificationsScreen } from '@/screens/notifications';
 
@@ -161,6 +161,8 @@ const ProfileStackNavigator: React.FC = () => (
     <ProfileStack.Screen name="Settings" component={SettingsScreen} />
     <ProfileStack.Screen name="Bookmarks" component={BookmarksScreen} />
     <ProfileStack.Screen name="MyPosts" component={MyPostsScreen} />
+    <ProfileStack.Screen name="AcademicProfile" component={AcademicProfileScreen} />
+    <ProfileStack.Screen name="ManageDeadlines" component={ManageDeadlinesScreen} />
   </ProfileStack.Navigator>
 );
 

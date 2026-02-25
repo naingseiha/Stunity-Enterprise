@@ -127,6 +127,8 @@ export type ProfileStackParamList = {
   Settings: undefined;
   Bookmarks: undefined;
   MyPosts: undefined;
+  AcademicProfile: undefined;
+  ManageDeadlines: undefined;
 };
 
 // Screen Props Types

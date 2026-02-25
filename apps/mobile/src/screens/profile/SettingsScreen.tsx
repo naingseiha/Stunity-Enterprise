@@ -356,6 +356,31 @@ export default function SettingsScreen() {
             ],
         },
         {
+            title: 'Learning Profile',
+            icon: 'school-outline' as IoniconsName,
+            iconColor: '#8B5CF6',
+            items: [
+                {
+                    icon: 'analytics-outline',
+                    iconColor: '#8B5CF6',
+                    iconBg: '#F3E8FF',
+                    label: 'Academic Proficiency',
+                    sublabel: 'View level and topics',
+                    type: 'navigate',
+                    onPress: () => navigation.navigate('AcademicProfile'),
+                },
+                {
+                    icon: 'calendar-outline',
+                    iconColor: '#F59E0B',
+                    iconBg: '#FEF3C7',
+                    label: 'Manage Deadlines',
+                    sublabel: 'Set assignment due dates',
+                    type: 'navigate',
+                    onPress: () => navigation.navigate('ManageDeadlines'),
+                },
+            ],
+        },
+        {
             title: 'Support',
             icon: 'help-buoy-outline' as IoniconsName,
             iconColor: '#10B981',

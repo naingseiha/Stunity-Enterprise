@@ -291,6 +291,31 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
   }
 });
 
+// GET /posts/:postId/difficulty - Get post difficulty score (Gamification Phase 4 API)
+router.get('/posts/:postId/difficulty', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { postId } = req.params;
+
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { difficultyLevel: true, postType: true }
+    });
+
+    if (!post) {
+      return res.status(404).json({ success: false, error: 'Post not found' });
+    }
+
+    res.json({
+      success: true,
+      difficultyLevel: post.difficultyLevel ?? 2.5,
+      postType: post.postType
+    });
+  } catch (error: any) {
+    console.error('Get post difficulty error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get post difficulty' });
+  }
+});
+
 // ========================================
 // PERSONALIZED FEED (ranked)
 // ========================================

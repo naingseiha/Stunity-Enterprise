@@ -30,29 +30,37 @@ interface ScoringWeights {
     RECENCY: number;
     SOCIAL_PROOF: number;
     LEARNING_CONTEXT: number;
+    ACADEMIC_RELEVANCE: number;
+    TEACHER_RELEVANCE: number;
+    PEER_LEARNING: number;
+    DIFFICULTY_MATCH: number;
 }
 
 const BASE_WEIGHTS: ScoringWeights = {
-    ENGAGEMENT: 0.25,
-    RELEVANCE: 0.25,
+    ENGAGEMENT: 0.15,
+    RELEVANCE: 0.20,
     QUALITY: 0.15,
-    RECENCY: 0.15,
-    SOCIAL_PROOF: 0.10,
+    RECENCY: 0.10,
+    SOCIAL_PROOF: 0.05,
     LEARNING_CONTEXT: 0.10,
+    ACADEMIC_RELEVANCE: 0.15,
+    TEACHER_RELEVANCE: 0.10,
+    PEER_LEARNING: 0.05,
+    DIFFICULTY_MATCH: 0.05,
 };
 
 // Per-post-type weight overrides (key insight: different content needs differ)
-const POST_TYPE_WEIGHTS: Partial<Record<PostType, ScoringWeights>> = {
+const POST_TYPE_WEIGHTS: Partial<Record<PostType, Partial<ScoringWeights>>> = {
     // Courses are evergreen, highly intentional — relevance is king
     COURSE: { ENGAGEMENT: 0.15, RELEVANCE: 0.35, QUALITY: 0.20, RECENCY: 0.05, SOCIAL_PROOF: 0.10, LEARNING_CONTEXT: 0.15 },
     // Questions need fast answers — recency matters most
-    QUESTION: { ENGAGEMENT: 0.20, RELEVANCE: 0.20, QUALITY: 0.10, RECENCY: 0.30, SOCIAL_PROOF: 0.10, LEARNING_CONTEXT: 0.10 },
+    QUESTION: { RECENCY: 0.25, PEER_LEARNING: 0.15, RELEVANCE: 0.20, ACADEMIC_RELEVANCE: 0.15, ENGAGEMENT: 0.15, TEACHER_RELEVANCE: 0.10, QUALITY: 0.00, SOCIAL_PROOF: 0.00, LEARNING_CONTEXT: 0.00, DIFFICULTY_MATCH: 0.00 },
     // Quizzes match curriculum — high relevance + learning context
     QUIZ: { ENGAGEMENT: 0.20, RELEVANCE: 0.30, QUALITY: 0.15, RECENCY: 0.10, SOCIAL_PROOF: 0.10, LEARNING_CONTEXT: 0.15 },
     // Exams are deadline-driven, must match student's courses
-    EXAM: { ENGAGEMENT: 0.10, RELEVANCE: 0.35, QUALITY: 0.15, RECENCY: 0.15, SOCIAL_PROOF: 0.05, LEARNING_CONTEXT: 0.20 },
+    EXAM: { ACADEMIC_RELEVANCE: 0.30, TEACHER_RELEVANCE: 0.20, RELEVANCE: 0.20, LEARNING_CONTEXT: 0.15, QUALITY: 0.10, ENGAGEMENT: 0.05, RECENCY: 0.00, SOCIAL_PROOF: 0.00, PEER_LEARNING: 0.00, DIFFICULTY_MATCH: 0.00 },
     // Assignments are curriculum-bound
-    ASSIGNMENT: { ENGAGEMENT: 0.10, RELEVANCE: 0.35, QUALITY: 0.15, RECENCY: 0.15, SOCIAL_PROOF: 0.05, LEARNING_CONTEXT: 0.20 },
+    ASSIGNMENT: { ACADEMIC_RELEVANCE: 0.30, TEACHER_RELEVANCE: 0.20, RELEVANCE: 0.20, LEARNING_CONTEXT: 0.15, QUALITY: 0.10, ENGAGEMENT: 0.05, RECENCY: 0.00, SOCIAL_PROOF: 0.00, PEER_LEARNING: 0.00, DIFFICULTY_MATCH: 0.00 },
     // Tutorials are evergreen educational content
     TUTORIAL: { ENGAGEMENT: 0.20, RELEVANCE: 0.30, QUALITY: 0.20, RECENCY: 0.05, SOCIAL_PROOF: 0.10, LEARNING_CONTEXT: 0.15 },
     // Research papers — quality and relevance matter most  
@@ -114,11 +122,19 @@ interface PostWithRelations extends Post {
 }
 
 interface UserSignals {
+    userId: string;
     topics: Record<string, number>;      // topicId → interest score
     topicDwellTime: Record<string, number>; // topicId → avg view duration (seconds)
     followingIds: string[];
     authorAffinity: Record<string, number>; // authorId → affinity score (0-100)
     enrolledCourseTopics: string[];         // topics from enrolled courses
+    academicLevel: number;
+    weakTopics: string[];
+    strongTopics: string[];
+    deadlines: { date: number; topics: string[] }[];
+    classmates: string[];
+    studyGroupMembers: string[];
+    instructorIds: string[];
 }
 
 export interface ScoredPost {
@@ -131,6 +147,10 @@ export interface ScoredPost {
         recency: number;
         socialProof: number;
         learningContext: number;
+        academicRelevance: number;
+        teacherRelevance: number;
+        peerLearning: number;
+        difficultyMatch: number;
     };
 }
 
@@ -521,7 +541,7 @@ export class FeedRanker {
 
     // ─── Step 1: User Signals (Enhanced v2) ──────────────────────────
     private async getUserSignals(userId: string): Promise<UserSignals> {
-        const [feedSignals, follows, user, authorInteractions, enrollments] = await Promise.all([
+        const [feedSignals, follows, user, authorInteractions, enrollments, academicProfile, deadlinesData, classmatesData, groupData] = await Promise.all([
             this.prisma.userFeedSignal.findMany({
                 where: { userId },
                 orderBy: { score: 'desc' },
@@ -554,14 +574,34 @@ export class FeedRanker {
                 }
                 return authorCounts;
             }).catch(() => new Map<string, number>()),
-            // Enrolled course topics
+            // Enrolled course topics and instructors
             this.prisma.enrollment.findMany({
                 where: { userId },
                 select: {
-                    course: { select: { tags: true, category: true } },
+                    course: { select: { tags: true, category: true, instructorId: true } },
                 },
                 take: 20,
             }).catch(() => [] as any[]),
+            // User Academic Profile
+            this.prisma.userAcademicProfile.findUnique({
+                where: { userId },
+            }).catch(() => null),
+            // User Deadlines
+            this.prisma.userDeadline.findMany({
+                where: { userId, deadlineDate: { gte: new Date() } },
+            }).catch(() => [] as any[]),
+            // Classmates
+            this.prisma.enrollment.findMany({
+                where: { course: { enrollments: { some: { userId } } } },
+                select: { userId: true },
+                distinct: ['userId'],
+            }).catch(() => [] as any[]),
+            // Study Group Members
+            this.prisma.clubMember.findMany({
+                where: { club: { members: { some: { userId } } } },
+                select: { userId: true },
+                distinct: ['userId'],
+            }).catch(() => [] as any[])
         ]);
 
         // Merge DB signals with profile interests/skills  
@@ -608,8 +648,9 @@ export class FeedRanker {
             authorAffinity[authorId] = Math.min(score, 100);
         }
 
-        // Extract enrolled course topics
+        // Extract enrolled course topics and instructor IDs
         const enrolledCourseTopics: string[] = [];
+        const instructorIds: string[] = [];
         const courseTopicSet = new Set<string>();
         for (const enrollment of enrollments) {
             const course = enrollment.course;
@@ -621,15 +662,39 @@ export class FeedRanker {
             if (course?.category) {
                 courseTopicSet.add(course.category.toLowerCase());
             }
+            if (course?.instructorId) {
+                instructorIds.push(course.instructorId);
+            }
         }
         enrolledCourseTopics.push(...courseTopicSet);
 
+        // Map Academic data
+        const academicLevel = academicProfile?.currentLevel ? Number(academicProfile.currentLevel) : 2.5;
+        const weakTopics = academicProfile?.weakTopics || [];
+        const strongTopics = academicProfile?.strongTopics || [];
+
+        const deadlines = deadlinesData.map((d: any) => ({
+            date: d.deadlineDate.getTime(),
+            topics: d.relatedTopics || [],
+        }));
+
+        const classmates = classmatesData.map((c: any) => c.userId);
+        const studyGroupMembers = groupData.map((g: any) => g.userId);
+
         return {
+            userId,
             topics,
             topicDwellTime,
             followingIds: follows.map(f => f.followingId),
             authorAffinity,
             enrolledCourseTopics,
+            academicLevel,
+            weakTopics,
+            strongTopics,
+            deadlines,
+            classmates,
+            studyGroupMembers,
+            instructorIds,
         };
     }
 
@@ -736,8 +801,15 @@ export class FeedRanker {
         const socialProof = this.calcSocialProof(post, signals);
         const learningContext = this.calcLearningContext(post, signals);
 
+        // Gamification / Academic Context
+        const academicRelevance = this.calcAcademicRelevance(post, signals);
+        const teacherRelevance = this.calcTeacherRelevance(post, signals);
+        const peerLearning = this.calcPeerLearning(post, signals);
+        const difficultyMatch = this.calcDifficultyMatch(post, signals);
+
         // Get per-post-type weights (or fall back to base weights)
-        const weights = POST_TYPE_WEIGHTS[post.postType] || BASE_WEIGHTS;
+        const overrides = POST_TYPE_WEIGHTS[post.postType];
+        const weights = overrides ? { ...BASE_WEIGHTS, ...overrides } : BASE_WEIGHTS;
 
         // Pinned posts always come first
         const pinBoost = post.isPinned ? 1000 : 0;
@@ -752,13 +824,17 @@ export class FeedRanker {
             (recency * weights.RECENCY) +
             (socialProof * weights.SOCIAL_PROOF) +
             (learningContext * weights.LEARNING_CONTEXT) +
+            (academicRelevance * weights.ACADEMIC_RELEVANCE) +
+            (teacherRelevance * weights.TEACHER_RELEVANCE) +
+            (peerLearning * weights.PEER_LEARNING) +
+            (difficultyMatch * weights.DIFFICULTY_MATCH) +
             (velocityBonus * 0.05) + // Small but impactful velocity boost
             pinBoost;
 
         return {
             post,
             score,
-            breakdown: { engagement, relevance, quality, recency, socialProof, learningContext },
+            breakdown: { engagement, relevance, quality, recency, socialProof, learningContext, academicRelevance, teacherRelevance, peerLearning, difficultyMatch },
         };
     }
 
@@ -934,6 +1010,91 @@ export class FeedRanker {
         return Math.min(velocity / 10, 1.0);
     }
 
+    // ─── Academic Relevance Score (0-1) — NEW ──────────────────────
+    private calcAcademicRelevance(post: PostWithRelations, signals: UserSignals): number {
+        const postTags = (post as any).topicTags as string[] | undefined;
+        if (!postTags || postTags.length === 0) return 0;
+
+        let score = 0;
+
+        // 1. Weak Topics Match (1.0 weight) - highly prioritize content that helps student improve
+        const weakMatches = postTags.filter(t => signals.weakTopics.includes(t.toLowerCase())).length;
+        if (weakMatches > 0) score += 1.0;
+
+        // 2. Strong Topics Match (0.5 weight) - reinforce existing knowledge
+        const strongMatches = postTags.filter(t => signals.strongTopics.includes(t.toLowerCase())).length;
+        if (strongMatches > 0) score += 0.5;
+
+        // 3. Deadline Proximity Match (1.5 weight) - highest priority for imminent deadlines
+        let deadlineScore = 0;
+        const now = Date.now();
+        for (const deadline of signals.deadlines) {
+            const daysUntil = (deadline.date - now) / (1000 * 60 * 60 * 24);
+            if (daysUntil >= 0 && daysUntil <= 7) {
+                // Check if post topics match deadline topics
+                const matches = postTags.some(t => deadline.topics.includes(t.toLowerCase()));
+                if (matches) {
+                    // Closer deadline = higher score (1.5 for today, scaling down to 0 for >7 days)
+                    const urgency = Math.max(0, 1.5 * (1 - daysUntil / 7));
+                    deadlineScore = Math.max(deadlineScore, urgency);
+                }
+            }
+        }
+        score += deadlineScore;
+
+        // Normalize
+        return Math.min(score / 3.0, 1.0);
+    }
+
+    // ─── Teacher Relevance Score (0-1) — NEW ───────────────────────
+    private calcTeacherRelevance(post: PostWithRelations, signals: UserSignals): number {
+        // Direct Instructor Match (1.0 weight)
+        if (signals.instructorIds.includes(post.authorId)) {
+            return 1.0;
+        }
+
+        // Generic Teacher Boost (0.5 weight) - any teaching staff
+        if (post.author?.role === 'TEACHER') {
+            return 0.5;
+        }
+
+        return 0.0;
+    }
+
+    // ─── Peer Learning Score (0-1) — NEW ───────────────────────────
+    private calcPeerLearning(post: PostWithRelations, signals: UserSignals): number {
+        // Same Course Classmates (1.0 weight)
+        if (signals.classmates.includes(post.authorId)) {
+            return 1.0;
+        }
+
+        // Study Group/Club Match (0.8 weight)
+        if (signals.studyGroupMembers.includes(post.authorId)) {
+            return 0.8;
+        }
+
+        return 0.0;
+    }
+
+    // ─── Difficulty Match Score (0-1) — NEW ────────────────────────
+    private calcDifficultyMatch(post: PostWithRelations, signals: UserSignals): number {
+        const postDiff = (post as any).difficultyLevel;
+        if (postDiff === undefined || postDiff === null) return 0.5; // Neutral score if no difficulty set
+
+        const userDiff = signals.academicLevel; // expected 1.0 - 5.0
+        const postDiffNum = Number(postDiff);
+
+        // Calculate the absolute distance between user's level and post difficulty
+        const distance = Math.abs(postDiffNum - userDiff);
+
+        // Assume maximum meaningful distance is 4.0 (e.g. 5.0 vs 1.0)
+        // Closer to 0 difference = score of 1.0. Distance >= 2.0 gets score 0
+        const matchScore = Math.max(0, 1 - (distance / 2.0));
+
+        return matchScore;
+    }
+
+
     // ─── Diversity Enforcement ─────────────────────────────────────
     private applyDiversity(scored: ScoredPost[]): ScoredPost[] {
         // Sort by score descending
@@ -1045,6 +1206,10 @@ export class FeedRanker {
                 recency: 1,
                 socialProof: 0,
                 learningContext: 0,
+                academicRelevance: 0,
+                teacherRelevance: 0,
+                peerLearning: 0,
+                difficultyMatch: 0,
             },
         }));
 

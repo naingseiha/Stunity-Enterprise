@@ -265,6 +265,14 @@ const PostContent = ({
           </View>
         )}
 
+        {/* Academic Match Badge */}
+        {post._scoreBreakdown?.academicRelevance > 0.5 && (
+          <View style={[styles.difficultyBadge, { backgroundColor: '#F0FDF4' }]}>
+            <Ionicons name="school" size={12} color="#16A34A" />
+            <Text style={[styles.difficultyText, { color: '#16A34A' }]}>Academic Match</Text>
+          </View>
+        )}
+
         <View style={styles.inlineMetrics}>
           {learningMeta?.xpReward != null && (
             <View style={styles.inlineMetric}>

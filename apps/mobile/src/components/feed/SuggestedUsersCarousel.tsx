@@ -43,7 +43,7 @@ export const SuggestedUsersCarousel: React.FC<Props> = ({ users }) => {
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>Suggested Connections</Text>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate('Search')}>
                     <Text style={styles.seeAll}>See All</Text>
                 </TouchableOpacity>
             </View>

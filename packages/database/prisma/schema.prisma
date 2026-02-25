@@ -4,8 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -624,6 +624,8 @@ model User {
   learningStreak          LearningStreak?
   weeklyLeaderboards      WeeklyLeaderboard[]
   feedSignals             UserFeedSignal[]
+  academicProfile         UserAcademicProfile?
+  deadlines               UserDeadline[]
   parent                  Parent?                    @relation(fields: [parentId], references: [id], onDelete: Cascade)
   school                  School?                    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   student                 Student?                   @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -707,10 +709,11 @@ model Post {
   projectStatus            String?
   projectDeadline          DateTime?
   projectTeamSize          Int?
-  topicTags                String[]       // Tags for topic matching / personalization
+  topicTags                String[] // Tags for topic matching / personalization
   mediaDisplayMode         String?        @default("AUTO") // AUTO, FIXED_HEIGHT, FULL_HEIGHT
   questionBounty           Int            @default(0) // Amount of diamonds offered for an answer
   trendingScore            Float          @default(0) // Precomputed trending score for fast queries
+  difficultyLevel          Decimal?       @default(2.5) @db.Decimal(3, 2) // Inference difficulty matching
   studyClubId              String? // If posted in a study club
   comments                 Comment[]
   likes                    Like[]
@@ -735,7 +738,7 @@ model Post {
   @@index([pollExpiresAt])
   @@index([studyClubId])
   @@index([isPinned, createdAt(sort: Desc)]) // Feed sorts by isPinned DESC, createdAt DESC
-  @@index([createdAt(sort: Desc)])            // Standalone for RECENT mode queries
+  @@index([createdAt(sort: Desc)]) // Standalone for RECENT mode queries
   // Phase 1 Performance Indexes (Free Tier Optimizations)
   @@index([visibility, isPinned(sort: Desc), createdAt(sort: Desc)]) // Main feed query optimization
   @@index([authorId, postType, createdAt(sort: Desc)]) // User profile by post type
@@ -745,19 +748,19 @@ model Post {
 }
 
 model Comment {
-  id        String            @id @default(cuid())
-  postId    String
-  authorId  String
-  content   String
-  parentId  String?
-  isVerifiedAnswer Boolean  @default(false)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime          @updatedAt
-  reactions CommentReaction[]
-  author    User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  parent    Comment?          @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   Comment[]         @relation("CommentReplies")
-  post      Post              @relation(fields: [postId], references: [id], onDelete: Cascade)
+  id               String            @id @default(cuid())
+  postId           String
+  authorId         String
+  content          String
+  parentId         String?
+  isVerifiedAnswer Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  reactions        CommentReaction[]
+  author           User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent           Comment?          @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies          Comment[]         @relation("CommentReplies")
+  post             Post              @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([postId, createdAt(sort: Desc)])
   @@index([authorId])
@@ -833,7 +836,7 @@ model Quiz {
   resultsVisibility String              @default("AFTER_SUBMISSION") // AFTER_SUBMISSION, IMMEDIATE, NEVER
   shuffleQuestions  Boolean             @default(false)
   shuffleAnswers    Boolean             @default(false)
-  maxAttempts       Int?                // Null means unlimited
+  maxAttempts       Int? // Null means unlimited
   showReview        Boolean             @default(true) // Allow reviewing answers after submission
   showExplanations  Boolean             @default(true) // Show explanations during review
   createdAt         DateTime            @default(now())
@@ -1189,7 +1192,7 @@ model PostView {
 model UserFeedSignal {
   id              String   @id @default(cuid())
   userId          String
-  topicId         String   // normalized topic/tag name
+  topicId         String // normalized topic/tag name
   score           Float    @default(0) // accumulated interest score
   viewCount       Int      @default(0)
   likeCount       Int      @default(0)
@@ -2740,6 +2743,7 @@ model Course {
   pathCourses   LearningPathCourse[]
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
+  UserDeadline  UserDeadline[]
 
   @@index([category])
   @@index([level])
@@ -3030,8 +3034,8 @@ model QuizAttemptRecord {
   sessionCode String? // if live quiz
   createdAt   DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz        Quiz       @relation(fields: [quizId], references: [id], onDelete: Cascade)
   userStatsId String?
   userStats   UserStats? @relation(fields: [userStatsId], references: [id])
 
@@ -3213,4 +3217,34 @@ model LoginAttempt {
   @@index([email, createdAt])
   @@index([ipAddress, createdAt])
   @@map("login_attempts")
+}
+
+model UserAcademicProfile {
+  userId       String   @id
+  currentLevel Decimal  @default(2.5) @db.Decimal(3, 2)
+  weakTopics   String[]
+  strongTopics String[]
+  lastUpdated  DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_academic_profiles")
+}
+
+model UserDeadline {
+  id            String   @id @default(cuid())
+  userId        String
+  title         String
+  deadlineDate  DateTime
+  relatedTopics String[]
+  courseId      String?
+  priority      String   @default("MEDIUM")
+  createdAt     DateTime @default(now())
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deadlineDate])
+  @@map("user_deadlines")
 }

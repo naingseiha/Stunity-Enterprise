@@ -47,7 +47,7 @@ export const SuggestedCoursesCarousel: React.FC<Props> = ({ courses }) => {
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Recommended Courses</Text>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.getParent()?.navigate('LearnTab')}>
                     <Text style={styles.seeAll}>See All</Text>
                 </TouchableOpacity>
             </View>

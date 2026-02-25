@@ -288,6 +288,22 @@ export interface Post {
   };
   // Q&A Bounty
   questionBounty?: number;
+
+  // Feed Score Data
+  _score?: number;
+  _scoreBreakdown?: {
+    engagement: number;
+    relevance: number;
+    quality: number;
+    recency: number;
+    socialProof: number;
+    learningContext: number;
+    academicRelevance?: number;
+    teacherRelevance?: number;
+    peerLearning?: number;
+    difficultyMatch?: number;
+  };
+
   createdAt: string;
   updatedAt: string;
 }

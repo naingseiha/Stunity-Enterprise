@@ -27,7 +27,21 @@ const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 app.use(cors());
 app.use(express.json());
 
-// Auth middleware
+// Extend Express Request
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        userId: string;
+        email: string;
+        role: string;
+      };
+    }
+  }
+}
+
+// Keep AuthRequest for backwards compatibility in this file if needed
 interface AuthRequest extends Request {
   user?: {
     id: string;
@@ -37,7 +51,7 @@ interface AuthRequest extends Request {
   };
 }
 
-const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -785,14 +799,67 @@ app.get('/leaderboard/global', authenticateToken, async (req: AuthRequest, res: 
       ],
       take: limit,
       skip,
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true,
+            email: true
+          }
+        }
+      }
     });
 
     const total = await prisma.userStats.count();
+
+    // Calculate requesting user's rank
+    const userId = req.user!.id;
+    let userRank = null;
+    let userStats = null;
+
+    if (userId) {
+      userStats = await prisma.userStats.findUnique({
+        where: { userId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              profilePictureUrl: true,
+            }
+          }
+        }
+      });
+
+      if (userStats) {
+        // Count how many users have strictly more XP, 
+        // OR same XP but higher Level, to determine rank (1-indexed)
+        const higherRankedCount = await prisma.userStats.count({
+          where: {
+            OR: [
+              { xp: { gt: userStats.xp } },
+              {
+                xp: userStats.xp,
+                level: { gt: userStats.level }
+              }
+            ]
+          }
+        });
+        userRank = higherRankedCount + 1;
+      }
+    }
 
     res.json({
       success: true,
       data: {
         leaderboard,
+        userStanding: userStats ? {
+          ...userStats,
+          rank: userRank
+        } : null,
         pagination: {
           page,
           limit,
@@ -835,11 +902,35 @@ app.get('/leaderboard/weekly', authenticateToken, async (req: AuthRequest, res: 
       take: 50,
     });
 
+    const userIds = weeklyAttempts.map(a => a.userId);
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        profilePictureUrl: true,
+      }
+    });
+
+    const userMap = new Map(users.map(u => [u.id, u]));
+
+    const leaderboard = weeklyAttempts.map((attempt, index) => ({
+      ...attempt,
+      rank: index + 1,
+      user: userMap.get(attempt.userId) || null
+    }));
+
+    // Find current user's weekly rank
+    const userId = req.user!.id;
+    const userStanding = leaderboard.find(l => l.userId === userId) || null;
+
     res.json({
       success: true,
       data: {
         weekStart,
-        leaderboard: weeklyAttempts,
+        leaderboard,
+        userStanding
       },
     });
   } catch (error: any) {

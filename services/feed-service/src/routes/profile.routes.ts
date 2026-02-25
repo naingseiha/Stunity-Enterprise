@@ -283,6 +283,167 @@ router.get('/users/:id/profile', authenticateToken, async (req: AuthRequest, res
   }
 });
 
+// GET /users/:id/academic-profile - Get user's academic profile (Gamification Phase 4 API)
+router.get('/users/:id/academic-profile', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const currentUserId = req.user?.id;
+    const userId = id === 'me' ? currentUserId : id;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const profile = await prisma.userAcademicProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!profile) {
+      // Return a default profile if not yet scored
+      return res.json({
+        success: true,
+        academicProfile: {
+          userId,
+          currentLevel: 2.5,
+          weakTopics: [],
+          strongTopics: [],
+          lastUpdated: new Date()
+        }
+      });
+    }
+
+    res.json({ success: true, academicProfile: profile });
+  } catch (error: any) {
+    console.error('Get academic profile error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get academic profile' });
+  }
+});
+
+// PUT /users/:id/academic-profile - Admin/System endpoint to manually override
+router.put('/users/:id/academic-profile', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const currentUserId = req.user?.id;
+    const userId = id === 'me' ? currentUserId : id;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    // Usually restricted to admin or internal system overrides
+    const currentUser = await prisma.user.findUnique({ where: { id: currentUserId } });
+    if (!currentUser || currentUser.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, error: 'Forbidden: Admins only' });
+    }
+
+    const { currentLevel, weakTopics, strongTopics } = req.body;
+
+    const data: any = { lastUpdated: new Date() };
+    if (currentLevel !== undefined) data.currentLevel = currentLevel;
+    if (weakTopics !== undefined) data.weakTopics = weakTopics;
+    if (strongTopics !== undefined) data.strongTopics = strongTopics;
+
+    const updated = await prisma.userAcademicProfile.upsert({
+      where: { userId },
+      update: data,
+      create: {
+        userId,
+        currentLevel: currentLevel ?? 2.5,
+        weakTopics: weakTopics ?? [],
+        strongTopics: strongTopics ?? [],
+        lastUpdated: new Date()
+      }
+    });
+
+    res.json({ success: true, academicProfile: updated });
+  } catch (error: any) {
+    console.error('Update academic profile error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update academic profile' });
+  }
+});
+
+// GET /users/:id/deadlines - Get user deadlines (Gamification Phase 4 API)
+router.get('/users/:id/deadlines', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const currentUserId = req.user?.id;
+    const userId = id === 'me' ? currentUserId : id;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const deadlines = await prisma.userDeadline.findMany({
+      where: { userId },
+      orderBy: { deadlineDate: 'asc' },
+    });
+
+    res.json({ success: true, deadlines });
+  } catch (error: any) {
+    console.error('Get user deadlines error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get user deadlines' });
+  }
+});
+
+// POST /users/me/deadlines - Create a new deadline (Gamification Phase 4 API)
+router.post('/users/me/deadlines', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const { title, deadlineDate, relatedTopics, courseId, priority } = req.body;
+
+    if (!title || !deadlineDate) {
+      return res.status(400).json({ success: false, error: 'Title and deadlineDate are required' });
+    }
+
+    const deadline = await prisma.userDeadline.create({
+      data: {
+        userId,
+        title,
+        deadlineDate: new Date(deadlineDate),
+        relatedTopics: relatedTopics ?? [],
+        courseId,
+        priority: priority ?? 'MEDIUM',
+      }
+    });
+
+    res.json({ success: true, deadline });
+  } catch (error: any) {
+    console.error('Create user deadline error:', error);
+    res.status(500).json({ success: false, error: 'Failed to create user deadline' });
+  }
+});
+
+// DELETE /users/me/deadlines/:deadlineId - Delete a deadline (Gamification Phase 4 API)
+router.delete('/users/me/deadlines/:deadlineId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { deadlineId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const existing = await prisma.userDeadline.findUnique({ where: { id: deadlineId } });
+    if (!existing || existing.userId !== userId) {
+      return res.status(404).json({ success: false, error: 'Deadline not found or unauthorized' });
+    }
+
+    await prisma.userDeadline.delete({
+      where: { id: deadlineId }
+    });
+
+    res.json({ success: true, message: 'Deadline deleted successfully' });
+  } catch (error: any) {
+    console.error('Delete user deadline error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete user deadline' });
+  }
+});
+
 // PUT /users/me/profile - Update own profile
 router.put('/users/me/profile', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {

@@ -22,6 +22,7 @@ import coursesRouter from './courses';
 import storiesRouter from './stories';
 import mediaRouter from './routes/media.routes';
 import { authenticateToken } from './middleware/auth';
+import { startGamificationJobs } from './gamificationJobs';
 
 // ─── Phase 1 Day 7: Performance Monitoring ─────────────────────────
 import {
@@ -139,6 +140,9 @@ if (runBackgroundJobs) {
       console.error('❌ [FeedCache] Pre-compute error:', err);
     }
   }, 5 * 60 * 1000);
+
+  // Gamification & Academic Background Jobs
+  startGamificationJobs(prisma);
 } else {
   console.log('⏭️  Background jobs disabled on this instance (DISABLE_BACKGROUND_JOBS=true)');
 }
