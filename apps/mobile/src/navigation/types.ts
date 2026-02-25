@@ -85,6 +85,7 @@ export type FeedStackParamList = {
   ClubDetail: { clubId: string };
   Events: undefined;
   EventDetail: { eventId: string };
+  SuggestedUsers: undefined;
 };
 
 // Learn Stack

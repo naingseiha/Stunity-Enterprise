@@ -26,7 +26,7 @@ import { Sidebar } from '@/components/navigation';
 import { NavigationProvider, useNavigationContext } from '@/contexts';
 
 // Implemented Screens
-import { FeedScreen, CreatePostScreen, EditPostScreen, PostDetailScreen, CommentsScreen, BookmarksScreen, MyPostsScreen, SearchScreen } from '@/screens/feed';
+import { FeedScreen, CreatePostScreen, EditPostScreen, PostDetailScreen, CommentsScreen, BookmarksScreen, MyPostsScreen, SearchScreen, SuggestedUsersScreen } from '@/screens/feed';
 import { LearnScreen, CourseDetailScreen } from '@/screens/learn';
 import { ProfileScreen, EditProfileScreen, SettingsScreen, AcademicProfileScreen, ManageDeadlinesScreen } from '@/screens/profile';
 import { ConversationsScreen, ChatScreen, NewMessageScreen } from '@/screens/messages';
@@ -125,6 +125,7 @@ const FeedStackNavigator: React.FC = () => (
     <FeedStack.Screen name="Hashtag" component={HashtagScreen} />
     <FeedStack.Screen name="Events" component={EventsScreen} />
     <FeedStack.Screen name="EventDetail" component={EventDetailScreen} />
+    <FeedStack.Screen name="SuggestedUsers" component={SuggestedUsersScreen} />
   </FeedStack.Navigator>
 );
 
