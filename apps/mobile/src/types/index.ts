@@ -266,6 +266,7 @@ export interface Post {
       options?: string[];
       correctAnswer: string;
       points: number;
+      explanation?: string;
     }>;
     timeLimit: number | null; // in minutes
     passingScore: number; // percentage (0-100)
@@ -311,7 +312,8 @@ export interface Post {
 export type FeedItem =
   | { type: 'POST'; data: Post }
   | { type: 'SUGGESTED_USERS'; data: Partial<User>[] }
-  | { type: 'SUGGESTED_COURSES'; data: Course[] };
+  | { type: 'SUGGESTED_COURSES'; data: Course[] }
+  | { type: 'SUGGESTED_QUIZZES'; data: any[] };
 
 export interface Comment {
   id: string;

@@ -9,7 +9,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "devDependencies": {
-    "ts-node": "^10.9.0",
+    "ts-node": "^10.9.2",
     "tsx": "^4.7.0"
   },
   "dependencies": {

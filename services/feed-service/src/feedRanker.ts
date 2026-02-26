@@ -157,7 +157,8 @@ export interface ScoredPost {
 export type FeedItem =
     | { type: 'POST'; data: ScoredPost }
     | { type: 'SUGGESTED_USERS'; data: Partial<User>[] }
-    | { type: 'SUGGESTED_COURSES'; data: any[] };
+    | { type: 'SUGGESTED_COURSES'; data: any[] }
+    | { type: 'SUGGESTED_QUIZZES'; data: any[] };
 
 // ─── Feed Ranker ───────────────────────────────────────────────────
 export class FeedRanker {
@@ -295,9 +296,10 @@ export class FeedRanker {
 
         // Only fetch suggestions if we are generating page 1
         if (page === 1) {
-            const [suggestedUsers, suggestedCourses] = await Promise.all([
+            const [suggestedUsers, suggestedCourses, suggestedQuizzes] = await Promise.all([
                 this.getSuggestedUsers(userId, userSignals),
-                this.getSuggestedCourses(userId, userSignals)
+                this.getSuggestedCourses(userId, userSignals),
+                this.getSuggestedQuizzes(userId, userSignals),
             ]);
 
             let injectionIndex = 6;
@@ -311,6 +313,12 @@ export class FeedRanker {
             // Inject Courses
             if (suggestedCourses.length > 0 && rawFeedItems.length >= injectionIndex) {
                 rawFeedItems.splice(injectionIndex, 0, { type: 'SUGGESTED_COURSES', data: suggestedCourses });
+                injectionIndex += 10;
+            }
+
+            // Inject Quizzes
+            if (suggestedQuizzes.length > 0 && rawFeedItems.length >= injectionIndex) {
+                rawFeedItems.splice(injectionIndex, 0, { type: 'SUGGESTED_QUIZZES', data: suggestedQuizzes });
             }
         }
 
@@ -448,6 +456,79 @@ export class FeedRanker {
         return suggested.map(course => ({
             ...course,
             enrollmentCount: course.enrolledCount,
+        }));
+    }
+
+    private async getSuggestedQuizzes(userId: string, signals: UserSignals): Promise<any[]> {
+        const userTopics = Object.keys(signals.topics).slice(0, 5);
+
+        // Find quizzes the user has already attempted to exclude them
+        const attempted = await this.prisma.quizAttempt.findMany({
+            where: { userId },
+            select: { quizId: true },
+        });
+        const attemptedIds = attempted.map(a => a.quizId);
+
+        const includeFields = {
+            post: {
+                select: {
+                    id: true,
+                    title: true,
+                    content: true,
+                    topicTags: true,
+                    likesCount: true,
+                    author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true } },
+                    createdAt: true
+                }
+            },
+            _count: { select: { attempts: true } },
+        };
+
+        const orderBy: any = [
+            { post: { likesCount: 'desc' } },
+            { post: { createdAt: 'desc' } },
+        ];
+
+        // Primary: Unattempted quizzes matching topics
+        let suggested = await this.prisma.quiz.findMany({
+            where: {
+                ...(attemptedIds.length > 0 ? { id: { notIn: attemptedIds } } : {}),
+                post: {
+                    postType: 'QUIZ',
+                    ...(userTopics.length > 0 && { topicTags: { hasSome: userTopics } })
+                },
+            },
+            include: includeFields,
+            orderBy,
+            take: 8,
+        });
+
+        // Fallback: Any unattempted quizzes
+        if (suggested.length < 2) {
+            suggested = await this.prisma.quiz.findMany({
+                where: {
+                    ...(attemptedIds.length > 0 ? { id: { notIn: attemptedIds } } : {}),
+                    post: { postType: 'QUIZ' },
+                },
+                include: includeFields,
+                orderBy,
+                take: 8,
+            });
+        }
+
+        return suggested.map(q => ({
+            id: q.id,
+            postId: q.post.id,
+            title: q.post.title || 'Untitled Quiz',
+            description: q.post.content,
+            topicTags: q.post.topicTags,
+            author: q.post.author,
+            questions: q.questions,
+            timeLimit: q.timeLimit,
+            passingScore: q.passingScore,
+            totalPoints: q.totalPoints,
+            attemptCount: q._count.attempts,
+            createdAt: q.post.createdAt,
         }));
     }
 

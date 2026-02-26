@@ -18,6 +18,7 @@ import { quizService, QuizItem } from '@/services/quiz';
 import { liveQuizService } from '@/services/liveQuiz';
 import { useFeedStore } from '@/stores';
 import { Alert } from 'react-native';
+import { QuizAnalyticsModal } from '@/components/quiz/QuizAnalyticsModal';
 
 const BACKGROUND_COLOR = '#0F172A';
 
@@ -28,6 +29,10 @@ export function QuizStudioScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [activeTab, setActiveTab] = useState<'ALL' | 'DRAFT'>('ALL'); // Currently backend returns all mapped as published; we can refine this later.
+    const [activeTag, setActiveTag] = useState<string | null>(null);
+
+    // Analytics Modal State
+    const [selectedAnalyticsQuiz, setSelectedAnalyticsQuiz] = useState<{ id: string, title: string } | null>(null);
 
     const loadQuizzes = async () => {
         try {
@@ -159,6 +164,11 @@ export function QuizStudioScreen() {
                             <Text style={[styles.editBtnText, { color: '#EF4444' }]}>Delete</Text>
                         </TouchableOpacity>
 
+                        <TouchableOpacity style={[styles.editBtn, { backgroundColor: 'rgba(96, 165, 250, 0.15)' }]} onPress={() => setSelectedAnalyticsQuiz({ id: item.id, title: item.title })}>
+                            <Ionicons name="bar-chart-outline" size={16} color="#60A5FA" />
+                            <Text style={[styles.editBtnText, { color: '#60A5FA' }]}>Stats</Text>
+                        </TouchableOpacity>
+
                         <TouchableOpacity
                             style={styles.liveBtn}
                             onPress={() => handleStartLive(item.id)}
@@ -207,6 +217,34 @@ export function QuizStudioScreen() {
                 </TouchableOpacity>
             </View>
 
+            {/* Tags Strip */}
+            {!loading && quizzes.length > 0 && (
+                <View style={styles.tagsContainer}>
+                    <FlatList
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        data={['All', ...Array.from(new Set(quizzes.flatMap(q => q.topicTags || []))).filter(Boolean)]}
+                        keyExtractor={item => item}
+                        contentContainerStyle={styles.tagsContent}
+                        renderItem={({ item }) => {
+                            const isSelected = item === 'All' ? activeTag === null : activeTag === item;
+                            return (
+                                <TouchableOpacity
+                                    style={[styles.tagPill, isSelected && styles.tagPillSelected]}
+                                    onPress={() => setActiveTag(item === 'All' ? null : item)}
+                                >
+                                    <View style={styles.tagContent}>
+                                        <Text style={[styles.tagText, isSelected && styles.tagTextSelected]}>
+                                            {item === 'All' ? 'All Topics' : `#${item}`}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        }}
+                    />
+                </View>
+            )}
+
             {/* List */}
             <View style={styles.listContainer}>
                 {loading ? (
@@ -230,7 +268,7 @@ export function QuizStudioScreen() {
                     </View>
                 ) : (
                     <FlatList
-                        data={quizzes}
+                        data={quizzes.filter(q => !activeTag || (q.topicTags || []).includes(activeTag))}
                         keyExtractor={item => item.id}
                         renderItem={renderQuizItem}
                         contentContainerStyle={styles.listContent}
@@ -247,6 +285,14 @@ export function QuizStudioScreen() {
             >
                 <Ionicons name="add" size={32} color="#FFF" />
             </TouchableOpacity>
+
+            {/* Analytics Modal */}
+            <QuizAnalyticsModal
+                visible={!!selectedAnalyticsQuiz}
+                onClose={() => setSelectedAnalyticsQuiz(null)}
+                quizId={selectedAnalyticsQuiz?.id || ''}
+                quizTitle={selectedAnalyticsQuiz?.title || ''}
+            />
         </SafeAreaView>
     );
 }
@@ -299,7 +345,40 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     activeTabText: {
-        color: '#A78BFA',
+        color: '#FFF',
+    },
+    tagsContainer: {
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.05)',
+        paddingVertical: 12,
+    },
+    tagsContent: {
+        paddingHorizontal: 20,
+        gap: 8,
+    },
+    tagPill: {
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    tagPillSelected: {
+        backgroundColor: 'rgba(124, 58, 237, 0.2)',
+        borderColor: '#7C3AED',
+    },
+    tagContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    tagText: {
+        color: '#94A3B8',
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    tagTextSelected: {
+        color: '#FFF',
     },
     listContainer: {
         flex: 1,

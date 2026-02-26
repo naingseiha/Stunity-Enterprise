@@ -42,6 +42,7 @@ interface QuizQuestion {
   options?: string[];
   correctAnswer: string;
   points: number;
+  explanation?: string;
 }
 
 interface Quiz {
@@ -271,9 +272,19 @@ export function QuizResultsScreen() {
                     Your Answer: {result.userAnswer || 'Skipped'}
                   </Text>
                   {!result.isCorrect && (
-                    <Text style={styles.correctAnswerText}>
-                      Correct Answer: {result.question.correctAnswer}
-                    </Text>
+                    <>
+                      <Text style={styles.correctAnswerText}>
+                        Correct Answer: {result.question.correctAnswer}
+                      </Text>
+                      {result.question.explanation && (
+                        <View style={styles.explanationBox}>
+                          <Ionicons name="information-circle" size={16} color="#60A5FA" style={{ marginTop: 2, marginRight: 6 }} />
+                          <Text style={styles.explanationText}>
+                            {result.question.explanation}
+                          </Text>
+                        </View>
+                      )}
+                    </>
                   )}
                 </View>
               ))}
@@ -497,5 +508,20 @@ const styles = StyleSheet.create({
   correctAnswerText: {
     color: 'rgba(255,255,255,0.6)',
     fontSize: 13,
+  },
+  explanationBox: {
+    flexDirection: 'row',
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#3B82F6',
+  },
+  explanationText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#93C5FD',
+    lineHeight: 18,
   },
 });

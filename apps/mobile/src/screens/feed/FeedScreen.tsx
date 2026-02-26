@@ -46,6 +46,7 @@ import {
   type EducationalValue,
   SuggestedUsersCarousel,
   SuggestedCoursesCarousel,
+  SuggestedQuizzesCarousel,
 } from '@/components/feed';
 import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
@@ -633,6 +634,9 @@ export default function FeedScreen() {
     if (item.type === 'SUGGESTED_COURSES') {
       return <SuggestedCoursesCarousel courses={item.data} />;
     }
+    if (item.type === 'SUGGESTED_QUIZZES') {
+      return <SuggestedQuizzesCarousel quizzes={item.data} />;
+    }
 
     if (item.type === 'POST' && !item.data) return null;
 
@@ -793,6 +797,7 @@ export default function FeedScreen() {
         getItemType={(item) => {
           if (item.type === 'SUGGESTED_USERS') return 'suggested_users';
           if (item.type === 'SUGGESTED_COURSES') return 'suggested_courses';
+          if (item.type === 'SUGGESTED_QUIZZES') return 'suggested_quizzes';
           // Type-bucketed recycling — cells of similar height are reused together
           const postData = (item as any).data || item;
           if (postData.postType === 'QUIZ') return 'quiz';

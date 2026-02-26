@@ -12,3 +12,4 @@ export { default as SubjectFilters } from './SubjectFilters';
 export { default as FloatingActionButton } from './FloatingActionButton';
 export { SuggestedUsersCarousel } from './SuggestedUsersCarousel';
 export { SuggestedCoursesCarousel } from './SuggestedCoursesCarousel';
+export { SuggestedQuizzesCarousel } from './SuggestedQuizzesCarousel';

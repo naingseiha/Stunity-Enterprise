@@ -18,6 +18,7 @@ export interface QuizQuestion {
   options: string[];
   correctAnswer: string;
   points: number;
+  explanation?: string;
 }
 
 interface QuizQuestionInputProps {
@@ -481,6 +482,19 @@ export function QuizQuestionInput({
 
           {/* Dynamic Options */}
           {renderOptions()}
+
+          {/* Explanation Field */}
+          <View style={[styles.inputGroup, { marginTop: 16 }]}>
+            <Text style={styles.sectionLabel}>Explanation (Optional)</Text>
+            <TextInput
+              style={[styles.questionInput, { minHeight: 80 }]}
+              placeholder="Explain the correct answer..."
+              placeholderTextColor="#9CA3AF"
+              multiline
+              value={question.explanation || ''}
+              onChangeText={(text) => onUpdate({ explanation: text })}
+            />
+          </View>
 
           {/* Footer Actions */}
           <View style={styles.footer}>
