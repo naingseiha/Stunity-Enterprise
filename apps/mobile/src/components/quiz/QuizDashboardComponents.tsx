@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { formatNumber } from '@/utils';
+import { QuizItem } from '@/services/quiz';
 
 const { width } = Dimensions.get('window');
 
@@ -299,7 +300,7 @@ const ActionButton = ({ title, icon, colors, onPress, delay = 0, badge }: Action
 // --------------- Daily Quiz Card -------------------
 interface DailyQuizCardProps {
     onPress: () => void;
-    dailyQuiz?: { id: string; title: string; questions?: any[]; totalPoints?: number; timeLimit?: number } | null;
+    dailyQuiz?: QuizItem | null;
 }
 
 export const DailyQuizCard = ({ onPress, dailyQuiz }: DailyQuizCardProps) => {

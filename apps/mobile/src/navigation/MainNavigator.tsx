@@ -42,6 +42,7 @@ import {
 import { TakeQuizScreen, QuizResultsScreen } from '@/screens/quiz';
 import QuizDashboardScreen from '@/screens/quiz/QuizDashboardScreen';
 import BrowseQuizzesScreen from '@/screens/quiz/BrowseQuizzesScreen';
+import { QuizStudioScreen } from '@/screens/quiz/QuizStudioScreen';
 import {
   LiveQuizJoinScreen,
   LiveQuizHostScreen,
@@ -339,6 +340,7 @@ const MainNavigator = () => {
         <MainStack.Screen name="TakeQuiz" component={TakeQuizScreen} />
         <MainStack.Screen name="QuizResults" component={QuizResultsScreen} />
         <MainStack.Screen name="BrowseQuizzes" component={BrowseQuizzesScreen} />
+        <MainStack.Screen name="QuizStudio" component={QuizStudioScreen} />
         <MainStack.Screen name="LiveQuizJoin" component={LiveQuizJoinScreen} />
         <MainStack.Screen name="LiveQuizHost" component={LiveQuizHostScreen} />
         <MainStack.Screen name="LiveQuizLobby" component={LiveQuizLobbyScreen} />

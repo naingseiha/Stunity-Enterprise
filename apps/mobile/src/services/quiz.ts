@@ -212,6 +212,24 @@ export const submitQuiz = async (
   return result;
 };
 
+// ─── My Quizzes ───────────────────────────────────────────────────────────────
+
+/**
+ * GET /quizzes/my-created — Get current user's authored quizzes (Quiz Studio)
+ */
+export const getMyCreatedQuizzes = async (): Promise<QuizItem[]> => {
+  try {
+    const response = await quizApi.get('/quizzes/my-created');
+    if (!response.data.success) {
+      return [];
+    }
+    return response.data.data;
+  } catch (error: any) {
+    console.error('❌ [QUIZ API] Get my created quizzes error:', error);
+    return [];
+  }
+};
+
 // ─── My Attempts ──────────────────────────────────────────────────────────────
 
 /**
@@ -271,6 +289,7 @@ export const quizService = {
   fetchRecommendedQuizzes,
   fetchDailyQuiz,
   fetchQuizById,
+  getMyCreatedQuizzes,
   submitQuiz,
   getMyQuizAttempts,
   getQuizAttempts,

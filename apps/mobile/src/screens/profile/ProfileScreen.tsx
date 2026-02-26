@@ -324,12 +324,12 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      {/* @ts-ignore FlashList array types with react navigation bounds can sometimes complain on strict mode */}
       <FlashList
         data={[{ key: 'tabContent', type: activeTab }]}
         keyExtractor={(item) => item.key}
         showsVerticalScrollIndicator={false}
-        estimatedItemSize={1000}
+        // @ts-ignore ignore type error with flash list sizes
+        estimatedItemSize={1000} 
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }

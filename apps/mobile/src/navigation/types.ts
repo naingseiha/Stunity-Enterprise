@@ -51,6 +51,7 @@ export type MainStackParamList = {
   Notifications: undefined;
   Messages: NavigatorScreenParams<MessagesStackParamList>;
   BrowseQuizzes: { category?: string; search?: string } | undefined;
+  QuizStudio: undefined;
 };
 
 // Auth Stack
