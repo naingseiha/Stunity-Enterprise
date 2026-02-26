@@ -13,8 +13,208 @@ import { feedCache, EventPublisher } from '../redis';
 const router = Router();
 
 // ========================================
-// Quiz Endpoints
+// Quiz Discovery Endpoints (new)
 // ========================================
+
+// GET /quizzes — Browse all published quizzes (paginated, category, search)
+router.get('/quizzes', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { category, search, page = '1', limit = '20' } = req.query as Record<string, string>;
+    const take = Math.min(parseInt(limit) || 20, 50);
+    const skip = (parseInt(page) - 1) * take;
+
+    const postWhere: any = {
+      postType: 'QUIZ',
+      ...(category && category !== 'ALL' ? { topicTags: { has: category } } : {}),
+      ...(search ? {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { content: { contains: search, mode: 'insensitive' } },
+        ]
+      } : {}),
+    };
+
+    const [quizzes, total] = await Promise.all([
+      prisma.quiz.findMany({
+        where: { post: postWhere },
+        include: {
+          post: { select: { id: true, title: true, content: true, topicTags: true, authorId: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true } }, createdAt: true } },
+          attempts: { where: { userId }, select: { id: true, score: true, passed: true, pointsEarned: true, submittedAt: true }, take: 1, orderBy: { submittedAt: 'desc' } },
+        },
+        orderBy: { post: { createdAt: 'desc' } },
+        skip,
+        take,
+      }),
+      prisma.quiz.count({ where: { post: postWhere } }),
+    ]);
+
+    const data = quizzes.map(q => ({
+      id: q.id,
+      postId: q.post.id,
+      title: q.post.title || 'Untitled Quiz',
+      description: q.post.content,
+      topicTags: q.post.topicTags,
+      author: q.post.author,
+      questions: q.questions as any[],
+      timeLimit: q.timeLimit,
+      passingScore: q.passingScore,
+      totalPoints: q.totalPoints,
+      userAttempt: (q.attempts as any[])[0] || null,
+      createdAt: q.post.createdAt,
+    }));
+
+    res.json({ success: true, data, pagination: { page: parseInt(page), limit: take, total, pages: Math.ceil(total / take) } });
+  } catch (error: any) {
+    console.error('Browse quizzes error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch quizzes' });
+  }
+});
+
+// GET /quizzes/recommended — Recommended quizzes for current user
+router.get('/quizzes/recommended', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const limit = Math.min(parseInt(req.query.limit as string || '10'), 20);
+
+    const attempted = await prisma.quizAttempt.findMany({
+      where: { userId },
+      select: { quizId: true },
+    });
+    const attemptedIds = attempted.map(a => a.quizId);
+
+    const quizzes = await prisma.quiz.findMany({
+      where: {
+        ...(attemptedIds.length > 0 ? { id: { notIn: attemptedIds } } : {}),
+        post: { postType: 'QUIZ' },
+      },
+      include: {
+        post: { select: { id: true, title: true, content: true, topicTags: true, likesCount: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true } }, createdAt: true } },
+        _count: { select: { attempts: true } },
+      },
+      orderBy: [{ post: { likesCount: 'desc' } }, { post: { createdAt: 'desc' } }],
+      take: limit,
+    });
+
+    const data = quizzes.map(q => ({
+      id: q.id,
+      postId: q.post.id,
+      title: q.post.title || 'Untitled Quiz',
+      description: q.post.content,
+      topicTags: q.post.topicTags,
+      author: q.post.author,
+      questions: q.questions as any[],
+      timeLimit: q.timeLimit,
+      passingScore: q.passingScore,
+      totalPoints: q.totalPoints,
+      attemptCount: q._count.attempts,
+      userAttempt: null,
+      createdAt: q.post.createdAt,
+    }));
+
+    res.json({ success: true, data });
+  } catch (error: any) {
+    console.error('Recommended quizzes error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch recommendations' });
+  }
+});
+
+// GET /quizzes/daily — Today's featured daily quiz
+router.get('/quizzes/daily', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const passed = await prisma.quizAttempt.findMany({
+      where: { userId, passed: true },
+      select: { quizId: true },
+    });
+    const passedIds = passed.map(a => a.quizId);
+
+    const quiz = await prisma.quiz.findFirst({
+      where: {
+        post: { postType: 'QUIZ', createdAt: { gte: sevenDaysAgo } },
+        ...(passedIds.length > 0 ? { id: { notIn: passedIds } } : {}),
+      },
+      include: {
+        post: { select: { id: true, title: true, content: true, topicTags: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true } }, createdAt: true } },
+        attempts: { where: { userId }, select: { id: true, score: true, passed: true, pointsEarned: true }, take: 1, orderBy: { submittedAt: 'desc' } },
+      },
+      orderBy: { post: { likesCount: 'desc' } },
+    });
+
+    if (!quiz) return res.json({ success: true, data: null });
+
+    res.json({
+      success: true,
+      data: {
+        id: quiz.id,
+        postId: quiz.post.id,
+        title: quiz.post.title || 'Daily Quiz',
+        description: quiz.post.content,
+        topicTags: quiz.post.topicTags,
+        author: quiz.post.author,
+        questions: quiz.questions as any[],
+        timeLimit: quiz.timeLimit,
+        passingScore: quiz.passingScore,
+        totalPoints: quiz.totalPoints,
+        userAttempt: (quiz.attempts as any[])[0] || null,
+        createdAt: quiz.post.createdAt,
+      },
+    });
+  } catch (error: any) {
+    console.error('Daily quiz error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch daily quiz' });
+  }
+});
+
+// GET /quizzes/:id — Single quiz detail with user attempt status
+router.get('/quizzes/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.id;
+
+    const quiz = await prisma.quiz.findUnique({
+      where: { id },
+      include: {
+        post: { select: { id: true, title: true, content: true, topicTags: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true } }, createdAt: true } },
+        attempts: { where: { userId }, select: { id: true, score: true, passed: true, pointsEarned: true, answers: true, submittedAt: true }, take: 1, orderBy: { submittedAt: 'desc' } },
+        _count: { select: { attempts: true } },
+      },
+    });
+
+    if (!quiz) return res.status(404).json({ success: false, error: 'Quiz not found' });
+
+    res.json({
+      success: true,
+      data: {
+        id: quiz.id,
+        postId: quiz.post.id,
+        title: quiz.post.title || 'Quiz',
+        description: quiz.post.content,
+        topicTags: quiz.post.topicTags,
+        author: quiz.post.author,
+        questions: quiz.questions as any[],
+        timeLimit: quiz.timeLimit,
+        passingScore: quiz.passingScore,
+        totalPoints: quiz.totalPoints,
+        userAttempt: (quiz.attempts as any[])[0] || null,
+        attemptCount: quiz._count.attempts,
+        createdAt: quiz.post.createdAt,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get quiz error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch quiz' });
+  }
+});
+
+// ========================================
+// Quiz Submission Endpoints
+// ========================================
+
+
 
 // POST /quizzes/:id/submit - Submit quiz answers
 router.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, res: Response) => {

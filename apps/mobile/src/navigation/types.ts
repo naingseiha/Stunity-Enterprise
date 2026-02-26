@@ -49,6 +49,8 @@ export type MainStackParamList = {
   ChallengeResult: { challenge: any };
   Achievements: undefined;
   Notifications: undefined;
+  Messages: NavigatorScreenParams<MessagesStackParamList>;
+  BrowseQuizzes: { category?: string; search?: string } | undefined;
 };
 
 // Auth Stack
@@ -65,7 +67,7 @@ export type AuthStackParamList = {
 export type MainTabParamList = {
   FeedTab: NavigatorScreenParams<FeedStackParamList>;
   LearnTab: NavigatorScreenParams<LearnStackParamList>;
-  MessagesTab: NavigatorScreenParams<MessagesStackParamList>;
+  QuizTab: NavigatorScreenParams<QuizStackParamList>;
   ClubsTab: NavigatorScreenParams<ClubsStackParamList>;
   ProfileTab: NavigatorScreenParams<ProfileStackParamList>;
 };
@@ -98,6 +100,12 @@ export type LearnStackParamList = {
   LearningPath: { pathId: string };
   MyCourses: undefined;
   MyCreatedCourses: undefined;
+};
+
+// Quiz Stack
+export type QuizStackParamList = {
+  QuizDashboard: undefined;
+  BrowseQuizzes: { category?: string; search?: string } | undefined;
 };
 
 // Messages Stack
@@ -157,6 +165,12 @@ export type FeedStackScreenProps<T extends keyof FeedStackParamList> =
 export type LearnStackScreenProps<T extends keyof LearnStackParamList> =
   CompositeScreenProps<
     NativeStackScreenProps<LearnStackParamList, T>,
+    MainTabScreenProps<keyof MainTabParamList>
+  >;
+
+export type QuizStackScreenProps<T extends keyof QuizStackParamList> =
+  CompositeScreenProps<
+    NativeStackScreenProps<QuizStackParamList, T>,
     MainTabScreenProps<keyof MainTabParamList>
   >;
 

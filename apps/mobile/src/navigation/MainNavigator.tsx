@@ -18,6 +18,7 @@ import {
   MainTabParamList,
   FeedStackParamList,
   LearnStackParamList,
+  QuizStackParamList,
   MessagesStackParamList,
   ProfileStackParamList,
 } from './types';
@@ -39,6 +40,8 @@ import {
   GradeSubmissionScreen,
 } from '@/screens/assignments';
 import { TakeQuizScreen, QuizResultsScreen } from '@/screens/quiz';
+import QuizDashboardScreen from '@/screens/quiz/QuizDashboardScreen';
+import BrowseQuizzesScreen from '@/screens/quiz/BrowseQuizzesScreen';
 import {
   LiveQuizJoinScreen,
   LiveQuizHostScreen,
@@ -92,13 +95,14 @@ type ExtendedMainStackParamList = MainStackParamList & {
 const MainStack = createNativeStackNavigator<ExtendedMainStackParamList>();
 const FeedStack = createNativeStackNavigator<FeedStackParamList>();
 const LearnStack = createNativeStackNavigator<LearnStackParamList>();
+const QuizStack = createNativeStackNavigator<QuizStackParamList>();
 const MessagesStack = createNativeStackNavigator<MessagesStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 
 // Clubs Stack
 const ClubsStack = createNativeStackNavigator();
 
-const ClubsStackNavigator: React.FC = () => (
+const ClubsStackNavigator = () => (
   <ClubsStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true }}>
     <ClubsStack.Screen name="ClubsList" component={ClubsScreen} />
     <ClubsStack.Screen name="ClubDetails" component={ClubDetailsScreen} />
@@ -112,7 +116,7 @@ const ClubsStackNavigator: React.FC = () => (
 );
 
 // Feed Stack Navigator
-const FeedStackNavigator: React.FC = () => (
+const FeedStackNavigator = () => (
   <FeedStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true }}>
     <FeedStack.Screen name="Feed" component={FeedScreen} />
     <FeedStack.Screen name="CreatePost" component={CreatePostScreen} />
@@ -130,7 +134,7 @@ const FeedStackNavigator: React.FC = () => (
 );
 
 // Learn Stack Navigator
-const LearnStackNavigator: React.FC = () => (
+const LearnStackNavigator = () => (
   <LearnStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true }}>
     <LearnStack.Screen name="LearnHub" component={LearnScreen} />
     <LearnStack.Screen name="CourseDetail" component={CourseDetailScreen} />
@@ -143,8 +147,15 @@ const LearnStackNavigator: React.FC = () => (
   </LearnStack.Navigator>
 );
 
+// Quiz Stack Navigator
+const QuizStackNavigator = () => (
+  <QuizStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true }}>
+    <QuizStack.Screen name="QuizDashboard" component={QuizDashboardScreen} />
+  </QuizStack.Navigator>
+);
+
 // Messages Stack Navigator
-const MessagesStackNavigator: React.FC = () => (
+const MessagesStackNavigator = () => (
   <MessagesStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true }}>
     <MessagesStack.Screen name="Conversations" component={ConversationsScreen} />
     <MessagesStack.Screen name="Chat" component={ChatScreen} />
@@ -154,7 +165,7 @@ const MessagesStackNavigator: React.FC = () => (
 );
 
 // Profile Stack Navigator
-const ProfileStackNavigator: React.FC = () => (
+const ProfileStackNavigator = () => (
   <ProfileStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true }}>
     <ProfileStack.Screen name="Profile" component={ProfileScreen} />
     <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} />
@@ -176,7 +187,7 @@ interface TabBarIconProps {
   size: number;
 }
 
-const MainNavigatorContent: React.FC = () => {
+const MainNavigatorContent = () => {
   const { sidebarVisible, closeSidebar } = useNavigationContext();
   const navigation = useNavigation<any>();
 
@@ -250,9 +261,9 @@ const MainNavigatorContent: React.FC = () => {
                 iconName = focused ? 'compass' : 'compass-outline';
                 iconSize = 28;
                 break;
-              case 'MessagesTab':
-                // Multiple chat bubbles for messages - cleaner look
-                iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
+              case 'QuizTab':
+                // Game controller for play/quizzes
+                iconName = focused ? 'game-controller' : 'game-controller-outline';
                 iconSize = 27;
                 break;
               case 'ClubsTab':
@@ -296,8 +307,8 @@ const MainNavigatorContent: React.FC = () => {
           component={LearnStackNavigator}
         />
         <Tab.Screen
-          name="MessagesTab"
-          component={MessagesStackNavigator}
+          name="QuizTab"
+          component={QuizStackNavigator}
         />
         <Tab.Screen
           name="ClubsTab"
@@ -319,13 +330,15 @@ const MainNavigatorContent: React.FC = () => {
   );
 };
 
-const MainNavigator: React.FC = () => {
+const MainNavigator = () => {
   return (
     <NavigationProvider>
       <MainStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true }}>
         <MainStack.Screen name="MainTabs" component={MainNavigatorContent} />
+        <MainStack.Screen name="Messages" component={MessagesStackNavigator} />
         <MainStack.Screen name="TakeQuiz" component={TakeQuizScreen} />
         <MainStack.Screen name="QuizResults" component={QuizResultsScreen} />
+        <MainStack.Screen name="BrowseQuizzes" component={BrowseQuizzesScreen} />
         <MainStack.Screen name="LiveQuizJoin" component={LiveQuizJoinScreen} />
         <MainStack.Screen name="LiveQuizHost" component={LiveQuizHostScreen} />
         <MainStack.Screen name="LiveQuizLobby" component={LiveQuizLobbyScreen} />

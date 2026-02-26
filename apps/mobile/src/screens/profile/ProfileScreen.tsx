@@ -360,10 +360,13 @@ export default function ProfileScreen() {
 
                   <View style={{ flex: 1 }} />
 
-                  {/* Settings & Camera — own profile only */}
+                  {/* Settings, Messages & Camera — own profile only */}
                   {isOwnProfile && (
                     <>
-                      <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.navigate('Settings' as any)}>
+                      <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.navigate('Messages' as any, { screen: 'Conversations' })}>
+                        <Ionicons name="chatbubbles-outline" size={20} color="#1a1a1a" />
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.headerCircleBtn, { marginLeft: 8 }]} onPress={() => navigation.navigate('Settings' as any)}>
                         <Ionicons name="settings-outline" size={20} color="#1a1a1a" />
                       </TouchableOpacity>
                       <TouchableOpacity style={[styles.headerCircleBtn, { marginLeft: 8 }]} onPress={handlePickCoverPhoto}>

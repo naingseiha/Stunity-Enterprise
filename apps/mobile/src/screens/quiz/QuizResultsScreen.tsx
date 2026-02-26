@@ -58,7 +58,7 @@ interface UserAnswer {
 }
 
 export function QuizResultsScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const route = useRoute();
   const {
     quiz,
@@ -138,7 +138,7 @@ export function QuizResultsScreen() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => navigation.goBack()}
+            onPress={() => navigation.popToTop()}
             style={styles.backButton}
           >
             <Ionicons name="close" size={24} color="#FFF" />
@@ -244,7 +244,7 @@ export function QuizResultsScreen() {
 
             <TouchableOpacity
               style={styles.secondaryButton}
-              onPress={() => navigation.goBack()}
+              onPress={() => navigation.popToTop()}
             >
               <Text style={styles.secondaryButtonText}>Back to Home</Text>
             </TouchableOpacity>
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    
+    borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
   statValue: {
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    
+    borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
   exploreLabel: {
@@ -439,10 +439,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     shadowColor: '#8B5CF6',
-    
-    shadowOpacity: 0.3,
-    
-    
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 8,
   },
   primaryButtonText: {
     color: '#FFF',
@@ -454,8 +454,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: 'center',
-    
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
   },
   secondaryButtonText: {
     color: '#FFF',
@@ -470,8 +470,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 14,
     padding: 16,
-    
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   questionHeader: {
     flexDirection: 'row',

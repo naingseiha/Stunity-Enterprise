@@ -60,7 +60,7 @@ interface UserAnswer {
 export function TakeQuizScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const quiz = route.params?.quiz as Quiz;
+  const quiz = (route.params as any)?.quiz as Quiz;
 
   const [questions, setQuestions] = useState<QuizQuestion[]>(quiz.questions || []);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -276,7 +276,7 @@ export function TakeQuizScreen() {
   if (showReviewScreen) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar barStyle="light-content" />
         <View style={styles.container}>
           {/* Review Header */}
           <View style={styles.header}>
@@ -804,9 +804,9 @@ export function TakeQuizScreen() {
                 <Text style={styles.loadingTitle}>Submitting Quiz...</Text>
                 <Text style={styles.loadingSubtitle}>Calculating your score</Text>
                 <View style={styles.loadingDots}>
-                  <View style={[styles.loadingDot, { animationDelay: '0ms' }]} />
-                  <View style={[styles.loadingDot, { animationDelay: '150ms' }]} />
-                  <View style={[styles.loadingDot, { animationDelay: '300ms' }]} />
+                  <View style={styles.loadingDot} />
+                  <View style={styles.loadingDot} />
+                  <View style={styles.loadingDot} />
                 </View>
               </RNAnimated.View>
             </LinearGradient>
@@ -820,20 +820,20 @@ export function TakeQuizScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#0F172A',
   },
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#0F172A',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(15,23,42,0.95)',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   backButton: {
     marginRight: 12,
@@ -847,40 +847,43 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: '#F8FAFC',
     flex: 1,
   },
   timer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EEF2FF',
+    backgroundColor: 'rgba(99,102,241,0.15)',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 14,
     gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(99,102,241,0.3)',
   },
   timerWarning: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: 'rgba(239,68,68,0.15)',
+    borderColor: 'rgba(239,68,68,0.3)',
   },
   timerText: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#6366F1',
+    color: '#A5B4FC',
   },
   timerTextWarning: {
-    color: '#EF4444',
+    color: '#FCA5A5',
   },
   progressContainer: {
     padding: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(15,23,42,0.95)',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   progressBarBg: {
     height: 6,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 3,
     overflow: 'hidden',
     marginBottom: 8,
@@ -888,26 +891,26 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#6366F1',
+    backgroundColor: '#8B5CF6',
     borderRadius: 3,
   },
   progressText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: 'rgba(255,255,255,0.45)',
     textAlign: 'center',
   },
   content: {
     flex: 1,
   },
   questionCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     margin: 16,
     marginBottom: 8,
     padding: 20,
-    borderRadius: 14,
-
-
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   questionHeader: {
     flexDirection: 'row',
@@ -923,18 +926,20 @@ const styles = StyleSheet.create({
   flagButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   questionNumber: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: 'rgba(139,92,246,0.18)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.3)',
   },
   questionNumberText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#6366F1',
+    color: '#C4B5FD',
   },
   questionPoints: {
     flexDirection: 'row',
@@ -944,13 +949,13 @@ const styles = StyleSheet.create({
   pointsText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0EA5E9',
+    color: '#38BDF8',
   },
   questionText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#111827',
-    lineHeight: 24,
+    color: '#F8FAFC',
+    lineHeight: 26,
     marginBottom: 20,
   },
   answerSection: {
@@ -962,54 +967,54 @@ const styles = StyleSheet.create({
   optionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 18,
-    backgroundColor: '#FFFFFF',
+    padding: 16,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 14,
-    borderWidth: 2,
-
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
     gap: 14,
-    minHeight: 64,
+    minHeight: 60,
   },
   optionButtonSelected: {
-    backgroundColor: '#EEF2FF',
-    borderColor: '#6366F1',
-
-
-
-
-
+    backgroundColor: 'rgba(139,92,246,0.18)',
+    borderColor: '#8B5CF6',
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
   optionLetter: {
-    width: 36,
-    height: 36,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   optionLetterSelected: {
-    backgroundColor: '#6366F1',
-    borderColor: '#6366F1',
+    backgroundColor: '#8B5CF6',
+    borderColor: '#8B5CF6',
   },
   optionLetterText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
-    color: '#6B7280',
+    color: 'rgba(255,255,255,0.5)',
   },
   optionLetterTextSelected: {
     color: '#FFFFFF',
   },
   optionText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
-    color: '#374151',
+    color: 'rgba(255,255,255,0.85)',
     flex: 1,
     lineHeight: 22,
   },
   optionTextSelected: {
-    color: '#1F2937',
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   trueFalseContainer: {
@@ -1022,52 +1027,54 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 2,
-
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
     gap: 8,
   },
   trueButtonSelected: {
-    backgroundColor: '#10B981',
+    backgroundColor: 'rgba(16,185,129,0.2)',
     borderColor: '#10B981',
   },
   falseButtonSelected: {
-    backgroundColor: '#EF4444',
+    backgroundColor: 'rgba(239,68,68,0.2)',
     borderColor: '#EF4444',
   },
   trueFalseText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#374151',
+    color: 'rgba(255,255,255,0.7)',
   },
   trueFalseTextSelected: {
     color: '#FFFFFF',
   },
   textInput: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-
-    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 14,
     padding: 16,
     fontSize: 15,
-    color: '#111827',
+    color: '#F8FAFC',
     minHeight: 120,
   },
   answerGrid: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255,255,255,0.04)',
     margin: 16,
     marginTop: 8,
-    padding: 20,
-    borderRadius: 16,
-
-
+    padding: 18,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
   },
   answerGridTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#111827',
+    color: 'rgba(255,255,255,0.55)',
     marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   gridContainer: {
     flexDirection: 'row',
@@ -1076,40 +1083,40 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   gridItem: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-
-
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   gridItemAnswered: {
-    backgroundColor: '#D1FAE5',
-    borderColor: '#10B981',
+    backgroundColor: 'rgba(16,185,129,0.2)',
+    borderColor: 'rgba(16,185,129,0.5)',
   },
   gridItemCurrent: {
-    backgroundColor: '#EEF2FF',
-    borderColor: '#6366F1',
+    backgroundColor: 'rgba(139,92,246,0.25)',
+    borderColor: '#8B5CF6',
     borderWidth: 2,
   },
   gridItemText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#9CA3AF',
+    color: 'rgba(255,255,255,0.35)',
   },
   gridItemTextAnswered: {
-    color: '#10B981',
+    color: '#34D399',
   },
   gridItemTextCurrent: {
-    color: '#6366F1',
+    color: '#C4B5FD',
     fontWeight: '700',
   },
   answeredCount: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#6B7280',
+    color: 'rgba(255,255,255,0.35)',
     textAlign: 'center',
   },
   footer: {
@@ -1117,9 +1124,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(15,23,42,0.98)',
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: 'rgba(255,255,255,0.08)',
     gap: 12,
   },
   footerLeft: {
@@ -1130,8 +1137,9 @@ const styles = StyleSheet.create({
   navButtonSmall: {
     padding: 12,
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#6366F1',
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.5)',
+    backgroundColor: 'rgba(139,92,246,0.1)',
   },
   navButton: {
     flexDirection: 'row',
@@ -1139,20 +1147,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#6366F1',
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.4)',
+    backgroundColor: 'rgba(139,92,246,0.1)',
     gap: 6,
   },
   navButtonDisabled: {
-
+    opacity: 0.35,
   },
   navButtonText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#6366F1',
+    color: '#A78BFA',
   },
   navButtonTextDisabled: {
-    color: '#D1D5DB',
+    color: 'rgba(255,255,255,0.2)',
   },
   reviewButton: {
     flexDirection: 'row',
@@ -1160,14 +1169,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#6366F1',
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.4)',
+    backgroundColor: 'rgba(139,92,246,0.1)',
     gap: 6,
   },
   reviewButtonText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#6366F1',
+    color: '#A78BFA',
   },
   reviewBadge: {
     backgroundColor: '#EF4444',
@@ -1187,10 +1197,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#6366F1',
+    backgroundColor: '#8B5CF6',
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     gap: 6,
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
   },
   nextButtonText: {
     fontSize: 15,
@@ -1202,10 +1217,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#10B981',
+    backgroundColor: '#059669',
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     gap: 6,
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 6,
   },
   submitButtonText: {
     fontSize: 15,
@@ -1214,17 +1234,17 @@ const styles = StyleSheet.create({
   },
   // Review Screen Styles
   reviewSummary: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     margin: 16,
     padding: 20,
-    borderRadius: 16,
-
-
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   reviewTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#111827',
+    color: '#F8FAFC',
     marginBottom: 16,
   },
   summaryGrid: {
@@ -1236,14 +1256,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   summaryNumber: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '800',
-    color: '#111827',
+    color: '#F8FAFC',
   },
   summaryLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#6B7280',
+    color: 'rgba(255,255,255,0.45)',
   },
   reviewList: {
     paddingHorizontal: 16,
@@ -1253,12 +1273,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     padding: 16,
-    borderRadius: 12,
-
-
-    marginBottom: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    marginBottom: 10,
   },
   reviewItemLeft: {
     flexDirection: 'row',
@@ -1268,25 +1288,25 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   reviewNumber: {
-    width: 36,
-    height: 36,
-    borderRadius: 14,
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   reviewNumberAnswered: {
-    backgroundColor: '#D1FAE5',
+    backgroundColor: 'rgba(16,185,129,0.2)',
   },
   reviewNumberUnanswered: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: 'rgba(239,68,68,0.18)',
   },
   reviewNumberText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#6B7280',
+    color: 'rgba(255,255,255,0.45)',
   },
   reviewNumberTextAnswered: {
-    color: '#10B981',
+    color: '#34D399',
   },
   reviewInfo: {
     flex: 1,
@@ -1294,13 +1314,13 @@ const styles = StyleSheet.create({
   reviewQuestionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: '#F8FAFC',
     marginBottom: 4,
   },
   reviewAnswerText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#6B7280',
+    color: 'rgba(255,255,255,0.45)',
   },
   reviewItemRight: {
     flexDirection: 'row',
@@ -1354,41 +1374,41 @@ const styles = StyleSheet.create({
   instructionText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#374151',
+    color: 'rgba(255,255,255,0.65)',
     marginBottom: 12,
   },
 
   // Ordering
   orderingContainer: {
-    gap: 12,
+    gap: 10,
   },
   orderingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     padding: 12,
     borderRadius: 12,
-
-
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
     gap: 12,
   },
   orderingNumber: {
     width: 28,
     height: 28,
-    borderRadius: 14,
-    backgroundColor: '#EEF2FF',
+    borderRadius: 10,
+    backgroundColor: 'rgba(139,92,246,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   orderingNumberText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#6366F1',
+    color: '#C4B5FD',
   },
   orderingText: {
     flex: 1,
     fontSize: 15,
-    color: '#111827',
+    color: '#F8FAFC',
   },
   orderingControls: {
     flexDirection: 'column',
@@ -1396,26 +1416,26 @@ const styles = StyleSheet.create({
   },
   orderBtn: {
     padding: 4,
-    borderRadius: 4,
-    backgroundColor: '#FFFFFF',
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   orderBtnDisabled: {
-    opacity: 0.5,
+    opacity: 0.3,
   },
 
   // Matching
   matchingContainer: {
-    gap: 16,
+    gap: 12,
   },
   matchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     padding: 12,
     borderRadius: 12,
-
-    borderColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   matchLeft: {
     flex: 1,
@@ -1423,7 +1443,7 @@ const styles = StyleSheet.create({
   matchText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: 'rgba(255,255,255,0.8)',
   },
   matchRight: {
     flex: 1.5,
@@ -1432,18 +1452,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-
-
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
     marginRight: 8,
   },
   matchChipSelected: {
-    backgroundColor: '#6366F1',
-    borderColor: '#6366F1',
+    backgroundColor: 'rgba(139,92,246,0.25)',
+    borderColor: '#8B5CF6',
   },
   matchChipText: {
     fontSize: 13,
-    color: '#4B5563',
+    color: 'rgba(255,255,255,0.6)',
     fontWeight: '500',
   },
   matchChipTextSelected: {
