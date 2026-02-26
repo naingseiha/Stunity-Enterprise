@@ -8,6 +8,12 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, LayoutAnimation } 
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, Layout } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { AIGenerateButton } from '@/components/ai/AIGenerateButton';
+import { AIPromptModal } from '@/components/ai/AIPromptModal';
+import { AILoadingOverlay } from '@/components/ai/AILoadingOverlay';
+import { AIResultPreview } from '@/components/ai/AIResultPreview';
+import type { AIPromptData } from '@/components/ai/AIPromptModal';
+import { aiService } from '@/services/ai.service';
 
 interface CourseFormProps {
   onDataChange: (data: CourseData) => void;
@@ -53,6 +59,51 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
   const [prerequisites, setPrerequisites] = useState<string[]>([]);
   const [prerequisiteInput, setPrerequisiteInput] = useState('');
   const [expandedSectionId, setExpandedSectionId] = useState<string | null>(syllabusSections[0].id);
+
+  // AI State
+  const [isAiModalVisible, setIsAiModalVisible] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiPreviewData, setAiPreviewData] = useState<any>(null);
+  const [lastPrompt, setLastPrompt] = useState<AIPromptData | null>(null);
+
+  const handleGenerateAI = async (data: AIPromptData) => {
+    setLastPrompt(data);
+    setIsAiLoading(true);
+    try {
+      const result = await aiService.generateCourseOutline(data.topic, data.gradeLevel, data.count);
+      setAiPreviewData(result || null);
+    } catch (error: any) {
+      alert(error.message || 'Failed to generate course outline');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleAcceptAI = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (aiPreviewData?.sections && Array.isArray(aiPreviewData.sections)) {
+      const mappedSections = aiPreviewData.sections.slice(0, 12).map((sec: any) => ({
+        id: Date.now().toString() + Math.random().toString(),
+        title: sec.title || `Week ${sec.week || ''}`,
+        description: sec.description || sec.topics?.join(', ') || '',
+      }));
+      setSyllabusSections(mappedSections);
+      if (mappedSections.length > 0) {
+        setExpandedSectionId(mappedSections[0].id);
+      }
+
+      // Auto-set duration if possible
+      if (aiPreviewData.summary && aiPreviewData.duration) {
+        // Find closest valid duration
+        const durationNum = parseInt(aiPreviewData.duration, 10);
+        if (!isNaN(durationNum)) {
+          const closest = [...DURATION_OPTIONS].sort((a, b) => Math.abs(a - durationNum) - Math.abs(b - durationNum))[0];
+          setDuration(closest);
+        }
+      }
+    }
+    setAiPreviewData(null);
+  };
 
   useEffect(() => {
     onDataChange({
@@ -203,13 +254,21 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
       {/* Syllabus Card */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: '#EEF2FF' }]}>
-            <Ionicons name="book" size={20} color="#6366F1" />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={[styles.iconContainer, { backgroundColor: '#EEF2FF' }]}>
+              <Ionicons name="book" size={20} color="#6366F1" />
+            </View>
+            <View>
+              <Text style={styles.cardTitle}>Syllabus</Text>
+              <Text style={styles.cardSubtitle}>{syllabusSections.length} sections added</Text>
+            </View>
           </View>
-          <View>
-            <Text style={styles.cardTitle}>Syllabus</Text>
-            <Text style={styles.cardSubtitle}>{syllabusSections.length} sections added</Text>
-          </View>
+          <AIGenerateButton
+            label="Outline"
+            size="small"
+            type="ghost"
+            onPress={() => setIsAiModalVisible(true)}
+          />
         </View>
 
         <View style={styles.sectionsList}>
@@ -335,6 +394,30 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
           </View>
         )}
       </View>
+
+      {/* AI Modals */}
+      <AIPromptModal
+        visible={isAiModalVisible}
+        onClose={() => setIsAiModalVisible(false)}
+        onGenerate={handleGenerateAI}
+        type="course"
+        title="Generate Course Outline"
+      />
+
+      <AIResultPreview
+        visible={!!aiPreviewData}
+        content={!!(aiPreviewData?.sections && Array.isArray(aiPreviewData.sections)) ? `Generated ${aiPreviewData.sections.length} syllabus sections:\n\n${aiPreviewData.sections.map((s: any, i: number) => `Week ${i + 1}: ${s.title}`).join('\n')}` : ''}
+        title="Course Outline Generated"
+        onAccept={handleAcceptAI}
+        onRegenerate={() => !!lastPrompt && handleGenerateAI(lastPrompt)}
+        onDiscard={() => setAiPreviewData(null)}
+        isRegenerating={isAiLoading}
+      />
+
+      <AILoadingOverlay
+        isVisible={!!(isAiLoading && !aiPreviewData)}
+        message="AI is structuring the course..."
+      />
     </View>
   );
 }

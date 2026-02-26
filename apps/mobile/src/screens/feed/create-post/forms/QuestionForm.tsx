@@ -4,10 +4,16 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, LayoutAnimation, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { AIGenerateButton } from '@/components/ai/AIGenerateButton';
+import { AIPromptModal } from '@/components/ai/AIPromptModal';
+import { AILoadingOverlay } from '@/components/ai/AILoadingOverlay';
+import { AIResultPreview } from '@/components/ai/AIResultPreview';
+import type { AIPromptData } from '@/components/ai/AIPromptModal';
+import { aiService } from '@/services/ai.service';
 
 interface QuestionFormProps {
   onDataChange: (data: QuestionData) => void;
@@ -40,9 +46,41 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
   const [tagInput, setTagInput] = useState('');
   const [expectedAnswerType, setExpectedAnswerType] = useState<QuestionData['expectedAnswerType']>('SHORT_ANSWER');
 
+  // AI State
+  const [isAiModalVisible, setIsAiModalVisible] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiPreviewData, setAiPreviewData] = useState<string | null>(null);
+  const [lastPrompt, setLastPrompt] = useState<AIPromptData | null>(null);
+
   useEffect(() => {
     onDataChange({ bounty, tags, expectedAnswerType });
   }, [bounty, tags, expectedAnswerType]);
+
+  const handleGenerateAI = async (data: AIPromptData) => {
+    setLastPrompt(data);
+    setIsAiLoading(true);
+    try {
+      // For questions, we "Enhance" the current topic or generate a new one
+      const result = await aiService.enhanceContent(data.topic, 'educational', 'question');
+      if (result && result.enhanced) {
+        setAiPreviewData(result.enhanced);
+      } else {
+        Alert.alert('AI Error', 'Failed to generate question');
+      }
+    } catch (error: any) {
+      Alert.alert('AI Error', error.message || 'Something went wrong');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleAcceptAI = () => {
+    if (aiPreviewData) {
+      // In a real scenario, we might want to update the parent's content
+      // But for QuestionForm, we just show it for now or we could emit an event
+      setAiPreviewData(null);
+    }
+  };
 
   const addTag = () => {
     const trimmed = tagInput.trim();
@@ -105,11 +143,11 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
               </View>
               <Text style={[
                 styles.bountyLabel,
-                bounty === option.value && styles.bountyLabelSelected
+                !!(bounty === option.value) && styles.bountyLabelSelected
               ]}>
                 {option.label}
               </Text>
-              {bounty === option.value && (
+              {!!(bounty === option.value) && (
                 <View style={styles.checkBadge}>
                   <Ionicons name="checkmark" size={12} color="#0EA5E9" />
                 </View>
@@ -129,6 +167,26 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
             <Text style={styles.cardTitle}>Topic Tags</Text>
             <Text style={styles.cardSubtitle}>{tags.length}/5 tags added</Text>
           </View>
+          <AIGenerateButton
+            label="Suggest Tags"
+            type="ghost"
+            size="small"
+            onPress={async () => {
+              if (tags.length >= 5) return;
+              setIsAiLoading(true);
+              try {
+                const result = await aiService.suggestTags("Question tags", tags);
+                if (result && result.tags) {
+                  const newTags = [...new Set([...tags, ...result.tags])].slice(0, 5);
+                  setTags(newTags);
+                }
+              } catch (e) {
+                console.error(e);
+              } finally {
+                setIsAiLoading(false);
+              }
+            }}
+          />
         </View>
 
         <View style={styles.tagInputWrapper}>
@@ -144,14 +202,14 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
             editable={tags.length < 5}
             returnKeyType="done"
           />
-          {tagInput.length > 0 && (
+          {!!(tagInput.length > 0) && (
             <TouchableOpacity onPress={addTag} style={styles.addTagButton}>
               <Ionicons name="arrow-up" size={16} color="#FFF" />
             </TouchableOpacity>
           )}
         </View>
 
-        {tags.length > 0 && (
+        {!!(tags.length > 0) && (
           <View style={styles.tagsContainer}>
             {tags.map((tag) => (
               <Animated.View
@@ -223,6 +281,30 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
           ))}
         </View>
       </View>
+
+      {/* AI Modals */}
+      <AIPromptModal
+        visible={isAiModalVisible}
+        onClose={() => setIsAiModalVisible(false)}
+        onGenerate={handleGenerateAI}
+        type="lesson"
+        title="Improve Question with AI"
+      />
+
+      <AIResultPreview
+        visible={!!aiPreviewData}
+        content={aiPreviewData || ''}
+        title="AI Suggestion"
+        onAccept={handleAcceptAI}
+        onRegenerate={() => !!lastPrompt && handleGenerateAI(lastPrompt)}
+        onDiscard={() => setAiPreviewData(null)}
+        isRegenerating={isAiLoading}
+      />
+
+      <AILoadingOverlay
+        isVisible={!!(isAiLoading && !aiPreviewData)}
+        message="AI is polishing your question..."
+      />
     </View>
   );
 }

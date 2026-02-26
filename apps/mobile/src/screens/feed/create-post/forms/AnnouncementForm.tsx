@@ -7,9 +7,16 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { AIGenerateButton } from '@/components/ai/AIGenerateButton';
+import { AIPromptModal } from '@/components/ai/AIPromptModal';
+import { AILoadingOverlay } from '@/components/ai/AILoadingOverlay';
+import { AIResultPreview } from '@/components/ai/AIResultPreview';
+import type { AIPromptData } from '@/components/ai/AIPromptModal';
+import { aiService } from '@/services/ai.service';
 
 interface AnnouncementFormProps {
   onDataChange: (data: AnnouncementData) => void;
+  onGenerated?: (title: string, content: string) => void;
 }
 
 export interface AnnouncementData {
@@ -72,12 +79,49 @@ const AUDIENCE_OPTIONS = [
   { value: 'SPECIFIC', label: 'Specific Group', desc: 'Invite selected people', icon: 'person-add', color: '#8B5CF6' },
 ];
 
-export function AnnouncementForm({ onDataChange }: AnnouncementFormProps) {
+export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementFormProps) {
   const [importance, setImportance] = useState<AnnouncementData['importance']>('INFO');
   const [pinToTop, setPinToTop] = useState(false);
   const [expiresIn, setExpiresIn] = useState<number | null>(null);
   const [targetAudience, setTargetAudience] = useState('EVERYONE');
   const [sendNotification, setSendNotification] = useState(true);
+
+  // AI State
+  const [isAiModalVisible, setIsAiModalVisible] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiPreviewData, setAiPreviewData] = useState<{ subject: string, body: string } | null>(null);
+  const [lastPrompt, setLastPrompt] = useState<AIPromptData | null>(null);
+
+  const handleGenerateAI = async (data: AIPromptData) => {
+    setLastPrompt(data);
+    setIsAiLoading(true);
+    try {
+      // For announcement, we map topic -> notes, gradeLevel -> urgency hint
+      const urgencyMap: Record<string, string> = {
+        'INFO': 'info',
+        'IMPORTANT': 'important',
+        'URGENT': 'urgent',
+        'CRITICAL': 'critical'
+      };
+      const mappedUrgency = urgencyMap[importance] || 'info';
+      const result = await aiService.generateAnnouncement(data.topic, undefined, mappedUrgency);
+      setAiPreviewData(result || null);
+    } catch (error: any) {
+      alert(error.message || 'Failed to draft announcement');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleAcceptAI = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (aiPreviewData?.subject && aiPreviewData?.body && onGenerated) {
+      onGenerated(aiPreviewData.subject, aiPreviewData.body);
+    } else if (!onGenerated) {
+      alert('Cannot apply text here. Please use the AI Assist button in the toolbar instead.');
+    }
+    setAiPreviewData(null);
+  };
 
   useEffect(() => {
     onDataChange({ importance, pinToTop, expiresIn });
@@ -90,13 +134,21 @@ export function AnnouncementForm({ onDataChange }: AnnouncementFormProps) {
       {/* Importance Level Card */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: selectedLevel.bgColor }]}>
-            <Ionicons name={selectedLevel.icon as any} size={20} color={selectedLevel.color} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={[styles.iconContainer, { backgroundColor: selectedLevel.bgColor }]}>
+              <Ionicons name={selectedLevel.icon as any} size={20} color={selectedLevel.color} />
+            </View>
+            <View>
+              <Text style={styles.cardTitle}>Importance Level</Text>
+              <Text style={styles.cardSubtitle}>Set the urgency of this announcement</Text>
+            </View>
           </View>
-          <View>
-            <Text style={styles.cardTitle}>Importance Level</Text>
-            <Text style={styles.cardSubtitle}>Set the urgency of this announcement</Text>
-          </View>
+          <AIGenerateButton
+            label="Draft"
+            size="small"
+            type="ghost"
+            onPress={() => setIsAiModalVisible(true)}
+          />
         </View>
 
         <View style={styles.importanceGrid}>
@@ -129,13 +181,13 @@ export function AnnouncementForm({ onDataChange }: AnnouncementFormProps) {
               <View>
                 <Text style={[
                   styles.importanceLabel,
-                  importance === level.type && { color: level.color, fontWeight: '700' }
+                  !!(importance === level.type) && { color: level.color, fontWeight: '700' }
                 ]}>
                   {level.label}
                 </Text>
                 <Text style={styles.importanceDesc}>{level.description}</Text>
               </View>
-              {importance === level.type && (
+              {!!(importance === level.type) && (
                 <View style={[styles.checkBadge, { borderColor: level.color }]}>
                   <Ionicons name="checkmark" size={10} color={level.color} />
                 </View>
@@ -205,7 +257,7 @@ export function AnnouncementForm({ onDataChange }: AnnouncementFormProps) {
               >
                 <Text style={[
                   styles.chipText,
-                  expiresIn === option.value && styles.chipTextSelected
+                  !!(expiresIn === option.value) && styles.chipTextSelected
                 ]}>{option.label}</Text>
               </TouchableOpacity>
             ))}
@@ -233,7 +285,7 @@ export function AnnouncementForm({ onDataChange }: AnnouncementFormProps) {
               Visible to everyone • {expiresIn ? `Expires in ${expiresIn}h` : 'No expiration'}
             </Text>
           </View>
-          {pinToTop && (
+          {!!pinToTop && (
             <View style={[styles.pinBadge, { backgroundColor: selectedLevel.color }]}>
               <Ionicons name="pin" size={10} color="#FFF" />
               <Text style={styles.pinText}>PINNED</Text>
@@ -265,7 +317,7 @@ export function AnnouncementForm({ onDataChange }: AnnouncementFormProps) {
                 }}
                 style={[
                   styles.audienceRow,
-                  isSelected && {
+                  !!isSelected && {
                     backgroundColor: opt.color + '10',
                     borderColor: opt.color,
                   },
@@ -281,13 +333,13 @@ export function AnnouncementForm({ onDataChange }: AnnouncementFormProps) {
                 <View style={styles.audienceInfo}>
                   <Text style={[
                     styles.audienceLabel,
-                    isSelected && { color: opt.color, fontWeight: '700' },
+                    !!isSelected && { color: opt.color, fontWeight: '700' },
                   ]}>
                     {opt.label}
                   </Text>
                   <Text style={styles.audienceHint}>{opt.desc}</Text>
                 </View>
-                {isSelected ? (
+                {!!isSelected ? (
                   <Ionicons name="checkmark-circle" size={20} color={opt.color} />
                 ) : (
                   <View style={styles.audienceRadio} />
@@ -315,6 +367,30 @@ export function AnnouncementForm({ onDataChange }: AnnouncementFormProps) {
           />
         </View>
       </View>
+
+      {/* AI Modals */}
+      <AIPromptModal
+        visible={isAiModalVisible}
+        onClose={() => setIsAiModalVisible(false)}
+        onGenerate={handleGenerateAI}
+        type="lesson" // generic topic prompt
+        title="Draft Announcement"
+      />
+
+      <AIResultPreview
+        visible={!!aiPreviewData}
+        content={aiPreviewData?.subject && aiPreviewData?.body ? `Subject: ${aiPreviewData.subject}\n\n${aiPreviewData.body}` : ''}
+        title="Announcement Drafted"
+        onAccept={handleAcceptAI}
+        onRegenerate={() => lastPrompt && handleGenerateAI(lastPrompt)}
+        onDiscard={() => setAiPreviewData(null)}
+        isRegenerating={isAiLoading}
+      />
+
+      <AILoadingOverlay
+        isVisible={!!(isAiLoading && !aiPreviewData)}
+        message="AI is drafting your announcement..."
+      />
     </View>
   );
 }

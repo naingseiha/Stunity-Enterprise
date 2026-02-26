@@ -9,6 +9,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { QuizQuestionInput, QuizQuestion, QuestionType } from '../components/QuizQuestionInput';
+import { AIGenerateButton } from '@/components/ai/AIGenerateButton';
+import { AIPromptModal } from '@/components/ai/AIPromptModal';
+import { AILoadingOverlay } from '@/components/ai/AILoadingOverlay';
+import { AIResultPreview } from '@/components/ai/AIResultPreview';
+import type { AIPromptData } from '@/components/ai/AIPromptModal';
+import { aiService } from '@/services/ai.service';
 
 if (Platform.OS === 'android') {
   if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -66,6 +72,34 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
     initialData?.questions?.[0]?.id || questions[0]?.id || null
   );
   const [isSettingsExpanded, setIsSettingsExpanded] = useState(true);
+
+  // AI State
+  const [isAiModalVisible, setIsAiModalVisible] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiPreviewData, setAiPreviewData] = useState<any[] | null>(null);
+  const [lastPrompt, setLastPrompt] = useState<AIPromptData | null>(null);
+
+  const handleGenerateAI = async (data: AIPromptData) => {
+    setLastPrompt(data);
+    setIsAiLoading(true);
+    try {
+      const result = await aiService.generateQuiz(data.topic, data.gradeLevel, data.count, data.difficulty);
+      setAiPreviewData(result || null);
+    } catch (error: any) {
+      alert(error.message || 'Failed to generate quiz');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleAcceptAI = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (aiPreviewData && Array.isArray(aiPreviewData)) {
+      setQuestions(aiPreviewData);
+      setExpandedQuestionId(aiPreviewData[0]?.id || null);
+    }
+    setAiPreviewData(null);
+  };
 
   useEffect(() => {
     const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
@@ -247,11 +281,18 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
       </View>
 
       {/* Questions Header */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Questions</Text>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{questions.length} Items</Text>
+      <View style={[styles.sectionHeader, { justifyContent: 'space-between' }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Text style={styles.sectionTitle}>Questions</Text>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{questions.length} Items</Text>
+          </View>
         </View>
+        <AIGenerateButton
+          label="AI Generate"
+          size="small"
+          onPress={() => setIsAiModalVisible(true)}
+        />
       </View>
 
       {/* Question List */}
@@ -279,6 +320,30 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
           </View>
         </TouchableOpacity>
       </View>
+
+      {/* AI Modals */}
+      <AIPromptModal
+        visible={isAiModalVisible}
+        onClose={() => setIsAiModalVisible(false)}
+        onGenerate={handleGenerateAI}
+        type="quiz"
+        title="Generate Quiz with AI"
+      />
+
+      <AIResultPreview
+        visible={!!aiPreviewData}
+        content={!!(aiPreviewData && Array.isArray(aiPreviewData)) ? `Generated ${aiPreviewData.length} questions:\n\n${aiPreviewData.map((q: any, i: number) => `${i + 1}. ${q.text}`).join('\n')}` : ''}
+        title="Quiz Generated"
+        onAccept={handleAcceptAI}
+        onRegenerate={() => !!lastPrompt && handleGenerateAI(lastPrompt)}
+        onDiscard={() => setAiPreviewData(null)}
+        isRegenerating={isAiLoading}
+      />
+
+      <AILoadingOverlay
+        isVisible={!!(isAiLoading && !aiPreviewData)}
+        message="AI is generating your quiz..."
+      />
 
     </View>
   );

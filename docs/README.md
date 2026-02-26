@@ -31,6 +31,7 @@ Reference these when working on a specific subsystem:
 | [`REALTIME_ARCHITECTURE.md`](./REALTIME_ARCHITECTURE.md) | Supabase Realtime + SSE patterns |
 | [`FEED_MEDIA_UPLOAD.md`](./FEED_MEDIA_UPLOAD.md) | R2 upload flow, image handling |
 | [`POLYGLOT_ARCHITECTURE_PLAN.md`](./POLYGLOT_ARCHITECTURE_PLAN.md) | Database architecture upgrade: Redis + pgvector + Typesense + TimescaleDB — phases, code, cost |
+| [`AI_INTEGRATION.md`](./AI_INTEGRATION.md) | **AI-assisted post creation** — Gemini setup, API endpoints, mobile components, per-post-type guide |
 
 ### School Management ↔ Social Integration
 | Doc | What it covers |

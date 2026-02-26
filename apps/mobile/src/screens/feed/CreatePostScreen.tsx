@@ -45,6 +45,8 @@ import { AnnouncementForm } from './create-post/forms/AnnouncementForm';
 import { CourseForm } from './create-post/forms/CourseForm';
 import { ProjectForm } from './create-post/forms/ProjectForm';
 import { VideoPlayer } from '@/components/common/VideoPlayer';
+import { AILoadingOverlay, AIResultPreview } from '@/components/ai';
+import { aiService } from '@/services/ai.service';
 
 // Post type options
 const POST_TYPES: { type: PostType; icon: string; label: string; color: string; gradient: [string, string] }[] = [
@@ -151,6 +153,55 @@ export default function CreatePostScreen() {
 
   // Project state
   const [projectData, setProjectData] = useState<any>(null);
+
+  // AI State
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiPreviewData, setAiPreviewData] = useState<{ enhanced: string; changes: string } | null>(null);
+
+  const handleEnhanceContent = async () => {
+    if (!content.trim()) {
+      Alert.alert('Empty Content', 'Write some text first for the AI to enhance.');
+      return;
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setIsAiLoading(true);
+    try {
+      const result = await aiService.enhanceContent(content, 'educational', postType.toLowerCase());
+      setAiPreviewData(result || null);
+    } catch (error: any) {
+      Alert.alert('AI Error', error.message || 'Failed to enhance content');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleAcceptEnhancedInfo = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (aiPreviewData?.enhanced) {
+      setContent(aiPreviewData.enhanced);
+    }
+    setAiPreviewData(null);
+  };
+
+  const handleSuggestTags = async () => {
+    if (!content.trim()) {
+      Alert.alert('Empty Content', 'Write something first to generate tags based on it.');
+      return;
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setIsAiLoading(true);
+    try {
+      const result = await aiService.suggestTags(content, topicTags);
+      if (result?.tags && result.tags.length > 0) {
+        setTopicTags(prev => [...new Set([...prev, ...result.tags])].slice(0, 5));
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (error: any) {
+      Alert.alert('AI Error', error.message || 'Failed to suggest tags');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
 
   // Tag helpers
   const addTag = useCallback((tag: string) => {
@@ -477,7 +528,7 @@ export default function CreatePostScreen() {
                     >
                       {typeObj.label}
                     </Text>
-                    {isActive && <View style={[styles.postTypeActiveIndicator, { backgroundColor: typeObj.color }]} />}
+                    {!!isActive && <View style={[styles.postTypeActiveIndicator, { backgroundColor: typeObj.color }]} />}
                   </TouchableOpacity>
                 );
               })}
@@ -641,7 +692,13 @@ export default function CreatePostScreen() {
 
             {/* Announcement Form (only for ANNOUNCEMENT type) */}
             {postType === 'ANNOUNCEMENT' && (
-              <AnnouncementForm onDataChange={setAnnouncementData} />
+              <AnnouncementForm
+                onDataChange={setAnnouncementData}
+                onGenerated={(title, body) => {
+                  setPostTitle(title);
+                  setContent(body);
+                }}
+              />
             )}
 
             {/* Course Form (only for COURSE type) */}
@@ -743,10 +800,21 @@ export default function CreatePostScreen() {
               <TouchableOpacity style={styles.mediaIconButton}>
                 <Ionicons name="document" size={24} color="#0EA5E9" />
               </TouchableOpacity>
+
+              <View style={{ width: 1, height: 24, backgroundColor: '#E5E7EB', marginHorizontal: 4 }} />
+
+              <TouchableOpacity
+                onPress={handleEnhanceContent}
+                style={styles.mediaIconButton}
+              >
+                <Ionicons name="sparkles" size={24} color="#F59E0B" />
+              </TouchableOpacity>
             </View>
 
-            {mediaUris.length > 0 ? (
-              <Text style={styles.mediaIndicatorText}>{mediaUris.length}/4</Text>
+            {!!(mediaUris.length > 0) ? (
+              <View style={styles.mediaIndicatorBadge}>
+                <Text style={styles.mediaIndicatorText}>{mediaUris.length}/4</Text>
+              </View>
             ) : (
               <View style={styles.mediaIndicatorEmpty} />
             )}
@@ -783,7 +851,7 @@ export default function CreatePostScreen() {
                 </TouchableOpacity>
               </View>
 
-              {topicTags.length > 0 && (
+              {!!(topicTags.length > 0) && (
                 <View style={styles.activeTagsRow}>
                   {topicTags.map((tag) => (
                     <TouchableOpacity key={tag} style={styles.activeTag} onPress={() => removeTag(tag)}>
@@ -794,10 +862,19 @@ export default function CreatePostScreen() {
                 </View>
               )}
 
-              {topicTags.length >= 5 && <Text style={styles.tagsCountLimitText}>Maximum 5 tags allowed.</Text>}
+              {!!(topicTags.length >= 5) && <Text style={styles.tagsCountLimitText}>Maximum 5 tags allowed.</Text>}
 
               <View style={{ marginTop: 24 }}>
-                <Text style={styles.suggestedTagsTitle}>Suggested Tags</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <Text style={styles.suggestedTagsTitle}>Suggested Tags</Text>
+                  <TouchableOpacity
+                    onPress={handleSuggestTags}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FEF3C7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}
+                  >
+                    <Ionicons name="sparkles" size={14} color="#D97706" />
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: '#D97706' }}>AI Suggest</Text>
+                  </TouchableOpacity>
+                </View>
                 <View style={styles.suggestedTagsGrid}>
                   {SUGGESTED_TAGS.filter(t => !topicTags.includes(t.toLowerCase())).slice(0, 10).map((tag) => (
                     <TouchableOpacity key={tag} style={styles.suggestedTag} onPress={() => addTag(tag)} disabled={topicTags.length >= 5}>
@@ -841,7 +918,7 @@ export default function CreatePostScreen() {
                       <Text style={[styles.modalOptionText, isSelected && { color: '#4F46E5', fontWeight: '600' }]}>{option.label}</Text>
                       <Text style={styles.modalOptionDescText}>{option.desc}</Text>
                     </View>
-                    {isSelected && <Ionicons name="checkmark-circle" size={24} color="#4F46E5" />}
+                    {!!isSelected && <Ionicons name="checkmark-circle" size={24} color="#4F46E5" />}
                   </TouchableOpacity>
                 );
               })}
@@ -877,7 +954,7 @@ export default function CreatePostScreen() {
                       <Ionicons name={level.icon as any} size={20} color={level.color} />
                     </View>
                     <Text style={[styles.modalOptionText, isSelected && { color: '#4F46E5', fontWeight: '600' }]}>{level.label}</Text>
-                    {isSelected && <Ionicons name="checkmark-circle" size={24} color="#4F46E5" />}
+                    {!!isSelected && <Ionicons name="checkmark-circle" size={24} color="#4F46E5" />}
                   </TouchableOpacity>
                 );
               })}
@@ -913,7 +990,7 @@ export default function CreatePostScreen() {
                       <Ionicons name="calendar-outline" size={20} color="#6B7280" />
                     </View>
                     <Text style={[styles.modalOptionText, isSelected && { color: '#4F46E5', fontWeight: '600' }]}>{opt.label}</Text>
-                    {isSelected && <Ionicons name="checkmark-circle" size={24} color="#4F46E5" />}
+                    {!!isSelected && <Ionicons name="checkmark-circle" size={24} color="#4F46E5" />}
                   </TouchableOpacity>
                 );
               })}
@@ -922,6 +999,20 @@ export default function CreatePostScreen() {
         </TouchableOpacity>
       </Modal>
 
+      <AIResultPreview
+        visible={!!aiPreviewData}
+        content={aiPreviewData?.enhanced ? `Enhanced Version:\n\n${aiPreviewData.enhanced}\n\nKey changes:\n${aiPreviewData.changes || 'N/A'}` : ''}
+        title="AI Enhancement Result"
+        onAccept={handleAcceptEnhancedInfo}
+        onRegenerate={handleEnhanceContent}
+        onDiscard={() => setAiPreviewData(null)}
+        isRegenerating={isAiLoading}
+      />
+
+      <AILoadingOverlay
+        isVisible={!!(isAiLoading && !aiPreviewData)}
+        message="AI is processing your content..."
+      />
     </SafeAreaView>
   );
 }
@@ -1429,15 +1520,17 @@ const styles = StyleSheet.create({
   mediaIconButton: {
     padding: 4,
   },
-  mediaIndicatorText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#4F46E5',
+  mediaIndicatorBadge: {
     backgroundColor: '#EEF2FF',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     overflow: 'hidden',
+  },
+  mediaIndicatorText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#4F46E5',
   },
   mediaIndicatorEmpty: {
     width: 20,

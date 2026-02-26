@@ -8,6 +8,12 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Layout
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, Layout } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { AIGenerateButton } from '@/components/ai/AIGenerateButton';
+import { AIPromptModal } from '@/components/ai/AIPromptModal';
+import { AILoadingOverlay } from '@/components/ai/AILoadingOverlay';
+import { AIResultPreview } from '@/components/ai/AIResultPreview';
+import type { AIPromptData } from '@/components/ai/AIPromptModal';
+import { aiService } from '@/services/ai.service';
 
 interface ProjectFormProps {
   onDataChange: (data: ProjectData) => void;
@@ -52,6 +58,47 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
   const [duration, setDuration] = useState(14);
   const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState('');
+
+  // AI State
+  const [isAiModalVisible, setIsAiModalVisible] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiPreviewData, setAiPreviewData] = useState<any>(null);
+  const [lastPrompt, setLastPrompt] = useState<AIPromptData | null>(null);
+
+  const handleGenerateAI = async (data: AIPromptData) => {
+    setLastPrompt(data);
+    setIsAiLoading(true);
+    try {
+      // The prompt actually wants projectTitle and description, but we only have topic from the generic modal
+      // We will map topic to projectTitle, and use gradeLevel as an extra hint for tone.
+      const result = await aiService.generateMilestones(data.topic, `A project. Level: ${data.gradeLevel}.`, data.count);
+      setAiPreviewData(result || null);
+    } catch (error: any) {
+      alert(error.message || 'Failed to generate milestones');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleAcceptAI = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (aiPreviewData?.milestones && Array.isArray(aiPreviewData.milestones)) {
+      const mappedMilestones = aiPreviewData.milestones.slice(0, 10).map((m: any) => ({
+        id: Date.now().toString() + Math.random().toString(),
+        title: m.title || m.name || m.description || 'Milestone',
+        dueInDays: m.durationDays || m.dueInDays || 7,
+      }));
+      setMilestones(mappedMilestones);
+
+      // Attempt to set total duration from sum of milestones
+      const totalDays = mappedMilestones.reduce((acc: number, m: any) => acc + (m.dueInDays || 0), 0);
+      if (totalDays > 0) {
+        const closest = [...DURATION_OPTIONS].sort((a, b) => Math.abs(a - totalDays) - Math.abs(b - totalDays))[0];
+        setDuration(closest);
+      }
+    }
+    setAiPreviewData(null);
+  };
 
   useEffect(() => {
     onDataChange({
@@ -191,13 +238,21 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
       {/* Milestones Card */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: '#EFF6FF' }]}>
-            <Ionicons name="flag" size={20} color="#3B82F6" />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={[styles.iconContainer, { backgroundColor: '#EFF6FF' }]}>
+              <Ionicons name="flag" size={20} color="#3B82F6" />
+            </View>
+            <View>
+              <Text style={styles.cardTitle}>Milestones</Text>
+              <Text style={styles.cardSubtitle}>Key project checkpoints</Text>
+            </View>
           </View>
-          <View>
-            <Text style={styles.cardTitle}>Milestones</Text>
-            <Text style={styles.cardSubtitle}>Key project checkpoints</Text>
-          </View>
+          <AIGenerateButton
+            label="Suggest"
+            size="small"
+            type="ghost"
+            onPress={() => setIsAiModalVisible(true)}
+          />
         </View>
 
         <View style={styles.milestonesList}>
@@ -418,6 +473,30 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
           </ScrollView>
         )}
       </View>
+
+      {/* AI Modals */}
+      <AIPromptModal
+        visible={isAiModalVisible}
+        onClose={() => setIsAiModalVisible(false)}
+        onGenerate={handleGenerateAI}
+        type="lesson" // Using lesson type to just ask for topic, no difficulty/count needed for project milestones usually, or we can use generic
+        title="Generate Milestones"
+      />
+
+      <AIResultPreview
+        visible={!!aiPreviewData}
+        content={!!(aiPreviewData?.milestones && Array.isArray(aiPreviewData.milestones)) ? `Suggested ${aiPreviewData.milestones.length} milestones:\n\n${aiPreviewData.milestones.map((m: any, i: number) => `${i + 1}. ${m.title} (${m.durationDays || m.dueInDays || 7} days)`).join('\n')}` : ''}
+        title="Milestones Generated"
+        onAccept={handleAcceptAI}
+        onRegenerate={() => !!lastPrompt && handleGenerateAI(lastPrompt)}
+        onDiscard={() => setAiPreviewData(null)}
+        isRegenerating={isAiLoading}
+      />
+
+      <AILoadingOverlay
+        isVisible={!!(isAiLoading && !aiPreviewData)}
+        message="AI is planning project phases..."
+      />
     </View>
   );
 }

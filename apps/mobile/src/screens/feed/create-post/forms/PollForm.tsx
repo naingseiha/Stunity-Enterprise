@@ -7,6 +7,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, LayoutAnimation, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { AIGenerateButton } from '@/components/ai/AIGenerateButton';
+import { AIPromptModal } from '@/components/ai/AIPromptModal';
+import { AILoadingOverlay } from '@/components/ai/AILoadingOverlay';
+import { AIResultPreview } from '@/components/ai/AIResultPreview';
+import type { AIPromptData } from '@/components/ai/AIPromptModal';
+import { aiService } from '@/services/ai.service';
 
 interface PollFormProps {
   options: string[];
@@ -51,6 +57,33 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
   // UI State
   const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);
 
+  // AI State
+  const [isAiModalVisible, setIsAiModalVisible] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiPreviewData, setAiPreviewData] = useState<{ question: string, options: string[] } | null>(null);
+  const [lastPrompt, setLastPrompt] = useState<AIPromptData | null>(null);
+
+  const handleGenerateAI = async (data: AIPromptData) => {
+    setLastPrompt(data);
+    setIsAiLoading(true);
+    try {
+      const result = await aiService.generatePollOptions(data.topic, data.count);
+      setAiPreviewData(result || null);
+    } catch (error: any) {
+      alert(error.message || 'Failed to generate poll options');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleAcceptAI = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (aiPreviewData && Array.isArray(aiPreviewData.options)) {
+      onOptionsChange(aiPreviewData.options.slice(0, 10));
+    }
+    setAiPreviewData(null);
+  };
+
   useEffect(() => {
     onDataChange({
       options,
@@ -93,17 +126,27 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
       {/* Poll Options Card */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: '#EEF2FF' }]}>
-            <Ionicons name="stats-chart" size={24} color="#6366F1" />
+          <View style={styles.cardHeaderLeft}>
+            <View style={[styles.iconContainer, { backgroundColor: '#EEF2FF' }]}>
+              <Ionicons name="stats-chart" size={24} color="#6366F1" />
+            </View>
+            <View>
+              <Text style={styles.cardTitle}>Poll Questions</Text>
+              <Text style={styles.cardSubtitle}>
+                Ask your community
+              </Text>
+            </View>
           </View>
-          <View>
-            <Text style={styles.cardTitle}>Poll Questions</Text>
-            <Text style={styles.cardSubtitle}>
-              Ask your community
-            </Text>
-          </View>
-          <View style={styles.badgeContainer}>
-            <Text style={styles.badgeText}>{options.length}/10</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={styles.badgeContainer}>
+              <Text style={styles.badgeText}>{options.length}/10</Text>
+            </View>
+            <AIGenerateButton
+              label="Suggest"
+              size="small"
+              type="ghost"
+              onPress={() => setIsAiModalVisible(true)}
+            />
           </View>
         </View>
 
@@ -275,6 +318,30 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
           </View>
         )}
       </View>
+
+      {/* AI Modals */}
+      <AIPromptModal
+        visible={isAiModalVisible}
+        onClose={() => setIsAiModalVisible(false)}
+        onGenerate={handleGenerateAI}
+        type="poll"
+        title="Suggest Poll Options"
+      />
+
+      <AIResultPreview
+        visible={!!aiPreviewData}
+        content={!!(aiPreviewData?.options && Array.isArray(aiPreviewData.options)) ? `Suggested question: ${aiPreviewData.question}\n\nOptions:\n${aiPreviewData.options.map((opt: any, i: number) => `${i + 1}. ${opt}`).join('\n')}` : ''}
+        title="Poll Options Generated"
+        onAccept={handleAcceptAI}
+        onRegenerate={() => !!lastPrompt && handleGenerateAI(lastPrompt)}
+        onDiscard={() => setAiPreviewData(null)}
+        isRegenerating={isAiLoading}
+      />
+
+      <AILoadingOverlay
+        isVisible={!!(isAiLoading && !aiPreviewData)}
+        message="AI is thinking of options..."
+      />
     </View>
   );
 }
