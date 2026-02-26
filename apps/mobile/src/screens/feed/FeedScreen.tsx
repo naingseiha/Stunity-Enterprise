@@ -71,25 +71,25 @@ const getGreeting = (): string => {
 type NavigationProp = FeedStackScreenProps<'Feed'>['navigation'];
 
 interface PerformanceCardProps {
-  stats: { currentStreak: number; totalPoints: number; completedLessons: number; level: number };
+  stats: { currentStreak: number; totalPoints: number; completedLessons: number; level: number; xpProgress: number; xpToNextLevel: number; avgScore: number; };
   user: { firstName: string; lastName: string; profilePictureUrl?: string } | null;
   onPress: () => void;
 }
 
 // ─── PerformanceCard ──────────────────────────────────────────────────────────
 const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPress }: PerformanceCardProps) {
-  const xpToNext = 250;
-  const xpProgress = stats.totalPoints % xpToNext;
-  const pct = Math.min((xpProgress / xpToNext) * 100, 100);
+  const xpToNext = stats.xpToNextLevel || 250;
+  const xpProgress = stats.xpProgress || 0;
+  const pct = xpToNext > 0 ? Math.min((xpProgress / xpToNext) * 100, 100) : 0;
   const nextLevel = stats.level + 1;
   const size = 128;
   const cx = size / 2;
   const cy = size / 2;
 
   const rings = [
-    { r: 55, sw: 10, pct: Math.min(xpProgress / xpToNext, 1), id: 'xp', c1: '#38BDF8', c2: '#0284C7' },
+    { r: 55, sw: 10, pct: xpToNext > 0 ? Math.min(xpProgress / xpToNext, 1) : 0, id: 'xp', c1: '#38BDF8', c2: '#0284C7' },
     { r: 42, sw: 8, pct: Math.min(stats.completedLessons / Math.max(stats.completedLessons + 5, 10), 1), id: 'lesson', c1: '#34D399', c2: '#059669' },
-    { r: 31, sw: 7, pct: Math.min(stats.currentStreak / 7, 1), id: 'streak', c1: '#FBBF24', c2: '#F97316' },
+    { r: 31, sw: 7, pct: Math.min(stats.avgScore / 100, 1), id: 'streak', c1: '#FBBF24', c2: '#F97316' },
   ];
 
   // XP bar fill
@@ -263,6 +263,9 @@ export default function FeedScreen() {
     totalPoints: 0,
     completedLessons: 0,
     level: 1,
+    xpProgress: 0,
+    xpToNextLevel: 250,
+    avgScore: 0,
   });
 
   // Refs for stable polling (avoid re-creating interval on every posts change)
@@ -298,6 +301,9 @@ export default function FeedScreen() {
               totalPoints: res.data.totalPoints || 0,
               completedLessons: res.data.completedLessons || 0,
               level: res.data.level || 1,
+              xpProgress: res.data.xpProgress || 0,
+              xpToNextLevel: res.data.xpToNextLevel || 250,
+              avgScore: res.data.avgScore || 0,
             });
             return;
           }
@@ -317,6 +323,9 @@ export default function FeedScreen() {
             totalPoints: stats?.totalPoints || 0,
             completedLessons: stats?.totalQuizzes || 0,
             level: stats?.level || 1,
+            xpProgress: stats?.xpProgress || 0,
+            xpToNextLevel: stats?.xpToNextLevel || 250,
+            avgScore: stats?.avgScore || 0,
           });
         }
       } catch (err) {
