@@ -25,7 +25,7 @@ import {
   Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -106,12 +106,13 @@ const VISIBILITY_OPTIONS = [
 
 export default function CreatePostScreen() {
   const navigation = useNavigation();
+  const route = useRoute<any>();
   const { user } = useAuthStore();
   const { createPost } = useFeedStore();
 
   const [content, setContent] = useState('');
   const [postTitle, setPostTitle] = useState('');
-  const [postType, setPostType] = useState<PostType>('ARTICLE');
+  const [postType, setPostType] = useState<PostType>(route.params?.initialPostType || 'ARTICLE');
   const [visibility, setVisibility] = useState('PUBLIC');
   const [mediaUris, setMediaUris] = useState<string[]>([]);
   const [isPosting, setIsPosting] = useState(false);

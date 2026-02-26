@@ -239,32 +239,43 @@ export const KingBanner = ({
 
 // --------------- Action Grid -------------------
 export const ActionGrid = ({
-    onJoin, onLeaderboard, onAchievements,
-}: { onJoin: () => void; onLeaderboard: () => void; onAchievements: () => void }) => {
+    onJoin, onLeaderboard, onAchievements, onCreate,
+}: { onJoin: () => void; onLeaderboard: () => void; onAchievements: () => void; onCreate: () => void }) => {
     return (
         <View style={styles.actionGridContainer}>
-            <ActionButton
-                title="Join Quiz"
-                icon="add-circle"
-                colors={['#7C3AED', '#9333EA']}
-                onPress={onJoin}
-                delay={360}
-                badge={3}
-            />
-            <ActionButton
-                title="Leaderboard"
-                icon="podium"
-                colors={['#065F46', '#059669']}
-                onPress={onLeaderboard}
-                delay={410}
-            />
-            <ActionButton
-                title="Achievements"
-                icon="ribbon"
-                colors={['#92400E', '#D97706']}
-                onPress={onAchievements}
-                delay={460}
-            />
+            <View style={styles.actionGridRow}>
+                <ActionButton
+                    title="Join Quiz"
+                    icon="add-circle"
+                    colors={['#7C3AED', '#9333EA']}
+                    onPress={onJoin}
+                    delay={360}
+                    badge={3}
+                />
+                <ActionButton
+                    title="Create Quiz"
+                    icon="color-wand"
+                    colors={['#EC4899', '#BE185D']}
+                    onPress={onCreate}
+                    delay={410}
+                />
+            </View>
+            <View style={styles.actionGridRow}>
+                <ActionButton
+                    title="Leaderboard"
+                    icon="podium"
+                    colors={['#065F46', '#059669']}
+                    onPress={onLeaderboard}
+                    delay={460}
+                />
+                <ActionButton
+                    title="Achievements"
+                    icon="ribbon"
+                    colors={['#92400E', '#D97706']}
+                    onPress={onAchievements}
+                    delay={510}
+                />
+            </View>
         </View>
     );
 };
@@ -781,9 +792,13 @@ const styles = StyleSheet.create({
 
     // Action Grid
     actionGridContainer: {
-        flexDirection: 'row',
+        flexDirection: 'column',
         paddingHorizontal: 12,
         marginBottom: 4,
+        gap: 8,
+    },
+    actionGridRow: {
+        flexDirection: 'row',
         gap: 8,
     },
     actionBtnWrap: {

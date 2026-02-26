@@ -166,6 +166,15 @@ export function QuizStudioScreen() {
                         <Ionicons name="folder-open-outline" size={64} color="rgba(255,255,255,0.2)" />
                         <Text style={styles.emptyTitle}>No Quizzes Yet</Text>
                         <Text style={styles.emptyDesc}>Create a quiz in a post to see it appear here in your studio.</Text>
+
+                        <TouchableOpacity
+                            style={styles.emptyCreateBtn}
+                            onPress={() => navigation.navigate('CreatePost', { initialPostType: 'QUIZ' })}
+                            activeOpacity={0.8}
+                        >
+                            <Ionicons name="add-circle" size={20} color="#FFF" />
+                            <Text style={styles.emptyCreateBtnText}>Create Quiz</Text>
+                        </TouchableOpacity>
                     </View>
                 ) : (
                     <FlatList
@@ -177,6 +186,15 @@ export function QuizStudioScreen() {
                     />
                 )}
             </View>
+
+            {/* Create Quiz FAB */}
+            <TouchableOpacity
+                style={styles.fab}
+                onPress={() => navigation.navigate('CreatePost', { initialPostType: 'QUIZ' })}
+                activeOpacity={0.8}
+            >
+                <Ionicons name="add" size={32} color="#FFF" />
+            </TouchableOpacity>
         </SafeAreaView>
     );
 }
@@ -368,5 +386,36 @@ const styles = StyleSheet.create({
         color: 'rgba(255,255,255,0.5)',
         textAlign: 'center',
         lineHeight: 22,
+    },
+    emptyCreateBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#7C3AED',
+        paddingHorizontal: 20,
+        paddingVertical: 14,
+        borderRadius: 16,
+        marginTop: 24,
+        gap: 8,
+    },
+    emptyCreateBtnText: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    fab: {
+        position: 'absolute',
+        bottom: 24,
+        right: 24,
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: '#EC4899',
+        alignItems: 'center',
+        justifyContent: 'center',
+        elevation: 8,
+        shadowColor: '#EC4899',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.35,
+        shadowRadius: 8,
     },
 });

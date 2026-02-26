@@ -16,7 +16,7 @@ export type RootStackParamList = {
   Auth: NavigatorScreenParams<AuthStackParamList>;
   Main: NavigatorScreenParams<MainTabParamList>;
   // Modal screens
-  CreatePost: undefined;
+  CreatePost: { initialPostType?: string } | undefined;
   EditPost: { post: Post };
   CreateStory: undefined;
   PostDetail: { postId: string };
@@ -76,7 +76,7 @@ export type MainTabParamList = {
 // Feed Stack
 export type FeedStackParamList = {
   Feed: undefined;
-  CreatePost: undefined;
+  CreatePost: { initialPostType?: string } | undefined;
   EditPost: { post: Post };
   PostDetail: { postId: string };
   Comments: { postId: string };
