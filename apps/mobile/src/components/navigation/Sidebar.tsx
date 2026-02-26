@@ -48,13 +48,12 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
 
   const menuItems: MenuItem[] = [
     {
-      key: 'notifications',
-      label: 'Notifications',
-      icon: 'notifications',
-      iconColor: '#0EA5E9',
-      iconBg: '#E0F2FE',
-      badge: 5,
-      onPress: () => { onNavigate('Notifications'); onClose(); },
+      key: 'leaderboard',
+      label: 'Leaderboard',
+      icon: 'podium',
+      iconColor: '#8B5CF6',
+      iconBg: '#EDE9FE',
+      onPress: () => { onNavigate('Leaderboard'); onClose(); },
     },
     {
       key: 'events',
