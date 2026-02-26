@@ -169,6 +169,57 @@ router.get('/quizzes/daily', authenticateToken, async (req: AuthRequest, res: Re
   }
 });
 
+// GET /quizzes/my-created — Get current user's authored quizzes (Quiz Studio)
+router.get('/quizzes/my-created', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+
+    // Find all quizzes attached to posts authored by the user
+    const quizzes = await prisma.quiz.findMany({
+      where: {
+        post: {
+          authorId: userId,
+          postType: 'QUIZ'
+        }
+      },
+      include: {
+        post: {
+          select: {
+            id: true,
+            title: true,
+            content: true,
+            topicTags: true,
+            createdAt: true,
+          }
+        },
+        _count: {
+          select: { attempts: true }
+        }
+      },
+      orderBy: { post: { createdAt: 'desc' } }
+    });
+
+    const data = quizzes.map(q => ({
+      id: q.id,
+      postId: q.post.id,
+      title: q.post.title || 'Untitled Quiz',
+      description: q.post.content,
+      topicTags: q.post.topicTags,
+      questions: q.questions as any[],
+      timeLimit: q.timeLimit,
+      passingScore: q.passingScore,
+      totalPoints: q.totalPoints,
+      attemptCount: q._count.attempts,
+      createdAt: q.post.createdAt,
+    }));
+
+    res.json({ success: true, data });
+  } catch (error: any) {
+    console.error('My created quizzes error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch your created quizzes' });
+  }
+});
+
 // GET /quizzes/:id — Single quiz detail with user attempt status
 router.get('/quizzes/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {

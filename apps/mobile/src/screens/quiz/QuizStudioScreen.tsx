@@ -16,11 +16,14 @@ import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { quizService, QuizItem } from '@/services/quiz';
 import { liveQuizService } from '@/services/liveQuiz';
+import { useFeedStore } from '@/stores';
+import { Alert } from 'react-native';
 
 const BACKGROUND_COLOR = '#0F172A';
 
 export function QuizStudioScreen() {
     const navigation = useNavigation<any>();
+    const { deletePost } = useFeedStore();
     const [quizzes, setQuizzes] = useState<QuizItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -60,6 +63,50 @@ export function QuizStudioScreen() {
             console.error('Failed to start live session:', e);
             // Alert could be added here
         }
+    };
+
+    const handleEdit = (item: QuizItem) => {
+        // Construct a partial Post object that EditPostScreen expects for a quiz
+        const mockPost = {
+            id: item.postId,
+            postId: item.postId,
+            title: item.title,
+            content: item.description || '',
+            postType: 'QUIZ',
+            visibility: 'PUBLIC',
+            quizData: {
+                id: item.id,
+                questions: item.questions,
+                timeLimit: item.timeLimit,
+                passingScore: item.passingScore,
+                totalPoints: item.totalPoints,
+            }
+        };
+        navigation.navigate('EditPost', { post: mockPost });
+    };
+
+    const handleDelete = (item: QuizItem) => {
+        Alert.alert(
+            'Delete Quiz',
+            `Are you sure you want to delete "${item.title}"? This will also remove the associated post and cannot be undone.`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            // Deleting the associated feed post deletes the quiz in the backend
+                            await deletePost(item.postId!);
+                            // Remove from local list to reflect instantly without reloading
+                            setQuizzes(prev => prev.filter(q => q.id !== item.id));
+                        } catch (error) {
+                            Alert.alert('Error', 'Failed to delete quiz.');
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     const renderQuizItem = ({ item, index }: { item: QuizItem; index: number }) => {
@@ -102,9 +149,14 @@ export function QuizStudioScreen() {
                     </View>
 
                     <View style={styles.actionRow}>
-                        <TouchableOpacity style={styles.editBtn}>
+                        <TouchableOpacity style={styles.editBtn} onPress={() => handleEdit(item)}>
                             <Ionicons name="pencil" size={16} color="#FFF" />
                             <Text style={styles.editBtnText}>Edit</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={[styles.editBtn, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]} onPress={() => handleDelete(item)}>
+                            <Ionicons name="trash" size={16} color="#EF4444" />
+                            <Text style={[styles.editBtnText, { color: '#EF4444' }]}>Delete</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
