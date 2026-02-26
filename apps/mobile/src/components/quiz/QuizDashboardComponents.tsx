@@ -239,8 +239,8 @@ export const KingBanner = ({
 
 // --------------- Action Grid -------------------
 export const ActionGrid = ({
-    onJoin, onLeaderboard, onAchievements, onCreate,
-}: { onJoin: () => void; onLeaderboard: () => void; onAchievements: () => void; onCreate: () => void }) => {
+    onJoin, onLeaderboard, onAchievements, onCreate, onManage
+}: { onJoin: () => void; onLeaderboard: () => void; onAchievements: () => void; onCreate: () => void; onManage: () => void }) => {
     return (
         <View style={styles.actionGridContainer}>
             <View style={styles.actionGridRow}>
@@ -276,6 +276,33 @@ export const ActionGrid = ({
                     delay={510}
                 />
             </View>
+
+            {/* Manage Quizzes Full-Width Button */}
+            <Animated.View entering={FadeInDown.delay(560).duration(500).springify()}>
+                <TouchableOpacity
+                    style={styles.manageBtnContainer}
+                    activeOpacity={0.8}
+                    onPress={onManage}
+                >
+                    <LinearGradient
+                        colors={['#1E293B', '#0F172A']}
+                        style={styles.manageBtnGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                    >
+                        <View style={styles.manageBtnContent}>
+                            <View style={styles.manageBtnIcon}>
+                                <Ionicons name="folder-open" size={20} color="#38BDF8" />
+                            </View>
+                            <View style={styles.manageBtnTextWrap}>
+                                <Text style={styles.manageBtnTitle}>Manage Quizzes</Text>
+                                <Text style={styles.manageBtnDesc}>Edit or delete your created quizzes in Studio</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.3)" />
+                        </View>
+                    </LinearGradient>
+                </TouchableOpacity>
+            </Animated.View>
         </View>
     );
 };
@@ -1065,6 +1092,42 @@ const styles = StyleSheet.create({
         borderRadius: 11,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    manageBtnContainer: {
+        marginTop: 12,
+        borderRadius: 16,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
+    },
+    manageBtnGradient: {
+        padding: 16,
+    },
+    manageBtnContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    manageBtnIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: 'rgba(56, 189, 248, 0.1)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    manageBtnTextWrap: {
+        flex: 1,
+    },
+    manageBtnTitle: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#F8FAFC',
+        marginBottom: 2,
+    },
+    manageBtnDesc: {
+        fontSize: 12,
+        color: '#94A3B8',
     },
 });
 

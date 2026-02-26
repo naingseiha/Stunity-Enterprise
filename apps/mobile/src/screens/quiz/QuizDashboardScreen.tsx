@@ -140,6 +140,7 @@ export default function QuizDashboardScreen() {
                     <ActionGrid
                         onJoin={() => navigation.navigate('LiveQuizJoin')}
                         onCreate={() => navigation.navigate('CreatePost', { initialPostType: 'QUIZ' })}
+                        onManage={() => navigation.navigate('QuizStudio')}
                         onLeaderboard={() => navigation.navigate('Leaderboard')}
                         onAchievements={() => navigation.navigate('Achievements')}
                     />
