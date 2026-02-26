@@ -106,9 +106,11 @@ function ContributionGrid({ streak, recentAttempts }: { streak: Streak | null; r
 }
 
 const gridStyles = StyleSheet.create({
-    container: { backgroundColor: '#fff', 
- 
- borderRadius: 14, padding: 20, shadowColor: '#000',    elevation: 1 },
+    container: {
+        backgroundColor: '#fff',
+
+        borderRadius: 14, padding: 20, shadowColor: '#000', elevation: 1
+    },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
     title: { fontSize: 16, fontWeight: '700', color: '#1F2937' },
     subtitle: { fontSize: 12, color: '#9CA3AF', fontWeight: '500' },
@@ -214,7 +216,7 @@ function ActivityTimeline({ items }: { items: TimelineItem[] }) {
                         <View style={[timelineStyles.dot, { backgroundColor: item.color }]}>
                             <Ionicons name={item.icon as any} size={12} color="#fff" />
                         </View>
-                        {i < items.length - 1 && <View style={timelineStyles.line} />}
+                        {!!(i < items.length - 1) && <View style={timelineStyles.line} />}
                     </View>
                     <View style={timelineStyles.content}>
                         <Text style={timelineStyles.itemTitle}>{item.title}</Text>
@@ -228,9 +230,11 @@ function ActivityTimeline({ items }: { items: TimelineItem[] }) {
 }
 
 const timelineStyles = StyleSheet.create({
-    container: { backgroundColor: '#fff', 
- 
- borderRadius: 14, padding: 20, shadowColor: '#000',    elevation: 1 },
+    container: {
+        backgroundColor: '#fff',
+
+        borderRadius: 14, padding: 20, shadowColor: '#000', elevation: 1
+    },
     header: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 },
     headerIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
     title: { fontSize: 16, fontWeight: '700', color: '#1F2937' },
@@ -288,9 +292,11 @@ function EngagementGrid({ stats, posts, followers }: { stats: UserStats | null; 
 }
 
 const engStyles = StyleSheet.create({
-    container: { backgroundColor: '#fff', 
- 
- borderRadius: 14, padding: 20, shadowColor: '#000',    elevation: 1 },
+    container: {
+        backgroundColor: '#fff',
+
+        borderRadius: 14, padding: 20, shadowColor: '#000', elevation: 1
+    },
     header: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
     headerIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
     title: { fontSize: 16, fontWeight: '700', color: '#1F2937' },

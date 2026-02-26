@@ -25,7 +25,7 @@ start_web() {
 # Kill all existing processes
 echo ""
 echo "🛑 Stopping any running services..."
-for port in 3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014; do
+for port in 3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014 3020; do
   pid=$(lsof -ti:$port 2>/dev/null)
   if [ ! -z "$pid" ]; then
     kill -9 $pid 2>/dev/null && echo "  Killed process on port $port"
@@ -79,6 +79,9 @@ sleep 2
 start_service "services/analytics-service" 3014 "analytics.log" "Analytics Service"
 sleep 2
 
+start_service "services/ai-service" 3020 "ai.log" "AI Service"
+sleep 2
+
 start_web
 sleep 5
 
@@ -89,7 +92,7 @@ echo "Checking status..."
 sleep 3
 
 # Check which services are running
-for port in 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014 3000; do
+for port in 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014 3020 3000; do
   if lsof -ti:$port > /dev/null 2>&1; then
     echo "  ✅ Port $port: Running"
   else
@@ -105,6 +108,7 @@ echo "💬 Messaging Service: http://localhost:3011"
 echo "🎓 Club Service: http://localhost:3012"
 echo "🔔 Notification Service: http://localhost:3013"
 echo "📊 Analytics Service: http://localhost:3014"
+echo "🤖 AI Service: http://localhost:3020"
 echo "📝 Logs in: /tmp/*.log"
 echo ""
 echo "🔑 Login: john.doe@testhighschool.edu / SecurePass123!"

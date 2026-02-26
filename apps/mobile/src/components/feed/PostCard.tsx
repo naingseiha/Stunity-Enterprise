@@ -599,7 +599,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
     <View style={styles.container}>
 
       {/* Repost Label */}
-      {post.repostOfId && (
+      {!!post.repostOfId && (
         <View style={styles.repostLabel}>
           <Ionicons name="repeat" size={14} color="#6B7280" />
           <Text style={styles.repostLabelText}>{authorName} reposted</Text>

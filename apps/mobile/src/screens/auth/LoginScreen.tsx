@@ -215,7 +215,7 @@ export default function LoginScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={[styles.checkbox, rememberMe && styles.checkboxActive]}>
-                    {rememberMe && <Ionicons name="checkmark" size={12} color="#fff" />}
+                    {!!rememberMe && <Ionicons name="checkmark" size={12} color="#fff" />}
                   </View>
                   <Text style={styles.rememberText}>Remember me</Text>
                 </TouchableOpacity>

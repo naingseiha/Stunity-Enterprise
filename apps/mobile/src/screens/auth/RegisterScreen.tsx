@@ -465,7 +465,7 @@ export default function RegisterScreen() {
                 <Text style={[s.roleLabel, role === r.value && { color: r.color }]}>{r.label}</Text>
                 <Text style={s.roleDescription}>{r.description}</Text>
               </View>
-              {role === r.value && (
+              {!!(role === r.value) && (
                 <Animated.View entering={ZoomIn.duration(300)}>
                   <Ionicons name="checkmark-circle" size={24} color={r.color} />
                 </Animated.View>
@@ -552,8 +552,8 @@ export default function RegisterScreen() {
             style={s.checkRow}
             activeOpacity={0.7}
           >
-            <View style={[s.checkbox, item.state && s.checkboxChecked]}>
-              {item.state && <Ionicons name="checkmark" size={12} color="#fff" />}
+            <View style={[s.checkbox, !!item.state && s.checkboxChecked]}>
+              {!!item.state && <Ionicons name="checkmark" size={12} color="#fff" />}
             </View>
             <Text style={s.checkText}>
               I agree to the <Text style={s.checkLink}>{item.label}</Text>
@@ -565,8 +565,8 @@ export default function RegisterScreen() {
           style={s.checkRow}
           activeOpacity={0.7}
         >
-          <View style={[s.checkbox, acceptCompliance && s.checkboxChecked]}>
-            {acceptCompliance && <Ionicons name="checkmark" size={12} color="#fff" />}
+          <View style={[s.checkbox, !!acceptCompliance && s.checkboxChecked]}>
+            {!!acceptCompliance && <Ionicons name="checkmark" size={12} color="#fff" />}
           </View>
           <Text style={s.checkText}>
             I acknowledge data processing per <Text style={s.checkLink}>FERPA</Text> and <Text style={s.checkLink}>GDPR</Text>
@@ -702,10 +702,10 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    
+
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    
+
   },
   headerTitle: {
     fontSize: 18,
@@ -833,10 +833,10 @@ const s = StyleSheet.create({
     borderColor: '#E2E8F0',
     backgroundColor: '#fff',
     shadowColor: '#000',
-    
+
     shadowOpacity: 0.04,
-    
-    
+
+
   },
   roleIcon: {
     width: 50,
@@ -932,7 +932,7 @@ const s = StyleSheet.create({
     shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
-    
+
     elevation: 4,
   },
   validateBtnText: {

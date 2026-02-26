@@ -107,7 +107,7 @@ export const StreakCard = ({ streak = 7, longestStreak = 14 }: { streak?: number
                         return (
                             <View key={i} style={styles.streakDayWrap}>
                                 <View style={[styles.streakDot, isActive && styles.streakDotActive]}>
-                                    {isActive && <Ionicons name="checkmark" size={9} color="#FFF" />}
+                                    {!!isActive && <Ionicons name="checkmark" size={9} color="#FFF" />}
                                 </View>
                                 <Text style={[styles.streakDayLabel, isActive && styles.streakDayLabelActive]}>{d}</Text>
                             </View>

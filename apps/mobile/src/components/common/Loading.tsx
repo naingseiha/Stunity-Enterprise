@@ -34,7 +34,7 @@ export const Loading: React.FC<LoadingProps> = ({
   const content = (
     <View style={styles.content}>
       <ActivityIndicator size={size} color={color} />
-      {message && <Text style={styles.message}>{message}</Text>}
+      {!!message && <Text style={styles.message}>{message}</Text>}
     </View>
   );
 

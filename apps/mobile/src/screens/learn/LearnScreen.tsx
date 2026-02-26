@@ -253,7 +253,7 @@ export default function LearnScreen() {
                 </TouchableOpacity>
               ))}
               {/* Fill empty slot if row has only 1 item */}
-              {row.length === 1 && <View style={styles.subjectCardPlaceholder} />}
+              {!!(row.length === 1) && <View style={styles.subjectCardPlaceholder} />}
             </View>
           ))}
         </View>

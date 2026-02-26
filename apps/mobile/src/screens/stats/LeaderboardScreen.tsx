@@ -140,7 +140,7 @@ export function LeaderboardScreen() {
                     <View style={styles.userInfo}>
                         <View style={styles.nameRow}>
                             <Text style={styles.listName} numberOfLines={1}>{item.firstName} {item.lastName}</Text>
-                            {item.isVerified && <Ionicons name="checkmark-circle" size={14} color="#3B82F6" style={{ marginLeft: 4 }} />}
+                            {!!item.isVerified && <Ionicons name="checkmark-circle" size={14} color="#3B82F6" style={{ marginLeft: 4 }} />}
                         </View>
                         <View style={styles.levelRow}>
                             <Ionicons name="school-outline" size={12} color="#6B7280" />

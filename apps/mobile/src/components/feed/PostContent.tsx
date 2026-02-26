@@ -95,7 +95,7 @@ const PostContent = ({
       </TouchableOpacity>
 
       {/* Embedded Repost Card */}
-      {post.repostOfId && post.repostOf && (
+      {!!post.repostOfId && !!post.repostOf && (
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => navigate?.('PostDetail', { postId: post.repostOf!.id })}
@@ -119,7 +119,7 @@ const PostContent = ({
               <Text style={styles.repostEmbedTime}>{formatRelativeTime(post.repostOf.createdAt)}</Text>
             </View>
           </View>
-          {post.repostOf.title && (
+          {!!post.repostOf.title && (
             <Text style={styles.repostEmbedTitle} numberOfLines={1}>{post.repostOf.title}</Text>
           )}
           <Text style={styles.repostEmbedContent} numberOfLines={3}>{post.repostOf.content}</Text>
@@ -232,7 +232,7 @@ const PostContent = ({
       )}
 
       {/* Generic CTA Button (Courses, Projects, Events, Assignments) */}
-      {!post.quizData && post.postType !== 'POLL' && post.postType !== 'QUESTION' && post.postType !== 'CLUB_ANNOUNCEMENT' && typeConfig.ctaLabel && (
+      {!post.quizData && post.postType !== 'POLL' && post.postType !== 'QUESTION' && post.postType !== 'CLUB_ANNOUNCEMENT' && !!typeConfig.ctaLabel && (
         <View style={styles.genericCtaContainer}>
           <TouchableOpacity activeOpacity={0.8} onPress={onPress}>
             <View style={[styles.genericCtaButton, { backgroundColor: typeConfig.color + '15' }]}>

@@ -67,13 +67,13 @@ export default function SubjectFilters({
               style={styles.categoryItem}
             >
               <LinearGradient
-                  colors={subject.gradient}
-                  style={[styles.iconBox, isActive && styles.iconBoxActive]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <Ionicons name={subject.icon} size={20} color="#fff" />
-                </LinearGradient>
+                colors={subject.gradient}
+                style={[styles.iconBox, isActive && styles.iconBoxActive]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Ionicons name={subject.icon} size={20} color="#fff" />
+              </LinearGradient>
               <Text
                 style={[
                   styles.categoryLabel,
@@ -83,7 +83,7 @@ export default function SubjectFilters({
               >
                 {subject.label}
               </Text>
-              {isActive && <View style={[styles.activeDot, { backgroundColor: subject.color }]} />}
+              {!!isActive && <View style={[styles.activeDot, { backgroundColor: subject.color }]} />}
             </TouchableOpacity>
           );
         })}

@@ -75,8 +75,8 @@ export const Input = forwardRef<TextInput, InputProps>(
     const borderColor = focusAnimation.interpolate({
       inputRange: [0, 1],
       outputRange: [
-        error ? '#EF4444' : '#D1D5DB', // Colors.error.main : Colors.gray[300]
-        error ? '#EF4444' : '#0EA5E9', // Colors.error.main : Colors.primary[500]
+        error ? Colors.error : Colors.gray[300],
+        error ? Colors.error : Colors.primary,
       ],
     });
 
@@ -91,7 +91,7 @@ export const Input = forwardRef<TextInput, InputProps>(
             <Text style={[styles.label, error && styles.labelError]}>
               {label}
             </Text>
-            {required && <Text style={styles.required}>*</Text>}
+            {!!required && <Text style={styles.required}>*</Text>}
           </View>
         )}
 
@@ -178,10 +178,10 @@ const styles = StyleSheet.create({
     color: Colors.gray[700],
   },
   labelError: {
-    color: Colors.error.main,
+    color: Colors.error,
   },
   required: {
-    color: Colors.error.main,
+    color: Colors.error,
     marginLeft: 2,
   },
   inputContainer: {
@@ -198,10 +198,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    
+
   },
   inputContainerError: {
-    borderColor: Colors.error.main,
+    borderColor: Colors.error,
   },
   inputContainerDisabled: {
     backgroundColor: Colors.gray[100],
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     color: Colors.gray[500],
   },
   helperError: {
-    color: Colors.error.main,
+    color: Colors.error,
   },
 });
 

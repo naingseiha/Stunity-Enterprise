@@ -115,7 +115,7 @@ const PostHeader = ({
             </View>
 
             {/* Study Group Tag */}
-            {learningMeta?.studyGroupName && (
+            {!!learningMeta?.studyGroupName && (
               <>
                 <Text style={styles.metaDot}>•</Text>
                 <View style={styles.studyGroupTag}>
@@ -154,7 +154,7 @@ const PostHeader = ({
         <TouchableOpacity style={styles.moreButton} onPress={onMenuToggle}>
           <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
         </TouchableOpacity>
-        {showMenu && menuContent}
+        {showMenu ? menuContent : null}
       </View>
     </View>
   );

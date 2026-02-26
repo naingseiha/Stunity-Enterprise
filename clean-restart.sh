@@ -14,7 +14,7 @@ echo ""
 
 # Step 2: Stop all running services
 echo "2️⃣ Stopping all services..."
-for port in 3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3012 3014; do
+for port in 3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014 3020; do
   pid=$(lsof -ti:$port 2>/dev/null)
   if [ ! -z "$pid" ]; then
     kill -9 $pid 2>/dev/null
@@ -43,7 +43,7 @@ echo ""
 echo "5️⃣ Checking service status..."
 running=0
 failed=0
-for port in 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3012 3014; do
+for port in 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014 3020; do
   if lsof -ti:$port > /dev/null 2>&1; then
     running=$((running + 1))
   else

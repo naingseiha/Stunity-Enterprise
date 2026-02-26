@@ -129,7 +129,7 @@ export default function NotificationsScreen() {
                     </View>
 
                     {/* Unread dot */}
-                    {!item.isRead && <View style={styles.unreadDot} />}
+                    {!!item.isRead === false && <View style={styles.unreadDot} />}
                 </TouchableOpacity>
             </Animated.View>
         );

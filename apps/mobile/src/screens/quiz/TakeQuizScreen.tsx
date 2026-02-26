@@ -363,8 +363,8 @@ export function TakeQuizScreen() {
                       </View>
                     </View>
                     <View style={styles.reviewItemRight}>
-                      {isFlagged && <Ionicons name="flag" size={18} color="#0EA5E9" />}
-                      {!isAnswered && <Ionicons name="alert-circle" size={18} color="#EF4444" />}
+                      {!!isFlagged && <Ionicons name="flag" size={18} color="#0EA5E9" />}
+                      {!!isAnswered === false && <Ionicons name="alert-circle" size={18} color="#EF4444" />}
                       <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
                     </View>
                   </TouchableOpacity>

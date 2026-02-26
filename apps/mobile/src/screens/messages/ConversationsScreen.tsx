@@ -111,7 +111,7 @@ export default function ConversationsScreen() {
               size="lg"
               showOnline={firstParticipant?.isOnline}
             />
-            {isUnread && <View style={styles.unreadDot} />}
+            {!!isUnread && <View style={styles.unreadDot} />}
           </View>
 
           {/* Content */}
