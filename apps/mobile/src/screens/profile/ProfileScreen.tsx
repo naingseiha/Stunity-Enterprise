@@ -329,7 +329,7 @@ export default function ProfileScreen() {
         keyExtractor={(item) => item.key}
         showsVerticalScrollIndicator={false}
         // @ts-ignore ignore type error with flash list sizes
-        estimatedItemSize={1000} 
+        estimatedItemSize={1000}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
@@ -526,6 +526,15 @@ export default function ProfileScreen() {
                     >
                       <Ionicons name="create-outline" size={16} color="#0284C7" />
                       <Text style={styles.editPillText}>Edit</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.editPill}
+                      onPress={() => navigation.navigate('QuizStudio' as any)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="school-outline" size={16} color="#0284C7" />
+                      <Text style={styles.editPillText}>Quiz Studio</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.iconBtn}>
