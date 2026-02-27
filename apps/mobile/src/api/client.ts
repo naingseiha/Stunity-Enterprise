@@ -17,7 +17,7 @@ import { eventEmitter } from '@/utils/eventEmitter';
 import { ApiResponse, ApiError } from '@/types';
 
 // Create axios instance
-const createApiClient = (baseURL: string): AxiosInstance => {
+export const createApiClient = (baseURL: string): AxiosInstance => {
   const client = axios.create({
     baseURL,
     timeout: APP_CONFIG.API_TIMEOUT,

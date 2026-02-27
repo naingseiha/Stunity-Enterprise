@@ -2,45 +2,17 @@
  * AI API Client
  * 
  * Handles all requests to the ai-service microservice.
+ * Uses the standard createApiClient factory for consistency.
  */
 
-import axios, { AxiosInstance } from 'axios';
+import { AxiosInstance } from 'axios';
 import { Config, APP_CONFIG } from '@/config';
-import { tokenService } from '@/services/token';
 import { ApiResponse } from '@/types';
+import { createApiClient } from './client';
 
-// Create a dedicated AI client separate from feed client due to different timeout needs
-// AI generation can take 5-15 seconds
-const aiClient: AxiosInstance = axios.create({
-    baseURL: Config.aiUrl,
-    timeout: 30000, // 30 seconds timeout for AI generation
-    headers: {
-        'Content-Type': 'application/json',
-        'X-Client-Version': APP_CONFIG.APP_VERSION,
-        'X-Platform': 'mobile',
-    },
-});
-
-// Add auth token interceptor
-aiClient.interceptors.request.use(async (config) => {
-    const token = await tokenService.getAccessToken();
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
-
-// Response interceptor for logging
-aiClient.interceptors.response.use(
-    (response) => {
-        if (__DEV__) console.log(`✅ [AI API] ${response.config.url} - ${response.status}`);
-        return response;
-    },
-    (error) => {
-        if (__DEV__) console.error(`❌ [AI API] Error:`, error.response?.data || error.message);
-        return Promise.reject(error);
-    }
-);
+// Create a dedicated AI client separate from feed client 
+// AI generation needs a long timeout (60s provided by createApiClient/APP_CONFIG)
+const aiClient: AxiosInstance = createApiClient(Config.aiUrl);
 
 export const aiApi = {
     // Quiz

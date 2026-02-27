@@ -17,7 +17,13 @@ const app = express();
 const PORT = parseInt(process.env.PORT || '3020', 10);
 
 // ─── CORS ──────────────────────────────────────────────────────────
-const defaultOrigins = ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3010', 'http://localhost:3020'];
+const defaultOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3010',
+    'http://localhost:3020',
+    `http://${process.env.EXPO_PUBLIC_API_HOST || 'localhost'}:3020`
+];
 const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
     : defaultOrigins;
@@ -37,7 +43,10 @@ app.use(cors({
 }));
 
 // ─── Middleware ────────────────────────────────────────────────────
-app.use(helmet());
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: false, // CSP is less relevant for this API-only service
+}));
 app.use(hpp());
 app.use(compression());
 app.use(express.json({ limit: '1mb' })); // AI prompts shouldn't be huge

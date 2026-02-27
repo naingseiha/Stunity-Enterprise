@@ -1,6 +1,6 @@
 # 🤖 AI Integration — Create Post
 
-**Version:** 1.0 | **Updated:** February 27, 2026
+**Version:** 1.1 | **Updated:** February 27, 2026 (Fixes for 404 & Android Crash)
 
 > AI-assisted content generation for all Stunity post types, powered by Google Gemini 1.5 Flash (free tier).
 
@@ -44,10 +44,10 @@ Google Gemini 1.5 Flash API
 ### Gemini Client (`gemini.service.ts`)
 
 ```typescript
-// Model: gemini-1.5-flash-latest (free tier)
-// Free limits: 15 req/min · 1,500 req/day · 1M tokens/day
+// Model: gemini-flash-latest (active free tier)
+// Note: gemini-1.5-flash-latest may return 404 in some regions.
 this.model = this.client.getGenerativeModel({
-    model: 'gemini-1.5-flash-latest',
+    model: 'gemini-flash-latest',
     generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
     safetySettings: [ /* BLOCK_MEDIUM_AND_ABOVE for all harm categories */ ],
 });
@@ -226,7 +226,7 @@ For a school with ~100 teachers generating a few posts per day, the free tier is
 Edit `services/ai-service/src/services/gemini.service.ts` line 46:
 
 ```typescript
-model: 'gemini-1.5-flash-latest',   // ← change this
+model: 'gemini-flash-latest',   // ← change this
 ```
 
 | Model | Free? | Speed | Quality |

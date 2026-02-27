@@ -89,8 +89,7 @@ export function AIPromptModal({
                             {/* Header */}
                             <View style={styles.header}>
                                 <View style={styles.headerTitleWrap}>
-                                    <Ionicons name="sparkles" size={20} color="#8B5CF6" style={{ marginRight: 8 }} />
-                                    <Text style={styles.title}>{title}</Text>
+                                    <Ionicons name="sparkles" size={20} color="#8B5CF6" style={{ marginRight: 8 }} /><Text style={styles.title}>{title}</Text>
                                 </View>
                                 <TouchableOpacity onPress={onClose} style={styles.closeBtn} disabled={isGenerating}>
                                     <Ionicons name="close" size={24} color="#9CA3AF" />
@@ -130,7 +129,7 @@ export function AIPromptModal({
                                     ))}
                                 </View>
 
-                                {isDifficultyRelevant && (
+                                {isDifficultyRelevant ? (
                                     <>
                                         <Text style={styles.label}>Difficulty</Text>
                                         <View style={styles.chipsContainer}>
@@ -148,7 +147,7 @@ export function AIPromptModal({
                                             ))}
                                         </View>
                                     </>
-                                )}
+                                ) : null}
 
                                 {isCountRelevant && (
                                     <View style={styles.counterRow}>

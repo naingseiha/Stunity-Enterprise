@@ -42,10 +42,9 @@ export function AIResultPreview({
                         <Ionicons name="close" size={24} color="#6B7280" />
                     </TouchableOpacity>
                     <View style={styles.titleWrap}>
-                        <Ionicons name="sparkles" size={18} color="#8B5CF6" style={{ marginRight: 6 }} />
-                        <Text style={styles.title}>{title}</Text>
+                        <Ionicons name="sparkles" size={18} color="#8B5CF6" style={{ marginRight: 6 }} /><Text style={styles.title}>{title}</Text>
                     </View>
-                    <View style={{ width: 44 }} /> {/* Balance header */}
+                    <View style={{ width: 44 }} />
                 </View>
 
                 <ScrollView style={styles.contentScroll} contentContainerStyle={styles.contentWrap}>
@@ -85,9 +84,7 @@ export function AIResultPreview({
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={StyleSheet.absoluteFillObject}
-                        />
-                        <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
-                        <Text style={styles.btnPrimaryText}>Accept & Edit</Text>
+                        /><Ionicons name="checkmark-circle" size={20} color="#FFFFFF" /><Text style={styles.btnPrimaryText}>Accept & Edit</Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>

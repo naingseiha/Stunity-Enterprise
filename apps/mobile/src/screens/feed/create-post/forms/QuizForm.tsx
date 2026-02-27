@@ -331,11 +331,11 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
       />
 
       <AIResultPreview
-        visible={!!aiPreviewData}
-        content={!!(aiPreviewData && Array.isArray(aiPreviewData)) ? `Generated ${aiPreviewData.length} questions:\n\n${aiPreviewData.map((q: any, i: number) => `${i + 1}. ${q.text}`).join('\n')}` : ''}
+        visible={aiPreviewData !== null}
+        content={Array.isArray(aiPreviewData) ? `Generated ${aiPreviewData.length} questions:\n\n${aiPreviewData.map((q: any, i: number) => `${i + 1}. ${q.text}`).join('\n')}` : ''}
         title="Quiz Generated"
         onAccept={handleAcceptAI}
-        onRegenerate={() => !!lastPrompt && handleGenerateAI(lastPrompt)}
+        onRegenerate={() => { if (lastPrompt) handleGenerateAI(lastPrompt); }}
         onDiscard={() => setAiPreviewData(null)}
         isRegenerating={isAiLoading}
       />

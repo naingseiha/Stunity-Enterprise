@@ -100,17 +100,14 @@ export function AIGenerateButton({
                 {isLoading ? (
                     <ActivityIndicator color={type === 'primary' ? '#FFFFFF' : '#6D28D9'} size="small" />
                 ) : (
-                    <>
-                        <Ionicons name={icon} size={size === 'small' ? 16 : 20} color={type === 'primary' ? '#FFFFFF' : '#6D28D9'} />
-                        <Text style={[
-                            styles.label,
-                            type === 'secondary' && styles.labelSecondary,
-                            size === 'small' && { fontSize: 13 },
-                            size === 'large' && { fontSize: 16 }
-                        ]}>
-                            {label}
-                        </Text>
-                    </>
+                    <><Ionicons name={icon} size={size === 'small' ? 16 : 20} color={type === 'primary' ? '#FFFFFF' : '#6D28D9'} /><Text style={[
+                        styles.label,
+                        type === 'secondary' && styles.labelSecondary,
+                        size === 'small' && { fontSize: 13 },
+                        size === 'large' && { fontSize: 16 }
+                    ]}>
+                        {label}
+                    </Text></>
                 )}
             </View>
         </TouchableOpacity>

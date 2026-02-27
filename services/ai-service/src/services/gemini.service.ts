@@ -43,7 +43,7 @@ class GeminiService {
         }
 
         this.model = this.client.getGenerativeModel({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-flash-latest',
             generationConfig: GENERATION_CONFIG,
             safetySettings: SAFETY_SETTINGS,
         });
