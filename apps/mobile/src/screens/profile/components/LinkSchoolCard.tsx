@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { useAuthStore } from '@/stores';
-import { Shadows } from '@/config';
 
 export function LinkSchoolCard() {
     const [code, setCode] = useState('');
@@ -106,12 +105,9 @@ export function LinkSchoolCard() {
 const styles = StyleSheet.create({
     card: {
         backgroundColor: '#fff',
-        borderRadius: 16,
+        borderRadius: 14,
+        overflow: 'hidden',
         padding: 20,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: '#E0F2FE',
-        ...Shadows.sm,
     },
     header: {
         flexDirection: 'row',

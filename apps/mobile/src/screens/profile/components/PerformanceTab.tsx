@@ -466,15 +466,8 @@ const s = StyleSheet.create({
     container: { gap: 16 },
     card: {
         backgroundColor: '#fff',
-
-
         borderRadius: 14,
         overflow: 'hidden',
-        shadowColor: '#000',
-
-
-
-
     },
     cardGradient: { padding: 20 },
     cardHeader: {

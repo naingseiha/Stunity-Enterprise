@@ -109,7 +109,7 @@ const gridStyles = StyleSheet.create({
     container: {
         backgroundColor: '#fff',
 
-        borderRadius: 14, padding: 20, shadowColor: '#000', elevation: 1
+        borderRadius: 14, overflow: 'hidden', padding: 20
     },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
     title: { fontSize: 16, fontWeight: '700', color: '#1F2937' },
@@ -233,7 +233,7 @@ const timelineStyles = StyleSheet.create({
     container: {
         backgroundColor: '#fff',
 
-        borderRadius: 14, padding: 20, shadowColor: '#000', elevation: 1
+        borderRadius: 14, overflow: 'hidden', padding: 20
     },
     header: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 },
     headerIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
@@ -295,7 +295,7 @@ const engStyles = StyleSheet.create({
     container: {
         backgroundColor: '#fff',
 
-        borderRadius: 14, padding: 20, shadowColor: '#000', elevation: 1
+        borderRadius: 14, overflow: 'hidden', padding: 20
     },
     header: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
     headerIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },

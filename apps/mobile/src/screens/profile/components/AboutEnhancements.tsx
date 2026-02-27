@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
@@ -228,7 +228,7 @@ export function ProfileCompletenessCard({ profile, onEdit }: { profile: User; on
 }
 
 const cmpStyles = StyleSheet.create({
-    card: { backgroundColor: '#fff', borderRadius: 14, padding: 20, shadowColor: '#000',  shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
+    card: { backgroundColor: '#fff', borderRadius: 14, overflow: 'hidden', padding: 20 },
     topRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
     ringWrap: { width: 60, height: 60, alignItems: 'center', justifyContent: 'center' },
     ringPct: { position: 'absolute', fontSize: 14, fontWeight: '800', color: '#0EA5E9' },
@@ -282,7 +282,7 @@ export function CareerGoalsCard({ careerGoals, isOwnProfile, onEdit }: { careerG
 }
 
 const goalStyles = StyleSheet.create({
-    card: { backgroundColor: '#fff', borderRadius: 14, overflow: 'hidden', shadowColor: '#000',  shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
+    card: { backgroundColor: '#fff', borderRadius: 14, overflow: 'hidden' },
     headerGradient: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
     headerIcon: { width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center' },
     headerTitle: { fontSize: 15, fontWeight: '700', color: '#fff', flex: 1 },
@@ -294,27 +294,10 @@ const goalStyles = StyleSheet.create({
     emptyHint: { fontSize: 12, color: '#D1D5DB' },
 });
 
-// ── Project Showcase ─────────────────────────────────────────────
-
-interface ProjectItem {
-    id: string;
-    name: string;
-    description?: string;
-    technologies?: string[];
-}
 
 export function ProjectShowcase({ stats, isOwnProfile }: { stats: UserStats | null; isOwnProfile: boolean }) {
     const projectCount = stats?.projects ?? 0;
-    if (projectCount === 0 && !isOwnProfile) return null;
-
-    const mockProjects: ProjectItem[] = projectCount > 0
-        ? Array.from({ length: Math.min(projectCount, 5) }, (_, i) => ({
-            id: `p-${i}`,
-            name: `Project ${i + 1}`,
-            description: 'A project in your portfolio',
-            technologies: ['React', 'Node.js'],
-        }))
-        : [];
+    if (!isOwnProfile && projectCount === 0) return null;
 
     return (
         <View style={projStyles.card}>
@@ -328,39 +311,24 @@ export function ProjectShowcase({ stats, isOwnProfile }: { stats: UserStats | nu
                 )}
             </View>
 
-            {mockProjects.length > 0 ? (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={projStyles.scroll}>
-                    {mockProjects.map((proj) => (
-                        <View key={proj.id} style={projStyles.projCard}>
-                            <LinearGradient
-                                colors={['#F3E8FF', '#FAF5FF']}
-                                style={projStyles.projGradient}
-                            >
-                                <View style={projStyles.projIcon}>
-                                    <Ionicons name="code-slash" size={18} color="#8B5CF6" />
-                                </View>
-                                <Text style={projStyles.projName} numberOfLines={1}>{proj.name}</Text>
-                                {proj.description && (
-                                    <Text style={projStyles.projDesc} numberOfLines={2}>{proj.description}</Text>
-                                )}
-                                {proj.technologies && proj.technologies.length > 0 && (
-                                    <View style={projStyles.techRow}>
-                                        {proj.technologies.slice(0, 3).map((tech, i) => (
-                                            <View key={i} style={projStyles.techTag}>
-                                                <Text style={projStyles.techText}>{tech}</Text>
-                                            </View>
-                                        ))}
-                                    </View>
-                                )}
-                            </LinearGradient>
-                        </View>
-                    ))}
-                </ScrollView>
+            {isOwnProfile ? (
+                <View style={projStyles.empty}>
+                    <View style={projStyles.emptyIconWrap}>
+                        <Ionicons name="folder-open" size={28} color="#8B5CF6" />
+                    </View>
+                    <Text style={projStyles.emptyText}>Showcase your work</Text>
+                    <Text style={projStyles.emptyHint}>
+                        {projectCount > 0
+                            ? `You have ${projectCount} project${projectCount > 1 ? 's' : ''} — full project management coming soon`
+                            : 'Add projects to your profile to impress peers and employers'}
+                    </Text>
+                </View>
             ) : (
                 <View style={projStyles.empty}>
-                    <Ionicons name="add-circle-outline" size={24} color="#D1D5DB" />
-                    <Text style={projStyles.emptyText}>No projects yet</Text>
-                    <Text style={projStyles.emptyHint}>Add projects to showcase your work</Text>
+                    <Ionicons name="folder-outline" size={32} color="#E5E7EB" />
+                    <Text style={projStyles.emptyText}>
+                        {projectCount > 0 ? `${projectCount} project${projectCount > 1 ? 's' : ''}` : 'No projects yet'}
+                    </Text>
                 </View>
             )}
         </View>
@@ -368,7 +336,7 @@ export function ProjectShowcase({ stats, isOwnProfile }: { stats: UserStats | nu
 }
 
 const projStyles = StyleSheet.create({
-    card: { backgroundColor: '#fff', borderRadius: 14, padding: 20, shadowColor: '#000',  shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
+    card: { backgroundColor: '#fff', borderRadius: 14, overflow: 'hidden', padding: 20 },
     scroll: { marginTop: 4, marginHorizontal: -4 },
     projCard: { width: 160, marginHorizontal: 4, borderRadius: 14, overflow: 'hidden' },
     projGradient: { padding: 14, borderRadius: 14, minHeight: 130 },
@@ -378,15 +346,16 @@ const projStyles = StyleSheet.create({
     techRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
     techTag: { backgroundColor: 'rgba(139,92,246,0.12)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
     techText: { fontSize: 9, fontWeight: '600', color: '#7C3AED' },
-    empty: { alignItems: 'center', paddingVertical: 16, gap: 4 },
+    empty: { alignItems: 'center', paddingVertical: 16, gap: 6 },
+    emptyIconWrap: { width: 52, height: 52, borderRadius: 16, backgroundColor: '#F3E8FF', alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
     emptyText: { fontSize: 14, fontWeight: '600', color: '#9CA3AF' },
-    emptyHint: { fontSize: 12, color: '#D1D5DB' },
+    emptyHint: { fontSize: 12, color: '#D1D5DB', textAlign: 'center', paddingHorizontal: 16 },
 });
 
 // ── Shared Styles ────────────────────────────────────────────────
 
 const sectionStyles = StyleSheet.create({
-    card: { backgroundColor: '#fff', borderRadius: 14, padding: 20, shadowColor: '#000',  shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
+    card: { backgroundColor: '#fff', borderRadius: 14, overflow: 'hidden', padding: 20 },
     header: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
     title: { fontSize: 16, fontWeight: '700', color: '#1F2937', flex: 1 },
     countBadge: { backgroundColor: '#EFF6FF', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },

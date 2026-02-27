@@ -348,11 +348,18 @@ export default function ProfileScreen() {
                 <Image source={{ uri: (profile as any).coverPhotoUrl }} style={styles.coverGradient} />
               ) : (
                 <LinearGradient
-                  colors={['#BAE6FD', '#E0F2FE', '#F0F9FF']}
+                  colors={['#0EA5E9', '#6366F1', '#8B5CF6']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.coverGradient}
-                />
+                >
+                  {/* Decorative overlay circles for depth */}
+                  <View style={[styles.coverDecorCircle, { width: 200, height: 200, top: -60, left: -40, opacity: 0.12 }]} />
+                  <View style={[styles.coverDecorCircle, { width: 140, height: 140, top: 20, right: -30, opacity: 0.1 }]} />
+                  <View style={[styles.coverDecorCircle, { width: 80, height: 80, bottom: -20, left: '40%', opacity: 0.15 }]} />
+                  {/* Subtle grid pattern suggestion via thin lines */}
+                  <View style={styles.coverPatternOverlay} />
+                </LinearGradient>
               )}
 
               {/* Header Buttons */}
@@ -361,7 +368,7 @@ export default function ProfileScreen() {
                   {/* Back Button — only when viewing someone else's profile */}
                   {!isOwnProfile && (
                     <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.goBack()}>
-                      <Ionicons name="chevron-back" size={22} color="#1a1a1a" />
+                      <Ionicons name="chevron-back" size={22} color="#fff" />
                     </TouchableOpacity>
                   )}
 
@@ -372,20 +379,20 @@ export default function ProfileScreen() {
                     <>
                       {currentUser?.role === 'TEACHER' && (
                         <TouchableOpacity style={[styles.headerCircleBtn, { marginRight: 8 }]} onPress={() => navigation.navigate('AttendanceCheckIn' as any)}>
-                          <Ionicons name="calendar-outline" size={20} color="#1a1a1a" />
+                          <Ionicons name="calendar-outline" size={20} color="#fff" />
                         </TouchableOpacity>
                       )}
                       <TouchableOpacity style={[styles.headerCircleBtn, { marginRight: 8 }]} onPress={() => navigation.navigate('QuizStudio' as any)}>
-                        <Ionicons name="cube-outline" size={20} color="#1a1a1a" />
+                        <Ionicons name="cube-outline" size={20} color="#fff" />
                       </TouchableOpacity>
                       <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.navigate('Messages' as any, { screen: 'Conversations' })}>
-                        <Ionicons name="chatbubbles-outline" size={20} color="#1a1a1a" />
+                        <Ionicons name="chatbubbles-outline" size={20} color="#fff" />
                       </TouchableOpacity>
                       <TouchableOpacity style={[styles.headerCircleBtn, { marginLeft: 8 }]} onPress={() => navigation.navigate('Settings' as any)}>
-                        <Ionicons name="settings-outline" size={20} color="#1a1a1a" />
+                        <Ionicons name="settings-outline" size={20} color="#fff" />
                       </TouchableOpacity>
                       <TouchableOpacity style={[styles.headerCircleBtn, { marginLeft: 8 }]} onPress={handlePickCoverPhoto}>
-                        <Ionicons name="camera-outline" size={20} color="#1a1a1a" />
+                        <Ionicons name="camera-outline" size={20} color="#fff" />
                       </TouchableOpacity>
                     </>
                   )}
@@ -393,7 +400,7 @@ export default function ProfileScreen() {
                   {/* More options — other user's profile */}
                   {!isOwnProfile && (
                     <TouchableOpacity style={styles.headerCircleBtn}>
-                      <Ionicons name="ellipsis-horizontal" size={20} color="#1a1a1a" />
+                      <Ionicons name="ellipsis-horizontal" size={20} color="#fff" />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -433,6 +440,27 @@ export default function ProfileScreen() {
                   )}
                 </View>
 
+                {/* Role Badge — Teacher or Student */}
+                {profile.role && (
+                  <Animated.View entering={FadeInDown.delay(220).duration(400)} style={styles.roleBadgeWrap}>
+                    <LinearGradient
+                      colors={profile.role === 'TEACHER' ? ['#6366F1', '#8B5CF6'] : ['#0EA5E9', '#0284C7']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.roleBadgeGradient}
+                    >
+                      <Ionicons
+                        name={profile.role === 'TEACHER' ? 'school' : 'person'}
+                        size={12}
+                        color="#fff"
+                      />
+                      <Text style={styles.roleBadgeText}>
+                        {profile.role === 'TEACHER' ? 'Teacher' : 'Student'}
+                      </Text>
+                    </LinearGradient>
+                  </Animated.View>
+                )}
+
                 {profile.headline ? (
                   <Text style={styles.headline}>{profile.headline || profile.professionalTitle}</Text>
                 ) : null}
@@ -465,14 +493,16 @@ export default function ProfileScreen() {
                     </View>
                   )}
                   {(profile as any).linkedinUrl && (
-                    <View style={styles.socialBadge}>
+                    <TouchableOpacity style={styles.socialBadge} onPress={() => { const { Linking } = require('react-native'); Linking.openURL((profile as any).linkedinUrl); }}>
                       <Ionicons name="logo-linkedin" size={14} color="#0077B5" />
-                    </View>
+                      <Text style={[styles.socialBadgeText, { color: '#0077B5' }]}>LinkedIn</Text>
+                    </TouchableOpacity>
                   )}
                   {(profile as any).githubUrl && (
-                    <View style={styles.socialBadge}>
+                    <TouchableOpacity style={styles.socialBadge} onPress={() => { const { Linking } = require('react-native'); Linking.openURL((profile as any).githubUrl); }}>
                       <Ionicons name="logo-github" size={14} color="#1a1a1a" />
-                    </View>
+                      <Text style={styles.socialBadgeText}>GitHub</Text>
+                    </TouchableOpacity>
                   )}
                 </View>
               </Animated.View>
@@ -493,41 +523,36 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               </Animated.View>
 
-              {/* Action Buttons — Fully rounded capsules */}
-              {!isOwnProfile && (
-                <Animated.View entering={FadeInDown.delay(300).duration(400).springify()} style={styles.capsuleRow}>
+              {/* Action Buttons */}
+              <Animated.View entering={FadeInDown.delay(300).duration(400).springify()} style={styles.capsuleRow}>
+                {isOwnProfile ? (
+                  // Own profile: prominent Edit Profile button
                   <TouchableOpacity
-                    style={isFollowing ? styles.capsuleBtn : styles.capsuleBtnFilled}
-                    onPress={handleFollow}
+                    style={styles.capsuleBtnFilled}
+                    onPress={handleEditProfile}
                     activeOpacity={0.8}
                   >
-                    <Text style={isFollowing ? styles.capsuleBtnText : styles.capsuleBtnFilledText}>
-                      {isFollowing ? 'Following' : 'Follow'}
-                    </Text>
+                    <Ionicons name="create-outline" size={16} color="#fff" style={{ marginRight: 4 }} />
+                    <Text style={styles.capsuleBtnFilledText}>Edit Profile</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.capsuleBtn} activeOpacity={0.8}>
-                    <Text style={styles.capsuleBtnText}>Message</Text>
-                  </TouchableOpacity>
-                </Animated.View>
-              )}
-
-              {/* Action Buttons — Fully rounded capsules */}
-              {!isOwnProfile && (
-                <Animated.View entering={FadeInDown.delay(300).duration(400).springify()} style={styles.capsuleRow}>
-                  <TouchableOpacity
-                    style={isFollowing ? styles.capsuleBtn : styles.capsuleBtnFilled}
-                    onPress={handleFollow}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={isFollowing ? styles.capsuleBtnText : styles.capsuleBtnFilledText}>
-                      {isFollowing ? 'Following' : 'Follow'}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.capsuleBtn} activeOpacity={0.8}>
-                    <Text style={styles.capsuleBtnText}>Message</Text>
-                  </TouchableOpacity>
-                </Animated.View>
-              )}
+                ) : (
+                  // Other user's profile: Follow + Message
+                  <>
+                    <TouchableOpacity
+                      style={isFollowing ? styles.capsuleBtn : styles.capsuleBtnFilled}
+                      onPress={handleFollow}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={isFollowing ? styles.capsuleBtnText : styles.capsuleBtnFilledText}>
+                        {isFollowing ? 'Following' : 'Follow'}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.capsuleBtn} activeOpacity={0.8}>
+                      <Text style={styles.capsuleBtnText}>Message</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </Animated.View>
 
               {/* Tabs */}
               <View style={styles.tabsSection}>
@@ -747,6 +772,19 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  coverDecorCircle: {
+    position: 'absolute',
+    backgroundColor: '#ffffff',
+    borderRadius: 999,
+  },
+  coverPatternOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.04)',
+  },
   headerButtons: {
     position: 'absolute',
     top: 0,
@@ -767,10 +805,11 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
     alignItems: 'center',
     justifyContent: 'center',
-    ...Shadows.sm,
   },
   backButton: {
     width: 40,
@@ -895,11 +934,31 @@ const styles = StyleSheet.create({
   },
   bio: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: '#4B5563',
     textAlign: 'center',
     lineHeight: 18,
     marginTop: 4,
     marginBottom: 8,
+  },
+  roleBadgeWrap: {
+    marginTop: 6,
+    marginBottom: 2,
+    borderRadius: 20,
+    overflow: 'hidden',
+    alignSelf: 'center',
+  },
+  roleBadgeGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    gap: 5,
+  },
+  roleBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   socialRow: {
     flexDirection: 'row',
@@ -959,6 +1018,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
     paddingVertical: 14,
     borderRadius: 50,
     backgroundColor: '#F3F4F6',
@@ -973,6 +1033,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
     paddingVertical: 14,
     borderRadius: 50,
     backgroundColor: '#0EA5E9',
@@ -1273,11 +1334,9 @@ const styles = StyleSheet.create({
   },
   aboutCard: {
     backgroundColor: '#fff',
-
-
     borderRadius: 14,
+    overflow: 'hidden',
     padding: 20,
-    ...Shadows.sm,
   },
   aboutCardHeader: {
     flexDirection: 'row',
