@@ -1802,6 +1802,27 @@ app.post('/auth/claim-codes/link', authenticateToken, async (req: AuthRequest, r
       });
     });
 
+    // Generate refreshed JWT token
+    const token = jwt.sign(
+      {
+        userId: userId,
+        email: req.user?.email, // Keep previous email
+        role: claimCode.type === 'TEACHER' ? 'TEACHER' : 'STUDENT',
+        schoolId: claimCode.school.id,
+        school: {
+          id: claimCode.school.id,
+          name: claimCode.school.name,
+          slug: claimCode.school.slug || '',
+          subscriptionTier: claimCode.school.subscriptionTier || 'FREE',
+          subscriptionEnd: claimCode.school.subscriptionEnd || null,
+          isTrial: claimCode.school.isTrial || false,
+          isActive: claimCode.school.isActive || true,
+        },
+      },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
+    );
+
     // Return success
     res.json({
       success: true,
@@ -1813,7 +1834,8 @@ app.post('/auth/claim-codes/link', authenticateToken, async (req: AuthRequest, r
           name: claimCode.school.name,
           type: claimCode.school.schoolType,
         },
-        role: claimCode.type,
+        role: claimCode.type === 'TEACHER' ? 'TEACHER' : 'STUDENT',
+        token, // Return fresh token
       },
     });
   } catch (error: any) {

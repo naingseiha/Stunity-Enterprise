@@ -46,7 +46,7 @@ import { formatNumber } from '@/utils';
 import { ProfileStackScreenProps } from '@/navigation/types';
 import { fetchProfile as apiFetchProfile, fetchEducation, fetchExperiences, fetchCertifications, followUser, unfollowUser, uploadProfilePhoto, uploadCoverPhoto } from '@/api/profileApi';
 import { statsAPI, type UserStats as QuizUserStats, type Streak, type UserAchievement, type Achievement } from '@/services/stats';
-import { PerformanceTab, ActivityTab, CertificationsSection, SkillsSection, ProfileCompletenessCard, CareerGoalsCard, ProjectShowcase } from './components';
+import { PerformanceTab, ActivityTab, CertificationsSection, SkillsSection, ProfileCompletenessCard, CareerGoalsCard, ProjectShowcase, LinkSchoolCard } from './components';
 import * as ImagePicker from 'expo-image-picker';
 
 const { width } = Dimensions.get('window');
@@ -537,6 +537,17 @@ export default function ProfileScreen() {
                       <Text style={styles.editPillText}>Quiz Studio</Text>
                     </TouchableOpacity>
 
+                    {currentUser?.role === 'TEACHER' && (
+                      <TouchableOpacity
+                        style={styles.editPill}
+                        onPress={() => navigation.navigate('AttendanceCheckIn' as any)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="location-outline" size={16} color="#0284C7" />
+                        <Text style={styles.editPillText}>Attendance</Text>
+                      </TouchableOpacity>
+                    )}
+
                     <TouchableOpacity style={styles.iconBtn}>
                       <Ionicons name="share-social-outline" size={18} color="#6B7280" />
                     </TouchableOpacity>
@@ -669,6 +680,11 @@ export default function ProfileScreen() {
             )}
             {activeTab === 'about' && (
               <View style={styles.aboutSection}>
+                {/* Link School via Claim Code - Only for own profile when no school is assigned */}
+                {isOwnProfile && !profile.school && (
+                  <LinkSchoolCard />
+                )}
+
                 {/* Profile Completeness — own profile only */}
                 {isOwnProfile && (
                   <ProfileCompletenessCard

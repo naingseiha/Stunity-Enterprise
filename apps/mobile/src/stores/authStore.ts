@@ -31,6 +31,7 @@ interface AuthState {
   updateUser: (updates: Partial<User>) => void;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
+  linkClaimCode: (code: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 // Helper to map backend API user response to app User type
@@ -260,6 +261,45 @@ export const useAuthStore = create<AuthState>()(
           }
         } catch (error) {
           console.error('Failed to refresh user:', error);
+        }
+      },
+
+      // Link Claim Code
+      linkClaimCode: async (code: string) => {
+        try {
+          set({ isLoading: true, error: null });
+          const response = await authApi.post('/auth/claim-codes/link', { code });
+
+          if (!response.data.success) {
+            throw new Error(response.data.error || 'Failed to link claim code');
+          }
+
+          const { token } = response.data.data;
+
+          if (token) {
+            // Update the stored token since the payload now contains the schoolId and role
+            const currentTokens = await tokenService.getTokens();
+            if (currentTokens) {
+              await tokenService.setTokens({
+                ...currentTokens,
+                accessToken: token,
+              });
+            }
+          }
+
+          // Refresh the user profile to pull in the new school and role data
+          await get().refreshUser();
+
+          set({ isLoading: false });
+          return { success: true };
+        } catch (error: any) {
+          console.error('Link claim code error:', error);
+          const message = error?.response?.data?.error || error?.message || 'Failed to link claim code';
+          set({
+            isLoading: false,
+            error: message,
+          });
+          return { success: false, error: message };
         }
       },
 
