@@ -4,6 +4,20 @@ import { apiClient } from "./client";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
+function getAuthHeaders(): Record<string, string> {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("accessToken") || localStorage.getItem("token")
+      : null;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 export interface GradeFormData {
   studentId: string;
   subjectId: string;
@@ -95,7 +109,8 @@ export const gradeApi = {
     year: number
   ): Promise<Grade[]> {
     const response = await fetch(
-      `${API_BASE_URL}/grades/month/${classId}?month=${month}&year=${year}`
+      `${API_BASE_URL}/grades/month/${classId}?month=${month}&year=${year}`,
+      { headers: getAuthHeaders() }
     );
 
     if (!response.ok) {
@@ -116,7 +131,8 @@ export const gradeApi = {
     year: number
   ): Promise<StudentSummary[]> {
     const response = await fetch(
-      `${API_BASE_URL}/grades/summary/${classId}?month=${month}&year=${year}`
+      `${API_BASE_URL}/grades/summary/${classId}?month=${month}&year=${year}`,
+      { headers: getAuthHeaders() }
     );
 
     if (!response.ok) {
@@ -137,7 +153,8 @@ export const gradeApi = {
     year: number
   ): Promise<GradeGridData> {
     const response = await fetch(
-      `${API_BASE_URL}/grades/grid/${classId}?month=${month}&year=${year}`
+      `${API_BASE_URL}/grades/grid/${classId}?month=${month}&year=${year}`,
+      { headers: getAuthHeaders() }
     );
 
     if (!response.ok) {
@@ -160,7 +177,7 @@ export const gradeApi = {
   ): Promise<{ savedCount: number; errorCount: number; errors?: any[] }> {
     const response = await fetch(`${API_BASE_URL}/grades/bulk-save`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ classId, month, year, grades }),
     });
 
@@ -183,7 +200,7 @@ export const gradeApi = {
   async saveGrade(gradeData: GradeFormData): Promise<Grade> {
     const response = await fetch(`${API_BASE_URL}/grades`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getAuthHeaders(),
       body: JSON.stringify(gradeData),
     });
 
@@ -203,8 +220,18 @@ export const gradeApi = {
     const formData = new FormData();
     formData.append("file", file);
 
+    const token =
+      typeof window !== "undefined"
+        ? localStorage.getItem("accessToken") || localStorage.getItem("token")
+        : null;
+    const importHeaders: Record<string, string> = {};
+    if (token) {
+      importHeaders["Authorization"] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_BASE_URL}/grades/import/${classId}`, {
       method: "POST",
+      headers: importHeaders,
       body: formData,
     });
 
@@ -225,7 +252,8 @@ export const gradeApi = {
     year: number
   ): Promise<Blob> {
     const response = await fetch(
-      `${API_BASE_URL}/grades/export/${classId}?month=${month}&year=${year}`
+      `${API_BASE_URL}/grades/export/${classId}?month=${month}&year=${year}`,
+      { headers: getAuthHeaders() }
     );
 
     if (!response.ok) {

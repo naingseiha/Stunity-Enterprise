@@ -1,6 +1,6 @@
 import { TokenManager } from './auth';
 
-const API_BASE_URL = 'http://localhost:3008';
+const API_BASE_URL = process.env.NEXT_PUBLIC_ATTENDANCE_SERVICE_URL || 'http://localhost:3008';
 
 export enum AttendanceStatus {
   PRESENT = 'PRESENT',
@@ -114,12 +114,15 @@ export interface ClassAttendanceSummary {
  * Attendance API Client
  */
 class AttendanceAPI {
-  private getHeaders() {
+  private getHeaders(): Record<string, string> {
     const token = TokenManager.getAccessToken();
-    return {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
     };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
   }
 
   /**

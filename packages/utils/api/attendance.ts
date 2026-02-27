@@ -1,6 +1,20 @@
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
+function getAuthHeaders(): Record<string, string> {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("accessToken") || localStorage.getItem("token")
+      : null;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 export interface AttendanceGridData {
   classId: string;
   className: string;
@@ -31,13 +45,7 @@ export interface AttendanceGridData {
 export interface BulkSaveAttendanceItem {
   studentId: string;
   day: number;
-  session: "M" | "A"; // ⭐ NEW
-  value: string;
-}
-
-export interface BulkSaveAttendanceItem {
-  studentId: string;
-  day: number;
+  session?: "M" | "A";
   value: string;
 }
 
@@ -50,7 +58,8 @@ export const attendanceApi = {
     const response = await fetch(
       `${API_BASE_URL}/attendance/grid/${classId}?month=${encodeURIComponent(
         month
-      )}&year=${year}`
+      )}&year=${year}`,
+      { headers: getAuthHeaders() }
     );
 
     if (!response.ok) {
@@ -72,13 +81,8 @@ export const attendanceApi = {
     // ✅ OPTIMIZATION: Use keepalive for faster requests
     const response = await fetch(`${API_BASE_URL}/attendance/bulk-save`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        // Add compression hint for large payloads
-        "Accept-Encoding": "gzip, deflate"
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ classId, month, year, monthNumber, attendance }),
-      // ✅ Keep connection alive for faster subsequent requests
       keepalive: true,
     });
 
@@ -96,27 +100,18 @@ export const attendanceApi = {
     month: string,
     year: number
   ): Promise<{ [studentId: string]: { absent: number; permission: number } }> {
-    // ✅ Add detailed logging
     const url = `${API_BASE_URL}/attendance/summary/${classId}?month=${encodeURIComponent(
       month
     )}&year=${year}`;
 
-    console.log("📡 Fetching attendance summary from:", url);
-
-    const response = await fetch(url);
-
-    console.log("📥 Response status:", response.status);
+    const response = await fetch(url, { headers: getAuthHeaders() });
 
     if (!response.ok) {
       const error = await response.json();
-      console.error("❌ API Error:", error);
       throw new Error(error.message || "Failed to fetch attendance summary");
     }
 
     const data = await response.json();
-    console.log("✅ Full API Response:", data);
-    console.log("✅ Summary data:", data.data);
-
     return data.data;
   },
 };

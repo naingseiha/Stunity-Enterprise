@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { TokenManager } from '@/lib/api/auth';
 import BlurLoader from '@/components/BlurLoader';
@@ -16,7 +17,7 @@ import {
   StudentDailyAttendance,
   BulkAttendanceItem,
 } from '@/lib/api/attendance';
-import { getAcademicYears, AcademicYear } from '@/lib/api/academic-years';
+import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { getClasses, Class } from '@/lib/api/classes';
 import { getClassStudents, StudentInClass } from '@/lib/api/class-students';
 import {
@@ -56,12 +57,13 @@ interface Statistics {
 
 export default function MarkAttendancePage() {
   const router = useRouter();
+  const locale = useLocale();
+  const { selectedYear, allYears, setSelectedYear } = useAcademicYear();
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
 
-  // Selectors
-  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('');
+  // Academic year from context
+  const selectedAcademicYear = selectedYear?.id || '';
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>(
@@ -92,7 +94,7 @@ export default function MarkAttendancePage() {
   useEffect(() => {
     const token = TokenManager.getAccessToken();
     if (!token) {
-      router.push('/auth/login');
+      router.push(`/${locale}/auth/login`);
       return;
     }
 
@@ -101,19 +103,12 @@ export default function MarkAttendancePage() {
     setSchool(userData.school);
   }, [router]);
 
-  // Load academic years
-  useEffect(() => {
-    if (user?.schoolId) {
-      loadAcademicYears();
-    }
-  }, [user]);
-
   // Load classes when academic year changes
   useEffect(() => {
-    if (selectedAcademicYear) {
+    if (user && selectedAcademicYear) {
       loadClasses();
     }
-  }, [selectedAcademicYear]);
+  }, [user, selectedAcademicYear]);
 
   // Warn before leaving with unsaved changes
   useEffect(() => {
@@ -127,25 +122,6 @@ export default function MarkAttendancePage() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
-
-  const loadAcademicYears = async () => {
-    try {
-      const token = TokenManager.getAccessToken();
-      if (!token || !user?.schoolId) return;
-
-      const years = await getAcademicYears(user.schoolId, token);
-      setAcademicYears(years);
-
-      const currentYear = years.find((y) => y.isCurrent);
-      if (currentYear) {
-        setSelectedAcademicYear(currentYear.id);
-      } else if (years.length > 0) {
-        setSelectedAcademicYear(years[0].id);
-      }
-    } catch (error) {
-      console.error('Failed to load academic years:', error);
-    }
-  };
 
   const loadClasses = async () => {
     try {
@@ -412,7 +388,7 @@ export default function MarkAttendancePage() {
 
   const handleLogout = () => {
     TokenManager.clearTokens();
-    router.push('/auth/login');
+    router.push(`/${locale}/auth/login`);
   };
 
   // Validate date not in future
@@ -472,13 +448,14 @@ export default function MarkAttendancePage() {
                 <select
                   value={selectedAcademicYear}
                   onChange={(e) => {
-                    setSelectedAcademicYear(e.target.value);
+                    const year = allYears.find(y => y.id === e.target.value);
+                    if (year) setSelectedYear(year);
                     setSelectedClass('');
                   }}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-shadow"
                 >
                   <option value="">Select Year</option>
-                  {academicYears.map((year) => (
+                  {allYears.map((year) => (
                     <option key={year.id} value={year.id}>
                       {year.name} {year.isCurrent && '(Current)'}
                     </option>

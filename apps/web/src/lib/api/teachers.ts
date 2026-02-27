@@ -106,7 +106,7 @@ export async function getTeachers(params?: {
     firstNameLatin: teacher.firstName || teacher.englishName || '',
     lastNameLatin: teacher.lastName || '',
     firstNameKhmer: teacher.khmerName || null,
-    lastNameKhmer: null,
+    lastNameKhmer: teacher.lastNameKhmer || null,
     phoneNumber: teacher.phone || null,
   }));
   

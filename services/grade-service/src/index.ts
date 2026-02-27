@@ -47,7 +47,12 @@ setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000); // Every 4 
 // Middleware
 // ========================================
 
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json());
 
 interface AuthRequest extends Request {
@@ -171,6 +176,15 @@ app.get('/grades/class/:classId', authenticateToken, async (req: AuthRequest, re
   try {
     const { classId } = req.params;
     const { month, subjectId } = req.query;
+    const schoolId = getSchoolId(req);
+
+    // Multi-tenant: verify class belongs to requesting school
+    if (schoolId) {
+      const classData = await prisma.class.findFirst({ where: { id: classId, schoolId } });
+      if (!classData) {
+        return res.status(404).json({ message: 'Class not found in your school' });
+      }
+    }
 
     const where: any = { classId };
 
@@ -522,19 +536,32 @@ app.put('/grades/:id', authenticateToken, async (req: AuthRequest, res: Response
 app.delete('/grades/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const schoolId = getSchoolId(req);
+
+    // Multi-tenant: verify grade belongs to requesting school
+    const existing = await prisma.grade.findUnique({
+      where: { id },
+      include: { class: { select: { schoolId: true } } },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ message: 'Grade not found' });
+    }
+
+    if (schoolId && existing.class?.schoolId !== schoolId) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
 
     const grade = await prisma.grade.delete({
       where: { id },
     });
-
-    console.log(`✅ Deleted grade ${id}`);
 
     res.json({
       message: 'Grade deleted successfully',
       grade,
     });
   } catch (error: any) {
-    console.error('❌ Error deleting grade:', error);
+    console.error('Error deleting grade:', error);
     res.status(500).json({
       message: 'Error deleting grade',
       error: error.message,

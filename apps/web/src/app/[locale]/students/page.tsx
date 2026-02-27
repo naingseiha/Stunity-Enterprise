@@ -116,7 +116,7 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
       try {
         const token = TokenManager.getAccessToken();
         const response = await fetch(
-          `http://localhost:3005/classes/lightweight?academicYearId=${selectedYear.id}`,
+          `${process.env.NEXT_PUBLIC_CLASS_SERVICE_URL || 'http://localhost:3005'}/classes/lightweight?academicYearId=${selectedYear.id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -195,7 +195,7 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
       // First, remove from current class if exists
       if (studentToReassign.class?.id) {
         await fetch(
-          `http://localhost:3005/classes/${studentToReassign.class.id}/students/${studentToReassign.id}`,
+          `${process.env.NEXT_PUBLIC_CLASS_SERVICE_URL || 'http://localhost:3005'}/classes/${studentToReassign.class.id}/students/${studentToReassign.id}`,
           {
             method: 'DELETE',
             headers: { Authorization: `Bearer ${token}` },
@@ -205,7 +205,7 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
 
       // Then assign to new class
       const response = await fetch(
-        `http://localhost:3005/classes/${targetClassId}/students`,
+        `${process.env.NEXT_PUBLIC_CLASS_SERVICE_URL || 'http://localhost:3005'}/classes/${targetClassId}/students`,
         {
           method: 'POST',
           headers: {
@@ -286,7 +286,7 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
         const student = students.find(s => s.id === studentId);
         if (student?.class?.id) {
           await fetch(
-            `http://localhost:3005/classes/${student.class.id}/students/${studentId}`,
+            `${process.env.NEXT_PUBLIC_CLASS_SERVICE_URL || 'http://localhost:3005'}/classes/${student.class.id}/students/${studentId}`,
             {
               method: 'DELETE',
               headers: { Authorization: `Bearer ${token}` },
@@ -297,7 +297,7 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
 
       // Batch assign to new class
       const response = await fetch(
-        `http://localhost:3005/classes/${targetClassId}/students/batch`,
+        `${process.env.NEXT_PUBLIC_CLASS_SERVICE_URL || 'http://localhost:3005'}/classes/${targetClassId}/students/batch`,
         {
           method: 'POST',
           headers: {

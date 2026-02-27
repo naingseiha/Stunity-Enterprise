@@ -18,6 +18,9 @@
     "clean": "turbo run clean && rm -rf node_modules",
     "type-check": "turbo run type-check",
     "seed:test-data": "tsx scripts/seed-complete-test-data.ts",
+    "seed:school-management": "tsx scripts/seed-school-management-full.ts",
+    "seed:super-admin": "tsx scripts/seed-super-admin.ts",
+    "seed:all": "cd packages/database && npx prisma db seed && cd ../.. && npm run seed:test-data && npm run seed:school-management",
     "seed:courses": "tsx scripts/seed-courses.ts",
     "seed:feed": "tsx scripts/seed-feed.ts"
   },

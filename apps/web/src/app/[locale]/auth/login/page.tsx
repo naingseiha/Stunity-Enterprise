@@ -19,9 +19,10 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Role-based redirect helper
-  const getRedirectPath = (role: string) => {
-    switch (role) {
+  // Role-based redirect helper (super admins go to super-admin dashboard)
+  const getRedirectPath = (user: { role?: string; isSuperAdmin?: boolean }) => {
+    if (user?.isSuperAdmin) return `/${locale}/super-admin`;
+    switch (user?.role) {
       case 'PARENT':
         return `/${locale}/parent`;
       case 'STUDENT':
@@ -41,8 +42,7 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
       const userData = TokenManager.getUserData();
       
       if (token && userData.user) {
-        // Already logged in, redirect based on role
-        const redirectPath = getRedirectPath(userData.user.role);
+        const redirectPath = getRedirectPath(userData.user);
         router.replace(redirectPath);
       }
     };
@@ -74,7 +74,7 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
           TokenManager.setUserData(response.data.user, response.data.school);
           
           await new Promise(resolve => setTimeout(resolve, 200));
-          const redirectPath = getRedirectPath(response.data.user.role);
+          const redirectPath = getRedirectPath(response.data.user);
           window.location.href = redirectPath;
           return;
         } else {
@@ -90,7 +90,7 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
           TokenManager.setUserData(response.user, response.school);
 
           await new Promise(resolve => setTimeout(resolve, 200));
-          const redirectPath = getRedirectPath(response.user.role);
+          const redirectPath = getRedirectPath(response.user);
           window.location.href = redirectPath;
           return;
         } else {

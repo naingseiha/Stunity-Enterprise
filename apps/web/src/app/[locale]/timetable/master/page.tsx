@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
 import {
   DndContext,
   DragOverlay,
@@ -90,6 +91,7 @@ interface ClassStats {
 
 export default function MasterTimetablePage() {
   const router = useRouter();
+  const locale = useLocale();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
@@ -127,7 +129,7 @@ export default function MasterTimetablePage() {
   useEffect(() => {
     const token = TokenManager.getAccessToken();
     if (!token) {
-      router.push('/en/auth/login');
+      router.push(`/${locale}/auth/login`);
       return;
     }
 

@@ -260,6 +260,16 @@ app.post('/students/batch', async (req: Request, res: Response) => {
   }
 });
 
+// Health check endpoint (no auth required) - must be before auth middleware
+app.get('/health', (_req, res) => {
+  res.json({
+    success: true,
+    service: 'student-service',
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Apply auth middleware to all routes
 app.use(authenticateToken);
 
@@ -578,6 +588,104 @@ app.get('/students', async (req: AuthRequest, res: Response) => {
     res.status(500).json({
       success: false,
       message: "Error fetching students",
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * GET /students/promote/eligible/:yearId
+ * Must be registered BEFORE /students/:id to avoid route conflict
+ */
+app.get('/students/promote/eligible/:yearId', async (req: AuthRequest, res: Response) => {
+  try {
+    const { yearId } = req.params;
+    const schoolId = req.user?.schoolId;
+
+    if (!schoolId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const academicYear = await prisma.academicYear.findFirst({
+      where: { id: yearId, schoolId },
+    });
+
+    if (!academicYear) {
+      return res.status(404).json({
+        success: false,
+        message: 'Academic year not found',
+      });
+    }
+
+    const classes = await prisma.class.findMany({
+      where: {
+        academicYearId: yearId,
+        schoolId,
+      },
+      include: {
+        studentClasses: {
+          where: {
+            status: 'ACTIVE',
+          },
+          include: {
+            student: {
+              select: {
+                id: true,
+                studentId: true,
+                firstName: true,
+                lastName: true,
+                khmerName: true,
+                gender: true,
+                dateOfBirth: true,
+                photoUrl: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        grade: 'asc',
+      },
+    });
+
+    const eligibleStudents = classes.map((cls) => ({
+      classId: cls.id,
+      className: cls.name,
+      grade: cls.grade,
+      section: cls.section,
+      track: cls.track,
+      studentCount: cls.studentClasses.length,
+      students: cls.studentClasses.map((sc) => ({
+        id: sc.student.id,
+        studentId: sc.student.studentId,
+        firstName: sc.student.firstName,
+        lastName: sc.student.lastName,
+        khmerName: sc.student.khmerName,
+        gender: sc.student.gender,
+        dateOfBirth: sc.student.dateOfBirth,
+        photoUrl: sc.student.photoUrl,
+      })),
+    }));
+
+    const totalStudents = eligibleStudents.reduce((sum, cls) => sum + cls.studentCount, 0);
+
+    res.json({
+      success: true,
+      data: {
+        academicYear: {
+          id: academicYear.id,
+          name: academicYear.name,
+          status: academicYear.status,
+        },
+        classes: eligibleStudents,
+        totalStudents,
+      },
+    });
+  } catch (error: any) {
+    console.error('Error fetching eligible students:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch eligible students',
       error: error.message,
     });
   }
@@ -1343,107 +1451,6 @@ app.post('/students/:id/photo', upload.single('photo'), async (req: AuthRequest,
 // ============================================
 // STUDENT PROMOTION & PROGRESSION ENDPOINTS
 // ============================================
-
-/**
- * Get eligible students for promotion
- * Returns all students enrolled in a specific academic year
- */
-app.get('/students/promote/eligible/:yearId', async (req: AuthRequest, res: Response) => {
-  try {
-    const { yearId } = req.params;
-    const schoolId = req.user?.schoolId;
-
-    if (!schoolId) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
-
-    // Verify academic year belongs to school
-    const academicYear = await prisma.academicYear.findFirst({
-      where: { id: yearId, schoolId },
-    });
-
-    if (!academicYear) {
-      return res.status(404).json({
-        success: false,
-        message: 'Academic year not found',
-      });
-    }
-
-    // Get all classes for this academic year with their students
-    const classes = await prisma.class.findMany({
-      where: {
-        academicYearId: yearId,
-        schoolId,
-      },
-      include: {
-        studentClasses: {
-          where: {
-            status: 'ACTIVE',
-          },
-          include: {
-            student: {
-              select: {
-                id: true,
-                studentId: true,
-                firstName: true,
-                lastName: true,
-                khmerName: true,
-                gender: true,
-                dateOfBirth: true,
-                photoUrl: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        grade: 'asc',
-      },
-    });
-
-    // Transform data for easier frontend consumption
-    const eligibleStudents = classes.map((cls) => ({
-      classId: cls.id,
-      className: cls.name,
-      grade: cls.grade,
-      section: cls.section,
-      track: cls.track,
-      studentCount: cls.studentClasses.length,
-      students: cls.studentClasses.map((sc) => ({
-        id: sc.student.id,
-        studentId: sc.student.studentId,
-        firstName: sc.student.firstName,
-        lastName: sc.student.lastName,
-        khmerName: sc.student.khmerName,
-        gender: sc.student.gender,
-        dateOfBirth: sc.student.dateOfBirth,
-        photoUrl: sc.student.photoUrl,
-      })),
-    }));
-
-    const totalStudents = eligibleStudents.reduce((sum, cls) => sum + cls.studentCount, 0);
-
-    res.json({
-      success: true,
-      data: {
-        academicYear: {
-          id: academicYear.id,
-          name: academicYear.name,
-          status: academicYear.status,
-        },
-        classes: eligibleStudents,
-        totalStudents,
-      },
-    });
-  } catch (error: any) {
-    console.error('Error fetching eligible students:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch eligible students',
-      error: error.message,
-    });
-  }
-});
 
 /**
  * Preview automatic promotion
@@ -2315,16 +2322,6 @@ function getLetterGrade(percentage: number): string {
   if (percentage >= 50) return 'E';
   return 'F';
 }
-
-// Health check endpoint (no auth required)
-app.get('/health', (_req, res) => {
-  res.json({
-    success: true,
-    service: 'student-service',
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-  });
-});
 
 // Start server
 const PORT = process.env.STUDENT_SERVICE_PORT || 3003;

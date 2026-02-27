@@ -29,7 +29,12 @@ const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 // Middleware
 // ========================================
 
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005', 'http://localhost:3006'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json());
 
 // Authentication Middleware
@@ -201,6 +206,7 @@ app.get('/subjects', authenticateToken, async (req: AuthRequest, res: Response) 
 
 /**
  * GET /subjects/lightweight - Lightweight list for dropdowns
+ * NOTE: Must be registered BEFORE /subjects/:id to avoid route conflict
  */
 app.get('/subjects/lightweight', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -237,6 +243,129 @@ app.get('/subjects/lightweight', authenticateToken, async (req: AuthRequest, res
     console.error('❌ Error getting lightweight subjects:', error);
     res.status(500).json({
       message: 'Error getting subjects',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * GET /subjects/by-grade/:grade - Get subjects by grade
+ * NOTE: Must be registered BEFORE /subjects/:id to avoid route conflict
+ */
+app.get('/subjects/by-grade/:grade', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { grade } = req.params;
+    const { isActive = 'true', track } = req.query;
+
+    const where: any = {
+      grade,
+      isActive: isActive === 'true',
+    };
+
+    if (track) where.track = track as string;
+
+    const subjects = await prisma.subject.findMany({
+      where,
+      include: {
+        _count: {
+          select: {
+            subjectTeachers: true,
+            grades: true,
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+
+    res.json(subjects);
+  } catch (error: any) {
+    console.error('Error getting subjects by grade:', error);
+    res.status(500).json({
+      message: 'Error getting subjects by grade',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * GET /subjects/by-teacher/:teacherId - Get subjects taught by teacher
+ * NOTE: Must be registered BEFORE /subjects/:id to avoid route conflict
+ */
+app.get('/subjects/by-teacher/:teacherId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { teacherId } = req.params;
+
+    const assignments = await prisma.subjectTeacher.findMany({
+      where: {
+        teacherId,
+      },
+      include: {
+        subject: {
+          include: {
+            _count: {
+              select: {
+                grades: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const subjects = assignments.map(a => a.subject);
+
+    res.json(subjects);
+  } catch (error: any) {
+    console.error('Error getting subjects by teacher:', error);
+    res.status(500).json({
+      message: 'Error getting subjects by teacher',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * GET /subjects/statistics - Get subject statistics
+ * NOTE: Must be registered BEFORE /subjects/:id to avoid route conflict
+ */
+app.get('/subjects/statistics', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const totalSubjects = await prisma.subject.count();
+    const activeSubjects = await prisma.subject.count({ where: { isActive: true } });
+    const inactiveSubjects = await prisma.subject.count({ where: { isActive: false } });
+
+    const byGrade = await prisma.subject.groupBy({
+      by: ['grade'],
+      _count: true,
+      orderBy: {
+        grade: 'asc',
+      },
+    });
+
+    const byCategory = await prisma.subject.groupBy({
+      by: ['category'],
+      _count: true,
+    });
+
+    const byTrack = await prisma.subject.groupBy({
+      by: ['track'],
+      _count: true,
+    });
+
+    res.json({
+      total: totalSubjects,
+      active: activeSubjects,
+      inactive: inactiveSubjects,
+      byGrade,
+      byCategory,
+      byTrack,
+    });
+  } catch (error: any) {
+    console.error('Error getting subject statistics:', error);
+    res.status(500).json({
+      message: 'Error getting subject statistics',
       error: error.message,
     });
   }
@@ -697,133 +826,6 @@ app.get('/subjects/:id/teachers', authenticateToken, async (req: AuthRequest, re
     console.error('❌ Error getting subject teachers:', error);
     res.status(500).json({
       message: 'Error getting subject teachers',
-      error: error.message,
-    });
-  }
-});
-
-// ========================================
-// ADVANCED QUERY ENDPOINTS
-// ========================================
-
-/**
- * GET /subjects/by-grade/:grade - Get subjects by grade
- */
-app.get('/subjects/by-grade/:grade', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { grade } = req.params;
-    const { isActive = 'true', track } = req.query;
-
-    const where: any = {
-      grade,
-      isActive: isActive === 'true',
-    };
-
-    if (track) where.track = track as string;
-
-    const subjects = await prisma.subject.findMany({
-      where,
-      include: {
-        _count: {
-          select: {
-            subjectTeachers: true,
-            grades: true,
-          },
-        },
-      },
-      orderBy: {
-        name: 'asc',
-      },
-    });
-
-    res.json(subjects);
-  } catch (error: any) {
-    console.error('❌ Error getting subjects by grade:', error);
-    res.status(500).json({
-      message: 'Error getting subjects by grade',
-      error: error.message,
-    });
-  }
-});
-
-/**
- * GET /subjects/by-teacher/:teacherId - Get subjects taught by teacher
- */
-app.get('/subjects/by-teacher/:teacherId', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const { teacherId } = req.params;
-
-    const assignments = await prisma.subjectTeacher.findMany({
-      where: {
-        teacherId,
-      },
-      include: {
-        subject: {
-          include: {
-            _count: {
-              select: {
-                grades: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    const subjects = assignments.map(a => a.subject);
-
-    res.json(subjects);
-  } catch (error: any) {
-    console.error('❌ Error getting subjects by teacher:', error);
-    res.status(500).json({
-      message: 'Error getting subjects by teacher',
-      error: error.message,
-    });
-  }
-});
-
-/**
- * GET /subjects/statistics - Get subject statistics
- */
-app.get('/subjects/statistics', authenticateToken, async (req: AuthRequest, res: Response) => {
-  try {
-    const totalSubjects = await prisma.subject.count();
-    const activeSubjects = await prisma.subject.count({ where: { isActive: true } });
-    const inactiveSubjects = await prisma.subject.count({ where: { isActive: false } });
-
-    // By grade
-    const byGrade = await prisma.subject.groupBy({
-      by: ['grade'],
-      _count: true,
-      orderBy: {
-        grade: 'asc',
-      },
-    });
-
-    // By category
-    const byCategory = await prisma.subject.groupBy({
-      by: ['category'],
-      _count: true,
-    });
-
-    // By track
-    const byTrack = await prisma.subject.groupBy({
-      by: ['track'],
-      _count: true,
-    });
-
-    res.json({
-      total: totalSubjects,
-      active: activeSubjects,
-      inactive: inactiveSubjects,
-      byGrade,
-      byCategory,
-      byTrack,
-    });
-  } catch (error: any) {
-    console.error('❌ Error getting subject statistics:', error);
-    res.status(500).json({
-      message: 'Error getting subject statistics',
       error: error.message,
     });
   }

@@ -111,7 +111,7 @@ export async function getStudents(params?: {
     firstNameLatin: student.firstName || student.englishName || '',
     lastNameLatin: student.lastName || '',
     firstNameKhmer: student.khmerName || null,
-    lastNameKhmer: null,
+    lastNameKhmer: student.lastNameKhmer || null,
   }));
   
   // Transform API response to match frontend interface
@@ -146,7 +146,7 @@ export async function getStudentById(id: string): Promise<{ success: boolean; da
 
 export async function createStudent(data: CreateStudentInput): Promise<{ success: boolean; data: { student: Student } }> {
   // Transform frontend field names to backend expectations
-  const backendData = {
+  const backendData: Record<string, any> = {
     firstName: data.firstNameLatin,
     lastName: data.lastNameLatin,
     khmerName: data.firstNameKhmer || '',
@@ -158,6 +158,9 @@ export async function createStudent(data: CreateStudentInput): Promise<{ success
     phoneNumber: data.phoneNumber || '',
     email: data.email || '',
   };
+  if ((data as any).classId) {
+    backendData.classId = (data as any).classId;
+  }
 
   const response = await fetch(`${STUDENT_SERVICE_URL}/students`, {
     method: 'POST',

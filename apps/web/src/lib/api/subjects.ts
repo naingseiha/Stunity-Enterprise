@@ -1,6 +1,6 @@
 import { TokenManager } from './auth';
 
-const API_BASE_URL = 'http://localhost:3006';
+const API_BASE_URL = process.env.NEXT_PUBLIC_SUBJECT_SERVICE_URL || 'http://localhost:3006';
 
 export interface Subject {
   id: string;
@@ -65,12 +65,15 @@ export interface SubjectFilters {
  * Subject API Client
  */
 class SubjectAPI {
-  private getHeaders() {
+  private getHeaders(): Record<string, string> {
     const token = TokenManager.getAccessToken();
-    return {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
     };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
   }
 
   /**

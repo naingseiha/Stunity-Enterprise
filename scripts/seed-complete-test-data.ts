@@ -109,11 +109,10 @@ async function main() {
           ...teacherData,
           schoolId: school.id,
           teacherId: `T${String(createdTeachers.length + 1).padStart(4, '0')}`,
-          phone: `0${10 + createdTeachers.length}`,
-          dateOfBirth: new Date('1985-01-01'),
+          phone: `+8551${String(createdTeachers.length).padStart(7, '0')}`,
+          dateOfBirth: '1985-01-01',
           gender: Math.random() > 0.5 ? 'MALE' : 'FEMALE',
-          status: 'ACTIVE',
-          hireDate: new Date('2024-01-01'),
+          hireDate: '2024-01-01',
         }
       });
       console.log(`  ✅ Created ${teacher.firstName} ${teacher.lastName} (${teacher.subject})`);
@@ -164,7 +163,7 @@ async function main() {
               section,
               schoolId: school.id,
               academicYearId: year.id,
-              classTeacherId: randomTeacher.id,
+              homeroomTeacherId: randomTeacher.id,
               capacity: 40,
               room: `Room ${grade}0${section.charCodeAt(0) - 64}`,
               schedule: 'Monday to Friday, 7:00 AM - 11:30 AM',
@@ -226,21 +225,28 @@ async function main() {
       const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
       const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
       
-      await prisma.student.create({
+      const student = await prisma.student.create({
         data: {
           studentId: `S${String(studentCounter).padStart(6, '0')}`,
           firstName,
           lastName,
           khmerName: `${firstName} ${lastName}`,
           email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}${studentCounter}@student.test.edu`,
-          phone: `0${70000000 + studentCounter}`,
-          dateOfBirth: new Date(`200${8 - parseInt(dist.grade) + 10}-05-15`),
+          phoneNumber: `0${70000000 + studentCounter}`,
+          dateOfBirth: `200${8 - parseInt(dist.grade) + 10}-05-15`,
           gender: Math.random() > 0.5 ? 'MALE' : 'FEMALE',
           schoolId: school.id,
           classId: cls.id,
-          status: 'ACTIVE',
-          enrollmentDate: new Date('2025-08-15'),
         }
+      });
+      // Also create StudentClass enrollment for roster/promotion features
+      await prisma.studentClass.create({
+        data: {
+          studentId: student.id,
+          classId: cls.id,
+          academicYearId: year2025.id,
+          status: 'ACTIVE',
+        },
       });
     }
   }

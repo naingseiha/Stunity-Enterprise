@@ -151,7 +151,7 @@ class ApiClient {
 
   private getToken(): string | null {
     if (typeof window === "undefined") return null;
-    return localStorage.getItem("token");
+    return localStorage.getItem("accessToken") || localStorage.getItem("token");
   }
 
   private getHeaders(): HeadersInit {

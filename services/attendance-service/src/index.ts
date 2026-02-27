@@ -239,23 +239,60 @@ app.get('/attendance/class/:classId/date/:date', authenticateToken, async (req: 
     const startDate = startOfDay(targetDate);
     const endDate = endOfDay(targetDate);
 
-    // Get all students in the class
-    const students = await prisma.student.findMany({
-      where: {
-        classId: classId,
-        schoolId: schoolId,
-      },
-      select: {
-        id: true,
-        studentId: true,
-        firstName: true,
-        lastName: true,
-        photoUrl: true,
-      },
-      orderBy: {
-        firstName: 'asc',
-      },
-    });
+    // Get students via both direct classId and StudentClass junction table
+    const [directStudents, enrolledStudents] = await Promise.all([
+      prisma.student.findMany({
+        where: {
+          classId: classId,
+          schoolId: schoolId,
+        },
+        select: {
+          id: true,
+          studentId: true,
+          firstName: true,
+          lastName: true,
+          photoUrl: true,
+        },
+      }),
+      prisma.studentClass.findMany({
+        where: {
+          classId: classId,
+          status: 'ACTIVE',
+        },
+        include: {
+          student: {
+            select: {
+              id: true,
+              studentId: true,
+              firstName: true,
+              lastName: true,
+              photoUrl: true,
+              schoolId: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    // Merge and deduplicate students from both sources
+    const studentMap = new Map<string, typeof directStudents[0]>();
+    for (const s of directStudents) {
+      studentMap.set(s.id, s);
+    }
+    for (const sc of enrolledStudents) {
+      if (sc.student.schoolId === schoolId && !studentMap.has(sc.student.id)) {
+        studentMap.set(sc.student.id, {
+          id: sc.student.id,
+          studentId: sc.student.studentId,
+          firstName: sc.student.firstName,
+          lastName: sc.student.lastName,
+          photoUrl: sc.student.photoUrl,
+        });
+      }
+    }
+    const students = Array.from(studentMap.values()).sort((a, b) =>
+      a.firstName.localeCompare(b.firstName)
+    );
 
     // Get attendance records for the date
     const attendanceRecords = await prisma.attendance.findMany({
@@ -363,18 +400,33 @@ app.post('/attendance/bulk', authenticateToken, async (req: AuthRequest, res: Re
     // Parse date
     const targetDate = startOfDay(parseISO(date));
 
-    // Validate students belong to class
+    // Validate students belong to class (via direct classId or StudentClass junction)
     const studentIds = attendance.map(a => a.studentId);
-    const validStudents = await prisma.student.findMany({
-      where: {
-        id: { in: studentIds },
-        classId: classId,
-        schoolId: schoolId,
-      },
-      select: { id: true },
-    });
+    const [directStudents2, enrolledStudents2] = await Promise.all([
+      prisma.student.findMany({
+        where: {
+          id: { in: studentIds },
+          classId: classId,
+          schoolId: schoolId,
+        },
+        select: { id: true },
+      }),
+      prisma.studentClass.findMany({
+        where: {
+          studentId: { in: studentIds },
+          classId: classId,
+          status: 'ACTIVE',
+        },
+        select: { studentId: true },
+      }),
+    ]);
+    const validStudentIds = new Set([
+      ...directStudents2.map(s => s.id),
+      ...enrolledStudents2.map(sc => sc.studentId),
+    ]);
 
-    if (validStudents.length !== studentIds.length) {
+    const invalidIds = studentIds.filter(id => !validStudentIds.has(id));
+    if (invalidIds.length > 0) {
       return res.status(400).json({
         success: false,
         message: 'One or more students do not belong to this class',
@@ -618,23 +670,37 @@ app.get('/attendance/class/:classId/month/:month/year/:year', authenticateToken,
     const startDate = startOfMonth(new Date(yearNum, monthNum - 1, 1));
     const endDate = endOfMonth(startDate);
 
-    // Get all students in the class
-    const students = await prisma.student.findMany({
-      where: {
-        classId: classId,
-        schoolId: schoolId,
-      },
-      select: {
-        id: true,
-        studentId: true,
-        firstName: true,
-        lastName: true,
-        photoUrl: true,
-      },
-      orderBy: {
-        firstName: 'asc',
-      },
-    });
+    // Get students via both direct classId and StudentClass junction table
+    const [directStu, enrolledStu] = await Promise.all([
+      prisma.student.findMany({
+        where: { classId: classId, schoolId: schoolId },
+        select: { id: true, studentId: true, firstName: true, lastName: true, photoUrl: true },
+      }),
+      prisma.studentClass.findMany({
+        where: { classId: classId, status: 'ACTIVE' },
+        include: {
+          student: {
+            select: { id: true, studentId: true, firstName: true, lastName: true, photoUrl: true, schoolId: true },
+          },
+        },
+      }),
+    ]);
+    const stuMap = new Map<string, typeof directStu[0]>();
+    for (const s of directStu) stuMap.set(s.id, s);
+    for (const sc of enrolledStu) {
+      if (sc.student.schoolId === schoolId && !stuMap.has(sc.student.id)) {
+        stuMap.set(sc.student.id, {
+          id: sc.student.id,
+          studentId: sc.student.studentId,
+          firstName: sc.student.firstName,
+          lastName: sc.student.lastName,
+          photoUrl: sc.student.photoUrl,
+        });
+      }
+    }
+    const students = Array.from(stuMap.values()).sort((a, b) =>
+      a.firstName.localeCompare(b.firstName)
+    );
 
     // Get all attendance records for the month
     const attendanceRecords = await prisma.attendance.findMany({

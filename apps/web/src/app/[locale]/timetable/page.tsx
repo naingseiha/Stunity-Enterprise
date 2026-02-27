@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useLocale } from 'next-intl';
 import {
   DndContext,
   DragOverlay,
@@ -355,6 +356,7 @@ function DroppableCell({
 
 export default function TimetablePage() {
   const router = useRouter();
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -439,7 +441,7 @@ export default function TimetablePage() {
   useEffect(() => {
     const token = TokenManager.getAccessToken();
     if (!token) {
-      router.push('/en/auth/login');
+      router.push(`/${locale}/auth/login`);
       return;
     }
 

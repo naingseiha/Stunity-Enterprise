@@ -67,7 +67,7 @@ export default function LocationsManagementPage({ params }: { params: { locale: 
             }
 
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/attendance/locations`,
+                `${process.env.NEXT_PUBLIC_ATTENDANCE_SERVICE_URL || 'http://localhost:3008'}/attendance/locations`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -109,7 +109,7 @@ export default function LocationsManagementPage({ params }: { params: { locale: 
             const token = TokenManager.getAccessToken();
 
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/attendance/locations`,
+                `${process.env.NEXT_PUBLIC_ATTENDANCE_SERVICE_URL || 'http://localhost:3008'}/attendance/locations`,
                 {
                     method: 'POST',
                     headers: {
@@ -154,7 +154,7 @@ export default function LocationsManagementPage({ params }: { params: { locale: 
             const token = TokenManager.getAccessToken();
 
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/attendance/locations/${id}`,
+                `${process.env.NEXT_PUBLIC_ATTENDANCE_SERVICE_URL || 'http://localhost:3008'}/attendance/locations/${id}`,
                 {
                     method: 'DELETE',
                     headers: {

@@ -23,11 +23,16 @@ function getPrisma(): PrismaClient {
   return prisma;
 }
 
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005', 'http://localhost:3006', 'http://localhost:3007', 'http://localhost:3008', 'http://localhost:3009'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json());
 
 // JWT Secret - must match auth service
-const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-v2-jwt-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 
 // Auth Middleware
 interface AuthUser {

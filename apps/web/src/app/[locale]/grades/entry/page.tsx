@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { gradeAPI, GradeGridItem, getGradeLevelColor, getScoreColor } from '@/lib/api/grades';
 import { getClasses, Class } from '@/lib/api/classes';
 import { subjectAPI, Subject } from '@/lib/api/subjects';
-import { getAcademicYears, AcademicYear } from '@/lib/api/academic-years';
 import { TokenManager } from '@/lib/api/auth';
+import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
@@ -44,11 +45,12 @@ interface Statistics {
 
 export default function GradeEntryPage() {
   const router = useRouter();
+  const locale = useLocale();
+  const { selectedYear, allYears, setSelectedYear } = useAcademicYear();
   const [user, setUser] = useState<any>(null);
   
-  // Selectors
-  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('');
+  // The academic year from context
+  const selectedAcademicYear = selectedYear?.id || '';
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -86,7 +88,7 @@ export default function GradeEntryPage() {
   useEffect(() => {
     const token = TokenManager.getAccessToken();
     if (!token) {
-      router.push('/auth/login');
+      router.push(`/${locale}/auth/login`);
       return;
     }
     
@@ -94,43 +96,18 @@ export default function GradeEntryPage() {
     setUser(userData.user);
   }, [router]);
 
-  // Load initial data
+  // Load classes when academic year changes
   useEffect(() => {
-    if (user) {
-      loadAcademicYears();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (selectedAcademicYear) {
+    if (user && selectedAcademicYear) {
       loadClasses();
     }
-  }, [selectedAcademicYear]);
+  }, [user, selectedAcademicYear]);
 
   useEffect(() => {
     if (selectedClass) {
       loadSubjects();
     }
   }, [selectedClass]);
-
-  // Load academic years
-  const loadAcademicYears = async () => {
-    try {
-      const token = TokenManager.getAccessToken();
-      if (!token || !user?.schoolId) return;
-      
-      const years = await getAcademicYears(user.schoolId, token);
-      setAcademicYears(years);
-      
-      // Select current year by default
-      const currentYear = years.find(y => y.isCurrent);
-      if (currentYear) {
-        setSelectedAcademicYear(currentYear.id);
-      }
-    } catch (error) {
-      console.error('Failed to load academic years:', error);
-    }
-  };
 
   // Load classes
   const loadClasses = async () => {
@@ -608,11 +585,14 @@ export default function GradeEntryPage() {
                   </label>
                   <select
                     value={selectedAcademicYear}
-                    onChange={(e) => setSelectedAcademicYear(e.target.value)}
+                    onChange={(e) => {
+                      const year = allYears.find(y => y.id === e.target.value);
+                      if (year) setSelectedYear(year);
+                    }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-shadow"
                   >
                     <option value="">Select Year</option>
-                    {academicYears.map(year => (
+                    {allYears.map(year => (
                       <option key={year.id} value={year.id}>
                         {year.name} {year.isCurrent && '(Current)'}
                       </option>
