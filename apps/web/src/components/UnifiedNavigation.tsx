@@ -21,10 +21,11 @@ import {
   TrendingUp,
   ClipboardList,
   ClipboardCheck,
-  Loader2,
   MessageCircle,
   ChevronRight,
   Ticket,
+  MapPin,
+  Loader2,
 } from 'lucide-react';
 import AcademicYearSelector from './AcademicYearSelector';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -168,7 +169,13 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       active: isSchoolContext,
       badge: null,
     },
-  ], [locale, isFeedContext, isClubsContext, isEventsContext, isSchoolContext, isLearnContext]);
+  ].filter(item => {
+    // Hide 'School' menu if the user is not part of any school
+    if (item.name === 'School' && !school) {
+      return false;
+    }
+    return true;
+  }), [locale, isFeedContext, isClubsContext, isEventsContext, isSchoolContext, isLearnContext, school]);
 
   // Memoized school menu items
   const schoolMenuItems = useMemo(() => [
@@ -187,6 +194,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
     { name: 'Attendance Reports', icon: ClipboardCheck, path: `/${locale}/attendance/reports`, prefetch: null },
     { name: 'Claim Codes', icon: Ticket, path: `/${locale}/admin/claim-codes`, prefetch: null },
     { name: 'Promotion', icon: TrendingUp, path: `/${locale}/settings/promotion`, prefetch: null },
+    { name: 'Campus Locations', icon: MapPin, path: `/${locale}/settings/locations`, prefetch: null },
     { name: 'Settings', icon: Settings, path: `/${locale}/settings/academic-years`, prefetch: null },
   ], [locale]);
 

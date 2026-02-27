@@ -32,7 +32,7 @@ class TokenService {
   async initialize(): Promise<boolean> {
     try {
       // Add timeout to prevent hanging
-      const timeout = new Promise<boolean>((_, reject) => 
+      const timeout = new Promise<boolean>((_, reject) =>
         setTimeout(() => reject(new Error('SecureStore timeout')), 3000)
       );
 
@@ -106,14 +106,14 @@ class TokenService {
 
     try {
       const refreshToken = this.refreshToken || await SecureStore.getItemAsync(KEYS.REFRESH_TOKEN);
-      
+
       if (!refreshToken) {
         throw new Error('No refresh token available');
       }
 
       // Import dynamically to avoid circular dependency
       const { authApi } = await import('@/api/client');
-      
+
       const response = await authApi.post('/auth/refresh', {
         refreshToken,
       });
@@ -121,10 +121,10 @@ class TokenService {
       if (response.data.success) {
         const tokens: AuthTokens = response.data.tokens;
         await this.setTokens(tokens);
-        
+
         // Notify all subscribers
         this.notifyRefreshSubscribers(tokens.accessToken);
-        
+
         return tokens.accessToken;
       }
 
@@ -140,12 +140,29 @@ class TokenService {
   }
 
   /**
+   * Get all tokens
+   */
+  async getTokens(): Promise<AuthTokens | null> {
+    const accessToken = await this.getAccessToken();
+    const refreshToken = this.refreshToken || await SecureStore.getItemAsync(KEYS.REFRESH_TOKEN);
+
+    if (accessToken && refreshToken) {
+      return {
+        accessToken,
+        refreshToken,
+        expiresIn: this.tokenExpiry ? Math.floor((this.tokenExpiry - Date.now()) / 1000) : 0,
+      };
+    }
+    return null;
+  }
+
+  /**
    * Save tokens to secure storage
    */
   async setTokens(tokens: AuthTokens): Promise<void> {
     // Handle expiresIn as either number (seconds) or string (e.g., "7d")
     let expiresInSeconds: number;
-    
+
     if (typeof tokens.expiresIn === 'string') {
       // Parse string like "7d" -> 7 * 24 * 60 * 60 seconds
       const match = tokens.expiresIn.match(/^(\d+)([smhd])$/);
@@ -165,7 +182,7 @@ class TokenService {
     } else {
       expiresInSeconds = tokens.expiresIn;
     }
-    
+
     const expiryTime = Date.now() + expiresInSeconds * 1000;
 
     await Promise.all([

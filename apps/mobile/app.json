@@ -23,7 +23,8 @@
         "NSCameraUsageDescription": "Stunity needs camera access to take photos for posts and profile pictures.",
         "NSPhotoLibraryUsageDescription": "Stunity needs photo library access to share photos in posts.",
         "NSMicrophoneUsageDescription": "Stunity needs microphone access to record videos.",
-        "NSFaceIDUsageDescription": "Stunity uses Face ID for secure login."
+        "NSFaceIDUsageDescription": "Stunity uses Face ID for secure login.",
+        "NSLocationWhenInUseUsageDescription": "Stunity needs your location to verify your check-in at school."
       }
     },
     "android": {
@@ -45,7 +46,9 @@
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.RECORD_AUDIO",
         "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT"
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "web": {

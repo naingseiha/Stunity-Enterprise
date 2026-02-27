@@ -8,6 +8,16 @@ async function main() {
 
   // Clean existing data (optional - be careful in production!)
   console.log('🗑️  Cleaning existing data...');
+
+  // Delete Course related data first 
+  await prisma.learningPathCourse.deleteMany();
+  await prisma.pathEnrollment.deleteMany();
+  await prisma.learningPath.deleteMany();
+  await prisma.enrollment.deleteMany();
+  await prisma.courseReview.deleteMany();
+  await prisma.lessonProgress.deleteMany();
+  await prisma.course.deleteMany();
+
   await prisma.studentProgression.deleteMany();
   await prisma.studentClass.deleteMany();
   await prisma.teacherClass.deleteMany();
@@ -16,6 +26,7 @@ async function main() {
   await prisma.class.deleteMany();
   await prisma.academicYear.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.schoolLocation.deleteMany(); // added from new feature
   await prisma.school.deleteMany();
 
   // Create Test Schools
@@ -62,7 +73,7 @@ async function main() {
 
   // Create Academic Years
   console.log('📅 Creating academic years...');
-  
+
   // Previous year (2024-2025) - ENDED status, ready for promotion
   const academicYear2024 = await prisma.academicYear.create({
     data: {
@@ -140,7 +151,7 @@ async function main() {
 
   // Create Classes for 2024-2025 (source year for promotion)
   console.log('📚 Creating classes for 2024-2025...');
-  
+
   // Grade 7 classes (2024-2025)
   const grade7A_2024 = await prisma.class.create({
     data: {
@@ -213,7 +224,7 @@ async function main() {
 
   // Create Classes for 2025-2026 (current year)
   console.log('📚 Creating classes for 2025-2026...');
-  
+
   // Grade 7 classes (2025-2026) - For repeating students
   const grade7A_2025 = await prisma.class.create({
     data: {
@@ -326,7 +337,7 @@ async function main() {
 
   // Create Classes for 2026-2027 (next year, for promotion target)
   console.log('📚 Creating classes for 2026-2027...');
-  
+
   const grade8A_2026 = await prisma.class.create({
     data: {
       schoolId: testHighSchool.id,
@@ -439,13 +450,13 @@ async function main() {
 
   // Create TeacherClass assignments (teachers assigned to classes by year)
   console.log('👨‍🏫 Assigning teachers to classes...');
-  
+
   // Get created teachers
   const createdTeachers = await prisma.teacher.findMany({
     where: { schoolId: testHighSchool.id },
     select: { id: true, firstName: true }
   });
-  
+
   // Assign teachers to 2024-2025 classes
   const classes2024 = [grade7A_2024, grade7B_2024, grade8A_2024, grade8B_2024, grade9A_2024];
   for (let i = 0; i < classes2024.length; i++) {
@@ -457,7 +468,7 @@ async function main() {
       }
     });
   }
-  
+
   // Assign teachers to 2025-2026 classes  
   const classes2025 = [grade7A_2025, grade7B_2025, grade8A_2025, grade8B_2025, grade9A_2025, grade9B_2025, grade10A_2025, grade10B_2025];
   for (let i = 0; i < classes2025.length; i++) {
@@ -469,7 +480,7 @@ async function main() {
       }
     });
   }
-  
+
   // Assign teachers to 2026-2027 classes
   const classes2026 = [grade8A_2026, grade9A_2026, grade10A_2026];
   for (let i = 0; i < classes2026.length; i++) {
@@ -481,19 +492,19 @@ async function main() {
       }
     });
   }
-  
+
   console.log(`✅ Assigned teachers to ${classes2024.length + classes2025.length + classes2026.length} classes`);
 
   // Create Students for 2024-2025 (ready for promotion)
   console.log('👨‍🎓 Creating students for 2024-2025...');
-  
+
   // Grade 7A students (20 students)
   const grade7A_students = [];
-  const firstNames = ['Sophea', 'Vuthy', 'Mealea', 'Borey', 'Chanthy', 'Virak', 'Sreymom', 'Ratha', 'Vanna', 'Piseth', 
-                       'Srey', 'Dara', 'Kunthea', 'Rithy', 'Nita', 'Sokha', 'Leakhena', 'Pheaktra', 'Samnang', 'Rotana'];
-  const lastNames = ['Mao', 'Lim', 'Seng', 'Tan', 'Kem', 'Chhay', 'Touch', 'Chea', 'Chhouk', 'Sok', 
-                     'Neang', 'Kong', 'Hour', 'Yin', 'Sok', 'Pheap', 'Chan', 'Keo', 'San', 'Long'];
-  
+  const firstNames = ['Sophea', 'Vuthy', 'Mealea', 'Borey', 'Chanthy', 'Virak', 'Sreymom', 'Ratha', 'Vanna', 'Piseth',
+    'Srey', 'Dara', 'Kunthea', 'Rithy', 'Nita', 'Sokha', 'Leakhena', 'Pheaktra', 'Samnang', 'Rotana'];
+  const lastNames = ['Mao', 'Lim', 'Seng', 'Tan', 'Kem', 'Chhay', 'Touch', 'Chea', 'Chhouk', 'Sok',
+    'Neang', 'Kong', 'Hour', 'Yin', 'Sok', 'Pheap', 'Chan', 'Keo', 'San', 'Long'];
+
   for (let i = 0; i < 20; i++) {
     const student = await prisma.student.create({
       data: {
@@ -597,7 +608,7 @@ async function main() {
 
   // Create StudentClass enrollments for 2024-2025
   console.log('📝 Creating student-class enrollments for 2024-2025...');
-  
+
   for (const student of grade7A_students) {
     await prisma.studentClass.create({
       data: {

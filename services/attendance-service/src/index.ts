@@ -936,6 +936,278 @@ app.get('/attendance/class/:classId/summary', authenticateToken, async (req: Aut
   }
 });
 
+// ==================== D. Geofenced Location Management ====================
+
+// GET /attendance/locations - Get all school locations
+app.get('/attendance/locations', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.schoolId!;
+    const locations = await prisma.schoolLocation.findMany({
+      where: { schoolId, isActive: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ success: true, data: locations });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Failed to fetch locations', error: error.message });
+  }
+});
+
+// POST /attendance/locations - Create a new location
+app.post('/attendance/locations', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.schoolId!;
+    const { name, latitude, longitude, radius } = req.body;
+
+    if (!name || latitude === undefined || longitude === undefined) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
+    const newLocation = await prisma.schoolLocation.create({
+      data: {
+        schoolId,
+        name,
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude),
+        radius: radius ? parseFloat(radius) : 50,
+      },
+    });
+
+    res.status(201).json({ success: true, message: 'Location created', data: newLocation });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Failed to create location', error: error.message });
+  }
+});
+
+// DELETE /attendance/locations/:id - Delete a location
+app.delete('/attendance/locations/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = req.schoolId!;
+
+    const location = await prisma.schoolLocation.findFirst({
+      where: { id, schoolId },
+    });
+
+    if (!location) {
+      return res.status(404).json({ success: false, message: 'Location not found' });
+    }
+
+    await prisma.schoolLocation.update({
+      where: { id },
+      data: { isActive: false },
+    });
+
+    res.json({ success: true, message: 'Location deleted successfully' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Failed to delete location', error: error.message });
+  }
+});
+
+// ==================== E. Geofenced Teacher Attendance ====================
+
+function getDistanceFromLatLonInM(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; 
+  return d;
+}
+
+// POST /attendance/teacher/check-in - Record teacher time in
+app.post('/attendance/teacher/check-in', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.schoolId!;
+    const userId = req.user?.id;
+    const { latitude, longitude } = req.body;
+
+    if (!latitude || !longitude) {
+      return res.status(400).json({ success: false, message: 'Location coordinates required' });
+    }
+
+    const teacher = await prisma.teacher.findFirst({
+      where: { schoolId, user: { id: userId } },
+    });
+
+    if (!teacher) {
+      return res.status(404).json({ success: false, message: 'Teacher profile not found' });
+    }
+
+    const locations = await prisma.schoolLocation.findMany({
+      where: { schoolId, isActive: true },
+    });
+
+    if (locations.length === 0) {
+      return res.status(400).json({ success: false, message: 'No school locations configured by admin' });
+    }
+
+    let matchedLocation = null;
+    let shortestDistance = Infinity;
+
+    for (const loc of locations) {
+      const distance = getDistanceFromLatLonInM(latitude, longitude, loc.latitude, loc.longitude);
+      if (distance <= loc.radius) {
+        if (distance < shortestDistance) {
+          shortestDistance = distance;
+          matchedLocation = loc;
+        }
+      }
+    }
+
+    if (!matchedLocation) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'You are outside the allowed school area.',
+        code: 'OUT_OF_BOUNDS'
+      });
+    }
+
+    const todayDate = startOfDay(new Date());
+
+    const existingAttendance = await prisma.teacherAttendance.findUnique({
+      where: {
+        teacherId_date: {
+          teacherId: teacher.id,
+          date: todayDate,
+        }
+      }
+    });
+
+    if (existingAttendance) {
+      return res.status(400).json({ success: false, message: 'Already checked in today' });
+    }
+
+    const attendance = await prisma.teacherAttendance.create({
+      data: {
+        teacherId: teacher.id,
+        locationId: matchedLocation.id,
+        date: todayDate,
+        timeIn: new Date(),
+        status: 'PRESENT',
+      }
+    });
+
+    res.status(201).json({ success: true, message: 'Checked in successfully', data: attendance, locationName: matchedLocation.name });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Check-in failed', error: error.message });
+  }
+});
+
+// POST /attendance/teacher/check-out - Record teacher time out
+app.post('/attendance/teacher/check-out', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.schoolId!;
+    const userId = req.user?.id;
+    const { latitude, longitude } = req.body;
+
+    if (!latitude || !longitude) {
+      return res.status(400).json({ success: false, message: 'Location coordinates required' });
+    }
+
+    const teacher = await prisma.teacher.findFirst({
+      where: { schoolId, user: { id: userId } },
+    });
+
+    if (!teacher) {
+      return res.status(404).json({ success: false, message: 'Teacher profile not found' });
+    }
+
+    const locations = await prisma.schoolLocation.findMany({
+      where: { schoolId, isActive: true },
+    });
+
+    if (locations.length === 0) {
+      return res.status(400).json({ success: false, message: 'No school locations configured by admin' });
+    }
+
+    let matchedLocation = null;
+
+    for (const loc of locations) {
+      const distance = getDistanceFromLatLonInM(latitude, longitude, loc.latitude, loc.longitude);
+      if (distance <= loc.radius) {
+        matchedLocation = loc;
+        break;
+      }
+    }
+
+    if (!matchedLocation) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'You are outside the allowed school area.',
+        code: 'OUT_OF_BOUNDS'
+      });
+    }
+
+    const todayDate = startOfDay(new Date());
+
+    const existingAttendance = await prisma.teacherAttendance.findUnique({
+      where: {
+        teacherId_date: {
+          teacherId: teacher.id,
+          date: todayDate,
+        }
+      }
+    });
+
+    if (!existingAttendance) {
+      return res.status(400).json({ success: false, message: 'No check-in record found for today' });
+    }
+
+    if (existingAttendance.timeOut) {
+      return res.status(400).json({ success: false, message: 'Already checked out today' });
+    }
+
+    const updatedAttendance = await prisma.teacherAttendance.update({
+      where: { id: existingAttendance.id },
+      data: {
+        timeOut: new Date(),
+      }
+    });
+
+    res.json({ success: true, message: 'Checked out successfully', data: updatedAttendance });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Check-out failed', error: error.message });
+  }
+});
+
+// GET /attendance/teacher/today - Get today's attendance status
+app.get('/attendance/teacher/today', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.schoolId!;
+    const userId = req.user?.id;
+    
+    const teacher = await prisma.teacher.findFirst({
+      where: { schoolId, user: { id: userId } },
+    });
+
+    if (!teacher) {
+      return res.status(404).json({ success: false, message: 'Teacher profile not found' });
+    }
+
+    const todayDate = startOfDay(new Date());
+
+    const attendance = await prisma.teacherAttendance.findUnique({
+      where: {
+        teacherId_date: {
+          teacherId: teacher.id,
+          date: todayDate,
+        }
+      },
+      include: {
+        location: true,
+      }
+    });
+
+    res.json({ success: true, data: attendance });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Failed to fetch attendance status', error: error.message });
+  }
+});
+
 // Start server
 const PORT = process.env.ATTENDANCE_SERVICE_PORT || 3008;
 app.listen(PORT, () => {

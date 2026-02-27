@@ -40,7 +40,7 @@ export default function ClaimCodesPage() {
 
   const loadData = async (refresh = false) => {
     if (!schoolId) return; // Guard clause
-    
+
     if (refresh) setIsRefreshing(true);
     setLoading(true);
     try {
@@ -140,7 +140,7 @@ export default function ClaimCodesPage() {
       {/* Main Content */}
       <div className="lg:ml-64 min-h-screen bg-[#f8fafc]">
         <main className="p-6 lg:p-8 max-w-[1600px] mx-auto">
-          
+
           {/* Page Header - Clean & Minimal */}
           <AnimatedContent animation="fade" delay={0}>
             <div className="mb-8">
@@ -322,6 +322,9 @@ export default function ClaimCodesPage() {
                             Expires
                           </th>
                           <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            Assigned To
+                          </th>
+                          <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                             Claimed By
                           </th>
                           <th className="px-6 py-3.5 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -331,8 +334,8 @@ export default function ClaimCodesPage() {
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {codes.map((code, index) => (
-                          <tr 
-                            key={code.id} 
+                          <tr
+                            key={code.id}
                             className="hover:bg-gray-50 transition-colors"
                             style={{
                               animation: `fadeIn 0.3s ease-out ${index * 0.05}s both`
@@ -355,8 +358,35 @@ export default function ClaimCodesPage() {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {new Date(code.expiresAt).toLocaleDateString()}
                             </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {code.student ? (
+                                <div className="flex items-center gap-2">
+                                  <div className="h-6 w-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold text-xs">
+                                    {code.student.firstName[0]}
+                                  </div>
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {code.student.firstName} {code.student.lastName}
+                                  </span>
+                                </div>
+                              ) : code.teacher ? (
+                                <div className="flex items-center gap-2">
+                                  <div className="h-6 w-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-semibold text-xs">
+                                    {code.teacher.firstName[0]}
+                                  </div>
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {code.teacher.firstName} {code.teacher.lastName}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-sm text-gray-400 italic">Unassigned</span>
+                              )}
+                            </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {code.claimedByUserId || '-'}
+                              {code.claimedByUser ? (
+                                <span className="text-gray-900">{code.claimedByUser.email}</span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                               <button
