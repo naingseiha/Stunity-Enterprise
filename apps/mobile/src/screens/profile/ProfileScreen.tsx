@@ -55,17 +55,17 @@ const COVER_HEIGHT = 200;
 type RouteProp = ProfileStackScreenProps<'Profile'>['route'];
 type NavigationProp = ProfileStackScreenProps<'Profile'>['navigation'];
 
-// Clean stat card config
-const STAT_CARDS = [
-  { icon: 'book-outline' as const, bg: '#F0F9FF', accent: '#0EA5E9', tint: '#0C4A6E' },
-  { icon: 'star-outline' as const, bg: '#FFF7ED', accent: '#F59E0B', tint: '#92400E' },
-  { icon: 'time-outline' as const, bg: '#F0FDF4', accent: '#10B981', tint: '#065F46' },
-  { icon: 'flame-outline' as const, bg: '#FFF1F2', accent: '#F43F5E', tint: '#9F1239' },
-  { icon: 'trophy-outline' as const, bg: '#FAF5FF', accent: '#8B5CF6', tint: '#5B21B6' },
-  { icon: 'code-slash-outline' as const, bg: '#EFF6FF', accent: '#3B82F6', tint: '#1E3A8A' },
+// Premium Stat card config with subtle gradients and glassmorphism hints
+export const STAT_CARDS = [
+  { icon: 'book-outline' as const, bgStart: '#F0F9FF', bgEnd: '#E0F2FE', accent: '#0EA5E9', tint: '#0C4A6E' },
+  { icon: 'star-outline' as const, bgStart: '#FFF7ED', bgEnd: '#FFEDD5', accent: '#F59E0B', tint: '#92400E' },
+  { icon: 'time-outline' as const, bgStart: '#F0FDF4', bgEnd: '#DCFCE7', accent: '#10B981', tint: '#065F46' },
+  { icon: 'flame-outline' as const, bgStart: '#FFF1F2', bgEnd: '#FFE4E6', accent: '#F43F5E', tint: '#9F1239' },
+  { icon: 'trophy-outline' as const, bgStart: '#FAF5FF', bgEnd: '#F3E8FF', accent: '#8B5CF6', tint: '#5B21B6' },
+  { icon: 'code-slash-outline' as const, bgStart: '#EFF6FF', bgEnd: '#DBEAFE', accent: '#3B82F6', tint: '#1E3A8A' },
 ];
 
-function StatCard({ icon, value, label, index = 0 }: { icon: string; value: string | number; label: string; index?: number }) {
+export function StatCard({ icon, value, label, index = 0 }: { icon: string; value: string | number; label: string; index?: number }) {
   const cfg = STAT_CARDS[index % STAT_CARDS.length];
   const scale = useSharedValue(0.92);
   const translateY = useSharedValue(12);
@@ -81,12 +81,19 @@ function StatCard({ icon, value, label, index = 0 }: { icon: string; value: stri
   }));
 
   return (
-    <Animated.View style={[styles.statGridCard, { backgroundColor: cfg.bg }, animStyle]}>
-      <View style={[styles.statGridIcon, { backgroundColor: cfg.accent }]}>
-        <Ionicons name={icon as any} size={16} color="#fff" />
-      </View>
-      <Text style={[styles.statGridValue, { color: cfg.tint }]}>{value}</Text>
-      <Text style={styles.statGridLabel}>{label}</Text>
+    <Animated.View style={[styles.statGridCardWrapper, animStyle]}>
+      <LinearGradient
+        colors={[cfg.bgStart, cfg.bgEnd]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.statGridCard}
+      >
+        <View style={[styles.statGridIcon, { backgroundColor: cfg.accent }]}>
+          <Ionicons name={icon as any} size={18} color="#fff" />
+        </View>
+        <Text style={[styles.statGridValue, { color: cfg.tint }]}>{value}</Text>
+        <Text style={[styles.statGridLabel, { color: cfg.tint, opacity: 0.8 }]}>{label}</Text>
+      </LinearGradient>
     </Animated.View>
   );
 }
@@ -363,6 +370,14 @@ export default function ProfileScreen() {
                   {/* Settings, Messages & Camera — own profile only */}
                   {isOwnProfile && (
                     <>
+                      {currentUser?.role === 'TEACHER' && (
+                        <TouchableOpacity style={[styles.headerCircleBtn, { marginRight: 8 }]} onPress={() => navigation.navigate('AttendanceCheckIn' as any)}>
+                          <Ionicons name="calendar-outline" size={20} color="#1a1a1a" />
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity style={[styles.headerCircleBtn, { marginRight: 8 }]} onPress={() => navigation.navigate('QuizStudio' as any)}>
+                        <Ionicons name="cube-outline" size={20} color="#1a1a1a" />
+                      </TouchableOpacity>
                       <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.navigate('Messages' as any, { screen: 'Conversations' })}>
                         <Ionicons name="chatbubbles-outline" size={20} color="#1a1a1a" />
                       </TouchableOpacity>
@@ -414,24 +429,13 @@ export default function ProfileScreen() {
                 <View style={styles.nameRow}>
                   <Text style={styles.name}>{fullName}</Text>
                   {profile.isVerified && (
-                    <Ionicons name="checkmark-circle" size={22} color="#3B82F6" />
+                    <Ionicons name="checkmark-circle" size={20} color="#3B82F6" />
                   )}
                 </View>
 
-                {/* Level Badge */}
-                <View style={styles.levelBadgeInline}>
-                  <LinearGradient
-                    colors={['#0EA5E9', '#0284C7']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.levelBadgeGradient}
-                  >
-                    <Ionicons name="star" size={12} color="#fff" />
-                    <Text style={styles.levelTextInline}>Level {quizStats?.level ?? profile.level ?? 1}</Text>
-                  </LinearGradient>
-                </View>
-
-                <Text style={styles.headline}>{profile.headline || profile.professionalTitle || ''}</Text>
+                {profile.headline ? (
+                  <Text style={styles.headline}>{profile.headline || profile.professionalTitle}</Text>
+                ) : null}
 
                 {/* Open to Opportunities Banner */}
                 {(profile as any).isOpenToOpportunities && (
@@ -442,7 +446,7 @@ export default function ProfileScreen() {
                       end={{ x: 1, y: 0 }}
                       style={styles.openToWorkGradient}
                     >
-                      <Ionicons name="briefcase" size={14} color="#fff" />
+                      <Ionicons name="briefcase" size={12} color="#fff" />
                       <Text style={styles.openToWorkText}>Open to Opportunities</Text>
                     </LinearGradient>
                   </Animated.View>
@@ -452,180 +456,78 @@ export default function ProfileScreen() {
                   <Text style={styles.bio}>{profile.bio}</Text>
                 ) : null}
 
-                {/* Location & Social Links */}
-                <View style={styles.metaRow}>
-                  <View style={styles.locationRow}>
-                    <Ionicons name="location-outline" size={14} color="#9CA3AF" />
-                    <Text style={styles.locationText}>{profile.location || 'No location set'}</Text>
-                  </View>
-
-                  <View style={styles.socialLinks}>
-                    <TouchableOpacity style={styles.socialIcon}>
-                      <Ionicons name="logo-github" size={16} color="#6B7280" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.socialIcon}>
-                      <Ionicons name="logo-linkedin" size={16} color="#6B7280" />
-                    </TouchableOpacity>
-                  </View>
+                {/* Social Links & Meta */}
+                <View style={styles.socialRow}>
+                  {profile.location && (
+                    <View style={styles.socialBadge}>
+                      <Ionicons name="location-outline" size={14} color="#6B7280" />
+                      <Text style={styles.socialBadgeText}>{profile.location}</Text>
+                    </View>
+                  )}
+                  {(profile as any).linkedinUrl && (
+                    <View style={styles.socialBadge}>
+                      <Ionicons name="logo-linkedin" size={14} color="#0077B5" />
+                    </View>
+                  )}
+                  {(profile as any).githubUrl && (
+                    <View style={styles.socialBadge}>
+                      <Ionicons name="logo-github" size={14} color="#1a1a1a" />
+                    </View>
+                  )}
                 </View>
               </Animated.View>
 
-              {/* Stats Cards — Premium Canvas Design */}
-              <View style={styles.statsRow}>
-                <Animated.View entering={ZoomIn.delay(250).duration(400)} style={{ flex: 1 }}>
-                  <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
-                    <View style={styles.statCardGradient}>
-                      <View style={[styles.statIconCircle, { backgroundColor: '#F3E8FF' }]}>
-                        <View style={[styles.statIconInner, { backgroundColor: '#A855F7' }]}>
-                          <Ionicons name="create" size={16} color="#fff" />
-                        </View>
-                      </View>
-                      <Text style={styles.statValue}>{formatNumber(stats.posts)}</Text>
-                      <Text style={styles.statLabel}>Posts</Text>
-                    </View>
-                  </TouchableOpacity>
-                </Animated.View>
-
-                <Animated.View entering={ZoomIn.delay(350).duration(400)} style={{ flex: 1 }}>
-                  <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
-                    <View style={styles.statCardGradient}>
-                      <View style={[styles.statIconCircle, { backgroundColor: '#DBEAFE' }]}>
-                        <View style={[styles.statIconInner, { backgroundColor: '#3B82F6' }]}>
-                          <Ionicons name="people" size={16} color="#fff" />
-                        </View>
-                      </View>
-                      <Text style={styles.statValue}>{formatNumber(stats.followers)}</Text>
-                      <Text style={styles.statLabel}>Followers</Text>
-                    </View>
-                  </TouchableOpacity>
-                </Animated.View>
-
-                <Animated.View entering={ZoomIn.delay(450).duration(400)} style={{ flex: 1 }}>
-                  <TouchableOpacity style={styles.statCard} activeOpacity={0.7}>
-                    <View style={styles.statCardGradient}>
-                      <View style={[styles.statIconCircle, { backgroundColor: '#D1FAE5' }]}>
-                        <View style={[styles.statIconInner, { backgroundColor: '#10B981' }]}>
-                          <Ionicons name="heart" size={16} color="#fff" />
-                        </View>
-                      </View>
-                      <Text style={styles.statValue}>{formatNumber(stats.following)}</Text>
-                      <Text style={styles.statLabel}>Following</Text>
-                    </View>
-                  </TouchableOpacity>
-                </Animated.View>
-              </View>
-
-              {/* Action Buttons — Compact layout */}
-              <Animated.View entering={FadeInDown.delay(350).duration(500).springify()} style={styles.actionButtons}>
-                {isOwnProfile ? (
-                  <>
-                    <TouchableOpacity
-                      style={styles.editPill}
-                      onPress={handleEditProfile}
-                      activeOpacity={0.8}
-                    >
-                      <Ionicons name="create-outline" size={16} color="#0284C7" />
-                      <Text style={styles.editPillText}>Edit</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.editPill}
-                      onPress={() => navigation.navigate('QuizStudio' as any)}
-                      activeOpacity={0.8}
-                    >
-                      <Ionicons name="school-outline" size={16} color="#0284C7" />
-                      <Text style={styles.editPillText}>Quiz Studio</Text>
-                    </TouchableOpacity>
-
-                    {currentUser?.role === 'TEACHER' && (
-                      <TouchableOpacity
-                        style={styles.editPill}
-                        onPress={() => navigation.navigate('AttendanceCheckIn' as any)}
-                        activeOpacity={0.8}
-                      >
-                        <Ionicons name="location-outline" size={16} color="#0284C7" />
-                        <Text style={styles.editPillText}>Attendance</Text>
-                      </TouchableOpacity>
-                    )}
-
-                    <TouchableOpacity style={styles.iconBtn}>
-                      <Ionicons name="share-social-outline" size={18} color="#6B7280" />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.iconBtn}>
-                      <Ionicons name="qr-code-outline" size={18} color="#6B7280" />
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <>
-                    <TouchableOpacity
-                      style={[styles.followPill, isFollowing && styles.followPillFollowing]}
-                      onPress={handleFollow}
-                      activeOpacity={0.8}
-                    >
-                      {isFollowing ? (
-                        <>
-                          <Ionicons name="checkmark" size={16} color="#6B7280" />
-                          <Text style={styles.followPillTextFollowing}>Following</Text>
-                        </>
-                      ) : (
-                        <LinearGradient
-                          colors={['#7DD3FC', '#0EA5E9', '#0284C7']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
-                          style={styles.followPillGradient}
-                        >
-                          <Ionicons name="person-add" size={14} color="#fff" />
-                          <Text style={styles.followPillText}>Follow</Text>
-                        </LinearGradient>
-                      )}
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.iconBtn}>
-                      <Ionicons name="mail-outline" size={18} color="#6B7280" />
-                    </TouchableOpacity>
-                  </>
-                )}
+              {/* Instagram-style Header Stats */}
+              <Animated.View entering={FadeInDown.delay(250).duration(400).springify()} style={styles.textStatsRow}>
+                <TouchableOpacity style={styles.textStat} activeOpacity={0.6}>
+                  <Text style={styles.textStatValue}>{formatNumber(stats.posts)}</Text>
+                  <Text style={styles.textStatLabel}>Posts</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.textStat} activeOpacity={0.6}>
+                  <Text style={styles.textStatValue}>{formatNumber(stats.followers)}</Text>
+                  <Text style={styles.textStatLabel}>Followers</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.textStat} activeOpacity={0.6}>
+                  <Text style={styles.textStatValue}>{formatNumber(stats.following)}</Text>
+                  <Text style={styles.textStatLabel}>Following</Text>
+                </TouchableOpacity>
               </Animated.View>
 
-              {/* Performance Highlights */}
-              <Animated.View entering={FadeInDown.delay(400).duration(500).springify()} style={styles.highlightsSection}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Performance</Text>
-                </View>
-
-                {/* Hero Progress Card */}
-                <View style={styles.heroCard}>
-                  <LinearGradient
-                    colors={['#38BDF8', '#0EA5E9', '#0284C7']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.heroGradient}
+              {/* Action Buttons — Fully rounded capsules */}
+              {!isOwnProfile && (
+                <Animated.View entering={FadeInDown.delay(300).duration(400).springify()} style={styles.capsuleRow}>
+                  <TouchableOpacity
+                    style={isFollowing ? styles.capsuleBtn : styles.capsuleBtnFilled}
+                    onPress={handleFollow}
+                    activeOpacity={0.8}
                   >
-                    {/* Decorative */}
-                    <View style={[styles.heroDecor, { top: -20, right: -15, width: 80, height: 80 }]} />
-                    <View style={[styles.heroDecor, { bottom: -10, left: -10, width: 60, height: 60 }]} />
+                    <Text style={isFollowing ? styles.capsuleBtnText : styles.capsuleBtnFilledText}>
+                      {isFollowing ? 'Following' : 'Follow'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.capsuleBtn} activeOpacity={0.8}>
+                    <Text style={styles.capsuleBtnText}>Message</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              )}
 
-                    <View style={styles.heroHeader}>
-                      <View style={styles.heroIconWrap}>
-                        <Ionicons name="trending-up" size={20} color="#0284C7" />
-                      </View>
-                      <Text style={styles.heroTitle}>Your Progress</Text>
-                    </View>
-
-                  </LinearGradient>
-                </View>
-
-                {/* Clean stat grid */}
-                <View style={styles.statGrid}>
-                  <StatCard icon="book-outline" value={profileStats?.certifications ?? quizStats?.totalQuizzes ?? 0} label="Courses" index={0} />
-                  <StatCard icon="star-outline" value={quizStats?.totalPoints ?? profile.totalPoints ?? 0} label="Points" index={1} />
-                  <StatCard icon="time-outline" value={profile.totalLearningHours ?? 0} label="Study Hours" index={2} />
-                  <StatCard icon="flame-outline" value={streak?.currentStreak ?? profile.currentStreak ?? 0} label="Day Streak" index={3} />
-                  <StatCard icon="trophy-outline" value={userAchievements?.length || profileStats?.achievements || 0} label="Achievements" index={4} />
-                  <StatCard icon="code-slash-outline" value={profileStats?.projects ?? 0} label="Projects" index={5} />
-                </View>
-              </Animated.View>
+              {/* Action Buttons — Fully rounded capsules */}
+              {!isOwnProfile && (
+                <Animated.View entering={FadeInDown.delay(300).duration(400).springify()} style={styles.capsuleRow}>
+                  <TouchableOpacity
+                    style={isFollowing ? styles.capsuleBtn : styles.capsuleBtnFilled}
+                    onPress={handleFollow}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={isFollowing ? styles.capsuleBtnText : styles.capsuleBtnFilledText}>
+                      {isFollowing ? 'Following' : 'Follow'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.capsuleBtn} activeOpacity={0.8}>
+                    <Text style={styles.capsuleBtnText}>Message</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              )}
 
               {/* Tabs */}
               <View style={styles.tabsSection}>
@@ -668,11 +570,13 @@ export default function ProfileScreen() {
             {activeTab === 'performance' && (
               <PerformanceTab
                 quizStats={quizStats}
+                profileStats={profileStats}
                 streak={streak}
                 achievements={userAchievements}
                 totalAchievements={allAchievements.length || 12}
                 level={quizStats?.level ?? profile.level ?? 1}
                 totalPoints={quizStats?.totalPoints ?? profile.totalPoints ?? 0}
+                profile={profile}
                 onViewAchievements={() => navigation.navigate('Achievements' as any)}
                 onViewLeaderboard={() => navigation.navigate('Leaderboard' as any)}
                 onViewStats={() => navigation.navigate('Stats' as any)}
@@ -906,7 +810,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   openToWorkBanner: {
-    marginTop: 8,
+    marginTop: 4,
+    marginBottom: 4,
     borderRadius: 14,
     overflow: 'hidden',
     alignSelf: 'center',
@@ -914,13 +819,13 @@ const styles = StyleSheet.create({
   openToWorkGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    gap: 4,
   },
   openToWorkText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   contentContainer: {
@@ -953,122 +858,132 @@ const styles = StyleSheet.create({
   nameSection: {
     alignItems: 'center',
     paddingHorizontal: 24,
-    marginBottom: 20,
+    marginBottom: 8,
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
+    gap: 4,
+    marginBottom: 2,
   },
   name: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    letterSpacing: -0.5,
-  },
-  headline: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#6B7280',
-    marginBottom: 8,
-  },
-  bio: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  locationText: {
-    fontSize: 13,
-    color: '#9CA3AF',
-  },
-  socialLinks: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  socialIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    gap: 10,
-    marginBottom: 20,
-  },
-  statCard: {
-    flex: 1,
-    borderRadius: 14,
-    overflow: 'hidden',
-    backgroundColor: '#fff',
-
-
-    shadowColor: '#000',
-
-
-
-
-  },
-  statCardGradient: {
-    alignItems: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 8,
-    borderRadius: 14,
-    backgroundColor: '#fff',
-  },
-  statIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-  statIconInner: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statValue: {
     fontSize: 22,
     fontWeight: '800',
     color: '#1a1a1a',
-    marginBottom: 2,
     letterSpacing: -0.5,
   },
-  statLabel: {
-    fontSize: 11,
-    color: '#6B7280',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  editPillSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+    marginLeft: 4,
   },
-  actionButtons: {
+  editPillTextSmall: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#4B5563',
+  },
+  headline: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  bio: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  socialRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  socialBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+  },
+  socialBadgeText: {
+    fontSize: 12,
+    color: '#4B5563',
+    fontWeight: '500',
+  },
+  // ── Simple Text Stats ──
+  textStatsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 20,
+    paddingVertical: 4,
+  },
+  textStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  textStatValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1a1a1a',
+    letterSpacing: -0.5,
+  },
+  textStatLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  // ── Capsule Action Buttons ──
+  capsuleRow: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
     gap: 10,
     marginBottom: 28,
   },
-  // ── Compact edit pill ──
+  capsuleBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 50,
+    backgroundColor: '#F3F4F6',
+    ...Shadows.sm,
+  },
+  capsuleBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  capsuleBtnFilled: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 50,
+    backgroundColor: '#0EA5E9',
+    ...Shadows.sm,
+  },
+  capsuleBtnFilledText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  // ── Legacy (kept for followPill if needed elsewhere) ──
   editPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1085,6 +1000,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#0284C7',
   },
+  editPillPrimary: {
+    backgroundColor: '#0EA5E9',
+    borderWidth: 0,
+    borderColor: 'transparent',
+  },
+  editPillTextPrimary: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
+  },
   iconBtn: {
     width: 40,
     height: 40,
@@ -1092,8 +1017,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-
-
+  },
+  iconBtnSecondary: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  iconBtnLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6B7280',
   },
   // ── Follow pill ──
   followPill: {
@@ -1225,40 +1158,46 @@ const styles = StyleSheet.create({
   statGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
+  },
+  statGridCardWrapper: {
+    width: '31%',
+    borderRadius: 16,
+    ...Shadows.sm,
+    shadowOpacity: 0.08,
   },
   statGridCard: {
-    width: '31%',
-    borderRadius: 14,
-    paddingVertical: 14,
+    width: '100%',
+    borderRadius: 16,
+    paddingVertical: 16,
     paddingHorizontal: 8,
     alignItems: 'center',
-    shadowColor: '#000',
-
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.6)',
   },
   statGridIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   statGridValue: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
     marginBottom: 2,
-    letterSpacing: -0.3,
+    letterSpacing: -0.5,
   },
   statGridLabel: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: '#9CA3AF',
+    fontSize: 10,
+    fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.4,
+    letterSpacing: 0.5,
   },
   tabsSection: {
     marginBottom: 16,

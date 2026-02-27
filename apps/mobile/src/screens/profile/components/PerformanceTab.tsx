@@ -23,6 +23,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path, Text as SvgText } from 'react-native-svg';
 import type { UserStats as QuizUserStats, UserAchievement, Streak } from '@/services/stats';
+import type { UserStats as ProfileUserStats } from '@/types';
+import { Shadows } from '@/config';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -30,14 +32,54 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface PerformanceTabProps {
     quizStats: QuizUserStats | null;
+    profileStats: ProfileUserStats | null;
     streak: Streak | null;
     achievements: UserAchievement[];
     totalAchievements: number;
     level: number;
     totalPoints: number;
+    profile: any;
     onViewAchievements?: () => void;
     onViewLeaderboard?: () => void;
     onViewStats?: () => void;
+}
+
+// Premium Stat card config with subtle gradients and glassmorphism hints
+const STAT_CARDS = [
+    { icon: 'book-outline' as const, bgStart: '#F0F9FF', bgEnd: '#E0F2FE', accent: '#0EA5E9', tint: '#0C4A6E' },
+    { icon: 'star-outline' as const, bgStart: '#FFF7ED', bgEnd: '#FFEDD5', accent: '#F59E0B', tint: '#92400E' },
+    { icon: 'time-outline' as const, bgStart: '#F0FDF4', bgEnd: '#DCFCE7', accent: '#10B981', tint: '#065F46' },
+    { icon: 'flame-outline' as const, bgStart: '#FFF1F2', bgEnd: '#FFE4E6', accent: '#F43F5E', tint: '#9F1239' },
+    { icon: 'trophy-outline' as const, bgStart: '#FAF5FF', bgEnd: '#F3E8FF', accent: '#8B5CF6', tint: '#5B21B6' },
+    { icon: 'code-slash-outline' as const, bgStart: '#EFF6FF', bgEnd: '#DBEAFE', accent: '#3B82F6', tint: '#1E3A8A' },
+];
+
+function StatCard({ icon, value, label, index = 0 }: { icon: string; value: string | number; label: string; index?: number }) {
+    const cfg = STAT_CARDS[index % STAT_CARDS.length];
+    const scale = useSharedValue(0.92);
+    const translateY = useSharedValue(12);
+
+    useEffect(() => {
+        const d = 200 + index * 50;
+        scale.value = withDelay(d, withSpring(1, { damping: 16, stiffness: 140 }));
+        translateY.value = withDelay(d, withSpring(0, { damping: 16, stiffness: 140 }));
+    }, []);
+
+    const animStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: scale.value }, { translateY: translateY.value }],
+    }));
+
+    return (
+        <Animated.View style={[s.statGridCardWrapper, animStyle]}>
+            <View style={[s.statGridCard, { backgroundColor: cfg.bgStart }]}>
+                <View style={[s.statGridIcon, { backgroundColor: cfg.accent }]}>
+                    <Ionicons name={icon as any} size={18} color="#fff" />
+                </View>
+                <Text style={[s.statGridValue, { color: cfg.tint }]}>{value}</Text>
+                <Text style={[s.statGridLabel, { color: cfg.tint, opacity: 0.8 }]}>{label}</Text>
+            </View>
+        </Animated.View>
+    );
 }
 
 // ── XP Progress Ring ─────────────────────────────────────────────
@@ -174,11 +216,13 @@ const dotStyles = StyleSheet.create({
 
 export default function PerformanceTab({
     quizStats,
+    profileStats,
     streak,
     achievements,
     totalAchievements,
     level,
     totalPoints,
+    profile,
     onViewAchievements,
     onViewLeaderboard,
     onViewStats,
@@ -332,6 +376,27 @@ export default function PerformanceTab({
                 <WeeklyDots streak={streak} />
             </View>
 
+            {/* Core Stats Overview */}
+            <View style={s.card}>
+                <View style={s.cardHeader}>
+                    <View style={[s.cardHeaderIcon, { backgroundColor: '#F3F4F6' }]}>
+                        <Ionicons name="apps" size={18} color="#4B5563" />
+                    </View>
+                    <Text style={s.cardTitle}>Performance Overview</Text>
+                </View>
+
+                <View style={s.statGridWrapper}>
+                    <View style={s.statGrid}>
+                        <StatCard icon="book-outline" value={quizStats?.totalQuizzes ?? 0} label="Courses" index={0} />
+                        <StatCard icon="star-outline" value={quizStats?.totalPoints ?? profile?.totalPoints ?? 0} label="Points" index={1} />
+                        <StatCard icon="time-outline" value={profile?.totalLearningHours ?? 0} label="Study Hours" index={2} />
+                        <StatCard icon="flame-outline" value={streak?.currentStreak ?? profile?.currentStreak ?? 0} label="Day Streak" index={3} />
+                        <StatCard icon="trophy-outline" value={achievements?.length || 0} label="Achievements" index={4} />
+                        <StatCard icon="code-slash-outline" value={(profile as any)?.projects?.length ?? 0} label="Projects" index={5} />
+                    </View>
+                </View>
+            </View>
+
             {/* Achievement Showcase */}
             <View style={s.card}>
                 <View style={s.cardHeader}>
@@ -401,15 +466,15 @@ const s = StyleSheet.create({
     container: { gap: 16 },
     card: {
         backgroundColor: '#fff',
-        
-        
+
+
         borderRadius: 14,
         overflow: 'hidden',
         shadowColor: '#000',
-        
-        
-        
-        
+
+
+
+
     },
     cardGradient: { padding: 20 },
     cardHeader: {
@@ -494,4 +559,54 @@ const s = StyleSheet.create({
     },
     leaderboardTitle: { fontSize: 16, fontWeight: '700', color: '#fff' },
     leaderboardSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+
+    // Core Stat Grid
+    statGridWrapper: {
+        paddingHorizontal: 16,
+        paddingBottom: 20,
+    },
+    statGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12,
+        justifyContent: 'center',
+    },
+    statGridCardWrapper: {
+        width: '31%',
+        borderRadius: 16,
+        ...Shadows.sm,
+        shadowOpacity: 0.08,
+    },
+    statGridCard: {
+        width: '100%',
+        borderRadius: 16,
+        paddingVertical: 16,
+        paddingHorizontal: 8,
+        alignItems: 'center',
+    },
+    statGridIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+    },
+    statGridValue: {
+        fontSize: 20,
+        fontWeight: '800',
+        marginBottom: 2,
+        letterSpacing: -0.5,
+    },
+    statGridLabel: {
+        fontSize: 10,
+        fontWeight: '700',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        textAlign: 'center',
+    },
 });
