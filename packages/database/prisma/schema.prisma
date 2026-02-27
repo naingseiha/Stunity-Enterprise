@@ -58,6 +58,7 @@ model School {
   idGenerationLogs    IdGenerationLog[]
   studyClubs          StudyClub[]
   SchoolLocation      SchoolLocation[]
+  featureFlags        FeatureFlag[]
 
   @@index([slug])
   @@index([subscriptionTier])
@@ -564,6 +565,7 @@ model User {
   achievements                Achievement[]
   adminAuditLogs              AuditLog[]                   @relation("AuditLogAdmin")
   teacherAuditLogs            AuditLog[]                   @relation("AuditLogTeacher")
+  platformAuditLogs           PlatformAuditLog[]
   certifications              Certification[]
   commentReactions            CommentReaction[]
   comments                    Comment[]
@@ -3586,4 +3588,64 @@ model TeacherAttendance {
   @@index([teacherId, date])
   @@index([locationId, date])
   @@map("teacher_attendance")
+}
+
+// ==========================================
+// Platform Administration (Super Admin)
+// ==========================================
+
+model PlatformAuditLog {
+  id          String   @id @default(cuid())
+  actorId     String
+  action      String
+  resourceType String  // SCHOOL, USER, etc.
+  resourceId  String?
+  details     Json?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  actor User @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([actorId])
+  @@index([resourceType, resourceId])
+  @@index([createdAt])
+  @@map("platform_audit_logs")
+}
+
+model FeatureFlag {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  description String?
+  enabled     Boolean  @default(false)
+  schoolId    String?  // null = platform-wide
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  school School? @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([key])
+  @@index([schoolId])
+  @@map("feature_flags")
+}
+
+model PlatformAnnouncement {
+  id        String                 @id @default(cuid())
+  title     String
+  content   String
+  priority  PlatformAnnouncementPriority @default(INFO)
+  isActive  Boolean                @default(true)
+  startAt   DateTime?
+  endAt     DateTime?
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+
+  @@index([isActive, startAt, endAt])
+  @@map("platform_announcements")
+}
+
+enum PlatformAnnouncementPriority {
+  INFO
+  WARNING
+  URGENT
 }

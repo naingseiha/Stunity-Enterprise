@@ -1,6 +1,7 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import jwt from 'jsonwebtoken';
 import { PrismaClient, SubscriptionTier, SchoolType } from '@prisma/client';
 import slugify from 'slugify';
 import { v4 as uuidv4 } from 'uuid';
@@ -98,6 +99,27 @@ app.get('/api/info', (req: Request, res: Response) => {
       'POST /schools/:schoolId/onboarding/complete - Mark onboarding complete',
     ],
   });
+});
+
+// Public: GET /api/announcements/active - Active platform announcements (no auth)
+app.get('/api/announcements/active', async (req: Request, res: Response) => {
+  try {
+    const now = new Date();
+    const announcements = await prisma.platformAnnouncement.findMany({
+      where: {
+        isActive: true,
+        AND: [
+          { OR: [{ startAt: null }, { startAt: { lte: now } }] },
+          { OR: [{ endAt: null }, { endAt: { gte: now } }] },
+        ],
+      },
+      orderBy: { priority: 'desc' },
+    });
+    res.json({ success: true, data: announcements });
+  } catch (error: any) {
+    console.error('Active announcements error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch announcements', message: error.message });
+  }
 });
 
 // SIMPLIFIED REGISTRATION ENDPOINT - Using nested writes for better performance
@@ -556,6 +578,638 @@ app.post('/schools/:schoolId/onboarding/complete', async (req: Request, res: Res
       success: false,
       error: 'Failed to complete onboarding',
     });
+  }
+});
+
+// ============================================================
+// JWT Authentication Middleware
+// ============================================================
+
+interface AuthRequest extends Request {
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+    schoolId: string | null;
+    isSuperAdmin?: boolean;
+  };
+}
+
+const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
+
+const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'Access token required' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    req.user = {
+      id: decoded.userId,
+      email: decoded.email || '',
+      role: decoded.role,
+      schoolId: decoded.schoolId ?? null,
+      isSuperAdmin: !!decoded.isSuperAdmin,
+    };
+    next();
+  } catch (error) {
+    return res.status(403).json({ success: false, message: 'Invalid or expired token' });
+  }
+};
+
+const requireSuperAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.user?.isSuperAdmin) {
+    return res.status(403).json({ success: false, message: 'Super admin access required' });
+  }
+  next();
+};
+
+async function createPlatformAuditLog(
+  actorId: string,
+  action: string,
+  resourceType: string,
+  resourceId: string | null,
+  details?: object,
+  ipAddress?: string
+) {
+  try {
+    await prisma.platformAuditLog.create({
+      data: { actorId, action, resourceType, resourceId, details: details || undefined, ipAddress },
+    });
+  } catch (e) {
+    console.error('Platform audit log write failed:', e);
+  }
+}
+
+// Apply auth middleware to all routes below this point
+app.use(authenticateToken);
+
+// ============================================================
+// SUPER ADMIN ENDPOINTS
+// ============================================================
+
+// GET /super-admin/schools - List all schools (super admin only)
+app.get('/super-admin/schools', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { page = '1', limit = '20', search, status } = req.query;
+    const pageNum = Math.max(1, parseInt(String(page)));
+    const limitNum = Math.min(100, Math.max(1, parseInt(String(limit))));
+    const skip = (pageNum - 1) * limitNum;
+
+    const where: any = {};
+    if (search) {
+      where.OR = [
+        { name: { contains: String(search), mode: 'insensitive' } },
+        { slug: { contains: String(search), mode: 'insensitive' } },
+        { email: { contains: String(search), mode: 'insensitive' } },
+      ];
+    }
+    if (status === 'active') where.isActive = true;
+    else if (status === 'inactive') where.isActive = false;
+
+    const [schools, total] = await Promise.all([
+      prisma.school.findMany({
+        where,
+        include: {
+          _count: {
+            select: { users: true, classes: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limitNum,
+      }),
+      prisma.school.count({ where }),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        schools,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Super admin schools error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch schools',
+      message: error.message,
+    });
+  }
+});
+
+// GET /super-admin/schools/:schoolId - Get school detail (super admin only)
+app.get('/super-admin/schools/:schoolId', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { schoolId } = req.params;
+    const school = await prisma.school.findUnique({
+      where: { id: schoolId },
+      include: {
+        _count: {
+          select: { users: true, classes: true, students: true, teachers: true, academicYears: true },
+        },
+        academicYears: {
+          take: 5,
+          orderBy: { startDate: 'desc' },
+          select: { id: true, name: true, startDate: true, endDate: true, isCurrent: true, status: true },
+        },
+      },
+    });
+    if (!school) {
+      return res.status(404).json({ success: false, error: 'School not found' });
+    }
+    res.json({ success: true, data: school });
+  } catch (error: any) {
+    console.error('Super admin school detail error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch school',
+      message: error.message,
+    });
+  }
+});
+
+// PATCH /super-admin/schools/:schoolId - Update school (super admin only)
+app.patch('/super-admin/schools/:schoolId', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { schoolId } = req.params;
+    const { name, email, phone, address, website, isActive, subscriptionTier, subscriptionEnd } = req.body;
+
+    const school = await prisma.school.findUnique({ where: { id: schoolId } });
+    if (!school) {
+      return res.status(404).json({ success: false, error: 'School not found' });
+    }
+
+    const updateData: any = {};
+    if (typeof name === 'string' && name.trim()) updateData.name = name.trim();
+    if (typeof email === 'string' && email.trim()) updateData.email = email.trim();
+    if (phone !== undefined) updateData.phone = phone ? String(phone).trim() || null : school.phone;
+    if (address !== undefined) updateData.address = address ? String(address).trim() || null : school.address;
+    if (website !== undefined) updateData.website = website ? String(website).trim() || null : school.website;
+    if (typeof isActive === 'boolean') updateData.isActive = isActive;
+    if (subscriptionTier && ['FREE_TRIAL_1M', 'FREE_TRIAL_3M', 'BASIC', 'STANDARD', 'PREMIUM', 'ENTERPRISE'].includes(subscriptionTier)) {
+      updateData.subscriptionTier = subscriptionTier;
+    }
+    if (subscriptionEnd !== undefined) {
+      updateData.subscriptionEnd = subscriptionEnd ? new Date(subscriptionEnd) : null;
+    }
+
+    const updated = await prisma.school.update({
+      where: { id: schoolId },
+      data: updateData,
+    });
+    await createPlatformAuditLog(
+      (req as AuthRequest).user!.id,
+      'SCHOOL_UPDATE',
+      'SCHOOL',
+      schoolId,
+      { changes: Object.keys(updateData), schoolName: updated.name },
+      req.ip || req.socket?.remoteAddress
+    );
+    res.json({ success: true, data: updated });
+  } catch (error: any) {
+    console.error('Super admin update school error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update school',
+      message: error.message,
+    });
+  }
+});
+
+// DELETE /super-admin/schools/:schoolId - Delete school (super admin only)
+app.delete('/super-admin/schools/:schoolId', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { schoolId } = req.params;
+    const school = await prisma.school.findUnique({ where: { id: schoolId } });
+    if (!school) {
+      return res.status(404).json({ success: false, error: 'School not found' });
+    }
+    await prisma.school.delete({ where: { id: schoolId } });
+    await createPlatformAuditLog(
+      (req as AuthRequest).user!.id,
+      'SCHOOL_DELETE',
+      'SCHOOL',
+      schoolId,
+      { schoolName: school.name, slug: school.slug },
+      req.ip || req.socket?.remoteAddress
+    );
+    res.json({ success: true, message: 'School deleted' });
+  } catch (error: any) {
+    console.error('Super admin delete school error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete school',
+      message: error.message,
+    });
+  }
+});
+
+// GET /super-admin/users - List users across platform (super admin only)
+app.get('/super-admin/users', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { page = '1', limit = '20', search, schoolId, role } = req.query;
+    const pageNum = Math.max(1, parseInt(String(page)));
+    const limitNum = Math.min(100, Math.max(1, parseInt(String(limit))));
+    const skip = (pageNum - 1) * limitNum;
+
+    const where: any = { schoolId: { not: null }, isSuperAdmin: false };
+    if (schoolId) where.schoolId = schoolId;
+    if (role) where.role = role;
+    if (search) {
+      where.OR = [
+        { firstName: { contains: String(search), mode: 'insensitive' } },
+        { lastName: { contains: String(search), mode: 'insensitive' } },
+        { email: { contains: String(search), mode: 'insensitive' } },
+      ];
+    }
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          schoolId: true,
+          isActive: true,
+          lastLogin: true,
+          school: { select: { id: true, name: true, slug: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limitNum,
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        users,
+        pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) },
+      },
+    });
+  } catch (error: any) {
+    console.error('Super admin users error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch users',
+      message: error.message,
+    });
+  }
+});
+
+// GET /super-admin/users/:userId - Get user detail (super admin only)
+app.get('/super-admin/users/:userId', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true, email: true, firstName: true, lastName: true, phone: true, role: true,
+        schoolId: true, isActive: true, lastLogin: true, createdAt: true, isSuperAdmin: true,
+        school: { select: { id: true, name: true, slug: true, isActive: true } },
+      },
+    });
+    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+    if (user.isSuperAdmin) return res.status(403).json({ success: false, error: 'Cannot view super admin' });
+    res.json({ success: true, data: user });
+  } catch (error: any) {
+    console.error('Super admin user detail error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch user', message: error.message });
+  }
+});
+
+// PATCH /super-admin/users/:userId - Update user (super admin only)
+app.patch('/super-admin/users/:userId', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { isActive } = req.body;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+    if (user.isSuperAdmin) return res.status(403).json({ success: false, error: 'Cannot modify super admin' });
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: typeof isActive === 'boolean' ? { isActive } : {},
+    });
+    if (typeof isActive === 'boolean') {
+      await createPlatformAuditLog(
+        (req as AuthRequest).user!.id,
+        isActive ? 'USER_ACTIVATE' : 'USER_DEACTIVATE',
+        'USER',
+        userId,
+        { email: user.email, schoolId: user.schoolId },
+        req.ip || req.socket?.remoteAddress
+      );
+    }
+    res.json({ success: true, data: updated });
+  } catch (error: any) {
+    console.error('Super admin update user error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update user', message: error.message });
+  }
+});
+
+// POST /super-admin/schools - Create school (super admin only)
+app.post('/super-admin/schools', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const {
+      name,
+      email,
+      phone,
+      address,
+      adminFirstName,
+      adminLastName,
+      adminEmail,
+      adminPassword,
+      schoolType = SchoolType.HIGH_SCHOOL,
+      subscriptionTier = SubscriptionTier.FREE_TRIAL_1M,
+      trialMonths = 1,
+    } = req.body;
+
+    if (!name || !email || !adminFirstName || !adminLastName || !adminEmail || !adminPassword) {
+      return res.status(400).json({ success: false, error: 'Missing required fields' });
+    }
+
+    if (await prisma.school.findUnique({ where: { email } })) {
+      return res.status(409).json({ success: false, error: 'School email already registered' });
+    }
+
+    const baseSlug = slugify(name, { lower: true, strict: true });
+    let slug = baseSlug;
+    let counter = 1;
+    while (await prisma.school.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+
+    const subscriptionStart = new Date();
+    const subscriptionEnd = new Date();
+    subscriptionEnd.setMonth(subscriptionEnd.getMonth() + (trialMonths || 1));
+
+    const validTiers = ['FREE_TRIAL_1M', 'FREE_TRIAL_3M', 'BASIC', 'STANDARD', 'PREMIUM', 'ENTERPRISE'];
+    const tier = validTiers.includes(subscriptionTier) ? subscriptionTier : (trialMonths === 3 ? SubscriptionTier.FREE_TRIAL_3M : SubscriptionTier.FREE_TRIAL_1M);
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    const schType = schoolType || SchoolType.HIGH_SCHOOL;
+
+    const school = await prisma.school.create({
+      data: {
+        name: name.trim(),
+        slug,
+        email: email.trim(),
+        phone: phone || null,
+        address: address || null,
+        schoolType: schType,
+        gradeRange: schType === SchoolType.PRIMARY_SCHOOL ? '1-6' : schType === SchoolType.MIDDLE_SCHOOL ? '7-9' : schType === SchoolType.HIGH_SCHOOL ? '10-12' : '7-12',
+        workingDays: [1, 2, 3, 4, 5],
+        subscriptionTier: tier,
+        subscriptionStart,
+        subscriptionEnd,
+        isTrial: true,
+        isActive: true,
+        maxStudents: trialMonths === 3 ? 300 : 100,
+        maxTeachers: trialMonths === 3 ? 20 : 10,
+      },
+    });
+
+    const user = await prisma.user.create({
+      data: {
+        email: adminEmail.trim(),
+        password: hashedPassword,
+        firstName: adminFirstName.trim(),
+        lastName: adminLastName.trim(),
+        role: 'ADMIN',
+        schoolId: school.id,
+      },
+    });
+
+    await createPlatformAuditLog(
+      (req as AuthRequest).user!.id,
+      'SCHOOL_CREATE',
+      'SCHOOL',
+      school.id,
+      { name: school.name, slug: school.slug, adminEmail: user.email },
+      req.ip || req.socket?.remoteAddress
+    );
+
+    res.status(201).json({ success: true, data: { school, adminUser: { id: user.id, email: user.email } } });
+  } catch (error: any) {
+    console.error('Super admin create school error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create school',
+      message: error.message,
+    });
+  }
+});
+
+// GET /super-admin/dashboard/stats - Platform-wide stats (super admin only)
+app.get('/super-admin/dashboard/stats', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const [schoolCount, userCount, classCount, activeSchools] = await Promise.all([
+      prisma.school.count(),
+      prisma.user.count({ where: { schoolId: { not: null } } }),
+      prisma.class.count(),
+      prisma.school.count({ where: { isActive: true } }),
+    ]);
+
+    const [recentSchools, schoolsByTier] = await Promise.all([
+      prisma.school.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, name: true, slug: true, createdAt: true, isActive: true },
+      }),
+      prisma.school.groupBy({
+        by: ['subscriptionTier'],
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } },
+      }),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        totalSchools: schoolCount,
+        totalUsers: userCount,
+        totalClasses: classCount,
+        activeSchools,
+        recentSchools,
+        schoolsByTier: schoolsByTier.map((t) => ({ tier: t.subscriptionTier, count: t._count.id })),
+      },
+    });
+  } catch (error: any) {
+    console.error('Super admin dashboard error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch dashboard stats',
+      message: error.message,
+    });
+  }
+});
+
+// GET /super-admin/audit-logs - Platform audit logs (super admin only)
+app.get('/super-admin/audit-logs', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { page = '1', limit = '50', resourceType, action } = req.query;
+    const pageNum = Math.max(1, parseInt(String(page)));
+    const limitNum = Math.min(100, Math.max(1, parseInt(String(limit))));
+    const skip = (pageNum - 1) * limitNum;
+
+    const where: any = {};
+    if (resourceType) where.resourceType = String(resourceType);
+    if (action) where.action = String(action);
+
+    const [logs, total] = await Promise.all([
+      prisma.platformAuditLog.findMany({
+        where,
+        include: { actor: { select: { id: true, firstName: true, lastName: true, email: true } } },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limitNum,
+      }),
+      prisma.platformAuditLog.count({ where }),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        logs,
+        pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) },
+      },
+    });
+  } catch (error: any) {
+    console.error('Super admin audit logs error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch audit logs', message: error.message });
+  }
+});
+
+// GET /super-admin/feature-flags - List feature flags (super admin only)
+app.get('/super-admin/feature-flags', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { scope = 'platform' } = req.query; // platform | school
+    const where: any = scope === 'school' ? { schoolId: { not: null } } : { schoolId: null };
+    const flags = await prisma.featureFlag.findMany({
+      where,
+      include: { school: { select: { id: true, name: true } } },
+      orderBy: { key: 'asc' },
+    });
+    res.json({ success: true, data: flags });
+  } catch (error: any) {
+    console.error('Super admin feature flags error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch feature flags', message: error.message });
+  }
+});
+
+// POST /super-admin/feature-flags - Create feature flag (super admin only)
+app.post('/super-admin/feature-flags', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { key, description, enabled = false, schoolId } = req.body;
+    if (!key || typeof key !== 'string') return res.status(400).json({ success: false, error: 'key required' });
+    const slug = String(key).trim().toUpperCase().replace(/\s+/g, '_');
+    const existing = await prisma.featureFlag.findUnique({ where: { key: slug } });
+    if (existing) return res.status(409).json({ success: false, error: 'Feature flag already exists' });
+    const flag = await prisma.featureFlag.create({
+      data: { key: slug, description: description || null, enabled: !!enabled, schoolId: schoolId || null },
+    });
+    res.status(201).json({ success: true, data: flag });
+  } catch (error: any) {
+    console.error('Super admin create feature flag error:', error);
+    res.status(500).json({ success: false, error: 'Failed to create feature flag', message: error.message });
+  }
+});
+
+// PATCH /super-admin/feature-flags/:id - Update feature flag (super admin only)
+app.patch('/super-admin/feature-flags/:id', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { enabled, description } = req.body;
+    const data: any = {};
+    if (typeof enabled === 'boolean') data.enabled = enabled;
+    if (description !== undefined) data.description = description;
+    const flag = await prisma.featureFlag.update({ where: { id }, data });
+    res.json({ success: true, data: flag });
+  } catch (error: any) {
+    console.error('Super admin update feature flag error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update feature flag', message: error.message });
+  }
+});
+
+// GET /super-admin/announcements - List platform announcements (super admin only)
+app.get('/super-admin/announcements', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const announcements = await prisma.platformAnnouncement.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ success: true, data: announcements });
+  } catch (error: any) {
+    console.error('Super admin announcements error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch announcements', message: error.message });
+  }
+});
+
+// POST /super-admin/announcements - Create platform announcement (super admin only)
+app.post('/super-admin/announcements', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { title, content, priority = 'INFO', isActive = true, startAt, endAt } = req.body;
+    if (!title || !content) return res.status(400).json({ success: false, error: 'title and content required' });
+    const validPriorities = ['INFO', 'WARNING', 'URGENT'];
+    const ann = await prisma.platformAnnouncement.create({
+      data: {
+        title: String(title).trim(),
+        content: String(content).trim(),
+        priority: validPriorities.includes(priority) ? priority : 'INFO',
+        isActive: !!isActive,
+        startAt: startAt ? new Date(startAt) : null,
+        endAt: endAt ? new Date(endAt) : null,
+      },
+    });
+    res.status(201).json({ success: true, data: ann });
+  } catch (error: any) {
+    console.error('Super admin create announcement error:', error);
+    res.status(500).json({ success: false, error: 'Failed to create announcement', message: error.message });
+  }
+});
+
+// PATCH /super-admin/announcements/:id - Update platform announcement (super admin only)
+app.patch('/super-admin/announcements/:id', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { title, content, priority, isActive, startAt, endAt } = req.body;
+    const data: any = {};
+    if (title !== undefined) data.title = String(title).trim();
+    if (content !== undefined) data.content = String(content).trim();
+    if (priority && ['INFO', 'WARNING', 'URGENT'].includes(priority)) data.priority = priority;
+    if (typeof isActive === 'boolean') data.isActive = isActive;
+    if (startAt !== undefined) data.startAt = startAt ? new Date(startAt) : null;
+    if (endAt !== undefined) data.endAt = endAt ? new Date(endAt) : null;
+    const ann = await prisma.platformAnnouncement.update({ where: { id }, data });
+    res.json({ success: true, data: ann });
+  } catch (error: any) {
+    console.error('Super admin update announcement error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update announcement', message: error.message });
+  }
+});
+
+// DELETE /super-admin/announcements/:id - Delete platform announcement (super admin only)
+app.delete('/super-admin/announcements/:id', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await prisma.platformAnnouncement.delete({ where: { id } });
+    res.json({ success: true, message: 'Announcement deleted' });
+  } catch (error: any) {
+    console.error('Super admin delete announcement error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete announcement', message: error.message });
   }
 });
 

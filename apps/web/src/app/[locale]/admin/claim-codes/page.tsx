@@ -106,6 +106,16 @@ export default function ClaimCodesPage() {
     }
   };
 
+  const handleRevoke = async (codeId: string) => {
+    if (!schoolId) return;
+    try {
+      await claimCodeService.revoke(schoolId, codeId);
+      await loadData(true);
+    } catch (error) {
+      console.error('Failed to revoke claim code:', error);
+    }
+  };
+
   const getStatusBadge = (code: ClaimCode) => {
     const now = new Date();
     if (code.revokedAt) {

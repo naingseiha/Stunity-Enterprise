@@ -350,23 +350,27 @@ app.post(
         });
       }
 
-      // Check if school is active
-      if (user.school && !user.school.isActive) {
-        return res.status(403).json({
-          success: false,
-          error: 'School subscription is inactive',
-        });
-      }
+      // Super admins bypass school/subscription checks
+      const isSuperAdmin = !!(user as any).isSuperAdmin;
+      if (!isSuperAdmin) {
+        // Check if school is active
+        if (user.school && !user.school.isActive) {
+          return res.status(403).json({
+            success: false,
+            error: 'School subscription is inactive',
+          });
+        }
 
-      // Check subscription expiration
-      if (user.school?.subscriptionEnd && new Date(user.school.subscriptionEnd) < new Date()) {
-        return res.status(403).json({
-          success: false,
-          error: 'School subscription has expired',
-          details: {
-            expiredAt: user.school.subscriptionEnd,
-          },
-        });
+        // Check subscription expiration
+        if (user.school?.subscriptionEnd && new Date(user.school.subscriptionEnd) < new Date()) {
+          return res.status(403).json({
+            success: false,
+            error: 'School subscription has expired',
+            details: {
+              expiredAt: user.school.subscriptionEnd,
+            },
+          });
+        }
       }
 
       // Verify password
@@ -398,6 +402,7 @@ app.post(
           email: user.email,
           role: user.role,
           schoolId: user.schoolId,
+          isSuperAdmin: !!(user as any).isSuperAdmin,
           school: user.school ? {
             id: user.school.id,
             name: user.school.name,
@@ -438,6 +443,7 @@ app.post(
             role: user.role,
             profilePictureUrl: user.profilePictureUrl,
             schoolId: user.schoolId,
+            isSuperAdmin: !!(user as any).isSuperAdmin,
           },
           school: user.school,
           tokens: {
@@ -1533,6 +1539,7 @@ app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Respons
           headline: user.headline,
           interests: user.interests,
           schoolId: user.schoolId,
+          isSuperAdmin: !!user.isSuperAdmin,
         },
         school: user.school,
       },
