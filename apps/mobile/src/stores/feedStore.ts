@@ -7,7 +7,7 @@
 import { create } from 'zustand';
 import { Post, Story, StoryGroup, PaginationParams, Comment, FeedItem } from '@/types';
 import { transformPost, transformPosts } from '@/utils/transformPost';
-import { feedApi } from '@/api/client';
+import { feedApi, quizApi } from '@/api/client';
 import { Image } from 'react-native';
 import { mockPosts, mockStories } from '@/api/mockData';
 import { recommendationEngine, UserInterestProfile } from '@/services/recommendation';
@@ -386,16 +386,20 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         if (page === 1) {
           const hasSuggestedUsers = optimizedFeedItems.some(i => i.type === 'SUGGESTED_USERS');
           const hasSuggestedCourses = optimizedFeedItems.some(i => i.type === 'SUGGESTED_COURSES');
+          const hasSuggestedQuizzes = optimizedFeedItems.some(i => i.type === 'SUGGESTED_QUIZZES');
 
-          if (!hasSuggestedUsers || !hasSuggestedCourses) {
+          if (!hasSuggestedUsers || !hasSuggestedCourses || !hasSuggestedQuizzes) {
             (async () => {
               try {
-                const [usersResp, coursesResp] = await Promise.allSettled([
+                const [usersResp, coursesResp, quizzesResp] = await Promise.allSettled([
                   !hasSuggestedUsers
                     ? feedApi.get('/users/suggested', { params: { limit: 10 }, timeout: 5000 })
                     : Promise.resolve(null),
                   !hasSuggestedCourses
                     ? feedApi.get('/courses', { params: { limit: 8, page: 1 }, timeout: 5000 })
+                    : Promise.resolve(null),
+                  !hasSuggestedQuizzes
+                    ? quizApi.get('/quizzes/recommended', { params: { limit: 8 }, timeout: 5000 })
                     : Promise.resolve(null),
                 ]);
 
@@ -423,12 +427,18 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
                   } : undefined,
                 }));
 
-                if (users.length === 0 && courses.length === 0) return;
+                const quizzes: any[] =
+                  quizzesResp.status === 'fulfilled' && quizzesResp.value?.data?.data
+                    ? quizzesResp.value.data.data
+                    : [];
+
+                if (users.length === 0 && courses.length === 0 && quizzes.length === 0) return;
 
                 set(state => {
                   // Re-check after async gap in case another fetch already injected them
                   const alreadyHasUsers = state.feedItems.some(i => i.type === 'SUGGESTED_USERS');
                   const alreadyHasCourses = state.feedItems.some(i => i.type === 'SUGGESTED_COURSES');
+                  const alreadyHasQuizzes = state.feedItems.some(i => i.type === 'SUGGESTED_QUIZZES');
 
                   const items = [...state.feedItems];
 
@@ -444,11 +454,17 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
                     items.splice(insertAt, 0, { type: 'SUGGESTED_COURSES', data: courses });
                   }
 
+                  // Inject suggested quizzes at position 22 (after suggested courses insert)
+                  if (!alreadyHasQuizzes && quizzes.length > 0) {
+                    const insertAt = Math.min(22, items.length);
+                    items.splice(insertAt, 0, { type: 'SUGGESTED_QUIZZES', data: quizzes });
+                  }
+
                   return { feedItems: items };
                 });
 
                 if (__DEV__) {
-                  console.log(`✅ [FeedStore] Client-side carousels injected: ${users.length} users, ${courses.length} courses`);
+                  console.log(`✅ [FeedStore] Client-side carousels injected: ${users.length} users, ${courses.length} courses, ${quizzes.length} quizzes`);
                 }
               } catch (err) {
                 // Silent — carousels are an enhancement, not critical
