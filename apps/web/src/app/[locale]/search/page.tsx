@@ -95,8 +95,8 @@ export default function SearchPage({ params: { locale } }: { params: { locale: s
         }
     }, [user, query, performSearch]);
 
-    const handleLogout = () => {
-        TokenManager.clearTokens();
+    const handleLogout = async () => {
+        await TokenManager.logout();
         router.replace(`/${locale}/auth/login`);
     };
 

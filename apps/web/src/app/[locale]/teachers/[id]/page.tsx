@@ -133,8 +133,8 @@ export default function TeacherDetailPage({
   const user = userData?.user;
   const school = userData?.school;
 
-  const handleLogout = () => {
-    TokenManager.clearTokens();
+  const handleLogout = async () => {
+    await TokenManager.logout();
     router.push(`/${locale}/login`);
   };
 

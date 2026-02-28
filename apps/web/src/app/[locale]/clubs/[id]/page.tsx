@@ -374,8 +374,8 @@ export default function ClubDetailPage() {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
   };
 
-  const handleLogout = () => {
-    TokenManager.clearTokens();
+  const handleLogout = async () => {
+    await TokenManager.logout();
     router.push(`/${locale}/login`);
   };
 

@@ -70,8 +70,8 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
   const totalPages = pagination.totalPages;
   const totalCount = pagination.total || 0;
 
-  const handleLogout = () => {
-    TokenManager.clearTokens();
+  const handleLogout = async () => {
+    await TokenManager.logout();
     router.push(`/${locale}/login`);
   };
 

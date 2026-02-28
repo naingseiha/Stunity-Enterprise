@@ -118,8 +118,8 @@ export default function EventsPage() {
     }
   }, []);
 
-  const handleLogout = () => {
-    TokenManager.clearTokens();
+  const handleLogout = async () => {
+    await TokenManager.logout();
     router.push(`/${locale}/login`);
   };
 

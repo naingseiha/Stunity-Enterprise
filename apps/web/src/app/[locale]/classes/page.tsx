@@ -85,8 +85,8 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
     academicYearId: selectedYear?.id,
   });
 
-  const handleLogout = useCallback(() => {
-    TokenManager.clearTokens();
+  const handleLogout = useCallback(async () => {
+    await TokenManager.logout();
     router.push(`/${locale}/login`);
   }, [locale, router]);
 

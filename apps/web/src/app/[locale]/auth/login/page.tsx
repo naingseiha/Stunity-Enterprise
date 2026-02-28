@@ -1,16 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { LogIn, AlertCircle, Mail, Phone, Users } from 'lucide-react';
 import { login, TokenManager } from '@/lib/api/auth';
 
+const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'http://localhost:3001';
+
 export default function LoginPage({ params: { locale } }: { params: { locale: string } }) {
   const t = useTranslations('login');
   const tc = useTranslations('common');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const ssoExchanged = useRef(false);
 
   const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
   const [email, setEmail] = useState('');
@@ -50,6 +54,41 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
     checkAuth();
   }, [locale, router]);
 
+  // SSO code exchange: ?code=...&sso=success -> POST /auth/sso/exchange, store tokens, redirect (no tokens in URL)
+  useEffect(() => {
+    const code = searchParams?.get('code');
+    const sso = searchParams?.get('sso');
+    if (!code || sso !== 'success' || ssoExchanged.current) return;
+
+    ssoExchanged.current = true;
+    setLoading(true);
+    setError('');
+
+    fetch(`${AUTH_SERVICE_URL}/auth/sso/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data?.tokens && data.data?.user) {
+          TokenManager.setTokens(data.data.tokens.accessToken, data.data.tokens.refreshToken);
+          TokenManager.setUserData(data.data.user, data.data.school);
+          const redirectPath = getRedirectPath(data.data.user);
+          window.location.href = redirectPath;
+        } else {
+          setError(data.error || 'SSO login failed');
+          setLoading(false);
+          router.replace(`/${locale}/auth/login`);
+        }
+      })
+      .catch((err) => {
+        setError(err.message || 'SSO login failed');
+        setLoading(false);
+        router.replace(`/${locale}/auth/login`);
+      });
+  }, [locale, router, searchParams]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -60,7 +99,6 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
       
       if (loginMethod === 'phone') {
         // Phone login (for parents and users with phone auth)
-        const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'http://localhost:3001';
         const res = await fetch(`${AUTH_SERVICE_URL}/auth/parent/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

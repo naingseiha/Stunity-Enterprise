@@ -548,8 +548,8 @@ export default function LearnHubPage() {
     }
   }, [currentUser, fetchCourses, fetchEnrolledCourses, fetchCreatedCourses, fetchLearningPaths, fetchSubjects, fetchGrades]);
 
-  const handleLogout = () => {
-    TokenManager.clearTokens();
+  const handleLogout = async () => {
+    await TokenManager.logout();
     router.push(`/${locale}/login`);
   };
 

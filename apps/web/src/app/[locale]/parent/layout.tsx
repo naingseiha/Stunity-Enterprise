@@ -70,8 +70,8 @@ export default function ParentLayout({
     setLoading(false);
   }, [locale, router]);
 
-  const handleLogout = () => {
-    TokenManager.clearTokens();
+  const handleLogout = async () => {
+    await TokenManager.logout();
     router.replace(`/${locale}/auth/parent/login`);
   };
 

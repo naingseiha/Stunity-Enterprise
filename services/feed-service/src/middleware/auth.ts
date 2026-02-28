@@ -1,7 +1,9 @@
-
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 
 export interface AuthRequest extends Request {

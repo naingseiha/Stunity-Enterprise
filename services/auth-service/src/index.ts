@@ -9,6 +9,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { body, validationResult } from 'express-validator';
 import ClaimCodeGenerator from './utils/claimCodeGenerator';
+import * as tokenBlacklist from './utils/tokenBlacklist';
 import passwordResetRoutes from './routes/passwordReset.routes';
 import socialAuthRoutes from './routes/socialAuth.routes';
 import twoFactorRoutes from './routes/twoFactor.routes';
@@ -19,9 +20,14 @@ dotenv.config({ path: '../../.env' });
 
 const app = express();
 const PORT = process.env.AUTH_SERVICE_PORT || 3001;
+// Security: fail startup in production if JWT_SECRET is unset
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
-const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '1h';
-const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '7d';
+// Remember-me style: long-lived tokens until explicit logout
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '24h';       // Access token: 24h (reduces refresh calls)
+const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d'; // Refresh: 1 year
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
 
 // ✅ Singleton pattern to prevent multiple Prisma instances
@@ -598,17 +604,16 @@ app.post(
 
 /**
  * POST /auth/logout
- * Logout user and invalidate refresh token
+ * Revoke refresh token (blacklist) so it cannot be used to obtain new access tokens.
+ * Client should send refreshToken in body.
  */
 app.post('/auth/logout', async (req: Request, res: Response) => {
   try {
-    // In a production system, you would:
-    // 1. Get refresh token from request
-    // 2. Blacklist/invalidate the refresh token
-    // 3. Update lastLogout timestamp
-
-    // For now, just return success
-    // The client will clear tokens locally
+    const { refreshToken } = req.body;
+    if (refreshToken && typeof refreshToken === 'string') {
+      const maxAgeMs = 365 * 24 * 60 * 60 * 1000; // 1 year
+      tokenBlacklist.revokeRefreshToken(refreshToken, maxAgeMs);
+    }
     res.json({
       success: true,
       message: 'Logged out successfully',
@@ -639,6 +644,14 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
       return res.status(401).json({
         success: false,
         error: 'Refresh token is required',
+      });
+    }
+
+    // Check if token was revoked (logout)
+    if (tokenBlacklist.isRevoked(refreshToken)) {
+      return res.status(401).json({
+        success: false,
+        error: 'Token has been revoked. Please log in again.',
       });
     }
 

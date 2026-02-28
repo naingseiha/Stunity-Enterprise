@@ -270,8 +270,8 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
     return statistics?.byCategory.find((c) => c.category === category)?._count || 0;
   }, [statistics]);
 
-  const handleLogout = useCallback(() => {
-    TokenManager.clearTokens();
+  const handleLogout = useCallback(async () => {
+    await TokenManager.logout();
     router.push(`/${locale}/auth/login`);
   }, [locale, router]);
 

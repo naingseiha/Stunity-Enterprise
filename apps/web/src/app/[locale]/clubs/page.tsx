@@ -121,8 +121,8 @@ export default function StudyClubsPage() {
     }
   }, []);
 
-  const handleLogout = () => {
-    TokenManager.clearTokens();
+  const handleLogout = async () => {
+    await TokenManager.logout();
     router.push(`/${locale}/login`);
   };
 

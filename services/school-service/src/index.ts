@@ -1,5 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import { PrismaClient, SubscriptionTier, SchoolType, RegistrationStatus } from '@prisma/client';
@@ -8,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import { parse } from 'csv-parse/sync';
+import { registerSchoolSchema } from './validators/school.validator';
 import ClaimCodeGenerator from './utils/claimCodeGenerator';
 import { sendBulkClaimCodeEmails } from './utils/emailService';
 import {
@@ -60,6 +63,11 @@ setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000); // Every 4 
   return this.toString();
 };
 
+// Security: fail startup in production if JWT_SECRET is unset
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
+}
+
 // Middleware - CORS configuration
 app.use(cors({
   origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'],
@@ -67,7 +75,28 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-app.use(express.json());
+
+// Security headers (Helmet) and rate limiting
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
+const schoolGlobalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many requests. Try again later.' },
+});
+const schoolRegisterLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many school registrations. Try again later.' },
+});
+app.use(schoolGlobalLimiter);
+app.use(express.json({ limit: '1mb' }));
 
 // Configure multer for file uploads
 const upload = multer({
@@ -140,9 +169,17 @@ app.get('/api/announcements/active', async (req: Request, res: Response) => {
   }
 });
 
-// SIMPLIFIED REGISTRATION ENDPOINT - Using nested writes for better performance
-app.post('/schools/register', async (req: Request, res: Response) => {
+// SIMPLIFIED REGISTRATION ENDPOINT - Using nested writes for better performance (rate limited)
+app.post('/schools/register', schoolRegisterLimiter, async (req: Request, res: Response) => {
   try {
+    const parsed = registerSchoolSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues.map(e => e.message).join('; ') || 'Validation failed';
+      return res.status(400).json({
+        success: false,
+        error: msg,
+      });
+    }
     const {
       schoolName,
       email,
@@ -153,24 +190,12 @@ app.post('/schools/register', async (req: Request, res: Response) => {
       adminEmail,
       adminPassword,
       adminPhone,
-      schoolType = SchoolType.HIGH_SCHOOL,
-      trialMonths = 3,
-    } = req.body;
+      schoolType,
+      trialMonths,
+    } = parsed.data;
 
-    // Validation
-    if (!schoolName || !email || !adminFirstName || !adminLastName || !adminEmail || !adminPassword) {
-      return res.status(400).json({
-        success: false,
-        error: 'Missing required fields',
-      });
-    }
-
-    if (trialMonths !== 1 && trialMonths !== 3) {
-      return res.status(400).json({
-        success: false,
-        error: 'Trial months must be 1 or 3',
-      });
-    }
+    // Map string schoolType to Prisma enum
+    const schoolTypeEnum = schoolType as SchoolType;
 
     // Check if school email already exists
     const existingSchool = await prisma.school.findUnique({
@@ -223,7 +248,7 @@ app.post('/schools/register', async (req: Request, res: Response) => {
         email,
         phone,
         address,
-        schoolType,
+        schoolType: schoolTypeEnum,
         gradeRange: schoolType === SchoolType.PRIMARY_SCHOOL
           ? '1-6'
           : schoolType === SchoolType.MIDDLE_SCHOOL

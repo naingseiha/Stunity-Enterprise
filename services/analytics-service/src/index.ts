@@ -11,6 +11,8 @@
 
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
@@ -27,11 +29,16 @@ dotenv.config({ path: '../../.env' });
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.ANALYTICS_SERVICE_PORT || 3014;
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 200, standardHeaders: true, legacyHeaders: false, message: { success: false, error: 'Too many requests' } }));
+app.use(express.json({ limit: '1mb' }));
 
 // Extend Express Request
 declare global {

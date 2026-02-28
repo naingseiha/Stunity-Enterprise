@@ -10,13 +10,19 @@ import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from '../utils/r2';
 import { feedCache, EventPublisher } from '../redis';
 import { updateUserFeedSignals } from './signals.routes';
+import { createPostSchema, createCommentSchema } from '../validators/post.validator';
 
 const router = Router();
 
 // POST /posts - Create new post
 router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { content, title, postType = 'ARTICLE', visibility = 'SCHOOL', mediaUrls = [], mediaDisplayMode = 'AUTO', pollOptions, quizData, topicTags, deadline, pollSettings } = req.body;
+    const parsed = createPostSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues.map(e => e.message).join('; ') || 'Validation failed';
+      return res.status(400).json({ success: false, error: msg });
+    }
+    const { content, title, postType, visibility, mediaUrls, mediaDisplayMode, pollOptions, quizData, topicTags, deadline, pollSettings } = parsed.data;
 
     console.log('📝 Creating post:', {
       postType,
@@ -27,10 +33,6 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
       topicTags,
       quizDataKeys: quizData ? Object.keys(quizData) : []
     });
-
-    if (!content || content.trim().length === 0) {
-      return res.status(400).json({ success: false, error: 'Content is required' });
-    }
 
     // Calculate deadline from poll duration if needed
     let resolvedDeadline = deadline;
@@ -70,13 +72,13 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
 
     const postData: any = {
       authorId: req.user!.id,
-      content: content.trim(),
-      title: title?.trim(),
+      content: content,
+      title: title ?? undefined,
       postType,
       visibility,
       mediaUrls,
       mediaDisplayMode,
-      topicTags: topicTags || [],
+      topicTags: topicTags ?? [],
       questionBounty: resolvedBounty,
       ...deadlineFields,
     };
@@ -450,19 +452,20 @@ router.get('/posts/:id/comments', authenticateToken, async (req: AuthRequest, re
 // POST /posts/:id/comments - Add comment
 router.post('/posts/:id/comments', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { content, parentId } = req.body;
-
-    if (!content || content.trim().length === 0) {
-      return res.status(400).json({ success: false, error: 'Content is required' });
+    const parsed = createCommentSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues.map(e => e.message).join('; ') || 'Validation failed';
+      return res.status(400).json({ success: false, error: msg });
     }
+    const { content, parentId } = parsed.data;
 
     // Create comment
     const newComment = await prisma.comment.create({
       data: {
         postId: req.params.id,
         authorId: req.user!.id,
-        content: content.trim(),
-        parentId: parentId || null,
+        content,
+        parentId: parentId ?? null,
       },
       include: {
         author: {

@@ -118,8 +118,14 @@ class TokenService {
         refreshToken,
       });
 
-      if (response.data.success) {
-        const tokens: AuthTokens = response.data.tokens;
+      // Auth service returns { success, data: { accessToken, refreshToken, expiresIn } }
+      const data = response.data?.data || response.data?.tokens || response.data;
+      if (response.data?.success && data?.accessToken && data?.refreshToken) {
+        const tokens: AuthTokens = {
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          expiresIn: data.expiresIn ?? '24h',
+        };
         await this.setTokens(tokens);
 
         // Notify all subscribers

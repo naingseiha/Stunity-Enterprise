@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import DOMPurify from 'isomorphic-dompurify';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -302,7 +303,7 @@ export default function LessonViewerPage() {
                   {lesson.content ? (
                     <div 
                       className="prose prose-invert max-w-none"
-                      dangerouslySetInnerHTML={{ __html: lesson.content }}
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(lesson.content, { ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'ul', 'ol', 'li', 'a', 'blockquote', 'code', 'pre'] }) }}
                     />
                   ) : (
                     <p className="text-gray-400">{lesson.description || 'Lesson content will be displayed here.'}</p>

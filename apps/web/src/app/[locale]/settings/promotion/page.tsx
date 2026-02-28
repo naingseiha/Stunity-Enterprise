@@ -45,8 +45,8 @@ export default function StudentPromotionPage({ params: { locale } }: { params: {
   const school = userData?.school;
   const schoolId = user?.schoolId || school?.id;
 
-  const handleLogout = () => {
-    TokenManager.clearTokens();
+  const handleLogout = async () => {
+    await TokenManager.logout();
     router.push(`/${locale}/login`);
   };
 

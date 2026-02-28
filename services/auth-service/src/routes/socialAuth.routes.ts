@@ -5,8 +5,8 @@ import jwt from 'jsonwebtoken';
 const router = Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
-const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '1h';
-const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '7d';
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '24h';
+const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d';
 
 // ─── Provider Token Verification ─────────────────────────────────────
 

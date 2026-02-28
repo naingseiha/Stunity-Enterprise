@@ -1,6 +1,8 @@
 /// <reference path="./express.d.ts" />
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
@@ -11,6 +13,9 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const app = express();
 const PORT = 3011; // Messaging service uses port 3011
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 
 // ✅ Prisma with Supabase PostgreSQL
@@ -55,7 +60,9 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-app.use(express.json());
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 200, standardHeaders: true, legacyHeaders: false, message: { success: false, error: 'Too many requests' } }));
+app.use(express.json({ limit: '1mb' }));
 
 // Auth Middleware (Request.user augmented via express.d.ts)
 const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {

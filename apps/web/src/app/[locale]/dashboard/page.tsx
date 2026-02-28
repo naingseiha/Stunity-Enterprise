@@ -104,8 +104,8 @@ export default function DashboardPage({ params }: { params: { locale: string } }
     fetchStats();
   }, [schoolId, currentYear?.id]);
 
-  const handleLogout = () => {
-    TokenManager.clearTokens();
+  const handleLogout = async () => {
+    await TokenManager.logout();
     router.push(`/${locale}/auth/login`);
   };
 

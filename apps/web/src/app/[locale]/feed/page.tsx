@@ -383,8 +383,8 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
     }
   }, [activeTab, user, fetchMyPosts, fetchBookmarks]);
 
-  const handleLogout = () => {
-    TokenManager.clearTokens();
+  const handleLogout = async () => {
+    await TokenManager.logout();
     router.replace(`/${locale}/auth/login`);
   };
 

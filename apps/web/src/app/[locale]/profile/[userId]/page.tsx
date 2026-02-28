@@ -224,8 +224,8 @@ export default function ProfilePage() {
     fetchProfileData();
   }, [userId]);
 
-  const handleLogout = () => {
-    TokenManager.clearTokens();
+  const handleLogout = async () => {
+    await TokenManager.logout();
     router.push(`/${locale}/login`);
   };
 

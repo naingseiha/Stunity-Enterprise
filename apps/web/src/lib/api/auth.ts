@@ -99,7 +99,9 @@ export async function verifyToken(token: string): Promise<VerifyTokenResponse> {
   return response.json();
 }
 
-// Token management utilities
+// Token management utilities (remember-me: long-lived tokens, refresh on 401)
+let _refreshPromise: Promise<boolean> | null = null;
+
 export const TokenManager = {
   setTokens(accessToken: string, refreshToken: string) {
     if (typeof window !== 'undefined') {
@@ -132,6 +134,60 @@ export const TokenManager = {
     return null;
   },
 
+  /** Refresh tokens via /auth/refresh. Returns true if successful. */
+  async refreshTokens(): Promise<boolean> {
+    if (typeof window === 'undefined') return false;
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) return false;
+
+    if (_refreshPromise) return _refreshPromise;
+
+    _refreshPromise = (async () => {
+      try {
+        const res = await fetch(`${AUTH_SERVICE_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+        const data = await res.json();
+        if (res.ok && data.success && data.data?.accessToken && data.data?.refreshToken) {
+          localStorage.setItem('accessToken', data.data.accessToken);
+          localStorage.setItem('refreshToken', data.data.refreshToken);
+          return true;
+        }
+        return false;
+      } catch {
+        return false;
+      } finally {
+        _refreshPromise = null;
+      }
+    })();
+
+    return _refreshPromise;
+  },
+
+  /** Fetch with auth - on 401, refresh tokens and retry once. */
+  async fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+    const tokens = this.getTokens();
+    const headers = new Headers(options.headers);
+    if (tokens?.accessToken) {
+      headers.set('Authorization', `Bearer ${tokens.accessToken}`);
+    }
+    let res = await fetch(url, { ...options, headers });
+
+    if (res.status === 401) {
+      const refreshed = await this.refreshTokens();
+      if (refreshed) {
+        const newToken = this.getAccessToken();
+        if (newToken) {
+          headers.set('Authorization', `Bearer ${newToken}`);
+          res = await fetch(url, { ...options, headers });
+        }
+      }
+    }
+    return res;
+  },
+
   clearTokens() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('accessToken');
@@ -139,6 +195,25 @@ export const TokenManager = {
       localStorage.removeItem('user');
       localStorage.removeItem('school');
     }
+    _refreshPromise = null;
+  },
+
+  /** Logout: revoke refresh token on server, then clear locally */
+  async logout() {
+    if (typeof window === 'undefined') return;
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (refreshToken) {
+      try {
+        await fetch(`${AUTH_SERVICE_URL}/auth/logout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+      } catch {
+        // Ignore - clear locally anyway
+      }
+    }
+    this.clearTokens();
   },
 
   setUserData(user: any, school: any) {

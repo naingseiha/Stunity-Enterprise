@@ -179,7 +179,7 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       const token = TokenManager.getAccessToken();
       
       if (!token) {
@@ -193,7 +193,7 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
         setUser(storedUser);
         setSchool(storedSchool);
       } else {
-        TokenManager.clearTokens();
+        await TokenManager.logout();
         router.replace(`/${locale}/auth/login`);
         return;
       }
@@ -204,8 +204,8 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
     checkAuth();
   }, [locale, router]);
 
-  const handleLogout = () => {
-    TokenManager.clearTokens();
+  const handleLogout = async () => {
+    await TokenManager.logout();
     router.push(`/${locale}/auth/login`);
   };
 

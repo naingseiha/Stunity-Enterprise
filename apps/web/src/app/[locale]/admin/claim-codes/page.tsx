@@ -33,8 +33,8 @@ export default function ClaimCodesPage() {
   const user = TokenManager.getUserData().user;
   const school = TokenManager.getUserData().school;
 
-  const handleLogout = () => {
-    TokenManager.clearTokens();
+  const handleLogout = async () => {
+    await TokenManager.logout();
     router.push('/en/login');
   };
 

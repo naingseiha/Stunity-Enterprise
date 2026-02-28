@@ -97,8 +97,8 @@ export default function YearComparisonPage({ params }: { params: { locale: strin
     }
   }, [school?.id]);
 
-  const handleLogout = () => {
-    TokenManager.clearTokens();
+  const handleLogout = async () => {
+    await TokenManager.logout();
     router.push(`/${locale}/auth/login`);
   };
 

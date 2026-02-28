@@ -38,8 +38,8 @@ export default function YearEndWorkflowPage({ params }: { params: { locale: stri
   const user = userData?.user;
   const school = userData?.school;
 
-  const handleLogout = () => {
-    TokenManager.clearTokens();
+  const handleLogout = async () => {
+    await TokenManager.logout();
     router.push(`/${params.locale}/login`);
   };
 

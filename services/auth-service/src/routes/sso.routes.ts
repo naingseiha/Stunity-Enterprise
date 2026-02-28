@@ -4,16 +4,46 @@ import { Strategy as GoogleStrategy, Profile as GoogleProfile } from 'passport-g
 import { OIDCStrategy } from 'passport-azure-ad';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import * as ssoCodeStore from '../utils/ssoCodeStore';
 
 const router = Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
-const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '1h';
-const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '7d';
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '24h';
+const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d';
 
 export default function ssoRoutes(prisma: PrismaClient) {
   // ─── Initialize Passport ──────────────────────────────────────────
   router.use(passport.initialize());
+
+  // ─── POST /auth/sso/exchange - Exchange short-lived code for tokens (no tokens in URL) ───
+  router.post('/exchange', async (req: Request, res: Response) => {
+    try {
+      const { code } = req.body;
+      if (!code || typeof code !== 'string') {
+        return res.status(400).json({ success: false, error: 'Code is required' });
+      }
+      const data = ssoCodeStore.consumeCode(code);
+      if (!data) {
+        return res.status(401).json({ success: false, error: 'Invalid or expired code. Please try again.' });
+      }
+      res.json({
+        success: true,
+        data: {
+          user: data.user,
+          school: data.school,
+          tokens: {
+            accessToken: data.accessToken,
+            refreshToken: data.refreshToken,
+            expiresIn: JWT_EXPIRATION,
+          },
+        },
+      });
+    } catch (error: any) {
+      console.error('SSO exchange error:', error.message);
+      res.status(500).json({ success: false, error: 'Exchange failed' });
+    }
+  });
 
   // ─── Helper function to issue tokens ────────────────────────────────
   const handleSSOSuccess = async (req: Request, res: Response, userEmail: string, provider: string, displayName: string, avatarUrl: string) => {
@@ -81,14 +111,27 @@ export default function ssoRoutes(prisma: PrismaClient) {
         },
       });
 
-      // 4. Redirect to Frontend
+      // 4. Create short-lived code and redirect (no tokens in URL)
+      const code = ssoCodeStore.createCode(
+        accessToken,
+        refreshToken,
+        {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          profilePictureUrl: user.profilePictureUrl,
+          schoolId: user.schoolId,
+        },
+        user.school
+      );
+
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-      // Pass tokens in query parameters so frontend can capture them 
       const redirectUrl = new URL(frontendUrl + '/en/auth/login');
-      redirectUrl.searchParams.append('accessToken', accessToken);
-      redirectUrl.searchParams.append('refreshToken', refreshToken);
+      redirectUrl.searchParams.append('code', code);
       redirectUrl.searchParams.append('sso', 'success');
-      
+
       return res.redirect(redirectUrl.toString());
     } catch (error: any) {
       console.error('SSO Login Error:', error.message);

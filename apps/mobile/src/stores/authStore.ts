@@ -149,6 +149,12 @@ export const useAuthStore = create<AuthState>()(
 
           const { user: apiUser, tokens } = response.data.data;
 
+          // Clear stale feed cache from previous user so new login sees fresh feed
+          const { clearFeedCache } = await import('@/services/feedCache');
+          await clearFeedCache();
+          const { useFeedStore } = await import('./feedStore');
+          useFeedStore.getState().reset();
+
           // Store tokens securely
           await tokenService.setTokens(tokens as AuthTokens);
           await tokenService.setUserId(apiUser.id);
@@ -197,6 +203,12 @@ export const useAuthStore = create<AuthState>()(
 
           const { user: apiUser, tokens } = response.data.data;
 
+          // Clear stale feed cache from previous user so new user sees fresh feed
+          const { clearFeedCache } = await import('@/services/feedCache');
+          await clearFeedCache();
+          const { useFeedStore } = await import('./feedStore');
+          useFeedStore.getState().reset();
+
           // Store tokens securely
           await tokenService.setTokens(tokens as AuthTokens);
           await tokenService.setUserId(apiUser.id);
@@ -226,14 +238,24 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true });
 
-          // Notify backend (best-effort)
+          // Revoke refresh token on server (best-effort)
           try {
-            await authApi.post('/auth/logout');
+            const tokens = await tokenService.getTokens();
+            const refreshToken = tokens?.refreshToken;
+            await authApi.post('/auth/logout', { refreshToken: refreshToken || undefined });
           } catch (e) {
             // Ignore logout API errors
           }
 
           await tokenService.clearTokens();
+
+          // Clear feed cache so new user / login doesn't see previous user's posts
+          const { clearFeedCache } = await import('@/services/feedCache');
+          await clearFeedCache();
+
+          // Reset feed store state
+          const { useFeedStore } = await import('./feedStore');
+          useFeedStore.getState().reset();
 
           set({
             user: null,

@@ -35,8 +35,8 @@ export default function LocationsManagementPage({ params }: { params: { locale: 
     const user = userData?.user;
     const school = userData?.school;
 
-    const handleLogout = () => {
-        TokenManager.clearTokens();
+    const handleLogout = async () => {
+        await TokenManager.logout();
         router.push(`/${locale}/auth/login`);
     };
 

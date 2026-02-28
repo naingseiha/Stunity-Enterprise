@@ -82,8 +82,8 @@ export default function AcademicCalendarPage({ params }: { params: { locale: str
   const user = userData?.user;
   const school = userData?.school;
 
-  const handleLogout = () => {
-    TokenManager.clearTokens();
+  const handleLogout = async () => {
+    await TokenManager.logout();
     router.push(`/${params.locale}/login`);
   };
 

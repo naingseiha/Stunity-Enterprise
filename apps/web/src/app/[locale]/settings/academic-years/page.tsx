@@ -52,8 +52,8 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
   const user = userData?.user;
   const school = userData?.school;
 
-  const handleLogout = () => {
-    TokenManager.clearTokens();
+  const handleLogout = async () => {
+    await TokenManager.logout();
     router.push(`/${locale}/login`);
   };
 

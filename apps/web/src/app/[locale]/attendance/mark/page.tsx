@@ -386,8 +386,8 @@ export default function MarkAttendancePage() {
     return () => window.removeEventListener('keypress', handleKeyPress);
   }, []);
 
-  const handleLogout = () => {
-    TokenManager.clearTokens();
+  const handleLogout = async () => {
+    await TokenManager.logout();
     router.push(`/${locale}/auth/login`);
   };
 

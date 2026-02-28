@@ -1,6 +1,34 @@
 "use client";
 
 import { useState, useEffect } from "react";
+
+/** Show success toast using textContent (XSS-safe, no innerHTML) */
+function showSuccessToast(message: string) {
+  const toast = document.createElement("div");
+  toast.className =
+    "fixed top-4 right-4 bg-green-600 text-white px-6 py-4 rounded-lg shadow-2xl z-[100] animate-in slide-in-from-top-2 duration-300";
+  const inner = document.createElement("div");
+  inner.className = "flex items-center gap-3";
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "w-5 h-5");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("stroke", "currentColor");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("stroke-linecap", "round");
+  path.setAttribute("stroke-linejoin", "round");
+  path.setAttribute("stroke-width", "2");
+  path.setAttribute("d", "M5 13l4 4L19 7");
+  svg.appendChild(path);
+  const span = document.createElement("span");
+  span.className = "font-bold";
+  span.textContent = message;
+  inner.appendChild(svg);
+  inner.appendChild(span);
+  toast.appendChild(inner);
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
 import { studentsApi } from "@/lib/api/students";
 import { classesApi, Class } from "@/lib/api/classes";
 import StudentDetailView from "./StudentDetailView";
@@ -89,20 +117,8 @@ export default function StudentModal({
         await studentsApi.create(updatedData as any);
         onUpdate();
 
-        // ✅ Toast notification
-        const toast = document.createElement("div");
-        toast.className =
-          "fixed top-4 right-4 bg-green-600 text-white px-6 py-4 rounded-lg shadow-2xl z-[100] animate-in slide-in-from-top-2 duration-300";
-        toast.innerHTML = `
-          <div class="flex items-center gap-3">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-            <span class="font-bold">បន្ថែមសិស្សបានជោគជ័យ!</span>
-          </div>
-        `;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
+        // ✅ Toast notification (use textContent to avoid XSS - no innerHTML)
+        showSuccessToast("បន្ថែមសិស្សបានជោគជ័យ!");
 
         handleClose();
       } else {
@@ -112,20 +128,8 @@ export default function StudentModal({
         onUpdate();
         setMode("view");
 
-        // ✅ Toast notification
-        const toast = document.createElement("div");
-        toast.className =
-          "fixed top-4 right-4 bg-green-600 text-white px-6 py-4 rounded-lg shadow-2xl z-[100] animate-in slide-in-from-top-2 duration-300";
-        toast.innerHTML = `
-          <div class="flex items-center gap-3">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-            <span class="font-bold">រក្សាទុកទិន្នន័យបានជោគជ័យ! </span>
-          </div>
-        `;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
+        // ✅ Toast notification (use textContent to avoid XSS - no innerHTML)
+        showSuccessToast("រក្សាទុកទិន្នន័យបានជោគជ័យ!");
       }
     } catch (error: any) {
       console.error("Failed to save student:", error);
@@ -141,20 +145,8 @@ export default function StudentModal({
       await studentsApi.delete(student.id);
       onUpdate();
 
-      // ✅ Success toast
-      const toast = document.createElement("div");
-      toast.className =
-        "fixed top-4 right-4 bg-green-600 text-white px-6 py-4 rounded-lg shadow-2xl z-[100]";
-      toast.innerHTML = `
-        <div class="flex items-center gap-3">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-          </svg>
-          <span class="font-bold">លុបសិស្សបានជោគជ័យ!</span>
-        </div>
-      `;
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
+      // ✅ Success toast (use textContent to avoid XSS - no innerHTML)
+      showSuccessToast("លុបសិស្សបានជោគជ័យ!");
 
       handleClose();
     } catch (error: any) {
@@ -183,20 +175,8 @@ export default function StudentModal({
       onUpdate();
       setShowChangeClassModal(false);
 
-      // ✅ Success toast
-      const toast = document.createElement("div");
-      toast.className =
-        "fixed top-4 right-4 bg-green-600 text-white px-6 py-4 rounded-lg shadow-2xl z-[100] animate-in slide-in-from-top-2 duration-300";
-      toast.innerHTML = `
-        <div class="flex items-center gap-3">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-          </svg>
-          <span class="font-bold">ផ្លាស់ប្តូរថ្នាក់បានជោគជ័យ!</span>
-        </div>
-      `;
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
+      // ✅ Success toast (use textContent to avoid XSS - no innerHTML)
+      showSuccessToast("ផ្លាស់ប្តូរថ្នាក់បានជោគជ័យ!");
     } catch (error: any) {
       console.error("Failed to change class:", error);
       alert(`❌ កំហុស: ${error.message}`);
