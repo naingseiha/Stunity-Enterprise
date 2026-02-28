@@ -95,7 +95,7 @@ export default function SuperAdminLayout({
         {/* Logo / Brand */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 flex-shrink-0">
           <Link href={`/${locale}/super-admin`} className="flex items-center gap-2">
-            <img src="/stunity-logo.png" alt="Stunity" className="h-8 w-auto object-contain" />
+            <img src="/Stunity.png" alt="Stunity" className="h-8 w-auto object-contain" />
             <span className="text-xs font-medium text-gray-500 bg-stunity-primary-50 text-stunity-primary-700 px-2 py-0.5 rounded">Admin</span>
           </Link>
           <button

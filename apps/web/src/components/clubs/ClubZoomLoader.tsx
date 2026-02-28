@@ -136,13 +136,13 @@ export default function ClubZoomLoader({
         
         {/* Logo */}
         <Image
-          src="/Stunity.svg"
+          src="/Stunity.png"
           alt="Stunity"
           width={180}
           height={56}
           priority
           onLoad={() => setLogoLoaded(true)}
-          className="relative z-10 drop-shadow-lg"
+          className="relative z-10 drop-shadow-lg object-contain"
           style={{
             filter: 'drop-shadow(0 4px 24px rgba(251, 146, 60, 0.5))',
           }}

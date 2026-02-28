@@ -173,7 +173,7 @@ export default function ParentRegisterPage({ params: { locale } }: { params: { l
         <div className="text-center mb-6">
           <div className="flex justify-center mb-4">
             <img 
-              src="/logo.png" 
+              src="/Stunity.png" 
               alt="Stunity Enterprise" 
               className="h-16 w-auto"
             />

@@ -13,10 +13,12 @@
       "title": "Modern School Management System",
       "subtitle": "Multi-tenant SaaS platform for educational institutions",
       "ctaRegister": "Register Your School",
-      "ctaLogin": "Login"
+      "ctaLogin": "Login",
+      "ctaHint": "New to Stunity? Register your school to get started."
     },
     "features": {
       "title": "Why Choose Stunity Enterprise?",
+      "subtitle": "Everything you need to run and grow your school in one place.",
       "multiTenant": "Multi-Tenant Architecture",
       "multiTenantDesc": "Each school gets isolated data and customization",
       "social": "Social Learning Platform",

@@ -111,7 +111,7 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
             <img 
-              src="/logo.png" 
+              src="/Stunity.png" 
               alt="Stunity Enterprise" 
               className="h-20 w-auto"
             />
@@ -171,7 +171,7 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 transition-colors"
                   placeholder="you@school.edu"
                   disabled={loading}
                 />
@@ -187,7 +187,7 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 transition-colors"
                   placeholder="012345678"
                   disabled={loading}
                 />
@@ -204,7 +204,7 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 transition-colors"
                 placeholder="••••••••"
                 disabled={loading}
               />

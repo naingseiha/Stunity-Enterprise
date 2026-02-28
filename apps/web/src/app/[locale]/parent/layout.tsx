@@ -96,7 +96,7 @@ export default function ParentLayout({
           <div className="flex items-center justify-between h-16">
             {/* Logo & Title */}
             <Link href={`/${locale}/parent`} className="flex items-center gap-3">
-              <img src="/logo.png" alt="Stunity" className="h-10 w-auto" />
+              <img src="/Stunity.png" alt="Stunity" className="h-10 w-auto" />
               <div className="hidden sm:block">
                 <h1 className="text-lg font-bold text-gray-900">Parent Portal</h1>
                 <p className="text-xs text-gray-500">{school?.name}</p>

@@ -16,7 +16,7 @@ interface FeedZoomLoaderProps {
  * - Logo starts centered, then zooms out smoothly when content loads
  * - Beautiful pulse glow effect behind logo
  * - Smooth fade transition to content
- * - Uses Stunity.svg logo for brand consistency
+ * - Uses Stunity.png logo for brand consistency
  */
 export default function FeedZoomLoader({
   isLoading,
@@ -108,13 +108,13 @@ export default function FeedZoomLoader({
         
         {/* Logo */}
         <Image
-          src="/Stunity.svg"
+          src="/Stunity.png"
           alt="Stunity"
           width={160}
           height={50}
           priority
           onLoad={() => setLogoLoaded(true)}
-          className="relative z-10 drop-shadow-lg"
+          className="relative z-10 drop-shadow-lg object-contain"
           style={{
             filter: 'drop-shadow(0 4px 20px rgba(251, 146, 60, 0.4))',
           }}
@@ -204,7 +204,7 @@ export function FeedInlineLoader({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' })
         
         {/* Logo with pulse animation */}
         <Image
-          src="/Stunity.svg"
+          src="/Stunity.png"
           alt="Loading..."
           width={config.logo}
           height={config.logo * 0.3}

@@ -1,99 +1,72 @@
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { GraduationCap, Users, BarChart3, Globe } from 'lucide-react';
 
 export default function HomePage({ params: { locale } }: { params: { locale: string } }) {
   const t = useTranslations('landing');
   const tc = useTranslations('common');
 
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 pt-20 pb-32">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="mb-8 flex justify-center">
-            <img 
-              src="/logo.png" 
-              alt="Stunity Enterprise" 
-              className="h-24 w-auto"
-            />
-          </div>
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-            {t('hero.title')}
-          </h1>
-          <p className="text-xl text-gray-600 mb-10">
-            {t('hero.subtitle')}
-          </p>
-          <div className="flex gap-4 justify-center flex-wrap">
-            <Link
-              href={`/${locale}/auth/login`}
-              className="px-8 py-4 bg-stunity-primary-600 text-white rounded-lg font-semibold hover:bg-stunity-primary-700 transition-colors shadow-lg hover:shadow-xl"
-            >
-              {t('hero.ctaLogin')}
-            </Link>
-            <button className="px-8 py-4 bg-white text-stunity-primary-600 rounded-lg font-semibold hover:bg-gray-50 transition-colors shadow-lg border-2 border-stunity-primary-200">
-              {t('hero.ctaRegister')}
-            </button>
-          </div>
+    <div className="h-screen flex flex-col bg-white overflow-hidden">
+      {/* Top bar – same horizontal spacing as feed nav (max-w-7xl, px-4 sm:px-6) */}
+      <header className="flex-shrink-0 h-14 border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
+          <Link href={`/${locale}`} className="flex items-center gap-2">
+            <img src="/Stunity.png" alt="Stunity Enterprise" className="h-8 w-auto" />
+            <span className="text-slate-600 font-medium text-sm hidden sm:inline">Enterprise</span>
+          </Link>
+          <nav className="flex items-center gap-1">
+          <Link
+            href={`/${locale}/auth/login`}
+            className="px-3 py-2 text-slate-500 hover:text-slate-900 text-sm font-medium rounded-md hover:bg-slate-50 transition-colors"
+          >
+            {t('hero.ctaLogin')}
+          </Link>
+          <Link
+            href={`/${locale}/register-school`}
+            className="px-3 py-2 bg-slate-900 text-white text-sm font-medium rounded-md hover:bg-slate-800 transition-colors"
+          >
+            {t('hero.ctaRegister')}
+          </Link>
+        </nav>
         </div>
-      </section>
+      </header>
 
-      {/* Features Section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16 text-gray-900">
-            {t('features.title')}
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {/* Multi-Tenant */}
-            <div className="p-8 bg-gradient-to-br from-stunity-primary-50 to-white rounded-xl shadow-lg hover:shadow-xl transition-shadow">
-              <div className="mb-4 p-3 bg-stunity-primary-100 rounded-lg w-fit">
-                <Globe className="w-8 h-8 text-stunity-primary-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900">
-                {t('features.multiTenant')}
-              </h3>
-              <p className="text-gray-600">
-                {t('features.multiTenantDesc')}
-              </p>
-            </div>
-
-            {/* Social Learning */}
-            <div className="p-8 bg-gradient-to-br from-stunity-primary-50 to-white rounded-xl shadow-lg hover:shadow-xl transition-shadow">
-              <div className="mb-4 p-3 bg-stunity-primary-100 rounded-lg w-fit">
-                <Users className="w-8 h-8 text-stunity-primary-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900">
-                {t('features.social')}
-              </h3>
-              <p className="text-gray-600">
-                {t('features.socialDesc')}
-              </p>
-            </div>
-
-            {/* Analytics */}
-            <div className="p-8 bg-gradient-to-br from-stunity-primary-50 to-white rounded-xl shadow-lg hover:shadow-xl transition-shadow">
-              <div className="mb-4 p-3 bg-stunity-primary-100 rounded-lg w-fit">
-                <BarChart3 className="w-8 h-8 text-stunity-primary-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-900">
-                {t('features.analytics')}
-              </h3>
-              <p className="text-gray-600">
-                {t('features.analyticsDesc')}
-              </p>
-            </div>
-          </div>
+      {/* Main – centered, no scroll */}
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
+        <img
+          src="/Stunity.png"
+          alt=""
+          className="h-14 w-auto mb-8 opacity-95"
+          aria-hidden
+        />
+        <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 text-center tracking-tight max-w-md">
+          {t('hero.title')}
+        </h1>
+        <p className="text-slate-500 text-sm sm:text-base text-center mt-3 max-w-sm">
+          {t('hero.subtitle')}
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 mt-10">
+          <Link
+            href={`/${locale}/auth/login`}
+            className="px-6 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 transition-colors text-center"
+          >
+            {t('hero.ctaLogin')}
+          </Link>
+          <Link
+            href={`/${locale}/register-school`}
+            className="px-6 py-2.5 text-slate-700 text-sm font-medium rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors text-center"
+          >
+            {t('hero.ctaRegister')}
+          </Link>
         </div>
-      </section>
+        <p className="mt-6 text-xs text-slate-400 text-center max-w-xs">
+          {t('hero.ctaHint')}
+        </p>
+      </main>
 
-      {/* Footer */}
-      <footer className="py-8 bg-gray-900 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-gray-400">
-            © 2026 {tc('appName')} - Modern School Management System
-          </p>
-        </div>
+      {/* Footer – same viewport */}
+      <footer className="flex-shrink-0 py-3 text-center text-xs text-slate-400">
+        © {new Date().getFullYear()} {tc('appName')}
       </footer>
     </div>
   );

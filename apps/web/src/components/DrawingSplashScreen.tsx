@@ -98,13 +98,13 @@ export default function DrawingSplashScreen({
           }}
         >
           <Image
-            src="/Stunity.svg"
+            src="/Stunity.png"
             alt="Stunity"
             width={320}
             height={100}
             priority
             onLoad={() => setLogoLoaded(true)}
-            className="drop-shadow-2xl"
+            className="drop-shadow-2xl object-contain"
             style={{
               filter: 'drop-shadow(0 10px 30px rgba(251, 146, 60, 0.3))',
             }}

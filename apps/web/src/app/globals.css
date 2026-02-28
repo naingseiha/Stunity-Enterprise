@@ -14,6 +14,33 @@ body {
   font-family: var(--font-poppins);
 }
 
+/* Form controls – clean, professional focus (no browser default outline) */
+input,
+select,
+textarea {
+  outline: none;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(234, 88, 12, 0.22);
+}
+@media (prefers-color-scheme: dark) {
+  input:focus,
+  select:focus,
+  textarea:focus {
+    box-shadow: 0 0 0 2px rgb(30 41 59), 0 0 0 4px rgba(234, 88, 12, 0.3);
+  }
+}
+/* Optional: softer border for inputs when not focused */
+input,
+select,
+textarea {
+  border-radius: 0.5rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
 [lang="km"] {
   font-family: var(--font-battambang);
 }

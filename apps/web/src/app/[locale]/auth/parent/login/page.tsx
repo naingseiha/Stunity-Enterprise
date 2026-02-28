@@ -81,7 +81,7 @@ export default function ParentLoginPage({ params: { locale } }: { params: { loca
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
             <img 
-              src="/logo.png" 
+              src="/Stunity.png" 
               alt="Stunity Enterprise" 
               className="h-20 w-auto"
             />

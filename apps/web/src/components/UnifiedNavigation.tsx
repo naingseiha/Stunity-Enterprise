@@ -290,7 +290,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                 title={isSchoolContext ? "Go to Dashboard" : "Go to Feed"}
               >
                 <img
-                  src="/stunity-logo.png"
+                  src="/Stunity.png"
                   alt="Stunity"
                   className="h-8 w-auto object-contain transition-all duration-200 group-hover:opacity-80"
                 />
