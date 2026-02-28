@@ -86,6 +86,13 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 - Academic year promotion workflow
 - Admin claim code generation + school templates
 
+### 👑 Super Admin & Platform Management
+- **Super Admin area** (`/[locale]/super-admin`) — Dashboard, Schools, Users, Audit Logs, Settings, Analytics
+- **Feature flags** — Platform-wide; create, toggle; public check API; `MAINTENANCE_MODE` for maintenance overlay
+- **Platform announcements** — Create, edit, delete; `AnnouncementBanner` for all users
+- **Platform audit logging** — School/User actions logged with actor, resource, details
+- See [SUPER_ADMIN_AND_ENTERPRISE_FEATURES.md](./docs/SUPER_ADMIN_AND_ENTERPRISE_FEATURES.md) for full details
+
 ### 📚 Learning
 - Course creation and enrollment (mobile + web)
 - Course detail with lessons

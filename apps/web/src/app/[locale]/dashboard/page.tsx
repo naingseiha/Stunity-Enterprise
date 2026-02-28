@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   GraduationCap,
   Users,
@@ -21,8 +22,10 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 import StatCard from '@/components/dashboard/StatCard';
 import ActionCard from '@/components/dashboard/ActionCard';
 import { TokenManager } from '@/lib/api/auth';
+import { useAcademicYear } from '@/contexts/AcademicYearContext';
+import { SCHOOL_SERVICE_URL } from '@/lib/api/config';
 import PageSkeleton from '@/components/layout/PageSkeleton';
-import AnimatedContent, { StaggeredList } from '@/components/AnimatedContent';
+import AnimatedContent from '@/components/AnimatedContent';
 
 interface UserData {
   id: string;
@@ -42,69 +45,112 @@ interface SchoolData {
   trialDaysRemaining?: number;
 }
 
+interface YearStats {
+  students: number;
+  teachers: number;
+  classes: number;
+}
+
 export default function DashboardPage({ params }: { params: { locale: string } }) {
   const router = useRouter();
+  const { locale } = params;
+  const { schoolId, currentYear } = useAcademicYear();
   const [user, setUser] = useState<UserData | null>(null);
   const [school, setSchool] = useState<SchoolData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [yearStats, setYearStats] = useState<YearStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     const token = TokenManager.getAccessToken();
     if (!token) {
-      router.replace(`/${params.locale}/auth/login`);
+      router.replace(`/${locale}/auth/login`);
       return;
     }
 
-    // Get user and school data from TokenManager
     const userData = TokenManager.getUserData();
     setUser(userData.user);
     setSchool(userData.school);
     setLoading(false);
-  }, [params.locale, router]);
+  }, [locale, router]);
+
+  useEffect(() => {
+    if (!schoolId || !currentYear?.id) {
+      setStatsLoading(false);
+      return;
+    }
+
+    const token = TokenManager.getAccessToken();
+    if (!token) return;
+
+    const fetchStats = async () => {
+      try {
+        setStatsLoading(true);
+        const res = await fetch(
+          `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${currentYear.id}/stats`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const data = await res.json();
+        if (data.success && data.data) {
+          setYearStats(data.data);
+        }
+      } catch {
+        setYearStats(null);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [schoolId, currentYear?.id]);
 
   const handleLogout = () => {
     TokenManager.clearTokens();
-    router.push(`/${params.locale}/auth/login`);
+    router.push(`/${locale}/auth/login`);
   };
 
   if (loading) {
     return <PageSkeleton user={user} school={school} type="dashboard" />;
   }
 
+  const studentsVal = yearStats ? String(yearStats.students) : (statsLoading ? '…' : '—');
+  const teachersVal = yearStats ? String(yearStats.teachers) : (statsLoading ? '…' : '—');
+  const classesVal = yearStats ? String(yearStats.classes) : (statsLoading ? '…' : '—');
+
   const stats = [
     {
       title: 'Total Students',
-      value: '2,847',
-      change: '+142 this semester',
-      changeType: 'positive' as const,
-      subtitle: '+5.2% from last year',
+      value: studentsVal,
+      change: currentYear ? 'Current year' : 'No year selected',
+      changeType: 'neutral' as const,
+      subtitle: currentYear?.name ?? 'Select academic year',
       icon: GraduationCap,
       iconColor: 'blue',
     },
     {
       title: 'Teachers',
-      value: '124',
-      change: '+6 new hires',
-      changeType: 'positive' as const,
-      subtitle: 'All departments covered',
+      value: teachersVal,
+      change: currentYear ? 'This year' : '',
+      changeType: 'neutral' as const,
+      subtitle: currentYear?.name ?? '',
       icon: Users,
       iconColor: 'purple',
     },
     {
       title: 'Classes',
-      value: '48',
-      change: 'All active',
+      value: classesVal,
+      change: currentYear ? 'Active' : '',
       changeType: 'neutral' as const,
-      subtitle: 'Grades 7-12',
+      subtitle: currentYear?.name ?? '',
       icon: School,
       iconColor: 'green',
     },
     {
       title: 'Attendance Rate',
-      value: '94.5%',
-      change: 'Above target',
-      changeType: 'positive' as const,
-      subtitle: 'Last 30 days',
+      value: '—',
+      change: 'From attendance',
+      changeType: 'neutral' as const,
+      subtitle: 'Mark attendance to see rate',
       icon: Target,
       iconColor: 'amber',
     },
@@ -112,46 +158,46 @@ export default function DashboardPage({ params }: { params: { locale: string } }
 
   const quickActions = [
     {
-      title: 'Add Student',
-      description: 'Enroll new student to the school',
+      title: 'Students',
+      description: 'View and manage students',
       icon: UserPlus,
       iconColor: 'blue',
-      href: '/students/new',
+      href: `/${locale}/students`,
     },
     {
-      title: 'Create Class',
-      description: 'Set up new class for current year',
+      title: 'Classes',
+      description: 'View and manage classes',
       icon: BookOpen,
       iconColor: 'purple',
-      href: '/classes/new',
+      href: `/${locale}/classes`,
     },
     {
       title: 'Grade Entry',
       description: 'Enter student grades and scores',
       icon: ClipboardList,
       iconColor: 'green',
-      href: '/grades',
+      href: `/${locale}/grades/entry`,
     },
     {
-      title: 'View Reports',
-      description: 'Analytics and performance insights',
+      title: 'Report Cards',
+      description: 'View reports and analytics',
       icon: BarChart3,
       iconColor: 'cyan',
-      href: '/reports',
+      href: `/${locale}/grades/reports`,
     },
     {
       title: 'Mark Attendance',
       description: 'Take daily class attendance',
       icon: Calendar,
       iconColor: 'amber',
-      href: '/attendance',
+      href: `/${locale}/attendance/mark`,
     },
     {
       title: 'Settings',
-      description: 'Manage school configuration',
+      description: 'Academic years and school config',
       icon: Settings,
       iconColor: 'red',
-      href: '/settings',
+      href: `/${locale}/settings/academic-years`,
     },
   ];
 
@@ -171,7 +217,10 @@ export default function DashboardPage({ params }: { params: { locale: string } }
             <div className="mb-6">
               {/* Breadcrumb */}
               <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-                <Home className="h-4 w-4" />
+                <Link href={`/${locale}/dashboard`} className="flex items-center gap-1 hover:text-gray-700">
+                  <Home className="h-4 w-4" />
+                  <span>Home</span>
+                </Link>
                 <ChevronRight className="h-4 w-4" />
                 <span className="text-gray-900 font-medium">Dashboard</span>
               </nav>
@@ -223,36 +272,9 @@ export default function DashboardPage({ params }: { params: { locale: string } }
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">
                       Recent Activity
                     </h2>
-                    <div className="bg-white rounded-lg border border-gray-200 divide-y">
-                    {[
-                      {
-                        action: 'New student enrolled',
-                        details: 'Sopheap Chan - Grade 10A',
-                        time: '2 hours ago',
-                      },
-                      {
-                        action: 'Attendance marked',
-                        details: 'Grade 11B - 28/30 present',
-                        time: '3 hours ago',
-                      },
-                      {
-                        action: 'Grades submitted',
-                        details: 'Mathematics Midterm - Grade 12',
-                        time: '5 hours ago',
-                      },
-                      {
-                        action: 'Teacher added',
-                        details: 'Dara Sok - Physics Department',
-                        time: '1 day ago',
-                      },
-                    ].map((item, index) => (
-                      <div key={index} className="p-4 hover:bg-gray-50 transition-colors">
-                        <p className="text-sm font-medium text-gray-900">{item.action}</p>
-                        <p className="text-sm text-gray-600 mt-0.5">{item.details}</p>
-                        <p className="text-xs text-gray-500 mt-1">{item.time}</p>
-                      </div>
-                    ))}
-                  </div>
+                    <div className="bg-white rounded-lg border border-gray-200 p-6 text-center text-gray-500 text-sm">
+                      Recent activity will appear here once you enroll students, mark attendance, or submit grades.
+                    </div>
                   </div>
                 </AnimatedContent>
               </div>
@@ -267,18 +289,34 @@ export default function DashboardPage({ params }: { params: { locale: string } }
                   </h3>
                   <div className="space-y-3">
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">2025-2026</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {currentYear?.name ?? '—'}
+                      </p>
                       <p className="text-sm text-gray-600 mt-1">
-                        October 2025 - September 2026
+                        {currentYear
+                          ? `${new Date(currentYear.startDate).toLocaleDateString()} – ${new Date(currentYear.endDate).toLocaleDateString()}`
+                          : 'Set up in settings'}
                       </p>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-gradient-to-r from-blue-600 to-blue-500 h-2 rounded-full" style={{ width: '45%' }}></div>
-                    </div>
-                    <p className="text-xs text-gray-600">4 months remaining</p>
-                    <button className="w-full py-2 px-4 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                    {currentYear && (
+                      <>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-gradient-to-r from-blue-600 to-blue-500 h-2 rounded-full"
+                            style={{
+                              width: currentYear.status === 'ACTIVE' ? '60%' : currentYear.status === 'ENDED' ? '100%' : '30%',
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-600">{currentYear.status}</p>
+                      </>
+                    )}
+                    <Link
+                      href={`/${locale}/settings/academic-years`}
+                      className="block w-full py-2 px-4 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors text-center"
+                    >
                       Manage Academic Years
-                    </button>
+                    </Link>
                   </div>
                 </div>
 
@@ -301,27 +339,28 @@ export default function DashboardPage({ params }: { params: { locale: string } }
                 {/* Quick Stats */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <h3 className="text-sm font-semibold text-gray-900 mb-4">
-                    Today's Overview
+                    Today&apos;s Overview
                   </h3>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Present</span>
-                      <span className="text-sm font-semibold text-gray-900">2,689</span>
+                      <span className="text-sm font-semibold text-gray-900">—</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Absent</span>
-                      <span className="text-sm font-semibold text-gray-900">158</span>
+                      <span className="text-sm font-semibold text-gray-900">—</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Late</span>
-                      <span className="text-sm font-semibold text-gray-900">42</span>
+                      <span className="text-sm font-semibold text-gray-900">—</span>
                     </div>
                     <div className="pt-3 border-t border-gray-200">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-gray-900">Attendance</span>
-                        <span className="text-sm font-bold text-green-600">94.5%</span>
+                        <span className="text-sm font-bold text-gray-500">—</span>
                       </div>
                     </div>
+                    <p className="text-xs text-gray-500">Mark attendance to see today&apos;s numbers</p>
                   </div>
                 </div>
                 </div>

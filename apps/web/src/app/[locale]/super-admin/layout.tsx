@@ -16,6 +16,7 @@ import {
   ChevronRight,
   User,
   FileText,
+  TrendingUp,
 } from 'lucide-react';
 
 export default function SuperAdminLayout({
@@ -58,6 +59,7 @@ export default function SuperAdminLayout({
     { section: 'Platform', items: [
       { href: `/${locale}/super-admin/schools`, label: 'Schools', icon: School },
       { href: `/${locale}/super-admin/users`, label: 'Users', icon: Users },
+      { href: `/${locale}/super-admin/analytics`, label: 'Analytics', icon: TrendingUp },
       { href: `/${locale}/super-admin/audit-logs`, label: 'Audit Logs', icon: FileText },
     ]},
     { section: 'Settings', items: [{ href: `/${locale}/super-admin/settings`, label: 'Platform Settings', icon: Settings }] },

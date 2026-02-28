@@ -26,6 +26,9 @@ import {
   Ticket,
   MapPin,
   Loader2,
+  Shield,
+  Archive,
+  UserX,
 } from 'lucide-react';
 import AcademicYearSelector from './AcademicYearSelector';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -177,26 +180,64 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
     return true;
   }), [locale, isFeedContext, isClubsContext, isEventsContext, isSchoolContext, isLearnContext, school]);
 
-  // Memoized school menu items
-  const schoolMenuItems = useMemo(() => [
-    { name: 'Dashboard', icon: BarChart3, path: `/${locale}/dashboard`, prefetch: null },
-    { name: 'Messages', icon: MessageCircle, path: `/${locale}/dashboard/messages`, prefetch: null },
-    { name: 'Students', icon: Users, path: `/${locale}/students`, prefetch: 'students' },
-    { name: 'Teachers', icon: User, path: `/${locale}/teachers`, prefetch: 'teachers' },
-    { name: 'Classes', icon: BookOpen, path: `/${locale}/classes`, prefetch: 'classes' },
-    { name: 'Subjects', icon: BookOpen, path: `/${locale}/settings/subjects`, prefetch: null },
-    { name: 'Timetable', icon: Calendar, path: `/${locale}/timetable`, prefetch: null },
-    { name: 'Master Timetable', icon: Calendar, path: `/${locale}/timetable/master`, prefetch: null },
-    { name: 'Grade Entry', icon: ClipboardList, path: `/${locale}/grades/entry`, prefetch: null },
-    { name: 'Report Cards', icon: FileText, path: `/${locale}/grades/reports`, prefetch: null },
-    { name: 'Grade Analytics', icon: TrendingUp, path: `/${locale}/grades/analytics`, prefetch: null },
-    { name: 'Mark Attendance', icon: ClipboardCheck, path: `/${locale}/attendance/mark`, prefetch: null },
-    { name: 'Attendance Reports', icon: ClipboardCheck, path: `/${locale}/attendance/reports`, prefetch: null },
-    { name: 'Claim Codes', icon: Ticket, path: `/${locale}/admin/claim-codes`, prefetch: null },
-    { name: 'Promotion', icon: TrendingUp, path: `/${locale}/settings/promotion`, prefetch: null },
-    { name: 'Campus Locations', icon: MapPin, path: `/${locale}/settings/locations`, prefetch: null },
-    { name: 'Settings', icon: Settings, path: `/${locale}/settings/academic-years`, prefetch: null },
+  // Memoized school menu sections with grouped items
+  const schoolMenuSections = useMemo(() => [
+    {
+      label: 'Overview',
+      items: [
+        { name: 'Dashboard', icon: BarChart3, path: `/${locale}/dashboard`, prefetch: null },
+        { name: 'Messages', icon: MessageCircle, path: `/${locale}/dashboard/messages`, prefetch: null },
+      ],
+    },
+    {
+      label: 'Academic',
+      items: [
+        { name: 'Students', icon: Users, path: `/${locale}/students`, prefetch: 'students' },
+        { name: 'Teachers', icon: User, path: `/${locale}/teachers`, prefetch: 'teachers' },
+        { name: 'Classes', icon: BookOpen, path: `/${locale}/classes`, prefetch: 'classes' },
+        { name: 'Subjects', icon: BookOpen, path: `/${locale}/settings/subjects`, prefetch: null },
+      ],
+    },
+    {
+      label: 'Schedule',
+      items: [
+        { name: 'Timetable', icon: Calendar, path: `/${locale}/timetable`, prefetch: null },
+        { name: 'Master Timetable', icon: Calendar, path: `/${locale}/timetable/master`, prefetch: null },
+      ],
+    },
+    {
+      label: 'Grades & Attendance',
+      items: [
+        { name: 'Grade Entry', icon: ClipboardList, path: `/${locale}/grades/entry`, prefetch: null },
+        { name: 'Report Cards', icon: FileText, path: `/${locale}/grades/reports`, prefetch: null },
+        { name: 'Grade Analytics', icon: TrendingUp, path: `/${locale}/grades/analytics`, prefetch: null },
+        { name: 'Mark Attendance', icon: ClipboardCheck, path: `/${locale}/attendance/mark`, prefetch: null },
+        { name: 'Attendance Reports', icon: ClipboardCheck, path: `/${locale}/attendance/reports`, prefetch: null },
+      ],
+    },
+    {
+      label: 'Year-End',
+      items: [
+        { name: 'Promotion', icon: TrendingUp, path: `/${locale}/settings/promotion`, prefetch: null },
+        { name: 'Failed Students', icon: UserX, path: `/${locale}/settings/failed-students`, prefetch: null },
+        { name: 'Year-End Workflow', icon: Archive, path: `/${locale}/settings/year-end-workflow`, prefetch: null },
+      ],
+    },
+    {
+      label: 'School Setup',
+      items: [
+        { name: 'Claim Codes', icon: Ticket, path: `/${locale}/admin/claim-codes`, prefetch: null },
+        { name: 'Campus Locations', icon: MapPin, path: `/${locale}/settings/locations`, prefetch: null },
+        { name: 'Settings', icon: Settings, path: `/${locale}/settings/academic-years`, prefetch: null },
+      ],
+    },
   ], [locale]);
+
+  // Flatten for mobile menu compatibility
+  const schoolMenuItems = useMemo(
+    () => schoolMenuSections.flatMap((s) => s.items),
+    [schoolMenuSections]
+  );
 
   // Prefetch data on hover for instant navigation
   const handleLinkHover = useCallback((prefetchType: string | null) => {
@@ -402,6 +443,18 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
 
                     {/* Menu Items */}
                     <div className="py-1">
+                      {user?.isSuperAdmin && (
+                        <Link
+                          href={`/${locale}/super-admin`}
+                          prefetch={true}
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-[13px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors group"
+                        >
+                          <Shield className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors" />
+                          <span className="flex-1">Platform Admin</span>
+                          <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600" />
+                        </Link>
+                      )}
                       <Link
                         href={`/${locale}/profile/me`}
                         prefetch={true}
@@ -501,50 +554,55 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       {/* School Context Sidebar - Refined */}
       {isSchoolContext && (
         <aside className="hidden lg:block fixed left-0 top-14 w-60 h-[calc(100vh-3.5rem)] bg-gray-50/50 dark:bg-gray-900/50 border-r border-gray-200/80 dark:border-gray-800 overflow-y-auto">
-          <div className="p-3 space-y-0.5">
+          <div className="p-3 space-y-4">
             <p className="px-3 py-2 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
               School Management
             </p>
-            {schoolMenuItems.map((item) => {
-              const Icon = item.icon;
-              // Use optimistic path for instant feedback, fallback to actual pathname
-              const isActive = optimisticPath ? optimisticPath === item.path : pathname === item.path;
-              const isHovered = activeHover === item.path;
-              const isNavigating = optimisticPath === item.path && pathname !== item.path;
+            {schoolMenuSections.map((section) => (
+              <div key={section.label} className="space-y-0.5">
+                <p className="px-3 py-1.5 text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                  {section.label}
+                </p>
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = optimisticPath ? optimisticPath === item.path : pathname === item.path;
+                  const isHovered = activeHover === item.path;
+                  const isNavigating = optimisticPath === item.path && pathname !== item.path;
 
-              return (
-                <Link
-                  key={item.name}
-                  href={item.path}
-                  prefetch={true}
-                  onClick={(e) => {
-                    // Set optimistic path immediately on click for instant feedback
-                    setOptimisticPath(item.path);
-                    handleLinkHover(item.prefetch);
-                  }}
-                  onMouseEnter={() => {
-                    setActiveHover(item.path);
-                    handleLinkHover(item.prefetch);
-                  }}
-                  onMouseLeave={() => setActiveHover(null)}
-                  className={`
-                    flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150
-                    ${isActive
-                      ? 'text-orange-600 dark:text-orange-400 bg-white dark:bg-gray-800 shadow-sm border border-gray-200/80 dark:border-gray-700'
-                      : isHovered
-                        ? 'text-gray-900 dark:text-white bg-white/60 dark:bg-gray-800/60'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                    }
-                  `}
-                >
-                  <Icon className={`w-4 h-4 transition-all duration-150 ${isActive ? 'text-orange-500' : ''}`} />
-                  <span className="flex-1">{item.name}</span>
-                  {isNavigating && (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-500" />
-                  )}
-                </Link>
-              );
-            })}
+                  return (
+                    <Link
+                      key={item.path}
+                      href={item.path}
+                      prefetch={true}
+                      onClick={(e) => {
+                        setOptimisticPath(item.path);
+                        handleLinkHover(item.prefetch);
+                      }}
+                      onMouseEnter={() => {
+                        setActiveHover(item.path);
+                        handleLinkHover(item.prefetch);
+                      }}
+                      onMouseLeave={() => setActiveHover(null)}
+                      className={`
+                        flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150
+                        ${isActive
+                          ? 'text-orange-600 dark:text-orange-400 bg-white dark:bg-gray-800 shadow-sm border border-gray-200/80 dark:border-gray-700'
+                          : isHovered
+                            ? 'text-gray-900 dark:text-white bg-white/60 dark:bg-gray-800/60'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                        }
+                      `}
+                    >
+                      <Icon className={`w-4 h-4 transition-all duration-150 ${isActive ? 'text-orange-500' : ''}`} />
+                      <span className="flex-1">{item.name}</span>
+                      {isNavigating && (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-500" />
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </aside>
       )}

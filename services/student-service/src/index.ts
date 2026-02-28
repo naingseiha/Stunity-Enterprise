@@ -313,9 +313,8 @@ async function refreshCache(
     } else {
       const enrollments = await prisma.studentClass.findMany({
         where: {
-          academicYearId,
           status: { in: ['ACTIVE', 'INACTIVE'] },
-          class: { schoolId },
+          class: { schoolId, academicYearId },
           ...(classId && classId !== 'all' ? { classId } : {}),
         },
         select: { studentId: true, classId: true, status: true, class: { select: { id: true, name: true, grade: true } } },
@@ -457,12 +456,11 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
         }),
       ]);
     } else {
-      // Year filter: First get enrollments, then fetch students
+      // Year filter: Find students in classes that belong to the selected academic year
       const enrollments = await prisma.studentClass.findMany({
         where: {
-          academicYearId,
           status: { in: ['ACTIVE', 'INACTIVE'] },
-          class: { schoolId },
+          class: { schoolId, academicYearId },
           ...(classId && classId !== 'all' ? { classId } : {}),
         },
         select: {
@@ -1607,89 +1605,83 @@ app.post('/students/promote/automatic', async (req: AuthRequest, res: Response) 
       failed: [] as any[],
     };
 
-    // Process each promotion
+    // Batch validation - fetch all required data in parallel
+    const studentIds = promotions.map((p: any) => p.studentId);
+    const fromClassIds = Array.from(new Set(promotions.map((p: any) => p.fromClassId)));
+
+    const [sourceEnrollments, existingProgressions] = await Promise.all([
+      prisma.studentClass.findMany({
+        where: {
+          studentId: { in: studentIds },
+          classId: { in: fromClassIds },
+          status: 'ACTIVE',
+        },
+        select: { studentId: true, classId: true },
+      }),
+      prisma.studentProgression.findMany({
+        where: {
+          studentId: { in: studentIds },
+          fromAcademicYearId,
+          toAcademicYearId,
+        },
+        select: { studentId: true },
+      }),
+    ]);
+
+    const sourceSet = new Set(sourceEnrollments.map((e) => `${e.studentId}:${e.classId}`));
+    const alreadyPromotedSet = new Set(existingProgressions.map((p) => p.studentId));
+
+    // Build valid promotions list
+    const validPromotions: Array<{ studentId: string; fromClassId: string; toClassId: string }> = [];
     for (const promo of promotions) {
-      try {
-        const { studentId, fromClassId, toClassId } = promo;
+      const { studentId, fromClassId, toClassId } = promo;
+      if (!sourceSet.has(`${studentId}:${fromClassId}`)) {
+        results.failed.push({ studentId, reason: 'Student not found in source class' });
+        continue;
+      }
+      if (alreadyPromotedSet.has(studentId)) {
+        results.failed.push({ studentId, reason: 'Already promoted to this academic year' });
+        continue;
+      }
+      validPromotions.push({ studentId, fromClassId, toClassId });
+    }
 
-        // Verify student exists and belongs to from class
-        const studentClass = await prisma.studentClass.findFirst({
-          where: {
-            studentId,
-            classId: fromClassId,
-          },
-        });
+    const promotionDate = new Date();
 
-        if (!studentClass) {
-          results.failed.push({
-            studentId,
-            reason: 'Student not found in source class',
-          });
-          continue;
-        }
-
-        // Check if already promoted
-        const existingProgression = await prisma.studentProgression.findFirst({
-          where: {
-            studentId,
-            fromAcademicYearId,
-            toAcademicYearId,
-          },
-        });
-
-        if (existingProgression) {
-          results.failed.push({
-            studentId,
-            reason: 'Already promoted to this academic year',
-          });
-          continue;
-        }
-
-        // Create progression record and assign to new class
-        await prisma.$transaction(async (tx) => {
-          // Create progression record
-          await tx.studentProgression.create({
-            data: {
-              studentId,
+    // Single transaction - batch create progressions and class enrollments
+    if (validPromotions.length > 0) {
+      await prisma.$transaction(
+        async (tx) => {
+          await tx.studentProgression.createMany({
+            data: validPromotions.map((p) => ({
+              studentId: p.studentId,
               fromAcademicYearId,
               toAcademicYearId,
-              fromClassId,
-              toClassId,
+              fromClassId: p.fromClassId,
+              toClassId: p.toClassId,
               promotionType: 'AUTOMATIC',
-              promotionDate: new Date(),
+              promotionDate,
               promotedBy: userId,
-            },
+            })),
+            skipDuplicates: true,
           });
 
-          // Assign student to new class
-          const existingAssignment = await tx.studentClass.findFirst({
-            where: {
-              studentId,
-              classId: toClassId,
-            },
+          await tx.studentClass.createMany({
+            data: validPromotions.map((p) => ({
+              studentId: p.studentId,
+              classId: p.toClassId,
+              academicYearId: toAcademicYearId,
+              enrolledAt: promotionDate,
+              status: 'ACTIVE',
+            })),
+            skipDuplicates: true,
           });
+        },
+        { maxWait: 30000, timeout: 60000 }
+      );
 
-          if (!existingAssignment) {
-            await tx.studentClass.create({
-              data: {
-                studentId,
-                classId: toClassId,
-                enrolledAt: new Date(),
-              },
-            });
-          }
-        });
-
-        results.successful.push({
-          studentId,
-          fromClassId,
-          toClassId,
-        });
-      } catch (error: any) {
-        results.failed.push({
-          studentId: promo.studentId,
-          reason: error.message,
-        });
+      for (const p of validPromotions) {
+        results.successful.push({ studentId: p.studentId, fromClassId: p.fromClassId, toClassId: p.toClassId });
       }
     }
 

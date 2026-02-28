@@ -43,6 +43,7 @@ Reference these when working on a specific subsystem:
 ### Admin & Permissions
 | Doc | What it covers |
 |-----|---------------|
+| [`SUPER_ADMIN_AND_ENTERPRISE_FEATURES.md`](./SUPER_ADMIN_AND_ENTERPRISE_FEATURES.md) | Super Admin area, platform settings, feature flags, maintenance mode |
 | [`admin-system/ADMIN_PERMISSION_SYSTEM.md`](./admin-system/ADMIN_PERMISSION_SYSTEM.md) | Role-based access control |
 | [`admin-system/ADMIN_PERMISSION_QUICK_REFERENCE.md`](./admin-system/ADMIN_PERMISSION_QUICK_REFERENCE.md) | Quick reference card |
 

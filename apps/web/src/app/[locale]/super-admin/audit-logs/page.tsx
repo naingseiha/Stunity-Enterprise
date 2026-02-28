@@ -1,15 +1,24 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { getSuperAdminAuditLogs, PlatformAuditLog } from '@/lib/api/super-admin';
+import {
+  getSuperAdminAuditLogs,
+  getSuperAdminAuditLogRetentionPolicy,
+  runSuperAdminAuditLogCleanup,
+  PlatformAuditLog,
+  AuditLogRetentionPolicy,
+} from '@/lib/api/super-admin';
 import AnimatedContent from '@/components/AnimatedContent';
 import {
   FileText,
   Home,
   ChevronRight,
   ChevronLeft,
+  Trash2,
+  Loader2,
+  Shield,
 } from 'lucide-react';
 
 const RESOURCE_LABELS: Record<string, string> = {
@@ -21,8 +30,11 @@ const ACTION_LABELS: Record<string, string> = {
   SCHOOL_CREATE: 'Created school',
   SCHOOL_UPDATE: 'Updated school',
   SCHOOL_DELETE: 'Deleted school',
+  SCHOOL_APPROVE: 'Approved school registration',
+  SCHOOL_REJECT: 'Rejected school registration',
   USER_ACTIVATE: 'Activated user',
   USER_DEACTIVATE: 'Deactivated user',
+  AUDIT_LOG_CLEANUP: 'Audit log cleanup',
 };
 
 export default function SuperAdminAuditLogsPage() {
@@ -34,15 +46,40 @@ export default function SuperAdminAuditLogsPage() {
   const [actionFilter, setActionFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retentionPolicy, setRetentionPolicy] = useState<AuditLogRetentionPolicy | null>(null);
+  const [cleanupLoading, setCleanupLoading] = useState(false);
+  const [cleanupSuccess, setCleanupSuccess] = useState<string | null>(null);
 
-  const fetchLogs = useCallback(async () => {
+  useEffect(() => {
+    getSuperAdminAuditLogRetentionPolicy()
+      .then((res) => setRetentionPolicy(res.data))
+      .catch(() => {});
+  }, []);
+
+  const handleRunCleanup = async () => {
+    if (!confirm('Delete audit logs older than the retention period? This cannot be undone.')) return;
+    setCleanupLoading(true);
+    setCleanupSuccess(null);
+    try {
+      const res = await runSuperAdminAuditLogCleanup();
+      setCleanupSuccess(`Deleted ${res.data.deletedCount} log(s) older than ${res.data.olderThanDays} days.`);
+      fetchLogs(1, resourceFilter, actionFilter);
+      getSuperAdminAuditLogRetentionPolicy().then((r) => setRetentionPolicy(r.data));
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setCleanupLoading(false);
+    }
+  };
+
+  const fetchLogs = useCallback(async (page: number, resourceType: string, action: string) => {
     setLoading(true);
     try {
       const res = await getSuperAdminAuditLogs({
-        page: pagination.page,
+        page,
         limit: 50,
-        resourceType: resourceFilter || undefined,
-        action: actionFilter || undefined,
+        resourceType: resourceType || undefined,
+        action: action || undefined,
       });
       setLogs(res.data.logs);
       setPagination(res.data.pagination);
@@ -53,15 +90,21 @@ export default function SuperAdminAuditLogsPage() {
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, resourceFilter, actionFilter]);
+  }, []);
 
+  const forcePage1Ref = useRef(false);
+  // When filters change, reset to page 1 and set flag for fetch
   useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]);
-
-  useEffect(() => {
-    setPagination((p) => ({ ...p, page: 1 }));
+    forcePage1Ref.current = true;
+    setPagination((p) => (p.page === 1 ? p : { ...p, page: 1 }));
   }, [resourceFilter, actionFilter]);
+
+  // Fetch when pagination or filters change. Use page 1 when filters just changed.
+  useEffect(() => {
+    const pageToFetch = forcePage1Ref.current ? 1 : pagination.page;
+    if (forcePage1Ref.current) forcePage1Ref.current = false;
+    fetchLogs(pageToFetch, resourceFilter, actionFilter);
+  }, [pagination.page, resourceFilter, actionFilter, fetchLogs]);
 
   return (
     <div className="space-y-6">
@@ -86,6 +129,40 @@ export default function SuperAdminAuditLogsPage() {
           </div>
         </div>
       </AnimatedContent>
+
+      {retentionPolicy && (
+        <AnimatedContent animation="slide-up" delay={75}>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-50">
+                <Shield className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Retention Policy</h3>
+                <p className="text-sm text-gray-500">
+                  Logs are retained for <strong>{retentionPolicy.retentionDays} days</strong>.
+                  {retentionPolicy.logsOlderThanRetention > 0 && (
+                    <> <strong>{retentionPolicy.logsOlderThanRetention}</strong> log(s) are older than the retention period.</>
+                  )}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleRunCleanup}
+              disabled={cleanupLoading || retentionPolicy.logsOlderThanRetention === 0}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
+            >
+              {cleanupLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              Run cleanup
+            </button>
+          </div>
+          {cleanupSuccess && (
+            <div className="mt-2 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-emerald-800 text-sm font-medium">
+              {cleanupSuccess}
+            </div>
+          )}
+        </AnimatedContent>
+      )}
 
       <AnimatedContent animation="slide-up" delay={100}>
         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex flex-col sm:flex-row gap-4">

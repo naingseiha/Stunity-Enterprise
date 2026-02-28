@@ -80,7 +80,6 @@ ADD COLUMN     "mode" "ClubMode" NOT NULL DEFAULT 'PUBLIC',
 ADD COLUMN     "objectives" TEXT,
 ADD COLUMN     "passingGrade" DOUBLE PRECISION,
 ADD COLUMN     "prerequisites" TEXT,
-ADD COLUMN     "schoolId" TEXT,
 ADD COLUMN     "startDate" TIMESTAMP(3),
 ADD COLUMN     "subject" TEXT,
 ADD COLUMN     "syllabus" TEXT,
@@ -470,10 +469,7 @@ CREATE INDEX "study_clubs_mode_idx" ON "study_clubs"("mode");
 -- CreateIndex
 CREATE INDEX "study_clubs_isActive_idx" ON "study_clubs"("isActive");
 
--- AddForeignKey
-ALTER TABLE "study_clubs" ADD CONSTRAINT "study_clubs_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
+-- AddForeignKey (schoolId already exists from 20260210131804; FK added in AlterTable above)
 ALTER TABLE "club_members" ADD CONSTRAINT "club_members_clubId_fkey" FOREIGN KEY ("clubId") REFERENCES "study_clubs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey

@@ -37,7 +37,7 @@ export default function ClassesStep({ onNext, onBack, onSkip, schoolId, academic
 
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:3005/classes/batch`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_CLASS_SERVICE_URL || 'http://localhost:3005'}/classes/batch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

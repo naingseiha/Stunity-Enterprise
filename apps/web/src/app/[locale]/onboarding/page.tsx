@@ -52,7 +52,7 @@ export default function OnboardingPage() {
       
       console.log('Loading onboarding for school:', schoolId);
       
-      const response = await fetch(`http://localhost:3002/schools/${schoolId}/onboarding/status`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/onboarding/status`);
       
       if (!response.ok) {
         throw new Error('Failed to load onboarding status');
@@ -119,7 +119,7 @@ export default function OnboardingPage() {
       const schoolId = localStorage.getItem('schoolId') || 'demo-school-id';
       const stepNames = ['registration', 'calendar', 'subjects', 'teachers', 'classes', 'students', 'complete'];
       
-      await fetch(`http://localhost:3002/schools/${schoolId}/onboarding/step`, {
+      await fetch(`${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/onboarding/step`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -137,7 +137,7 @@ export default function OnboardingPage() {
     try {
       const schoolId = localStorage.getItem('schoolId') || 'demo-school-id';
       
-      const response = await fetch(`http://localhost:3002/schools/${schoolId}/onboarding/complete`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/onboarding/complete`, {
         method: 'POST',
       });
 

@@ -170,7 +170,7 @@ export default function StudentTranscriptPage() {
       setError(null);
       
       const token = TokenManager.getAccessToken();
-      const response = await fetch(`http://localhost:3003/students/${studentId}/transcript`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003'}/students/${studentId}/transcript`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

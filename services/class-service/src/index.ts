@@ -266,12 +266,20 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
       schoolId: schoolId,
     };
 
-    // Add academic year filter if provided
     if (academicYearId) {
+      const yearExists = await prisma.academicYear.findFirst({
+        where: { id: academicYearId, schoolId },
+        select: { id: true },
+      });
+      if (!yearExists) {
+        return res.status(404).json({
+          success: false,
+          message: 'Academic year not found or access denied',
+        });
+      }
       where.academicYearId = academicYearId;
     }
 
-    // Add grade filter if provided
     if (grade) {
       where.grade = grade;
     }
@@ -478,7 +486,8 @@ app.get('/classes/grade/:grade', async (req: AuthRequest, res: Response) => {
 
 // ===========================
 // GET /classes/unassigned-students/:academicYearId
-// Get students not assigned to any class for a specific academic year
+// Get students not assigned to any class for a specific academic year.
+// Multi-tenant: academicYearId is validated to belong to req.user.schoolId.
 // NOTE: This route MUST be before /classes/:id to prevent route conflict
 // ===========================
 app.get('/classes/unassigned-students/:academicYearId', authMiddleware, async (req: AuthRequest, res: Response) => {
@@ -487,18 +496,34 @@ app.get('/classes/unassigned-students/:academicYearId', authMiddleware, async (r
     const schoolId = req.user!.schoolId;
     const { search, limit = '100', page = '1' } = req.query as any;
 
+    // Multi-tenant: ensure academic year belongs to this school
+    const academicYear = await prisma.academicYear.findFirst({
+      where: { id: academicYearId, schoolId },
+      select: { id: true },
+    });
+    if (!academicYear) {
+      return res.status(404).json({
+        success: false,
+        message: 'Academic year not found or access denied',
+      });
+    }
+
     console.log(`🔍 [School ${schoolId}] Getting unassigned students for year: ${academicYearId}`);
 
-    // Get all student IDs assigned to classes in this academic year
+    // Get all student IDs assigned to any class in this academic year.
+    // Use class.academicYearId so we count enrollments even when StudentClass.academicYearId is null.
     const assignedStudentClasses = await prisma.studentClass.findMany({
       where: {
-        academicYearId,
         status: 'ACTIVE',
+        class: {
+          academicYearId,
+          schoolId,
+        },
       },
       select: { studentId: true },
     });
 
-    const assignedStudentIds = assignedStudentClasses.map(sc => sc.studentId);
+    const assignedStudentIds = [...new Set(assignedStudentClasses.map(sc => sc.studentId))];
 
     // Build where clause for unassigned students
     const where: any = {

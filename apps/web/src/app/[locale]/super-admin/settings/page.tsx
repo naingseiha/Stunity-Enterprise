@@ -7,6 +7,7 @@ import {
   getSuperAdminFeatureFlags,
   createSuperAdminFeatureFlag,
   updateSuperAdminFeatureFlag,
+  deleteSuperAdminFeatureFlag,
   getSuperAdminAnnouncements,
   createSuperAdminAnnouncement,
   updateSuperAdminAnnouncement,
@@ -33,7 +34,7 @@ import {
   Edit2,
 } from 'lucide-react';
 
-type Tab = 'feature-flags' | 'announcements' | 'coming-soon';
+type Tab = 'feature-flags' | 'announcements' | 'subscription-tiers' | 'coming-soon';
 
 export default function SuperAdminSettingsPage() {
   const params = useParams();
@@ -44,6 +45,7 @@ export default function SuperAdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [flagModal, setFlagModal] = useState(false);
+  const [editingFlag, setEditingFlag] = useState<FeatureFlag | null>(null);
   const [flagForm, setFlagForm] = useState({ key: '', description: '', enabled: false });
   const [savingFlag, setSavingFlag] = useState(false);
   const [annModal, setAnnModal] = useState(false);
@@ -76,17 +78,25 @@ export default function SuperAdminSettingsPage() {
     Promise.all([loadFlags(), loadAnnouncements()]).finally(() => setLoading(false));
   }, [loadFlags, loadAnnouncements]);
 
-  const handleCreateFlag = async (e: React.FormEvent) => {
+  const handleSaveFlag = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!flagForm.key.trim()) return;
+    if (!flagForm.key.trim() && !editingFlag) return;
     setSavingFlag(true);
     try {
-      await createSuperAdminFeatureFlag({
-        key: flagForm.key.trim().toUpperCase().replace(/\s+/g, '_'),
-        description: flagForm.description.trim() || undefined,
-        enabled: flagForm.enabled,
-      });
+      if (editingFlag) {
+        await updateSuperAdminFeatureFlag(editingFlag.id, {
+          description: flagForm.description.trim() || undefined,
+          enabled: flagForm.enabled,
+        });
+      } else {
+        await createSuperAdminFeatureFlag({
+          key: flagForm.key.trim().toUpperCase().replace(/\s+/g, '_'),
+          description: flagForm.description.trim() || undefined,
+          enabled: flagForm.enabled,
+        });
+      }
       setFlagModal(false);
+      setEditingFlag(null);
       setFlagForm({ key: '', description: '', enabled: false });
       await loadFlags();
       setError(null);
@@ -94,6 +104,23 @@ export default function SuperAdminSettingsPage() {
       setError(e.message);
     } finally {
       setSavingFlag(false);
+    }
+  };
+
+  const openEditFlag = (f: FeatureFlag) => {
+    setEditingFlag(f);
+    setFlagForm({ key: f.key, description: f.description || '', enabled: f.enabled });
+    setFlagModal(true);
+  };
+
+  const handleDeleteFlag = async (f: FeatureFlag) => {
+    if (!confirm(`Delete feature flag "${f.key}"? This cannot be undone.`)) return;
+    try {
+      await deleteSuperAdminFeatureFlag(f.id);
+      setFlags((prev) => prev.filter((x) => x.id !== f.id));
+      setError(null);
+    } catch (e: any) {
+      setError(e.message);
     }
   };
 
@@ -157,11 +184,21 @@ export default function SuperAdminSettingsPage() {
   const tabs = [
     { id: 'feature-flags' as Tab, label: 'Feature Flags', icon: Shield },
     { id: 'announcements' as Tab, label: 'Announcements', icon: Bell },
+    { id: 'subscription-tiers' as Tab, label: 'Subscription Tiers', icon: CreditCard },
     { id: 'coming-soon' as Tab, label: 'Coming Soon', icon: Database },
   ];
 
+  const subscriptionTiers = [
+    { tier: 'FREE_TRIAL_1M', label: '1 Month Trial', maxStudents: 100, maxTeachers: 10, maxStorage: '1 GB' },
+    { tier: 'FREE_TRIAL_3M', label: '3 Month Trial', maxStudents: 300, maxTeachers: 20, maxStorage: '5 GB' },
+    { tier: 'BASIC', label: 'Basic', maxStudents: 500, maxTeachers: 30, maxStorage: '10 GB' },
+    { tier: 'STANDARD', label: 'Standard', maxStudents: 1000, maxTeachers: 50, maxStorage: '25 GB' },
+    { tier: 'PREMIUM', label: 'Premium', maxStudents: 2500, maxTeachers: 100, maxStorage: '50 GB' },
+    { tier: 'ENTERPRISE', label: 'Enterprise', maxStudents: -1, maxTeachers: -1, maxStorage: 'Unlimited' },
+  ];
+
   const comingSoonSections = [
-    { title: 'Subscription Tiers', description: 'Manage platform subscription tiers and pricing', icon: CreditCard },
+    { title: 'Billing Integration', description: 'Stripe integration for plans, invoices, upgrades', icon: CreditCard },
     { title: 'Notifications', description: 'Configure system notifications and alerts', icon: Bell },
     { title: 'Localization', description: 'Manage languages and regional settings', icon: Globe },
     { title: 'Maintenance Mode', description: 'Put the platform into maintenance mode', icon: Database },
@@ -222,7 +259,7 @@ export default function SuperAdminSettingsPage() {
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900">Platform Feature Flags</h3>
               <button
-                onClick={() => { setFlagModal(true); setFlagForm({ key: '', description: '', enabled: false }); }}
+                onClick={() => { setEditingFlag(null); setFlagForm({ key: '', description: '', enabled: false }); setFlagModal(true); }}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-stunity-primary-600 text-white hover:bg-stunity-primary-700 text-sm font-medium"
               >
                 <Plus className="h-4 w-4" /> Add Flag
@@ -246,20 +283,36 @@ export default function SuperAdminSettingsPage() {
                       <p className="font-medium text-gray-900">{f.key}</p>
                       {f.description && <p className="text-sm text-gray-500 mt-0.5">{f.description}</p>}
                     </div>
-                    <button
-                      onClick={() => handleToggleFlag(f)}
-                      disabled={togglingId === f.id}
-                      className="flex items-center gap-2 text-sm font-medium disabled:opacity-50"
-                    >
-                      {togglingId === f.id ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      ) : f.enabled ? (
-                        <ToggleRight className="h-8 w-8 text-emerald-500" />
-                      ) : (
-                        <ToggleLeft className="h-8 w-8 text-gray-300" />
-                      )}
-                      <span className={f.enabled ? 'text-emerald-600' : 'text-gray-500'}>{f.enabled ? 'On' : 'Off'}</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => openEditFlag(f)}
+                        className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+                        title="Edit"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteFlag(f)}
+                        className="p-2 rounded-lg hover:bg-red-50 text-red-600"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleToggleFlag(f)}
+                        disabled={togglingId === f.id}
+                        className="flex items-center gap-2 text-sm font-medium disabled:opacity-50"
+                      >
+                        {togglingId === f.id ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : f.enabled ? (
+                          <ToggleRight className="h-8 w-8 text-emerald-500" />
+                        ) : (
+                          <ToggleLeft className="h-8 w-8 text-gray-300" />
+                        )}
+                        <span className={f.enabled ? 'text-emerald-600' : 'text-gray-500'}>{f.enabled ? 'On' : 'Off'}</span>
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -323,6 +376,41 @@ export default function SuperAdminSettingsPage() {
         </AnimatedContent>
       )}
 
+      {tab === 'subscription-tiers' && (
+        <AnimatedContent animation="slide-up" delay={150}>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-gray-200">
+              <h3 className="font-semibold text-gray-900">Subscription Tiers (Read-Only)</h3>
+              <p className="text-sm text-gray-500 mt-1">Tiers and limits are configured per school in school detail. Billing integration coming soon.</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tier</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Label</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Max Students</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Max Teachers</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Storage</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {subscriptionTiers.map((t) => (
+                    <tr key={t.tier} className="hover:bg-gray-50/80">
+                      <td className="px-6 py-4 font-medium text-gray-900">{t.tier}</td>
+                      <td className="px-6 py-4 text-gray-700">{t.label}</td>
+                      <td className="px-6 py-4 text-gray-600">{t.maxStudents === -1 ? 'Unlimited' : t.maxStudents}</td>
+                      <td className="px-6 py-4 text-gray-600">{t.maxTeachers === -1 ? 'Unlimited' : t.maxTeachers}</td>
+                      <td className="px-6 py-4 text-gray-600">{t.maxStorage}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </AnimatedContent>
+      )}
+
       {tab === 'coming-soon' && (
         <AnimatedContent animation="slide-up" delay={150}>
           <div className="grid gap-4">
@@ -344,10 +432,10 @@ export default function SuperAdminSettingsPage() {
 
       {/* Feature Flag Modal */}
       {flagModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setFlagModal(false)}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { if (!savingFlag) { setFlagModal(false); setEditingFlag(null); } }}>
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Feature Flag</h3>
-            <form onSubmit={handleCreateFlag} className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">{editingFlag ? 'Edit Feature Flag' : 'Add Feature Flag'}</h3>
+            <form onSubmit={handleSaveFlag} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Key</label>
                 <input
@@ -355,9 +443,11 @@ export default function SuperAdminSettingsPage() {
                   value={flagForm.key}
                   onChange={(e) => setFlagForm((p) => ({ ...p, key: e.target.value }))}
                   placeholder="FEATURE_NAME"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 disabled:bg-gray-100 disabled:text-gray-600"
                   required
+                  disabled={!!editingFlag}
                 />
+                {editingFlag && <p className="text-xs text-gray-500 mt-1">Key cannot be changed after creation</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
@@ -376,12 +466,12 @@ export default function SuperAdminSettingsPage() {
                   checked={flagForm.enabled}
                   onChange={(e) => setFlagForm((p) => ({ ...p, enabled: e.target.checked }))}
                 />
-                <label htmlFor="enabled" className="text-sm text-gray-700">Enabled by default</label>
+                <label htmlFor="enabled" className="text-sm text-gray-700">{editingFlag ? 'Enabled' : 'Enabled by default'}</label>
               </div>
               <div className="flex gap-2 justify-end pt-4">
-                <button type="button" onClick={() => setFlagModal(false)} className="px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
+                <button type="button" onClick={() => { setFlagModal(false); setEditingFlag(null); }} disabled={savingFlag} className="px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50">Cancel</button>
                 <button type="submit" disabled={savingFlag} className="px-4 py-2 rounded-lg bg-stunity-primary-600 text-white hover:bg-stunity-primary-700 disabled:opacity-50 flex items-center gap-2">
-                  {savingFlag && <Loader2 className="h-4 w-4 animate-spin" />} Create
+                  {savingFlag && <Loader2 className="h-4 w-4 animate-spin" />} {editingFlag ? 'Save' : 'Create'}
                 </button>
               </div>
             </form>

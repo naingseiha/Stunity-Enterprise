@@ -16,6 +16,7 @@ An enterprise-grade school management + social e-learning platform. Combines **s
 | **[DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)** | Architecture, patterns, deployment — read first |
 | **[CURRENT_FEATURES.md](./CURRENT_FEATURES.md)** | Complete feature inventory |
 | **[NEXT_IMPLEMENTATION.md](./NEXT_IMPLEMENTATION.md)** | Prioritized roadmap with code examples |
+| **[docs/SUPER_ADMIN_AND_ENTERPRISE_FEATURES.md](./docs/SUPER_ADMIN_AND_ENTERPRISE_FEATURES.md)** | Super Admin area, platform management, enterprise features |
 | **[docs/](./docs/README.md)** | Technical deep dives (feed, realtime, school integration) |
 
 ---

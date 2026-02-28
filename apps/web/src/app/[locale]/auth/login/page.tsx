@@ -291,13 +291,19 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
             </button>
           </div>
 
-          <div className="mt-6 pt-6 border-t border-gray-100">
+          <div className="mt-6 pt-6 border-t border-gray-100 space-y-3">
             <Link
               href={`/${locale}/auth/parent/register`}
               className="flex items-center justify-center gap-2 w-full py-3 border-2 border-green-500 text-green-600 rounded-lg font-medium hover:bg-green-50 transition-colors"
             >
               <Users className="w-5 h-5" />
               Parent? Register here
+            </Link>
+            <Link
+              href={`/${locale}/register-school`}
+              className="flex items-center justify-center gap-2 w-full py-3 border-2 border-stunity-primary-500 text-stunity-primary-600 rounded-lg font-medium hover:bg-stunity-primary-50 transition-colors"
+            >
+              Register your school
             </Link>
           </div>
 

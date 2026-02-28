@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
+import { SCHOOL_SERVICE_URL } from '@/lib/api/config';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import PageSkeleton from '@/components/layout/PageSkeleton';
 import {
@@ -69,7 +70,7 @@ export default function YearEndWorkflowPage({ params }: { params: { locale: stri
       }
 
       const response = await fetch(
-        `http://localhost:3002/schools/${schoolId}/academic-years/${yearId}`,
+        `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${yearId}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -104,7 +105,7 @@ export default function YearEndWorkflowPage({ params }: { params: { locale: stri
       }
 
       const response = await fetch(
-        `http://localhost:3002/schools/${schoolId}/academic-years`,
+        `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -143,7 +144,7 @@ export default function YearEndWorkflowPage({ params }: { params: { locale: stri
       if (!token || !schoolId) return;
 
       const response = await fetch(
-        `http://localhost:3002/schools/${schoolId}/academic-years/${currentYear.id}`,
+        `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${currentYear.id}`,
         {
           method: 'PATCH',
           headers: {
@@ -184,7 +185,7 @@ export default function YearEndWorkflowPage({ params }: { params: { locale: stri
       if (!token || !schoolId) return;
 
       const response = await fetch(
-        `http://localhost:3002/schools/${schoolId}/academic-years/${currentYear.id}`,
+        `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${currentYear.id}`,
         {
           method: 'PATCH',
           headers: {

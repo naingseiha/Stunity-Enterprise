@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { TokenManager } from '@/lib/api/auth';
+import { CLASS_SERVICE_URL } from '@/lib/api/config';
 import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
 import {
@@ -127,10 +128,10 @@ export default function ClassManagePage() {
       const token = TokenManager.getAccessToken();
 
       const [classRes, studentsRes] = await Promise.all([
-        fetch(`http://localhost:3005/classes/${classId}`, {
+        fetch(`${CLASS_SERVICE_URL}/classes/${classId}`, {
           headers: { 'Authorization': `Bearer ${token}` },
         }),
-        fetch(`http://localhost:3005/classes/${classId}/students`, {
+        fetch(`${CLASS_SERVICE_URL}/classes/${classId}/students`, {
           headers: { 'Authorization': `Bearer ${token}` },
         }),
       ]);
@@ -170,7 +171,7 @@ export default function ClassManagePage() {
       const token = TokenManager.getAccessToken();
 
       const response = await fetch(
-        `http://localhost:3005/classes/unassigned-students/${academicYearId}?limit=200`,
+        `${CLASS_SERVICE_URL}/classes/unassigned-students/${academicYearId}?limit=200`,
         {
           headers: { 'Authorization': `Bearer ${token}` },
         }
@@ -191,7 +192,7 @@ export default function ClassManagePage() {
     try {
       const token = TokenManager.getAccessToken();
       const response = await fetch(
-        `http://localhost:3005/classes/lightweight?academicYearId=${academicYearId}`,
+        `${CLASS_SERVICE_URL}/classes/lightweight?academicYearId=${academicYearId}`,
         {
           headers: { 'Authorization': `Bearer ${token}` },
         }
@@ -241,7 +242,7 @@ export default function ClassManagePage() {
       setActionMessage(null);
       const token = TokenManager.getAccessToken();
 
-      const response = await fetch(`http://localhost:3005/classes/${classId}/students/batch`, {
+      const response = await fetch(`${CLASS_SERVICE_URL}/classes/${classId}/students/batch`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -318,7 +319,7 @@ export default function ClassManagePage() {
       const token = TokenManager.getAccessToken();
 
       // Use batch endpoint for faster operation
-      const response = await fetch(`http://localhost:3005/classes/${classId}/students/batch-remove`, {
+      const response = await fetch(`${CLASS_SERVICE_URL}/classes/${classId}/students/batch-remove`, {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -358,14 +359,14 @@ export default function ClassManagePage() {
 
       // First remove from current class
       for (const studentId of studentIds) {
-        await fetch(`http://localhost:3005/classes/${classId}/students/${studentId}`, {
+        await fetch(`${CLASS_SERVICE_URL}/classes/${classId}/students/${studentId}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` },
         });
       }
 
       // Then add to target class
-      const response = await fetch(`http://localhost:3005/classes/${transferTargetClass}/students/batch`, {
+      const response = await fetch(`${CLASS_SERVICE_URL}/classes/${transferTargetClass}/students/batch`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

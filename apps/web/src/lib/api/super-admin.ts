@@ -6,6 +6,7 @@ export interface SuperAdminSchool {
   slug: string;
   email: string;
   isActive: boolean;
+  registrationStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
   subscriptionTier?: string;
   subscriptionEnd?: string | null;
   createdAt: string;
@@ -48,7 +49,7 @@ export async function getSuperAdminSchools(params?: {
   page?: number;
   limit?: number;
   search?: string;
-  status?: 'all' | 'active' | 'inactive';
+  status?: 'all' | 'active' | 'inactive' | 'pending';
 }): Promise<{ data: { schools: SuperAdminSchool[]; pagination: { page: number; limit: number; total: number; totalPages: number } } }> {
   const token = await getToken();
   if (!token) throw new Error('Authentication required');
@@ -283,6 +284,44 @@ export interface PlatformAuditLog {
   actor?: { id: string; firstName: string; lastName: string; email: string | null };
 }
 
+export interface AuditLogRetentionPolicy {
+  retentionDays: number;
+  logsOlderThanRetention: number;
+  cutoffDate: string;
+}
+
+export async function getSuperAdminAuditLogRetentionPolicy(): Promise<{ data: AuditLogRetentionPolicy }> {
+  const token = await getToken();
+  if (!token) throw new Error('Authentication required');
+  const res = await fetch(`${SCHOOL_SERVICE_URL}/super-admin/audit-logs/retention-policy`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to fetch retention policy');
+  }
+  return res.json();
+}
+
+export async function runSuperAdminAuditLogCleanup(olderThanDays?: number): Promise<{
+  data: { deletedCount: number; olderThanDays: number; cutoffDate: string };
+}> {
+  const token = await getToken();
+  if (!token) throw new Error('Authentication required');
+  const url = olderThanDays
+    ? `${SCHOOL_SERVICE_URL}/super-admin/audit-logs/cleanup?olderThanDays=${olderThanDays}`
+    : `${SCHOOL_SERVICE_URL}/super-admin/audit-logs/cleanup`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || err.error || 'Failed to run cleanup');
+  }
+  return res.json();
+}
+
 export async function getSuperAdminAuditLogs(params?: {
   page?: number;
   limit?: number;
@@ -365,6 +404,20 @@ export async function updateSuperAdminFeatureFlag(
   return res.json();
 }
 
+export async function deleteSuperAdminFeatureFlag(id: string): Promise<void> {
+  const token = await getToken();
+  if (!token) throw new Error('Authentication required');
+  const res = await fetch(`${SCHOOL_SERVICE_URL}/super-admin/feature-flags/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (res.status === 404) throw new Error('Feature flag not found');
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || err.error || 'Failed to delete feature flag');
+  }
+}
+
 export interface PlatformAnnouncement {
   id: string;
   title: string;
@@ -442,6 +495,39 @@ export async function deleteSuperAdminAnnouncement(id: string): Promise<void> {
   }
 }
 
+export async function getFeatureFlagCheck(key: string): Promise<{ data: { key: string; enabled: boolean } }> {
+  const url = `${SCHOOL_SERVICE_URL}/api/feature-flags/check?key=${encodeURIComponent(key)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to check feature flag');
+  return res.json();
+}
+
+export async function getFeatureFlagsCheck(keys: string[]): Promise<{ data: Record<string, boolean> }> {
+  const url = `${SCHOOL_SERVICE_URL}/api/feature-flags/check?keys=${keys.map(encodeURIComponent).join(',')}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to check feature flags');
+  return res.json();
+}
+
+export interface SuperAdminAnalytics {
+  schoolsPerMonth: { month: string; count: number }[];
+  usersPerMonth: { month: string; count: number }[];
+  topSchools: { id: string; name: string; slug: string; currentStudents: number; currentTeachers: number; subscriptionTier: string }[];
+  summary: { totalSchools: number; totalUsers: number; activeSchools: number };
+}
+
+export async function getSuperAdminAnalytics(months?: number): Promise<{ data: SuperAdminAnalytics }> {
+  const token = await getToken();
+  if (!token) throw new Error('Authentication required');
+  const url = `${SCHOOL_SERVICE_URL}/super-admin/analytics${months ? `?months=${months}` : ''}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to fetch analytics');
+  }
+  return res.json();
+}
+
 export async function getActiveAnnouncements(): Promise<{ data: PlatformAnnouncement[] }> {
   const url = `${SCHOOL_SERVICE_URL}/api/announcements/active`;
   const res = await fetch(url);
@@ -462,5 +548,34 @@ export async function deleteSuperAdminSchool(schoolId: string): Promise<void> {
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
     throw new Error(err.message || err.error || 'Failed to delete school');
+  }
+}
+
+export async function approveSuperAdminSchool(schoolId: string): Promise<{ data: SuperAdminSchoolDetail }> {
+  const token = await getToken();
+  if (!token) throw new Error('Authentication required');
+  const res = await fetch(`${SCHOOL_SERVICE_URL}/super-admin/schools/${schoolId}/approve`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (res.status === 404) throw new Error('School not found');
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || err.message || 'Failed to approve school');
+  }
+  return res.json();
+}
+
+export async function rejectSuperAdminSchool(schoolId: string): Promise<void> {
+  const token = await getToken();
+  if (!token) throw new Error('Authentication required');
+  const res = await fetch(`${SCHOOL_SERVICE_URL}/super-admin/schools/${schoolId}/reject`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (res.status === 404) throw new Error('School not found');
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || err.message || 'Failed to reject school');
   }
 }

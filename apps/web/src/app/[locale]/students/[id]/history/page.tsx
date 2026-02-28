@@ -92,7 +92,7 @@ export default function StudentHistoryPage({ params }: { params: { locale: strin
       }
 
       const response = await fetch(
-        `http://localhost:3003/students/${id}/progression`,
+        `${process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003'}/students/${id}/progression`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,

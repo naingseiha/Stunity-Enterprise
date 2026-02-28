@@ -12,12 +12,14 @@ import {
   type PromotionRequest,
 } from '@/lib/api/promotion';
 import { getAcademicYears, type AcademicYear } from '@/lib/api/academic-years';
+import { TokenManager } from '@/lib/api/auth';
 
 export default function PromotionWizardPage() {
   const params = useParams();
   const router = useRouter();
   const fromYearId = params.id as string;
   const { schoolId } = useAcademicYear();
+  const user = TokenManager.getUserData()?.user;
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -40,7 +42,6 @@ export default function PromotionWizardPage() {
         
         console.log('🔍 Loading promotion data...', { schoolId, fromYearId });
         
-        // Get token for API calls
         const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
         if (!token || !schoolId) {
           console.error('Missing token or schoolId');
@@ -79,7 +80,8 @@ export default function PromotionWizardPage() {
         
         // Get eligible students
         console.log('📚 Fetching eligible students...');
-        const eligible = await getEligibleStudents(schoolId!, fromYearId);
+        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        const eligible = await getEligibleStudents(schoolId!, fromYearId, token || undefined);
         console.log('✅ Eligible students:', eligible.totalStudents);
         setEligibleStudents(eligible);
       } catch (error: any) {
@@ -105,7 +107,8 @@ export default function PromotionWizardPage() {
       
       try {
         console.log('🔄 Loading promotion preview...');
-        const previewData = await getPromotionPreview(schoolId, fromYearId, toYear.id);
+        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        const previewData = await getPromotionPreview(schoolId, fromYearId, toYear.id, token || undefined);
         setPreview(previewData);
         
         console.log('✅ Preview loaded:', previewData);
@@ -175,12 +178,14 @@ export default function PromotionWizardPage() {
     
     try {
       setProcessing(true);
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
       const response = await promoteStudents(
         schoolId,
         fromYearId,
         toYear.id,
         promotions,
-        'user-admin-001' // Use the actual admin user ID
+        user?.id || 'SYSTEM',
+        token || undefined
       );
       
       console.log('✅ Promotion successful:', response);
@@ -228,6 +233,29 @@ export default function PromotionWizardPage() {
           <button
             onClick={() => router.back()}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            ← Back to Academic Years
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Promotion already completed for this year — block re-run and explain
+  if (fromYear.isPromotionDone) {
+    return (
+      <div className="container mx-auto p-6 max-w-4xl">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+          <h2 className="text-2xl font-semibold text-amber-900 mb-2">Promotion already completed</h2>
+          <p className="text-amber-800 mb-4">
+            Students from <strong>{fromYear.name}</strong> have already been promoted. Running promotion again from this year is not allowed, and the system will not change any data if you try.
+          </p>
+          <p className="text-sm text-amber-700 mb-6">
+            To promote students, use a source year that has not yet had its promotion run (e.g. the next year when it ends).
+          </p>
+          <button
+            onClick={() => router.back()}
+            className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
           >
             ← Back to Academic Years
           </button>

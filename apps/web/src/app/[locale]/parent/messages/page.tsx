@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
+import { MESSAGING_SERVICE_URL } from '@/lib/api/config';
 import {
   MessageCircle,
   Send,
@@ -71,8 +72,6 @@ interface Message {
   createdAt: string;
 }
 
-const MESSAGING_API = 'http://localhost:3011';
-
 export default function ParentMessagesPage({ params: { locale } }: { params: { locale: string } }) {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -113,7 +112,7 @@ export default function ParentMessagesPage({ params: { locale } }: { params: { l
   const fetchConversations = async () => {
     try {
       const token = TokenManager.getAccessToken();
-      const res = await fetch(`${MESSAGING_API}/conversations`, {
+      const res = await fetch(`${MESSAGING_SERVICE_URL}/conversations`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -128,7 +127,7 @@ export default function ParentMessagesPage({ params: { locale } }: { params: { l
   const fetchMessages = useCallback(async (conversationId: string) => {
     try {
       const token = TokenManager.getAccessToken();
-      const res = await fetch(`${MESSAGING_API}/conversations/${conversationId}/messages`, {
+      const res = await fetch(`${MESSAGING_SERVICE_URL}/conversations/${conversationId}/messages`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -144,7 +143,7 @@ export default function ParentMessagesPage({ params: { locale } }: { params: { l
   const fetchTeachers = async () => {
     try {
       const token = TokenManager.getAccessToken();
-      const res = await fetch(`${MESSAGING_API}/teachers`, {
+      const res = await fetch(`${MESSAGING_SERVICE_URL}/teachers`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -185,7 +184,7 @@ export default function ParentMessagesPage({ params: { locale } }: { params: { l
     setSending(true);
     try {
       const token = TokenManager.getAccessToken();
-      const res = await fetch(`${MESSAGING_API}/conversations/${selectedConversation.id}/messages`, {
+      const res = await fetch(`${MESSAGING_SERVICE_URL}/conversations/${selectedConversation.id}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -209,7 +208,7 @@ export default function ParentMessagesPage({ params: { locale } }: { params: { l
   const startNewConversation = async (teacher: Teacher) => {
     try {
       const token = TokenManager.getAccessToken();
-      const res = await fetch(`${MESSAGING_API}/conversations`, {
+      const res = await fetch(`${MESSAGING_SERVICE_URL}/conversations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

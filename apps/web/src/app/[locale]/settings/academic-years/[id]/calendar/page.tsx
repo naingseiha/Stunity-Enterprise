@@ -106,7 +106,7 @@ export default function AcademicCalendarPage({ params }: { params: { locale: str
       }
 
       const response = await fetch(
-        `http://localhost:3002/schools/${schoolId}/academic-years/${id}/calendar`,
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years/${id}/calendar`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -145,7 +145,7 @@ export default function AcademicCalendarPage({ params }: { params: { locale: str
       const schoolId = userData?.user?.schoolId || userData?.school?.id;
 
       const response = await fetch(
-        `http://localhost:3002/schools/${schoolId}/academic-years/${id}/calendar/events`,
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years/${id}/calendar/events`,
         {
           method: 'POST',
           headers: {
@@ -193,7 +193,7 @@ export default function AcademicCalendarPage({ params }: { params: { locale: str
       const schoolId = userData?.user?.schoolId || userData?.school?.id;
 
       await fetch(
-        `http://localhost:3002/schools/${schoolId}/academic-years/${id}/calendar/events/${eventId}`,
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years/${id}/calendar/events/${eventId}`,
         {
           method: 'DELETE',
           headers: {

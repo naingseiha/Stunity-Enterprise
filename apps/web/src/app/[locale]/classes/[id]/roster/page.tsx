@@ -325,7 +325,7 @@ export default function ClassRosterEnhancedPage({
                     <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
                       {student.photoUrl ? (
                         <img
-                          src={`http://localhost:3003${student.photoUrl}`}
+                          src={`${process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003'}${student.photoUrl}`}
                           alt={`${student.firstName} ${student.lastName}`}
                           className="h-full w-full object-cover"
                         />
@@ -458,7 +458,7 @@ export default function ClassRosterEnhancedPage({
                           <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
                             {student.photoUrl ? (
                               <img
-                                src={`http://localhost:3003${student.photoUrl}`}
+                                src={`${process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003'}${student.photoUrl}`}
                                 alt={`${student.firstNameLatin} ${student.lastNameLatin}`}
                                 className="h-full w-full object-cover"
                               />

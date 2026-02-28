@@ -44,6 +44,7 @@ model School {
   nextTeacherNumber   Int                  @default(1)
   countryCode         String?              @default("KH")
   regionCode          String?
+  registrationStatus  RegistrationStatus   @default(APPROVED) // PENDING = awaiting approval
   academicYears       AcademicYear[]
   classes             Class[]
   onboardingChecklist OnboardingChecklist?
@@ -63,6 +64,7 @@ model School {
   @@index([slug])
   @@index([subscriptionTier])
   @@index([isActive])
+  @@index([registrationStatus])
   @@map("schools")
 }
 
@@ -1593,6 +1595,12 @@ model TimetablePublish {
   @@index([academicYearId])
   @@index([status])
   @@map("timetable_publishes")
+}
+
+enum RegistrationStatus {
+  PENDING   // Awaiting super admin approval
+  APPROVED  // Approved, school can operate
+  REJECTED  // Rejected by super admin
 }
 
 enum SchoolType {

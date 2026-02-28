@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
+import { SCHOOL_SERVICE_URL } from '@/lib/api/config';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import {
   Calendar,
@@ -176,7 +177,7 @@ export default function AcademicYearWizardPage({ params }: { params: { locale: s
       const schoolId = school?.id;
       if (!schoolId) return;
 
-      const response = await fetch(`http://localhost:3002/schools/${schoolId}/academic-years`, {
+      const response = await fetch(`${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -196,7 +197,7 @@ export default function AcademicYearWizardPage({ params }: { params: { locale: s
       if (!schoolId) return;
 
       const response = await fetch(
-        `http://localhost:3002/schools/${schoolId}/academic-years/${yearId}/template`,
+        `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${yearId}/template`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await response.json();
@@ -221,7 +222,7 @@ export default function AcademicYearWizardPage({ params }: { params: { locale: s
       const schoolId = school?.id;
       if (!schoolId) return;
 
-      const response = await fetch(`http://localhost:3002/schools/${schoolId}/setup-templates`, {
+      const response = await fetch(`${SCHOOL_SERVICE_URL}/schools/${schoolId}/setup-templates`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -348,7 +349,7 @@ export default function AcademicYearWizardPage({ params }: { params: { locale: s
         payload.holidays = holidays;
       }
 
-      const response = await fetch(`http://localhost:3002/schools/${schoolId}/academic-years/wizard`, {
+      const response = await fetch(`${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/wizard`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

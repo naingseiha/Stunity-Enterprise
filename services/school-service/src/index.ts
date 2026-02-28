@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
-import { PrismaClient, SubscriptionTier, SchoolType } from '@prisma/client';
+import { PrismaClient, SubscriptionTier, SchoolType, RegistrationStatus } from '@prisma/client';
 import slugify from 'slugify';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
@@ -99,6 +99,24 @@ app.get('/api/info', (req: Request, res: Response) => {
       'POST /schools/:schoolId/onboarding/complete - Mark onboarding complete',
     ],
   });
+});
+
+// Public: GET /api/feature-flags/check?key=KEY - Check platform-wide feature flag (no auth)
+app.get('/api/feature-flags/check', async (req: Request, res: Response) => {
+  try {
+    const { key, keys } = req.query;
+    const keysToCheck = keys ? String(keys).split(',').map((k) => k.trim().toUpperCase()) : (key ? [String(key).trim().toUpperCase()] : []);
+    if (keysToCheck.length === 0) return res.status(400).json({ success: false, error: 'key or keys required' });
+    const flags = await prisma.featureFlag.findMany({
+      where: { key: { in: keysToCheck }, schoolId: null },
+    });
+    const result: Record<string, boolean> = {};
+    keysToCheck.forEach((k) => { result[k] = !!flags.find((f) => f.key === k && f.enabled); });
+    res.json({ success: true, data: keysToCheck.length === 1 ? { key: keysToCheck[0], enabled: result[keysToCheck[0]] } : result });
+  } catch (error: any) {
+    console.error('Feature flag check error:', error);
+    res.status(500).json({ success: false, error: 'Failed to check feature flags', message: error.message });
+  }
 });
 
 // Public: GET /api/announcements/active - Active platform announcements (no auth)
@@ -220,7 +238,8 @@ app.post('/schools/register', async (req: Request, res: Response) => {
         subscriptionStart,
         subscriptionEnd,
         isTrial: true,
-        isActive: true,
+        registrationStatus: RegistrationStatus.PENDING,
+        isActive: false, // Pending approval - super admin must approve
         maxStudents,
         maxTeachers,
         maxStorage,
@@ -647,6 +666,24 @@ async function createPlatformAuditLog(
 // Apply auth middleware to all routes below this point
 app.use(authenticateToken);
 
+// Multi-tenant: ensure non-super-admin users can only access their own school.
+// Super admins can access any school; regular users must use their JWT schoolId.
+const requireSchoolAccess = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const schoolIdParam = (req.params as any).schoolId ?? (req.params as any).id;
+  if (!schoolIdParam) return next();
+  if (req.user?.isSuperAdmin) return next();
+  if (req.user?.schoolId !== schoolIdParam) {
+    return res.status(403).json({
+      success: false,
+      error: 'Access denied',
+      message: 'You can only access your own school',
+    });
+  }
+  next();
+};
+app.use('/schools/:schoolId', requireSchoolAccess);
+app.use('/schools/:id', requireSchoolAccess);
+
 // ============================================================
 // SUPER ADMIN ENDPOINTS
 // ============================================================
@@ -669,6 +706,7 @@ app.get('/super-admin/schools', requireSuperAdmin, async (req: Request, res: Res
     }
     if (status === 'active') where.isActive = true;
     else if (status === 'inactive') where.isActive = false;
+    else if (status === 'pending') where.registrationStatus = RegistrationStatus.PENDING;
 
     const [schools, total] = await Promise.all([
       prisma.school.findMany({
@@ -783,6 +821,64 @@ app.patch('/super-admin/schools/:schoolId', requireSuperAdmin, async (req: Reque
       error: 'Failed to update school',
       message: error.message,
     });
+  }
+});
+
+// POST /super-admin/schools/:schoolId/approve - Approve pending registration (super admin only)
+app.post('/super-admin/schools/:schoolId/approve', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { schoolId } = req.params;
+    const school = await prisma.school.findUnique({ where: { id: schoolId } });
+    if (!school) return res.status(404).json({ success: false, error: 'School not found' });
+    const schoolData = school as { registrationStatus?: string };
+    if (schoolData.registrationStatus !== 'PENDING') {
+      return res.status(400).json({ success: false, error: 'School is not pending approval' });
+    }
+    const updated = await prisma.school.update({
+      where: { id: schoolId },
+      data: { registrationStatus: RegistrationStatus.APPROVED, isActive: true },
+    });
+    await createPlatformAuditLog(
+      (req as AuthRequest).user!.id,
+      'SCHOOL_APPROVE',
+      'SCHOOL',
+      schoolId,
+      { schoolName: updated.name },
+      req.ip || req.socket?.remoteAddress
+    );
+    res.json({ success: true, data: updated });
+  } catch (error: any) {
+    console.error('Super admin approve school error:', error);
+    res.status(500).json({ success: false, error: 'Failed to approve school', message: error.message });
+  }
+});
+
+// POST /super-admin/schools/:schoolId/reject - Reject pending registration (super admin only)
+app.post('/super-admin/schools/:schoolId/reject', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { schoolId } = req.params;
+    const school = await prisma.school.findUnique({ where: { id: schoolId } });
+    if (!school) return res.status(404).json({ success: false, error: 'School not found' });
+    const schoolData = school as { registrationStatus?: string };
+    if (schoolData.registrationStatus !== 'PENDING') {
+      return res.status(400).json({ success: false, error: 'School is not pending approval' });
+    }
+    await prisma.school.update({
+      where: { id: schoolId },
+      data: { registrationStatus: RegistrationStatus.REJECTED },
+    });
+    await createPlatformAuditLog(
+      (req as AuthRequest).user!.id,
+      'SCHOOL_REJECT',
+      'SCHOOL',
+      schoolId,
+      { schoolName: school.name },
+      req.ip || req.socket?.remoteAddress
+    );
+    res.json({ success: true, message: 'Registration rejected' });
+  } catch (error: any) {
+    console.error('Super admin reject school error:', error);
+    res.status(500).json({ success: false, error: 'Failed to reject school', message: error.message });
   }
 });
 
@@ -1058,6 +1154,125 @@ app.get('/super-admin/dashboard/stats', requireSuperAdmin, async (req: Request, 
   }
 });
 
+// GET /super-admin/analytics - Platform analytics (super admin only)
+app.get('/super-admin/analytics', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { months = '12' } = req.query;
+    const monthsNum = Math.min(24, Math.max(1, parseInt(String(months)) || 12));
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - monthsNum);
+    startDate.setDate(1);
+    startDate.setHours(0, 0, 0, 0);
+
+    // Build monthly buckets and aggregate via Prisma
+    const schools = await prisma.school.findMany({
+      where: { createdAt: { gte: startDate } },
+      select: { createdAt: true },
+    });
+    const users = await prisma.user.findMany({
+      where: { schoolId: { not: null }, createdAt: { gte: startDate } },
+      select: { createdAt: true },
+    });
+    const bucket = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const schoolsByMonth: Record<string, number> = {};
+    const usersByMonth: Record<string, number> = {};
+    for (let i = 0; i < monthsNum; i++) {
+      const d = new Date(startDate);
+      d.setMonth(d.getMonth() + i);
+      const m = bucket(d);
+      schoolsByMonth[m] = 0;
+      usersByMonth[m] = 0;
+    }
+    schools.forEach((s) => { const m = bucket(s.createdAt); if (schoolsByMonth[m] !== undefined) schoolsByMonth[m]++; });
+    users.forEach((u) => { const m = bucket(u.createdAt); if (usersByMonth[m] !== undefined) usersByMonth[m]++; });
+    const schoolsPerMonth = Object.entries(schoolsByMonth).sort(([a], [b]) => a.localeCompare(b)).map(([month, count]) => ({ month, count }));
+    const usersPerMonth = Object.entries(usersByMonth).sort(([a], [b]) => a.localeCompare(b)).map(([month, count]) => ({ month, count }));
+
+    // Top schools by student count
+    const topSchools = await prisma.school.findMany({
+      take: 10,
+      orderBy: { currentStudents: 'desc' },
+      select: { id: true, name: true, slug: true, currentStudents: true, currentTeachers: true, subscriptionTier: true },
+    });
+
+    const [totalSchools, totalUsers, activeSchools] = await Promise.all([
+      prisma.school.count(),
+      prisma.user.count({ where: { schoolId: { not: null } } }),
+      prisma.school.count({ where: { isActive: true } }),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        schoolsPerMonth,
+        usersPerMonth,
+        topSchools,
+        summary: { totalSchools, totalUsers, activeSchools },
+      },
+    });
+  } catch (error: any) {
+    console.error('Super admin analytics error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch analytics', message: error.message });
+  }
+});
+
+// Audit log retention (days) - env AUDIT_LOG_RETENTION_DAYS, default 90
+const AUDIT_LOG_RETENTION_DAYS = Math.max(7, parseInt(process.env.AUDIT_LOG_RETENTION_DAYS || '90', 10));
+
+// GET /super-admin/audit-logs/retention-policy - Retention policy (super admin only)
+app.get('/super-admin/audit-logs/retention-policy', requireSuperAdmin, async (_req: Request, res: Response) => {
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - AUDIT_LOG_RETENTION_DAYS);
+    const countOlderThanPolicy = await prisma.platformAuditLog.count({
+      where: { createdAt: { lt: cutoffDate } },
+    });
+    res.json({
+      success: true,
+      data: {
+        retentionDays: AUDIT_LOG_RETENTION_DAYS,
+        logsOlderThanRetention: countOlderThanPolicy,
+        cutoffDate: cutoffDate.toISOString(),
+      },
+    });
+  } catch (error: any) {
+    console.error('Audit log retention policy error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch retention policy', message: error.message });
+  }
+});
+
+// POST /super-admin/audit-logs/cleanup - Delete logs older than retention (super admin only)
+app.post('/super-admin/audit-logs/cleanup', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const olderThanDays = req.query.olderThanDays
+      ? Math.max(1, parseInt(String(req.query.olderThanDays), 10))
+      : AUDIT_LOG_RETENTION_DAYS;
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
+
+    const result = await prisma.platformAuditLog.deleteMany({
+      where: { createdAt: { lt: cutoffDate } },
+    });
+
+    await createPlatformAuditLog(
+      (req as AuthRequest).user!.id,
+      'AUDIT_LOG_CLEANUP',
+      'PLATFORM',
+      null,
+      { deletedCount: result.count, olderThanDays, cutoffDate: cutoffDate.toISOString() },
+      req.ip || req.socket?.remoteAddress
+    );
+
+    res.json({
+      success: true,
+      data: { deletedCount: result.count, olderThanDays, cutoffDate: cutoffDate.toISOString() },
+    });
+  } catch (error: any) {
+    console.error('Audit log cleanup error:', error);
+    res.status(500).json({ success: false, error: 'Failed to cleanup audit logs', message: error.message });
+  }
+});
+
 // GET /super-admin/audit-logs - Platform audit logs (super admin only)
 app.get('/super-admin/audit-logs', requireSuperAdmin, async (req: Request, res: Response) => {
   try {
@@ -1142,6 +1357,20 @@ app.patch('/super-admin/feature-flags/:id', requireSuperAdmin, async (req: Reque
   } catch (error: any) {
     console.error('Super admin update feature flag error:', error);
     res.status(500).json({ success: false, error: 'Failed to update feature flag', message: error.message });
+  }
+});
+
+// DELETE /super-admin/feature-flags/:id - Delete feature flag (super admin only)
+app.delete('/super-admin/feature-flags/:id', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const flag = await prisma.featureFlag.findUnique({ where: { id } });
+    if (!flag) return res.status(404).json({ success: false, error: 'Feature flag not found' });
+    await prisma.featureFlag.delete({ where: { id } });
+    res.json({ success: true, message: 'Feature flag deleted' });
+  } catch (error: any) {
+    console.error('Super admin delete feature flag error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete feature flag', message: error.message });
   }
 });
 
@@ -4498,6 +4727,27 @@ app.listen(PORT, () => {
   console.log('   - GET  /schools/:id/claim-codes/export         - Export as CSV');
   console.log('   - POST /schools/:id/claim-codes/:codeId/revoke - Revoke a code\n');
   console.log('Press Ctrl+C to stop');
+
+  // Automated audit log cleanup (runs daily, disabled when DISABLE_BACKGROUND_JOBS=true)
+  const enableAuditCleanup = process.env.DISABLE_BACKGROUND_JOBS !== 'true';
+  if (enableAuditCleanup) {
+    const runAuditLogCleanup = async () => {
+      try {
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - AUDIT_LOG_RETENTION_DAYS);
+        const result = await prisma.platformAuditLog.deleteMany({
+          where: { createdAt: { lt: cutoffDate } },
+        });
+        if (result.count > 0) {
+          console.log(`[Audit Log Cleanup] Deleted ${result.count} log(s) older than ${AUDIT_LOG_RETENTION_DAYS} days`);
+        }
+      } catch (e) {
+        console.error('[Audit Log Cleanup] Error:', e);
+      }
+    };
+    runAuditLogCleanup(); // Run once on startup
+    setInterval(runAuditLogCleanup, 24 * 60 * 60 * 1000); // Daily
+  }
 });
 
 export default app;

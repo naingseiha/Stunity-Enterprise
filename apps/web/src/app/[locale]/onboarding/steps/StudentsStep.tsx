@@ -43,7 +43,7 @@ export default function StudentsStep({ onNext, onBack, onSkip, schoolId, classId
     setIsLoading(true);
     try {
       if (students.length > 0) {
-        const response = await fetch(`http://localhost:3003/students/batch`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003'}/students/batch`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

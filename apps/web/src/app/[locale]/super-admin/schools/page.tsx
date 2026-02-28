@@ -7,6 +7,8 @@ import {
   getSuperAdminSchools,
   updateSuperAdminSchool,
   createSuperAdminSchool,
+  approveSuperAdminSchool,
+  rejectSuperAdminSchool,
   SuperAdminSchool,
 } from '@/lib/api/super-admin';
 import AnimatedContent from '@/components/AnimatedContent';
@@ -28,6 +30,8 @@ import {
   Loader2,
   Power,
   PowerOff,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react';
 
 const TIER_LABELS: Record<string, string> = {
@@ -55,7 +59,8 @@ export default function SuperAdminSchoolsPage() {
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'pending'>('all');
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -85,7 +90,7 @@ export default function SuperAdminSchoolsPage() {
     };
   }, [filterOpen]);
 
-  const fetchSchools = useCallback(async (page: number, searchText: string, status: 'all' | 'active' | 'inactive') => {
+  const fetchSchools = useCallback(async (page: number, searchText: string, status: 'all' | 'active' | 'inactive' | 'pending') => {
     setLoading(true);
     try {
       const res = await getSuperAdminSchools({
@@ -138,6 +143,35 @@ export default function SuperAdminSchoolsPage() {
       setError(err.message);
     } finally {
       setTogglingId(null);
+    }
+  };
+
+  const handleApprove = async (school: SuperAdminSchool) => {
+    setApprovingId(school.id);
+    try {
+      await approveSuperAdminSchool(school.id);
+      setSchools((prev) => prev.filter((s) => s.id !== school.id));
+      setPagination((p) => ({ ...p, total: Math.max(0, p.total - 1) }));
+      setError(null);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const handleReject = async (school: SuperAdminSchool) => {
+    if (!confirm(`Reject registration for "${school.name}"? The school will be marked as rejected.`)) return;
+    setApprovingId(school.id);
+    try {
+      await rejectSuperAdminSchool(school.id);
+      setSchools((prev) => prev.filter((s) => s.id !== school.id));
+      setPagination((p) => ({ ...p, total: Math.max(0, p.total - 1) }));
+      setError(null);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setApprovingId(null);
     }
   };
 
@@ -276,12 +310,12 @@ export default function SuperAdminSchoolsPage() {
                 }`}
                 >
                   <Filter className="w-4 h-4" />
-                  Status: {statusFilter === 'all' ? 'All' : statusFilter === 'active' ? 'Active' : 'Inactive'}
+                  Status: {statusFilter === 'all' ? 'All' : statusFilter === 'active' ? 'Active' : statusFilter === 'pending' ? 'Pending' : 'Inactive'}
                   <ChevronDown className={`w-4 h-4 transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {filterOpen && (
                   <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl border border-gray-200 shadow-lg py-2 z-10" onClick={(e) => e.stopPropagation()}>
-                    {(['all', 'active', 'inactive'] as const).map((s) => (
+                    {(['all', 'pending', 'active', 'inactive'] as const).map((s) => (
                       <button
                         key={s}
                         type="button"
@@ -290,7 +324,7 @@ export default function SuperAdminSchoolsPage() {
                           statusFilter === s ? 'bg-stunity-primary-50 text-stunity-primary-700 font-medium' : 'text-gray-700'
                         }`}
                       >
-                        {s === 'all' ? 'All schools' : s === 'active' ? 'Active only' : 'Inactive only'}
+                        {s === 'all' ? 'All schools' : s === 'pending' ? 'Pending approval' : s === 'active' ? 'Active only' : 'Inactive only'}
                       </button>
                     ))}
                   </div>
@@ -410,17 +444,37 @@ export default function SuperAdminSchoolsPage() {
                           {school._count?.classes ?? '–'}
                         </td>
                         <td className="px-6 py-4">
-                          <button
-                            onClick={() => handleToggleActive(school)}
-                            disabled={togglingId === school.id}
-                            title={school.isActive ? 'Deactivate' : 'Activate'}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                              school.isActive ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            } disabled:opacity-50`}
-                          >
-                            {togglingId === school.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : school.isActive ? <PowerOff className="w-3.5 h-3.5" /> : <Power className="w-3.5 h-3.5" />}
-                            {school.isActive ? 'Active' : 'Inactive'}
-                          </button>
+                          {school.registrationStatus === 'PENDING' ? (
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Pending</span>
+                              <button
+                                onClick={() => handleApprove(school)}
+                                disabled={approvingId === school.id}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-emerald-100 text-emerald-700 hover:bg-emerald-200 disabled:opacity-50"
+                              >
+                                {approvingId === school.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />} Approve
+                              </button>
+                              <button
+                                onClick={() => handleReject(school)}
+                                disabled={approvingId === school.id}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50"
+                              >
+                                <XCircle className="w-3 h-3" /> Reject
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleToggleActive(school)}
+                              disabled={togglingId === school.id}
+                              title={school.isActive ? 'Deactivate' : 'Activate'}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                                school.isActive ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              } disabled:opacity-50`}
+                            >
+                              {togglingId === school.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : school.isActive ? <PowerOff className="w-3.5 h-3.5" /> : <Power className="w-3.5 h-3.5" />}
+                              {school.isActive ? 'Active' : 'Inactive'}
+                            </button>
+                          )}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">
                           {new Date(school.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}

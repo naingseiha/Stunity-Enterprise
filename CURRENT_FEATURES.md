@@ -61,6 +61,31 @@
 
 ---
 
+## 👑 Super Admin & Platform Management
+
+Platform-wide management area for super administrators. See [SUPER_ADMIN_AND_ENTERPRISE_FEATURES.md](./docs/SUPER_ADMIN_AND_ENTERPRISE_FEATURES.md) for full details.
+
+### Super Admin Area (`/[locale]/super-admin`)
+- **Dashboard** — Platform stats (schools, users, classes), schools by tier, recent schools, quick actions
+- **Schools** — List with pagination/search/status filter, create, detail, edit, delete, activate/deactivate
+- **Users** — List with pagination/search/school/role filter, detail, activate/deactivate
+- **Audit Logs** — Platform-wide trail with filters (resource type, action)
+- **Platform Settings** — Feature Flags, Announcements, Subscription Tiers (read-only), Coming Soon tab
+- **Analytics** — Schools/users per month charts, top schools, month range selector (6/12/24)
+
+### Enterprise Features
+- **Feature Flags** — Platform-wide or per-school; create, toggle, check via public API
+- **Platform Announcements** — Create, edit, delete; shown in `AnnouncementBanner`; priority levels (INFO/WARNING/URGENT)
+- **Maintenance Mode** — `MAINTENANCE_MODE` feature flag; non–super-admin users see full-screen overlay; super admins bypass
+- **Platform Audit Logging** — SCHOOL_CREATE/UPDATE/DELETE, USER_ACTIVATE/DEACTIVATE
+
+### Seed Super Admin
+```bash
+npm run seed:super-admin [email]
+```
+
+---
+
 ## 📱 Social Feed (Mobile — Fully Optimized)
 
 ### Post Creation

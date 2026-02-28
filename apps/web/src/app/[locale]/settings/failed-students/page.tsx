@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
+import { SCHOOL_SERVICE_URL, STUDENT_SERVICE_URL } from '@/lib/api/config';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import {
   AlertTriangle,
@@ -78,7 +79,7 @@ export default function FailedStudentsPage({ params }: { params: { locale: strin
       }
 
       const response = await fetch(
-        `http://localhost:3002/schools/${schoolId}/academic-years`,
+        `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years`,
         {
           headers: { 'Authorization': `Bearer ${token}` },
         }
@@ -122,7 +123,7 @@ export default function FailedStudentsPage({ params }: { params: { locale: strin
 
       // Get all students with their current classes
       const response = await fetch(
-        `http://localhost:3003/schools/${schoolId}/students`,
+        `${STUDENT_SERVICE_URL}/schools/${schoolId}/students`,
         {
           headers: { 'Authorization': `Bearer ${token}` },
         }
@@ -157,7 +158,7 @@ export default function FailedStudentsPage({ params }: { params: { locale: strin
 
       const token = TokenManager.getAccessToken();
 
-      const response = await fetch('http://localhost:3003/students/mark-failed', {
+      const response = await fetch(`${STUDENT_SERVICE_URL}/students/mark-failed`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -63,7 +63,7 @@ export default function SuperAdminDashboardPage({
   const quickActions = [
     { title: 'Manage Schools', description: 'View and manage all platform schools', icon: School, iconColor: 'blue', href: `/${locale}/super-admin/schools` },
     { title: 'Platform Users', description: 'View users across all schools', icon: Users, iconColor: 'purple', href: `/${locale}/super-admin/users` },
-    { title: 'Platform Analytics', description: 'Platform-wide analytics and reports', icon: TrendingUp, iconColor: 'cyan', href: '#', disabled: true },
+    { title: 'Platform Analytics', description: 'Platform-wide analytics and reports', icon: TrendingUp, iconColor: 'cyan', href: `/${locale}/super-admin/analytics` },
   ];
 
   return (

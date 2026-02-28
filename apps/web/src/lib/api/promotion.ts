@@ -149,23 +149,23 @@ export interface PromotionReportResponse {
  */
 export async function getEligibleStudents(
   schoolId: string,
-  academicYearId: string
+  academicYearId: string,
+  token?: string
 ): Promise<EligibleStudentsResponse> {
-  console.log('API Call: GET eligible students', { schoolId, academicYearId });
-  
-  const url = `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${academicYearId}/promotion/eligible-students`;
-  console.log('URL:', url);
-  
-  const response = await fetch(url);
-  
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const response = await fetch(
+    `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${academicYearId}/promotion/eligible-students`,
+    { headers }
+  );
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: response.statusText }));
-    console.error('API Error:', error);
     throw new Error(error.error || `Failed to fetch eligible students: ${response.statusText}`);
   }
-  
+
   const data = await response.json();
-  console.log('API Response:', data);
   return data.data;
 }
 
@@ -175,24 +175,26 @@ export async function getEligibleStudents(
 export async function getPromotionPreview(
   schoolId: string,
   fromYearId: string,
-  toYearId: string
+  toYearId: string,
+  token?: string
 ): Promise<PromotionPreviewResponse> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
   const response = await fetch(
     `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${fromYearId}/promotion/preview`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({ toAcademicYearId: toYearId }),
     }
   );
-  
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ error: response.statusText }));
     throw new Error(errorData.error || errorData.message || `Failed to get promotion preview: ${response.statusText}`);
   }
-  
+
   const data = await response.json();
   return data.data;
 }
@@ -205,15 +207,17 @@ export async function promoteStudents(
   fromYearId: string,
   toYearId: string,
   promotions: PromotionRequest[],
-  promotedBy: string
+  promotedBy: string,
+  token?: string
 ): Promise<PromotionResponse> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
   const response = await fetch(
     `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${fromYearId}/promote-students`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         toAcademicYearId: toYearId,
         promotions,
@@ -221,12 +225,12 @@ export async function promoteStudents(
       }),
     }
   );
-  
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ error: response.statusText }));
     throw new Error(errorData.error || errorData.message || `Failed to promote students: ${response.statusText}`);
   }
-  
+
   const data = await response.json();
   return data.data;
 }
