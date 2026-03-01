@@ -1,0 +1,2 @@
+# Export data from V1 will be written to export-YYYYMMDD-HHMMSS/ subfolders
+# Add export-*/ to .gitignore if you don't want to commit export data

@@ -1,0 +1,2414 @@
+[
+  {
+    "id": "cmkmlti0p00031075ca6f72p8",
+    "studentId": "cmitbulc3012712oaci5uha1i",
+    "parentId": "cmkmlohww0000j2tr3bkmzmmu",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:02:41.017Z",
+    "updatedAt": "2026-01-20T06:02:41.017Z"
+  },
+  {
+    "id": "cmkmltomu00071075ixxeoznc",
+    "studentId": "cmitbrplb011912oa6e1ejjrm",
+    "parentId": "cmkmlojk60003j2tri40v6jff",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:02:49.590Z",
+    "updatedAt": "2026-01-20T06:02:49.590Z"
+  },
+  {
+    "id": "cmkmltqjp000b1075qaq3d9nq",
+    "studentId": "cmitbpgy700yx12oahjbsba2v",
+    "parentId": "cmkmlokx30006j2trh5zgjvva",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:02:52.069Z",
+    "updatedAt": "2026-01-20T06:02:52.069Z"
+  },
+  {
+    "id": "cmkmltswv000f1075c1z1a5zm",
+    "studentId": "cmitbksx000w912oah2ziixnv",
+    "parentId": "cmkmlomgq0009j2truupa4adt",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:02:55.135Z",
+    "updatedAt": "2026-01-20T06:02:55.135Z"
+  },
+  {
+    "id": "cmkmltvfo000j10759a1w62jf",
+    "studentId": "cmitbk2ob00vh12oaoh0flmg6",
+    "parentId": "cmkmlonwv000cj2trgsb8b1cj",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:02:58.405Z",
+    "updatedAt": "2026-01-20T06:02:58.405Z"
+  },
+  {
+    "id": "cmkmltxv5000n1075d2gnz8ww",
+    "studentId": "cmitbmcb100xt12oazpl573zw",
+    "parentId": "cmkmloowz000fj2tr0ffui680",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:01.553Z",
+    "updatedAt": "2026-01-20T06:03:01.553Z"
+  },
+  {
+    "id": "cmkmlu06v000r1075woef6nmk",
+    "studentId": "cmitbuybk012l12oab16pqsa2",
+    "parentId": "cmkmloqdp000ij2trr21bbaxl",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:04.567Z",
+    "updatedAt": "2026-01-20T06:03:04.567Z"
+  },
+  {
+    "id": "cmkmlu2ja000v1075866vts2d",
+    "studentId": "cmitcz9s901ip12oagdb765jq",
+    "parentId": "cmkmlormr000lj2tr96bwevgj",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:07.607Z",
+    "updatedAt": "2026-01-20T06:03:07.607Z"
+  },
+  {
+    "id": "cmkmlu4ir000z1075iwr64uld",
+    "studentId": "cmitc2jgw015t12oa4ksdjnau",
+    "parentId": "cmkmlosub000oj2trnxzlk7md",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:10.180Z",
+    "updatedAt": "2026-01-20T06:03:10.180Z"
+  },
+  {
+    "id": "cmkmlu6n300131075zmb3ewqd",
+    "studentId": "cmitae6v300lt12oae9dbi9f9",
+    "parentId": "cmkmlouin000rj2trfi1gdns7",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:12.927Z",
+    "updatedAt": "2026-01-20T06:03:12.927Z"
+  },
+  {
+    "id": "cmkmlu8jj00171075ksanvmld",
+    "studentId": "cmitc27sq015h12oafr0evztp",
+    "parentId": "cmkmlovpy000uj2tray23rx78",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:15.392Z",
+    "updatedAt": "2026-01-20T06:03:15.392Z"
+  },
+  {
+    "id": "cmkmluaiy001b10756ueo7i1l",
+    "studentId": "cmitbuqrl012d12oa3pkaphgh",
+    "parentId": "cmkmlox0c000xj2trg3pm3kj3",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:17.963Z",
+    "updatedAt": "2026-01-20T06:03:17.963Z"
+  },
+  {
+    "id": "cmkmlucmz001f10754jqwhe6m",
+    "studentId": "cmitblwiv00xf12oayvkd4zho",
+    "parentId": "cmkmloyae0010j2trbb8mlhtd",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:20.700Z",
+    "updatedAt": "2026-01-20T06:03:20.700Z"
+  },
+  {
+    "id": "cmkmlueoj001j1075c0wdpa6i",
+    "studentId": "cmitbqo5j010712oazmrebv39",
+    "parentId": "cmkmlozdl0013j2tr1vinj36e",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:23.347Z",
+    "updatedAt": "2026-01-20T06:03:23.347Z"
+  },
+  {
+    "id": "cmkmlugxd001n1075o9uj5akx",
+    "studentId": "cmitbq6di00zp12oamgbe6bev",
+    "parentId": "cmkmlp0i10016j2tryu1jq9mz",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:26.257Z",
+    "updatedAt": "2026-01-20T06:03:26.257Z"
+  },
+  {
+    "id": "cmkmlui40001p1075e4cww78z",
+    "studentId": "cmit9h4kc001v12oaej56vp2u",
+    "parentId": "cmkmlp0i10016j2tryu1jq9mz",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:27.793Z",
+    "updatedAt": "2026-01-20T06:03:27.793Z"
+  },
+  {
+    "id": "cmkmluksp001t10750lq71fs1",
+    "studentId": "cmitbmnlq00y512oacfrispqz",
+    "parentId": "cmkmlp1uq0019j2trcna9ky4o",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:31.273Z",
+    "updatedAt": "2026-01-20T06:03:31.273Z"
+  },
+  {
+    "id": "cmkmlunfn001x1075x1y1kl67",
+    "studentId": "cmitblqs700x912oa4of681za",
+    "parentId": "cmkmlp374001cj2trn51zz3jy",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:34.691Z",
+    "updatedAt": "2026-01-20T06:03:34.691Z"
+  },
+  {
+    "id": "cmkmluq6p00211075zblknjzp",
+    "studentId": "cmitbqed900zx12oaqxcpkapg",
+    "parentId": "cmkmlp4rn001fj2tr6iwbogxi",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:38.258Z",
+    "updatedAt": "2026-01-20T06:03:38.258Z"
+  },
+  {
+    "id": "cmkmlusaz002510758ppjg9qz",
+    "studentId": "cmitc1h9y014p12oalnr0vkyd",
+    "parentId": "cmkmlp663001ij2trpbi3lsel",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:41.003Z",
+    "updatedAt": "2026-01-20T06:03:41.003Z"
+  },
+  {
+    "id": "cmkmluurj00291075dxa0hss7",
+    "studentId": "cmitbtuxh011h12oatqwjj3qj",
+    "parentId": "cmkmlp7ov001lj2trlz3uz0rj",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:44.192Z",
+    "updatedAt": "2026-01-20T06:03:44.192Z"
+  },
+  {
+    "id": "cmkmluwpq002d1075610f2xw1",
+    "studentId": "cmitaev6n00mj12oarns8g7on",
+    "parentId": "cmkmlp8rf001oj2tr9eb18dd5",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:46.718Z",
+    "updatedAt": "2026-01-20T06:03:46.718Z"
+  },
+  {
+    "id": "cmkmluypd002h1075pzontdn2",
+    "studentId": "cmitcywdt01id12oanxe4rzln",
+    "parentId": "cmkmlpa4h001rj2tryq29y3ir",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:49.297Z",
+    "updatedAt": "2026-01-20T06:03:49.297Z"
+  },
+  {
+    "id": "cmkmlv0pp002l1075o2ro528e",
+    "studentId": "cmit9g81u000x12oawrv7qnc6",
+    "parentId": "cmkmlpb7h001uj2trr1vsvbo0",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:51.901Z",
+    "updatedAt": "2026-01-20T06:03:51.901Z"
+  },
+  {
+    "id": "cmkmlv333002p1075el0q340x",
+    "studentId": "cmitczhkx01ix12oapur81ifj",
+    "parentId": "cmkmlpch0001xj2tr13lf19zt",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:03:54.975Z",
+    "updatedAt": "2026-01-20T06:03:54.975Z"
+  },
+  {
+    "id": "cmkmlv85r002u1075v5z5jzs5",
+    "studentId": "cmitc2mzv015x12oadme72o60",
+    "parentId": "cmkmlv5rm002q1075sbpt8pgm",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:04:01.552Z",
+    "updatedAt": "2026-01-20T06:04:01.552Z"
+  },
+  {
+    "id": "cmkmlvc9n002z1075sy28dge7",
+    "studentId": "cmitc1oyv014x12oa9uy8okny",
+    "parentId": "cmkmlv9lw002v1075bbchxhf2",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:04:06.876Z",
+    "updatedAt": "2026-01-20T06:04:06.876Z"
+  },
+  {
+    "id": "cmkmlvefp003410755pu7qze0",
+    "studentId": "cmitc1ssp015112oaxlhuw2xv",
+    "parentId": "cmkmlvd1w00301075fpuqw1lg",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:04:09.686Z",
+    "updatedAt": "2026-01-20T06:04:09.686Z"
+  },
+  {
+    "id": "cmkmlvguu00391075ojo28sfm",
+    "studentId": "cmitaf47f00mt12oa9n7aijny",
+    "parentId": "cmkmlvf7o00351075uzu6x8lh",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:04:12.822Z",
+    "updatedAt": "2026-01-20T06:04:12.822Z"
+  },
+  {
+    "id": "cmkmlvjga003e1075ke0gbxi6",
+    "studentId": "cmita69fo00hb12oa3y09hjq9",
+    "parentId": "cmkmlvhwo003a10752g9tk5j4",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:04:16.186Z",
+    "updatedAt": "2026-01-20T06:04:16.186Z"
+  },
+  {
+    "id": "cmkmlvo5b003j1075v6gw8454",
+    "studentId": "cmitcxzsw01hj12oa4s92aof6",
+    "parentId": "cmkmlvkx0003f1075hot7onjh",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:04:22.271Z",
+    "updatedAt": "2026-01-20T06:04:22.271Z"
+  },
+  {
+    "id": "cmkmlvs8d003o10755kukm2aa",
+    "studentId": "cmitbuukj012h12oa1vyezq2a",
+    "parentId": "cmkmlvp52003k1075e8bw9xhl",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:04:27.566Z",
+    "updatedAt": "2026-01-20T06:04:27.566Z"
+  },
+  {
+    "id": "cmkmlvwu7003t1075331rzwgc",
+    "studentId": "cmitc30ab016b12oa1h07byuz",
+    "parentId": "cmkmlvtd1003p1075oxmi3zio",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:04:33.535Z",
+    "updatedAt": "2026-01-20T06:04:33.535Z"
+  },
+  {
+    "id": "cmkmlvy0u003v1075h88k0dzd",
+    "studentId": "cmitc2ygc016912oakx079kyv",
+    "parentId": "cmkmlvtd1003p1075oxmi3zio",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:04:35.071Z",
+    "updatedAt": "2026-01-20T06:04:35.071Z"
+  },
+  {
+    "id": "cmkmlw1x000401075m30tkige",
+    "studentId": "cmitbljn900x112oac4tlkkmr",
+    "parentId": "cmkmlw0g6003w1075dzsjmaan",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:04:40.116Z",
+    "updatedAt": "2026-01-20T06:04:40.116Z"
+  },
+  {
+    "id": "cmkmlw5go00451075vg4s2ijd",
+    "studentId": "cmitbrvwj011f12oaxjanl1xa",
+    "parentId": "cmkmlw302004110750nfq8ot5",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:04:44.712Z",
+    "updatedAt": "2026-01-20T06:04:44.712Z"
+  },
+  {
+    "id": "cmkmlw97q004a1075621a61r1",
+    "studentId": "cmitbkcek00vr12oatoi60h7o",
+    "parentId": "cmkmlw6x600461075z16363d1",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:04:49.574Z",
+    "updatedAt": "2026-01-20T06:04:49.574Z"
+  },
+  {
+    "id": "cmkmlwdtp004f1075fn4uig6e",
+    "studentId": "cmitbv9ee012x12oati89d7ft",
+    "parentId": "cmkmlwaff004b1075odv2x0rc",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:04:55.550Z",
+    "updatedAt": "2026-01-20T06:04:55.550Z"
+  },
+  {
+    "id": "cmkmlwgtz004k107570sa1z89",
+    "studentId": "cmitbw13y013r12oansjzgghc",
+    "parentId": "cmkmlwfc3004g1075j97yfxox",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:04:59.448Z",
+    "updatedAt": "2026-01-20T06:04:59.448Z"
+  },
+  {
+    "id": "cmkmlwj9a004p1075iycccj4g",
+    "studentId": "cmitbqiec010112oaclpq46he",
+    "parentId": "cmkmlwi02004l1075m6609341",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:05:02.590Z",
+    "updatedAt": "2026-01-20T06:05:02.590Z"
+  },
+  {
+    "id": "cmkmlwlvv004u1075uatxxp2w",
+    "studentId": "cmitc8i72016r12oa9uegwuwt",
+    "parentId": "cmkmlwk2w004q1075e7bnhs6y",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:05:05.996Z",
+    "updatedAt": "2026-01-20T06:05:05.996Z"
+  },
+  {
+    "id": "cmkmlwoz7004z1075zdrvjbat",
+    "studentId": "cmitaetg300mh12oadg10e0kt",
+    "parentId": "cmkmlwnd1004v10751vbujevd",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:05:10.003Z",
+    "updatedAt": "2026-01-20T06:05:10.003Z"
+  },
+  {
+    "id": "cmkmlwrq800541075iblmmjvw",
+    "studentId": "cmitc2030015912oa5ht0hvx9",
+    "parentId": "cmkmlwpqg00501075ujh2lwjv",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:05:13.569Z",
+    "updatedAt": "2026-01-20T06:05:13.569Z"
+  },
+  {
+    "id": "cmkmlwuf300591075pj8az5zx",
+    "studentId": "cmitad6mi00kr12oaiyezix2j",
+    "parentId": "cmkmlwsx000551075e0m8bnu2",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:05:17.055Z",
+    "updatedAt": "2026-01-20T06:05:17.055Z"
+  },
+  {
+    "id": "cmkmlwxc5005e1075qgcfcde0",
+    "studentId": "cmitcz5rv01il12oaa548w1j4",
+    "parentId": "cmkmlwvok005a1075z3qfovwr",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:05:20.837Z",
+    "updatedAt": "2026-01-20T06:05:20.837Z"
+  },
+  {
+    "id": "cmkmlwzkc005j10759bivtt88",
+    "studentId": "cmitcy5yp01hp12oax4a0ho1r",
+    "parentId": "cmkmlwy1v005f10752e48l5xq",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:05:23.725Z",
+    "updatedAt": "2026-01-20T06:05:23.725Z"
+  },
+  {
+    "id": "cmkmlx2du005o107581qgqzz9",
+    "studentId": "cmitbp5we00yl12oatnek8xl0",
+    "parentId": "cmkmlx10o005k1075s44lgewz",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:05:27.378Z",
+    "updatedAt": "2026-01-20T06:05:27.378Z"
+  },
+  {
+    "id": "cmkmlx4yl005t1075miq4tr43",
+    "studentId": "cmitbl5vi00wn12oa3786h2ee",
+    "parentId": "cmkmlx3a7005p10754idzh05q",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:05:30.718Z",
+    "updatedAt": "2026-01-20T06:05:30.718Z"
+  },
+  {
+    "id": "cmkmlx7fd005y1075hx8nqbdf",
+    "studentId": "cmitcyqo901i712oajqw1t7h4",
+    "parentId": "cmkmlx5xf005u10757tm3ct1a",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:05:33.913Z",
+    "updatedAt": "2026-01-20T06:05:33.913Z"
+  },
+  {
+    "id": "cmkmlx9kh00631075uqagmiyk",
+    "studentId": "cmitcakiq018x12oaaax63dht",
+    "parentId": "cmkmlx86b005z1075z1f1d3xt",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:05:36.690Z",
+    "updatedAt": "2026-01-20T06:05:36.690Z"
+  },
+  {
+    "id": "cmkmlxd6600681075b4le2doa",
+    "studentId": "cmitbrgce010z12oaj8xfyuw6",
+    "parentId": "cmkmlxaxj00641075j1pji9a3",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:05:41.358Z",
+    "updatedAt": "2026-01-20T06:05:41.358Z"
+  },
+  {
+    "id": "cmkmlxfdh006d1075733ivyiw",
+    "studentId": "cmitc1kxv014t12oauvxyhd1n",
+    "parentId": "cmkmlxdxo00691075vh08sw6g",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:05:44.213Z",
+    "updatedAt": "2026-01-20T06:05:44.213Z"
+  },
+  {
+    "id": "cmkmlxhrc006i1075i7s35sz4",
+    "studentId": "cmitaeoae00mb12oamal0cv3j",
+    "parentId": "cmkmlxger006e1075v3djbgj1",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:05:47.304Z",
+    "updatedAt": "2026-01-20T06:05:47.304Z"
+  },
+  {
+    "id": "cmkmlxkej006n1075mdovfwn3",
+    "studentId": "cmitbky1c00wf12oabsdcp43m",
+    "parentId": "cmkmlxj0q006j1075wwx00o95",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:05:50.731Z",
+    "updatedAt": "2026-01-20T06:05:50.731Z"
+  },
+  {
+    "id": "cmkmlxmls006s10756plh4u69",
+    "studentId": "cmitbp7om00yn12oa346l9kz8",
+    "parentId": "cmkmlxl3a006o1075n80wkypd",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:05:53.585Z",
+    "updatedAt": "2026-01-20T06:05:53.585Z"
+  },
+  {
+    "id": "cmkmlxphm006x107515g4aeew",
+    "studentId": "cmitc145e014b12oaflcp4w8w",
+    "parentId": "cmkmlxnhv006t10757uk158v2",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:05:57.322Z",
+    "updatedAt": "2026-01-20T06:05:57.322Z"
+  },
+  {
+    "id": "cmkmlxs0q00721075pf2gsd6y",
+    "studentId": "cmitbv588012t12oag66260zx",
+    "parentId": "cmkmlxqgo006y1075xpjrnw71",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:06:00.602Z",
+    "updatedAt": "2026-01-20T06:06:00.602Z"
+  },
+  {
+    "id": "cmkmlxugf00771075pf1ltwxq",
+    "studentId": "cmitc8nmn016x12oakmpt9fcg",
+    "parentId": "cmkmlxsyk00731075vdfu3g3d",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:06:03.759Z",
+    "updatedAt": "2026-01-20T06:06:03.759Z"
+  },
+  {
+    "id": "cmkmlxxhp007c1075jzkybrl1",
+    "studentId": "cmitae8ut00lv12oapgsm0zhs",
+    "parentId": "cmkmlxvsi007810757w6v9vus",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:06:07.693Z",
+    "updatedAt": "2026-01-20T06:06:07.693Z"
+  },
+  {
+    "id": "cmkmly1eg007h1075z7ris7z4",
+    "studentId": "cmitd06zn01jj12oa0hx2wzlb",
+    "parentId": "cmkmlxyzb007d1075j5rgtpaj",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:06:12.760Z",
+    "updatedAt": "2026-01-20T06:06:12.760Z"
+  },
+  {
+    "id": "cmkmly5ng007m107535d2nkpv",
+    "studentId": "cmitbu9jp011v12oaz19olxlo",
+    "parentId": "cmkmly3y9007i1075opyckv55",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:06:18.268Z",
+    "updatedAt": "2026-01-20T06:06:18.268Z"
+  },
+  {
+    "id": "cmkmly8tt007r1075g89umghf",
+    "studentId": "cmitbpkg500z112oa93k7t4cg",
+    "parentId": "cmkmly6n6007n1075vla6b8h0",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:06:22.386Z",
+    "updatedAt": "2026-01-20T06:06:22.386Z"
+  },
+  {
+    "id": "cmkmlygmb007w1075b6vikynm",
+    "studentId": "cmitbtxxg011j12oaijktqrdb",
+    "parentId": "cmkmlydhn007s107570k72pzu",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:06:32.483Z",
+    "updatedAt": "2026-01-20T06:06:32.483Z"
+  },
+  {
+    "id": "cmkmlyk8a00811075tfuuk791",
+    "studentId": "cmitbre9w010x12oa74nasm79",
+    "parentId": "cmkmlyi47007x10757hwxdlv9",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:06:37.162Z",
+    "updatedAt": "2026-01-20T06:06:37.162Z"
+  },
+  {
+    "id": "cmkmlyqve00861075cnnmel61",
+    "studentId": "cmitbrnrh011712oah2wex2bk",
+    "parentId": "cmkmlyl5e008210750bq9mdqa",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:06:45.770Z",
+    "updatedAt": "2026-01-20T06:06:45.770Z"
+  },
+  {
+    "id": "cmkmlz9bx008c1075xuau6k5o",
+    "studentId": "cmitbklfa00w112oawr3258k7",
+    "parentId": "cmkmlz67p008810755qieqgtc",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:07:09.694Z",
+    "updatedAt": "2026-01-20T06:07:09.694Z"
+  },
+  {
+    "id": "cmkmlzcqa008h1075y53shgpn",
+    "studentId": "cmit9hi1c002912oa5bzdjnyp",
+    "parentId": "cmkmlzar8008d1075kq8eh9vt",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:07:14.099Z",
+    "updatedAt": "2026-01-20T06:07:14.099Z"
+  },
+  {
+    "id": "cmkmlzf9b008m1075satgn49e",
+    "studentId": "cmitatgk700pr12oai5bcxq30",
+    "parentId": "cmkmlzdr8008i1075h5oaf9px",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:07:17.375Z",
+    "updatedAt": "2026-01-20T06:07:17.375Z"
+  },
+  {
+    "id": "cmkmlzhev008r10751rc3d5sh",
+    "studentId": "cmitblsr200xb12oa5whtb69k",
+    "parentId": "cmkmlzfzw008n1075g1eah5l5",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:07:20.168Z",
+    "updatedAt": "2026-01-20T06:07:20.168Z"
+  },
+  {
+    "id": "cmkmlzk3g008w1075dwn2x125",
+    "studentId": "cmitadvlk00lh12oasiqu3uth",
+    "parentId": "cmkmlzijw008s1075arc0oq9m",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:07:23.644Z",
+    "updatedAt": "2026-01-20T06:07:23.644Z"
+  },
+  {
+    "id": "cmkmlzm32009110751zaakivv",
+    "studentId": "cmitcy1ry01hl12oabejfj0xj",
+    "parentId": "cmkmlzktp008x1075efmi21ku",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:07:26.222Z",
+    "updatedAt": "2026-01-20T06:07:26.222Z"
+  },
+  {
+    "id": "cmkmlzo8f00961075f35mlycw",
+    "studentId": "cmitcyoyk01i512oaz9r0qgt8",
+    "parentId": "cmkmlzmx800921075z1iptu1f",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:07:29.008Z",
+    "updatedAt": "2026-01-20T06:07:29.008Z"
+  },
+  {
+    "id": "cmkmlzqjr009b1075leot4n9t",
+    "studentId": "cmitd0ito01jv12oaj4dgycdt",
+    "parentId": "cmkmlzoz300971075j22nysga",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:07:32.007Z",
+    "updatedAt": "2026-01-20T06:07:32.007Z"
+  },
+  {
+    "id": "cmkmlzsyr009g107513iz64hp",
+    "studentId": "cmitcymsj01i312oaw1l6uwtu",
+    "parentId": "cmkmlzrcd009c1075o5rfmc8x",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:07:35.140Z",
+    "updatedAt": "2026-01-20T06:07:35.140Z"
+  },
+  {
+    "id": "cmkmlzvsj009l1075orsdyola",
+    "studentId": "cmit9fw8a000l12oakvw8i3zk",
+    "parentId": "cmkmlzudd009h1075j2e0g1l5",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:07:38.804Z",
+    "updatedAt": "2026-01-20T06:07:38.804Z"
+  },
+  {
+    "id": "cmkmlzylw009q1075hkfu2jls",
+    "studentId": "cmitbprt000z912oav8a76z2h",
+    "parentId": "cmkmlzx8l009m1075tup4r4fn",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:07:42.453Z",
+    "updatedAt": "2026-01-20T06:07:42.453Z"
+  },
+  {
+    "id": "cmkmm01ax009v1075cmus2i6u",
+    "studentId": "cmitc9rsk018312oas950q8zf",
+    "parentId": "cmkmlzzj0009r10759mf2952m",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:07:45.945Z",
+    "updatedAt": "2026-01-20T06:07:45.945Z"
+  },
+  {
+    "id": "cmkmm041r00a010754lqtf3nf",
+    "studentId": "cmitc9w7r018712oa23p70gdh",
+    "parentId": "cmkmm0267009w1075heb05loj",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:07:49.503Z",
+    "updatedAt": "2026-01-20T06:07:49.503Z"
+  },
+  {
+    "id": "cmkmm06t700a51075sgoiyjlz",
+    "studentId": "cmitcyz4901if12oa7bwav8qn",
+    "parentId": "cmkmm056d00a11075f9qyum0f",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:07:53.083Z",
+    "updatedAt": "2026-01-20T06:07:53.083Z"
+  },
+  {
+    "id": "cmkmm092o00aa10750uopnp66",
+    "studentId": "cmitadg8r00l112oayl8mn1hi",
+    "parentId": "cmkmm07up00a61075491hlg1c",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:07:56.017Z",
+    "updatedAt": "2026-01-20T06:07:56.017Z"
+  },
+  {
+    "id": "cmkmm0bjg00af1075e93jiiol",
+    "studentId": "cmitbvman013b12oaxv8vka8g",
+    "parentId": "cmkmm09u600ab107521a4l01w",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:07:59.212Z",
+    "updatedAt": "2026-01-20T06:07:59.212Z"
+  },
+  {
+    "id": "cmkmm0dux00ak1075cqawscz1",
+    "studentId": "cmitadq5o00lb12oabifvgmvp",
+    "parentId": "cmkmm0caa00ag1075bycklq1x",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:08:02.217Z",
+    "updatedAt": "2026-01-20T06:08:02.217Z"
+  },
+  {
+    "id": "cmkmm0fz200ap107584wbted6",
+    "studentId": "cmitaf2ix00mr12oa5me940yx",
+    "parentId": "cmkmm0ejm00al1075ncejkqmk",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:08:04.958Z",
+    "updatedAt": "2026-01-20T06:08:04.958Z"
+  },
+  {
+    "id": "cmkmm0iq300au10753h9bxwcj",
+    "studentId": "cmitbq4n000zn12oantw7ji14",
+    "parentId": "cmkmm0h9i00aq1075nh7j28oa",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:08:08.523Z",
+    "updatedAt": "2026-01-20T06:08:08.523Z"
+  },
+  {
+    "id": "cmkmm0lhd00az107579qojel8",
+    "studentId": "cmitca78z018j12oa1gwazu8p",
+    "parentId": "cmkmm0jsk00av1075eokphwl3",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:08:12.097Z",
+    "updatedAt": "2026-01-20T06:08:12.097Z"
+  },
+  {
+    "id": "cmkmm0peh00b41075m794drqy",
+    "studentId": "cmitc9tot018512oansd5vvfs",
+    "parentId": "cmkmm0mqt00b010750m2ljlr7",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:08:17.177Z",
+    "updatedAt": "2026-01-20T06:08:17.177Z"
+  },
+  {
+    "id": "cmkmm0rmr00b61075y9s23mc7",
+    "studentId": "cmitb4d9c00rl12oay44ikke1",
+    "parentId": "cmkmm0mqt00b010750m2ljlr7",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:08:20.067Z",
+    "updatedAt": "2026-01-20T06:08:20.067Z"
+  },
+  {
+    "id": "cmkmm11a700bb1075kd4ub49p",
+    "studentId": "cmitc8ghr016p12oag5praevi",
+    "parentId": "cmkmm0vtb00b71075jcf7fe91",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:08:32.575Z",
+    "updatedAt": "2026-01-20T06:08:32.575Z"
+  },
+  {
+    "id": "cmkmm15rc00bg1075f3covvog",
+    "studentId": "cmitca3i9018f12oarrsf3ytt",
+    "parentId": "cmkmm138x00bc1075vy8l0u06",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:08:38.376Z",
+    "updatedAt": "2026-01-20T06:08:38.376Z"
+  },
+  {
+    "id": "cmkmm1bg800bl1075obbk0rj3",
+    "studentId": "cmitcyfln01hx12oaq90eavxk",
+    "parentId": "cmkmm187g00bh10754ticsll0",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:08:45.752Z",
+    "updatedAt": "2026-01-20T06:08:45.752Z"
+  },
+  {
+    "id": "cmkmm1ez400bq1075jk38un1j",
+    "studentId": "cmitc1057014712oayj2rl0tl",
+    "parentId": "cmkmm1c7w00bm1075d5z0uttr",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:08:50.320Z",
+    "updatedAt": "2026-01-20T06:08:50.320Z"
+  },
+  {
+    "id": "cmkmm1icq00bv10759m26tfzu",
+    "studentId": "cmitbpq3b00z712oa3z89onbz",
+    "parentId": "cmkmm1g2b00br107552nkctf6",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:08:54.698Z",
+    "updatedAt": "2026-01-20T06:08:54.698Z"
+  },
+  {
+    "id": "cmkmm1mpi00c010759bobd9dd",
+    "studentId": "cmitc19j6014h12oa3n3s7jj8",
+    "parentId": "cmkmm1je200bw10752aw40r06",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:09:00.342Z",
+    "updatedAt": "2026-01-20T06:09:00.342Z"
+  },
+  {
+    "id": "cmkmm1t2f00c5107503lkg5ni",
+    "studentId": "cmitbpm6u00z312oa36mlelpt",
+    "parentId": "cmkmm1q7y00c110757kc1xsj3",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:09:08.584Z",
+    "updatedAt": "2026-01-20T06:09:08.584Z"
+  },
+  {
+    "id": "cmkmm1vud00ca1075loiu76do",
+    "studentId": "cmitd0mjl01jz12oaw1tkx3ly",
+    "parentId": "cmkmm1tui00c61075rhhuj05g",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:09:12.181Z",
+    "updatedAt": "2026-01-20T06:09:12.181Z"
+  },
+  {
+    "id": "cmkmm1y0k00cf10754nx4nsi6",
+    "studentId": "cmitd0qvh01k312oaqldpid34",
+    "parentId": "cmkmm1wrw00cb1075iq80u9q8",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:09:14.996Z",
+    "updatedAt": "2026-01-20T06:09:14.996Z"
+  },
+  {
+    "id": "cmkmm222p00ck107579csfgy0",
+    "studentId": "cmitaeytg00mn12oa99k3ce09",
+    "parentId": "cmkmm1zbf00cg10750dpoi3gb",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:09:20.257Z",
+    "updatedAt": "2026-01-20T06:09:20.257Z"
+  },
+  {
+    "id": "cmkmm246w00cp1075cnitd33y",
+    "studentId": "cmitczfup01iv12oaxx2nb2hj",
+    "parentId": "cmkmm22zx00cl1075c983q2pq",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:09:23.000Z",
+    "updatedAt": "2026-01-20T06:09:23.000Z"
+  },
+  {
+    "id": "cmkmm269r00cu107572w361pw",
+    "studentId": "cmitczxdn01j912oayl8ksajn",
+    "parentId": "cmkmm24wy00cq1075yeg31zj5",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:09:25.695Z",
+    "updatedAt": "2026-01-20T06:09:25.695Z"
+  },
+  {
+    "id": "cmkmm28y300cz1075q6y5r706",
+    "studentId": "cmitbl1fo00wj12oaw4u02y03",
+    "parentId": "cmkmm26yf00cv1075pcbhzvy0",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:09:28.710Z",
+    "updatedAt": "2026-01-20T06:09:28.710Z"
+  },
+  {
+    "id": "cmkmm2b5200d41075uayec6r6",
+    "studentId": "cmitb4oyq00rx12oal31v2q5n",
+    "parentId": "cmkmm29ns00d01075cxtozxtd",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:09:32.007Z",
+    "updatedAt": "2026-01-20T06:09:32.007Z"
+  },
+  {
+    "id": "cmkmm2dhh00d91075ziimqbek",
+    "studentId": "cmitcfbm601aj12oaijlhyul5",
+    "parentId": "cmkmm2by900d51075tq9o44gk",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:09:35.045Z",
+    "updatedAt": "2026-01-20T06:09:35.045Z"
+  },
+  {
+    "id": "cmkmm2h8300de1075pcajc8pc",
+    "studentId": "cmitbrk2s011312oakj9n9nx3",
+    "parentId": "cmkmm2emt00da1075w19wsx4c",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:09:39.891Z",
+    "updatedAt": "2026-01-20T06:09:39.891Z"
+  },
+  {
+    "id": "cmkmm2kdq00dj1075zxqwb4l9",
+    "studentId": "cmitcze3y01it12oaik3f79z7",
+    "parentId": "cmkmm2im700df1075ngohqdbx",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:09:43.983Z",
+    "updatedAt": "2026-01-20T06:09:43.983Z"
+  },
+  {
+    "id": "cmkmm2mpl00do1075jis78ov0",
+    "studentId": "cmitcey2601a712oaskm6h88v",
+    "parentId": "cmkmm2lhs00dk1075d7idcmce",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:09:47.001Z",
+    "updatedAt": "2026-01-20T06:09:47.001Z"
+  },
+  {
+    "id": "cmkmm2os000dt107568u13crd",
+    "studentId": "cmitb49rc00rh12oaau464ykk",
+    "parentId": "cmkmm2nk800dp107546v8wvm6",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:09:49.680Z",
+    "updatedAt": "2026-01-20T06:09:49.680Z"
+  },
+  {
+    "id": "cmkmm2qr500dy10755mev316m",
+    "studentId": "cmit9guvs001l12oarxpnxfjv",
+    "parentId": "cmkmm2pgf00du1075hp6ct3ah",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:09:52.241Z",
+    "updatedAt": "2026-01-20T06:09:52.241Z"
+  },
+  {
+    "id": "cmkmm2sn800e31075gs00lvvk",
+    "studentId": "cmit9h0kz001r12oabug2w6vs",
+    "parentId": "cmkmm2rg800dz1075xvwojyc8",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:09:54.693Z",
+    "updatedAt": "2026-01-20T06:09:54.693Z"
+  },
+  {
+    "id": "cmkmm2ulw00e81075h58xpgp7",
+    "studentId": "cmit9huzk002n12oas4deyxcn",
+    "parentId": "cmkmm2teu00e41075u826s0uz",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:09:57.236Z",
+    "updatedAt": "2026-01-20T06:09:57.236Z"
+  },
+  {
+    "id": "cmkmm2xjx00ed1075wo5iffb3",
+    "studentId": "cmit9fsjq000h12oa45h0pqdj",
+    "parentId": "cmkmm2vpi00e91075nnrahbo1",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:10:01.053Z",
+    "updatedAt": "2026-01-20T06:10:01.053Z"
+  },
+  {
+    "id": "cmkmm2zm700ei1075ylyl7mt5",
+    "studentId": "cmit9g62j000v12oa40zhmonp",
+    "parentId": "cmkmm2y9l00ee1075u7hy7doy",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:10:03.727Z",
+    "updatedAt": "2026-01-20T06:10:03.727Z"
+  },
+  {
+    "id": "cmkmm323s00en1075ctqwoyqy",
+    "studentId": "cmit9gdz5001312oa50pzxis2",
+    "parentId": "cmkmm30c300ej1075ibx2sri6",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:10:06.952Z",
+    "updatedAt": "2026-01-20T06:10:06.952Z"
+  },
+  {
+    "id": "cmkmm34sk00es1075m2qs1e8n",
+    "studentId": "cmit9h6fu001x12oa9ao2a16b",
+    "parentId": "cmkmm33db00eo1075sazumbg5",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:10:10.437Z",
+    "updatedAt": "2026-01-20T06:10:10.437Z"
+  },
+  {
+    "id": "cmkmm370400ex1075aozvtq2z",
+    "studentId": "cmit9gpo8001f12oas5tl6rkh",
+    "parentId": "cmkmm35i100et1075i7p5mfou",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:10:13.301Z",
+    "updatedAt": "2026-01-20T06:10:13.301Z"
+  },
+  {
+    "id": "cmkmm3bhd00f01075qm4me8mt",
+    "studentId": "cmit9hg4t002712oao5tv7jcc",
+    "parentId": "cmkmm38az00ey1075ov8uql1l",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:10:19.105Z",
+    "updatedAt": "2026-01-20T06:10:19.105Z"
+  },
+  {
+    "id": "cmkmm3dx100f510754d0uqs2f",
+    "studentId": "cmit9gc8d001112oa1bdzdctm",
+    "parentId": "cmkmm3c9k00f1107504a35r79",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:10:22.262Z",
+    "updatedAt": "2026-01-20T06:10:22.262Z"
+  },
+  {
+    "id": "cmkmm3h5y00fa10758nhccsp7",
+    "studentId": "cmitczl2701j112oa6p8m78vo",
+    "parentId": "cmkmm3fct00f61075ojliriag",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:10:26.471Z",
+    "updatedAt": "2026-01-20T06:10:26.471Z"
+  },
+  {
+    "id": "cmkmm3kaq00ff107522vvi2pr",
+    "studentId": "cmit9ghp1001712oadbu6dj7i",
+    "parentId": "cmkmm3hzj00fb1075py6r54ze",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:10:30.530Z",
+    "updatedAt": "2026-01-20T06:10:30.530Z"
+  },
+  {
+    "id": "cmkmm3po000fk10751cj5px3j",
+    "studentId": "cmitbr05q010j12oaeacuwgqd",
+    "parentId": "cmkmm3mkh00fg1075fhlmvzoz",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:10:37.488Z",
+    "updatedAt": "2026-01-20T06:10:37.488Z"
+  },
+  {
+    "id": "cmkmm3ta800fp10753ja78769",
+    "studentId": "cmit9gjfs001912oaiaa6m2xx",
+    "parentId": "cmkmm3qgi00fl10758jxwcwwv",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:10:42.176Z",
+    "updatedAt": "2026-01-20T06:10:42.176Z"
+  },
+  {
+    "id": "cmkmm3w1f00fu1075ogjrkb0i",
+    "studentId": "cmitadedx00kz12oae5l4fm9m",
+    "parentId": "cmkmm3ufr00fq1075zwyoghn8",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:10:45.748Z",
+    "updatedAt": "2026-01-20T06:10:45.748Z"
+  },
+  {
+    "id": "cmkmm3zux00fz107546jdte6u",
+    "studentId": "cmitbr6g9010p12oaq4hejiij",
+    "parentId": "cmkmm3wzy00fv1075qxq11u65",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:10:50.697Z",
+    "updatedAt": "2026-01-20T06:10:50.697Z"
+  },
+  {
+    "id": "cmkmm43vd00g41075ys0ux5ak",
+    "studentId": "cmitbrlw8011512oaqu6cw5ij",
+    "parentId": "cmkmm40w500g01075ex1q5l5n",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:10:55.898Z",
+    "updatedAt": "2026-01-20T06:10:55.898Z"
+  },
+  {
+    "id": "cmkmm46pt00g91075jkr3ejw2",
+    "studentId": "cmitc0uft014112oauvky9edy",
+    "parentId": "cmkmm459900g51075gzocxyl5",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:10:59.586Z",
+    "updatedAt": "2026-01-20T06:10:59.586Z"
+  },
+  {
+    "id": "cmkmm49jh00ge1075p5al9lxb",
+    "studentId": "cmitadtms00lf12oawynrywp7",
+    "parentId": "cmkmm47l300ga1075bmhxgdug",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:11:03.245Z",
+    "updatedAt": "2026-01-20T06:11:03.245Z"
+  },
+  {
+    "id": "cmkmm4cyh00gj1075kf09m05h",
+    "studentId": "cmit9fyca000n12oa6xz7fclf",
+    "parentId": "cmkmm4ay200gf1075gdlpqimc",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:11:07.674Z",
+    "updatedAt": "2026-01-20T06:11:07.674Z"
+  },
+  {
+    "id": "cmkmm4g7k00go10759fycx1ov",
+    "studentId": "cmit9g0if000p12oaq30m12jg",
+    "parentId": "cmkmm4e2d00gk10752xu3w3o6",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:11:11.889Z",
+    "updatedAt": "2026-01-20T06:11:11.889Z"
+  },
+  {
+    "id": "cmkmm4jwr00gt10751jw2y7q1",
+    "studentId": "cmitadchu00kx12oar0p2rkaa",
+    "parentId": "cmkmm4ie900gp1075i082t0ul",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:11:16.683Z",
+    "updatedAt": "2026-01-20T06:11:16.683Z"
+  },
+  {
+    "id": "cmkmm4mci00gy1075v9540hok",
+    "studentId": "cmitad8m800kt12oaonrhzqo7",
+    "parentId": "cmkmm4kop00gu1075vsuwk7pp",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:11:19.842Z",
+    "updatedAt": "2026-01-20T06:11:19.842Z"
+  },
+  {
+    "id": "cmkmm4n0f00h010757z4qutp6",
+    "studentId": "cmitc0w9y014312oap8m85rv3",
+    "parentId": "cmkmm4kop00gu1075vsuwk7pp",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:11:20.703Z",
+    "updatedAt": "2026-01-20T06:11:20.703Z"
+  },
+  {
+    "id": "cmkmm4p9t00h51075l4hab521",
+    "studentId": "cmitbpyqs00zh12oam9nlqvco",
+    "parentId": "cmkmm4nzu00h110759d64ft4m",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:11:23.633Z",
+    "updatedAt": "2026-01-20T06:11:23.633Z"
+  },
+  {
+    "id": "cmkmm4rtz00ha1075pyffmhcw",
+    "studentId": "cmitd035101jf12oajai9m55a",
+    "parentId": "cmkmm4qb900h61075tvciwt1m",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:11:26.952Z",
+    "updatedAt": "2026-01-20T06:11:26.952Z"
+  },
+  {
+    "id": "cmkmm4tpr00hf1075ztydmcl0",
+    "studentId": "cmitbquie010d12oad5guewzz",
+    "parentId": "cmkmm4sir00hb10758bdow3k0",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:11:29.391Z",
+    "updatedAt": "2026-01-20T06:11:29.391Z"
+  },
+  {
+    "id": "cmkmm4vr400hk10750zrjcdbr",
+    "studentId": "cmitbpbfk00yr12oavw3tyg6g",
+    "parentId": "cmkmm4ugj00hg10750byl35rg",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:11:32.033Z",
+    "updatedAt": "2026-01-20T06:11:32.033Z"
+  },
+  {
+    "id": "cmkmm4yaj00hp1075eozt1vlh",
+    "studentId": "cmit9gt4p001j12oa4hlgg091",
+    "parentId": "cmkmm4wsi00hl1075lr1k58sm",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:11:35.323Z",
+    "updatedAt": "2026-01-20T06:11:35.323Z"
+  },
+  {
+    "id": "cmkmm51a300hu1075fnwfhmj5",
+    "studentId": "cmit9ga7k000z12oa90uaea46",
+    "parentId": "cmkmm4zdj00hq1075e676g8h3",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:11:39.195Z",
+    "updatedAt": "2026-01-20T06:11:39.195Z"
+  },
+  {
+    "id": "cmkmm53fx00hz1075t0uz2ly2",
+    "studentId": "cmit9ha6u002112oa2xrpn88g",
+    "parentId": "cmkmm528800hv10755e64363w",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:11:41.997Z",
+    "updatedAt": "2026-01-20T06:11:41.997Z"
+  },
+  {
+    "id": "cmkmm55g400i410752a7kh2vm",
+    "studentId": "cmit9greq001h12oatxatnx2b",
+    "parentId": "cmkmm547v00i01075mskdd620",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:11:44.597Z",
+    "updatedAt": "2026-01-20T06:11:44.597Z"
+  },
+  {
+    "id": "cmkmm57kc00i910755295moo1",
+    "studentId": "cmit9gl8n001b12oa048n6cew",
+    "parentId": "cmkmm56ck00i51075ar3rg5pt",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:11:47.341Z",
+    "updatedAt": "2026-01-20T06:11:47.341Z"
+  },
+  {
+    "id": "cmkmm59go00ie1075cnt5mwdc",
+    "studentId": "cmit9hjxf002b12oa667yal9b",
+    "parentId": "cmkmm589i00ia1075t9tfarcu",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:11:49.800Z",
+    "updatedAt": "2026-01-20T06:11:49.800Z"
+  },
+  {
+    "id": "cmkmm5bki00ij1075756x6zqs",
+    "studentId": "cmit9i6f4002z12oaguzzi9mn",
+    "parentId": "cmkmm5a5m00if1075uegkxrgj",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:11:52.530Z",
+    "updatedAt": "2026-01-20T06:11:52.530Z"
+  },
+  {
+    "id": "cmkmm5dhx00io1075ddvj6wht",
+    "studentId": "cmitc2fiu015p12oa2xij4abb",
+    "parentId": "cmkmm5c9h00ik1075n3vauggn",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:11:55.029Z",
+    "updatedAt": "2026-01-20T06:11:55.029Z"
+  },
+  {
+    "id": "cmkmm5fn000it1075hsea0e6h",
+    "studentId": "cmit9hp43002h12oar6zfznrh",
+    "parentId": "cmkmm5eey00ip1075y3qgiz3e",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:11:57.805Z",
+    "updatedAt": "2026-01-20T06:11:57.805Z"
+  },
+  {
+    "id": "cmkmm5hso00iy1075u5js3qj4",
+    "studentId": "cmitaerqc00mf12oap5n4f237",
+    "parentId": "cmkmm5gcs00iu1075n97y9k5w",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:12:00.601Z",
+    "updatedAt": "2026-01-20T06:12:00.601Z"
+  },
+  {
+    "id": "cmkmm5ih400j01075iriuex8f",
+    "studentId": "cmitc2bgl015l12oac590mn05",
+    "parentId": "cmkmm5gcs00iu1075n97y9k5w",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:12:01.480Z",
+    "updatedAt": "2026-01-20T06:12:01.480Z"
+  },
+  {
+    "id": "cmkmm5m0p00j51075j46k7lxj",
+    "studentId": "cmitacysw00kj12oat7wjq12k",
+    "parentId": "cmkmm5j5y00j11075j7e28ehw",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:12:03.940Z",
+    "updatedAt": "2026-01-20T06:12:03.940Z"
+  },
+  {
+    "id": "cmkmm5s7b00ja1075ed8amc14",
+    "studentId": "cmitad0s600kl12oa5c79i2k5",
+    "parentId": "cmkmm5n7l00j61075yzhyimqh",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:12:14.088Z",
+    "updatedAt": "2026-01-20T06:12:14.088Z"
+  },
+  {
+    "id": "cmkmm5ue600jf1075ztpiv20d",
+    "studentId": "cmitae1jk00ln12oau50tknpj",
+    "parentId": "cmkmm5t5d00jb107553u5qw9e",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:12:16.927Z",
+    "updatedAt": "2026-01-20T06:12:16.927Z"
+  },
+  {
+    "id": "cmkmm5wbg00jk1075000hiik2",
+    "studentId": "cmitaeiak00m512oaygifv5re",
+    "parentId": "cmkmm5v3x00jg10759ry4ma5c",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:12:19.421Z",
+    "updatedAt": "2026-01-20T06:12:19.421Z"
+  },
+  {
+    "id": "cmkmm5ydb00jn1075vlw8flnb",
+    "studentId": "cmitae3ct00lp12oapfd87gzh",
+    "parentId": "cmkmm5x3u00jl1075lwwl8jkq",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:12:22.079Z",
+    "updatedAt": "2026-01-20T06:12:22.079Z"
+  },
+  {
+    "id": "cmkmm60i400js1075g86j2q2k",
+    "studentId": "cmitaek3000m712oarby6bbhz",
+    "parentId": "cmkmm5z2700jo1075qrd4zg3x",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:12:24.845Z",
+    "updatedAt": "2026-01-20T06:12:24.845Z"
+  },
+  {
+    "id": "cmkmm63e700jx1075jkcp48l0",
+    "studentId": "cmitadzng00ll12oa45vz3eel",
+    "parentId": "cmkmm61ad00jt1075yce70ouo",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:12:28.591Z",
+    "updatedAt": "2026-01-20T06:12:28.591Z"
+  },
+  {
+    "id": "cmkmm64dt00jz1075j9een2vw",
+    "studentId": "cmitadxsu00lj12oa3qym1lm8",
+    "parentId": "cmkmm61ad00jt1075yce70ouo",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:12:29.873Z",
+    "updatedAt": "2026-01-20T06:12:29.873Z"
+  },
+  {
+    "id": "cmkmm6c5c00k410751chqxwvy",
+    "studentId": "cmitaeepy00m112oaeoy3gf2s",
+    "parentId": "cmkmm65or00k0107557thgmkx",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:12:39.937Z",
+    "updatedAt": "2026-01-20T06:12:39.937Z"
+  },
+  {
+    "id": "cmkmm6gi100k91075ov13bj01",
+    "studentId": "cmitaeq1800md12oa469ewpgm",
+    "parentId": "cmkmm6cyj00k51075sfhvcx0a",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:12:45.578Z",
+    "updatedAt": "2026-01-20T06:12:45.578Z"
+  },
+  {
+    "id": "cmkmm6jbk00ke1075sky7xibj",
+    "studentId": "cmitae51c00lr12oa0gsqzl72",
+    "parentId": "cmkmm6hko00ka1075uehbydn0",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:12:49.232Z",
+    "updatedAt": "2026-01-20T06:12:49.232Z"
+  },
+  {
+    "id": "cmkmm6lju00kj1075ddc1n9vf",
+    "studentId": "cmitadmen00l712oahdwe9bez",
+    "parentId": "cmkmm6k4h00kf10759ft3xnzu",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:12:52.123Z",
+    "updatedAt": "2026-01-20T06:12:52.123Z"
+  },
+  {
+    "id": "cmkmm6o9z00ko1075p3dqp3cu",
+    "studentId": "cmitaeaza00lx12oavnry7lay",
+    "parentId": "cmkmm6mm400kk1075bf724534",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:12:55.655Z",
+    "updatedAt": "2026-01-20T06:12:55.655Z"
+  },
+  {
+    "id": "cmkmm6raz00kt1075hs4dd4of",
+    "studentId": "cmitadrwu00ld12oab6al6hwo",
+    "parentId": "cmkmm6pi000kp1075k2b7j2w9",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:12:59.579Z",
+    "updatedAt": "2026-01-20T06:12:59.579Z"
+  },
+  {
+    "id": "cmkmm6ul700ky1075x9qnv4ie",
+    "studentId": "cmitafb7k00n112oa00d74e4r",
+    "parentId": "cmkmm6s3i00ku10757glb4ouv",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:13:03.836Z",
+    "updatedAt": "2026-01-20T06:13:03.836Z"
+  },
+  {
+    "id": "cmkmm6yld00l31075zscni9xd",
+    "studentId": "cmitaeww400ml12oa7x003ab4",
+    "parentId": "cmkmm6wit00kz1075zb1ein71",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:13:09.026Z",
+    "updatedAt": "2026-01-20T06:13:09.026Z"
+  },
+  {
+    "id": "cmkmm72rn00l81075kovx6ulo",
+    "studentId": "cmitb3pmu00qz12oaw6nstr4z",
+    "parentId": "cmkmm6zdx00l41075ax4io0bl",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:13:14.436Z",
+    "updatedAt": "2026-01-20T06:13:14.436Z"
+  },
+  {
+    "id": "cmkmm75e300ld10752pnwak9q",
+    "studentId": "cmitad4qo00kp12oa3syc98ry",
+    "parentId": "cmkmm73k500l9107529me0ae0",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:13:17.836Z",
+    "updatedAt": "2026-01-20T06:13:17.836Z"
+  },
+  {
+    "id": "cmkmm79l200li1075qtjkqgsq",
+    "studentId": "cmitbk90m00vn12oadibgwgr3",
+    "parentId": "cmkmm783g00le1075gnes5eq5",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:13:23.270Z",
+    "updatedAt": "2026-01-20T06:13:23.270Z"
+  },
+  {
+    "id": "cmkmm7c0g00ln1075si2pc4fq",
+    "studentId": "cmitbki0f00vx12oaiq1vcas1",
+    "parentId": "cmkmm7arg00lj1075u9lwnb4w",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:13:26.416Z",
+    "updatedAt": "2026-01-20T06:13:26.416Z"
+  },
+  {
+    "id": "cmkmm7eni00ls1075ec5fsa1b",
+    "studentId": "cmitbkzql00wh12oaj4w3w333",
+    "parentId": "cmkmm7crn00lo10756jk5uobt",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:13:29.838Z",
+    "updatedAt": "2026-01-20T06:13:29.838Z"
+  },
+  {
+    "id": "cmkmm7had00lx1075sri2ybua",
+    "studentId": "cmitbm62500xp12oao2w28llw",
+    "parentId": "cmkmm7ff200lt1075oueih9vs",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:13:33.254Z",
+    "updatedAt": "2026-01-20T06:13:33.254Z"
+  },
+  {
+    "id": "cmkmm7k2p00m21075px14vs7y",
+    "studentId": "cmitbllfv00x312oalpzs0ga7",
+    "parentId": "cmkmm7icb00ly1075q42g2hli",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:13:36.866Z",
+    "updatedAt": "2026-01-20T06:13:36.866Z"
+  },
+  {
+    "id": "cmkmm7m6p00m71075kz1zm7yx",
+    "studentId": "cmitblbem00wt12oax84q5nko",
+    "parentId": "cmkmm7ktb00m31075gb5nepgg",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:13:39.602Z",
+    "updatedAt": "2026-01-20T06:13:39.602Z"
+  },
+  {
+    "id": "cmkmm7po600mc1075td9h3fga",
+    "studentId": "cmitbl9ie00wr12oanga4xmkj",
+    "parentId": "cmkmm7nvt00m81075oyypr0jx",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:13:44.118Z",
+    "updatedAt": "2026-01-20T06:13:44.118Z"
+  },
+  {
+    "id": "cmkmm7rt300mh1075emwpoxq3",
+    "studentId": "cmitblnc500x512oajnpmtvuw",
+    "parentId": "cmkmm7qhb00md10755bjfbnvr",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:13:46.887Z",
+    "updatedAt": "2026-01-20T06:13:46.887Z"
+  },
+  {
+    "id": "cmkmm7u2f00mm1075j4hu0a2b",
+    "studentId": "cmitbl7p700wp12oaguqdp14f",
+    "parentId": "cmkmm7shq00mi10754yx1klwz",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:13:49.815Z",
+    "updatedAt": "2026-01-20T06:13:49.815Z"
+  },
+  {
+    "id": "cmkmm7x7400mr1075pnsgm3qa",
+    "studentId": "cmitbkwe600wd12oaqmmliq5v",
+    "parentId": "cmkmm7uvy00mn1075pvdsinbt",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:13:53.872Z",
+    "updatedAt": "2026-01-20T06:13:53.872Z"
+  },
+  {
+    "id": "cmkmm7zvs00mw1075tdtcp9dh",
+    "studentId": "cmitadoay00l912oaehp3l86h",
+    "parentId": "cmkmm7xwp00ms1075ocromohy",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:13:57.352Z",
+    "updatedAt": "2026-01-20T06:13:57.352Z"
+  },
+  {
+    "id": "cmkmm82et00n11075588c8a1i",
+    "studentId": "cmitbmacl00xr12oalq7i6krv",
+    "parentId": "cmkmm80zf00mx1075gxsg2lu3",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:14:00.630Z",
+    "updatedAt": "2026-01-20T06:14:00.630Z"
+  },
+  {
+    "id": "cmkmm84lu00n610758zdz7wkn",
+    "studentId": "cmitbpdfm00yt12oajt97poqr",
+    "parentId": "cmkmm83cu00n21075h1m0ep77",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:14:03.474Z",
+    "updatedAt": "2026-01-20T06:14:03.474Z"
+  },
+  {
+    "id": "cmkmm86yw00nb1075dbtr92g9",
+    "studentId": "cmitbozul00yf12oaw2rratwg",
+    "parentId": "cmkmm85j400n710752en7kx1f",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:14:06.536Z",
+    "updatedAt": "2026-01-20T06:14:06.536Z"
+  },
+  {
+    "id": "cmkmm8c7j00ng1075dj434ilj",
+    "studentId": "cmitbpf7y00yv12oajvtdc41z",
+    "parentId": "cmkmm89z300nc1075uezk9be4",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:14:13.328Z",
+    "updatedAt": "2026-01-20T06:14:13.328Z"
+  },
+  {
+    "id": "cmkmm8ez600nl1075eqlv0y04",
+    "studentId": "cmitc2l9z015v12oaon4o90ev",
+    "parentId": "cmkmm8dc300nh1075kcsxtljf",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:14:16.915Z",
+    "updatedAt": "2026-01-20T06:14:16.915Z"
+  },
+  {
+    "id": "cmkmm8ho600nq1075pjsd7r9k",
+    "studentId": "cmitbq2sv00zl12oabmy8q766",
+    "parentId": "cmkmm8fx700nm1075094qukj6",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:14:20.406Z",
+    "updatedAt": "2026-01-20T06:14:20.406Z"
+  },
+  {
+    "id": "cmkmm8jvg00nv1075ll1h5d7e",
+    "studentId": "cmitbqc7m00zv12oaqgrhk3dm",
+    "parentId": "cmkmm8ij200nr1075f0yclmev",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:14:23.261Z",
+    "updatedAt": "2026-01-20T06:14:23.261Z"
+  },
+  {
+    "id": "cmkmm8meh00o0107501f2q0yg",
+    "studentId": "cmitbpo4u00z512oav1fxj9be",
+    "parentId": "cmkmm8kwh00nw107526lapodl",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:14:26.538Z",
+    "updatedAt": "2026-01-20T06:14:26.538Z"
+  },
+  {
+    "id": "cmkmm8qao00o51075cvdime96",
+    "studentId": "cmitbq89q00zr12oatzsebacm",
+    "parentId": "cmkmm8nwl00o110753f248jcg",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:14:31.585Z",
+    "updatedAt": "2026-01-20T06:14:31.585Z"
+  },
+  {
+    "id": "cmkmm8vqb00oa1075yzavc39p",
+    "studentId": "cmitbqmbg010512oauindtfw0",
+    "parentId": "cmkmm8rz200o61075i7k7t2zx",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:14:38.628Z",
+    "updatedAt": "2026-01-20T06:14:38.628Z"
+  },
+  {
+    "id": "cmkmm8zo300of1075fcyghbu6",
+    "studentId": "cmitbqwf3010f12oal9vend6k",
+    "parentId": "cmkmm8wt700ob10755ki9swrr",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:14:43.732Z",
+    "updatedAt": "2026-01-20T06:14:43.732Z"
+  },
+  {
+    "id": "cmkmm945d00ok1075b77fx8t7",
+    "studentId": "cmitbqso5010b12oaywl89ozq",
+    "parentId": "cmkmm921j00og1075e3x4pl5a",
+    "isPrimary": true,
+    "relationship": "MOTHER",
+    "createdAt": "2026-01-20T06:14:49.537Z",
+    "updatedAt": "2026-01-20T06:14:49.537Z"
+  },
+  {
+    "id": "cmkmm97b700op1075vmp843mk",
+    "studentId": "cmitbq0sn00zj12oa3zc2fpvp",
+    "parentId": "cmkmm95tt00ol1075rogreckq",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:14:53.635Z",
+    "updatedAt": "2026-01-20T06:14:53.635Z"
+  },
+  {
+    "id": "cmkmm9a2w00ou1075pj17c9ig",
+    "studentId": "cmitbqqhn010912oarzgj1sx9",
+    "parentId": "cmkmm98om00oq1075f0rj5uxx",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:14:57.224Z",
+    "updatedAt": "2026-01-20T06:14:57.224Z"
+  },
+  {
+    "id": "cmkmm9dhs00oz1075vhpcxayj",
+    "studentId": "cmitbubj7011x12oajncxuzeq",
+    "parentId": "cmkmm9c3u00ov1075ngswgvs4",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:15:01.649Z",
+    "updatedAt": "2026-01-20T06:15:01.649Z"
+  },
+  {
+    "id": "cmkmm9hju00p410750kh9234y",
+    "studentId": "cmitbu5ku011r12oabudsjsfp",
+    "parentId": "cmkmm9fh600p01075k8kf7mix",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:15:06.907Z",
+    "updatedAt": "2026-01-20T06:15:06.907Z"
+  },
+  {
+    "id": "cmkmm9kyu00p91075gp6ys9bv",
+    "studentId": "cmitbra9d010t12oawmy0opej",
+    "parentId": "cmkmm9ip000p510756mir4ylu",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:15:11.334Z",
+    "updatedAt": "2026-01-20T06:15:11.334Z"
+  },
+  {
+    "id": "cmkmm9nyh00pe1075pdtf7i2z",
+    "studentId": "cmitbri5a011112oakeqg8zn1",
+    "parentId": "cmkmm9lxj00pa1075fxg4ayu0",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:15:15.209Z",
+    "updatedAt": "2026-01-20T06:15:15.209Z"
+  },
+  {
+    "id": "cmkmm9rq100pj1075i2uqh66d",
+    "studentId": "cmitbu1lw011n12oareevl462",
+    "parentId": "cmkmm9p5c00pf1075lqciz4jr",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:15:20.089Z",
+    "updatedAt": "2026-01-20T06:15:20.089Z"
+  },
+  {
+    "id": "cmkmm9uyr00po10755vmpcb7f",
+    "studentId": "cmitbu3qf011p12oalz2cpnvm",
+    "parentId": "cmkmm9tdv00pk1075basg2u47",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:15:24.291Z",
+    "updatedAt": "2026-01-20T06:15:24.291Z"
+  },
+  {
+    "id": "cmkmm9xnn00pt1075rlepwrt3",
+    "studentId": "cmitbu7oe011t12oa6nfaw5b7",
+    "parentId": "cmkmm9w4200pp10752pjij1sr",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:15:27.779Z",
+    "updatedAt": "2026-01-20T06:15:27.779Z"
+  },
+  {
+    "id": "cmkmma0hj00py1075npftowp0",
+    "studentId": "cmitbrc78010v12oa4clgcyhb",
+    "parentId": "cmkmm9yj800pu1075na3tqtnl",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:15:31.448Z",
+    "updatedAt": "2026-01-20T06:15:31.448Z"
+  },
+  {
+    "id": "cmkmma33100q31075rbwdjwvy",
+    "studentId": "cmitbr4l8010n12oay71f4cdb",
+    "parentId": "cmkmma1ho00pz1075uo60a0uz",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:15:34.814Z",
+    "updatedAt": "2026-01-20T06:15:34.814Z"
+  },
+  {
+    "id": "cmkmma5lp00q81075c0nml32l",
+    "studentId": "cmitbr8d3010r12oafv6mdrns",
+    "parentId": "cmkmma47k00q41075sab7bw67",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:15:38.078Z",
+    "updatedAt": "2026-01-20T06:15:38.078Z"
+  },
+  {
+    "id": "cmkmma81g00qd1075i5ecmfw1",
+    "studentId": "cmitbrtzy011d12oagc2ocdz8",
+    "parentId": "cmkmma6ns00q91075tyscjfre",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:15:41.237Z",
+    "updatedAt": "2026-01-20T06:15:41.237Z"
+  },
+  {
+    "id": "cmkmmab3000qi1075j92q7cjs",
+    "studentId": "cmitbvcww013112oahqi13gav",
+    "parentId": "cmkmma93w00qe1075rk0fldbw",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:15:44.868Z",
+    "updatedAt": "2026-01-20T06:15:44.868Z"
+  },
+  {
+    "id": "cmkmmad7d00qn10755o51g7s5",
+    "studentId": "cmitbv7dn012v12oar0m5yc2v",
+    "parentId": "cmkmmabwy00qj1075b5yrcz2q",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:15:47.929Z",
+    "updatedAt": "2026-01-20T06:15:47.929Z"
+  },
+  {
+    "id": "cmkmmaf5100qs10751kqqd6s1",
+    "studentId": "cmitbudey011z12oadub8k9hi",
+    "parentId": "cmkmmadwb00qo1075hwok650g",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:15:50.437Z",
+    "updatedAt": "2026-01-20T06:15:50.437Z"
+  },
+  {
+    "id": "cmkmmah8w00qx1075g9dqlv9n",
+    "studentId": "cmitbvo33013d12oap19g8zat",
+    "parentId": "cmkmmafud00qt1075edu5dvpx",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:15:53.168Z",
+    "updatedAt": "2026-01-20T06:15:53.168Z"
+  },
+  {
+    "id": "cmkmmajjb00r21075oznhmga6",
+    "studentId": "cmitbuozh012b12oaymufsp0v",
+    "parentId": "cmkmmai1c00qy1075lwds5fs2",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:15:56.135Z",
+    "updatedAt": "2026-01-20T06:15:56.135Z"
+  },
+  {
+    "id": "cmkmmam3l00r71075i31ogih6",
+    "studentId": "cmitbv3i9012r12oahex64l1p",
+    "parentId": "cmkmmakoi00r31075lff8e1df",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:15:59.457Z",
+    "updatedAt": "2026-01-20T06:15:59.457Z"
+  },
+  {
+    "id": "cmkmmap5d00rc1075j5iossbl",
+    "studentId": "cmitc1fgz014n12oaj2rwfw0j",
+    "parentId": "cmkmmanjt00r81075mimxfaua",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:16:03.409Z",
+    "updatedAt": "2026-01-20T06:16:03.409Z"
+  },
+  {
+    "id": "cmkmmar6m00rh1075rstw8cnd",
+    "studentId": "cmitc1dgd014l12oa1hfnyeuf",
+    "parentId": "cmkmmapxs00rd1075ll7l35x4",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:16:06.046Z",
+    "updatedAt": "2026-01-20T06:16:06.046Z"
+  },
+  {
+    "id": "cmkmmatbf00rm1075he95nk8u",
+    "studentId": "cmitc0pvg013x12oa8skdt33x",
+    "parentId": "cmkmmarwp00ri1075zn7jqayj",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:16:08.811Z",
+    "updatedAt": "2026-01-20T06:16:08.811Z"
+  },
+  {
+    "id": "cmkmmavyl00rr10753q53wx3p",
+    "studentId": "cmitc1my6014v12oaevvodwi8",
+    "parentId": "cmkmmau7500rn1075q1tlz2jk",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:16:12.238Z",
+    "updatedAt": "2026-01-20T06:16:12.238Z"
+  },
+  {
+    "id": "cmkmmayn700rw1075p6dcq6pp",
+    "studentId": "cmitc0shb013z12oanxyfv85m",
+    "parentId": "cmkmmaxc600rs1075hejgdodm",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:16:15.716Z",
+    "updatedAt": "2026-01-20T06:16:15.716Z"
+  },
+  {
+    "id": "cmkmmb1i900s11075hzssumtp",
+    "studentId": "cmitc1j7z014r12oah0frktd8",
+    "parentId": "cmkmmb01u00rx10755finj1gw",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:16:19.425Z",
+    "updatedAt": "2026-01-20T06:16:19.425Z"
+  },
+  {
+    "id": "cmkmmb3zc00s610751tjsyb2v",
+    "studentId": "cmitbvru3013h12oa358003ao",
+    "parentId": "cmkmmb2j200s2107527in7nh9",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:16:22.633Z",
+    "updatedAt": "2026-01-20T06:16:22.633Z"
+  },
+  {
+    "id": "cmkmmb6gx00sb1075sss51m4l",
+    "studentId": "cmitbw2vg013t12oauhub8o3i",
+    "parentId": "cmkmmb4pp00s710750413lkeh",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:16:25.857Z",
+    "updatedAt": "2026-01-20T06:16:25.857Z"
+  },
+  {
+    "id": "cmkmmb8qy00sg1075hjp9ghkq",
+    "studentId": "cmitc2qks016112oaweatjmm9",
+    "parentId": "cmkmmb76300sc1075i8g9irbs",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:16:28.810Z",
+    "updatedAt": "2026-01-20T06:16:28.810Z"
+  },
+  {
+    "id": "cmkmmbc3500sl10754akqp4xz",
+    "studentId": "cmitc2ub1016512oazpqryz8f",
+    "parentId": "cmkmmba8r00sh1075yedrllrx",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:16:32.698Z",
+    "updatedAt": "2026-01-20T06:16:32.698Z"
+  },
+  {
+    "id": "cmkmmbfm800sq1075jfe3d45h",
+    "studentId": "cmitc1wct015512oagok4ruzz",
+    "parentId": "cmkmmbddt00sm1075sx5lcnha",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:16:37.712Z",
+    "updatedAt": "2026-01-20T06:16:37.712Z"
+  },
+  {
+    "id": "cmkmmbifv00sv10757bdsy36u",
+    "studentId": "cmitc23y2015d12oamu2gii6j",
+    "parentId": "cmkmmbggg00sr1075q9nc59kq",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:16:41.372Z",
+    "updatedAt": "2026-01-20T06:16:41.372Z"
+  },
+  {
+    "id": "cmkmmblwg00t01075r550xdvx",
+    "studentId": "cmitc2ham015r12oac9cp7fk3",
+    "parentId": "cmkmmbjki00sw1075rpthncmv",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:16:45.856Z",
+    "updatedAt": "2026-01-20T06:16:45.856Z"
+  },
+  {
+    "id": "cmkmmbpr300t51075peqit6cz",
+    "studentId": "cmitc2skq016312oa499azvyj",
+    "parentId": "cmkmmbn9700t11075vv17dtwv",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:16:50.847Z",
+    "updatedAt": "2026-01-20T06:16:50.847Z"
+  },
+  {
+    "id": "cmkmmbv5i00ta10759msjoysy",
+    "studentId": "cmitc1y8h015712oarksfgplb",
+    "parentId": "cmkmmbqrb00t61075al4pkmmn",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:16:57.846Z",
+    "updatedAt": "2026-01-20T06:16:57.846Z"
+  },
+  {
+    "id": "cmkmmbzmz00tf1075p3dyxw1y",
+    "studentId": "cmitc2da7015n12oaz3sij5ll",
+    "parentId": "cmkmmbwx600tb10755xdmjs6z",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:17:03.659Z",
+    "updatedAt": "2026-01-20T06:17:03.659Z"
+  },
+  {
+    "id": "cmkmmc7qv00tk1075s8wqk1yv",
+    "studentId": "cmitc9ak8017l12oafp10f31u",
+    "parentId": "cmkmmc1h000tg1075vt1l757t",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:17:14.167Z",
+    "updatedAt": "2026-01-20T06:17:14.167Z"
+  },
+  {
+    "id": "cmkmmccd600tp1075wyhi40yj",
+    "studentId": "cmitc98ov017j12oayydm4f1t",
+    "parentId": "cmkmmc98x00tl1075q5cgixti",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:17:20.155Z",
+    "updatedAt": "2026-01-20T06:17:20.155Z"
+  },
+  {
+    "id": "cmkmmcgko00tu1075xg1xp2ow",
+    "studentId": "cmitc8zfx017912oa1xdiirb1",
+    "parentId": "cmkmmcdj800tq1075q3t4dswt",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:17:25.279Z",
+    "updatedAt": "2026-01-20T06:17:25.279Z"
+  },
+  {
+    "id": "cmkmmcja000tz10750t2cxm87",
+    "studentId": "cmitc8lu2016v12oagku55chs",
+    "parentId": "cmkmmcho200tv10759bvq68mr",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:17:29.112Z",
+    "updatedAt": "2026-01-20T06:17:29.112Z"
+  },
+  {
+    "id": "cmkmmclkt00u41075vusssj2n",
+    "studentId": "cmitc92xu017d12oauazoxz6b",
+    "parentId": "cmkmmck1t00u01075ur64qcnc",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:17:32.093Z",
+    "updatedAt": "2026-01-20T06:17:32.093Z"
+  },
+  {
+    "id": "cmkmmcp0c00u910758d8en9z5",
+    "studentId": "cmitc8jy9016t12oafri90lf8",
+    "parentId": "cmkmmcmoh00u51075xt2w7dfd",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:17:36.541Z",
+    "updatedAt": "2026-01-20T06:17:36.541Z"
+  },
+  {
+    "id": "cmkmmcrz100ue1075ucb9f2xd",
+    "studentId": "cmitcabhp018n12oagceorvj2",
+    "parentId": "cmkmmcqch00ua10757e596onr",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:17:40.382Z",
+    "updatedAt": "2026-01-20T06:17:40.382Z"
+  },
+  {
+    "id": "cmkmmcv7y00uj1075fnevv3ew",
+    "studentId": "cmitca5gy018h12oay57x7stj",
+    "parentId": "cmkmmctbt00uf10750v2zqs76",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:17:44.590Z",
+    "updatedAt": "2026-01-20T06:17:44.590Z"
+  },
+  {
+    "id": "cmkmmcxfj00uo1075abobsopi",
+    "studentId": "cmitc9i8a017t12oa1en9y168",
+    "parentId": "cmkmmcvyq00uk1075hvh10dd8",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:17:47.456Z",
+    "updatedAt": "2026-01-20T06:17:47.456Z"
+  },
+  {
+    "id": "cmkmmczz800ut10752i2gf7hn",
+    "studentId": "cmitcdzia019b12oa253bdr01",
+    "parentId": "cmkmmcyga00up1075xr0pvp50",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:17:50.757Z",
+    "updatedAt": "2026-01-20T06:17:50.757Z"
+  },
+  {
+    "id": "cmkmmd2t200uy1075rbpwsnsy",
+    "studentId": "cmitces2001a112oa6qgudapk",
+    "parentId": "cmkmmd15100uu10758mwizbw9",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:17:54.422Z",
+    "updatedAt": "2026-01-20T06:17:54.422Z"
+  },
+  {
+    "id": "cmkmmd67900v31075wyb6f1lz",
+    "studentId": "cmitce1jw019d12oawr8t70cs",
+    "parentId": "cmkmmd4nm00uz10750ap0kvyb",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:17:58.822Z",
+    "updatedAt": "2026-01-20T06:17:58.822Z"
+  },
+  {
+    "id": "cmkmmd8kb00v81075jva00lei",
+    "studentId": "cmitce9ns019l12oa1x0dbrl6",
+    "parentId": "cmkmmd6yx00v410759gr7z2je",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:18:01.883Z",
+    "updatedAt": "2026-01-20T06:18:01.883Z"
+  },
+  {
+    "id": "cmkmmdb0h00vd1075lgxgonti",
+    "studentId": "cmitcyk4z01i112oaqpntvsky",
+    "parentId": "cmkmmd9d000v910758vuoilpc",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:18:05.057Z",
+    "updatedAt": "2026-01-20T06:18:05.057Z"
+  },
+  {
+    "id": "cmkmmddju00vi1075e2tdabro",
+    "studentId": "cmitcy3vj01hn12oaofb6mcrc",
+    "parentId": "cmkmmdc2k00ve1075yk29dlpr",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:18:08.347Z",
+    "updatedAt": "2026-01-20T06:18:08.347Z"
+  },
+  {
+    "id": "cmkmmdh3k00vn1075pu5va3fe",
+    "studentId": "cmitcyas001ht12oaepty62ev",
+    "parentId": "cmkmmdeq100vj107589b97sja",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:18:12.536Z",
+    "updatedAt": "2026-01-20T06:18:12.536Z"
+  },
+  {
+    "id": "cmkmmdjz600vs1075yctvscdc",
+    "studentId": "cmitcz1bx01ih12oauwmvr69s",
+    "parentId": "cmkmmdigy00vo1075vuyjstg2",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:18:16.674Z",
+    "updatedAt": "2026-01-20T06:18:16.674Z"
+  },
+  {
+    "id": "cmkmmdn5l00vx1075n0knfcnf",
+    "studentId": "cmitcydc001hv12oaxepzlx0v",
+    "parentId": "cmkmmdkw600vt1075l7smu2tq",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:18:20.794Z",
+    "updatedAt": "2026-01-20T06:18:20.794Z"
+  },
+  {
+    "id": "cmkmmdpjo00w210752svf0pn2",
+    "studentId": "cmitcyhyd01hz12oalmyjbyy7",
+    "parentId": "cmkmmdnyl00vy1075sapzs1wv",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:18:23.893Z",
+    "updatedAt": "2026-01-20T06:18:23.893Z"
+  },
+  {
+    "id": "cmkmmds9m00w71075nv6l8bd3",
+    "studentId": "cmitczbx801ir12oae5jubucp",
+    "parentId": "cmkmmdqkw00w3107520z1ta6u",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:18:27.418Z",
+    "updatedAt": "2026-01-20T06:18:27.418Z"
+  },
+  {
+    "id": "cmkmmdwoz00wc1075knjiauc9",
+    "studentId": "cmitcy8bp01hr12oawt7hgiqg",
+    "parentId": "cmkmmdtqp00w81075iy7583yo",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:18:33.156Z",
+    "updatedAt": "2026-01-20T06:18:33.156Z"
+  },
+  {
+    "id": "cmkmmdzob00wh1075oxsikxnm",
+    "studentId": "cmitczjb701iz12oarjggw369",
+    "parentId": "cmkmmdxzs00wd10753chrt599",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:18:37.020Z",
+    "updatedAt": "2026-01-20T06:18:37.020Z"
+  },
+  {
+    "id": "cmkmme3m900wm107579o0sw3f",
+    "studentId": "cmitcyun101ib12oa6x1tkdh0",
+    "parentId": "cmkmme1d200wi1075493197yq",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:18:42.130Z",
+    "updatedAt": "2026-01-20T06:18:42.130Z"
+  },
+  {
+    "id": "cmkmme83c00wr1075l2m8sdr9",
+    "studentId": "cmitd052s01jh12oaszve13k2",
+    "parentId": "cmkmme55700wn1075h0kbpeqy",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:18:47.929Z",
+    "updatedAt": "2026-01-20T06:18:47.929Z"
+  },
+  {
+    "id": "cmkmmec9p00ww1075h5w2ei9n",
+    "studentId": "cmitczttg01j512oaud9qn3gf",
+    "parentId": "cmkmme91e00ws1075wkr6gy1p",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:18:53.341Z",
+    "updatedAt": "2026-01-20T06:18:53.341Z"
+  },
+  {
+    "id": "cmkmmej6n00x11075ibshwmww",
+    "studentId": "cmitd0cjo01jp12oaphvn9g5v",
+    "parentId": "cmkmmeds300wx10758m81ls1a",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:19:02.303Z",
+    "updatedAt": "2026-01-20T06:19:02.303Z"
+  },
+  {
+    "id": "cmkmmemn400x61075amvrhoff",
+    "studentId": "cmitczz7u01jb12oa7fut2auz",
+    "parentId": "cmkmmek7m00x210753l3pj2vg",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:19:06.784Z",
+    "updatedAt": "2026-01-20T06:19:06.784Z"
+  },
+  {
+    "id": "cmkmmeptq00xb1075tykq0ir1",
+    "studentId": "cmitd0at401jn12oafmmqtfqm",
+    "parentId": "cmkmmeo6200x71075glnn249k",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:19:10.910Z",
+    "updatedAt": "2026-01-20T06:19:10.910Z"
+  },
+  {
+    "id": "cmkmmewga00xg1075c8v96ow6",
+    "studentId": "cmitd0gok01jt12oarim490z3",
+    "parentId": "cmkmmeuie00xc1075lcel2dug",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:19:19.498Z",
+    "updatedAt": "2026-01-20T06:19:19.498Z"
+  },
+  {
+    "id": "cmkmmf4dl00xl1075kjckifbj",
+    "studentId": "cmitd0oga01k112oaz2qqlabh",
+    "parentId": "cmkmmf0ug00xh10750zgypl17",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:19:29.770Z",
+    "updatedAt": "2026-01-20T06:19:29.770Z"
+  },
+  {
+    "id": "cmkmmf9f000xq1075qqe7o73a",
+    "studentId": "cmitd01aw01jd12oa5xmpovcj",
+    "parentId": "cmkmmf7wx00xm1075rwp3e59t",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:19:36.300Z",
+    "updatedAt": "2026-01-20T06:19:36.300Z"
+  },
+  {
+    "id": "cmkmmfc5x00xv1075lgf2tqkc",
+    "studentId": "cmitd08pn01jl12oaxebo6q7r",
+    "parentId": "cmkmmfad500xr1075ciaer2qs",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:19:39.862Z",
+    "updatedAt": "2026-01-20T06:19:39.862Z"
+  },
+  {
+    "id": "cmkmmfesj00y01075nd7rc3zd",
+    "studentId": "cmitczvil01j712oada8s53p9",
+    "parentId": "cmkmmfd1q00xw1075i9s3vi4s",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:19:43.267Z",
+    "updatedAt": "2026-01-20T06:19:43.267Z"
+  },
+  {
+    "id": "cmkmmfhkb00y51075w56mtggl",
+    "studentId": "cmit9fcfx000112oavon6angd",
+    "parentId": "cmkmmffhs00y11075hlfoawpx",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:19:46.860Z",
+    "updatedAt": "2026-01-20T06:19:46.860Z"
+  },
+  {
+    "id": "cmkmmfkhj00ya10751ihzbqkb",
+    "studentId": "cmit9hlnn002d12oamwn1k645",
+    "parentId": "cmkmmfiky00y610758cy9bdra",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:19:50.647Z",
+    "updatedAt": "2026-01-20T06:19:50.647Z"
+  },
+  {
+    "id": "cmkmmfmxf00yf10753dmqd2kq",
+    "studentId": "cmit9ht8e002l12oa2cxddbj7",
+    "parentId": "cmkmmflgt00yb10754s2p27kc",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:19:53.811Z",
+    "updatedAt": "2026-01-20T06:19:53.811Z"
+  },
+  {
+    "id": "cmkmmfpk900yk107554zwfz6r",
+    "studentId": "cmit9i2fi002v12oa69cdnrtv",
+    "parentId": "cmkmmfo6x00yg10753jiqol1g",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:19:57.225Z",
+    "updatedAt": "2026-01-20T06:19:57.225Z"
+  },
+  {
+    "id": "cmkmmfsdo00yp1075qbe2sc7i",
+    "studentId": "cmitcu6v801fr12oa1inyxxqi",
+    "parentId": "cmkmmfqel00yl1075a8c22opz",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:20:00.876Z",
+    "updatedAt": "2026-01-20T06:20:00.876Z"
+  },
+  {
+    "id": "cmkmmfuxa00yu1075matvop39",
+    "studentId": "cmit9fqrm000f12oaakeyp9th",
+    "parentId": "cmkmmft9400yq10752zknqg0y",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:20:04.174Z",
+    "updatedAt": "2026-01-20T06:20:04.174Z"
+  },
+  {
+    "id": "cmkmmfy2h00yz1075aq3e1p6q",
+    "studentId": "cmit9hnei002f12oa843ndmde",
+    "parentId": "cmkmmfwke00yv10754dmdbxs2",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:20:08.250Z",
+    "updatedAt": "2026-01-20T06:20:08.250Z"
+  },
+  {
+    "id": "cmkmmg0r600z41075364rhsm5",
+    "studentId": "cmitaegdy00m312oa92bvxs59",
+    "parentId": "cmkmmfz1k00z01075d5peih78",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:20:11.731Z",
+    "updatedAt": "2026-01-20T06:20:11.731Z"
+  },
+  {
+    "id": "cmkmmg3io00z91075q2ht3xez",
+    "studentId": "cmitc17ol014f12oa61b1egnv",
+    "parentId": "cmkmmg1z800z51075k8tzsndr",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:20:15.312Z",
+    "updatedAt": "2026-01-20T06:20:15.312Z"
+  },
+  {
+    "id": "cmkmmg67g00ze1075rtj710lr",
+    "studentId": "cmitbqgjc00zz12oayytraobm",
+    "parentId": "cmkmmg4gv00za1075sutkziwo",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:20:18.796Z",
+    "updatedAt": "2026-01-20T06:20:18.796Z"
+  },
+  {
+    "id": "cmkmmg9om00zj1075ukl2cvqj",
+    "studentId": "cmitc0ye2014512oa34gfdsrl",
+    "parentId": "cmkmmg7gz00zf1075zxsu0qfr",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:20:23.302Z",
+    "updatedAt": "2026-01-20T06:20:23.302Z"
+  },
+  {
+    "id": "cmkmmgc5000zo10750vh2lyl2",
+    "studentId": "cmitbkg8100vv12oam9gv2vpu",
+    "parentId": "cmkmmgamt00zk10755j12cy3s",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:20:26.484Z",
+    "updatedAt": "2026-01-20T06:20:26.484Z"
+  },
+  {
+    "id": "cmkmmgfb800zt1075d6c0xumv",
+    "studentId": "cmitc12bm014912oa0fr43cc3",
+    "parentId": "cmkmmgdh500zp1075q7ailpnh",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:20:30.597Z",
+    "updatedAt": "2026-01-20T06:20:30.597Z"
+  },
+  {
+    "id": "cmkmmgi3a00zy1075q2dqcxa5",
+    "studentId": "cmitbvi3k013712oapji6dich",
+    "parentId": "cmkmmggf700zu1075tszwqpfk",
+    "isPrimary": true,
+    "relationship": "FATHER",
+    "createdAt": "2026-01-20T06:20:34.198Z",
+    "updatedAt": "2026-01-20T06:20:34.198Z"
+  }
+]

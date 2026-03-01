@@ -1,0 +1,23 @@
+{
+  "exportedAt": "2026-03-01T13:40:01.639Z",
+  "source": "V1_SchoolManagementApp",
+  "exportVersion": "2.0",
+  "durationMs": 52674,
+  "tableCounts": {
+    "classes": 33,
+    "subjects": 119,
+    "teachers": 77,
+    "students": 1705,
+    "parents": 263,
+    "student_parents": 268,
+    "subject_teachers": 116,
+    "teacher_classes": 483,
+    "grades": 82972,
+    "attendance": 9613,
+    "student_monthly_summaries": 2725,
+    "users": 2025,
+    "grade_confirmations": 828,
+    "audit_logs": 81
+  },
+  "skippedTables": []
+}

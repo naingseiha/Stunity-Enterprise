@@ -1138,35 +1138,85 @@ app.post('/super-admin/schools', requireSuperAdmin, async (req: Request, res: Re
 // GET /super-admin/dashboard/stats - Platform-wide stats (super admin only)
 app.get('/super-admin/dashboard/stats', requireSuperAdmin, async (req: Request, res: Response) => {
   try {
-    const [schoolCount, userCount, classCount, activeSchools] = await Promise.all([
+    const now = new Date();
+    const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
+    const monthAgo = new Date(now); monthAgo.setMonth(monthAgo.getMonth() - 1);
+    const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
+
+    const [
+      schoolCount, userCount, classCount, activeSchools,
+      pendingApprovals, newSchoolsThisWeek, newSchoolsToday,
+      totalStudents, totalTeachers, newUsersThisWeek,
+    ] = await Promise.all([
       prisma.school.count(),
       prisma.user.count({ where: { schoolId: { not: null } } }),
       prisma.class.count(),
       prisma.school.count({ where: { isActive: true } }),
+      prisma.school.count({ where: { registrationStatus: RegistrationStatus.PENDING } }),
+      prisma.school.count({ where: { createdAt: { gte: weekAgo } } }),
+      prisma.school.count({ where: { createdAt: { gte: startOfToday } } }),
+      prisma.student.count(),
+      prisma.teacher.count(),
+      prisma.user.count({ where: { schoolId: { not: null }, createdAt: { gte: weekAgo } } }),
     ]);
 
-    const [recentSchools, schoolsByTier] = await Promise.all([
+    const [recentSchools, schoolsByTier, subscriptionBreakdown] = await Promise.all([
       prisma.school.findMany({
-        take: 5,
+        take: 8,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, name: true, slug: true, createdAt: true, isActive: true },
+        select: {
+          id: true, name: true, slug: true, createdAt: true,
+          isActive: true, registrationStatus: true, subscriptionTier: true,
+          currentStudents: true,
+        },
       }),
       prisma.school.groupBy({
         by: ['subscriptionTier'],
         _count: { id: true },
         orderBy: { _count: { id: 'desc' } },
       }),
+      prisma.school.groupBy({
+        by: ['subscriptionTier', 'isActive'],
+        _count: { id: true },
+      }),
     ]);
+
+    // Pending school registrations (ordered by date)
+    const pendingSchools = await prisma.school.findMany({
+      where: { registrationStatus: RegistrationStatus.PENDING },
+      take: 5,
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, name: true, slug: true, email: true, createdAt: true, schoolType: true },
+    });
 
     res.json({
       success: true,
       data: {
+        // Core counts
         totalSchools: schoolCount,
         totalUsers: userCount,
         totalClasses: classCount,
+        totalStudents,
+        totalTeachers,
         activeSchools,
+        inactiveSchools: schoolCount - activeSchools,
+        // Business velocity
+        pendingApprovals,
+        newSchoolsToday,
+        newSchoolsThisWeek,
+        newUsersThisWeek,
+        // Breakdown
         recentSchools,
-        schoolsByTier: schoolsByTier.map((t) => ({ tier: t.subscriptionTier, count: t._count.id })),
+        pendingSchools,
+        schoolsByTier: schoolsByTier.map((t) => ({
+          tier: t.subscriptionTier,
+          count: t._count.id,
+        })),
+        subscriptionBreakdown: subscriptionBreakdown.map((s) => ({
+          tier: s.subscriptionTier,
+          isActive: s.isActive,
+          count: s._count.id,
+        })),
       },
     });
   } catch (error: any) {
@@ -1175,6 +1225,45 @@ app.get('/super-admin/dashboard/stats', requireSuperAdmin, async (req: Request, 
       success: false,
       error: 'Failed to fetch dashboard stats',
       message: error.message,
+    });
+  }
+});
+
+// GET /super-admin/dashboard/health - Platform health check (super admin only)
+app.get('/super-admin/dashboard/health', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const start = Date.now();
+    await prisma.$queryRaw`SELECT 1`;
+    const dbLatencyMs = Date.now() - start;
+
+    const [schoolCount, userCount] = await Promise.all([
+      prisma.school.count(),
+      prisma.user.count(),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        version: '2.0.0',
+        service: 'school-service',
+        database: {
+          status: 'connected',
+          latencyMs: dbLatencyMs,
+          schools: schoolCount,
+          users: userCount,
+        },
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      data: {
+        status: 'degraded',
+        timestamp: new Date().toISOString(),
+        error: error.message,
+      },
     });
   }
 });

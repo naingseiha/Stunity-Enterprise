@@ -1,0 +1,3383 @@
+[
+  {
+    "id": "6d390e1c-1cfd-4bce-b666-dc2f6d43eece",
+    "teacherId": "cmjcxfo48002ja91iq38tekbu",
+    "classId": "cmiq80auu001jq0ja1ro6kgvs",
+    "createdAt": "2025-12-21T19:05:57.395Z",
+    "updatedAt": "2025-12-21T19:05:57.395Z"
+  },
+  {
+    "id": "1879448a-7108-4836-8171-f8c98df0f111",
+    "teacherId": "cmjcxfo48002ja91iq38tekbu",
+    "classId": "cmiq806mn0019q0jak0j1b2cp",
+    "createdAt": "2025-12-21T19:05:57.395Z",
+    "updatedAt": "2025-12-21T19:05:57.395Z"
+  },
+  {
+    "id": "a86707e1-f8d0-4ff9-82bf-bf88c462aa6d",
+    "teacherId": "cmjcxfo48002ja91iq38tekbu",
+    "classId": "cmiq80bg9001lq0jazgu8jiit",
+    "createdAt": "2025-12-21T19:05:57.395Z",
+    "updatedAt": "2025-12-21T19:05:57.395Z"
+  },
+  {
+    "id": "70080b57-f30c-40b9-9e7f-c757755f9cda",
+    "teacherId": "cmjcxfz6i003da91iyug0vy0g",
+    "classId": "cmiq80a10001hq0ja2qvou6f6",
+    "createdAt": "2025-12-21T20:45:16.960Z",
+    "updatedAt": "2025-12-21T20:45:16.960Z"
+  },
+  {
+    "id": "caeabf58-6829-4c32-9f5a-b63472f8cb68",
+    "teacherId": "cmjcxfz6i003da91iyug0vy0g",
+    "classId": "cmiq80bg9001lq0jazgu8jiit",
+    "createdAt": "2025-12-21T20:45:16.960Z",
+    "updatedAt": "2025-12-21T20:45:16.960Z"
+  },
+  {
+    "id": "07deddfe-8eea-4da7-8ee4-96cd3b3a0324",
+    "teacherId": "cmjcxfz6i003da91iyug0vy0g",
+    "classId": "cmiq80auu001jq0ja1ro6kgvs",
+    "createdAt": "2025-12-21T20:45:16.960Z",
+    "updatedAt": "2025-12-21T20:45:16.960Z"
+  },
+  {
+    "id": "5640038f-855b-4e2c-aa9f-d2cecd2e16cf",
+    "teacherId": "cmjcxhbjn006za91ienpdwb9r",
+    "classId": "cmiq80c05001nq0jakw8wy95p",
+    "createdAt": "2025-12-21T21:04:11.824Z",
+    "updatedAt": "2025-12-21T21:04:11.824Z"
+  },
+  {
+    "id": "34a05796-5620-4476-9907-40be91d65e7f",
+    "teacherId": "cmjcxhbjn006za91ienpdwb9r",
+    "classId": "cmiq80e7s001tq0ja8913v4mf",
+    "createdAt": "2025-12-21T21:04:11.824Z",
+    "updatedAt": "2025-12-21T21:04:11.824Z"
+  },
+  {
+    "id": "3d91341c-3442-4306-a3bc-4780643a9b58",
+    "teacherId": "cmjcxhbjn006za91ienpdwb9r",
+    "classId": "cmiq80di6001rq0ja5op34pk8",
+    "createdAt": "2025-12-21T21:04:11.824Z",
+    "updatedAt": "2025-12-21T21:04:11.824Z"
+  },
+  {
+    "id": "ca17510e-a45c-45ab-a0d5-b8f3fb7cc762",
+    "teacherId": "cmjcxhbjn006za91ienpdwb9r",
+    "classId": "cmiq80cpq001pq0ja802ln7to",
+    "createdAt": "2025-12-21T21:04:11.824Z",
+    "updatedAt": "2025-12-21T21:04:11.824Z"
+  },
+  {
+    "id": "98ca11d0-d58c-45da-8369-6450141be244",
+    "teacherId": "cmjcxhbjn006za91ienpdwb9r",
+    "classId": "cmiq805mh0015q0jal0pu36yp",
+    "createdAt": "2025-12-21T21:04:11.824Z",
+    "updatedAt": "2025-12-21T21:04:11.824Z"
+  },
+  {
+    "id": "8dc5a32f-019c-4999-a010-931efe0d0c66",
+    "teacherId": "cmjcxguh6005qa91ia64ws9ba",
+    "classId": "cmiq8006f000tq0jargnvbo6j",
+    "createdAt": "2025-12-21T21:15:10.124Z",
+    "updatedAt": "2025-12-21T21:15:10.124Z"
+  },
+  {
+    "id": "c0706afc-aff2-49d3-961b-2e654a300ab1",
+    "teacherId": "cmjcxguh6005qa91ia64ws9ba",
+    "classId": "cmiq7zzlk000rq0ja6s7xwhj0",
+    "createdAt": "2025-12-21T21:15:10.124Z",
+    "updatedAt": "2025-12-21T21:15:10.124Z"
+  },
+  {
+    "id": "9d1b8d8f-9042-4f9b-b46e-249de2de62ff",
+    "teacherId": "cmjcxguh6005qa91ia64ws9ba",
+    "classId": "cmiq806mn0019q0jak0j1b2cp",
+    "createdAt": "2025-12-21T21:15:10.124Z",
+    "updatedAt": "2025-12-21T21:15:10.124Z"
+  },
+  {
+    "id": "381f803b-2d32-4d60-b2d7-db5e442025a3",
+    "teacherId": "cmjcxguh6005qa91ia64ws9ba",
+    "classId": "cmiq8064j0017q0jafgpnxa73",
+    "createdAt": "2025-12-21T21:15:10.124Z",
+    "updatedAt": "2025-12-21T21:15:10.124Z"
+  },
+  {
+    "id": "349138fd-4f5d-45a5-bdc9-bf70bdbe1f17",
+    "teacherId": "cmjcxguh6005qa91ia64ws9ba",
+    "classId": "cmiq805mh0015q0jal0pu36yp",
+    "createdAt": "2025-12-21T21:15:10.124Z",
+    "updatedAt": "2025-12-21T21:15:10.124Z"
+  },
+  {
+    "id": "cd865a21-182c-4791-8e24-12b0bbaa37c9",
+    "teacherId": "cmjcxguh6005qa91ia64ws9ba",
+    "classId": "cmiq8024k000xq0jayizuqk1s",
+    "createdAt": "2025-12-21T21:15:10.124Z",
+    "updatedAt": "2025-12-21T21:15:10.124Z"
+  },
+  {
+    "id": "7e4cb9bb-5600-4b19-8e65-b7bb26f36aa8",
+    "teacherId": "cmjcxguh6005qa91ia64ws9ba",
+    "classId": "cmiq8013m000vq0jat513mkxw",
+    "createdAt": "2025-12-21T21:15:10.124Z",
+    "updatedAt": "2025-12-21T21:15:10.124Z"
+  },
+  {
+    "id": "fa90b7e4-e09f-4bbd-bd16-fce92d0a388e",
+    "teacherId": "cmjcxg2z6003na91ivzg2ng2q",
+    "classId": "cmiq8024k000xq0jayizuqk1s",
+    "createdAt": "2025-12-21T21:18:42.579Z",
+    "updatedAt": "2025-12-21T21:18:42.579Z"
+  },
+  {
+    "id": "9f28f633-8fe1-4411-a97e-4001e2b0c5d7",
+    "teacherId": "cmjcxg2z6003na91ivzg2ng2q",
+    "classId": "cmiq8006f000tq0jargnvbo6j",
+    "createdAt": "2025-12-21T21:18:42.579Z",
+    "updatedAt": "2025-12-21T21:18:42.579Z"
+  },
+  {
+    "id": "650a37e9-55a2-402b-8bd7-351befc8f669",
+    "teacherId": "cmjcxg2z6003na91ivzg2ng2q",
+    "classId": "cmiq803b9000zq0ja7axlvaon",
+    "createdAt": "2025-12-21T21:18:42.579Z",
+    "updatedAt": "2025-12-21T21:18:42.579Z"
+  },
+  {
+    "id": "203b5d8e-7834-424c-a783-01ad808a7b74",
+    "teacherId": "cmjcxg2z6003na91ivzg2ng2q",
+    "classId": "cmiq8013m000vq0jat513mkxw",
+    "createdAt": "2025-12-21T21:18:42.579Z",
+    "updatedAt": "2025-12-21T21:18:42.579Z"
+  },
+  {
+    "id": "a17eba66-6949-401e-b8d1-0187c45a4cf8",
+    "teacherId": "cmjcxf9by001fa91iz91jooci",
+    "classId": "cmiq8064j0017q0jafgpnxa73",
+    "createdAt": "2025-12-21T21:39:24.382Z",
+    "updatedAt": "2025-12-21T21:39:24.382Z"
+  },
+  {
+    "id": "9848dc0a-4b60-4046-82b9-f2c9f1ed9dc9",
+    "teacherId": "cmjcxf9by001fa91iz91jooci",
+    "classId": "cmiq80c05001nq0jakw8wy95p",
+    "createdAt": "2025-12-21T21:39:24.382Z",
+    "updatedAt": "2025-12-21T21:39:24.382Z"
+  },
+  {
+    "id": "7777843a-cdce-4a85-bf5e-97ccaf0db355",
+    "teacherId": "cmjcxf9by001fa91iz91jooci",
+    "classId": "cmiq80bg9001lq0jazgu8jiit",
+    "createdAt": "2025-12-21T21:39:24.382Z",
+    "updatedAt": "2025-12-21T21:39:24.382Z"
+  },
+  {
+    "id": "67466b46-3e58-4101-890b-bf4735cc71d4",
+    "teacherId": "cmjcxfb3a001ka91iizmh9z1s",
+    "classId": "cmiq80di6001rq0ja5op34pk8",
+    "createdAt": "2025-12-21T23:28:23.750Z",
+    "updatedAt": "2025-12-21T23:28:23.750Z"
+  },
+  {
+    "id": "72985320-54d9-41ff-8a55-bec5ac3491ea",
+    "teacherId": "cmjcxfb3a001ka91iizmh9z1s",
+    "classId": "cmiq807ku001bq0jacu44ttnk",
+    "createdAt": "2025-12-21T23:28:23.750Z",
+    "updatedAt": "2025-12-21T23:28:23.750Z"
+  },
+  {
+    "id": "73109757-04b8-4c57-b839-66ab72ff0d7c",
+    "teacherId": "cmjcxfb3a001ka91iizmh9z1s",
+    "classId": "cmiq806mn0019q0jak0j1b2cp",
+    "createdAt": "2025-12-21T23:28:23.750Z",
+    "updatedAt": "2025-12-21T23:28:23.750Z"
+  },
+  {
+    "id": "2ff9f126-40db-4220-8e17-70ff3af2aeb9",
+    "teacherId": "cmjcxfgws001za91iwsaohfj9",
+    "classId": "cmiq8043p0011q0jap2zvukfd",
+    "createdAt": "2025-12-21T23:35:06.591Z",
+    "updatedAt": "2025-12-21T23:35:06.591Z"
+  },
+  {
+    "id": "e0081cd2-fc10-4cf5-8ec9-f48bdf02f24f",
+    "teacherId": "cmjcxfgws001za91iwsaohfj9",
+    "classId": "cmiq8051t0013q0janrrewlq2",
+    "createdAt": "2025-12-21T23:35:06.591Z",
+    "updatedAt": "2025-12-21T23:35:06.591Z"
+  },
+  {
+    "id": "de04b79a-d869-4b38-8a85-297eff25bb15",
+    "teacherId": "cmjcxhzhi008sa91idawta69l",
+    "classId": "cmiq7zs080003q0jav4gj9wat",
+    "createdAt": "2025-12-21T23:43:10.493Z",
+    "updatedAt": "2025-12-21T23:43:10.493Z"
+  },
+  {
+    "id": "7169db4e-2936-4b7d-bebc-426e04d2c8b9",
+    "teacherId": "cmjcxhzhi008sa91idawta69l",
+    "classId": "cmiq7zvab000dq0jaz5sltz3k",
+    "createdAt": "2025-12-21T23:43:10.493Z",
+    "updatedAt": "2025-12-21T23:43:10.493Z"
+  },
+  {
+    "id": "1902eac2-5b67-42f4-9237-dbd7be7d5228",
+    "teacherId": "cmjcxhzhi008sa91idawta69l",
+    "classId": "cmiq7zr9e0001q0ja25clx0sy",
+    "createdAt": "2025-12-21T23:43:10.493Z",
+    "updatedAt": "2025-12-21T23:43:10.493Z"
+  },
+  {
+    "id": "0646cdee-86d6-4f8c-83f8-2bb649381aed",
+    "teacherId": "cmjcxhzhi008sa91idawta69l",
+    "classId": "cmiq7zus8000bq0jaz191ad1z",
+    "createdAt": "2025-12-21T23:43:10.493Z",
+    "updatedAt": "2025-12-21T23:43:10.493Z"
+  },
+  {
+    "id": "78ed8df6-82ef-4c5a-af01-6c8aebced179",
+    "teacherId": "cmjcxfrny002ta91ithz3riue",
+    "classId": "cmiq8013m000vq0jat513mkxw",
+    "createdAt": "2025-12-21T23:47:04.492Z",
+    "updatedAt": "2025-12-21T23:47:04.492Z"
+  },
+  {
+    "id": "7e3e60fb-2a9d-4e16-9fc3-cfaa70951721",
+    "teacherId": "cmjcxftw7002ya91ihmqgxafj",
+    "classId": "cmiq8024k000xq0jayizuqk1s",
+    "createdAt": "2025-12-21T23:49:26.161Z",
+    "updatedAt": "2025-12-21T23:49:26.161Z"
+  },
+  {
+    "id": "a31034d5-54d3-41e5-b94f-456e83683f88",
+    "teacherId": "cmjcxgfp2004ma91i3tlh8l8s",
+    "classId": "cmiq80bg9001lq0jazgu8jiit",
+    "createdAt": "2025-12-21T23:55:43.464Z",
+    "updatedAt": "2025-12-21T23:55:43.464Z"
+  },
+  {
+    "id": "aca326bd-3588-4872-b4ba-dfca7bb3faee",
+    "teacherId": "cmjcxgfp2004ma91i3tlh8l8s",
+    "classId": "cmiq80a10001hq0ja2qvou6f6",
+    "createdAt": "2025-12-21T23:55:43.464Z",
+    "updatedAt": "2025-12-21T23:55:43.464Z"
+  },
+  {
+    "id": "802b3f76-8c11-40c6-8e3c-fe7313aeffd2",
+    "teacherId": "cmjcxgfp2004ma91i3tlh8l8s",
+    "classId": "cmiq8098s001fq0jaixxdzvdc",
+    "createdAt": "2025-12-21T23:55:43.464Z",
+    "updatedAt": "2025-12-21T23:55:43.464Z"
+  },
+  {
+    "id": "83c3b92e-dc0e-47bc-9f45-de30d822091f",
+    "teacherId": "cmjcxgfp2004ma91i3tlh8l8s",
+    "classId": "cmiq806mn0019q0jak0j1b2cp",
+    "createdAt": "2025-12-21T23:55:43.464Z",
+    "updatedAt": "2025-12-21T23:55:43.464Z"
+  },
+  {
+    "id": "2cf87e7d-0a45-49e1-8622-ae2a03923716",
+    "teacherId": "cmjcxgfp2004ma91i3tlh8l8s",
+    "classId": "cmiq80c05001nq0jakw8wy95p",
+    "createdAt": "2025-12-21T23:55:43.464Z",
+    "updatedAt": "2025-12-21T23:55:43.464Z"
+  },
+  {
+    "id": "4d17c1cd-6d44-4157-8dff-3777c32b2ffd",
+    "teacherId": "cmjcxgn5e0056a91ibz8fokx4",
+    "classId": "cmiq8013m000vq0jat513mkxw",
+    "createdAt": "2025-12-22T00:00:48.174Z",
+    "updatedAt": "2025-12-22T00:00:48.174Z"
+  },
+  {
+    "id": "ac264a1f-3f6e-4f35-8363-23e6bd90d154",
+    "teacherId": "cmjcxgn5e0056a91ibz8fokx4",
+    "classId": "cmiq8024k000xq0jayizuqk1s",
+    "createdAt": "2025-12-22T00:00:48.174Z",
+    "updatedAt": "2025-12-22T00:00:48.174Z"
+  },
+  {
+    "id": "c2af4270-e722-4271-9999-4052b0253201",
+    "teacherId": "cmjcxgsn1005la91i7zdd407k",
+    "classId": "cmiq807ku001bq0jacu44ttnk",
+    "createdAt": "2025-12-22T00:26:55.628Z",
+    "updatedAt": "2025-12-22T00:26:55.628Z"
+  },
+  {
+    "id": "6bae37d2-351a-4fd9-b6c8-7f8b638babe8",
+    "teacherId": "cmjcxgsn1005la91i7zdd407k",
+    "classId": "cmiq8098s001fq0jaixxdzvdc",
+    "createdAt": "2025-12-22T00:26:55.628Z",
+    "updatedAt": "2025-12-22T00:26:55.628Z"
+  },
+  {
+    "id": "bab4668c-5e8e-45da-b053-ef20f7162cc2",
+    "teacherId": "cmjcxgsn1005la91i7zdd407k",
+    "classId": "cmiq808iz001dq0jag5t4x47j",
+    "createdAt": "2025-12-22T00:26:55.628Z",
+    "updatedAt": "2025-12-22T00:26:55.628Z"
+  },
+  {
+    "id": "ad023370-96ec-4197-89fa-45995b7d878c",
+    "teacherId": "cmjcxgsn1005la91i7zdd407k",
+    "classId": "cmiq80a10001hq0ja2qvou6f6",
+    "createdAt": "2025-12-22T00:26:55.628Z",
+    "updatedAt": "2025-12-22T00:26:55.628Z"
+  },
+  {
+    "id": "8500df72-a6c2-4b0f-be32-87c2ccc3502e",
+    "teacherId": "cmjcxgsn1005la91i7zdd407k",
+    "classId": "cmiq8043p0011q0jap2zvukfd",
+    "createdAt": "2025-12-22T00:26:55.628Z",
+    "updatedAt": "2025-12-22T00:26:55.628Z"
+  },
+  {
+    "id": "d5431c9e-8911-43a4-aac7-a01f215aa320",
+    "teacherId": "cmjcxgsn1005la91i7zdd407k",
+    "classId": "cmiq8051t0013q0janrrewlq2",
+    "createdAt": "2025-12-22T00:26:55.628Z",
+    "updatedAt": "2025-12-22T00:26:55.628Z"
+  },
+  {
+    "id": "21f11ae2-7d6e-42ca-87e4-6de9363d99a5",
+    "teacherId": "cmjcxgsn1005la91i7zdd407k",
+    "classId": "cmiq803b9000zq0ja7axlvaon",
+    "createdAt": "2025-12-22T00:26:55.628Z",
+    "updatedAt": "2025-12-22T00:26:55.628Z"
+  },
+  {
+    "id": "35ebb8c2-b3ab-4af4-a061-1e73b53df13e",
+    "teacherId": "cmjcxfxgk0038a91ih9p3qrbh",
+    "classId": "cmiq8043p0011q0jap2zvukfd",
+    "createdAt": "2025-12-22T18:00:00.641Z",
+    "updatedAt": "2025-12-22T18:00:00.641Z"
+  },
+  {
+    "id": "44f5a9c8-cea3-44f6-9ed8-0cde2bf8c616",
+    "teacherId": "cmjcxfxgk0038a91ih9p3qrbh",
+    "classId": "cmiq803b9000zq0ja7axlvaon",
+    "createdAt": "2025-12-22T18:00:00.641Z",
+    "updatedAt": "2025-12-22T18:00:00.641Z"
+  },
+  {
+    "id": "ebbc94a3-c6a6-46cd-997c-0656941fc192",
+    "teacherId": "cmjcxfxgk0038a91ih9p3qrbh",
+    "classId": "cmiq8051t0013q0janrrewlq2",
+    "createdAt": "2025-12-22T18:00:00.641Z",
+    "updatedAt": "2025-12-22T18:00:00.641Z"
+  },
+  {
+    "id": "82ca6683-659a-4d20-aa6a-df1cea8dbeb7",
+    "teacherId": "cmjcxglbb0051a91ixpqsuqo2",
+    "classId": "cmiq806mn0019q0jak0j1b2cp",
+    "createdAt": "2025-12-22T18:03:15.196Z",
+    "updatedAt": "2025-12-22T18:03:15.196Z"
+  },
+  {
+    "id": "726f2bb8-5d0b-4754-827e-aea7abe5a6a4",
+    "teacherId": "cmjcxglbb0051a91ixpqsuqo2",
+    "classId": "cmiq80di6001rq0ja5op34pk8",
+    "createdAt": "2025-12-22T18:03:15.196Z",
+    "updatedAt": "2025-12-22T18:03:15.196Z"
+  },
+  {
+    "id": "61701cc6-c52f-45ea-9c4f-447dddb147a3",
+    "teacherId": "cmjcxglbb0051a91ixpqsuqo2",
+    "classId": "cmiq80e7s001tq0ja8913v4mf",
+    "createdAt": "2025-12-22T18:03:15.196Z",
+    "updatedAt": "2025-12-22T18:03:15.196Z"
+  },
+  {
+    "id": "68fada54-89c6-4bc6-a24c-fe19afaae4da",
+    "teacherId": "cmjcxglbb0051a91ixpqsuqo2",
+    "classId": "cmiq80a10001hq0ja2qvou6f6",
+    "createdAt": "2025-12-22T18:03:15.196Z",
+    "updatedAt": "2025-12-22T18:03:15.196Z"
+  },
+  {
+    "id": "240dd59b-fe50-4224-914c-33aa78751dfc",
+    "teacherId": "cmjcxglbb0051a91ixpqsuqo2",
+    "classId": "cmiq8064j0017q0jafgpnxa73",
+    "createdAt": "2025-12-22T18:03:15.196Z",
+    "updatedAt": "2025-12-22T18:03:15.196Z"
+  },
+  {
+    "id": "278b3ab1-4fa0-43aa-98b3-761754745571",
+    "teacherId": "cmjcxglbb0051a91ixpqsuqo2",
+    "classId": "cmiq805mh0015q0jal0pu36yp",
+    "createdAt": "2025-12-22T18:03:15.196Z",
+    "updatedAt": "2025-12-22T18:03:15.196Z"
+  },
+  {
+    "id": "7513b3f2-1a9f-4286-ad1e-7370c563c347",
+    "teacherId": "cmjcxglbb0051a91ixpqsuqo2",
+    "classId": "cmiq80cpq001pq0ja802ln7to",
+    "createdAt": "2025-12-22T18:03:15.196Z",
+    "updatedAt": "2025-12-22T18:03:15.196Z"
+  },
+  {
+    "id": "4e5e38f5-bcc9-44dc-aaa7-38771abec310",
+    "teacherId": "cmjcxgqub005ga91iu13cjbes",
+    "classId": "cmiq80c05001nq0jakw8wy95p",
+    "createdAt": "2025-12-22T18:06:06.938Z",
+    "updatedAt": "2025-12-22T18:06:06.938Z"
+  },
+  {
+    "id": "dd8bb88f-b6bc-4293-b816-68f3c4381728",
+    "teacherId": "cmjcxgqub005ga91iu13cjbes",
+    "classId": "cmiq80di6001rq0ja5op34pk8",
+    "createdAt": "2025-12-22T18:06:06.938Z",
+    "updatedAt": "2025-12-22T18:06:06.938Z"
+  },
+  {
+    "id": "8cbabfa8-fb3c-4fe9-b4eb-4c0a398938d5",
+    "teacherId": "cmjcxgqub005ga91iu13cjbes",
+    "classId": "cmiq80auu001jq0ja1ro6kgvs",
+    "createdAt": "2025-12-22T18:06:06.938Z",
+    "updatedAt": "2025-12-22T18:06:06.938Z"
+  },
+  {
+    "id": "6e1bb587-a9a4-489a-b286-6c2c3d820cb3",
+    "teacherId": "cmjcxgqub005ga91iu13cjbes",
+    "classId": "cmiq80e7s001tq0ja8913v4mf",
+    "createdAt": "2025-12-22T18:06:06.938Z",
+    "updatedAt": "2025-12-22T18:06:06.938Z"
+  },
+  {
+    "id": "9899f143-6cc8-40d7-bd97-99541a8959d6",
+    "teacherId": "cmjcxgqub005ga91iu13cjbes",
+    "classId": "cmiq80bg9001lq0jazgu8jiit",
+    "createdAt": "2025-12-22T18:06:06.938Z",
+    "updatedAt": "2025-12-22T18:06:06.938Z"
+  },
+  {
+    "id": "3fd72ad7-02ca-4b4d-85d1-3ae22fd7cc1a",
+    "teacherId": "cmjcxgqub005ga91iu13cjbes",
+    "classId": "cmiq80cpq001pq0ja802ln7to",
+    "createdAt": "2025-12-22T18:06:06.938Z",
+    "updatedAt": "2025-12-22T18:06:06.938Z"
+  },
+  {
+    "id": "29026633-4e7c-4fef-915b-ecbd6b6d1204",
+    "teacherId": "cmjcxh21x006aa91icgn7ryjz",
+    "classId": "cmiq8013m000vq0jat513mkxw",
+    "createdAt": "2025-12-22T19:56:52.051Z",
+    "updatedAt": "2025-12-22T19:56:52.051Z"
+  },
+  {
+    "id": "66c9314d-addc-49e2-927b-451b2b0b3bde",
+    "teacherId": "cmjcxh21x006aa91icgn7ryjz",
+    "classId": "cmiq8006f000tq0jargnvbo6j",
+    "createdAt": "2025-12-22T19:56:52.051Z",
+    "updatedAt": "2025-12-22T19:56:52.051Z"
+  },
+  {
+    "id": "77862573-1047-4bfa-ab3d-39afd08147b3",
+    "teacherId": "cmjcxh21x006aa91icgn7ryjz",
+    "classId": "cmiq8024k000xq0jayizuqk1s",
+    "createdAt": "2025-12-22T19:56:52.051Z",
+    "updatedAt": "2025-12-22T19:56:52.051Z"
+  },
+  {
+    "id": "3c535325-98b4-42c0-b1ec-29b6fbd8cda4",
+    "teacherId": "cmjcxh21x006aa91icgn7ryjz",
+    "classId": "cmiq803b9000zq0ja7axlvaon",
+    "createdAt": "2025-12-22T19:56:52.051Z",
+    "updatedAt": "2025-12-22T19:56:52.051Z"
+  },
+  {
+    "id": "6dba2ba8-57c5-4809-bd33-46ffbf381b42",
+    "teacherId": "cmjcxh21x006aa91icgn7ryjz",
+    "classId": "cmiq8043p0011q0jap2zvukfd",
+    "createdAt": "2025-12-22T19:56:52.051Z",
+    "updatedAt": "2025-12-22T19:56:52.051Z"
+  },
+  {
+    "id": "1153d6df-a870-4686-95ce-774abdb82388",
+    "teacherId": "cmjcxh21x006aa91icgn7ryjz",
+    "classId": "cmiq80a10001hq0ja2qvou6f6",
+    "createdAt": "2025-12-22T19:56:52.051Z",
+    "updatedAt": "2025-12-22T19:56:52.051Z"
+  },
+  {
+    "id": "dad9fdf6-45a7-49e1-8cd9-5f07a550aac8",
+    "teacherId": "cmjcxh21x006aa91icgn7ryjz",
+    "classId": "cmiq8098s001fq0jaixxdzvdc",
+    "createdAt": "2025-12-22T19:56:52.051Z",
+    "updatedAt": "2025-12-22T19:56:52.051Z"
+  },
+  {
+    "id": "34b09a89-d0e1-4c2a-a2a9-88ca7348374c",
+    "teacherId": "cmjcxh21x006aa91icgn7ryjz",
+    "classId": "cmiq8051t0013q0janrrewlq2",
+    "createdAt": "2025-12-22T19:56:52.051Z",
+    "updatedAt": "2025-12-22T19:56:52.051Z"
+  },
+  {
+    "id": "8865862c-c7c2-47c8-abda-7b48118ac7e1",
+    "teacherId": "cmjcxh21x006aa91icgn7ryjz",
+    "classId": "cmiq7zzlk000rq0ja6s7xwhj0",
+    "createdAt": "2025-12-22T19:56:52.051Z",
+    "updatedAt": "2025-12-22T19:56:52.051Z"
+  },
+  {
+    "id": "bdf37def-ee3c-4c4d-b610-6b43fd0d4ee4",
+    "teacherId": "cmjcxfd2f001pa91i0oxj47r4",
+    "classId": "cmiq8098s001fq0jaixxdzvdc",
+    "createdAt": "2025-12-22T20:04:07.563Z",
+    "updatedAt": "2025-12-22T20:04:07.563Z"
+  },
+  {
+    "id": "ee815ed7-1a07-415b-954c-cd9ec1f9ca43",
+    "teacherId": "cmjcxfd2f001pa91i0oxj47r4",
+    "classId": "cmiq80e7s001tq0ja8913v4mf",
+    "createdAt": "2025-12-22T20:04:07.563Z",
+    "updatedAt": "2025-12-22T20:04:07.563Z"
+  },
+  {
+    "id": "1927d870-192b-4814-9f19-964daded7250",
+    "teacherId": "cmjcxfd2f001pa91i0oxj47r4",
+    "classId": "cmiq805mh0015q0jal0pu36yp",
+    "createdAt": "2025-12-22T20:04:07.563Z",
+    "updatedAt": "2025-12-22T20:04:07.563Z"
+  },
+  {
+    "id": "ae411650-4a2f-4697-9f95-e5d3eb7d7e25",
+    "teacherId": "cmjcxfd2f001pa91i0oxj47r4",
+    "classId": "cmiq80auu001jq0ja1ro6kgvs",
+    "createdAt": "2025-12-22T20:04:07.563Z",
+    "updatedAt": "2025-12-22T20:04:07.563Z"
+  },
+  {
+    "id": "c73292cc-9c99-4f30-8f1d-7750018cfa60",
+    "teacherId": "cmjcxgabu0047a91i082hwzxx",
+    "classId": "cmiq7zy6z000nq0jaeinbeyfd",
+    "createdAt": "2025-12-22T20:04:44.248Z",
+    "updatedAt": "2025-12-22T20:04:44.248Z"
+  },
+  {
+    "id": "3c0da8ae-3562-4487-9e82-e1c4583f7017",
+    "teacherId": "cmjcxgabu0047a91i082hwzxx",
+    "classId": "cmiq805mh0015q0jal0pu36yp",
+    "createdAt": "2025-12-22T20:04:44.248Z",
+    "updatedAt": "2025-12-22T20:04:44.248Z"
+  },
+  {
+    "id": "13f39a7e-d053-438f-856a-df3d0bbfb005",
+    "teacherId": "cmjcxgabu0047a91i082hwzxx",
+    "classId": "cmiq8064j0017q0jafgpnxa73",
+    "createdAt": "2025-12-22T20:04:44.248Z",
+    "updatedAt": "2025-12-22T20:04:44.248Z"
+  },
+  {
+    "id": "2bca8e6e-b92c-4763-a441-aa4a22ac7db7",
+    "teacherId": "cmjcxgabu0047a91i082hwzxx",
+    "classId": "cmiq80auu001jq0ja1ro6kgvs",
+    "createdAt": "2025-12-22T20:04:44.248Z",
+    "updatedAt": "2025-12-22T20:04:44.248Z"
+  },
+  {
+    "id": "0facb6b5-aea6-4a28-85b9-701b87800c8d",
+    "teacherId": "cmjcxgabu0047a91i082hwzxx",
+    "classId": "cmiq80cpq001pq0ja802ln7to",
+    "createdAt": "2025-12-22T20:04:44.248Z",
+    "updatedAt": "2025-12-22T20:04:44.248Z"
+  },
+  {
+    "id": "3b8c342c-db55-4508-af83-2437b4be583b",
+    "teacherId": "cmjcxgabu0047a91i082hwzxx",
+    "classId": "cmiq7zxhq000lq0jagpi729wu",
+    "createdAt": "2025-12-22T20:04:44.248Z",
+    "updatedAt": "2025-12-22T20:04:44.248Z"
+  },
+  {
+    "id": "61655c11-173d-4822-b4c6-2cf498a3c75e",
+    "teacherId": "cmjcxgjkn004wa91iffjn60gc",
+    "classId": "cmiq80auu001jq0ja1ro6kgvs",
+    "createdAt": "2025-12-22T20:07:38.297Z",
+    "updatedAt": "2025-12-22T20:07:38.297Z"
+  },
+  {
+    "id": "53835868-b7c5-44d3-b3aa-e80e3cff3dfb",
+    "teacherId": "cmjcxgjkn004wa91iffjn60gc",
+    "classId": "cmiq80bg9001lq0jazgu8jiit",
+    "createdAt": "2025-12-22T20:07:38.297Z",
+    "updatedAt": "2025-12-22T20:07:38.297Z"
+  },
+  {
+    "id": "ab54b6b5-8fc2-4212-9464-8a43188644f6",
+    "teacherId": "cmjcxgjkn004wa91iffjn60gc",
+    "classId": "cmiq80c05001nq0jakw8wy95p",
+    "createdAt": "2025-12-22T20:07:38.297Z",
+    "updatedAt": "2025-12-22T20:07:38.297Z"
+  },
+  {
+    "id": "36677995-1d21-40a3-b090-bd032095db41",
+    "teacherId": "cmjcxgjkn004wa91iffjn60gc",
+    "classId": "cmiq8098s001fq0jaixxdzvdc",
+    "createdAt": "2025-12-22T20:07:38.297Z",
+    "updatedAt": "2025-12-22T20:07:38.297Z"
+  },
+  {
+    "id": "c554d45e-dd72-401f-a1a3-2b9d7fe8493b",
+    "teacherId": "cmjcxgjkn004wa91iffjn60gc",
+    "classId": "cmiq808iz001dq0jag5t4x47j",
+    "createdAt": "2025-12-22T20:07:38.297Z",
+    "updatedAt": "2025-12-22T20:07:38.297Z"
+  },
+  {
+    "id": "ed4c5d40-7b52-4d3a-b9de-3ade862030ad",
+    "teacherId": "cmjcxgjkn004wa91iffjn60gc",
+    "classId": "cmiq807ku001bq0jacu44ttnk",
+    "createdAt": "2025-12-22T20:07:38.297Z",
+    "updatedAt": "2025-12-22T20:07:38.297Z"
+  },
+  {
+    "id": "0e37c516-9993-4f2b-a9ff-7be954098968",
+    "teacherId": "cmjcxf1xb000va91iwuosii26",
+    "classId": "cmiq80e7s001tq0ja8913v4mf",
+    "createdAt": "2025-12-22T20:43:07.195Z",
+    "updatedAt": "2025-12-22T20:43:07.195Z"
+  },
+  {
+    "id": "c12c568e-4808-438f-878d-74583a331f59",
+    "teacherId": "cmjcxf1xb000va91iwuosii26",
+    "classId": "cmiq80di6001rq0ja5op34pk8",
+    "createdAt": "2025-12-22T20:43:07.195Z",
+    "updatedAt": "2025-12-22T20:43:07.195Z"
+  },
+  {
+    "id": "bbb42e2e-4321-4885-9297-aca4d87377b0",
+    "teacherId": "cmjcxf1xb000va91iwuosii26",
+    "classId": "cmiq80bg9001lq0jazgu8jiit",
+    "createdAt": "2025-12-22T20:43:07.195Z",
+    "updatedAt": "2025-12-22T20:43:07.195Z"
+  },
+  {
+    "id": "e8441a53-9f83-4ed8-8501-52244db91f03",
+    "teacherId": "cmjcxf1xb000va91iwuosii26",
+    "classId": "cmiq80c05001nq0jakw8wy95p",
+    "createdAt": "2025-12-22T20:43:07.195Z",
+    "updatedAt": "2025-12-22T20:43:07.195Z"
+  },
+  {
+    "id": "a949267f-3078-468a-8678-00383ef4d018",
+    "teacherId": "cmjcxf1xb000va91iwuosii26",
+    "classId": "cmiq80cpq001pq0ja802ln7to",
+    "createdAt": "2025-12-22T20:43:07.195Z",
+    "updatedAt": "2025-12-22T20:43:07.195Z"
+  },
+  {
+    "id": "6f85971f-b14d-4267-9bc8-23a0ce8abe28",
+    "teacherId": "cmjcxf1xb000va91iwuosii26",
+    "classId": "cmiq7zus8000bq0jaz191ad1z",
+    "createdAt": "2025-12-22T20:43:07.195Z",
+    "updatedAt": "2025-12-22T20:43:07.195Z"
+  },
+  {
+    "id": "b28ddbeb-4166-4459-bbd4-67e7d0e2dedb",
+    "teacherId": "cmjcxf1xb000va91iwuosii26",
+    "classId": "cmiq7zvab000dq0jaz5sltz3k",
+    "createdAt": "2025-12-22T20:43:07.195Z",
+    "updatedAt": "2025-12-22T20:43:07.195Z"
+  },
+  {
+    "id": "8a8bb2b7-ea76-4864-bd97-2ffbca4299c7",
+    "teacherId": "cmjcxf1xb000va91iwuosii26",
+    "classId": "cmiq80auu001jq0ja1ro6kgvs",
+    "createdAt": "2025-12-22T20:43:07.195Z",
+    "updatedAt": "2025-12-22T20:43:07.195Z"
+  },
+  {
+    "id": "c42fba7a-6fc0-4f67-9dd2-c112c1e2eaa0",
+    "teacherId": "cmjcxf1xb000va91iwuosii26",
+    "classId": "cmiq8098s001fq0jaixxdzvdc",
+    "createdAt": "2025-12-22T20:43:07.195Z",
+    "updatedAt": "2025-12-22T20:43:07.195Z"
+  },
+  {
+    "id": "7fa71e17-d43d-44bf-b60f-07bf3dac22c2",
+    "teacherId": "cmjcxf7io001aa91i3xt48n62",
+    "classId": "cmiq808iz001dq0jag5t4x47j",
+    "createdAt": "2025-12-22T20:51:25.279Z",
+    "updatedAt": "2025-12-22T20:51:25.279Z"
+  },
+  {
+    "id": "26419e87-6709-4189-a249-aecbe1be12ab",
+    "teacherId": "cmjcxf7io001aa91i3xt48n62",
+    "classId": "cmiq8098s001fq0jaixxdzvdc",
+    "createdAt": "2025-12-22T20:51:25.279Z",
+    "updatedAt": "2025-12-22T20:51:25.279Z"
+  },
+  {
+    "id": "3ef056bd-2ec6-4f4e-b138-a5d8cff16acd",
+    "teacherId": "cmjcxf7io001aa91i3xt48n62",
+    "classId": "cmiq80cpq001pq0ja802ln7to",
+    "createdAt": "2025-12-22T20:51:25.279Z",
+    "updatedAt": "2025-12-22T20:51:25.279Z"
+  },
+  {
+    "id": "e182c195-7998-4bf7-8e0c-a37d7e7ad787",
+    "teacherId": "cmjcxik3j00aba91in6seainw",
+    "classId": "cmiq7zyos000pq0jawwgzbdr7",
+    "createdAt": "2025-12-22T21:11:46.259Z",
+    "updatedAt": "2025-12-22T21:11:46.259Z"
+  },
+  {
+    "id": "f6fff464-304f-4e19-bdca-ec5a30805783",
+    "teacherId": "cmjcxik3j00aba91in6seainw",
+    "classId": "cmiq7zzlk000rq0ja6s7xwhj0",
+    "createdAt": "2025-12-22T21:11:46.259Z",
+    "updatedAt": "2025-12-22T21:11:46.259Z"
+  },
+  {
+    "id": "77aa9650-d1b4-4a22-abfd-de12bcfeafe7",
+    "teacherId": "cmjcxik3j00aba91in6seainw",
+    "classId": "cmiq8013m000vq0jat513mkxw",
+    "createdAt": "2025-12-22T21:11:46.259Z",
+    "updatedAt": "2025-12-22T21:11:46.259Z"
+  },
+  {
+    "id": "e8896803-76d6-4143-8c5f-ddc20907fa9c",
+    "teacherId": "cmjcxik3j00aba91in6seainw",
+    "classId": "cmiq7zxhq000lq0jagpi729wu",
+    "createdAt": "2025-12-22T21:11:46.259Z",
+    "updatedAt": "2025-12-22T21:11:46.259Z"
+  },
+  {
+    "id": "e10a378a-b171-4589-bb23-793a26ff0ac7",
+    "teacherId": "cmjcxik3j00aba91in6seainw",
+    "classId": "cmiq7zy6z000nq0jaeinbeyfd",
+    "createdAt": "2025-12-22T21:11:46.259Z",
+    "updatedAt": "2025-12-22T21:11:46.259Z"
+  },
+  {
+    "id": "d1b51c0f-87c4-4e7c-8239-cc9598fe7b41",
+    "teacherId": "cmjcxik3j00aba91in6seainw",
+    "classId": "cmiq7zwy1000jq0jalus7rknx",
+    "createdAt": "2025-12-22T21:11:46.259Z",
+    "updatedAt": "2025-12-22T21:11:46.259Z"
+  },
+  {
+    "id": "6d1fa9c0-0eba-43b7-b258-71cf66a533b0",
+    "teacherId": "cmjcxik3j00aba91in6seainw",
+    "classId": "cmiq8006f000tq0jargnvbo6j",
+    "createdAt": "2025-12-22T21:11:46.259Z",
+    "updatedAt": "2025-12-22T21:11:46.259Z"
+  },
+  {
+    "id": "1de2b21e-f984-4602-b63c-2f41ef6e7567",
+    "teacherId": "cmjcxg10a003ia91irld4trby",
+    "classId": "cmiq7zs080003q0jav4gj9wat",
+    "createdAt": "2025-12-22T21:13:21.559Z",
+    "updatedAt": "2025-12-22T21:13:21.559Z"
+  },
+  {
+    "id": "138dabde-e405-4709-89f1-ffced83a5e6b",
+    "teacherId": "cmjcxg10a003ia91irld4trby",
+    "classId": "cmiq80c05001nq0jakw8wy95p",
+    "createdAt": "2025-12-22T21:13:21.559Z",
+    "updatedAt": "2025-12-22T21:13:21.559Z"
+  },
+  {
+    "id": "752f870b-78a5-424e-9b80-15ddfd581486",
+    "teacherId": "cmjcxg10a003ia91irld4trby",
+    "classId": "cmiq805mh0015q0jal0pu36yp",
+    "createdAt": "2025-12-22T21:13:21.559Z",
+    "updatedAt": "2025-12-22T21:13:21.559Z"
+  },
+  {
+    "id": "f83a28d5-1857-47ae-8ef4-fd84a08859ff",
+    "teacherId": "cmjcxg10a003ia91irld4trby",
+    "classId": "cmiq7zsqx0005q0jatgouva40",
+    "createdAt": "2025-12-22T21:13:21.559Z",
+    "updatedAt": "2025-12-22T21:13:21.559Z"
+  },
+  {
+    "id": "1eab8049-33d1-4883-971f-5aa079039f99",
+    "teacherId": "cmjcxg10a003ia91irld4trby",
+    "classId": "cmiq7zr9e0001q0ja25clx0sy",
+    "createdAt": "2025-12-22T21:13:21.559Z",
+    "updatedAt": "2025-12-22T21:13:21.559Z"
+  },
+  {
+    "id": "7def2203-4e51-4906-a3c5-044bd0d55e95",
+    "teacherId": "cmjcxg10a003ia91irld4trby",
+    "classId": "cmiq80cpq001pq0ja802ln7to",
+    "createdAt": "2025-12-22T21:13:21.559Z",
+    "updatedAt": "2025-12-22T21:13:21.559Z"
+  },
+  {
+    "id": "3b39a5b5-3366-4375-bcce-7fb32f070e3c",
+    "teacherId": "cmjbm97690002a8rlxz74axy3",
+    "classId": "cmiq80cpq001pq0ja802ln7to",
+    "createdAt": "2025-12-22T21:29:11.241Z",
+    "updatedAt": "2025-12-22T21:29:11.241Z"
+  },
+  {
+    "id": "475fef0b-df82-4fd5-9b31-42d920426426",
+    "teacherId": "cmjbm97690002a8rlxz74axy3",
+    "classId": "cmiq8013m000vq0jat513mkxw",
+    "createdAt": "2025-12-22T21:29:11.241Z",
+    "updatedAt": "2025-12-22T21:29:11.241Z"
+  },
+  {
+    "id": "6f63e195-c50e-4cfd-a1bb-2e34a47a5317",
+    "teacherId": "cmjbm97690002a8rlxz74axy3",
+    "classId": "cmiq8024k000xq0jayizuqk1s",
+    "createdAt": "2025-12-22T21:29:11.241Z",
+    "updatedAt": "2025-12-22T21:29:11.241Z"
+  },
+  {
+    "id": "7f16427f-f143-4fd9-a81f-4b3d7906f7ac",
+    "teacherId": "cmjbm97690002a8rlxz74axy3",
+    "classId": "cmiq808iz001dq0jag5t4x47j",
+    "createdAt": "2025-12-22T21:29:11.241Z",
+    "updatedAt": "2025-12-22T21:29:11.241Z"
+  },
+  {
+    "id": "882c3dc1-767e-4a72-9f1f-d467ec511825",
+    "teacherId": "cmjbm97690002a8rlxz74axy3",
+    "classId": "cmiq807ku001bq0jacu44ttnk",
+    "createdAt": "2025-12-22T21:29:11.241Z",
+    "updatedAt": "2025-12-22T21:29:11.241Z"
+  },
+  {
+    "id": "882e78a6-2588-457c-b357-6cac3e45ebef",
+    "teacherId": "cmjcxhtpi008da91iudir1cet",
+    "classId": "cmiq8051t0013q0janrrewlq2",
+    "createdAt": "2025-12-22T22:08:28.882Z",
+    "updatedAt": "2025-12-22T22:08:28.882Z"
+  },
+  {
+    "id": "fb828dfa-b37d-4857-ac47-8c43b498521e",
+    "teacherId": "cmjcxhtpi008da91iudir1cet",
+    "classId": "cmiq7zus8000bq0jaz191ad1z",
+    "createdAt": "2025-12-22T22:08:28.882Z",
+    "updatedAt": "2025-12-22T22:08:28.882Z"
+  },
+  {
+    "id": "4f58d6b3-4e8e-4662-92d4-bac7012442d7",
+    "teacherId": "cmjcxhtpi008da91iudir1cet",
+    "classId": "cmiq7zvab000dq0jaz5sltz3k",
+    "createdAt": "2025-12-22T22:08:28.882Z",
+    "updatedAt": "2025-12-22T22:08:28.882Z"
+  },
+  {
+    "id": "c026300e-70ab-4a64-8f03-5222e0d8d484",
+    "teacherId": "cmjcxhtpi008da91iudir1cet",
+    "classId": "cmiq8064j0017q0jafgpnxa73",
+    "createdAt": "2025-12-22T22:08:28.882Z",
+    "updatedAt": "2025-12-22T22:08:28.882Z"
+  },
+  {
+    "id": "d618f78f-2963-4b04-be0d-2a47053bcd5f",
+    "teacherId": "cmjcxhtpi008da91iudir1cet",
+    "classId": "cmiq805mh0015q0jal0pu36yp",
+    "createdAt": "2025-12-22T22:08:28.882Z",
+    "updatedAt": "2025-12-22T22:08:28.882Z"
+  },
+  {
+    "id": "6da2b49f-51d3-46ca-baba-577331f862ef",
+    "teacherId": "cmjcxfvmq0033a91ia7se5jfx",
+    "classId": "cmiq80c05001nq0jakw8wy95p",
+    "createdAt": "2025-12-23T15:11:16.267Z",
+    "updatedAt": "2025-12-23T15:11:16.267Z"
+  },
+  {
+    "id": "5289cc86-1f27-444d-b99a-6219ce7bd92c",
+    "teacherId": "cmjcxfvmq0033a91ia7se5jfx",
+    "classId": "cmiq805mh0015q0jal0pu36yp",
+    "createdAt": "2025-12-23T15:11:16.267Z",
+    "updatedAt": "2025-12-23T15:11:16.267Z"
+  },
+  {
+    "id": "620ead3d-248c-49c6-83a5-630937c51c9f",
+    "teacherId": "cmjcxfvmq0033a91ia7se5jfx",
+    "classId": "cmiq8064j0017q0jafgpnxa73",
+    "createdAt": "2025-12-23T15:11:16.267Z",
+    "updatedAt": "2025-12-23T15:11:16.267Z"
+  },
+  {
+    "id": "49939836-122c-4360-8bed-d22a33e36c65",
+    "teacherId": "433b478f-2330-4e0a-946a-b1cef291f6b9",
+    "classId": "cmiq80di6001rq0ja5op34pk8",
+    "createdAt": "2025-12-23T15:16:44.285Z",
+    "updatedAt": "2025-12-23T15:16:44.285Z"
+  },
+  {
+    "id": "86b15d4f-2bd7-4ba9-84c1-fd29d8fdfc00",
+    "teacherId": "433b478f-2330-4e0a-946a-b1cef291f6b9",
+    "classId": "cmiq8098s001fq0jaixxdzvdc",
+    "createdAt": "2025-12-23T15:16:44.285Z",
+    "updatedAt": "2025-12-23T15:16:44.285Z"
+  },
+  {
+    "id": "a4d50367-eeca-4171-b6f7-3af1a8d206ce",
+    "teacherId": "433b478f-2330-4e0a-946a-b1cef291f6b9",
+    "classId": "cmiq80e7s001tq0ja8913v4mf",
+    "createdAt": "2025-12-23T15:16:44.285Z",
+    "updatedAt": "2025-12-23T15:16:44.285Z"
+  },
+  {
+    "id": "71114f50-d3dd-4b35-8766-9146f08d93d1",
+    "teacherId": "433b478f-2330-4e0a-946a-b1cef291f6b9",
+    "classId": "cmiq80auu001jq0ja1ro6kgvs",
+    "createdAt": "2025-12-23T15:16:44.285Z",
+    "updatedAt": "2025-12-23T15:16:44.285Z"
+  },
+  {
+    "id": "36e6a5b1-2641-45ff-b6bb-e69649d60e25",
+    "teacherId": "433b478f-2330-4e0a-946a-b1cef291f6b9",
+    "classId": "cmiq80c05001nq0jakw8wy95p",
+    "createdAt": "2025-12-23T15:16:44.285Z",
+    "updatedAt": "2025-12-23T15:16:44.285Z"
+  },
+  {
+    "id": "d62e0e6b-9b54-4718-bfad-c9586ee3b0bf",
+    "teacherId": "433b478f-2330-4e0a-946a-b1cef291f6b9",
+    "classId": "cmiq80cpq001pq0ja802ln7to",
+    "createdAt": "2025-12-23T15:16:44.285Z",
+    "updatedAt": "2025-12-23T15:16:44.285Z"
+  },
+  {
+    "id": "a0d88c73-5552-4d9c-9280-c44d1cb32b09",
+    "teacherId": "433b478f-2330-4e0a-946a-b1cef291f6b9",
+    "classId": "cmiq80bg9001lq0jazgu8jiit",
+    "createdAt": "2025-12-23T15:16:44.285Z",
+    "updatedAt": "2025-12-23T15:16:44.285Z"
+  },
+  {
+    "id": "fc6d1ae1-5c88-4e2b-bd86-d935fce059da",
+    "teacherId": "cmjcxi6li009ca91ie6u5m5pe",
+    "classId": "cmiq7zvub000fq0jaaz3hiu4e",
+    "createdAt": "2025-12-23T15:31:28.985Z",
+    "updatedAt": "2025-12-23T15:31:28.985Z"
+  },
+  {
+    "id": "eb24ca86-e3a6-4a7f-bcaa-135e00e3dfc7",
+    "teacherId": "cmjcxi6li009ca91ie6u5m5pe",
+    "classId": "cmiq7zwfy000hq0jaf7ml4u89",
+    "createdAt": "2025-12-23T15:31:28.985Z",
+    "updatedAt": "2025-12-23T15:31:28.985Z"
+  },
+  {
+    "id": "91c9d526-74b4-4c78-9c3d-3b5c4bc0c9d9",
+    "teacherId": "cmjcxi6li009ca91ie6u5m5pe",
+    "classId": "cmiq7zus8000bq0jaz191ad1z",
+    "createdAt": "2025-12-23T15:31:28.985Z",
+    "updatedAt": "2025-12-23T15:31:28.985Z"
+  },
+  {
+    "id": "96b5c7b3-7296-4158-bc1d-d7de87210992",
+    "teacherId": "cmjcxi6li009ca91ie6u5m5pe",
+    "classId": "cmiq7zvab000dq0jaz5sltz3k",
+    "createdAt": "2025-12-23T15:31:28.985Z",
+    "updatedAt": "2025-12-23T15:31:28.985Z"
+  },
+  {
+    "id": "505fa70f-9cf6-46de-8fbe-76954b145ddc",
+    "teacherId": "cmjcxiesn009wa91ibujt66dl",
+    "classId": "cmiq7zwfy000hq0jaf7ml4u89",
+    "createdAt": "2025-12-23T15:35:55.619Z",
+    "updatedAt": "2025-12-23T15:35:55.619Z"
+  },
+  {
+    "id": "52eeb0f4-f104-4214-9b5d-341d72f7474a",
+    "teacherId": "cmjcxiesn009wa91ibujt66dl",
+    "classId": "cmiq7zwy1000jq0jalus7rknx",
+    "createdAt": "2025-12-23T15:35:55.619Z",
+    "updatedAt": "2025-12-23T15:35:55.619Z"
+  },
+  {
+    "id": "cea7ba5b-37d2-4ad9-a065-8958671cf369",
+    "teacherId": "cmjcxiesn009wa91ibujt66dl",
+    "classId": "cmiq7zu9d0009q0jag59r3pss",
+    "createdAt": "2025-12-23T15:35:55.619Z",
+    "updatedAt": "2025-12-23T15:35:55.619Z"
+  },
+  {
+    "id": "72b5ff55-90dc-48e7-bcbd-4cfcb25fc445",
+    "teacherId": "cmjcxiesn009wa91ibujt66dl",
+    "classId": "cmiq7zus8000bq0jaz191ad1z",
+    "createdAt": "2025-12-23T15:35:55.619Z",
+    "updatedAt": "2025-12-23T15:35:55.619Z"
+  },
+  {
+    "id": "17224fbb-cfe8-4c53-98cf-ee3417de063e",
+    "teacherId": "cmjcxiesn009wa91ibujt66dl",
+    "classId": "cmiq7zvab000dq0jaz5sltz3k",
+    "createdAt": "2025-12-23T15:35:55.619Z",
+    "updatedAt": "2025-12-23T15:35:55.619Z"
+  },
+  {
+    "id": "82e1d4c8-96f9-4766-8492-d131e0338af6",
+    "teacherId": "cmjcxiesn009wa91ibujt66dl",
+    "classId": "cmiq7zvub000fq0jaaz3hiu4e",
+    "createdAt": "2025-12-23T15:35:55.619Z",
+    "updatedAt": "2025-12-23T15:35:55.619Z"
+  },
+  {
+    "id": "46780488-edac-4685-be69-ae02a32de60d",
+    "teacherId": "cmjcxiesn009wa91ibujt66dl",
+    "classId": "cmiq7zthb0007q0ja8fed8leq",
+    "createdAt": "2025-12-23T15:35:55.619Z",
+    "updatedAt": "2025-12-23T15:35:55.619Z"
+  },
+  {
+    "id": "7b99e894-546f-4a5a-b654-14467ea59cdc",
+    "teacherId": "cmjcxiesn009wa91ibujt66dl",
+    "classId": "cmiq7zsqx0005q0jatgouva40",
+    "createdAt": "2025-12-23T15:35:55.619Z",
+    "updatedAt": "2025-12-23T15:35:55.619Z"
+  },
+  {
+    "id": "2cd241ef-d9d4-4a99-8846-a1d89cce3c8d",
+    "teacherId": "cmjcxiesn009wa91ibujt66dl",
+    "classId": "cmiq7zs080003q0jav4gj9wat",
+    "createdAt": "2025-12-23T15:35:55.619Z",
+    "updatedAt": "2025-12-23T15:35:55.619Z"
+  },
+  {
+    "id": "d2256e39-11d4-46b3-bfbb-4c80db3bc25f",
+    "teacherId": "cmjcxiesn009wa91ibujt66dl",
+    "classId": "cmiq7zr9e0001q0ja25clx0sy",
+    "createdAt": "2025-12-23T15:35:55.619Z",
+    "updatedAt": "2025-12-23T15:35:55.619Z"
+  },
+  {
+    "id": "88a347da-e6f7-4543-9174-c37318725251",
+    "teacherId": "cmjcxigpk00a1a91i4a03a007",
+    "classId": "cmiq7zvub000fq0jaaz3hiu4e",
+    "createdAt": "2025-12-23T15:37:25.353Z",
+    "updatedAt": "2025-12-23T15:37:25.353Z"
+  },
+  {
+    "id": "006e9b90-acd6-4a40-8df4-ceb1760f47b3",
+    "teacherId": "cmjcxigpk00a1a91i4a03a007",
+    "classId": "cmiq7zu9d0009q0jag59r3pss",
+    "createdAt": "2025-12-23T15:37:25.353Z",
+    "updatedAt": "2025-12-23T15:37:25.353Z"
+  },
+  {
+    "id": "decc1ad8-824c-482b-8ac1-377570c3aa91",
+    "teacherId": "cmjcxigpk00a1a91i4a03a007",
+    "classId": "cmiq7zus8000bq0jaz191ad1z",
+    "createdAt": "2025-12-23T15:37:25.353Z",
+    "updatedAt": "2025-12-23T15:37:25.353Z"
+  },
+  {
+    "id": "080c7fd3-4706-49b0-9dfe-1b3d883ddd64",
+    "teacherId": "cmjcxigpk00a1a91i4a03a007",
+    "classId": "cmiq7zvab000dq0jaz5sltz3k",
+    "createdAt": "2025-12-23T15:37:25.353Z",
+    "updatedAt": "2025-12-23T15:37:25.353Z"
+  },
+  {
+    "id": "3e8533e1-65a8-4b60-afa9-35640e0e000f",
+    "teacherId": "cmjcxigpk00a1a91i4a03a007",
+    "classId": "cmiq7zwfy000hq0jaf7ml4u89",
+    "createdAt": "2025-12-23T15:37:25.353Z",
+    "updatedAt": "2025-12-23T15:37:25.353Z"
+  },
+  {
+    "id": "1120cba2-05e6-4fc3-9a25-559c0d8568ea",
+    "teacherId": "cmjcxigpk00a1a91i4a03a007",
+    "classId": "cmiq7zthb0007q0ja8fed8leq",
+    "createdAt": "2025-12-23T15:37:25.353Z",
+    "updatedAt": "2025-12-23T15:37:25.353Z"
+  },
+  {
+    "id": "2612e669-acfe-4ea2-9ca9-5b5c011d2acd",
+    "teacherId": "cmjcxigpk00a1a91i4a03a007",
+    "classId": "cmiq7zsqx0005q0jatgouva40",
+    "createdAt": "2025-12-23T15:37:25.353Z",
+    "updatedAt": "2025-12-23T15:37:25.353Z"
+  },
+  {
+    "id": "26a8417e-6675-4dee-aa50-0104e961d5bf",
+    "teacherId": "cmjcxigpk00a1a91i4a03a007",
+    "classId": "cmiq7zs080003q0jav4gj9wat",
+    "createdAt": "2025-12-23T15:37:25.353Z",
+    "updatedAt": "2025-12-23T15:37:25.353Z"
+  },
+  {
+    "id": "0118f039-371f-419d-b64a-7699943e6313",
+    "teacherId": "cmjcxigpk00a1a91i4a03a007",
+    "classId": "cmiq7zr9e0001q0ja25clx0sy",
+    "createdAt": "2025-12-23T15:37:25.353Z",
+    "updatedAt": "2025-12-23T15:37:25.353Z"
+  },
+  {
+    "id": "39a9f24f-f17c-4a4c-9cbd-a895bf196aec",
+    "teacherId": "cmjcxh5uw006ka91i3pqjzjgn",
+    "classId": "cmiq7zthb0007q0ja8fed8leq",
+    "createdAt": "2025-12-23T15:40:14.270Z",
+    "updatedAt": "2025-12-23T15:40:14.270Z"
+  },
+  {
+    "id": "31578896-c72f-40c7-aff0-c0bdf33733b3",
+    "teacherId": "cmjcxh5uw006ka91i3pqjzjgn",
+    "classId": "cmiq7zu9d0009q0jag59r3pss",
+    "createdAt": "2025-12-23T15:40:14.270Z",
+    "updatedAt": "2025-12-23T15:40:14.270Z"
+  },
+  {
+    "id": "232c0eb1-c240-4e11-a9ac-35bba059c150",
+    "teacherId": "cmjcxh5uw006ka91i3pqjzjgn",
+    "classId": "cmiq7zvub000fq0jaaz3hiu4e",
+    "createdAt": "2025-12-23T15:40:14.270Z",
+    "updatedAt": "2025-12-23T15:40:14.270Z"
+  },
+  {
+    "id": "7ccd1815-bbdb-477e-9fe1-b849e3999f72",
+    "teacherId": "cmjcxh5uw006ka91i3pqjzjgn",
+    "classId": "cmiq7zwfy000hq0jaf7ml4u89",
+    "createdAt": "2025-12-23T15:40:14.270Z",
+    "updatedAt": "2025-12-23T15:40:14.270Z"
+  },
+  {
+    "id": "73832891-e2f5-49ab-8146-d028cbb398e9",
+    "teacherId": "cmjcxhrw50088a91iv16ji907",
+    "classId": "cmiq8024k000xq0jayizuqk1s",
+    "createdAt": "2025-12-23T15:53:17.839Z",
+    "updatedAt": "2025-12-23T15:53:17.839Z"
+  },
+  {
+    "id": "0f1fe2ff-83c3-41b4-a022-3c2377c89380",
+    "teacherId": "cmjcxhrw50088a91iv16ji907",
+    "classId": "cmiq806mn0019q0jak0j1b2cp",
+    "createdAt": "2025-12-23T15:53:17.839Z",
+    "updatedAt": "2025-12-23T15:53:17.839Z"
+  },
+  {
+    "id": "314d95ef-4e23-45d9-b9f7-94711d1dcfca",
+    "teacherId": "cmjcxhrw50088a91iv16ji907",
+    "classId": "cmiq80a10001hq0ja2qvou6f6",
+    "createdAt": "2025-12-23T15:53:17.839Z",
+    "updatedAt": "2025-12-23T15:53:17.839Z"
+  },
+  {
+    "id": "ac8716b5-6d17-4175-8ce1-b8ae2391657b",
+    "teacherId": "cmjcxhrw50088a91iv16ji907",
+    "classId": "cmiq7zr9e0001q0ja25clx0sy",
+    "createdAt": "2025-12-23T15:53:17.839Z",
+    "updatedAt": "2025-12-23T15:53:17.839Z"
+  },
+  {
+    "id": "fac601d9-4795-4b5e-8e09-7ec42ffbfaef",
+    "teacherId": "cmjcxhrw50088a91iv16ji907",
+    "classId": "cmiq7zs080003q0jav4gj9wat",
+    "createdAt": "2025-12-23T15:53:17.839Z",
+    "updatedAt": "2025-12-23T15:53:17.839Z"
+  },
+  {
+    "id": "59c070bf-8e67-49eb-99c7-d87e01c57051",
+    "teacherId": "cmjcxhrw50088a91iv16ji907",
+    "classId": "cmiq7zus8000bq0jaz191ad1z",
+    "createdAt": "2025-12-23T15:53:17.839Z",
+    "updatedAt": "2025-12-23T15:53:17.839Z"
+  },
+  {
+    "id": "e4a3a3b2-1a27-4653-8efb-fed35f684ad7",
+    "teacherId": "cmjcxhrw50088a91iv16ji907",
+    "classId": "cmiq7zvab000dq0jaz5sltz3k",
+    "createdAt": "2025-12-23T15:53:17.839Z",
+    "updatedAt": "2025-12-23T15:53:17.839Z"
+  },
+  {
+    "id": "27d6080c-cda1-461a-85de-f733a4840c64",
+    "teacherId": "cmjcxhrw50088a91iv16ji907",
+    "classId": "cmiq7zwy1000jq0jalus7rknx",
+    "createdAt": "2025-12-23T15:53:17.839Z",
+    "updatedAt": "2025-12-23T15:53:17.839Z"
+  },
+  {
+    "id": "0963feae-7f12-4223-8da6-473c946b2c53",
+    "teacherId": "cmjcxhrw50088a91iv16ji907",
+    "classId": "cmiq7zxhq000lq0jagpi729wu",
+    "createdAt": "2025-12-23T15:53:17.839Z",
+    "updatedAt": "2025-12-23T15:53:17.839Z"
+  },
+  {
+    "id": "808d8b3d-7d94-490b-b69a-928cf9677819",
+    "teacherId": "cmjcxhrw50088a91iv16ji907",
+    "classId": "cmiq7zzlk000rq0ja6s7xwhj0",
+    "createdAt": "2025-12-23T15:53:17.839Z",
+    "updatedAt": "2025-12-23T15:53:17.839Z"
+  },
+  {
+    "id": "bf5cb69d-11a5-4bf5-816c-e646f3be1fab",
+    "teacherId": "cmjcxhrw50088a91iv16ji907",
+    "classId": "cmiq8006f000tq0jargnvbo6j",
+    "createdAt": "2025-12-23T15:53:17.839Z",
+    "updatedAt": "2025-12-23T15:53:17.839Z"
+  },
+  {
+    "id": "06649757-9a11-480f-949e-c57b111c3056",
+    "teacherId": "cmjcxhrw50088a91iv16ji907",
+    "classId": "cmiq8013m000vq0jat513mkxw",
+    "createdAt": "2025-12-23T15:53:17.839Z",
+    "updatedAt": "2025-12-23T15:53:17.839Z"
+  },
+  {
+    "id": "445b5c9a-e465-4d83-9764-671008849af4",
+    "teacherId": "cmjcxhrw50088a91iv16ji907",
+    "classId": "cmiq805mh0015q0jal0pu36yp",
+    "createdAt": "2025-12-23T15:53:17.839Z",
+    "updatedAt": "2025-12-23T15:53:17.839Z"
+  },
+  {
+    "id": "1b8dd483-2318-43e5-9a23-66a9b88d80e0",
+    "teacherId": "cmjcxhkn2007oa91iwgbs579a",
+    "classId": "cmiq7zsqx0005q0jatgouva40",
+    "createdAt": "2025-12-23T15:55:15.349Z",
+    "updatedAt": "2025-12-23T15:55:15.349Z"
+  },
+  {
+    "id": "ba34b340-8cf3-40d2-b06e-a7d4213f0e44",
+    "teacherId": "cmjcxhkn2007oa91iwgbs579a",
+    "classId": "cmiq7zwfy000hq0jaf7ml4u89",
+    "createdAt": "2025-12-23T15:55:15.349Z",
+    "updatedAt": "2025-12-23T15:55:15.349Z"
+  },
+  {
+    "id": "afbb758f-bda7-4ec9-9503-edb49ea9e50c",
+    "teacherId": "cmjcxhkn2007oa91iwgbs579a",
+    "classId": "cmiq7zy6z000nq0jaeinbeyfd",
+    "createdAt": "2025-12-23T15:55:15.349Z",
+    "updatedAt": "2025-12-23T15:55:15.349Z"
+  },
+  {
+    "id": "ffe4a3db-40e3-441e-8ded-91251a7978f5",
+    "teacherId": "cmjcxhkn2007oa91iwgbs579a",
+    "classId": "cmiq7zyos000pq0jawwgzbdr7",
+    "createdAt": "2025-12-23T15:55:15.349Z",
+    "updatedAt": "2025-12-23T15:55:15.349Z"
+  },
+  {
+    "id": "217dc5eb-d3f8-42b9-9b1d-1e5fa84384b7",
+    "teacherId": "cmjcxhkn2007oa91iwgbs579a",
+    "classId": "cmiq7zvub000fq0jaaz3hiu4e",
+    "createdAt": "2025-12-23T15:55:15.349Z",
+    "updatedAt": "2025-12-23T15:55:15.349Z"
+  },
+  {
+    "id": "5d39b498-1af3-411d-aa98-343073c5bd3f",
+    "teacherId": "cmjcxhkn2007oa91iwgbs579a",
+    "classId": "cmiq7zu9d0009q0jag59r3pss",
+    "createdAt": "2025-12-23T15:55:15.349Z",
+    "updatedAt": "2025-12-23T15:55:15.349Z"
+  },
+  {
+    "id": "0be6a8c7-6167-4a03-9b4c-760c6d5c5106",
+    "teacherId": "cmjcxhkn2007oa91iwgbs579a",
+    "classId": "cmiq803b9000zq0ja7axlvaon",
+    "createdAt": "2025-12-23T15:55:15.349Z",
+    "updatedAt": "2025-12-23T15:55:15.349Z"
+  },
+  {
+    "id": "6752f4cb-be69-4b97-934a-c96febe3cf1f",
+    "teacherId": "cmjcxhkn2007oa91iwgbs579a",
+    "classId": "cmiq8043p0011q0jap2zvukfd",
+    "createdAt": "2025-12-23T15:55:15.349Z",
+    "updatedAt": "2025-12-23T15:55:15.349Z"
+  },
+  {
+    "id": "8b851ce6-e054-4004-8b3b-6347ef2fb98b",
+    "teacherId": "cmjcxhkn2007oa91iwgbs579a",
+    "classId": "cmiq8064j0017q0jafgpnxa73",
+    "createdAt": "2025-12-23T15:55:15.349Z",
+    "updatedAt": "2025-12-23T15:55:15.349Z"
+  },
+  {
+    "id": "0e26cfbb-6102-4e42-bf9a-358051d729d2",
+    "teacherId": "cmjcxhkn2007oa91iwgbs579a",
+    "classId": "cmiq8098s001fq0jaixxdzvdc",
+    "createdAt": "2025-12-23T15:55:15.349Z",
+    "updatedAt": "2025-12-23T15:55:15.349Z"
+  },
+  {
+    "id": "7154ece0-1279-444b-bd2d-e0fbdea95f33",
+    "teacherId": "cmjcxhkn2007oa91iwgbs579a",
+    "classId": "cmiq808iz001dq0jag5t4x47j",
+    "createdAt": "2025-12-23T15:55:15.349Z",
+    "updatedAt": "2025-12-23T15:55:15.349Z"
+  },
+  {
+    "id": "49217529-9932-4685-a601-ccf351306987",
+    "teacherId": "cmjcxhkn2007oa91iwgbs579a",
+    "classId": "cmiq807ku001bq0jacu44ttnk",
+    "createdAt": "2025-12-23T15:55:15.349Z",
+    "updatedAt": "2025-12-23T15:55:15.349Z"
+  },
+  {
+    "id": "5e14b2ca-6ea0-4095-9679-ebb6cbf7672f",
+    "teacherId": "cmjcxhkn2007oa91iwgbs579a",
+    "classId": "cmiq8051t0013q0janrrewlq2",
+    "createdAt": "2025-12-23T15:55:15.349Z",
+    "updatedAt": "2025-12-23T15:55:15.349Z"
+  },
+  {
+    "id": "d470f4d8-9f93-4317-9ee5-adb565a3701c",
+    "teacherId": "cmjcxhkn2007oa91iwgbs579a",
+    "classId": "cmiq7zthb0007q0ja8fed8leq",
+    "createdAt": "2025-12-23T15:55:15.349Z",
+    "updatedAt": "2025-12-23T15:55:15.349Z"
+  },
+  {
+    "id": "509d884a-ec24-445b-9a04-d733a6fc872e",
+    "teacherId": "cmjcxh82m006pa91i0p4gtml4",
+    "classId": "cmiq80auu001jq0ja1ro6kgvs",
+    "createdAt": "2025-12-23T22:48:37.404Z",
+    "updatedAt": "2025-12-23T22:48:37.404Z"
+  },
+  {
+    "id": "793d24c2-c814-4d37-bdbb-7b1650f5c438",
+    "teacherId": "cmjcxh82m006pa91i0p4gtml4",
+    "classId": "cmiq80a10001hq0ja2qvou6f6",
+    "createdAt": "2025-12-23T22:48:37.404Z",
+    "updatedAt": "2025-12-23T22:48:37.404Z"
+  },
+  {
+    "id": "3e925ca1-8d66-445d-98f8-1fa40af2289c",
+    "teacherId": "cmjcxh82m006pa91i0p4gtml4",
+    "classId": "cmiq808iz001dq0jag5t4x47j",
+    "createdAt": "2025-12-23T22:48:37.404Z",
+    "updatedAt": "2025-12-23T22:48:37.404Z"
+  },
+  {
+    "id": "8d81cabf-6d5a-40ff-bcbe-6acea07c0f76",
+    "teacherId": "cmjcxh82m006pa91i0p4gtml4",
+    "classId": "cmiq80e7s001tq0ja8913v4mf",
+    "createdAt": "2025-12-23T22:48:37.404Z",
+    "updatedAt": "2025-12-23T22:48:37.404Z"
+  },
+  {
+    "id": "822ec6e5-55d0-45d0-b366-019e01661280",
+    "teacherId": "cmjcxh82m006pa91i0p4gtml4",
+    "classId": "cmiq80di6001rq0ja5op34pk8",
+    "createdAt": "2025-12-23T22:48:37.404Z",
+    "updatedAt": "2025-12-23T22:48:37.404Z"
+  },
+  {
+    "id": "e543ab60-a8e5-4fc1-aefd-003794c4e57c",
+    "teacherId": "cmjcxh82m006pa91i0p4gtml4",
+    "classId": "cmiq80cpq001pq0ja802ln7to",
+    "createdAt": "2025-12-23T22:48:37.404Z",
+    "updatedAt": "2025-12-23T22:48:37.404Z"
+  },
+  {
+    "id": "b86bc67f-cf01-4c7b-9283-66fcabc0e3f1",
+    "teacherId": "cmjcxh82m006pa91i0p4gtml4",
+    "classId": "cmiq80c05001nq0jakw8wy95p",
+    "createdAt": "2025-12-23T22:48:37.404Z",
+    "updatedAt": "2025-12-23T22:48:37.404Z"
+  },
+  {
+    "id": "4ad2f82f-aa4e-4d65-acd1-ea8ded83bd74",
+    "teacherId": "58ced212-ec6a-4a82-9706-4700ed63ef28",
+    "classId": "cmiq80auu001jq0ja1ro6kgvs",
+    "createdAt": "2025-12-24T00:55:46.275Z",
+    "updatedAt": "2025-12-24T00:55:46.275Z"
+  },
+  {
+    "id": "7ad4a3fc-a26f-4734-a1e7-1d59d5cba5f3",
+    "teacherId": "58ced212-ec6a-4a82-9706-4700ed63ef28",
+    "classId": "cmiq807ku001bq0jacu44ttnk",
+    "createdAt": "2025-12-24T00:55:46.275Z",
+    "updatedAt": "2025-12-24T00:55:46.275Z"
+  },
+  {
+    "id": "fa096c6b-7aba-4fd5-a5c7-683a9974cffc",
+    "teacherId": "58ced212-ec6a-4a82-9706-4700ed63ef28",
+    "classId": "cmiq806mn0019q0jak0j1b2cp",
+    "createdAt": "2025-12-24T00:55:46.275Z",
+    "updatedAt": "2025-12-24T00:55:46.275Z"
+  },
+  {
+    "id": "1be48ecd-62dd-4264-8a2d-fee77274fec0",
+    "teacherId": "58ced212-ec6a-4a82-9706-4700ed63ef28",
+    "classId": "cmiq808iz001dq0jag5t4x47j",
+    "createdAt": "2025-12-24T00:55:46.275Z",
+    "updatedAt": "2025-12-24T00:55:46.275Z"
+  },
+  {
+    "id": "d04ce1f4-5a88-4ebb-b2f0-8f3f411339c9",
+    "teacherId": "58ced212-ec6a-4a82-9706-4700ed63ef28",
+    "classId": "cmiq805mh0015q0jal0pu36yp",
+    "createdAt": "2025-12-24T00:55:46.275Z",
+    "updatedAt": "2025-12-24T00:55:46.275Z"
+  },
+  {
+    "id": "0be6b66c-7096-42fe-b78c-902c8ab7f8fc",
+    "teacherId": "58ced212-ec6a-4a82-9706-4700ed63ef28",
+    "classId": "cmiq8064j0017q0jafgpnxa73",
+    "createdAt": "2025-12-24T00:55:46.275Z",
+    "updatedAt": "2025-12-24T00:55:46.275Z"
+  },
+  {
+    "id": "610159b8-4408-42d1-ab41-495e6110e3ac",
+    "teacherId": "58ced212-ec6a-4a82-9706-4700ed63ef28",
+    "classId": "cmiq80e7s001tq0ja8913v4mf",
+    "createdAt": "2025-12-24T00:55:46.275Z",
+    "updatedAt": "2025-12-24T00:55:46.275Z"
+  },
+  {
+    "id": "1923d7c0-ebed-46ae-accd-0f0121a0eea3",
+    "teacherId": "cmjcxgoxg005ba91igp2f5upj",
+    "classId": "cmiq7zyos000pq0jawwgzbdr7",
+    "createdAt": "2025-12-24T02:22:34.348Z",
+    "updatedAt": "2025-12-24T02:22:34.348Z"
+  },
+  {
+    "id": "366e1402-7f91-4e8e-ab62-fdbf415275c6",
+    "teacherId": "cmjcxgoxg005ba91igp2f5upj",
+    "classId": "cmiq8051t0013q0janrrewlq2",
+    "createdAt": "2025-12-24T02:22:34.348Z",
+    "updatedAt": "2025-12-24T02:22:34.348Z"
+  },
+  {
+    "id": "4f8bff39-94f0-404f-9065-c13464d309fa",
+    "teacherId": "cmjcxgoxg005ba91igp2f5upj",
+    "classId": "cmiq8024k000xq0jayizuqk1s",
+    "createdAt": "2025-12-24T02:22:34.348Z",
+    "updatedAt": "2025-12-24T02:22:34.348Z"
+  },
+  {
+    "id": "b0ac162a-e272-492e-9451-772440c0664f",
+    "teacherId": "cmjcxgoxg005ba91igp2f5upj",
+    "classId": "cmiq8013m000vq0jat513mkxw",
+    "createdAt": "2025-12-24T02:22:34.348Z",
+    "updatedAt": "2025-12-24T02:22:34.348Z"
+  },
+  {
+    "id": "abd9af89-60b8-44ce-8eff-ed9f35f9c72c",
+    "teacherId": "cmjcxgoxg005ba91igp2f5upj",
+    "classId": "cmiq8043p0011q0jap2zvukfd",
+    "createdAt": "2025-12-24T02:22:34.348Z",
+    "updatedAt": "2025-12-24T02:22:34.348Z"
+  },
+  {
+    "id": "1bead53d-8741-4c78-8eff-8536e71a8b5f",
+    "teacherId": "cmjcxgoxg005ba91igp2f5upj",
+    "classId": "cmiq7zwy1000jq0jalus7rknx",
+    "createdAt": "2025-12-24T02:22:34.348Z",
+    "updatedAt": "2025-12-24T02:22:34.348Z"
+  },
+  {
+    "id": "4e60da0f-a8d1-4e59-a4cd-c51d0989729a",
+    "teacherId": "cmjcxgoxg005ba91igp2f5upj",
+    "classId": "cmiq7zxhq000lq0jagpi729wu",
+    "createdAt": "2025-12-24T02:22:34.348Z",
+    "updatedAt": "2025-12-24T02:22:34.348Z"
+  },
+  {
+    "id": "c0338cdb-8741-4b91-bfd0-62ec6c198159",
+    "teacherId": "cmjcxgoxg005ba91igp2f5upj",
+    "classId": "cmiq7zy6z000nq0jaeinbeyfd",
+    "createdAt": "2025-12-24T02:22:34.348Z",
+    "updatedAt": "2025-12-24T02:22:34.348Z"
+  },
+  {
+    "id": "375c0ffe-003f-4f90-b265-1fcefd9f5e65",
+    "teacherId": "cmjcxeybb000la91iovxap72o",
+    "classId": "cmiq8051t0013q0janrrewlq2",
+    "createdAt": "2025-12-24T03:28:22.373Z",
+    "updatedAt": "2025-12-24T03:28:22.373Z"
+  },
+  {
+    "id": "a550a5d6-88b1-427a-8068-1c5090d37894",
+    "teacherId": "cmjcxeybb000la91iovxap72o",
+    "classId": "cmiq8043p0011q0jap2zvukfd",
+    "createdAt": "2025-12-24T03:28:22.373Z",
+    "updatedAt": "2025-12-24T03:28:22.373Z"
+  },
+  {
+    "id": "e5527dd0-c854-4767-bc14-a07d7af9984e",
+    "teacherId": "cmjcxeybb000la91iovxap72o",
+    "classId": "cmiq8006f000tq0jargnvbo6j",
+    "createdAt": "2025-12-24T03:28:22.373Z",
+    "updatedAt": "2025-12-24T03:28:22.373Z"
+  },
+  {
+    "id": "9475a0ed-4ab6-4bde-b896-b855971b2565",
+    "teacherId": "cmjcxeybb000la91iovxap72o",
+    "classId": "cmiq7zzlk000rq0ja6s7xwhj0",
+    "createdAt": "2025-12-24T03:28:22.373Z",
+    "updatedAt": "2025-12-24T03:28:22.373Z"
+  },
+  {
+    "id": "4e7ce88c-2ae7-448c-a963-edfa356cb19b",
+    "teacherId": "cmjcxeybb000la91iovxap72o",
+    "classId": "cmiq80a10001hq0ja2qvou6f6",
+    "createdAt": "2025-12-24T03:28:22.373Z",
+    "updatedAt": "2025-12-24T03:28:22.373Z"
+  },
+  {
+    "id": "b78159a8-7a1e-42cb-b364-6a18f6cdc254",
+    "teacherId": "cmjcxeybb000la91iovxap72o",
+    "classId": "cmiq7zwfy000hq0jaf7ml4u89",
+    "createdAt": "2025-12-24T03:28:22.373Z",
+    "updatedAt": "2025-12-24T03:28:22.373Z"
+  },
+  {
+    "id": "8e978cd4-7f69-4c44-a9b2-a1df33db7a3b",
+    "teacherId": "cmjcxeybb000la91iovxap72o",
+    "classId": "cmiq7zxhq000lq0jagpi729wu",
+    "createdAt": "2025-12-24T03:28:22.373Z",
+    "updatedAt": "2025-12-24T03:28:22.373Z"
+  },
+  {
+    "id": "b4342fce-3b7d-48e3-8756-b93dc5f116c6",
+    "teacherId": "cmjcxeybb000la91iovxap72o",
+    "classId": "cmiq7zvub000fq0jaaz3hiu4e",
+    "createdAt": "2025-12-24T03:28:22.373Z",
+    "updatedAt": "2025-12-24T03:28:22.373Z"
+  },
+  {
+    "id": "733ac413-9c0c-4ee0-813b-1203d6eb3741",
+    "teacherId": "cmjcxeybb000la91iovxap72o",
+    "classId": "cmiq7zus8000bq0jaz191ad1z",
+    "createdAt": "2025-12-24T03:28:22.373Z",
+    "updatedAt": "2025-12-24T03:28:22.373Z"
+  },
+  {
+    "id": "a48594a8-d4d2-416d-95ad-3d6197acbc64",
+    "teacherId": "cmjcxeybb000la91iovxap72o",
+    "classId": "cmiq7zy6z000nq0jaeinbeyfd",
+    "createdAt": "2025-12-24T03:28:22.373Z",
+    "updatedAt": "2025-12-24T03:28:22.373Z"
+  },
+  {
+    "id": "b71adcb2-11c8-4e2e-9100-58feb80219a1",
+    "teacherId": "cmjcxeybb000la91iovxap72o",
+    "classId": "cmiq7zwy1000jq0jalus7rknx",
+    "createdAt": "2025-12-24T03:28:22.373Z",
+    "updatedAt": "2025-12-24T03:28:22.373Z"
+  },
+  {
+    "id": "9d7a3296-8e78-447d-b94d-8e7f0bd0ab15",
+    "teacherId": "cmjcxeybb000la91iovxap72o",
+    "classId": "cmiq7zyos000pq0jawwgzbdr7",
+    "createdAt": "2025-12-24T03:28:22.373Z",
+    "updatedAt": "2025-12-24T03:28:22.373Z"
+  },
+  {
+    "id": "4c340cb3-8309-4f6b-82c1-454917f8c41b",
+    "teacherId": "cmjcxeybb000la91iovxap72o",
+    "classId": "cmiq8024k000xq0jayizuqk1s",
+    "createdAt": "2025-12-24T03:28:22.373Z",
+    "updatedAt": "2025-12-24T03:28:22.373Z"
+  },
+  {
+    "id": "def589b6-fddf-4b95-8d6c-82bd1093d343",
+    "teacherId": "cmjcxeybb000la91iovxap72o",
+    "classId": "cmiq8013m000vq0jat513mkxw",
+    "createdAt": "2025-12-24T03:28:22.373Z",
+    "updatedAt": "2025-12-24T03:28:22.373Z"
+  },
+  {
+    "id": "dad11317-483f-4245-a30b-485c8d0ae666",
+    "teacherId": "cmjcxeybb000la91iovxap72o",
+    "classId": "cmiq803b9000zq0ja7axlvaon",
+    "createdAt": "2025-12-24T03:28:22.373Z",
+    "updatedAt": "2025-12-24T03:28:22.373Z"
+  },
+  {
+    "id": "bede8cfb-7215-4288-ba82-d83e5931e15c",
+    "teacherId": "cmjcxhvgd008ia91i64bqsn6s",
+    "classId": "cmiq7zyos000pq0jawwgzbdr7",
+    "createdAt": "2025-12-24T06:10:06.992Z",
+    "updatedAt": "2025-12-24T06:10:06.992Z"
+  },
+  {
+    "id": "1e6525e7-9c00-4f7f-93ae-46940f7dea67",
+    "teacherId": "cmjcxhvgd008ia91i64bqsn6s",
+    "classId": "cmiq7zy6z000nq0jaeinbeyfd",
+    "createdAt": "2025-12-24T06:10:06.992Z",
+    "updatedAt": "2025-12-24T06:10:06.992Z"
+  },
+  {
+    "id": "830b8551-d2d3-488d-8f1d-2d7a46354678",
+    "teacherId": "cmjcxhvgd008ia91i64bqsn6s",
+    "classId": "cmiq7zwfy000hq0jaf7ml4u89",
+    "createdAt": "2025-12-24T06:10:06.992Z",
+    "updatedAt": "2025-12-24T06:10:06.992Z"
+  },
+  {
+    "id": "654016ad-6bb7-451d-b0ac-f94c73c91b2c",
+    "teacherId": "cmjcxfmb7002ea91ivh44pmuv",
+    "classId": "cmiq8013m000vq0jat513mkxw",
+    "createdAt": "2025-12-24T06:31:20.351Z",
+    "updatedAt": "2025-12-24T06:31:20.351Z"
+  },
+  {
+    "id": "bfabd0e4-82e6-478e-8e7c-9b64c59aa8b6",
+    "teacherId": "cmjcxfmb7002ea91ivh44pmuv",
+    "classId": "cmiq8064j0017q0jafgpnxa73",
+    "createdAt": "2025-12-24T06:31:20.351Z",
+    "updatedAt": "2025-12-24T06:31:20.351Z"
+  },
+  {
+    "id": "8420cf57-a5e0-4be6-995b-0bd629628857",
+    "teacherId": "cmjcxfmb7002ea91ivh44pmuv",
+    "classId": "cmiq8006f000tq0jargnvbo6j",
+    "createdAt": "2025-12-24T06:31:20.351Z",
+    "updatedAt": "2025-12-24T06:31:20.351Z"
+  },
+  {
+    "id": "bb9aec8f-a4da-43f8-bbf0-330c0bb5db17",
+    "teacherId": "cmjcxfmb7002ea91ivh44pmuv",
+    "classId": "cmiq7zwy1000jq0jalus7rknx",
+    "createdAt": "2025-12-24T06:31:20.351Z",
+    "updatedAt": "2025-12-24T06:31:20.351Z"
+  },
+  {
+    "id": "d4f1e4f6-e043-4ea5-8eca-0e807e46dab3",
+    "teacherId": "cmjcxfmb7002ea91ivh44pmuv",
+    "classId": "cmiq7zxhq000lq0jagpi729wu",
+    "createdAt": "2025-12-24T06:31:20.351Z",
+    "updatedAt": "2025-12-24T06:31:20.351Z"
+  },
+  {
+    "id": "485066ef-cd8c-47c8-a28f-8006eb75bad5",
+    "teacherId": "cmjcxfmb7002ea91ivh44pmuv",
+    "classId": "cmiq7zzlk000rq0ja6s7xwhj0",
+    "createdAt": "2025-12-24T06:31:20.351Z",
+    "updatedAt": "2025-12-24T06:31:20.351Z"
+  },
+  {
+    "id": "fbdebe13-f43c-4133-a529-c89f0755eb90",
+    "teacherId": "cmjcxfmb7002ea91ivh44pmuv",
+    "classId": "cmiq8043p0011q0jap2zvukfd",
+    "createdAt": "2025-12-24T06:31:20.351Z",
+    "updatedAt": "2025-12-24T06:31:20.351Z"
+  },
+  {
+    "id": "bf4dd199-c747-42d2-9354-d84f7724109b",
+    "teacherId": "cmjcxfmb7002ea91ivh44pmuv",
+    "classId": "cmiq8051t0013q0janrrewlq2",
+    "createdAt": "2025-12-24T06:31:20.351Z",
+    "updatedAt": "2025-12-24T06:31:20.351Z"
+  },
+  {
+    "id": "81fffa1b-32c1-4020-814a-c40a8841aa75",
+    "teacherId": "cmjcxfmb7002ea91ivh44pmuv",
+    "classId": "cmiq803b9000zq0ja7axlvaon",
+    "createdAt": "2025-12-24T06:31:20.351Z",
+    "updatedAt": "2025-12-24T06:31:20.351Z"
+  },
+  {
+    "id": "f1747eca-e71b-4358-9fbe-df6df1399a5d",
+    "teacherId": "cmjcxfmb7002ea91ivh44pmuv",
+    "classId": "cmiq8024k000xq0jayizuqk1s",
+    "createdAt": "2025-12-24T06:31:20.351Z",
+    "updatedAt": "2025-12-24T06:31:20.351Z"
+  },
+  {
+    "id": "acababe6-1151-4d10-9daa-17cf870da0d3",
+    "teacherId": "cmjcxg8ep0042a91iib124xn0",
+    "classId": "cmiq7zs080003q0jav4gj9wat",
+    "createdAt": "2025-12-24T22:09:31.392Z",
+    "updatedAt": "2025-12-24T22:09:31.392Z"
+  },
+  {
+    "id": "32ba24a1-157a-4780-8183-f3048762aacf",
+    "teacherId": "cmjcxg8ep0042a91iib124xn0",
+    "classId": "cmiq7zvab000dq0jaz5sltz3k",
+    "createdAt": "2025-12-24T22:09:31.392Z",
+    "updatedAt": "2025-12-24T22:09:31.392Z"
+  },
+  {
+    "id": "469fd113-e31e-46af-8b8f-50cdee913389",
+    "teacherId": "cmjcxg8ep0042a91iib124xn0",
+    "classId": "cmiq7zus8000bq0jaz191ad1z",
+    "createdAt": "2025-12-24T22:09:31.392Z",
+    "updatedAt": "2025-12-24T22:09:31.392Z"
+  },
+  {
+    "id": "de0bdd24-3b12-4bb3-8990-00a1bf39faed",
+    "teacherId": "cmjcxg8ep0042a91iib124xn0",
+    "classId": "cmiq7zu9d0009q0jag59r3pss",
+    "createdAt": "2025-12-24T22:09:31.392Z",
+    "updatedAt": "2025-12-24T22:09:31.392Z"
+  },
+  {
+    "id": "e2fa74bb-58cf-42da-998a-52236d838a6f",
+    "teacherId": "cmjcxg8ep0042a91iib124xn0",
+    "classId": "cmiq7zr9e0001q0ja25clx0sy",
+    "createdAt": "2025-12-24T22:09:31.392Z",
+    "updatedAt": "2025-12-24T22:09:31.392Z"
+  },
+  {
+    "id": "c8ff20bc-0c5a-4317-982d-55da86c3f44f",
+    "teacherId": "cmjcxg8ep0042a91iib124xn0",
+    "classId": "cmiq7zthb0007q0ja8fed8leq",
+    "createdAt": "2025-12-24T22:09:31.392Z",
+    "updatedAt": "2025-12-24T22:09:31.392Z"
+  },
+  {
+    "id": "c9d3526f-f223-4729-8c2c-8e9b00221dc4",
+    "teacherId": "cmjcxg8ep0042a91iib124xn0",
+    "classId": "cmiq7zsqx0005q0jatgouva40",
+    "createdAt": "2025-12-24T22:09:31.392Z",
+    "updatedAt": "2025-12-24T22:09:31.392Z"
+  },
+  {
+    "id": "5a5b33bd-b3ea-4d30-99d3-c37d5896908f",
+    "teacherId": "cmjcxg8ep0042a91iib124xn0",
+    "classId": "cmiq8043p0011q0jap2zvukfd",
+    "createdAt": "2025-12-24T22:09:31.392Z",
+    "updatedAt": "2025-12-24T22:09:31.392Z"
+  },
+  {
+    "id": "13433d5d-6af9-44c8-9447-110385a51733",
+    "teacherId": "cmjcxg8ep0042a91iib124xn0",
+    "classId": "cmiq8051t0013q0janrrewlq2",
+    "createdAt": "2025-12-24T22:09:31.392Z",
+    "updatedAt": "2025-12-24T22:09:31.392Z"
+  },
+  {
+    "id": "75b0bf27-106a-47a2-bfe8-875c717e667d",
+    "teacherId": "cmjcxg8ep0042a91iib124xn0",
+    "classId": "cmiq8098s001fq0jaixxdzvdc",
+    "createdAt": "2025-12-24T22:09:31.392Z",
+    "updatedAt": "2025-12-24T22:09:31.392Z"
+  },
+  {
+    "id": "7d85a94a-ecaa-4028-beef-090d5b319ce1",
+    "teacherId": "cmjcxg8ep0042a91iib124xn0",
+    "classId": "cmiq80a10001hq0ja2qvou6f6",
+    "createdAt": "2025-12-24T22:09:31.392Z",
+    "updatedAt": "2025-12-24T22:09:31.392Z"
+  },
+  {
+    "id": "2ce286a9-1f4b-4213-95e1-216a1b1fd60f",
+    "teacherId": "cmjcxg8ep0042a91iib124xn0",
+    "classId": "cmiq807ku001bq0jacu44ttnk",
+    "createdAt": "2025-12-24T22:09:31.392Z",
+    "updatedAt": "2025-12-24T22:09:31.392Z"
+  },
+  {
+    "id": "272f88c3-c6a3-4f7d-b85a-519805d3d11b",
+    "teacherId": "cmjcxg8ep0042a91iib124xn0",
+    "classId": "cmiq7zyos000pq0jawwgzbdr7",
+    "createdAt": "2025-12-24T22:09:31.392Z",
+    "updatedAt": "2025-12-24T22:09:31.392Z"
+  },
+  {
+    "id": "799e4c3d-01dc-4b93-aa37-616df372419b",
+    "teacherId": "cmjcxg8ep0042a91iib124xn0",
+    "classId": "cmiq7zy6z000nq0jaeinbeyfd",
+    "createdAt": "2025-12-24T22:09:31.392Z",
+    "updatedAt": "2025-12-24T22:09:31.392Z"
+  },
+  {
+    "id": "157a7728-efa4-4931-bd2e-2da43f29a564",
+    "teacherId": "cmjcxg8ep0042a91iib124xn0",
+    "classId": "cmiq7zxhq000lq0jagpi729wu",
+    "createdAt": "2025-12-24T22:09:31.392Z",
+    "updatedAt": "2025-12-24T22:09:31.392Z"
+  },
+  {
+    "id": "d1d70a09-1c25-4a67-8a7f-3e6e8882e8a0",
+    "teacherId": "cmjcxg8ep0042a91iib124xn0",
+    "classId": "cmiq7zwy1000jq0jalus7rknx",
+    "createdAt": "2025-12-24T22:09:31.392Z",
+    "updatedAt": "2025-12-24T22:09:31.392Z"
+  },
+  {
+    "id": "7260b566-3885-4d1b-9ac5-e74c20483928",
+    "teacherId": "cmjcxg8ep0042a91iib124xn0",
+    "classId": "cmiq7zwfy000hq0jaf7ml4u89",
+    "createdAt": "2025-12-24T22:09:31.392Z",
+    "updatedAt": "2025-12-24T22:09:31.392Z"
+  },
+  {
+    "id": "9de46860-ecd2-48f6-899c-84eed2824d70",
+    "teacherId": "cmjcxg8ep0042a91iib124xn0",
+    "classId": "cmiq7zvub000fq0jaaz3hiu4e",
+    "createdAt": "2025-12-24T22:09:31.392Z",
+    "updatedAt": "2025-12-24T22:09:31.392Z"
+  },
+  {
+    "id": "872f4558-dc08-47b5-bee8-2d39d1fbc580",
+    "teacherId": "cmjcxh0ap0065a91i88wte26f",
+    "classId": "cmiq80di6001rq0ja5op34pk8",
+    "createdAt": "2025-12-25T00:45:50.467Z",
+    "updatedAt": "2025-12-25T00:45:50.467Z"
+  },
+  {
+    "id": "5e1a3a52-85a6-4dc8-8215-513bc5fcdf3d",
+    "teacherId": "cmjcxh0ap0065a91i88wte26f",
+    "classId": "cmiq7zr9e0001q0ja25clx0sy",
+    "createdAt": "2025-12-25T00:45:50.467Z",
+    "updatedAt": "2025-12-25T00:45:50.467Z"
+  },
+  {
+    "id": "d2f3aa21-df24-458a-85ac-15d7407e3f05",
+    "teacherId": "cmjcxh0ap0065a91i88wte26f",
+    "classId": "cmiq80bg9001lq0jazgu8jiit",
+    "createdAt": "2025-12-25T00:45:50.467Z",
+    "updatedAt": "2025-12-25T00:45:50.467Z"
+  },
+  {
+    "id": "01e4fee3-0900-4e1d-8642-010f85646c21",
+    "teacherId": "cmjcxh0ap0065a91i88wte26f",
+    "classId": "cmiq80cpq001pq0ja802ln7to",
+    "createdAt": "2025-12-25T00:45:50.467Z",
+    "updatedAt": "2025-12-25T00:45:50.467Z"
+  },
+  {
+    "id": "58c80379-952a-41c9-aa4e-6162249974b3",
+    "teacherId": "cmjcxh0ap0065a91i88wte26f",
+    "classId": "cmiq80c05001nq0jakw8wy95p",
+    "createdAt": "2025-12-25T00:45:50.467Z",
+    "updatedAt": "2025-12-25T00:45:50.467Z"
+  },
+  {
+    "id": "7974c814-4e81-4bda-a520-cc489d4dfd1e",
+    "teacherId": "cmjcxh0ap0065a91i88wte26f",
+    "classId": "cmiq7zs080003q0jav4gj9wat",
+    "createdAt": "2025-12-25T00:45:50.467Z",
+    "updatedAt": "2025-12-25T00:45:50.467Z"
+  },
+  {
+    "id": "bd9c2bd8-be80-4e25-bfc2-e59562a9614b",
+    "teacherId": "cmjcxgdvx004ha91i2a8xt7ys",
+    "classId": "cmiq8006f000tq0jargnvbo6j",
+    "createdAt": "2025-12-25T00:47:18.859Z",
+    "updatedAt": "2025-12-25T00:47:18.859Z"
+  },
+  {
+    "id": "d7748dd2-77df-48dc-b161-107798e2541f",
+    "teacherId": "cmjcxgdvx004ha91i2a8xt7ys",
+    "classId": "cmiq7zzlk000rq0ja6s7xwhj0",
+    "createdAt": "2025-12-25T00:47:18.859Z",
+    "updatedAt": "2025-12-25T00:47:18.859Z"
+  },
+  {
+    "id": "95b77ed0-93ac-400b-8a23-3e72e575078d",
+    "teacherId": "cmjcxgdvx004ha91i2a8xt7ys",
+    "classId": "cmiq807ku001bq0jacu44ttnk",
+    "createdAt": "2025-12-25T00:47:18.859Z",
+    "updatedAt": "2025-12-25T00:47:18.859Z"
+  },
+  {
+    "id": "1532e11b-473a-4235-ac96-6559a1554194",
+    "teacherId": "cmjcxgdvx004ha91i2a8xt7ys",
+    "classId": "cmiq80a10001hq0ja2qvou6f6",
+    "createdAt": "2025-12-25T00:47:18.859Z",
+    "updatedAt": "2025-12-25T00:47:18.859Z"
+  },
+  {
+    "id": "4ca51741-455a-48a2-bc95-99af34a21d3c",
+    "teacherId": "cmjcxgdvx004ha91i2a8xt7ys",
+    "classId": "cmiq808iz001dq0jag5t4x47j",
+    "createdAt": "2025-12-25T00:47:18.859Z",
+    "updatedAt": "2025-12-25T00:47:18.859Z"
+  },
+  {
+    "id": "fba350b2-cf24-4c9f-8d71-7c652f0f82b2",
+    "teacherId": "cmjcxgdvx004ha91i2a8xt7ys",
+    "classId": "cmiq8024k000xq0jayizuqk1s",
+    "createdAt": "2025-12-25T00:47:18.859Z",
+    "updatedAt": "2025-12-25T00:47:18.859Z"
+  },
+  {
+    "id": "ee850bf6-486e-4407-ba33-fda55aead225",
+    "teacherId": "cmjcxgdvx004ha91i2a8xt7ys",
+    "classId": "cmiq8013m000vq0jat513mkxw",
+    "createdAt": "2025-12-25T00:47:18.859Z",
+    "updatedAt": "2025-12-25T00:47:18.859Z"
+  },
+  {
+    "id": "007c14eb-428f-4d83-8fa2-1e829de3d47e",
+    "teacherId": "cmjcxgdvx004ha91i2a8xt7ys",
+    "classId": "cmiq803b9000zq0ja7axlvaon",
+    "createdAt": "2025-12-25T00:47:18.859Z",
+    "updatedAt": "2025-12-25T00:47:18.859Z"
+  },
+  {
+    "id": "d5b8af83-cf1c-445a-8535-6d989ce1afa0",
+    "teacherId": "cmjcxi1dq008xa91ifsh9y953",
+    "classId": "cmiq7zvab000dq0jaz5sltz3k",
+    "createdAt": "2025-12-26T01:08:05.685Z",
+    "updatedAt": "2025-12-26T01:08:05.685Z"
+  },
+  {
+    "id": "bdc4e6a7-00d4-454b-975e-189d24533993",
+    "teacherId": "cmjcxi1dq008xa91ifsh9y953",
+    "classId": "cmiq7zu9d0009q0jag59r3pss",
+    "createdAt": "2025-12-26T01:08:05.685Z",
+    "updatedAt": "2025-12-26T01:08:05.685Z"
+  },
+  {
+    "id": "442e48fb-1099-4e10-97ce-21c6f7343d3b",
+    "teacherId": "cmjcxi1dq008xa91ifsh9y953",
+    "classId": "cmiq7zthb0007q0ja8fed8leq",
+    "createdAt": "2025-12-26T01:08:05.685Z",
+    "updatedAt": "2025-12-26T01:08:05.685Z"
+  },
+  {
+    "id": "491bc69f-fdea-46d6-b165-61d9dd485362",
+    "teacherId": "cmjcxi1dq008xa91ifsh9y953",
+    "classId": "cmiq7zsqx0005q0jatgouva40",
+    "createdAt": "2025-12-26T01:08:05.685Z",
+    "updatedAt": "2025-12-26T01:08:05.685Z"
+  },
+  {
+    "id": "19129748-e5fa-4105-a6ca-c43eca79946d",
+    "teacherId": "cmjcxi1dq008xa91ifsh9y953",
+    "classId": "cmiq7zs080003q0jav4gj9wat",
+    "createdAt": "2025-12-26T01:08:05.685Z",
+    "updatedAt": "2025-12-26T01:08:05.685Z"
+  },
+  {
+    "id": "c29563c2-15c0-49a7-84e2-65e6d585d716",
+    "teacherId": "cmjcxi1dq008xa91ifsh9y953",
+    "classId": "cmiq7zr9e0001q0ja25clx0sy",
+    "createdAt": "2025-12-26T01:08:05.685Z",
+    "updatedAt": "2025-12-26T01:08:05.685Z"
+  },
+  {
+    "id": "f63d0eeb-756f-4d9c-af72-d639c8bec507",
+    "teacherId": "cmjcxgyi80060a91i3uba27tz",
+    "classId": "cmiq803b9000zq0ja7axlvaon",
+    "createdAt": "2025-12-26T05:48:15.235Z",
+    "updatedAt": "2025-12-26T05:48:15.235Z"
+  },
+  {
+    "id": "7460f7f3-8065-450a-8bcf-4619bbb2ecd9",
+    "teacherId": "cmjcxgyi80060a91i3uba27tz",
+    "classId": "cmiq7zzlk000rq0ja6s7xwhj0",
+    "createdAt": "2025-12-26T05:48:15.235Z",
+    "updatedAt": "2025-12-26T05:48:15.235Z"
+  },
+  {
+    "id": "c21c0002-f4cf-47be-93aa-ea6f888725c0",
+    "teacherId": "cmjcxgyi80060a91i3uba27tz",
+    "classId": "cmiq8064j0017q0jafgpnxa73",
+    "createdAt": "2025-12-26T05:48:15.235Z",
+    "updatedAt": "2025-12-26T05:48:15.235Z"
+  },
+  {
+    "id": "92171cd5-a2d9-40ce-b996-9d2dc60ad165",
+    "teacherId": "cmjcxgyi80060a91i3uba27tz",
+    "classId": "cmiq805mh0015q0jal0pu36yp",
+    "createdAt": "2025-12-26T05:48:15.235Z",
+    "updatedAt": "2025-12-26T05:48:15.235Z"
+  },
+  {
+    "id": "02d48817-54db-4c06-b040-bd3f4ae42f20",
+    "teacherId": "cmjcxgyi80060a91i3uba27tz",
+    "classId": "cmiq8043p0011q0jap2zvukfd",
+    "createdAt": "2025-12-26T05:48:15.235Z",
+    "updatedAt": "2025-12-26T05:48:15.235Z"
+  },
+  {
+    "id": "4f193463-96df-4aef-ab1f-7f436b6243ed",
+    "teacherId": "cmjcxgyi80060a91i3uba27tz",
+    "classId": "cmiq806mn0019q0jak0j1b2cp",
+    "createdAt": "2025-12-26T05:48:15.235Z",
+    "updatedAt": "2025-12-26T05:48:15.235Z"
+  },
+  {
+    "id": "050180b1-f222-499a-9d44-f1035b89c9bc",
+    "teacherId": "cmjcxgyi80060a91i3uba27tz",
+    "classId": "cmiq8051t0013q0janrrewlq2",
+    "createdAt": "2025-12-26T05:48:15.235Z",
+    "updatedAt": "2025-12-26T05:48:15.235Z"
+  },
+  {
+    "id": "f84c5596-503a-45ec-80a1-045c53b56a92",
+    "teacherId": "cmjcxgyi80060a91i3uba27tz",
+    "classId": "cmiq807ku001bq0jacu44ttnk",
+    "createdAt": "2025-12-26T05:48:15.235Z",
+    "updatedAt": "2025-12-26T05:48:15.235Z"
+  },
+  {
+    "id": "f2153232-2fce-483b-b332-679d04501194",
+    "teacherId": "cmjcxgyi80060a91i3uba27tz",
+    "classId": "cmiq8006f000tq0jargnvbo6j",
+    "createdAt": "2025-12-26T05:48:15.235Z",
+    "updatedAt": "2025-12-26T05:48:15.235Z"
+  },
+  {
+    "id": "f082f78a-29a0-4237-b9f7-52df847d804e",
+    "teacherId": "cmjcxgyi80060a91i3uba27tz",
+    "classId": "cmiq8013m000vq0jat513mkxw",
+    "createdAt": "2025-12-26T05:48:15.235Z",
+    "updatedAt": "2025-12-26T05:48:15.235Z"
+  },
+  {
+    "id": "d4984bd4-cdec-47f3-99ce-e8825420c87b",
+    "teacherId": "cmjcxgyi80060a91i3uba27tz",
+    "classId": "cmiq8024k000xq0jayizuqk1s",
+    "createdAt": "2025-12-26T05:48:15.235Z",
+    "updatedAt": "2025-12-26T05:48:15.235Z"
+  },
+  {
+    "id": "ad4366d7-adbb-46f9-9436-28de0a4232f0",
+    "teacherId": "cmjcxfkk20029a91izxdoos4y",
+    "classId": "cmiq7zs080003q0jav4gj9wat",
+    "createdAt": "2025-12-26T09:09:03.305Z",
+    "updatedAt": "2025-12-26T09:09:03.305Z"
+  },
+  {
+    "id": "122e2934-e059-4b3b-9a7c-95367e948a97",
+    "teacherId": "cmjcxfkk20029a91izxdoos4y",
+    "classId": "cmiq7zu9d0009q0jag59r3pss",
+    "createdAt": "2025-12-26T09:09:03.305Z",
+    "updatedAt": "2025-12-26T09:09:03.305Z"
+  },
+  {
+    "id": "f3fb2700-85a9-459a-a524-98820a4c0a80",
+    "teacherId": "cmjcxfkk20029a91izxdoos4y",
+    "classId": "cmiq7zsqx0005q0jatgouva40",
+    "createdAt": "2025-12-26T09:09:03.305Z",
+    "updatedAt": "2025-12-26T09:09:03.305Z"
+  },
+  {
+    "id": "f305c26f-f8b4-4438-b4a3-72f563234e54",
+    "teacherId": "cmjcxfkk20029a91izxdoos4y",
+    "classId": "cmiq7zr9e0001q0ja25clx0sy",
+    "createdAt": "2025-12-26T09:09:03.305Z",
+    "updatedAt": "2025-12-26T09:09:03.305Z"
+  },
+  {
+    "id": "d9a1f38f-9286-4476-bfa5-56ef8086dec8",
+    "teacherId": "cmjcxfkk20029a91izxdoos4y",
+    "classId": "cmiq7zthb0007q0ja8fed8leq",
+    "createdAt": "2025-12-26T09:09:03.305Z",
+    "updatedAt": "2025-12-26T09:09:03.305Z"
+  },
+  {
+    "id": "42fbc8ec-c58a-4653-9c47-8210ec939118",
+    "teacherId": "cmjcxfkk20029a91izxdoos4y",
+    "classId": "cmiq803b9000zq0ja7axlvaon",
+    "createdAt": "2025-12-26T09:09:03.305Z",
+    "updatedAt": "2025-12-26T09:09:03.305Z"
+  },
+  {
+    "id": "c4065ed2-9dbb-4c0c-87c8-d9c24850bb1a",
+    "teacherId": "cmjcxh3vq006fa91ix5ye3kqw",
+    "classId": "cmiq7zthb0007q0ja8fed8leq",
+    "createdAt": "2025-12-26T22:10:54.655Z",
+    "updatedAt": "2025-12-26T22:10:54.655Z"
+  },
+  {
+    "id": "4ae42cf2-20c3-4953-b28f-c707c1f746b9",
+    "teacherId": "cmjcxh3vq006fa91ix5ye3kqw",
+    "classId": "cmiq7zvab000dq0jaz5sltz3k",
+    "createdAt": "2025-12-26T22:10:54.655Z",
+    "updatedAt": "2025-12-26T22:10:54.655Z"
+  },
+  {
+    "id": "64e4a841-94fb-4e88-b1ad-cb91ca8ad90f",
+    "teacherId": "cmjcxh3vq006fa91ix5ye3kqw",
+    "classId": "cmiq7zvub000fq0jaaz3hiu4e",
+    "createdAt": "2025-12-26T22:10:54.655Z",
+    "updatedAt": "2025-12-26T22:10:54.655Z"
+  },
+  {
+    "id": "96872a80-9bbf-4e1a-a991-c797e38404b6",
+    "teacherId": "cmjcxh3vq006fa91ix5ye3kqw",
+    "classId": "cmiq80a10001hq0ja2qvou6f6",
+    "createdAt": "2025-12-26T22:10:54.655Z",
+    "updatedAt": "2025-12-26T22:10:54.655Z"
+  },
+  {
+    "id": "50bbb70f-49df-4cf5-899a-c54fdf5f1d58",
+    "teacherId": "cmjcxh3vq006fa91ix5ye3kqw",
+    "classId": "cmiq7zxhq000lq0jagpi729wu",
+    "createdAt": "2025-12-26T22:10:54.655Z",
+    "updatedAt": "2025-12-26T22:10:54.655Z"
+  },
+  {
+    "id": "6dd7e619-73db-4e69-b922-71dc71ac3bb8",
+    "teacherId": "cmjcxh3vq006fa91ix5ye3kqw",
+    "classId": "cmiq7zy6z000nq0jaeinbeyfd",
+    "createdAt": "2025-12-26T22:10:54.655Z",
+    "updatedAt": "2025-12-26T22:10:54.655Z"
+  },
+  {
+    "id": "0610bb4b-4651-44e8-a33c-1134cb54f94b",
+    "teacherId": "cmjcxh3vq006fa91ix5ye3kqw",
+    "classId": "cmiq7zwfy000hq0jaf7ml4u89",
+    "createdAt": "2025-12-26T22:10:54.655Z",
+    "updatedAt": "2025-12-26T22:10:54.655Z"
+  },
+  {
+    "id": "18263edd-ef7a-4603-a650-70516fdd8ddd",
+    "teacherId": "cmjcxh3vq006fa91ix5ye3kqw",
+    "classId": "cmiq7zu9d0009q0jag59r3pss",
+    "createdAt": "2025-12-26T22:10:54.655Z",
+    "updatedAt": "2025-12-26T22:10:54.655Z"
+  },
+  {
+    "id": "991f1a33-4691-429d-9c8c-e9ed3cd51d7c",
+    "teacherId": "cmjcxh3vq006fa91ix5ye3kqw",
+    "classId": "cmiq7zyos000pq0jawwgzbdr7",
+    "createdAt": "2025-12-26T22:10:54.655Z",
+    "updatedAt": "2025-12-26T22:10:54.655Z"
+  },
+  {
+    "id": "2335a570-fc6d-4f97-ae3a-5bc1a7be55ca",
+    "teacherId": "cmjcxh3vq006fa91ix5ye3kqw",
+    "classId": "cmiq7zus8000bq0jaz191ad1z",
+    "createdAt": "2025-12-26T22:10:54.655Z",
+    "updatedAt": "2025-12-26T22:10:54.655Z"
+  },
+  {
+    "id": "88b134f0-395e-44bc-954c-05e284270ab1",
+    "teacherId": "cmjcxh3vq006fa91ix5ye3kqw",
+    "classId": "cmiq7zsqx0005q0jatgouva40",
+    "createdAt": "2025-12-26T22:10:54.655Z",
+    "updatedAt": "2025-12-26T22:10:54.655Z"
+  },
+  {
+    "id": "21ef1479-10d1-472b-aa19-ed7db9b85619",
+    "teacherId": "cmjcxh3vq006fa91ix5ye3kqw",
+    "classId": "cmiq7zwy1000jq0jalus7rknx",
+    "createdAt": "2025-12-26T22:10:54.655Z",
+    "updatedAt": "2025-12-26T22:10:54.655Z"
+  },
+  {
+    "id": "95506174-768e-421a-87d0-4be79f376afa",
+    "teacherId": "cmjcxg4pf003sa91iumguouvv",
+    "classId": "cmiq806mn0019q0jak0j1b2cp",
+    "createdAt": "2025-12-26T22:54:48.413Z",
+    "updatedAt": "2025-12-26T22:54:48.413Z"
+  },
+  {
+    "id": "5e1acb1e-64d8-4464-8309-a9d9a768fff3",
+    "teacherId": "cmjcxg4pf003sa91iumguouvv",
+    "classId": "cmiq80bg9001lq0jazgu8jiit",
+    "createdAt": "2025-12-26T22:54:48.413Z",
+    "updatedAt": "2025-12-26T22:54:48.413Z"
+  },
+  {
+    "id": "b3d3595c-adaf-4666-bdb4-f93ea762887d",
+    "teacherId": "cmjcxg4pf003sa91iumguouvv",
+    "classId": "cmiq7zxhq000lq0jagpi729wu",
+    "createdAt": "2025-12-26T22:54:48.413Z",
+    "updatedAt": "2025-12-26T22:54:48.413Z"
+  },
+  {
+    "id": "f130ae55-600c-4955-b34a-6f89d9e19ad7",
+    "teacherId": "cmjcxg4pf003sa91iumguouvv",
+    "classId": "cmiq7zwy1000jq0jalus7rknx",
+    "createdAt": "2025-12-26T22:54:48.413Z",
+    "updatedAt": "2025-12-26T22:54:48.413Z"
+  },
+  {
+    "id": "cfbe815c-876b-4f46-b609-f9d8cbaf3f22",
+    "teacherId": "cmjcxg4pf003sa91iumguouvv",
+    "classId": "cmiq80e7s001tq0ja8913v4mf",
+    "createdAt": "2025-12-26T22:54:48.413Z",
+    "updatedAt": "2025-12-26T22:54:48.413Z"
+  },
+  {
+    "id": "9274e07d-325f-49d0-863b-7e25cdb5c52b",
+    "teacherId": "cmjcxg4pf003sa91iumguouvv",
+    "classId": "cmiq80di6001rq0ja5op34pk8",
+    "createdAt": "2025-12-26T22:54:48.413Z",
+    "updatedAt": "2025-12-26T22:54:48.413Z"
+  },
+  {
+    "id": "17662ec7-3e5c-4e87-8c22-93a454701a04",
+    "teacherId": "cmjcxg4pf003sa91iumguouvv",
+    "classId": "cmiq8098s001fq0jaixxdzvdc",
+    "createdAt": "2025-12-26T22:54:48.413Z",
+    "updatedAt": "2025-12-26T22:54:48.413Z"
+  },
+  {
+    "id": "150463c0-514c-457d-80d1-692931adcdb3",
+    "teacherId": "cmjcxg4pf003sa91iumguouvv",
+    "classId": "cmiq808iz001dq0jag5t4x47j",
+    "createdAt": "2025-12-26T22:54:48.413Z",
+    "updatedAt": "2025-12-26T22:54:48.413Z"
+  },
+  {
+    "id": "1fe88b24-3bfd-4768-92d9-ff6156a580f7",
+    "teacherId": "cmjcxg4pf003sa91iumguouvv",
+    "classId": "cmiq807ku001bq0jacu44ttnk",
+    "createdAt": "2025-12-26T22:54:48.413Z",
+    "updatedAt": "2025-12-26T22:54:48.413Z"
+  },
+  {
+    "id": "29ba1c22-cad0-4af6-ac10-931282b956f7",
+    "teacherId": "cmjcxg4pf003sa91iumguouvv",
+    "classId": "cmiq8064j0017q0jafgpnxa73",
+    "createdAt": "2025-12-26T22:54:48.413Z",
+    "updatedAt": "2025-12-26T22:54:48.413Z"
+  },
+  {
+    "id": "abcce543-e118-43f9-af10-9c2ee27a08af",
+    "teacherId": "cmjcxhgx2007ea91iawccibl0",
+    "classId": "cmiq7zwy1000jq0jalus7rknx",
+    "createdAt": "2025-12-26T22:56:41.120Z",
+    "updatedAt": "2025-12-26T22:56:41.120Z"
+  },
+  {
+    "id": "ea4f4764-3219-4dbe-9873-b7c1a021a5cc",
+    "teacherId": "cmjcxhgx2007ea91iawccibl0",
+    "classId": "cmiq7zyos000pq0jawwgzbdr7",
+    "createdAt": "2025-12-26T22:56:41.120Z",
+    "updatedAt": "2025-12-26T22:56:41.120Z"
+  },
+  {
+    "id": "be0979cd-1c69-4986-8100-58dfcb12af0e",
+    "teacherId": "cmjcxhgx2007ea91iawccibl0",
+    "classId": "cmiq805mh0015q0jal0pu36yp",
+    "createdAt": "2025-12-26T22:56:41.120Z",
+    "updatedAt": "2025-12-26T22:56:41.120Z"
+  },
+  {
+    "id": "190c53a5-04e1-47a2-abfd-7aac67854a75",
+    "teacherId": "cmjcxhgx2007ea91iawccibl0",
+    "classId": "cmiq8064j0017q0jafgpnxa73",
+    "createdAt": "2025-12-26T22:56:41.120Z",
+    "updatedAt": "2025-12-26T22:56:41.120Z"
+  },
+  {
+    "id": "462a9cac-257f-4d60-a646-93b0ba68a862",
+    "teacherId": "cmjcxhgx2007ea91iawccibl0",
+    "classId": "cmiq7zxhq000lq0jagpi729wu",
+    "createdAt": "2025-12-26T22:56:41.120Z",
+    "updatedAt": "2025-12-26T22:56:41.120Z"
+  },
+  {
+    "id": "091041ed-007d-49f5-923d-dcfcac2008a9",
+    "teacherId": "cmjcxhgx2007ea91iawccibl0",
+    "classId": "cmiq7zy6z000nq0jaeinbeyfd",
+    "createdAt": "2025-12-26T22:56:41.120Z",
+    "updatedAt": "2025-12-26T22:56:41.120Z"
+  },
+  {
+    "id": "5f000b96-0cfa-4985-a349-40760a852b79",
+    "teacherId": "cmjcxfesn001ua91iotwo4o8u",
+    "classId": "cmiq8006f000tq0jargnvbo6j",
+    "createdAt": "2025-12-27T07:24:24.693Z",
+    "updatedAt": "2025-12-27T07:24:24.693Z"
+  },
+  {
+    "id": "38bfdd2f-9cfe-4e05-a09c-96d2cec31e6d",
+    "teacherId": "cmjcxfesn001ua91iotwo4o8u",
+    "classId": "cmiq7zzlk000rq0ja6s7xwhj0",
+    "createdAt": "2025-12-27T07:24:24.693Z",
+    "updatedAt": "2025-12-27T07:24:24.693Z"
+  },
+  {
+    "id": "03c3178f-0a6a-4098-8ff6-84fda1748cd2",
+    "teacherId": "cmjcxfesn001ua91iotwo4o8u",
+    "classId": "cmiq8013m000vq0jat513mkxw",
+    "createdAt": "2025-12-27T07:24:24.693Z",
+    "updatedAt": "2025-12-27T07:24:24.693Z"
+  },
+  {
+    "id": "1dbe63ad-77a4-47f5-8119-8621081090d6",
+    "teacherId": "cmjcxfesn001ua91iotwo4o8u",
+    "classId": "cmiq80a10001hq0ja2qvou6f6",
+    "createdAt": "2025-12-27T07:24:24.693Z",
+    "updatedAt": "2025-12-27T07:24:24.693Z"
+  },
+  {
+    "id": "4e4f7e5c-4b08-4cf8-bb19-31ac56b6aaa4",
+    "teacherId": "cmjcxgwlv005va91ir2lo3zc5",
+    "classId": "cmiq80di6001rq0ja5op34pk8",
+    "createdAt": "2025-12-27T07:26:19.022Z",
+    "updatedAt": "2025-12-27T07:26:19.022Z"
+  },
+  {
+    "id": "393a9b6c-8bc7-4a91-acc1-39510d90c726",
+    "teacherId": "cmjcxgwlv005va91ir2lo3zc5",
+    "classId": "cmiq80auu001jq0ja1ro6kgvs",
+    "createdAt": "2025-12-27T07:26:19.022Z",
+    "updatedAt": "2025-12-27T07:26:19.022Z"
+  },
+  {
+    "id": "d478cd94-de46-4435-a54c-8b3031b67427",
+    "teacherId": "cmjcxgwlv005va91ir2lo3zc5",
+    "classId": "cmiq80cpq001pq0ja802ln7to",
+    "createdAt": "2025-12-27T07:26:19.022Z",
+    "updatedAt": "2025-12-27T07:26:19.022Z"
+  },
+  {
+    "id": "035cf9c3-badf-4cc8-8e0f-056c1463bea4",
+    "teacherId": "cmjcxgwlv005va91ir2lo3zc5",
+    "classId": "cmiq808iz001dq0jag5t4x47j",
+    "createdAt": "2025-12-27T07:26:19.022Z",
+    "updatedAt": "2025-12-27T07:26:19.022Z"
+  },
+  {
+    "id": "bddd070e-2244-4838-aa7a-8938a36d5993",
+    "teacherId": "cmjcxgwlv005va91ir2lo3zc5",
+    "classId": "cmiq8098s001fq0jaixxdzvdc",
+    "createdAt": "2025-12-27T07:26:19.022Z",
+    "updatedAt": "2025-12-27T07:26:19.022Z"
+  },
+  {
+    "id": "5398140f-29cf-43f2-a990-b5fd9f2ae9d7",
+    "teacherId": "cmjcxgwlv005va91ir2lo3zc5",
+    "classId": "cmiq80e7s001tq0ja8913v4mf",
+    "createdAt": "2025-12-27T07:26:19.022Z",
+    "updatedAt": "2025-12-27T07:26:19.022Z"
+  },
+  {
+    "id": "eb401732-a30e-46f3-a9e7-1b3cd2cd617a",
+    "teacherId": "cmjcxgwlv005va91ir2lo3zc5",
+    "classId": "cmiq80bg9001lq0jazgu8jiit",
+    "createdAt": "2025-12-27T07:26:19.022Z",
+    "updatedAt": "2025-12-27T07:26:19.022Z"
+  },
+  {
+    "id": "9945524c-5213-4064-b9e5-a05ca4f78235",
+    "teacherId": "cmjcxgwlv005va91ir2lo3zc5",
+    "classId": "cmiq80c05001nq0jakw8wy95p",
+    "createdAt": "2025-12-27T07:26:19.022Z",
+    "updatedAt": "2025-12-27T07:26:19.022Z"
+  },
+  {
+    "id": "5ee17a67-57fc-4fa6-af7d-fb1210cfbafa",
+    "teacherId": "cmjcxfiod0024a91i25w8qnqg",
+    "classId": "cmiq8098s001fq0jaixxdzvdc",
+    "createdAt": "2025-12-27T09:39:17.203Z",
+    "updatedAt": "2025-12-27T09:39:17.203Z"
+  },
+  {
+    "id": "3b63ca77-9d12-4d36-8ecb-b9e5aae7b7cb",
+    "teacherId": "cmjcxfiod0024a91i25w8qnqg",
+    "classId": "cmiq8064j0017q0jafgpnxa73",
+    "createdAt": "2025-12-27T09:39:17.203Z",
+    "updatedAt": "2025-12-27T09:39:17.203Z"
+  },
+  {
+    "id": "1f1e7310-eba5-4180-bcbe-cd3b810152fe",
+    "teacherId": "cmjcxfiod0024a91i25w8qnqg",
+    "classId": "cmiq8024k000xq0jayizuqk1s",
+    "createdAt": "2025-12-27T09:39:17.203Z",
+    "updatedAt": "2025-12-27T09:39:17.203Z"
+  },
+  {
+    "id": "02eb6162-2316-4ae6-9669-e17b6569d4ce",
+    "teacherId": "cmjcxfiod0024a91i25w8qnqg",
+    "classId": "cmiq808iz001dq0jag5t4x47j",
+    "createdAt": "2025-12-27T09:39:17.203Z",
+    "updatedAt": "2025-12-27T09:39:17.203Z"
+  },
+  {
+    "id": "b4d9df27-548d-4237-97a4-38ac284e009d",
+    "teacherId": "cmjcxfiod0024a91i25w8qnqg",
+    "classId": "cmiq806mn0019q0jak0j1b2cp",
+    "createdAt": "2025-12-27T09:39:17.203Z",
+    "updatedAt": "2025-12-27T09:39:17.203Z"
+  },
+  {
+    "id": "f36be4d6-eac7-4505-bce9-5ac628f4cb3c",
+    "teacherId": "cmjcxfiod0024a91i25w8qnqg",
+    "classId": "cmiq807ku001bq0jacu44ttnk",
+    "createdAt": "2025-12-27T09:39:17.203Z",
+    "updatedAt": "2025-12-27T09:39:17.203Z"
+  },
+  {
+    "id": "4a421fb1-a368-41c9-9832-604c8fee0ab2",
+    "teacherId": "cmjcxhf510079a91iqinura6n",
+    "classId": "cmiq806mn0019q0jak0j1b2cp",
+    "createdAt": "2025-12-28T21:16:01.514Z",
+    "updatedAt": "2025-12-28T21:16:01.514Z"
+  },
+  {
+    "id": "6a6b4f3c-8ea8-4653-aabe-1f1ef2eae777",
+    "teacherId": "cmjcxhf510079a91iqinura6n",
+    "classId": "cmiq8064j0017q0jafgpnxa73",
+    "createdAt": "2025-12-28T21:16:01.514Z",
+    "updatedAt": "2025-12-28T21:16:01.514Z"
+  },
+  {
+    "id": "29de4412-5c90-48a9-871e-e3ce29e3c2a1",
+    "teacherId": "cmjcxhf510079a91iqinura6n",
+    "classId": "cmiq807ku001bq0jacu44ttnk",
+    "createdAt": "2025-12-28T21:16:01.514Z",
+    "updatedAt": "2025-12-28T21:16:01.514Z"
+  },
+  {
+    "id": "e18d9d51-3241-41c1-b929-62f60472e133",
+    "teacherId": "cmjcxhf510079a91iqinura6n",
+    "classId": "cmiq808iz001dq0jag5t4x47j",
+    "createdAt": "2025-12-28T21:16:01.514Z",
+    "updatedAt": "2025-12-28T21:16:01.514Z"
+  },
+  {
+    "id": "2b3d5c6d-529b-4f7a-bc70-63bc7974c819",
+    "teacherId": "cmjcxhf510079a91iqinura6n",
+    "classId": "cmiq80a10001hq0ja2qvou6f6",
+    "createdAt": "2025-12-28T21:16:01.514Z",
+    "updatedAt": "2025-12-28T21:16:01.514Z"
+  },
+  {
+    "id": "3ec132ff-c7d8-4062-8279-0de56cc14f40",
+    "teacherId": "cmjcxhf510079a91iqinura6n",
+    "classId": "cmiq80bg9001lq0jazgu8jiit",
+    "createdAt": "2025-12-28T21:16:01.514Z",
+    "updatedAt": "2025-12-28T21:16:01.514Z"
+  },
+  {
+    "id": "eea514b3-2e38-4717-89e8-ec028a008905",
+    "teacherId": "cmjcxhf510079a91iqinura6n",
+    "classId": "cmiq8098s001fq0jaixxdzvdc",
+    "createdAt": "2025-12-28T21:16:01.514Z",
+    "updatedAt": "2025-12-28T21:16:01.514Z"
+  },
+  {
+    "id": "c7f5be35-8133-4e6b-9c6a-bd7516195139",
+    "teacherId": "cmjcxhf510079a91iqinura6n",
+    "classId": "cmiq80auu001jq0ja1ro6kgvs",
+    "createdAt": "2025-12-28T21:16:01.514Z",
+    "updatedAt": "2025-12-28T21:16:01.514Z"
+  },
+  {
+    "id": "e3cb29e2-02d9-4f82-9c0a-80b0e0cd5227",
+    "teacherId": "cmjcxhdfx0074a91i6vbhnb48",
+    "classId": "cmiq7zvub000fq0jaaz3hiu4e",
+    "createdAt": "2025-12-28T23:10:03.616Z",
+    "updatedAt": "2025-12-28T23:10:03.616Z"
+  },
+  {
+    "id": "debab815-5179-4ed4-a13c-28fb724dcdc4",
+    "teacherId": "cmjcxhdfx0074a91i6vbhnb48",
+    "classId": "cmiq8043p0011q0jap2zvukfd",
+    "createdAt": "2025-12-28T23:10:03.616Z",
+    "updatedAt": "2025-12-28T23:10:03.616Z"
+  },
+  {
+    "id": "f0cf4d15-c517-44a5-b5d6-9c3cc373746c",
+    "teacherId": "cmjcxhdfx0074a91i6vbhnb48",
+    "classId": "cmiq8024k000xq0jayizuqk1s",
+    "createdAt": "2025-12-28T23:10:03.616Z",
+    "updatedAt": "2025-12-28T23:10:03.616Z"
+  },
+  {
+    "id": "57ecb269-0461-4b93-aefb-ca7d1d409fbd",
+    "teacherId": "cmjcxhdfx0074a91i6vbhnb48",
+    "classId": "cmiq7zus8000bq0jaz191ad1z",
+    "createdAt": "2025-12-28T23:10:03.616Z",
+    "updatedAt": "2025-12-28T23:10:03.616Z"
+  },
+  {
+    "id": "ad3566a9-d139-47d2-9190-fafb3120557c",
+    "teacherId": "cmjcxhdfx0074a91i6vbhnb48",
+    "classId": "cmiq7zwfy000hq0jaf7ml4u89",
+    "createdAt": "2025-12-28T23:10:03.616Z",
+    "updatedAt": "2025-12-28T23:10:03.616Z"
+  },
+  {
+    "id": "8f5ba0a7-f3d4-4f79-9d03-5ceca34ead11",
+    "teacherId": "cmjcxhdfx0074a91i6vbhnb48",
+    "classId": "cmiq7zvab000dq0jaz5sltz3k",
+    "createdAt": "2025-12-28T23:10:03.616Z",
+    "updatedAt": "2025-12-28T23:10:03.616Z"
+  },
+  {
+    "id": "5aab46a3-c2e7-4802-ae06-c8852e3bbc47",
+    "teacherId": "cmjcxhdfx0074a91i6vbhnb48",
+    "classId": "cmiq803b9000zq0ja7axlvaon",
+    "createdAt": "2025-12-28T23:10:03.616Z",
+    "updatedAt": "2025-12-28T23:10:03.616Z"
+  },
+  {
+    "id": "677cb3c8-0160-4ea1-98dd-697de746caf2",
+    "teacherId": "cmjcxhio9007ja91ivudyimyu",
+    "classId": "cmiq808iz001dq0jag5t4x47j",
+    "createdAt": "2025-12-29T07:19:06.432Z",
+    "updatedAt": "2025-12-29T07:19:06.432Z"
+  },
+  {
+    "id": "14965062-b51d-4d55-8463-8a859760252d",
+    "teacherId": "cmjcxhio9007ja91ivudyimyu",
+    "classId": "cmiq80a10001hq0ja2qvou6f6",
+    "createdAt": "2025-12-29T07:19:06.432Z",
+    "updatedAt": "2025-12-29T07:19:06.432Z"
+  },
+  {
+    "id": "74db4a01-e47c-486d-9bc4-238167236483",
+    "teacherId": "cmjcxhio9007ja91ivudyimyu",
+    "classId": "cmiq7zvab000dq0jaz5sltz3k",
+    "createdAt": "2025-12-29T07:19:06.432Z",
+    "updatedAt": "2025-12-29T07:19:06.432Z"
+  },
+  {
+    "id": "177b98b5-76cf-44ce-8892-f0188c7252a2",
+    "teacherId": "cmjcxhio9007ja91ivudyimyu",
+    "classId": "cmiq8064j0017q0jafgpnxa73",
+    "createdAt": "2025-12-29T07:19:06.432Z",
+    "updatedAt": "2025-12-29T07:19:06.432Z"
+  },
+  {
+    "id": "78d9598e-d1ab-4236-9e4b-29dc99d6a722",
+    "teacherId": "cmjcxhio9007ja91ivudyimyu",
+    "classId": "cmiq806mn0019q0jak0j1b2cp",
+    "createdAt": "2025-12-29T07:19:06.432Z",
+    "updatedAt": "2025-12-29T07:19:06.432Z"
+  },
+  {
+    "id": "1e08d738-e3f1-4e0d-8562-20e859d97ef4",
+    "teacherId": "cmjcxhio9007ja91ivudyimyu",
+    "classId": "cmiq807ku001bq0jacu44ttnk",
+    "createdAt": "2025-12-29T07:19:06.432Z",
+    "updatedAt": "2025-12-29T07:19:06.432Z"
+  },
+  {
+    "id": "b10f30ad-ab76-4b14-adbf-f3c1db332f18",
+    "teacherId": "cmjcxi8i0009ha91i9k94mw17",
+    "classId": "cmiq7zu9d0009q0jag59r3pss",
+    "createdAt": "2025-12-29T10:59:44.094Z",
+    "updatedAt": "2025-12-29T10:59:44.094Z"
+  },
+  {
+    "id": "743e6e0f-70bf-4817-9899-590ade2cd34d",
+    "teacherId": "cmjcxi8i0009ha91i9k94mw17",
+    "classId": "cmiq7zsqx0005q0jatgouva40",
+    "createdAt": "2025-12-29T10:59:44.094Z",
+    "updatedAt": "2025-12-29T10:59:44.094Z"
+  },
+  {
+    "id": "1e28aad6-3abc-4a0c-8528-5f4b3695d65f",
+    "teacherId": "cmjcxi8i0009ha91i9k94mw17",
+    "classId": "cmiq7zthb0007q0ja8fed8leq",
+    "createdAt": "2025-12-29T10:59:44.094Z",
+    "updatedAt": "2025-12-29T10:59:44.094Z"
+  },
+  {
+    "id": "36f18deb-2c88-4e82-b646-5054e1dd458d",
+    "teacherId": "cmjcxhmdb007ta91i0256a7qy",
+    "classId": "cmiq7zvub000fq0jaaz3hiu4e",
+    "createdAt": "2025-12-30T20:14:29.251Z",
+    "updatedAt": "2025-12-30T20:14:29.251Z"
+  },
+  {
+    "id": "aec99a7b-8135-4256-a5c4-9de68b042e29",
+    "teacherId": "cmjcxhmdb007ta91i0256a7qy",
+    "classId": "cmiq7zvab000dq0jaz5sltz3k",
+    "createdAt": "2025-12-30T20:14:29.251Z",
+    "updatedAt": "2025-12-30T20:14:29.251Z"
+  },
+  {
+    "id": "06cb72c1-5af6-4d80-a2f8-e1afddb2f0b8",
+    "teacherId": "cmjcxhmdb007ta91i0256a7qy",
+    "classId": "cmiq7zr9e0001q0ja25clx0sy",
+    "createdAt": "2025-12-30T20:14:29.251Z",
+    "updatedAt": "2025-12-30T20:14:29.251Z"
+  },
+  {
+    "id": "29c8ce3c-5011-4cee-9b2a-9f5c9988af31",
+    "teacherId": "cmjcxhmdb007ta91i0256a7qy",
+    "classId": "cmiq7zus8000bq0jaz191ad1z",
+    "createdAt": "2025-12-30T20:14:29.251Z",
+    "updatedAt": "2025-12-30T20:14:29.251Z"
+  },
+  {
+    "id": "54f1faf9-bfae-4421-8725-4dacec595576",
+    "teacherId": "cmjcxhmdb007ta91i0256a7qy",
+    "classId": "cmiq7zsqx0005q0jatgouva40",
+    "createdAt": "2025-12-30T20:14:29.251Z",
+    "updatedAt": "2025-12-30T20:14:29.251Z"
+  },
+  {
+    "id": "7ed7a279-6911-42de-b085-ab30616bfb37",
+    "teacherId": "cmjcxhmdb007ta91i0256a7qy",
+    "classId": "cmiq7zyos000pq0jawwgzbdr7",
+    "createdAt": "2025-12-30T20:14:29.251Z",
+    "updatedAt": "2025-12-30T20:14:29.251Z"
+  },
+  {
+    "id": "3b48137e-3f8a-4f2e-b8b3-ce5750db35db",
+    "teacherId": "cmjcxhmdb007ta91i0256a7qy",
+    "classId": "cmiq7zy6z000nq0jaeinbeyfd",
+    "createdAt": "2025-12-30T20:14:29.251Z",
+    "updatedAt": "2025-12-30T20:14:29.251Z"
+  },
+  {
+    "id": "95b89a07-77c5-4e14-8e84-ff5903181801",
+    "teacherId": "cmjcxhmdb007ta91i0256a7qy",
+    "classId": "cmiq7zxhq000lq0jagpi729wu",
+    "createdAt": "2025-12-30T20:14:29.251Z",
+    "updatedAt": "2025-12-30T20:14:29.251Z"
+  },
+  {
+    "id": "dbd02555-cd7c-4ab2-99dc-b5722b69fd28",
+    "teacherId": "cmjcxhmdb007ta91i0256a7qy",
+    "classId": "cmiq7zwy1000jq0jalus7rknx",
+    "createdAt": "2025-12-30T20:14:29.251Z",
+    "updatedAt": "2025-12-30T20:14:29.251Z"
+  },
+  {
+    "id": "dd11dadc-1235-4445-8bd1-7501ca9bc037",
+    "teacherId": "cmjcxhmdb007ta91i0256a7qy",
+    "classId": "cmiq7zu9d0009q0jag59r3pss",
+    "createdAt": "2025-12-30T20:14:29.251Z",
+    "updatedAt": "2025-12-30T20:14:29.251Z"
+  },
+  {
+    "id": "b1a44894-48d8-478a-89d2-1094ce739c11",
+    "teacherId": "cmjcxhmdb007ta91i0256a7qy",
+    "classId": "cmiq7zwfy000hq0jaf7ml4u89",
+    "createdAt": "2025-12-30T20:14:29.251Z",
+    "updatedAt": "2025-12-30T20:14:29.251Z"
+  },
+  {
+    "id": "5fbc7b75-8a05-4c0c-8582-5ba6149b5777",
+    "teacherId": "cmjcxhmdb007ta91i0256a7qy",
+    "classId": "cmiq7zs080003q0jav4gj9wat",
+    "createdAt": "2025-12-30T20:14:29.251Z",
+    "updatedAt": "2025-12-30T20:14:29.251Z"
+  },
+  {
+    "id": "e3821190-2d99-4664-987f-feed671221ae",
+    "teacherId": "cmjcxhmdb007ta91i0256a7qy",
+    "classId": "cmiq7zthb0007q0ja8fed8leq",
+    "createdAt": "2025-12-30T20:14:29.251Z",
+    "updatedAt": "2025-12-30T20:14:29.251Z"
+  },
+  {
+    "id": "3ffeec6e-67b4-4ee9-b228-ee416ab17289",
+    "teacherId": "cmjcxi4sj0097a91i6eme7n0f",
+    "classId": "cmiq7zxhq000lq0jagpi729wu",
+    "createdAt": "2025-12-30T22:27:26.250Z",
+    "updatedAt": "2025-12-30T22:27:26.250Z"
+  },
+  {
+    "id": "632b4e9a-70c2-4656-b5e5-5413974eac67",
+    "teacherId": "cmjcxi4sj0097a91i6eme7n0f",
+    "classId": "cmiq7zwy1000jq0jalus7rknx",
+    "createdAt": "2025-12-30T22:27:26.250Z",
+    "updatedAt": "2025-12-30T22:27:26.250Z"
+  },
+  {
+    "id": "c3ace9db-0675-484a-90cf-ba34ea1db018",
+    "teacherId": "cmjcxi4sj0097a91i6eme7n0f",
+    "classId": "cmiq7zyos000pq0jawwgzbdr7",
+    "createdAt": "2025-12-30T22:27:26.250Z",
+    "updatedAt": "2025-12-30T22:27:26.250Z"
+  },
+  {
+    "id": "df977841-0c26-48bf-8339-dc2007dd4b2b",
+    "teacherId": "cmjcxhxqh008na91i38tghogi",
+    "classId": "cmiq7zwy1000jq0jalus7rknx",
+    "createdAt": "2025-12-30T22:29:55.941Z",
+    "updatedAt": "2025-12-30T22:29:55.941Z"
+  },
+  {
+    "id": "4b5b9286-f62d-40c6-b510-97e091b876bb",
+    "teacherId": "cmjcxhxqh008na91i38tghogi",
+    "classId": "cmiq7zvub000fq0jaaz3hiu4e",
+    "createdAt": "2025-12-30T22:29:55.941Z",
+    "updatedAt": "2025-12-30T22:29:55.941Z"
+  },
+  {
+    "id": "680ce4c9-c192-46a9-b461-4035039cfb15",
+    "teacherId": "cmjcxhxqh008na91i38tghogi",
+    "classId": "cmiq7zsqx0005q0jatgouva40",
+    "createdAt": "2025-12-30T22:29:55.941Z",
+    "updatedAt": "2025-12-30T22:29:55.941Z"
+  },
+  {
+    "id": "b2c96d69-d0e4-46c1-b20f-04f5749aba4f",
+    "teacherId": "cmjcxhxqh008na91i38tghogi",
+    "classId": "cmiq7zxhq000lq0jagpi729wu",
+    "createdAt": "2025-12-30T22:29:55.941Z",
+    "updatedAt": "2025-12-30T22:29:55.941Z"
+  },
+  {
+    "id": "db0116e3-87b3-4bb9-b3e3-1044107cbe00",
+    "teacherId": "cmjcxhxqh008na91i38tghogi",
+    "classId": "cmiq7zy6z000nq0jaeinbeyfd",
+    "createdAt": "2025-12-30T22:29:55.941Z",
+    "updatedAt": "2025-12-30T22:29:55.941Z"
+  },
+  {
+    "id": "18918dc7-3b6b-420c-8aec-7b3fff7c3777",
+    "teacherId": "cmjcxhxqh008na91i38tghogi",
+    "classId": "cmiq7zyos000pq0jawwgzbdr7",
+    "createdAt": "2025-12-30T22:29:55.941Z",
+    "updatedAt": "2025-12-30T22:29:55.941Z"
+  },
+  {
+    "id": "a27694ee-b163-4644-8f83-2b196c33f988",
+    "teacherId": "cmjcxi3440092a91io8bat4f0",
+    "classId": "cmiq7zzlk000rq0ja6s7xwhj0",
+    "createdAt": "2025-12-31T01:40:22.696Z",
+    "updatedAt": "2025-12-31T01:40:22.696Z"
+  },
+  {
+    "id": "7ca35a91-675c-405a-85bf-05377ff09b22",
+    "teacherId": "cmjcxi3440092a91io8bat4f0",
+    "classId": "cmiq7zy6z000nq0jaeinbeyfd",
+    "createdAt": "2025-12-31T01:40:22.696Z",
+    "updatedAt": "2025-12-31T01:40:22.696Z"
+  },
+  {
+    "id": "691289d1-4bdb-4c08-a896-c13151a722f7",
+    "teacherId": "cmjcxi3440092a91io8bat4f0",
+    "classId": "cmiq8006f000tq0jargnvbo6j",
+    "createdAt": "2025-12-31T01:40:22.696Z",
+    "updatedAt": "2025-12-31T01:40:22.696Z"
+  },
+  {
+    "id": "8a375521-194f-4a34-9f4e-a72480b1f576",
+    "teacherId": "cmjcxibdj009ma91iy3sj1blo",
+    "classId": "cmiq8051t0013q0janrrewlq2",
+    "createdAt": "2026-01-04T06:05:34.063Z",
+    "updatedAt": "2026-01-04T06:05:34.063Z"
+  },
+  {
+    "id": "d54314ec-5333-4061-b60e-acacd886eece",
+    "teacherId": "cmjcxibdj009ma91iy3sj1blo",
+    "classId": "cmiq7zxhq000lq0jagpi729wu",
+    "createdAt": "2026-01-04T06:05:34.063Z",
+    "updatedAt": "2026-01-04T06:05:34.063Z"
+  },
+  {
+    "id": "56144270-c912-4b83-b0b5-f679a8136272",
+    "teacherId": "cmjcxibdj009ma91iy3sj1blo",
+    "classId": "cmiq7zy6z000nq0jaeinbeyfd",
+    "createdAt": "2026-01-04T06:05:34.063Z",
+    "updatedAt": "2026-01-04T06:05:34.063Z"
+  },
+  {
+    "id": "36c41719-cccd-404c-b693-b9d897b8a9a4",
+    "teacherId": "cmjcxf07e000qa91iqf0434qv",
+    "classId": "cmiq8043p0011q0jap2zvukfd",
+    "createdAt": "2026-01-05T20:04:51.801Z",
+    "updatedAt": "2026-01-05T20:04:51.801Z"
+  },
+  {
+    "id": "9f02d10e-3023-4dc0-b765-7af9efbda600",
+    "teacherId": "cmjcxf07e000qa91iqf0434qv",
+    "classId": "cmiq7zzlk000rq0ja6s7xwhj0",
+    "createdAt": "2026-01-05T20:04:51.801Z",
+    "updatedAt": "2026-01-05T20:04:51.801Z"
+  },
+  {
+    "id": "e5f218c7-3918-4d12-8659-bf35f15adfc3",
+    "teacherId": "cmjcxgc4i004ca91idlwyv6yx",
+    "classId": "cmiq808iz001dq0jag5t4x47j",
+    "createdAt": "2026-01-20T03:43:50.164Z",
+    "updatedAt": "2026-01-20T03:43:50.164Z"
+  },
+  {
+    "id": "04f0eb02-c929-432d-bd99-3f6449f2efb0",
+    "teacherId": "cmjcxgc4i004ca91idlwyv6yx",
+    "classId": "cmiq805mh0015q0jal0pu36yp",
+    "createdAt": "2026-01-20T03:43:50.164Z",
+    "updatedAt": "2026-01-20T03:43:50.164Z"
+  },
+  {
+    "id": "9346a5b3-7d30-4725-976e-288a429d532d",
+    "teacherId": "cmjcxgc4i004ca91idlwyv6yx",
+    "classId": "cmiq80e7s001tq0ja8913v4mf",
+    "createdAt": "2026-01-20T03:43:50.164Z",
+    "updatedAt": "2026-01-20T03:43:50.164Z"
+  },
+  {
+    "id": "5a69231e-d7fc-4692-9000-c141cbda5631",
+    "teacherId": "cmjcxgc4i004ca91idlwyv6yx",
+    "classId": "cmiq7zzlk000rq0ja6s7xwhj0",
+    "createdAt": "2026-01-20T03:43:50.164Z",
+    "updatedAt": "2026-01-20T03:43:50.164Z"
+  },
+  {
+    "id": "63faf832-4d6f-4d5e-8fd5-022a749f22fc",
+    "teacherId": "cmjcxgc4i004ca91idlwyv6yx",
+    "classId": "cmiq80di6001rq0ja5op34pk8",
+    "createdAt": "2026-01-20T03:43:50.164Z",
+    "updatedAt": "2026-01-20T03:43:50.164Z"
+  },
+  {
+    "id": "8628421c-5d44-4ce9-94c9-7ac197d9fb7a",
+    "teacherId": "cmjcxgc4i004ca91idlwyv6yx",
+    "classId": "cmiq8098s001fq0jaixxdzvdc",
+    "createdAt": "2026-01-20T03:43:50.164Z",
+    "updatedAt": "2026-01-20T03:43:50.164Z"
+  },
+  {
+    "id": "ff21f46a-9eb2-4010-95ba-43f65cc291fc",
+    "teacherId": "cmjcxghi6004ra91iha3u7qkl",
+    "classId": "cmiq803b9000zq0ja7axlvaon",
+    "createdAt": "2026-01-24T03:54:55.443Z",
+    "updatedAt": "2026-01-24T03:54:55.443Z"
+  },
+  {
+    "id": "e1bba3fe-b7d3-45b7-b1b2-a24cb6cffcaa",
+    "teacherId": "cmjcxghi6004ra91iha3u7qkl",
+    "classId": "cmiq7zwy1000jq0jalus7rknx",
+    "createdAt": "2026-01-24T03:54:55.443Z",
+    "updatedAt": "2026-01-24T03:54:55.443Z"
+  },
+  {
+    "id": "d0976a43-2a5b-41e3-b44a-5348125e38fb",
+    "teacherId": "cmjcxghi6004ra91iha3u7qkl",
+    "classId": "cmiq7zyos000pq0jawwgzbdr7",
+    "createdAt": "2026-01-24T03:54:55.443Z",
+    "updatedAt": "2026-01-24T03:54:55.443Z"
+  },
+  {
+    "id": "d015a12c-f902-4541-97aa-84ce1445d30b",
+    "teacherId": "cmjcxghi6004ra91iha3u7qkl",
+    "classId": "cmiq8043p0011q0jap2zvukfd",
+    "createdAt": "2026-01-24T03:54:55.443Z",
+    "updatedAt": "2026-01-24T03:54:55.443Z"
+  },
+  {
+    "id": "969c5b26-c92c-4e25-9922-026a8be3a1ba",
+    "teacherId": "cmjcxghi6004ra91iha3u7qkl",
+    "classId": "cmiq8051t0013q0janrrewlq2",
+    "createdAt": "2026-01-24T03:54:55.443Z",
+    "updatedAt": "2026-01-24T03:54:55.443Z"
+  },
+  {
+    "id": "8b92afac-b8da-4c6d-b9bb-30c0f9b1694d",
+    "teacherId": "cmjcxghi6004ra91iha3u7qkl",
+    "classId": "cmiq7zzlk000rq0ja6s7xwhj0",
+    "createdAt": "2026-01-24T03:54:55.443Z",
+    "updatedAt": "2026-01-24T03:54:55.443Z"
+  },
+  {
+    "id": "62cb3a09-4795-4d5f-a4d6-9b4682926be1",
+    "teacherId": "cmjcxghi6004ra91iha3u7qkl",
+    "classId": "cmiq8006f000tq0jargnvbo6j",
+    "createdAt": "2026-01-24T03:54:55.443Z",
+    "updatedAt": "2026-01-24T03:54:55.443Z"
+  },
+  {
+    "id": "b74c3490-20ee-4ae9-acae-d7ed376b9726",
+    "teacherId": "cmjcxghi6004ra91iha3u7qkl",
+    "classId": "cmiq7zus8000bq0jaz191ad1z",
+    "createdAt": "2026-01-24T03:54:55.443Z",
+    "updatedAt": "2026-01-24T03:54:55.443Z"
+  },
+  {
+    "id": "54d84966-7cf9-40d8-8215-557a7b6de67c",
+    "teacherId": "cmjcxghi6004ra91iha3u7qkl",
+    "classId": "cmiq7zy6z000nq0jaeinbeyfd",
+    "createdAt": "2026-01-24T03:54:55.443Z",
+    "updatedAt": "2026-01-24T03:54:55.443Z"
+  },
+  {
+    "id": "5eea7be1-cdd8-4f74-a5dc-1497be5c699e",
+    "teacherId": "cmjcxghi6004ra91iha3u7qkl",
+    "classId": "cmiq7zr9e0001q0ja25clx0sy",
+    "createdAt": "2026-01-24T03:54:55.443Z",
+    "updatedAt": "2026-01-24T03:54:55.443Z"
+  },
+  {
+    "id": "5908dcbc-f81f-439a-8641-5a84775b03e7",
+    "teacherId": "cmjcxghi6004ra91iha3u7qkl",
+    "classId": "cmiq7zs080003q0jav4gj9wat",
+    "createdAt": "2026-01-24T03:54:55.443Z",
+    "updatedAt": "2026-01-24T03:54:55.443Z"
+  },
+  {
+    "id": "7ec9c4af-585b-45cd-ac7e-f0ff175ca9ae",
+    "teacherId": "cmjcxghi6004ra91iha3u7qkl",
+    "classId": "cmiq7zu9d0009q0jag59r3pss",
+    "createdAt": "2026-01-24T03:54:55.443Z",
+    "updatedAt": "2026-01-24T03:54:55.443Z"
+  },
+  {
+    "id": "e9cb38d1-0a96-479f-8a4a-90f212d1b11d",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq7zwfy000hq0jaf7ml4u89",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "ff25ac23-fe86-4dff-a670-b23f9ff6c279",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq7zzlk000rq0ja6s7xwhj0",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "b874d4a4-06ec-4b69-b742-3f0ecbfb0ff4",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq8006f000tq0jargnvbo6j",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "8086505c-7fb1-473c-8b8d-6be8c34c181f",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq803b9000zq0ja7axlvaon",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "6f1944ef-8721-4347-9fc7-2d450d5d75c3",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq805mh0015q0jal0pu36yp",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "dd3fbf22-820f-4567-a18a-b182ea6ded7e",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq8064j0017q0jafgpnxa73",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "282ba7a8-32ec-4cb1-a9b9-e63d179a0f7f",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq806mn0019q0jak0j1b2cp",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "55264988-3bfa-4053-a8f7-ddfbb7105dd3",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq807ku001bq0jacu44ttnk",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "42c398f3-a768-4cc7-a181-c2e73f84a830",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq8098s001fq0jaixxdzvdc",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "b5a70748-bf1d-4cd2-a583-495277f8a810",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq80a10001hq0ja2qvou6f6",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "82a16fe8-5f4f-4d1e-bb99-5fe4b3d0914c",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq80auu001jq0ja1ro6kgvs",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "26d34d3b-5e72-4fe7-bc19-122a216af158",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq80bg9001lq0jazgu8jiit",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "dc456202-b5ee-4c5c-9e80-8f7e809e8268",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq80c05001nq0jakw8wy95p",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "865a4ee8-1040-43fd-812a-1b80212a3383",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq80cpq001pq0ja802ln7to",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "ed51a260-5eda-4836-97d8-13c86fe9fcb1",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq80di6001rq0ja5op34pk8",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "29922f7f-53fb-4408-8a60-fc29ac63887a",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq80e7s001tq0ja8913v4mf",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "59f281c3-142c-4238-a16a-09320f323f2c",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq7zr9e0001q0ja25clx0sy",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "0f0beb16-ae3e-47ad-8ff3-d3dc87b90c37",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq7zs080003q0jav4gj9wat",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "6020414a-2bb8-4af0-a5ef-eb8da2828f08",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq7zsqx0005q0jatgouva40",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "a09f849d-70c7-4610-8d19-38bb98762d47",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq808iz001dq0jag5t4x47j",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "14308ae0-5747-4d11-92e9-fd6d19539848",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq7zthb0007q0ja8fed8leq",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "c9743b6b-5aa7-40a4-995d-9d2d032ffe6d",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq7zvab000dq0jaz5sltz3k",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "b3e8f5b6-b9a1-42a7-a50f-afde3e949a0a",
+    "teacherId": "cmjcxho3z007ya91i34xu62k7",
+    "classId": "cmiq7zvub000fq0jaaz3hiu4e",
+    "createdAt": "2026-01-31T23:56:58.188Z",
+    "updatedAt": "2026-01-31T23:56:58.188Z"
+  },
+  {
+    "id": "40af8982-852f-46a0-9977-cf4f9db6b2d1",
+    "teacherId": "cmjcxid1s009ra91iyefnwf23",
+    "classId": "cmiq7zyos000pq0jawwgzbdr7",
+    "createdAt": "2026-02-01T21:23:32.181Z",
+    "updatedAt": "2026-02-01T21:23:32.181Z"
+  },
+  {
+    "id": "5cd02854-115a-46d9-8c3c-4ac3c975a036",
+    "teacherId": "cmjcxid1s009ra91iyefnwf23",
+    "classId": "cmiq7zwy1000jq0jalus7rknx",
+    "createdAt": "2026-02-01T21:23:32.181Z",
+    "updatedAt": "2026-02-01T21:23:32.181Z"
+  },
+  {
+    "id": "a0832604-656a-4df2-b356-0b1726148655",
+    "teacherId": "cmjcxid1s009ra91iyefnwf23",
+    "classId": "cmiq8043p0011q0jap2zvukfd",
+    "createdAt": "2026-02-01T21:23:32.181Z",
+    "updatedAt": "2026-02-01T21:23:32.181Z"
+  },
+  {
+    "id": "73166d10-ad3f-4f9a-aa5f-d47d25295e6b",
+    "teacherId": "cmjcxh9t4006ua91i6ziqwxs6",
+    "classId": "cmiq7zr9e0001q0ja25clx0sy",
+    "createdAt": "2026-02-02T18:59:46.619Z",
+    "updatedAt": "2026-02-02T18:59:46.619Z"
+  },
+  {
+    "id": "4a7cf4e9-12fb-4745-a6bd-3a6ec956cb41",
+    "teacherId": "cmjcxh9t4006ua91i6ziqwxs6",
+    "classId": "cmiq8043p0011q0jap2zvukfd",
+    "createdAt": "2026-02-02T18:59:46.619Z",
+    "updatedAt": "2026-02-02T18:59:46.619Z"
+  },
+  {
+    "id": "dfe42c55-12ac-4866-872e-91474f55cafe",
+    "teacherId": "cmjcxh9t4006ua91i6ziqwxs6",
+    "classId": "cmiq8024k000xq0jayizuqk1s",
+    "createdAt": "2026-02-02T18:59:46.619Z",
+    "updatedAt": "2026-02-02T18:59:46.619Z"
+  },
+  {
+    "id": "f3bb7d1b-77fb-4deb-9708-098f656525b0",
+    "teacherId": "cmjcxh9t4006ua91i6ziqwxs6",
+    "classId": "cmiq8013m000vq0jat513mkxw",
+    "createdAt": "2026-02-02T18:59:46.619Z",
+    "updatedAt": "2026-02-02T18:59:46.619Z"
+  },
+  {
+    "id": "eb7cfe64-91ad-4b0d-9e46-c8b559e950a9",
+    "teacherId": "cmjcxh9t4006ua91i6ziqwxs6",
+    "classId": "cmiq8006f000tq0jargnvbo6j",
+    "createdAt": "2026-02-02T18:59:46.619Z",
+    "updatedAt": "2026-02-02T18:59:46.619Z"
+  },
+  {
+    "id": "de2d92c6-9ebe-4a93-864a-4c5947a38b73",
+    "teacherId": "cmjcxh9t4006ua91i6ziqwxs6",
+    "classId": "cmiq7zvab000dq0jaz5sltz3k",
+    "createdAt": "2026-02-02T18:59:46.619Z",
+    "updatedAt": "2026-02-02T18:59:46.619Z"
+  },
+  {
+    "id": "6f0b3a7e-0992-4ee1-8c9f-b894eb0600b3",
+    "teacherId": "cmjcxh9t4006ua91i6ziqwxs6",
+    "classId": "cmiq7zthb0007q0ja8fed8leq",
+    "createdAt": "2026-02-02T18:59:46.619Z",
+    "updatedAt": "2026-02-02T18:59:46.619Z"
+  },
+  {
+    "id": "ec1c4d05-971b-43f2-b699-1a6b90c5eef6",
+    "teacherId": "cmjcxh9t4006ua91i6ziqwxs6",
+    "classId": "cmiq7zsqx0005q0jatgouva40",
+    "createdAt": "2026-02-02T18:59:46.619Z",
+    "updatedAt": "2026-02-02T18:59:46.619Z"
+  },
+  {
+    "id": "fff3b1c5-b586-4e06-bf3b-7688ee123a8b",
+    "teacherId": "cmjcxh9t4006ua91i6ziqwxs6",
+    "classId": "cmiq7zs080003q0jav4gj9wat",
+    "createdAt": "2026-02-02T18:59:46.619Z",
+    "updatedAt": "2026-02-02T18:59:46.619Z"
+  },
+  {
+    "id": "eca799d0-07bb-4f64-b940-54c7e59a928b",
+    "teacherId": "cmjcxh9t4006ua91i6ziqwxs6",
+    "classId": "cmiq803b9000zq0ja7axlvaon",
+    "createdAt": "2026-02-02T18:59:46.619Z",
+    "updatedAt": "2026-02-02T18:59:46.619Z"
+  },
+  {
+    "id": "a3078213-a5a9-42da-b412-f18b947d6c5c",
+    "teacherId": "cmjcxh9t4006ua91i6ziqwxs6",
+    "classId": "cmiq7zzlk000rq0ja6s7xwhj0",
+    "createdAt": "2026-02-02T18:59:46.619Z",
+    "updatedAt": "2026-02-02T18:59:46.619Z"
+  },
+  {
+    "id": "f0110ff3-d647-4748-8af5-e8e571ae09cd",
+    "teacherId": "cmjcxh9t4006ua91i6ziqwxs6",
+    "classId": "cmiq7zwfy000hq0jaf7ml4u89",
+    "createdAt": "2026-02-02T18:59:46.619Z",
+    "updatedAt": "2026-02-02T18:59:46.619Z"
+  },
+  {
+    "id": "ac384ec0-13f5-480f-86c2-46ff15368df2",
+    "teacherId": "cmjcxh9t4006ua91i6ziqwxs6",
+    "classId": "cmiq7zus8000bq0jaz191ad1z",
+    "createdAt": "2026-02-02T18:59:46.619Z",
+    "updatedAt": "2026-02-02T18:59:46.619Z"
+  },
+  {
+    "id": "94d0c5fe-574b-47e7-abaf-958cb2a2c857",
+    "teacherId": "cmjcxh9t4006ua91i6ziqwxs6",
+    "classId": "cmiq7zu9d0009q0jag59r3pss",
+    "createdAt": "2026-02-02T18:59:46.619Z",
+    "updatedAt": "2026-02-02T18:59:46.619Z"
+  },
+  {
+    "id": "f6344c16-55ad-47e9-9bfb-990445044826",
+    "teacherId": "cmjcxh9t4006ua91i6ziqwxs6",
+    "classId": "cmiq7zvub000fq0jaaz3hiu4e",
+    "createdAt": "2026-02-02T18:59:46.619Z",
+    "updatedAt": "2026-02-02T18:59:46.619Z"
+  },
+  {
+    "id": "610fe8f4-f9eb-45a8-b9bf-598beec255d2",
+    "teacherId": "cmjcxiids00a6a91idugmue1z",
+    "classId": "cmiq7zs080003q0jav4gj9wat",
+    "createdAt": "2026-02-06T01:01:11.203Z",
+    "updatedAt": "2026-02-06T01:01:11.203Z"
+  },
+  {
+    "id": "ecd7db1b-753a-4804-a731-4dee2703b554",
+    "teacherId": "cmjcxiids00a6a91idugmue1z",
+    "classId": "cmiq7zy6z000nq0jaeinbeyfd",
+    "createdAt": "2026-02-06T01:01:11.203Z",
+    "updatedAt": "2026-02-06T01:01:11.203Z"
+  },
+  {
+    "id": "a5da4a96-1a02-4436-ab44-3c4aa0852904",
+    "teacherId": "cmjcxiids00a6a91idugmue1z",
+    "classId": "cmiq7zyos000pq0jawwgzbdr7",
+    "createdAt": "2026-02-06T01:01:11.203Z",
+    "updatedAt": "2026-02-06T01:01:11.203Z"
+  },
+  {
+    "id": "5dbaa717-46a4-4669-84d4-0c2d01b90267",
+    "teacherId": "cmjcxiids00a6a91idugmue1z",
+    "classId": "cmiq7zu9d0009q0jag59r3pss",
+    "createdAt": "2026-02-06T01:01:11.203Z",
+    "updatedAt": "2026-02-06T01:01:11.203Z"
+  },
+  {
+    "id": "97fc1ff2-7c74-494e-b600-186ecdbcf257",
+    "teacherId": "cmjcxiids00a6a91idugmue1z",
+    "classId": "cmiq7zr9e0001q0ja25clx0sy",
+    "createdAt": "2026-02-06T01:01:11.203Z",
+    "updatedAt": "2026-02-06T01:01:11.203Z"
+  },
+  {
+    "id": "270dc013-9ba3-4670-9d98-36d2dc970167",
+    "teacherId": "cmjcxiids00a6a91idugmue1z",
+    "classId": "cmiq7zsqx0005q0jatgouva40",
+    "createdAt": "2026-02-06T01:01:11.203Z",
+    "updatedAt": "2026-02-06T01:01:11.203Z"
+  },
+  {
+    "id": "9e3e4dfc-426d-4650-9526-7f5ca00a7b37",
+    "teacherId": "cmjcxiids00a6a91idugmue1z",
+    "classId": "cmiq7zthb0007q0ja8fed8leq",
+    "createdAt": "2026-02-06T01:01:11.203Z",
+    "updatedAt": "2026-02-06T01:01:11.203Z"
+  },
+  {
+    "id": "3507585b-02c4-410a-93ec-76e70e561167",
+    "teacherId": "cmjcxiids00a6a91idugmue1z",
+    "classId": "cmiq7zwfy000hq0jaf7ml4u89",
+    "createdAt": "2026-02-06T01:01:11.203Z",
+    "updatedAt": "2026-02-06T01:01:11.203Z"
+  },
+  {
+    "id": "d56a174c-d294-4700-ae7d-c15ee8d55c63",
+    "teacherId": "cmjcxiids00a6a91idugmue1z",
+    "classId": "cmiq7zvub000fq0jaaz3hiu4e",
+    "createdAt": "2026-02-06T01:01:11.203Z",
+    "updatedAt": "2026-02-06T01:01:11.203Z"
+  },
+  {
+    "id": "44237202-7ae0-4f27-af40-860a138598b1",
+    "teacherId": "cmjcxiids00a6a91idugmue1z",
+    "classId": "cmiq7zvab000dq0jaz5sltz3k",
+    "createdAt": "2026-02-06T01:01:11.203Z",
+    "updatedAt": "2026-02-06T01:01:11.203Z"
+  },
+  {
+    "id": "8f61a78a-1684-4513-882b-649567ac2010",
+    "teacherId": "cmjcxiids00a6a91idugmue1z",
+    "classId": "cmiq7zus8000bq0jaz191ad1z",
+    "createdAt": "2026-02-06T01:01:11.203Z",
+    "updatedAt": "2026-02-06T01:01:11.203Z"
+  },
+  {
+    "id": "922bd4e6-88b8-4aca-97e0-a0c9d85163cd",
+    "teacherId": "cmjcxiids00a6a91idugmue1z",
+    "classId": "cmiq7zwy1000jq0jalus7rknx",
+    "createdAt": "2026-02-06T01:01:11.203Z",
+    "updatedAt": "2026-02-06T01:01:11.203Z"
+  },
+  {
+    "id": "63aaa33d-bd67-430b-94da-6e33ade85ca6",
+    "teacherId": "cmjcxiids00a6a91idugmue1z",
+    "classId": "cmiq7zxhq000lq0jagpi729wu",
+    "createdAt": "2026-02-06T01:01:11.203Z",
+    "updatedAt": "2026-02-06T01:01:11.203Z"
+  },
+  {
+    "id": "66d86d11-501c-4c62-9d9e-ced0c19beda9",
+    "teacherId": "cmjcxfpxs002oa91iasc4rj31",
+    "classId": "cmiq80di6001rq0ja5op34pk8",
+    "createdAt": "2026-02-17T02:07:47.818Z",
+    "updatedAt": "2026-02-17T02:07:47.818Z"
+  },
+  {
+    "id": "d2585675-6b23-4941-8d7d-0dc8b5905e12",
+    "teacherId": "cmjcxfpxs002oa91iasc4rj31",
+    "classId": "cmiq80e7s001tq0ja8913v4mf",
+    "createdAt": "2026-02-17T02:07:47.818Z",
+    "updatedAt": "2026-02-17T02:07:47.818Z"
+  },
+  {
+    "id": "1db490ae-cff4-4a81-acf1-75c02d3e563a",
+    "teacherId": "cmjcxfpxs002oa91iasc4rj31",
+    "classId": "cmiq80a10001hq0ja2qvou6f6",
+    "createdAt": "2026-02-17T02:07:47.818Z",
+    "updatedAt": "2026-02-17T02:07:47.818Z"
+  },
+  {
+    "id": "3810867c-3613-46b4-b6f9-4570ff02e1f8",
+    "teacherId": "cmjcxfpxs002oa91iasc4rj31",
+    "classId": "cmiq8098s001fq0jaixxdzvdc",
+    "createdAt": "2026-02-17T02:07:47.818Z",
+    "updatedAt": "2026-02-17T02:07:47.818Z"
+  },
+  {
+    "id": "695d561b-6ff6-428d-b5ef-61263db7139e",
+    "teacherId": "cmjcxg6n4003xa91ix7w38xu1",
+    "classId": "cmiq805mh0015q0jal0pu36yp",
+    "createdAt": "2026-02-26T20:21:42.225Z",
+    "updatedAt": "2026-02-26T20:21:42.225Z"
+  },
+  {
+    "id": "b71f9e91-2ac1-4fba-8820-fc08f84004a0",
+    "teacherId": "cmjcxg6n4003xa91ix7w38xu1",
+    "classId": "cmiq803b9000zq0ja7axlvaon",
+    "createdAt": "2026-02-26T20:21:42.225Z",
+    "updatedAt": "2026-02-26T20:21:42.225Z"
+  },
+  {
+    "id": "bdee7e4f-58ae-4691-bec7-66e49c735e3b",
+    "teacherId": "cmjcxg6n4003xa91ix7w38xu1",
+    "classId": "cmiq806mn0019q0jak0j1b2cp",
+    "createdAt": "2026-02-26T20:21:42.225Z",
+    "updatedAt": "2026-02-26T20:21:42.225Z"
+  },
+  {
+    "id": "817caeb2-59e5-4cd0-8fc6-f001f9a4d365",
+    "teacherId": "cmjcxg6n4003xa91ix7w38xu1",
+    "classId": "cmiq808iz001dq0jag5t4x47j",
+    "createdAt": "2026-02-26T20:21:42.225Z",
+    "updatedAt": "2026-02-26T20:21:42.225Z"
+  },
+  {
+    "id": "402c477d-8bfb-450a-8d40-bfcec38a9a79",
+    "teacherId": "cmjcxg6n4003xa91ix7w38xu1",
+    "classId": "cmiq7zr9e0001q0ja25clx0sy",
+    "createdAt": "2026-02-26T20:21:42.225Z",
+    "updatedAt": "2026-02-26T20:21:42.225Z"
+  },
+  {
+    "id": "6e3a7fc9-2091-4c04-93d9-cc3478831d2d",
+    "teacherId": "cmjcxg6n4003xa91ix7w38xu1",
+    "classId": "cmiq7zs080003q0jav4gj9wat",
+    "createdAt": "2026-02-26T20:21:42.225Z",
+    "updatedAt": "2026-02-26T20:21:42.225Z"
+  },
+  {
+    "id": "d5272488-fa9c-4fad-b654-7a643055a82b",
+    "teacherId": "cmjcxg6n4003xa91ix7w38xu1",
+    "classId": "cmiq7zzlk000rq0ja6s7xwhj0",
+    "createdAt": "2026-02-26T20:21:42.225Z",
+    "updatedAt": "2026-02-26T20:21:42.225Z"
+  },
+  {
+    "id": "2be14371-7710-4f0f-9733-474adcacb4c4",
+    "teacherId": "cmjcxg6n4003xa91ix7w38xu1",
+    "classId": "cmiq8006f000tq0jargnvbo6j",
+    "createdAt": "2026-02-26T20:21:42.225Z",
+    "updatedAt": "2026-02-26T20:21:42.225Z"
+  },
+  {
+    "id": "175d5b12-4b24-4c2c-945d-e2bb68bf8b90",
+    "teacherId": "cmjcxg6n4003xa91ix7w38xu1",
+    "classId": "cmiq8013m000vq0jat513mkxw",
+    "createdAt": "2026-02-26T20:21:42.225Z",
+    "updatedAt": "2026-02-26T20:21:42.225Z"
+  },
+  {
+    "id": "2bb9b24a-2c94-4270-a3a2-28a488fe56ed",
+    "teacherId": "cmjcxg6n4003xa91ix7w38xu1",
+    "classId": "cmiq8024k000xq0jayizuqk1s",
+    "createdAt": "2026-02-26T20:21:42.225Z",
+    "updatedAt": "2026-02-26T20:21:42.225Z"
+  },
+  {
+    "id": "843c3107-2c4c-4793-824d-6aa88141cf5d",
+    "teacherId": "cmjcxg6n4003xa91ix7w38xu1",
+    "classId": "cmiq8064j0017q0jafgpnxa73",
+    "createdAt": "2026-02-26T20:21:42.225Z",
+    "updatedAt": "2026-02-26T20:21:42.225Z"
+  },
+  {
+    "id": "b1bef068-76c4-4cb0-b32d-199fb614d8a8",
+    "teacherId": "cmjcxg6n4003xa91ix7w38xu1",
+    "classId": "cmiq8051t0013q0janrrewlq2",
+    "createdAt": "2026-02-26T20:21:42.225Z",
+    "updatedAt": "2026-02-26T20:21:42.225Z"
+  }
+]

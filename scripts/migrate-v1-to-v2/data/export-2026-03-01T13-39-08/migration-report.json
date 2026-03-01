@@ -1,0 +1,23 @@
+{
+  "schoolId": "cmm7z6tbr0000ot28v9vugp29",
+  "schoolName": "Svaythom High School",
+  "created": {
+    "school": 1,
+    "academicYears": 2,
+    "gradingScales": 2,
+    "subjects": 0,
+    "teachers": 0,
+    "classes": 33,
+    "students": 1705,
+    "studentClasses": 1705,
+    "subjectTeachers": 116,
+    "teacherClasses": 483
+  },
+  "skipped": {
+    "subjects": 119
+  },
+  "errors": [],
+  "startedAt": "2026-03-01T16:39:47.815Z",
+  "completedAt": "2026-03-01T16:53:45.910Z",
+  "durationMs": 838321
+}

@@ -294,6 +294,7 @@ model Student {
   entryYear            Int?
   permanentId          String?                 @unique
   studentIdFormat      IdFormat?
+  customFields         Json?                   // flexible country/school-specific data
   studentIdMeta        Json?
   attendance           Attendance[]
   claimCode            ClaimCode?
@@ -339,6 +340,7 @@ model Parent {
   isAccountActive Boolean            @default(true)
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
+  customFields    Json?              // flexible country/school-specific data
   conversations   Conversation[]
   studentParents  StudentParent[]
   user            User?
@@ -414,6 +416,7 @@ model Subject {
   isActive                  Boolean                    @default(true)
   createdAt                 DateTime                   @default(now())
   updatedAt                 DateTime                   @updatedAt
+  customFields              Json?                      // e.g. { localName, examWeight, curriculumRef }
   grades                    Grade[]
   subjectTeachers           SubjectTeacher[]
   teacherSubjectAssignments TeacherSubjectAssignment[] @relation("TeacherSubjectAssignments")
@@ -473,6 +476,7 @@ model Teacher {
   permanentId               String?                    @unique
   teacherIdFormat           IdFormat?
   teacherIdMeta             Json?
+  customFields              Json?                      // flexible country/school-specific data
   claimCode                 ClaimCode?
   conversations             Conversation[]
   subjectTeachers           SubjectTeacher[]

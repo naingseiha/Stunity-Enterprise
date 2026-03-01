@@ -852,6 +852,7 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
         email: user.email,
         role: user.role,
         schoolId: user.schoolId,
+        isSuperAdmin: !!(user as any).isSuperAdmin,
         school: user.school ? {
           id: user.school.id,
           name: user.school.name,

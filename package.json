@@ -23,8 +23,11 @@
     "seed:all": "cd packages/database && npx prisma db seed && cd ../.. && npm run seed:test-data && npm run seed:school-management",
     "seed:courses": "tsx scripts/seed-courses.ts",
     "seed:feed": "tsx scripts/seed-feed.ts",
+    "db:reset": "tsx scripts/reset-to-clean.ts",
+    "db:reset:confirm": "tsx scripts/reset-to-clean.ts --confirm",
     "migrate:v1-export": "V1_DATABASE_URL=${V1_DATABASE_URL} tsx scripts/migrate-v1-to-v2/export-v1-data.ts",
-    "migrate:v1-import": "tsx scripts/migrate-v1-to-v2/import-to-v2.ts"
+    "migrate:v1-import": "tsx scripts/migrate-v1-to-v2/import-to-v2.ts",
+    "migrate:v1-validate": "tsx scripts/migrate-v1-to-v2/validate-migration.ts"
   },
   "devDependencies": {
     "@prisma/client": "^5.22.0",

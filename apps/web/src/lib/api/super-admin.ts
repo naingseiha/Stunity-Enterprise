@@ -17,15 +17,36 @@ export interface SuperAdminStats {
   totalSchools: number;
   totalUsers: number;
   totalClasses: number;
+  totalStudents: number;
+  totalTeachers: number;
   activeSchools: number;
+  inactiveSchools: number;
+  // Business velocity
+  pendingApprovals: number;
+  newSchoolsToday: number;
+  newSchoolsThisWeek: number;
+  newUsersThisWeek: number;
+  // Lists
   recentSchools: Array<{
     id: string;
     name: string;
     slug: string;
     createdAt: string;
     isActive: boolean;
+    registrationStatus?: string;
+    subscriptionTier?: string;
+    currentStudents?: number;
+  }>;
+  pendingSchools: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    email: string;
+    createdAt: string;
+    schoolType?: string;
   }>;
   schoolsByTier?: Array<{ tier: string; count: number }>;
+  subscriptionBreakdown?: Array<{ tier: string; isActive: boolean; count: number }>;
 }
 
 export interface SuperAdminUser {
