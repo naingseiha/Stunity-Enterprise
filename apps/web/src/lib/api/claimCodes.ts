@@ -4,6 +4,8 @@
  * Handles all claim code operations with the school service
  */
 
+import { TokenManager } from './auth';
+
 export interface ClaimCode {
   id: string;
   code: string;
@@ -69,13 +71,25 @@ export interface ClaimCodeStats {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
 
 class ClaimCodeService {
+  private getHeaders(isFormData = false): Record<string, string> {
+    const token = TokenManager.getAccessToken();
+    const headers: Record<string, string> = {};
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
+    }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  }
+
   /**
    * Generate claim codes
    */
   async generate(schoolId: string, params: GenerateCodesParams): Promise<string[]> {
     const response = await fetch(`${API_BASE_URL}/schools/${schoolId}/claim-codes/generate`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders(),
       body: JSON.stringify(params),
     });
 
@@ -106,7 +120,10 @@ class ClaimCodeService {
     if (params.search) queryParams.append('search', params.search);
 
     const response = await fetch(
-      `${API_BASE_URL}/schools/${schoolId}/claim-codes?${queryParams.toString()}`
+      `${API_BASE_URL}/schools/${schoolId}/claim-codes?${queryParams.toString()}`,
+      {
+        headers: this.getHeaders(),
+      }
     );
 
     if (!response.ok) {
@@ -126,7 +143,9 @@ class ClaimCodeService {
    * Get claim code details
    */
   async get(schoolId: string, codeId: string): Promise<ClaimCode> {
-    const response = await fetch(`${API_BASE_URL}/schools/${schoolId}/claim-codes/${codeId}`);
+    const response = await fetch(`${API_BASE_URL}/schools/${schoolId}/claim-codes/${codeId}`, {
+      headers: this.getHeaders(),
+    });
 
     if (!response.ok) {
       throw new Error('Failed to fetch claim code details');
@@ -144,7 +163,7 @@ class ClaimCodeService {
       `${API_BASE_URL}/schools/${schoolId}/claim-codes/${codeId}/revoke`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getHeaders(),
         body: JSON.stringify({ reason }),
       }
     );
@@ -164,7 +183,10 @@ class ClaimCodeService {
     if (params.status) queryParams.append('status', params.status);
 
     const response = await fetch(
-      `${API_BASE_URL}/schools/${schoolId}/claim-codes/export?${queryParams.toString()}`
+      `${API_BASE_URL}/schools/${schoolId}/claim-codes/export?${queryParams.toString()}`,
+      {
+        headers: this.getHeaders(),
+      }
     );
 
     if (!response.ok) {
@@ -178,7 +200,9 @@ class ClaimCodeService {
    * Get statistics
    */
   async getStats(schoolId: string): Promise<ClaimCodeStats> {
-    const response = await fetch(`${API_BASE_URL}/schools/${schoolId}/claim-codes/stats`);
+    const response = await fetch(`${API_BASE_URL}/schools/${schoolId}/claim-codes/stats`, {
+      headers: this.getHeaders(),
+    });
 
     if (!response.ok) {
       throw new Error('Failed to fetch claim code statistics');
@@ -252,7 +276,7 @@ class ClaimCodeService {
       {
         method: 'POST',
         body: formData,
-        headers: {},
+        headers: this.getHeaders(true),
       }
     );
 

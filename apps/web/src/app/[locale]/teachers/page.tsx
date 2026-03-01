@@ -22,9 +22,12 @@ import {
   Phone,
   Briefcase,
   Lock,
+  Ticket,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
-import { deleteTeacher, type Teacher } from '@/lib/api/teachers';
+import { claimCodeService } from '@/lib/api/claimCodes';
+import { deleteTeacher } from '@/lib/api/teachers';
+import { Teacher, Gender } from '@/types/models';
 import { useTeachers } from '@/hooks/useTeachers';
 import TeacherModal from '@/components/teachers/TeacherModal';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
@@ -48,12 +51,15 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
   const debouncedSearch = useDebounce(searchTerm, 300);
   const [showModal, setShowModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [isGenerating, setIsGenerating] = useState<string | null>(null);
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [page, setPage] = useState(1);
   const { selectedYear } = useAcademicYear();
 
   const user = TokenManager.getUserData().user;
   const school = TokenManager.getUserData().school;
+  const schoolId = school?.id;
 
   // Use SWR hook for data fetching with automatic caching
   const {
@@ -67,7 +73,6 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
     page,
     limit: ITEMS_PER_PAGE,
     search: debouncedSearch,
-    academicYearId: selectedYear?.id,
   });
 
   const totalPages = pagination.totalPages;
@@ -88,6 +93,28 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
   const handleSearch = useCallback(() => {
     setPage(1);
   }, []);
+
+  const handleGenerateCode = async (teacher: Teacher) => {
+    if (!schoolId) return;
+    try {
+      setIsGenerating(teacher.id);
+      const codes = await claimCodeService.generate(schoolId, {
+        type: 'TEACHER',
+        quantity: 1,
+        specificRecords: [{ teacherId: teacher.id }],
+        expiresInDays: 30,
+      });
+      if (codes && codes.length > 0) {
+        // Automatically copy to clipboard and alert the user
+        navigator.clipboard.writeText(codes[0]);
+        alert(`Claim code generated for ${teacher.firstName} ${teacher.lastName}:\n\n${codes[0]}\n\nThis code has been copied to your clipboard.`);
+      }
+    } catch (error: any) {
+      alert(error.message || 'Failed to generate claim code for this teacher.');
+    } finally {
+      setIsGenerating(null);
+    }
+  };
 
   const handleDelete = useCallback(async (id: string) => {
     if (!confirm('Are you sure you want to delete this teacher?')) return;
@@ -236,12 +263,7 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
                     />
                   </div>
 
-                  {/* Year Badge */}
-                  {selectedYear && (
-                    <div className="hidden lg:flex items-center gap-2 px-3 h-10 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium">
-                      <span>{selectedYear.name}</span>
-                    </div>
-                  )}
+                  {/* Year Badge Removed for Global List */}
                 </div>
               </div>
 
@@ -404,6 +426,14 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
                               {/* Actions */}
                               <td className="px-4 py-3">
                                 <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={() => handleGenerateCode(teacher)}
+                                    disabled={isGenerating === teacher.id}
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors disabled:opacity-50"
+                                    title="Generate Claim Code"
+                                  >
+                                    <Ticket className="w-4 h-4" />
+                                  </button>
                                   <button
                                     onClick={() => router.push(`/${locale}/teachers/${teacher.id}`)}
                                     className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"

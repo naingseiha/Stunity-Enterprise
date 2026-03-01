@@ -1972,15 +1972,53 @@ app.post('/auth/claim-codes/link', authenticateToken, async (req: AuthRequest, r
         organizationCode: claimCode.school.id, // Using school ID as organization code
         organizationName: claimCode.school.name,
         organizationType: claimCode.school.schoolType,
+        schoolId: claimCode.school.id,
         socialFeaturesEnabled: true,
       };
 
+      let finalStudentId = claimCode.type === 'STUDENT' ? claimCode.studentId : undefined;
+      let finalTeacherId = claimCode.type === 'TEACHER' ? claimCode.teacherId : undefined;
+
+      const currentUser = await tx.user.findUnique({ where: { id: userId } });
+
+      // Create Teacher profile if needed
+      if (claimCode.type === 'TEACHER' && !finalTeacherId && currentUser) {
+        const newTeacher = await tx.teacher.create({
+          data: {
+            schoolId: claimCode.school.id,
+            firstName: currentUser.firstName,
+            lastName: currentUser.lastName,
+            email: currentUser.email,
+            phone: currentUser.phone || null,
+            gender: 'MALE',
+            position: 'Teacher',
+          }
+        });
+        finalTeacherId = newTeacher.id;
+      }
+
+      // Create Student profile if needed
+      if (claimCode.type === 'STUDENT' && !finalStudentId && currentUser) {
+        const newStudent = await tx.student.create({
+          data: {
+            schoolId: claimCode.school.id,
+            firstName: currentUser.firstName,
+            lastName: currentUser.lastName,
+            email: currentUser.email,
+            khmerName: `${currentUser.firstName} ${currentUser.lastName}`,
+            dateOfBirth: verificationData?.dateOfBirth || new Date().toISOString(),
+            gender: 'MALE',
+          }
+        });
+        finalStudentId = newStudent.id;
+      }
+
       // Link to student or teacher by setting studentId/teacherId in User
-      if (claimCode.type === 'STUDENT' && claimCode.studentId) {
-        updateData.studentId = claimCode.studentId;
+      if (claimCode.type === 'STUDENT') {
+        updateData.studentId = finalStudentId;
         updateData.role = 'STUDENT';
-      } else if (claimCode.type === 'TEACHER' && claimCode.teacherId) {
-        updateData.teacherId = claimCode.teacherId;
+      } else if (claimCode.type === 'TEACHER') {
+        updateData.teacherId = finalTeacherId;
         updateData.role = 'TEACHER';
       }
 
@@ -2145,6 +2183,39 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
 
     // Create user and link account in transaction
     const result = await prisma.$transaction(async (tx) => {
+      let finalStudentId = claimCode.type === 'STUDENT' ? claimCode.studentId : undefined;
+      let finalTeacherId = claimCode.type === 'TEACHER' ? claimCode.teacherId : undefined;
+
+      if (claimCode.type === 'TEACHER' && !finalTeacherId) {
+        const newTeacher = await tx.teacher.create({
+          data: {
+            schoolId: claimCode.school.id,
+            firstName,
+            lastName,
+            email: email || null,
+            phone: phone || null,
+            gender: 'MALE',
+            position: 'Teacher',
+          }
+        });
+        finalTeacherId = newTeacher.id;
+      }
+
+      if (claimCode.type === 'STUDENT' && !finalStudentId) {
+        const newStudent = await tx.student.create({
+          data: {
+            schoolId: claimCode.school.id,
+            firstName,
+            lastName,
+            khmerName: `${firstName} ${lastName}`,
+            dateOfBirth: verificationData?.dateOfBirth || new Date().toISOString(),
+            gender: 'MALE',
+            email: email || null,
+          }
+        });
+        finalStudentId = newStudent.id;
+      }
+
       // Create user
       const user = await tx.user.create({
         data: {
@@ -2160,9 +2231,10 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
           role: claimCode.type === 'TEACHER' ? 'TEACHER' : 'STUDENT',
           socialFeaturesEnabled: true,
           isEmailVerified: false,
+          schoolId: claimCode.school.id, // Add school ID here, since registration didn't have it either!
           // Link to student or teacher via foreign key
-          studentId: claimCode.type === 'STUDENT' ? claimCode.studentId : undefined,
-          teacherId: claimCode.type === 'TEACHER' ? claimCode.teacherId : undefined,
+          studentId: finalStudentId,
+          teacherId: finalTeacherId,
         },
       });
 
