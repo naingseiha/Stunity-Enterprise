@@ -214,7 +214,7 @@ const transformError = (error: AxiosError<ApiResponse<unknown>>): ApiError => {
     case 400:
       return {
         code: 'BAD_REQUEST',
-        message: data?.message || 'Invalid request. Please check your input.',
+        message: data?.error || data?.message || 'Invalid request. Please check your input.',
       };
     case 401:
       return {

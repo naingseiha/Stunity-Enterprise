@@ -1518,6 +1518,9 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       } catch { return undefined; }
     };
 
+    let _livenessTimer: ReturnType<typeof setTimeout> | null = null;
+    let _receivedAnyEvent = false;
+
     const channelName = `feed:realtime:${Date.now()}`; // Unique per subscription
     const channel = supabase
       .channel(channelName)
@@ -1526,18 +1529,14 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'posts' },
         async (payload) => {
+          _receivedAnyEvent = true; // Liveness: at least one event arrived
           const newPostRaw = payload.new as any;
           const newPostId = newPostRaw?.id;
           if (!newPostId) return;
 
-          // Skip own posts (already added via optimistic update in createPost)
-          const currentUserId = getCurrentUserId();
-          if (currentUserId && newPostRaw.authorId === currentUserId) {
-            console.log('🔔 [FeedStore] Skipping own post INSERT:', newPostId);
-            return;
-          }
-
-          // Skip if already known (dedup)
+          // Skip if already known (dedup) — includes optimistic update on creating device
+          // Note: Don't skip "own posts" here — same user on Device B needs to receive
+          // posts created on Device A; isKnownPostId handles the creating device.
           if (isKnownPostId(newPostId)) {
             console.log('🔔 [FeedStore] Skipping duplicate INSERT:', newPostId);
             return;
@@ -1570,6 +1569,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'posts' },
         async (payload) => {
+          _receivedAnyEvent = true; // Liveness: at least one event arrived
           const updated = payload.new as any;
           if (!updated?.id) return;
 
@@ -1650,6 +1650,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'posts' },
         (payload) => {
+          _receivedAnyEvent = true; // Liveness: at least one event arrived
           const deletedId = (payload.old as any)?.id;
           if (!deletedId) return;
 
@@ -1660,8 +1661,36 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         }
       )
       .subscribe((status, err) => {
-        console.log('🔌 [FeedStore] Subscription status:', status);
-        if (err) console.error('🔌 [FeedStore] Subscription error:', err);
+        if (err) console.error('❌ [FeedStore] Subscription error:', err);
+
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ [FeedStore] Realtime ACTIVE — listening for post changes');
+          // Reset retry counter
+          set({ ...(get() as any), _realtimeRetries: 0 } as any);
+
+          // Liveness check: if no event arrives within 30s of subscribing,
+          // warn about possible RLS blocking (silent failure mode).
+          // In production with active users this fires rarely — posts are created often.
+          if (_livenessTimer) clearTimeout(_livenessTimer);
+          _livenessTimer = setTimeout(() => {
+            if (!_receivedAnyEvent && __DEV__) {
+              console.warn(
+                '⚠️ [FeedStore] No real-time events received 30s after SUBSCRIBED.\n' +
+                '  → Check Supabase dashboard: is RLS enabled on the `posts` table?\n' +
+                '  → Run: ALTER TABLE public.posts DISABLE ROW LEVEL SECURITY;\n' +
+                '  → See implementation_plan.md for full details.'
+              );
+            }
+          }, 30_000);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ [FeedStore] Realtime CHANNEL_ERROR — check Supabase RLS or network');
+          if (_livenessTimer) { clearTimeout(_livenessTimer); _livenessTimer = null; }
+        } else if (status === 'TIMED_OUT') {
+          console.error('❌ [FeedStore] Realtime TIMED_OUT — network issue or Supabase outage');
+          if (_livenessTimer) { clearTimeout(_livenessTimer); _livenessTimer = null; }
+        } else {
+          console.log(`🔌 [FeedStore] Realtime status: ${status}`);
+        }
 
         // Auto-reconnect on error with exponential backoff
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
@@ -1679,9 +1708,6 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           } else {
             console.warn('🔌 [FeedStore] Max retries reached, giving up on realtime');
           }
-        } else if (status === 'SUBSCRIBED') {
-          // Reset retry counter on successful connection
-          set({ ...(get() as any), _realtimeRetries: 0 } as any);
         }
       });
 

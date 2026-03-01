@@ -121,7 +121,7 @@ export const useClubStore = create<ClubState>((set, get) => ({
                 {
                     event: '*', // Listen to all events
                     schema: 'public',
-                    table: 'clubs',
+                    table: 'study_clubs',
                 },
                 (payload) => {
                     console.log('👥 [ClubStore] Realtime update:', payload);
