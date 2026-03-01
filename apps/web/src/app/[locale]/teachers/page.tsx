@@ -30,6 +30,7 @@ import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import AcademicYearSelector from '@/components/AcademicYearSelector';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import AdminResetPasswordModal from '@/components/AdminResetPasswordModal';
 import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
@@ -45,6 +46,7 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 300);
   const [showModal, setShowModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [page, setPage] = useState(1);
   const { selectedYear } = useAcademicYear();
@@ -126,7 +128,7 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
       {/* Main Content */}
       <div className="lg:ml-64 min-h-screen bg-[#f8fafc]">
         <main className="p-6 lg:p-8 max-w-[1600px] mx-auto">
-          
+
           {/* Page Header - Clean & Minimal */}
           <AnimatedContent animation="fade" delay={0}>
             <div className="mb-8">
@@ -217,7 +219,7 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
           {/* Main Content Card */}
           <AnimatedContent animation="slide-up" delay={100}>
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              
+
               {/* Toolbar */}
               <div className="px-5 py-4 border-b border-gray-100">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
@@ -290,7 +292,7 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
                     </div>
                   </div>
                 )}
-                
+
                 {isEmpty ? (
                   <div className="px-6 py-16 text-center">
                     <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-100 rounded-full mb-4">
@@ -323,7 +325,7 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                           {teachers.map((teacher) => (
-                            <tr 
+                            <tr
                               key={teacher.id}
                               className="group transition-colors hover:bg-gray-50/50"
                             >
@@ -337,9 +339,8 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
                                       className="w-9 h-9 rounded-full object-cover"
                                     />
                                   ) : (
-                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium text-white ${
-                                      teacher.gender === 'MALE' ? 'bg-blue-500' : 'bg-pink-500'
-                                    }`}>
+                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium text-white ${teacher.gender === 'MALE' ? 'bg-blue-500' : 'bg-pink-500'
+                                      }`}>
                                       {teacher.firstNameLatin.charAt(0)}{teacher.lastNameLatin.charAt(0)}
                                     </div>
                                   )}
@@ -363,11 +364,10 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
 
                               {/* Gender */}
                               <td className="px-4 py-3">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                  teacher.gender === 'MALE' 
-                                    ? 'bg-blue-50 text-blue-700' 
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${teacher.gender === 'MALE'
+                                    ? 'bg-blue-50 text-blue-700'
                                     : 'bg-pink-50 text-pink-700'
-                                }`}>
+                                  }`}>
                                   {teacher.gender === 'MALE' ? 'Male' : 'Female'}
                                 </span>
                               </td>
@@ -409,6 +409,16 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
                                     title="View"
                                   >
                                     <Eye className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedTeacher(teacher);
+                                      setShowResetModal(true);
+                                    }}
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors"
+                                    title="Reset Password"
+                                  >
+                                    <Lock className="w-4 h-4" />
                                   </button>
                                   <button
                                     onClick={() => handleEdit(teacher)}
@@ -463,11 +473,10 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
                               <button
                                 key={pageNum}
                                 onClick={() => setPage(pageNum)}
-                                className={`inline-flex items-center justify-center h-8 min-w-[32px] px-2 text-sm font-medium rounded-md transition-colors ${
-                                  page === pageNum
+                                className={`inline-flex items-center justify-center h-8 min-w-[32px] px-2 text-sm font-medium rounded-md transition-colors ${page === pageNum
                                     ? 'bg-gray-900 text-white'
                                     : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
-                                }`}
+                                  }`}
                               >
                                 {pageNum}
                               </button>
@@ -496,6 +505,21 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
         <TeacherModal
           teacher={selectedTeacher}
           onClose={handleModalClose}
+        />
+      )}
+
+      {/* Admin Reset Password Modal */}
+      {showResetModal && selectedTeacher && (
+        <AdminResetPasswordModal
+          user={{
+            id: selectedTeacher.id,
+            name: `${selectedTeacher.firstNameLatin} ${selectedTeacher.lastNameLatin}`,
+            email: selectedTeacher.email,
+          }}
+          onClose={() => {
+            setShowResetModal(false);
+            setSelectedTeacher(null);
+          }}
         />
       )}
     </>

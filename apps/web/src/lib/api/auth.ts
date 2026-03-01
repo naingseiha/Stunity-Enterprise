@@ -69,7 +69,7 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
   }
 
   const result = await response.json();
-  
+
   // Backend returns data wrapped in { success, message, data: { user, school, tokens } }
   // Transform to match our interface
   if (result.data) {
@@ -81,7 +81,7 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
       tokens: result.data.tokens,
     };
   }
-  
+
   return result;
 }
 
@@ -245,6 +245,32 @@ export async function forgotPassword(email: string): Promise<{ success: boolean;
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
   });
+  return response.json();
+}
+
+/**
+ * Reset a user's password as an administrator.
+ * Requires ADMIN or SUPER_ADMIN role.
+ */
+export async function adminResetPassword(
+  userId: string | number,
+  newPassword: string,
+  token: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  const response = await fetch(`${AUTH_SERVICE_URL}/auth/admin/reset-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ userId, newPassword }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: 'Admin reset failed' }));
+    throw new Error(err.error || 'Admin reset failed');
+  }
+
   return response.json();
 }
 

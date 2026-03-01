@@ -12,7 +12,10 @@ import {
   ChevronRight,
   Home,
   School,
+  Lock,
 } from 'lucide-react';
+import AdminResetPasswordModal from '@/components/AdminResetPasswordModal';
+import { TokenManager } from '@/lib/api/auth';
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Admin',
@@ -32,9 +35,10 @@ export default function SuperAdminUsersPage() {
   const [search, setSearch] = useState('');
   const [schoolFilter, setSchoolFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<SuperAdminUser | null>(null);
 
   const fetchUsers = useCallback(async (page: number, searchText: string, schoolId: string, role: string) => {
     setLoading(true);
@@ -60,7 +64,7 @@ export default function SuperAdminUsersPage() {
   useEffect(() => {
     getSuperAdminSchools({ limit: 500 })
       .then((r) => setSchools(r.data.schools.map((s) => ({ id: s.id, name: s.name }))))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -210,13 +214,22 @@ export default function SuperAdminUsersPage() {
                           <button
                             onClick={() => handleToggleActive(u)}
                             disabled={togglingId === u.id}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                              u.isActive
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${u.isActive
                                 ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
                                 : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                              } disabled:opacity-50 disabled:cursor-not-allowed`}
                           >
                             {togglingId === u.id ? '…' : u.isActive ? 'Deactivate' : 'Activate'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedUser(u);
+                              setShowResetModal(true);
+                            }}
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-100 text-amber-700 hover:bg-amber-200"
+                            title="Reset Password"
+                          >
+                            <Lock className="w-3.5 h-3.5" />
                           </button>
                         </td>
                       </tr>
@@ -251,6 +264,20 @@ export default function SuperAdminUsersPage() {
           )}
         </div>
       </AnimatedContent>
+
+      {showResetModal && selectedUser && (
+        <AdminResetPasswordModal
+          user={{
+            id: selectedUser.id,
+            name: `${selectedUser.firstName} ${selectedUser.lastName}`,
+            email: selectedUser.email || undefined,
+          }}
+          onClose={() => {
+            setShowResetModal(false);
+            setSelectedUser(null);
+          }}
+        />
+      )}
     </div>
   );
 }

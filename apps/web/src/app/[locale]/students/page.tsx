@@ -39,6 +39,7 @@ import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import AcademicYearSelector from '@/components/AcademicYearSelector';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import AdminResetPasswordModal from '@/components/AdminResetPasswordModal';
 
 interface ClassOption {
   id: string;
@@ -56,6 +57,7 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 300);
   const [showModal, setShowModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
@@ -65,14 +67,14 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
   const [classFilter, setClassFilter] = useState<string>('all');
   const [availableClasses, setAvailableClasses] = useState<ClassOption[]>([]);
   const [loadingClasses, setLoadingClasses] = useState(false);
-  
+
   // Reassign modal state
   const [showReassignModal, setShowReassignModal] = useState(false);
   const [studentToReassign, setStudentToReassign] = useState<Student | null>(null);
   const [targetClassId, setTargetClassId] = useState<string>('');
   const [isReassigning, setIsReassigning] = useState(false);
   const [reassignMessage, setReassignMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  
+
   // Multi-select for bulk actions
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
   const [showBulkReassignModal, setShowBulkReassignModal] = useState(false);
@@ -81,13 +83,13 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
   const school = TokenManager.getUserData().school;
 
   // Use SWR hook for data fetching with automatic caching
-  const { 
-    students, 
-    pagination, 
-    isLoading, 
-    isValidating, 
+  const {
+    students,
+    pagination,
+    isLoading,
+    isValidating,
     mutate,
-    isEmpty 
+    isEmpty
   } = useStudents({
     page,
     limit: ITEMS_PER_PAGE,
@@ -111,7 +113,7 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
   useEffect(() => {
     const fetchClasses = async () => {
       if (!selectedYear?.id) return;
-      
+
       setLoadingClasses(true);
       try {
         const token = TokenManager.getAccessToken();
@@ -342,11 +344,11 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
   };
 
   // Filter students by class
-  const filteredStudents = classFilter === 'all' 
-    ? students 
+  const filteredStudents = classFilter === 'all'
+    ? students
     : classFilter === 'unassigned'
-    ? students.filter(s => !s.class)
-    : students.filter(s => s.class?.id === classFilter);
+      ? students.filter(s => !s.class)
+      : students.filter(s => s.class?.id === classFilter);
 
   const totalPages = pagination.totalPages;
   const totalCount = pagination.total;
@@ -358,7 +360,7 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
       {/* Main Content */}
       <div className="lg:ml-64 min-h-screen bg-[#f8fafc]">
         <main className="p-6 lg:p-8 max-w-[1600px] mx-auto">
-          
+
           {/* Page Header - Clean & Minimal */}
           <AnimatedContent animation="fade" delay={0}>
             <div className="mb-8">
@@ -453,7 +455,7 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
           {/* Main Content Card */}
           <AnimatedContent animation="slide-up" delay={100}>
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              
+
               {/* Toolbar */}
               <div className="px-5 py-4 border-b border-gray-100">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
@@ -565,7 +567,7 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
                     </div>
                   </div>
                 )}
-                
+
                 {isEmpty ? (
                   <div className="px-6 py-16 text-center">
                     <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-100 rounded-full mb-4">
@@ -612,185 +614,209 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                           {filteredStudents.map((student) => (
-                            <tr 
-                            key={student.id}
-                            className={`group transition-colors ${
-                              selectedStudents.has(student.id) 
-                                ? 'bg-gray-50' 
+                            <tr
+                              key={student.id}
+                              className={`group transition-colors ${selectedStudents.has(student.id)
+                                ? 'bg-gray-50'
                                 : 'hover:bg-gray-50/50'
-                            }`}
-                          >
-                            {/* Checkbox */}
-                            <td className="px-4 py-3">
-                              <button
-                                onClick={() => toggleStudentSelection(student.id)}
-                                className="flex items-center justify-center w-5 h-5"
-                              >
-                                {selectedStudents.has(student.id) ? (
-                                  <CheckSquare className="w-[18px] h-[18px] text-gray-900" />
-                                ) : (
-                                  <Square className="w-[18px] h-[18px] text-gray-300 group-hover:text-gray-400" />
-                                )}
-                              </button>
-                            </td>
+                                }`}
+                            >
+                              {/* Checkbox */}
+                              <td className="px-4 py-3">
+                                <button
+                                  onClick={() => toggleStudentSelection(student.id)}
+                                  className="flex items-center justify-center w-5 h-5"
+                                >
+                                  {selectedStudents.has(student.id) ? (
+                                    <CheckSquare className="w-[18px] h-[18px] text-gray-900" />
+                                  ) : (
+                                    <Square className="w-[18px] h-[18px] text-gray-300 group-hover:text-gray-400" />
+                                  )}
+                                </button>
+                              </td>
 
-                            {/* Student Info */}
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-3">
-                                {student.photoUrl ? (
-                                  <img
-                                    src={`${process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003'}${student.photoUrl}`}
-                                    alt=""
-                                    className="w-9 h-9 rounded-full object-cover"
-                                  />
-                                ) : (
-                                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium text-white ${
-                                    student.gender === 'MALE' ? 'bg-blue-500' : 'bg-pink-500'
+                              {/* Student Info */}
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-3">
+                                  {student.photoUrl ? (
+                                    <img
+                                      src={`${process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003'}${student.photoUrl}`}
+                                      alt=""
+                                      className="w-9 h-9 rounded-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium text-white ${student.gender === 'MALE' ? 'bg-blue-500' : 'bg-pink-500'
+                                      }`}>
+                                      {student.firstNameLatin.charAt(0)}{student.lastNameLatin.charAt(0)}
+                                    </div>
+                                  )}
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium text-gray-900 truncate">
+                                      {student.firstNameLatin} {student.lastNameLatin}
+                                    </p>
+                                    {student.firstNameKhmer && (
+                                      <p className="text-xs text-gray-500 truncate">
+                                        {student.firstNameKhmer} {student.lastNameKhmer}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Student ID */}
+                              <td className="px-4 py-3">
+                                <span className="text-sm text-gray-600 font-mono">{student.studentId}</span>
+                              </td>
+
+                              {/* Gender */}
+                              <td className="px-4 py-3">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${student.gender === 'MALE'
+                                  ? 'bg-blue-50 text-blue-700'
+                                  : 'bg-pink-50 text-pink-700'
                                   }`}>
+                                  {student.gender === 'MALE' ? 'Male' : 'Female'}
+                                </span>
+                              </td>
+
+                              {/* Date of Birth */}
+                              <td className="px-4 py-3">
+                                <span className="text-sm text-gray-600">
+                                  {new Date(student.dateOfBirth).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  })}
+                                </span>
+                              </td>
+
+                              {/* Class */}
+                              <td className="px-4 py-3">
+                                {student.class?.name ? (
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                                    {student.class.name}
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                                    Unassigned
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Actions */}
+                              <td className="px-4 py-3">
+                                <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={() => handleOpenReassign(student)}
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                                    title="Assign to Class"
+                                  >
+                                    <ArrowRightLeft className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedStudent(student);
+                                      setShowResetModal(true);
+                                    }}
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors"
+                                    title="Reset Password"
+                                  >
+                                    <Lock className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => router.push(`/${locale}/students/${student.id}`)}
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                                    title="View"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleEdit(student)}
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                                    title="Edit"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(student.id)}
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile Cards (hidden on desktop) */}
+                    <div className="lg:hidden divide-y divide-gray-100">
+                      {filteredStudents.map((student) => (
+                        <div key={student.id} className="p-4">
+                          <div className="flex items-start gap-3">
+                            <button
+                              onClick={() => toggleStudentSelection(student.id)}
+                              className="mt-1"
+                            >
+                              {selectedStudents.has(student.id) ? (
+                                <CheckSquare className="w-5 h-5 text-gray-900" />
+                              ) : (
+                                <Square className="w-5 h-5 text-gray-300" />
+                              )}
+                            </button>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-3 mb-2">
+                                {student.photoUrl ? (
+                                  <img src={`${process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003'}${student.photoUrl}`} alt="" className="w-10 h-10 rounded-full object-cover" />
+                                ) : (
+                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium text-white ${student.gender === 'MALE' ? 'bg-blue-500' : 'bg-pink-500'}`}>
                                     {student.firstNameLatin.charAt(0)}{student.lastNameLatin.charAt(0)}
                                   </div>
                                 )}
-                                <div className="min-w-0">
-                                  <p className="text-sm font-medium text-gray-900 truncate">
-                                    {student.firstNameLatin} {student.lastNameLatin}
-                                  </p>
-                                  {student.firstNameKhmer && (
-                                    <p className="text-xs text-gray-500 truncate">
-                                      {student.firstNameKhmer} {student.lastNameKhmer}
-                                    </p>
-                                  )}
+                                <div>
+                                  <p className="font-medium text-gray-900">{student.firstNameLatin} {student.lastNameLatin}</p>
+                                  <p className="text-xs text-gray-500">{student.studentId}</p>
                                 </div>
                               </div>
-                            </td>
-
-                            {/* Student ID */}
-                            <td className="px-4 py-3">
-                              <span className="text-sm text-gray-600 font-mono">{student.studentId}</span>
-                            </td>
-
-                            {/* Gender */}
-                            <td className="px-4 py-3">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                student.gender === 'MALE' 
-                                  ? 'bg-blue-50 text-blue-700' 
-                                  : 'bg-pink-50 text-pink-700'
-                              }`}>
-                                {student.gender === 'MALE' ? 'Male' : 'Female'}
-                              </span>
-                            </td>
-
-                            {/* Date of Birth */}
-                            <td className="px-4 py-3">
-                              <span className="text-sm text-gray-600">
-                                {new Date(student.dateOfBirth).toLocaleDateString('en-US', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric'
-                                })}
-                              </span>
-                            </td>
-
-                            {/* Class */}
-                            <td className="px-4 py-3">
-                              {student.class?.name ? (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700">
-                                  {student.class.name}
+                              <div className="flex flex-wrap gap-2 text-xs">
+                                <span className={`px-2 py-0.5 rounded ${student.gender === 'MALE' ? 'bg-blue-50 text-blue-700' : 'bg-pink-50 text-pink-700'}`}>
+                                  {student.gender === 'MALE' ? 'Male' : 'Female'}
                                 </span>
-                              ) : (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
-                                  Unassigned
-                                </span>
-                              )}
-                            </td>
-
-                            {/* Actions */}
-                            <td className="px-4 py-3">
-                              <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                  onClick={() => handleOpenReassign(student)}
-                                  className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-                                  title="Assign to Class"
-                                >
-                                  <ArrowRightLeft className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => router.push(`/${locale}/students/${student.id}`)}
-                                  className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-                                  title="View"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleEdit(student)}
-                                  className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-                                  title="Edit"
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(student.id)}
-                                  className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                                  title="Delete"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
+                                {student.class?.name ? (
+                                  <span className="px-2 py-0.5 rounded bg-green-50 text-green-700">{student.class.name}</span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-500">Unassigned</span>
+                                )}
                               </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Mobile Cards (hidden on desktop) */}
-                  <div className="lg:hidden divide-y divide-gray-100">
-                    {filteredStudents.map((student) => (
-                      <div key={student.id} className="p-4">
-                        <div className="flex items-start gap-3">
-                          <button
-                            onClick={() => toggleStudentSelection(student.id)}
-                            className="mt-1"
-                          >
-                            {selectedStudents.has(student.id) ? (
-                              <CheckSquare className="w-5 h-5 text-gray-900" />
-                            ) : (
-                              <Square className="w-5 h-5 text-gray-300" />
-                            )}
-                          </button>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3 mb-2">
-                              {student.photoUrl ? (
-                                <img src={`${process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003'}${student.photoUrl}`} alt="" className="w-10 h-10 rounded-full object-cover" />
-                              ) : (
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium text-white ${student.gender === 'MALE' ? 'bg-blue-500' : 'bg-pink-500'}`}>
-                                  {student.firstNameLatin.charAt(0)}{student.lastNameLatin.charAt(0)}
-                                </div>
-                              )}
-                              <div>
-                                <p className="font-medium text-gray-900">{student.firstNameLatin} {student.lastNameLatin}</p>
-                                <p className="text-xs text-gray-500">{student.studentId}</p>
-                              </div>
-                            </div>
-                            <div className="flex flex-wrap gap-2 text-xs">
-                              <span className={`px-2 py-0.5 rounded ${student.gender === 'MALE' ? 'bg-blue-50 text-blue-700' : 'bg-pink-50 text-pink-700'}`}>
-                                {student.gender === 'MALE' ? 'Male' : 'Female'}
-                              </span>
-                              {student.class?.name ? (
-                                <span className="px-2 py-0.5 rounded bg-green-50 text-green-700">{student.class.name}</span>
-                              ) : (
-                                <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-500">Unassigned</span>
-                              )}
                             </div>
                           </div>
-                          <button onClick={() => handleEdit(student)} className="p-2 text-gray-400 hover:text-gray-600">
-                            <MoreVertical className="w-5 h-5" />
-                          </button>
+
+                          <div className="flex items-center gap-1 ml-2">
+                            <button
+                              onClick={() => {
+                                setSelectedStudent(student);
+                                setShowResetModal(true);
+                              }}
+                              className="p-2 text-gray-400 hover:text-amber-600"
+                              title="Reset Password"
+                            >
+                              <Lock className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => handleEdit(student)}
+                              className="p-2 text-gray-400 hover:text-gray-600"
+                            >
+                              <MoreVertical className="w-5 h-5" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
+                      ))}
+                    </div>
+                  </>
+                )}
+              </BlurLoader>
 
               {/* Pagination Footer */}
               {totalPages > 1 && (
@@ -823,11 +849,10 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
                         <button
                           key={pageNum}
                           onClick={() => setPage(pageNum)}
-                          className={`inline-flex items-center justify-center h-8 min-w-[32px] px-2 text-sm font-medium rounded-md transition-colors ${
-                            page === pageNum
+                          className={`inline-flex items-center justify-center h-8 min-w-[32px] px-2 text-sm font-medium rounded-md transition-colors ${page === pageNum
                               ? 'bg-gray-900 text-white'
                               : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
-                          }`}
+                            }`}
                         >
                           {pageNum}
                         </button>
@@ -843,7 +868,6 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
                   </div>
                 </div>
               )}
-              </BlurLoader>
             </div>
           </AnimatedContent>
         </main>
@@ -857,7 +881,21 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
         />
       )}
 
-      {/* Single Student Reassign Modal - Professional Design */}
+      {/* Admin Reset Password Modal */}
+      {showResetModal && selectedStudent && (
+        <AdminResetPasswordModal
+          user={{
+            id: selectedStudent.id,
+            name: `${selectedStudent.firstNameLatin} ${selectedStudent.lastNameLatin}`,
+            email: selectedStudent.email || undefined,
+          }}
+          onClose={() => {
+            setShowResetModal(false);
+            setSelectedStudent(null);
+          }}
+        />
+      )}
+
       {/* Single Student Reassign Modal */}
       {showReassignModal && studentToReassign && (
         <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -919,11 +957,10 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
               </div>
 
               {reassignMessage && (
-                <div className={`mb-5 p-3 rounded-lg text-sm ${
-                  reassignMessage.type === 'success' 
-                    ? 'bg-green-50 text-green-700' 
+                <div className={`mb-5 p-3 rounded-lg text-sm ${reassignMessage.type === 'success'
+                    ? 'bg-green-50 text-green-700'
                     : 'bg-red-50 text-red-700'
-                }`}>
+                  }`}>
                   {reassignMessage.text}
                 </div>
               )}
@@ -1013,14 +1050,13 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
                 >
                   <option value="">Select a class...</option>
                   {(() => {
-                    // Get current class IDs of selected students to exclude them
                     const selectedStudentsList = students.filter(s => selectedStudents.has(s.id));
                     const currentClassIds = new Set(
                       selectedStudentsList
                         .filter(s => s.class?.id)
                         .map(s => s.class!.id)
                     );
-                    
+
                     return availableClasses
                       .filter(c => !currentClassIds.has(c.id))
                       .map(c => (
@@ -1033,11 +1069,10 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
               </div>
 
               {reassignMessage && (
-                <div className={`mb-5 p-3 rounded-lg text-sm ${
-                  reassignMessage.type === 'success' 
-                    ? 'bg-green-50 text-green-700' 
+                <div className={`mb-5 p-3 rounded-lg text-sm ${reassignMessage.type === 'success'
+                    ? 'bg-green-50 text-green-700'
                     : 'bg-red-50 text-red-700'
-                }`}>
+                  }`}>
                   {reassignMessage.text}
                 </div>
               )}
