@@ -62,6 +62,7 @@ const mapApiUserToUser = (apiUser: any): User => ({
   totalLearningHours: apiUser.totalLearningHours ?? 0,
   currentStreak: apiUser.currentStreak ?? 0,
   children: apiUser.children || [],
+  isDefaultPassword: apiUser.isDefaultPassword || false,
   createdAt: apiUser.createdAt || new Date().toISOString(),
   updatedAt: apiUser.updatedAt || new Date().toISOString(),
 });

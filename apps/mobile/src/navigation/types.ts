@@ -42,6 +42,7 @@ export type RootStackParamList = {
   Search: undefined;
   Comments: { postId: string };
   ImageViewer: { images: string[]; initialIndex?: number };
+  ForceChangePassword: undefined;
 };
 
 // Main Stack (for screens outside tabs)
@@ -75,6 +76,8 @@ export type AuthStackParamList = {
   ForgotPassword: undefined;
   VerifyOTP: { email: string };
   ResetPassword: { token: string };
+  ForceChangePassword: undefined;
+  TwoFactor: undefined;
 };
 
 // Main Tab Navigator

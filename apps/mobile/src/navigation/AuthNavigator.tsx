@@ -18,6 +18,7 @@ import {
   ForgotPasswordScreen,
   ResetPasswordScreen,
   TwoFactorScreen,
+  ForceChangePasswordScreen,
 } from '@/screens/auth';
 
 // Placeholder for screens not yet implemented
@@ -52,6 +53,7 @@ const AuthNavigator: React.FC = () => {
       <Stack.Screen name="VerifyOTP" component={VerifyOTPScreen} />
       <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
       <Stack.Screen name="TwoFactor" component={TwoFactorScreen as any} />
+      <Stack.Screen name="ForceChangePassword" component={ForceChangePasswordScreen} />
     </Stack.Navigator>
   );
 };

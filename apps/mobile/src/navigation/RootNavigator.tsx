@@ -18,6 +18,9 @@ import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
 import ParentNavigator from './ParentNavigator';
 
+// Import screens
+import { ForceChangePasswordScreen } from '@/screens/auth';
+
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 // Custom theme based on color scheme
@@ -30,7 +33,7 @@ const createNavigationTheme = (isDark: boolean) => ({
     card: isDark ? Colors.gray[800] : Colors.white,
     text: isDark ? Colors.gray[50] : Colors.gray[900],
     border: isDark ? Colors.gray[700] : Colors.gray[200],
-    notification: Colors.error.main,
+    notification: Colors.error,
   },
 });
 
@@ -40,14 +43,15 @@ const RootNavigator: React.FC = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isInitialized = useAuthStore((state) => state.isInitialized);
   const user = useAuthStore((state) => state.user);
-  const isParent = (user as any)?.role === 'PARENT';
+  const isParent = user?.role === 'PARENT';
+  const mustChangePassword = isAuthenticated && user?.isDefaultPassword;
 
   // Show loading while initializing
   if (!isInitialized) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
-        <ActivityIndicator size="large" color={Colors.primary[500]} />
-        <Text style={{ marginTop: 16, color: Colors.gray[600] }}>Loading...</Text>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: isDark ? Colors.gray[900] : Colors.white }}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={{ marginTop: 16, color: isDark ? Colors.gray[400] : Colors.gray[600] }}>Loading...</Text>
       </View>
     );
   }
@@ -83,6 +87,8 @@ const RootNavigator: React.FC = () => {
       >
         {!isAuthenticated ? (
           <Stack.Screen name="Auth" component={AuthNavigator} />
+        ) : mustChangePassword ? (
+          <Stack.Screen name="ForceChangePassword" component={ForceChangePasswordScreen} />
         ) : isParent ? (
           <Stack.Screen name="Parent" component={ParentNavigator} />
         ) : (

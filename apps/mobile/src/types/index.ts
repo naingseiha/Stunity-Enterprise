@@ -51,6 +51,7 @@ export interface User {
     relationship?: string;
     isPrimary?: boolean;
   }>;
+  isDefaultPassword?: boolean;
   createdAt: string;
   updatedAt: string;
 }

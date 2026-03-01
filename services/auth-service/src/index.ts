@@ -250,6 +250,86 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
   }
 };
 
+/**
+ * 🛡️ Admin Password Reset
+ * Allows School Admins (same school) or Super Admins (any school) to manually reset 
+ * passwords for users (Student/Parent) who may not have email access.
+ */
+app.post(
+  '/auth/admin/reset-password',
+  authenticateToken as any,
+  [
+    body('userId').notEmpty().withMessage('User ID is required'),
+    body('newPassword').notEmpty().withMessage('New password is required'),
+  ],
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
+      }
+
+      const { userId, newPassword } = req.body;
+      const requester = req.user!;
+
+      // 1. Authorization: User must be an ADMIN or SUPER_ADMIN
+      // (Super Admins have isSuperAdmin: true, School Admins have role: 'ADMIN')
+      const isSuper = (requester as any).isSuperAdmin === true;
+      const isAdmin = requester.role === 'ADMIN' || isSuper;
+
+      if (!isAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Unauthorized: Admin privileges required'
+        });
+      }
+
+      // 2. Fetch target user
+      const targetUser = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!targetUser) {
+        return res.status(404).json({ success: false, error: 'User not found' });
+      }
+
+      // 3. Multi-tenant Check: School Admin can only reset their own users
+      if (!isSuper && targetUser.schoolId !== requester.schoolId) {
+        console.warn(`🛑 MULTI-TENANT VIOLATION ATTEMPT: Admin ${requester.id} tried to reset user ${userId} in another school`);
+        return res.status(403).json({
+          success: false,
+          error: 'Permission denied: User belongs to a different school'
+        });
+      }
+
+      // 4. Update password and force change
+      const hashedPassword = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          password: hashedPassword,
+          isDefaultPassword: true,  // Trigger force-change on mobile/web
+          passwordChangedAt: new Date(),
+          failedAttempts: 0,        // Unlock account if it was locked
+          lockedUntil: null,
+          lastPasswordHashes: [],   // Clear history for admin override
+        },
+      });
+
+      console.log(`🛡️ Admin Reset: ${requester.email || requester.id} reset password for user ${userId}`);
+
+      res.json({
+        success: true,
+        message: 'Password reset successfully. The user will be required to change it on their next login.',
+      });
+    } catch (error: any) {
+      console.error('Admin reset error:', error);
+      res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+  }
+);
+
 // ─── Mount modular route files ───────────────────────────────────────
 app.use('/auth', passwordResetRoutes(prisma));
 app.use('/auth/social', socialAuthRoutes(prisma));
@@ -325,37 +405,37 @@ app.post(
       // Find user by email or phone
       const user = emailTrim
         ? await prisma.user.findUnique({
-            where: { email: emailTrim },
-            include: {
-              school: {
-                select: {
-                  id: true,
-                  name: true,
-                  slug: true,
-                  subscriptionTier: true,
-                  subscriptionEnd: true,
-                  isTrial: true,
-                  isActive: true,
-                },
+          where: { email: emailTrim },
+          include: {
+            school: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                subscriptionTier: true,
+                subscriptionEnd: true,
+                isTrial: true,
+                isActive: true,
               },
             },
-          })
+          },
+        })
         : await prisma.user.findFirst({
-            where: { phone: phoneTrim },
-            include: {
-              school: {
-                select: {
-                  id: true,
-                  name: true,
-                  slug: true,
-                  subscriptionTier: true,
-                  subscriptionEnd: true,
-                  isTrial: true,
-                  isActive: true,
-                },
+          where: { phone: phoneTrim },
+          include: {
+            school: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                subscriptionTier: true,
+                subscriptionEnd: true,
+                isTrial: true,
+                isActive: true,
               },
             },
-          });
+          },
+        });
 
       if (!user) {
         console.log('❌ User not found:', emailTrim || phoneTrim);
@@ -1615,14 +1695,14 @@ app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Respons
     const children =
       user.role === 'PARENT' && user.parent?.studentParents
         ? user.parent.studentParents.map((sp: any) => ({
-            id: sp.student.id,
-            firstName: sp.student.firstName,
-            lastName: sp.student.lastName,
-            khmerName: sp.student.khmerName,
-            studentId: sp.student.studentId,
-            relationship: sp.relationship,
-            isPrimary: sp.isPrimary,
-          }))
+          id: sp.student.id,
+          firstName: sp.student.firstName,
+          lastName: sp.student.lastName,
+          khmerName: sp.student.khmerName,
+          studentId: sp.student.studentId,
+          relationship: sp.relationship,
+          isPrimary: sp.isPrimary,
+        }))
         : undefined;
 
     res.json({
