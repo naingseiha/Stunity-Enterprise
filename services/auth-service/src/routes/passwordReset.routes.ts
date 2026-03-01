@@ -38,39 +38,65 @@ function validatePassword(password: string): { isValid: boolean; errors: string[
 
 // ─── Email sending (pluggable — console.log for dev, Resend for production) ───
 async function sendResetEmail(email: string, token: string): Promise<void> {
-  const resetUrl = `${APP_URL}/reset-password?token=${token}`;
+  // Mobile Deep Link: ensures the link opens the Stunity app directly
+  const deepLink = `stunity://reset-password?token=${token}`;
+
+  // Web Fallback: for users opening on desktop
+  const webUrl = `${APP_URL}/reset-password?token=${token}`;
+
+  const emailHtml = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px; color: #1F2937;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <h1 style="color: #0EA5E9; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.025em;">Stunity</h1>
+        <p style="color: #6B7280; margin-top: 4px; font-size: 14px; font-weight: 500;">Secure E-Learning Engine</p>
+      </div>
+      
+      <div style="background: #F9FAFB; border-radius: 16px; padding: 32px; border: 1px solid #F3F4F6;">
+        <h2 style="color: #111827; margin: 0 0 16px; font-size: 20px; font-weight: 700;">Reset Your Password</h2>
+        <p style="margin: 0 0 24px; line-height: 24px; color: #4B5563;">
+          We received a request to reset your password. Tap the button below to secure your account. This link expires in 1 hour.
+        </p>
+        
+        <a href="${deepLink}" style="display: block; background: #0EA5E9; color: white; padding: 14px 24px; border-radius: 12px; text-decoration: none; font-weight: 600; text-align: center; font-size: 16px; box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.2);">
+          Open in Stunity App
+        </a>
+        
+        <div style="margin-top: 24px; text-align: center;">
+          <p style="font-size: 13px; color: #9CA3AF; margin-bottom: 8px;">Using a computer?</p>
+          <a href="${webUrl}" style="color: #0EA5E9; text-decoration: underline; font-size: 13px; font-weight: 500;">
+            Reset in browser
+          </a>
+        </div>
+      </div>
+      
+      <p style="color: #9CA3AF; font-size: 13px; text-align: center; margin-top: 32px;">
+        If you didn't request this, you can safely ignore this email.
+      </p>
+      <div style="border-top: 1px solid #E5E7EB; margin-top: 32px; padding-top: 24px; text-align: center;">
+        <p style="color: #D1D5DB; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">
+          Stunity Enterprise © 2026
+        </p>
+      </div>
+    </div>
+  `;
 
   if (process.env.RESEND_API_KEY) {
-    // Production: Use Resend (free 3,000 emails/month)
     const { Resend } = await import('resend');
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
       from: process.env.FROM_EMAIL || 'Stunity <noreply@stunity.com>',
       to: email,
       subject: 'Reset your Stunity password',
-      html: `
-        <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:24px;">
-          <h2 style="color:#0EA5E9;">Reset Your Password</h2>
-          <p>Click the button below to reset your password. This link expires in 1 hour.</p>
-          <a href="${resetUrl}" style="display:inline-block;background:#0EA5E9;color:white;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;margin:16px 0;">
-            Reset Password
-          </a>
-          <p style="color:#6B7280;font-size:14px;margin-top:24px;">If you didn't request this, you can safely ignore this email.</p>
-          <hr style="border:none;border-top:1px solid #E5E7EB;margin:24px 0;" />
-          <p style="color:#9CA3AF;font-size:12px;">Stunity Enterprise — Secure E-Learning Platform</p>
-        </div>
-      `,
+      html: emailHtml,
     });
     console.log(`📧 Reset email sent to ${email}`);
   } else {
-    // Development: Log to console
     console.log('');
     console.log('═══════════════════════════════════════════════');
-    console.log('📧 PASSWORD RESET EMAIL (dev mode — no RESEND_API_KEY)');
+    console.log('📧 PASSWORD RESET EMAIL (dev mode)');
     console.log(`   To: ${email}`);
-    console.log(`   Reset URL: ${resetUrl}`);
-    console.log(`   Token: ${token}`);
-    console.log('   Expires: 1 hour');
+    console.log(`   Deep Link: ${deepLink}`);
+    console.log(`   Web URL:   ${webUrl}`);
     console.log('═══════════════════════════════════════════════');
     console.log('');
   }

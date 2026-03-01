@@ -52,13 +52,27 @@ const RootNavigator: React.FC = () => {
     );
   }
 
+  // Deep linking configuration
+  const linking = {
+    prefixes: ['stunity://', 'https://stunity.com'],
+    config: {
+      screens: {
+        Auth: {
+          screens: {
+            ResetPassword: 'reset-password',
+          },
+        },
+      },
+    } as any,
+  };
+
   return (
-    <NavigationContainer theme={createNavigationTheme(isDark)}>
+    <NavigationContainer theme={createNavigationTheme(isDark)} linking={linking}>
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor={isDark ? Colors.gray[900] : Colors.white}
       />
-      
+
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
