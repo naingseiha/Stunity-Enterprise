@@ -35,6 +35,7 @@ export default function SuperAdminUsersPage() {
   const [search, setSearch] = useState('');
   const [schoolFilter, setSchoolFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
@@ -215,8 +216,8 @@ export default function SuperAdminUsersPage() {
                             onClick={() => handleToggleActive(u)}
                             disabled={togglingId === u.id}
                             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${u.isActive
-                                ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                                : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                              ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                              : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
                               } disabled:opacity-50 disabled:cursor-not-allowed`}
                           >
                             {togglingId === u.id ? '…' : u.isActive ? 'Deactivate' : 'Activate'}

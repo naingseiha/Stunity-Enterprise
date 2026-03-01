@@ -25,6 +25,7 @@ import {
   Loader2,
   AlertCircle,
   MoreVertical,
+  Lock,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import { deleteStudent, type Student } from '@/lib/api/students';
@@ -850,8 +851,8 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
                           key={pageNum}
                           onClick={() => setPage(pageNum)}
                           className={`inline-flex items-center justify-center h-8 min-w-[32px] px-2 text-sm font-medium rounded-md transition-colors ${page === pageNum
-                              ? 'bg-gray-900 text-white'
-                              : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+                            ? 'bg-gray-900 text-white'
+                            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
                             }`}
                         >
                           {pageNum}
@@ -958,8 +959,8 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
 
               {reassignMessage && (
                 <div className={`mb-5 p-3 rounded-lg text-sm ${reassignMessage.type === 'success'
-                    ? 'bg-green-50 text-green-700'
-                    : 'bg-red-50 text-red-700'
+                  ? 'bg-green-50 text-green-700'
+                  : 'bg-red-50 text-red-700'
                   }`}>
                   {reassignMessage.text}
                 </div>
@@ -1070,8 +1071,8 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
 
               {reassignMessage && (
                 <div className={`mb-5 p-3 rounded-lg text-sm ${reassignMessage.type === 'success'
-                    ? 'bg-green-50 text-green-700'
-                    : 'bg-red-50 text-red-700'
+                  ? 'bg-green-50 text-green-700'
+                  : 'bg-red-50 text-red-700'
                   }`}>
                   {reassignMessage.text}
                 </div>

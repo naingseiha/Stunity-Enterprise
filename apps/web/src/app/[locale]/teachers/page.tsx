@@ -21,6 +21,7 @@ import {
   Mail,
   Phone,
   Briefcase,
+  Lock,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import { deleteTeacher, type Teacher } from '@/lib/api/teachers';
@@ -365,8 +366,8 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
                               {/* Gender */}
                               <td className="px-4 py-3">
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${teacher.gender === 'MALE'
-                                    ? 'bg-blue-50 text-blue-700'
-                                    : 'bg-pink-50 text-pink-700'
+                                  ? 'bg-blue-50 text-blue-700'
+                                  : 'bg-pink-50 text-pink-700'
                                   }`}>
                                   {teacher.gender === 'MALE' ? 'Male' : 'Female'}
                                 </span>
@@ -474,8 +475,8 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
                                 key={pageNum}
                                 onClick={() => setPage(pageNum)}
                                 className={`inline-flex items-center justify-center h-8 min-w-[32px] px-2 text-sm font-medium rounded-md transition-colors ${page === pageNum
-                                    ? 'bg-gray-900 text-white'
-                                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+                                  ? 'bg-gray-900 text-white'
+                                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
                                   }`}
                               >
                                 {pageNum}
