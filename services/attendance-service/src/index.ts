@@ -1136,7 +1136,7 @@ function getDistanceFromLatLonInM(lat1: number, lon1: number, lat2: number, lon2
     Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const d = R * c; 
+  const d = R * c;
   return d;
 }
 
@@ -1145,11 +1145,16 @@ app.post('/attendance/teacher/check-in', authenticateToken, async (req: AuthRequ
   try {
     const schoolId = req.schoolId!;
     const userId = req.user?.id;
-    const { latitude, longitude } = req.body;
+    const { latitude, longitude, session: manualSession } = req.body;
 
     if (!latitude || !longitude) {
       return res.status(400).json({ success: false, message: 'Location coordinates required' });
     }
+
+    // Auto-detect session if not provided
+    const now = new Date();
+    const currentHour = now.getHours();
+    const session: AttendanceSession = manualSession || (currentHour < 12 ? 'MORNING' : 'AFTERNOON');
 
     const teacher = await prisma.teacher.findFirst({
       where: { schoolId, user: { id: userId } },
@@ -1181,8 +1186,8 @@ app.post('/attendance/teacher/check-in', authenticateToken, async (req: AuthRequ
     }
 
     if (!matchedLocation) {
-      return res.status(400).json({ 
-        success: false, 
+      return res.status(400).json({
+        success: false,
         message: 'You are outside the allowed school area.',
         code: 'OUT_OF_BOUNDS'
       });
@@ -1192,15 +1197,16 @@ app.post('/attendance/teacher/check-in', authenticateToken, async (req: AuthRequ
 
     const existingAttendance = await prisma.teacherAttendance.findUnique({
       where: {
-        teacherId_date: {
+        teacherId_date_session: {
           teacherId: teacher.id,
           date: todayDate,
+          session: session,
         }
       }
     });
 
     if (existingAttendance) {
-      return res.status(400).json({ success: false, message: 'Already checked in today' });
+      return res.status(400).json({ success: false, message: `Already checked in for ${session} session` });
     }
 
     const attendance = await prisma.teacherAttendance.create({
@@ -1208,12 +1214,13 @@ app.post('/attendance/teacher/check-in', authenticateToken, async (req: AuthRequ
         teacherId: teacher.id,
         locationId: matchedLocation.id,
         date: todayDate,
+        session: session,
         timeIn: new Date(),
         status: 'PRESENT',
       }
     });
 
-    res.status(201).json({ success: true, message: 'Checked in successfully', data: attendance, locationName: matchedLocation.name });
+    res.status(201).json({ success: true, message: `Checked in for ${session} successfully`, data: attendance, locationName: matchedLocation.name });
   } catch (error: any) {
     res.status(500).json({ success: false, message: 'Check-in failed', error: error.message });
   }
@@ -1224,7 +1231,7 @@ app.post('/attendance/teacher/check-out', authenticateToken, async (req: AuthReq
   try {
     const schoolId = req.schoolId!;
     const userId = req.user?.id;
-    const { latitude, longitude } = req.body;
+    const { latitude, longitude, session: manualSession } = req.body;
 
     if (!latitude || !longitude) {
       return res.status(400).json({ success: false, message: 'Location coordinates required' });
@@ -1257,8 +1264,8 @@ app.post('/attendance/teacher/check-out', authenticateToken, async (req: AuthReq
     }
 
     if (!matchedLocation) {
-      return res.status(400).json({ 
-        success: false, 
+      return res.status(400).json({
+        success: false,
         message: 'You are outside the allowed school area.',
         code: 'OUT_OF_BOUNDS'
       });
@@ -1266,21 +1273,43 @@ app.post('/attendance/teacher/check-out', authenticateToken, async (req: AuthReq
 
     const todayDate = startOfDay(new Date());
 
-    const existingAttendance = await prisma.teacherAttendance.findUnique({
-      where: {
-        teacherId_date: {
+    // Auto-detect session or use manual
+    let session: AttendanceSession;
+    if (manualSession) {
+      session = manualSession;
+    } else {
+      // Find active check-in session that isn't checked out
+      const activeSession = await prisma.teacherAttendance.findFirst({
+        where: {
           teacherId: teacher.id,
           date: todayDate,
+          timeOut: null,
+        },
+        orderBy: { timeIn: 'desc' }
+      });
+
+      if (!activeSession) {
+        return res.status(400).json({ success: false, message: 'No active check-in session found to check out' });
+      }
+      session = activeSession.session;
+    }
+
+    const existingAttendance = await prisma.teacherAttendance.findUnique({
+      where: {
+        teacherId_date_session: {
+          teacherId: teacher.id,
+          date: todayDate,
+          session: session,
         }
       }
     });
 
     if (!existingAttendance) {
-      return res.status(400).json({ success: false, message: 'No check-in record found for today' });
+      return res.status(400).json({ success: false, message: `No check-in record found for ${session} session` });
     }
 
     if (existingAttendance.timeOut) {
-      return res.status(400).json({ success: false, message: 'Already checked out today' });
+      return res.status(400).json({ success: false, message: `Already checked out of ${session} session` });
     }
 
     const updatedAttendance = await prisma.teacherAttendance.update({
@@ -1290,7 +1319,7 @@ app.post('/attendance/teacher/check-out', authenticateToken, async (req: AuthReq
       }
     });
 
-    res.json({ success: true, message: 'Checked out successfully', data: updatedAttendance });
+    res.json({ success: true, message: `Checked out of ${session} successfully`, data: updatedAttendance });
   } catch (error: any) {
     res.status(500).json({ success: false, message: 'Check-out failed', error: error.message });
   }
@@ -1301,7 +1330,7 @@ app.get('/attendance/teacher/today', authenticateToken, async (req: AuthRequest,
   try {
     const schoolId = req.schoolId!;
     const userId = req.user?.id;
-    
+
     const teacher = await prisma.teacher.findFirst({
       where: { schoolId, user: { id: userId } },
     });
@@ -1312,19 +1341,23 @@ app.get('/attendance/teacher/today', authenticateToken, async (req: AuthRequest,
 
     const todayDate = startOfDay(new Date());
 
-    const attendance = await prisma.teacherAttendance.findUnique({
+    const attendanceRecords = await prisma.teacherAttendance.findMany({
       where: {
-        teacherId_date: {
-          teacherId: teacher.id,
-          date: todayDate,
-        }
+        teacherId: teacher.id,
+        date: todayDate,
       },
       include: {
         location: true,
       }
     });
 
-    res.json({ success: true, data: attendance });
+    // Structure result as session map for easier mobile consumption
+    const sessions = {
+      MORNING: attendanceRecords.find(r => r.session === 'MORNING') || null,
+      AFTERNOON: attendanceRecords.find(r => r.session === 'AFTERNOON') || null,
+    };
+
+    res.json({ success: true, data: sessions });
   } catch (error: any) {
     res.status(500).json({ success: false, message: 'Failed to fetch attendance status', error: error.message });
   }

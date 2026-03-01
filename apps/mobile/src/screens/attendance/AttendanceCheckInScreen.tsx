@@ -1,376 +1,614 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    Dimensions,
+    StatusBar,
+    Platform
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { Colors, Typography, Shadows } from '@/config';
-import { attendanceService } from '@/services/attendance';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Colors, ColorScale, Typography, Shadows } from '@/config';
 import { useNavigation } from '@react-navigation/native';
+import Animated, { FadeInUp, FadeInDown, ZoomIn } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import { useAuthStore } from '@/stores';
+
+const { width } = Dimensions.get('window');
+
+const WeeklyStrip = () => {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const today = new Date().getDay();
+    const currentDayIdx = today === 0 ? 6 : today - 1;
+
+    return (
+        <View style={styles.weeklyContainer}>
+            {days.map((day, i) => {
+                const isToday = i === currentDayIdx;
+                const isPast = i < currentDayIdx;
+                return (
+                    <View key={day} style={styles.dayCol}>
+                        <View style={[
+                            styles.dayDot,
+                            isToday && styles.todayDot,
+                            isPast && styles.pastDot
+                        ]}>
+                            {isPast && <Ionicons name="checkmark" size={12} color="#fff" />}
+                        </View>
+                        <Text style={[styles.dayLabel, isToday && styles.todayLabel]}>{day}</Text>
+                    </View>
+                );
+            })}
+        </View>
+    );
+};
+
+const SessionCard = ({
+    session,
+    data,
+    onAction,
+    processing,
+    isCurrent
+}: {
+    session: 'MORNING' | 'AFTERNOON';
+    data: any;
+    onAction: (type: 'in' | 'out', session: 'MORNING' | 'AFTERNOON') => void;
+    processing: boolean;
+    isCurrent: boolean;
+}) => {
+    const isCheckedIn = !!data?.timeIn;
+    const isCheckedOut = !!data?.timeOut;
+    const isOnDuty = isCheckedIn && !isCheckedOut;
+
+    const handlePress = () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        onAction(isOnDuty ? 'out' : 'in', session);
+    };
+
+    return (
+        <Animated.View
+            entering={FadeInUp.delay(session === 'MORNING' ? 100 : 200).duration(600)}
+            style={[
+                styles.sessionCard,
+                isCurrent && styles.currentSessionCard,
+                isCheckedOut && styles.completedSessionCard
+            ]}
+        >
+            <View style={styles.sessionHeader}>
+                <View style={[styles.sessionIconBg, { backgroundColor: isCurrent ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255,255,255,0.05)' }]}>
+                    <Ionicons
+                        name={session === 'MORNING' ? "sunny" : "partly-sunny"}
+                        size={22}
+                        color={isCurrent ? '#38BDF8' : 'rgba(255,255,255,0.4)'}
+                    />
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={[styles.sessionTitle, isCurrent && { color: '#38BDF8' }]}>{session}</Text>
+                    <Text style={styles.sessionTimeWindow}>
+                        {session === 'MORNING' ? '07:00 AM - 12:00 PM' : '12:00 PM - 06:00 PM'}
+                    </Text>
+                </View>
+                {isCheckedOut ? (
+                    <View style={styles.completedBadge}>
+                        <Ionicons name="checkmark-circle" size={14} color="#34D399" />
+                        <Text style={styles.completedBadgeText}>DONE</Text>
+                    </View>
+                ) : isCurrent && (
+                    <View style={styles.currentBadge}>
+                        <Text style={styles.currentBadgeText}>ACTIVE</Text>
+                    </View>
+                )}
+            </View>
+
+            <View style={styles.timeInfoRow}>
+                <View style={styles.timeBox}>
+                    <Text style={styles.timeLabel}>CHECK IN</Text>
+                    <Text style={[styles.timeValue, isCheckedIn && styles.activeTimeValue]}>
+                        {data?.timeIn ? new Date(data.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                    </Text>
+                </View>
+                <View style={styles.timeSeparator} />
+                <View style={styles.timeBox}>
+                    <Text style={styles.timeLabel}>CHECK OUT</Text>
+                    <Text style={[styles.timeValue, isCheckedOut && styles.activeTimeValue]}>
+                        {data?.timeOut ? new Date(data.timeOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                    </Text>
+                </View>
+            </View>
+
+            {!isCheckedOut && (
+                <TouchableOpacity
+                    style={[
+                        styles.sessionBtn,
+                        isOnDuty ? styles.sessionBtnOut : styles.sessionBtnIn,
+                        processing && styles.btnDisabled,
+                        !isCurrent && !isCheckedIn && styles.btnInactive
+                    ]}
+                    onPress={handlePress}
+                    disabled={processing}
+                    activeOpacity={0.8}
+                >
+                    {processing ? (
+                        <ActivityIndicator color="#fff" size="small" />
+                    ) : (
+                        <>
+                            <Ionicons name={isOnDuty ? "log-out-outline" : "finger-print"} size={20} color="#fff" />
+                            <Text style={styles.sessionBtnText}>
+                                {isOnDuty ? 'Finish Session' : `Start ${session}`}
+                            </Text>
+                        </>
+                    )}
+                </TouchableOpacity>
+            )}
+        </Animated.View>
+    );
+};
 
 export const AttendanceCheckInScreen = () => {
     const navigation = useNavigation();
+    const { user } = useAuthStore();
+    const isLinkedToSchool = !!user?.schoolId;
+
     const [loading, setLoading] = useState(true);
-    const [processing, setProcessing] = useState(false);
+    const [processingSession, setProcessingSession] = useState<'MORNING' | 'AFTERNOON' | null>(null);
     const [status, setStatus] = useState<any>(null);
     const [locationPermGranted, setLocationPermGranted] = useState(false);
-    const [currentLocationText, setCurrentLocationText] = useState('Fetching location...');
+    const [gpsText, setGpsText] = useState('Initializing GPS...');
 
-    useEffect(() => {
-        checkPermissionsAndFetchStatus();
-    }, []);
-
-    const checkPermissionsAndFetchStatus = async () => {
-        try {
-            setLoading(true);
-            const { status } = await Location.requestForegroundPermissionsAsync();
-
-            if (status !== 'granted') {
-                Alert.alert('Permission Denied', 'Please enable location services to use check-in.');
-                setLocationPermGranted(false);
-                setLoading(false);
-                return;
-            }
-
-            setLocationPermGranted(true);
-
-            // Attempt to get a quick location reading
-            try {
-                const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-                setCurrentLocationText(`Lat: ${location.coords.latitude.toFixed(4)}, Lng: ${location.coords.longitude.toFixed(4)}`);
-            } catch (locErr) {
-                setCurrentLocationText('Location available (accuracy may be low)');
-            }
-
-            await fetchTodayStatus();
-        } catch (error) {
-            console.error(error);
-            Alert.alert('Error', 'Failed to initialize.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchTodayStatus = async () => {
+    const fetchTodayStatus = useCallback(async () => {
         try {
             const result = await attendanceService.getTodayStatus();
-            if (result.success && result.data) {
+            if (result.success) {
                 setStatus(result.data);
-            } else {
-                setStatus(null);
             }
-        } catch (error: any) {
-            // Don't alert if they just haven't checked in yet, this might return 404 or empty data
-            console.log('No status found or error:', error.message);
-            setStatus(null);
+        } catch (error) {
+            console.log('Error fetching status:', error);
+        }
+    }, []);
+
+    const checkPermissions = async () => {
+        try {
+            const { status: locStatus } = await Location.requestForegroundPermissionsAsync();
+            if (locStatus !== 'granted') {
+                return false;
+            }
+            setLocationPermGranted(true);
+            return true;
+        } catch (e) {
+            return false;
         }
     };
 
-    const handleAction = async (actionType: 'in' | 'out') => {
-        try {
-            setProcessing(true);
-
-            // Get precise location for check-in
-            const location = await Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.Highest,
-            });
-
-            const payload = {
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude,
-            };
-
-            if (actionType === 'in') {
-                await attendanceService.checkIn(payload);
-                Alert.alert('Success', 'Successfully checked in! Have a great day.');
+    useEffect(() => {
+        const init = async () => {
+            setLoading(true);
+            const hasPerm = await checkPermissions();
+            if (hasPerm) {
+                await fetchTodayStatus();
+                try {
+                    const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+                    setGpsText(`Ready (${loc.coords.latitude.toFixed(4)}, ${loc.coords.longitude.toFixed(4)})`);
+                } catch (e) {
+                    setGpsText('GPS Limited');
+                }
             } else {
-                await attendanceService.checkOut(payload);
-                Alert.alert('Success', 'Successfully checked out! See you tomorrow.');
+                setGpsText('Location Access Denied');
+            }
+            setLoading(false);
+        };
+        init();
+    }, [fetchTodayStatus]);
+
+    const handleAttendance = async (type: 'in' | 'out', session: 'MORNING' | 'AFTERNOON') => {
+        try {
+            setProcessingSession(session);
+            setGpsText('Verifying location...');
+
+            const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+            const payload = { latitude: location.coords.latitude, longitude: location.coords.longitude };
+
+            if (type === 'in') {
+                await attendanceService.checkIn(payload, session);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                Alert.alert('Success', `Successfully checked in for ${session} session.`);
+            } else {
+                await attendanceService.checkOut(payload, session);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                Alert.alert('Success', `Successfully checked out of ${session} session.`);
             }
 
             await fetchTodayStatus();
+            setGpsText('Location verified');
         } catch (error: any) {
-            const errorMessage = error.message || `Failed to check ${actionType}`;
-            Alert.alert('Attendance Failed', errorMessage);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            Alert.alert('Attendance Failed', error.message || 'An error occurred during verification.');
+            setGpsText('Verification failed');
         } finally {
-            setProcessing(false);
+            setProcessingSession(null);
         }
     };
 
     if (loading) {
         return (
             <View style={styles.centerContainer}>
-                <ActivityIndicator size="large" color={Colors.primary.main} />
-                <Text style={styles.loadingText}>Loading attendance data...</Text>
+                <LinearGradient colors={['#0f172a', '#1e293b']} style={StyleSheet.absoluteFill} />
+                <ActivityIndicator size="large" color="#38BDF8" />
+                <Text style={[styles.loadingText, { color: '#38BDF8' }]}>Syncing with enterprise server...</Text>
             </View>
         );
     }
 
-    const isCheckedIn = !!status;
-    const isCheckedOut = status && status.timeOut;
-    const timeInLabel = status?.timeIn ? new Date(status.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
-    const timeOutLabel = status?.timeOut ? new Date(status.timeOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+    if (!isLinkedToSchool) {
+        return (
+            <View style={styles.container}>
+                <LinearGradient
+                    colors={['#4c1d95', '#1e1b4b', '#0f172a']}
+                    style={StyleSheet.absoluteFill}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                />
+                <SafeAreaView style={styles.safeArea} edges={['top']}>
+                    <View style={styles.navHeader}>
+                        <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()}>
+                            <Ionicons name="chevron-back" size={24} color="#fff" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>ATTENDANCE</Text>
+                        <View style={{ width: 44 }} />
+                    </View>
+                    <View style={[styles.centerContainer, { paddingHorizontal: 30 }]}>
+                        <View style={styles.sessionIconBg}>
+                            <Ionicons name="business-outline" size={64} color="rgba(255,255,255,0.4)" />
+                        </View>
+                        <Text style={[styles.dateDisplay, { marginTop: 20, textAlign: 'center' }]}>Not Linked to a School</Text>
+                        <Text style={[styles.infoText, { textAlign: 'center', marginTop: 12, fontSize: 14 }]}>
+                            You must be linked to a school to use the attendance feature. Please ask your administrator to invite you or provide a claim code.
+                        </Text>
+                    </View>
+                </SafeAreaView>
+            </View>
+        );
+    }
+
+    const currentHour = new Date().getHours();
+    const isMorningActual = currentHour < 12;
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={24} color={Colors.gray[800]} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Daily Attendance</Text>
-                <View style={{ width: 40 }} />
-            </View>
+        <View style={styles.container}>
+            <StatusBar barStyle="light-content" />
+            <LinearGradient
+                colors={['#4c1d95', '#1e1b4b', '#0f172a']}
+                style={StyleSheet.absoluteFill}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+            />
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={styles.dateCard}>
-                    <Text style={styles.dateText}>
-                        {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                    </Text>
-                    <View style={styles.locationBadge}>
-                        <Ionicons name="location" size={12} color={Colors.white} />
-                        <Text style={styles.locationText}>Geofence Active</Text>
-                    </View>
+            <SafeAreaView style={styles.safeArea} edges={['top']}>
+                <View style={styles.navHeader}>
+                    <TouchableOpacity
+                        style={styles.iconBtn}
+                        onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            navigation.goBack();
+                        }}
+                    >
+                        <Ionicons name="chevron-back" size={24} color="#fff" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>ATTENDANCE</Text>
+                    <TouchableOpacity
+                        style={styles.iconBtn}
+                        onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            fetchTodayStatus();
+                        }}
+                    >
+                        <Ionicons name="refresh" size={20} color="#fff" />
+                    </TouchableOpacity>
                 </View>
 
-                <View style={styles.statusContainer}>
-                    <View style={styles.statusBox}>
-                        <Ionicons name="enter-outline" size={28} color={isCheckedIn ? Colors.success.main : Colors.gray[400]} />
-                        <Text style={styles.statusLabel}>Time In</Text>
-                        <Text style={[styles.statusTime, isCheckedIn && { color: Colors.success.main }]}>{timeInLabel}</Text>
-                    </View>
-                    <View style={styles.divider} />
-                    <View style={styles.statusBox}>
-                        <Ionicons name="exit-outline" size={28} color={isCheckedOut ? Colors.secondary.main : Colors.gray[400]} />
-                        <Text style={styles.statusLabel}>Time Out</Text>
-                        <Text style={[styles.statusTime, isCheckedOut && { color: Colors.secondary.main }]}>{timeOutLabel}</Text>
-                    </View>
-                </View>
+                <ScrollView
+                    style={styles.content}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <Animated.View entering={FadeInDown.duration(800)} style={styles.headerContent}>
+                        <Text style={styles.dateDisplay}>
+                            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                        </Text>
+                        <View style={styles.gpsRow}>
+                            <View style={[styles.gpsDot, { backgroundColor: locationPermGranted ? '#34D399' : '#F87171' }]} />
+                            <Text style={styles.gpsStatusText}>{gpsText}</Text>
+                        </View>
+                    </Animated.View>
 
-                {!locationPermGranted ? (
-                    <View style={styles.warningContainer}>
-                        <Ionicons name="warning" size={24} color={Colors.warning.main} />
-                        <Text style={styles.warningText}>Location permission is required to mark attendance.</Text>
-                        <TouchableOpacity style={styles.permissionBtn} onPress={checkPermissionsAndFetchStatus}>
-                            <Text style={styles.permissionBtnText}>Grant Permission</Text>
-                        </TouchableOpacity>
-                    </View>
-                ) : (
-                    <View style={styles.actionContainer}>
-                        <Text style={styles.gpsText}>GPS Signal: {currentLocationText}</Text>
+                    <Animated.View entering={FadeInDown.delay(200).duration(800)}>
+                        <WeeklyStrip />
+                    </Animated.View>
 
-                        {isCheckedOut ? (
-                            <View style={styles.completedContainer}>
-                                <Ionicons name="checkmark-circle" size={60} color={Colors.success.main} />
-                                <Text style={styles.completedTitle}>You're all done for today!</Text>
-                                <Text style={styles.completedSub}>Enjoy the rest of your day.</Text>
-                            </View>
-                        ) : (
-                            <TouchableOpacity
-                                style={[
-                                    styles.actionButton,
-                                    isCheckedIn ? styles.buttonOut : styles.buttonIn,
-                                    processing && styles.buttonDisabled
-                                ]}
-                                disabled={processing}
-                                onPress={() => handleAction(isCheckedIn ? 'out' : 'in')}
-                                activeOpacity={0.8}
-                            >
-                                {processing ? (
-                                    <ActivityIndicator color={Colors.white} />
-                                ) : (
-                                    <>
-                                        <Ionicons
-                                            name={isCheckedIn ? "exit" : "finger-print"}
-                                            size={24}
-                                            color={Colors.white}
-                                            style={styles.btnIcon}
-                                        />
-                                        <Text style={styles.actionButtonText}>
-                                            {isCheckedIn ? 'MARK TIME OUT' : 'MARK TIME IN'}
-                                        </Text>
-                                    </>
-                                )}
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                )}
-            </ScrollView>
-        </SafeAreaView>
+                    <SessionCard
+                        session="MORNING"
+                        data={status?.MORNING}
+                        onAction={handleAttendance}
+                        processing={processingSession === 'MORNING'}
+                        isCurrent={isMorningActual}
+                    />
+
+                    <SessionCard
+                        session="AFTERNOON"
+                        data={status?.AFTERNOON}
+                        onAction={handleAttendance}
+                        processing={processingSession === 'AFTERNOON'}
+                        isCurrent={!isMorningActual}
+                    />
+
+                    <Animated.View entering={FadeInUp.delay(400)} style={styles.infoCard}>
+                        <LinearGradient
+                            colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.03)']}
+                            style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
+                        />
+                        <Ionicons name="shield-checkmark-outline" size={20} color="rgba(56, 189, 248, 0.6)" />
+                        <Text style={styles.infoText}>
+                            Enterprise Geofencing Active. Your location is only recorded during check-in/out for verification.
+                        </Text>
+                    </Animated.View>
+                </ScrollView>
+            </SafeAreaView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.gray[50],
-    },
-    centerContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: Colors.gray[50],
-    },
-    loadingText: {
-        marginTop: 12,
-        color: Colors.gray[600],
-        fontSize: Typography.fontSize.sm,
-        fontWeight: Typography.fontWeight.medium,
-    },
-    header: {
+    container: { flex: 1 },
+    safeArea: { flex: 1 },
+    centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    loadingText: { marginTop: 16, fontSize: 14, fontWeight: '700', letterSpacing: 0.5 },
+
+    navHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: Colors.white,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.gray[200],
     },
-    backButton: {
-        width: 40,
-        height: 40,
+    iconBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 14,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        alignItems: 'center',
         justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
     },
     headerTitle: {
-        fontSize: Typography.fontSize.xl,
-        fontWeight: Typography.fontWeight.bold,
-        color: Colors.gray[900],
+        fontSize: 16,
+        fontWeight: '900',
+        color: '#fff',
+        letterSpacing: 2,
     },
-    scrollContent: {
-        padding: 20,
+    headerContent: {
+        alignItems: 'center',
+        marginTop: 24,
+        marginBottom: 32,
     },
-    dateCard: {
-        backgroundColor: Colors.white,
+    dateDisplay: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: '#fff',
+        letterSpacing: -0.5,
+    },
+    gpsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 20,
+        marginTop: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
+    },
+    gpsDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginRight: 8,
+    },
+    gpsStatusText: {
+        color: 'rgba(255,255,255,0.8)',
+        fontSize: 11,
+        fontWeight: '700',
+        letterSpacing: 0.5,
+    },
+
+    weeklyContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 32,
+        paddingHorizontal: 4,
+    },
+    dayCol: {
+        alignItems: 'center',
+        gap: 8,
+    },
+    dayDot: {
+        width: 32,
+        height: 32,
         borderRadius: 16,
-        padding: 20,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    todayDot: {
+        backgroundColor: 'rgba(56, 189, 248, 0.2)',
+        borderColor: '#38BDF8',
+        borderWidth: 2,
+    },
+    pastDot: {
+        backgroundColor: '#34D399',
+        borderColor: '#34D399',
+    },
+    dayLabel: {
+        fontSize: 10,
+        color: 'rgba(255,255,255,0.4)',
+        fontWeight: '700',
+    },
+    todayLabel: {
+        color: '#38BDF8',
+    },
+
+    content: { flex: 1 },
+    scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
+
+    sessionCard: {
+        backgroundColor: 'rgba(255,255,255,0.06)',
+        borderRadius: 24,
+        padding: 24,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
+    },
+    currentSessionCard: {
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(56, 189, 248, 0.4)',
+        borderWidth: 1.5,
+    },
+    completedSessionCard: {
+        opacity: 0.8,
+    },
+    sessionHeader: {
+        flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 24,
-        ...Shadows.sm,
     },
-    dateText: {
-        fontSize: Typography.fontSize.xl,
-        fontWeight: Typography.fontWeight.bold,
-        color: Colors.gray[900],
-        marginBottom: 12,
+    sessionIconBg: {
+        width: 50,
+        height: 50,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    locationBadge: {
+    sessionTitle: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#fff',
+    },
+    sessionTimeWindow: {
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.4)',
+        marginTop: 4,
+        fontWeight: '600',
+    },
+    completedBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Colors.primary,
-        paddingHorizontal: 12,
+        backgroundColor: 'rgba(52, 211, 153, 0.15)',
+        paddingHorizontal: 10,
         paddingVertical: 6,
-        borderRadius: 20,
+        borderRadius: 10,
+        gap: 4,
     },
-    locationText: {
-        color: Colors.white,
-        fontSize: Typography.fontSize.xs,
-        fontWeight: 'bold',
-        marginLeft: 4,
+    completedBadgeText: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: '#34D399',
     },
-    statusContainer: {
+    currentBadge: {
+        backgroundColor: 'rgba(56, 189, 248, 0.15)',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 10,
+    },
+    currentBadgeText: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: '#38BDF8',
+    },
+
+    timeInfoRow: {
         flexDirection: 'row',
-        backgroundColor: Colors.white,
-        borderRadius: 16,
-        padding: 24,
-        marginBottom: 32,
-        ...Shadows.sm,
+        backgroundColor: 'rgba(0,0,0,0.2)',
+        borderRadius: 18,
+        padding: 18,
+        marginBottom: 24,
     },
-    statusBox: {
+    timeBox: {
         flex: 1,
         alignItems: 'center',
     },
-    divider: {
+    timeLabel: {
+        fontSize: 10,
+        color: 'rgba(255,255,255,0.3)',
+        fontWeight: '800',
+        marginBottom: 6,
+        letterSpacing: 1,
+    },
+    timeValue: {
+        fontSize: 20,
+        fontWeight: '800',
+        color: 'rgba(255,255,255,0.15)',
+    },
+    activeTimeValue: {
+        color: '#fff',
+    },
+    timeSeparator: {
         width: 1,
-        backgroundColor: Colors.gray[200],
-        marginHorizontal: 10,
+        height: '100%',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        marginHorizontal: 12,
     },
-    statusLabel: {
-        fontSize: Typography.fontSize.sm,
-        fontWeight: Typography.fontWeight.medium,
-        color: Colors.gray[500],
-        marginTop: 8,
-        marginBottom: 4,
-    },
-    statusTime: {
-        fontSize: Typography.fontSize['2xl'],
-        fontWeight: Typography.fontWeight.bold,
-        color: Colors.gray[900],
-    },
-    actionContainer: {
-        alignItems: 'center',
-    },
-    gpsText: {
-        fontSize: Typography.fontSize.xs,
-        color: Colors.gray[500],
-        marginBottom: 20,
-    },
-    actionButton: {
+
+    sessionBtn: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        width: '100%',
-        paddingVertical: 18,
-        borderRadius: 16,
+        paddingVertical: 16,
+        borderRadius: 18,
+        gap: 12,
         ...Shadows.md,
     },
-    buttonIn: {
-        backgroundColor: Colors.primary,
+    btnInactive: {
+        opacity: 0.5,
     },
-    buttonOut: {
-        backgroundColor: '#8B5CF6',
+    sessionBtnIn: {
+        backgroundColor: '#38BDF8',
     },
-    buttonDisabled: {
-        opacity: 0.7,
+    sessionBtnOut: {
+        backgroundColor: '#F43F5E',
     },
-    btnIcon: {
-        marginRight: 10,
+    btnDisabled: {
+        opacity: 0.6,
     },
-    actionButtonText: {
-        color: Colors.white,
-        fontSize: Typography.fontSize.lg,
-        fontWeight: Typography.fontWeight.bold,
-        letterSpacing: 1,
+    sessionBtnText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '900',
+        letterSpacing: 0.5,
     },
-    warningContainer: {
-        backgroundColor: Colors.warning.light,
-        padding: 20,
-        borderRadius: 12,
-        alignItems: 'center',
-    },
-    warningText: {
-        color: Colors.warning.dark,
-        textAlign: 'center',
-        marginVertical: 12,
-        fontSize: Typography.fontSize.sm,
-        fontWeight: Typography.fontWeight.medium,
-    },
-    permissionBtn: {
-        backgroundColor: Colors.warning.main,
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 8,
-    },
-    permissionBtnText: {
-        color: Colors.white,
-        fontWeight: 'bold',
-    },
-    completedContainer: {
+
+    infoCard: {
+        flexDirection: 'row',
         alignItems: 'center',
         padding: 20,
-        backgroundColor: Colors.gray[50],
-        borderRadius: 16,
-        width: '100%',
+        borderRadius: 20,
+        marginTop: 8,
+        gap: 16,
+        overflow: 'hidden',
     },
-    completedTitle: {
-        fontSize: Typography.fontSize.lg,
-        fontWeight: Typography.fontWeight.bold,
-        color: Colors.success.main,
-        marginTop: 12,
-        marginBottom: 4,
-    },
-    completedSub: {
-        fontSize: Typography.fontSize.sm,
-        fontWeight: Typography.fontWeight.medium,
-        color: Colors.gray[600],
+    infoText: {
+        flex: 1,
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.5)',
+        lineHeight: 18,
+        fontWeight: '500',
     },
 });
 

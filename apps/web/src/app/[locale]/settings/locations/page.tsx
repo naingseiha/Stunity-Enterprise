@@ -284,52 +284,79 @@ export default function LocationsManagementPage({ params }: { params: { locale: 
                                 </div>
                             ) : (
                                 locations.map((loc) => (
-                                    <div key={loc.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between hover:shadow-md transition">
-                                        <div>
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center shrink-0">
-                                                        <MapPin className="w-6 h-6 text-indigo-600" />
+                                    <div key={loc.id} className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 group">
+                                        {/* Map Preview Header */}
+                                        <div className="h-32 bg-gray-100 relative">
+                                            <iframe
+                                                width="100%"
+                                                height="100%"
+                                                frameBorder="0"
+                                                style={{ border: 0 }}
+                                                src={`https://maps.google.com/maps?q=${loc.latitude},${loc.longitude}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                                                allowFullScreen
+                                                className="grayscale-[0.5] group-hover:grayscale-0 transition-all duration-500"
+                                            ></iframe>
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
+                                            <div className="absolute top-3 left-3">
+                                                <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg font-bold">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                                    Active Geofence
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-6">
+                                            <div className="flex items-start justify-between mb-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-200">
+                                                        <MapPin className="w-6 h-6 text-white" />
                                                     </div>
                                                     <div>
-                                                        <h3 className="text-xl font-bold text-gray-900">{loc.name}</h3>
-                                                        <p className="text-sm text-gray-500">Geofence Radius: {loc.radius}m</p>
+                                                        <h3 className="text-xl font-bold text-gray-900 leading-tight">{loc.name}</h3>
+                                                        <p className="text-sm text-gray-500 font-medium">Radius: <span className="text-indigo-600">{loc.radius}m</span></p>
                                                     </div>
                                                 </div>
                                                 <button
                                                     onClick={() => handleDeleteLocation(loc.id, loc.name)}
-                                                    className="w-10 h-10 bg-red-50 text-red-600 flex items-center justify-center rounded-lg hover:bg-red-100 transition"
+                                                    className="w-10 h-10 bg-gray-50 text-gray-400 flex items-center justify-center rounded-xl hover:bg-red-50 hover:text-red-600 transition-all duration-200"
                                                     title="Remove Location"
                                                 >
                                                     <Trash2 className="w-5 h-5" />
                                                 </button>
                                             </div>
 
-                                            <div className="bg-gray-50 rounded-xl p-4 flex gap-6">
-                                                <div>
-                                                    <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Latitude</p>
-                                                    <p className="text-gray-900 font-mono">{loc.latitude.toFixed(6)}</p>
+                                            <div className="grid grid-cols-2 gap-3 mb-6">
+                                                <div className="bg-gray-50/50 rounded-2xl p-3 border border-gray-100">
+                                                    <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-1">Latitude</p>
+                                                    <p className="text-gray-900 font-mono text-sm font-semibold">{loc.latitude.toFixed(6)}</p>
                                                 </div>
-                                                <div>
-                                                    <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Longitude</p>
-                                                    <p className="text-gray-900 font-mono">{loc.longitude.toFixed(6)}</p>
+                                                <div className="bg-gray-50/50 rounded-2xl p-3 border border-gray-100">
+                                                    <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-1">Longitude</p>
+                                                    <p className="text-gray-900 font-mono text-sm font-semibold">{loc.longitude.toFixed(6)}</p>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between text-sm">
-                                            <span className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full font-medium">
-                                                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                                                Active Zone
-                                            </span>
-                                            <a
-                                                href={`https://www.google.com/maps/search/?api=1&query=${loc.latitude},${loc.longitude}`}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="flex items-center gap-1.5 text-blue-600 font-medium hover:underline"
-                                            >
-                                                View on Maps <Navigation className="w-4 h-4" />
-                                            </a>
+                                            <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
+                                                <div className="flex -space-x-2">
+                                                    {[1, 2, 3].map((i) => (
+                                                        <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-400">
+                                                            {String.fromCharCode(64 + i)}
+                                                        </div>
+                                                    ))}
+                                                    <div className="w-8 h-8 rounded-full border-2 border-white bg-blue-50 flex items-center justify-center text-[10px] font-bold text-blue-600">
+                                                        +12
+                                                    </div>
+                                                </div>
+
+                                                <a
+                                                    href={`https://www.google.com/maps/search/?api=1&query=${loc.latitude},${loc.longitude}`}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="flex items-center gap-2 text-indigo-600 text-sm font-bold hover:gap-3 transition-all"
+                                                >
+                                                    Open Maps <Navigation className="w-4 h-4" />
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
                                 ))
@@ -341,92 +368,114 @@ export default function LocationsManagementPage({ params }: { params: { locale: 
 
             {/* Create Modal */}
             {showCreateModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-                        <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
-                            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                                <MapPin className="text-blue-600 w-6 h-6" /> Add Location
-                            </h2>
-                            <button
-                                onClick={() => setShowCreateModal(false)}
-                                className="text-gray-400 hover:text-gray-600"
-                            >
-                                <span className="text-2xl">×</span>
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Location Name</label>
-                                <input
-                                    type="text"
-                                    value={newName}
-                                    onChange={(e) => setNewName(e.target.value)}
-                                    placeholder="e.g. Main Building, Science Block"
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none focus:bg-white transition"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Latitude</label>
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={newLat}
-                                        onChange={(e) => setNewLat(e.target.value)}
-                                        placeholder="e.g. 37.7749"
-                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none focus:bg-white font-mono text-sm transition"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Longitude</label>
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={newLng}
-                                        onChange={(e) => setNewLng(e.target.value)}
-                                        placeholder="e.g. -122.4194"
-                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none focus:bg-white font-mono text-sm transition"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="bg-blue-50 rounded-lg p-3 text-xs text-blue-800 flex items-start gap-2 mb-2">
-                                <Navigation className="w-4 h-4 shrink-0 mt-0.5" />
-                                <p>Tip: Right-click on Google Maps to copy the exact coordinates (latitude, longitude).</p>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Allowed Radius (meters)</label>
-                                <input
-                                    type="number"
-                                    value={newRadius}
-                                    onChange={(e) => setNewRadius(e.target.value)}
-                                    min="10"
-                                    max="5000"
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none focus:bg-white transition"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">Distance from coordinates where check-in is allowed.</p>
-                            </div>
-
-                            <div className="flex gap-3 pt-4 border-t border-gray-100 mt-6">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <AnimatedContent animation="slide-up">
+                        <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-lg w-full overflow-hidden border border-white/20">
+                            {/* Modal Header */}
+                            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-white relative">
                                 <button
                                     onClick={() => setShowCreateModal(false)}
-                                    className="flex-1 px-4 py-3 text-gray-700 font-medium hover:bg-gray-100 rounded-xl transition"
+                                    className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-all"
                                 >
-                                    Cancel
+                                    <span className="text-2xl leading-none">×</span>
                                 </button>
-                                <button
-                                    onClick={handleCreateLocation}
-                                    disabled={loading}
-                                    className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-xl font-medium hover:bg-blue-700 transition disabled:opacity-50"
-                                >
-                                    {loading ? 'Adding...' : 'Save Location'}
-                                </button>
+                                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-4 backdrop-blur-md">
+                                    <MapPin className="w-8 h-8 text-white" />
+                                </div>
+                                <h2 className="text-3xl font-bold mb-1">Add New Zone</h2>
+                                <p className="text-blue-100 text-sm">Define a new geofenced area for attendance.</p>
+                            </div>
+
+                            <div className="p-8 space-y-6">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Location Name</label>
+                                    <input
+                                        type="text"
+                                        value={newName}
+                                        onChange={(e) => setNewName(e.target.value)}
+                                        placeholder="e.g. Main Campus, Library Wing"
+                                        className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:outline-none focus:bg-white transition-all text-gray-900 font-medium placeholder:text-gray-300"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Latitude</label>
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                step="any"
+                                                value={newLat}
+                                                onChange={(e) => setNewLat(e.target.value)}
+                                                placeholder="37.7749"
+                                                className="w-full pl-5 pr-10 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:outline-none focus:bg-white transition-all font-mono text-sm"
+                                            />
+                                            <Globe className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Longitude</label>
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                step="any"
+                                                value={newLng}
+                                                onChange={(e) => setNewLng(e.target.value)}
+                                                placeholder="-122.4194"
+                                                className="w-full pl-5 pr-10 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:outline-none focus:bg-white transition-all font-mono text-sm"
+                                            />
+                                            <Globe className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 flex items-start gap-4">
+                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-sm text-blue-600">
+                                        <Navigation className="w-5 h-5" />
+                                    </div>
+                                    <p className="text-xs text-blue-800 leading-relaxed font-medium">
+                                        <span className="font-bold block mb-0.5">Pro Tip:</span>
+                                        Right-click on Google Maps to copy the exact coordinates.
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Accuracy Radius (Meters)</label>
+                                    <div className="flex items-center gap-4">
+                                        <input
+                                            type="range"
+                                            min="20"
+                                            max="500"
+                                            step="10"
+                                            value={newRadius}
+                                            onChange={(e) => setNewRadius(e.target.value)}
+                                            className="flex-1 accent-indigo-600 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                        <div className="w-16 h-10 flex items-center justify-center bg-indigo-50 rounded-xl text-indigo-700 font-bold text-sm">
+                                            {newRadius}m
+                                        </div>
+                                    </div>
+                                    <p className="text-[10px] text-gray-400 mt-2 font-medium">Standard campus buildings usually need 50-100m.</p>
+                                </div>
+
+                                <div className="flex gap-4 pt-4">
+                                    <button
+                                        onClick={() => setShowCreateModal(false)}
+                                        className="flex-1 px-4 py-4 text-gray-500 font-bold hover:bg-gray-50 rounded-2xl transition-all"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleCreateLocation}
+                                        disabled={loading}
+                                        className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-4 rounded-2xl font-bold hover:shadow-lg hover:shadow-blue-200 transition-all disabled:opacity-50 active:scale-95"
+                                    >
+                                        {loading ? 'Processing...' : 'Deploy Zone'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </AnimatedContent>
                 </div>
             )}
         </>

@@ -38,6 +38,7 @@ export interface User {
   level?: number;
   isOpenToOpportunities?: boolean;
   // Relations
+  schoolId?: string | null;
   school?: { id: string; name: string; logo?: string };
   teacher?: { id: string; position?: string; degree?: string; hireDate?: string; major1?: string; major2?: string };
   student?: { id: string; firstName: string; lastName: string; class?: { id: string; name: string; grade: string } };

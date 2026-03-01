@@ -22,7 +22,9 @@
     "seed:super-admin": "tsx scripts/seed-super-admin.ts",
     "seed:all": "cd packages/database && npx prisma db seed && cd ../.. && npm run seed:test-data && npm run seed:school-management",
     "seed:courses": "tsx scripts/seed-courses.ts",
-    "seed:feed": "tsx scripts/seed-feed.ts"
+    "seed:feed": "tsx scripts/seed-feed.ts",
+    "migrate:v1-export": "V1_DATABASE_URL=${V1_DATABASE_URL} tsx scripts/migrate-v1-to-v2/export-v1-data.ts",
+    "migrate:v1-import": "tsx scripts/migrate-v1-to-v2/import-to-v2.ts"
   },
   "devDependencies": {
     "@prisma/client": "^5.22.0",

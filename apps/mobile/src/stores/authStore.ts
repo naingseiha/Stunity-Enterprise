@@ -56,6 +56,7 @@ const mapApiUserToUser = (apiUser: any): User => ({
   socialLinks: apiUser.socialLinks || {},
   isVerified: apiUser.isVerified || false,
   isOnline: true,
+  schoolId: apiUser.schoolId || null,
   school: apiUser.school || null,
   level: apiUser.level ?? 1,
   totalPoints: apiUser.totalPoints ?? 0,

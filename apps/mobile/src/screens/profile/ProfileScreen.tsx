@@ -17,6 +17,8 @@ import {
   Dimensions,
   StatusBar,
   Image,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -44,6 +46,8 @@ import { useAuthStore } from '@/stores';
 import { User, UserStats, Education, Experience, Certification } from '@/types';
 import { formatNumber } from '@/utils';
 import { ProfileStackScreenProps } from '@/navigation/types';
+import * as Location from 'expo-location';
+import { attendanceService } from '@/services/attendance';
 import { fetchProfile as apiFetchProfile, fetchEducation, fetchExperiences, fetchCertifications, followUser, unfollowUser, uploadProfilePhoto, uploadCoverPhoto } from '@/api/profileApi';
 import { statsAPI, type UserStats as QuizUserStats, type Streak, type UserAchievement, type Achievement } from '@/services/stats';
 import { PerformanceTab, ActivityTab, CertificationsSection, SkillsSection, ProfileCompletenessCard, CareerGoalsCard, ProjectShowcase, LinkSchoolCard } from './components';
@@ -125,6 +129,8 @@ export default function ProfileScreen() {
   useEffect(() => {
     loadProfile();
   }, [userId, isOwnProfile]);
+
+
 
   const loadProfile = async () => {
     if (!refreshing) setLoading(true);
@@ -378,8 +384,11 @@ export default function ProfileScreen() {
                   {isOwnProfile && (
                     <>
                       {currentUser?.role === 'TEACHER' && (
-                        <TouchableOpacity style={[styles.headerCircleBtn, { marginRight: 8 }]} onPress={() => navigation.navigate('AttendanceCheckIn' as any)}>
-                          <Ionicons name="calendar-outline" size={20} color="#fff" />
+                        <TouchableOpacity
+                          style={[styles.headerCircleBtn, { marginRight: 8, backgroundColor: 'rgba(255,255,255,0.2)' }]}
+                          onPress={() => navigation.navigate('AttendanceCheckIn' as any)}
+                        >
+                          <Ionicons name="finger-print" size={20} color="#fff" />
                         </TouchableOpacity>
                       )}
                       <TouchableOpacity style={[styles.headerCircleBtn, { marginRight: 8 }]} onPress={() => navigation.navigate('QuizStudio' as any)}>

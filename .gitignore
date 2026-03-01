@@ -63,3 +63,6 @@ temp/
 
 # User uploads
 services/feed-service/uploads/
+
+# V1 migration export data (uncomment to ignore)
+# scripts/migrate-v1-to-v2/data/export-*/

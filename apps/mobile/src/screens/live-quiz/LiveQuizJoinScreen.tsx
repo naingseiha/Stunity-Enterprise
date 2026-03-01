@@ -10,13 +10,13 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   Alert,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -60,7 +60,7 @@ export function LiveQuizJoinScreen() {
     } catch (error: any) {
       console.error('Join session error:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      
+
       const message = error.response?.data?.error || 'Failed to join session. Please check the code and try again.';
       Alert.alert('Join Failed', message);
     } finally {
@@ -233,10 +233,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     shadowColor: '#000',
-    
+
     shadowOpacity: 0.3,
-    
-    
+
+
   },
   joinButtonDisabled: {
     opacity: 0.5,

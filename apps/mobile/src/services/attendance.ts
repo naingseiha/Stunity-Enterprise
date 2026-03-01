@@ -2,8 +2,7 @@ import tokenService from './token';
 import { Config } from '@/config';
 
 const getBaseUrl = () => {
-    // We'll use the authUrl base since the new attendance routes are there
-    return Config.authUrl.replace('/auth', '');
+    return Config.attendanceUrl;
 };
 
 export interface CheckInLocation {
@@ -12,7 +11,7 @@ export interface CheckInLocation {
 }
 
 export const attendanceService = {
-    checkIn: async (location: CheckInLocation) => {
+    checkIn: async (location: CheckInLocation, session?: 'MORNING' | 'AFTERNOON') => {
         const token = await tokenService.getAccessToken();
         const response = await fetch(`${getBaseUrl()}/attendance/teacher/check-in`, {
             method: 'POST',
@@ -20,7 +19,7 @@ export const attendanceService = {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify(location),
+            body: JSON.stringify({ ...location, session }),
         });
 
         // Read the text first, in case it's not JSON
@@ -36,7 +35,7 @@ export const attendanceService = {
         return data;
     },
 
-    checkOut: async (location: CheckInLocation) => {
+    checkOut: async (location: CheckInLocation, session?: 'MORNING' | 'AFTERNOON') => {
         const token = await tokenService.getAccessToken();
         const response = await fetch(`${getBaseUrl()}/attendance/teacher/check-out`, {
             method: 'POST',
@@ -44,7 +43,7 @@ export const attendanceService = {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify(location),
+            body: JSON.stringify({ ...location, session }),
         });
 
         const text = await response.text();
