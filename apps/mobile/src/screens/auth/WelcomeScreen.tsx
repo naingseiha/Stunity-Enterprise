@@ -13,6 +13,7 @@ import {
   Dimensions,
   StatusBar,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -60,13 +61,19 @@ export default function WelcomeScreen() {
       <View style={styles.decorCircle4} />
 
       <SafeAreaView style={styles.content}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         {/* Logo and Branding */}
         <Animated.View
           entering={FadeInDown.delay(200).duration(700).springify()}
           style={styles.brandingContainer}
         >
           <Animated.View entering={FadeInDown.delay(100).duration(600)}>
-            <StunityLogo width={160} height={160} style={{ marginBottom: 16 }} />
+            <StunityLogo width={130} height={130} style={{ marginBottom: 10 }} />
           </Animated.View>
 
           <Text style={styles.tagline}>
@@ -139,19 +146,47 @@ export default function WelcomeScreen() {
             </View>
           </TouchableOpacity>
 
+          {/* Other sign-in options */}
+          <View style={styles.otherOptionsLabel}>
+            <View style={styles.otherOptionsLine} />
+            <Text style={styles.otherOptionsText}>Other sign-in options</Text>
+            <View style={styles.otherOptionsLine} />
+          </View>
+
+          {/* Parent Portal */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ParentLogin')}
+            activeOpacity={0.85}
+            accessibilityLabel="Parent portal login"
+            accessibilityRole="button"
+            style={[styles.linkButton, styles.linkButtonParent]}
+          >
+            <View style={[styles.linkIconWrap, { backgroundColor: '#D1FAE5' }]}>
+              <Ionicons name="people" size={20} color="#059669" />
+            </View>
+            <View style={styles.linkTextWrap}>
+              <Text style={styles.linkLabel}>Parent Portal</Text>
+              <Text style={styles.linkDesc}>{"View your child's grades and attendance"}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={Colors.gray[400]} />
+          </TouchableOpacity>
+
           {/* Enterprise SSO */}
           <TouchableOpacity
             onPress={() => navigation.navigate('Login')}
             activeOpacity={0.85}
             accessibilityLabel="Enterprise SSO login"
             accessibilityRole="button"
-            style={styles.ssoButton}
+            style={[styles.linkButton, styles.linkButtonEnterprise]}
           >
-            <View style={styles.ssoIconWrap}>
-              <Ionicons name="business" size={16} color="#0EA5E9" />
+            <View style={[styles.linkIconWrap, { backgroundColor: '#E0F2FE' }]}>
+              <Ionicons name="business" size={20} color="#0EA5E9" />
             </View>
-            <Text style={styles.ssoText}>Enterprise SSO</Text>
-            <Ionicons name="chevron-forward" size={16} color={Colors.gray[400]} />
+            <View style={styles.linkTextWrap}>
+              <Text style={styles.linkLabel}>Enterprise SSO</Text>
+              <Text style={styles.linkDesc}>Sign in with your organization</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={Colors.gray[400]} />
           </TouchableOpacity>
 
           {/* Trust Footer */}
@@ -166,6 +201,7 @@ export default function WelcomeScreen() {
             </Text>
           </View>
         </Animated.View>
+        </ScrollView>
       </SafeAreaView>
     </View>
   );
@@ -178,6 +214,14 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 24,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: Math.max(24, height * 0.05),
+    paddingTop: 0,
   },
 
   // ── Decorative Circles ────────────────────────────────
@@ -205,7 +249,7 @@ const styles = StyleSheet.create({
   // ── Branding ──────────────────────────────────────────
   brandingContainer: {
     alignItems: 'center',
-    marginTop: height * 0.04,
+    marginTop: 12,
   },
   logo: {
     width: 160,
@@ -213,11 +257,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   tagline: {
-    fontSize: 30,
+    fontSize: 26,
     fontWeight: '300',
     color: Colors.gray[700],
     textAlign: 'center',
-    lineHeight: 38,
+    lineHeight: 34,
     letterSpacing: -0.3,
   },
   taglineBrand: {
@@ -226,45 +270,44 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   description: {
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.gray[500],
     textAlign: 'center',
-    lineHeight: 22,
-    marginTop: 8,
+    lineHeight: 20,
+    marginTop: 6,
   },
 
   // ── Feature Highlights ────────────────────────────────
   featuresRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 28,
+    gap: 8,
+    marginTop: 14,
   },
   featureCard: {
     flex: 1,
     backgroundColor: '#fff',
-    borderRadius: 24,
-    paddingVertical: 16,
-    paddingHorizontal: 8,
+    borderRadius: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 6,
     alignItems: 'center',
     shadowColor: '#000',
-    
     shadowOpacity: 0.04,
-    
-    
+    shadowRadius: 6,
+    elevation: 2,
   },
   featureIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   featureLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: Colors.gray[900],
-    marginBottom: 2,
+    marginBottom: 1,
   },
   featureDesc: {
     fontSize: 10,
@@ -274,13 +317,14 @@ const styles = StyleSheet.create({
 
   spacer: {
     flex: 1,
-    minHeight: 20,
+    minHeight: 8,
+    maxHeight: 32,
   },
 
   // ── Buttons ───────────────────────────────────────────
   buttonsContainer: {
-    marginBottom: 16,
-    gap: 12,
+    marginBottom: 20,
+    gap: 10,
   },
   primaryShadow: {
     shadowColor: '#0EA5E9',
@@ -288,11 +332,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 14,
     elevation: 8,
-    borderRadius: 28,
+    borderRadius: 26,
   },
   primaryButton: {
-    height: 56,
-    borderRadius: 28,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -305,15 +349,15 @@ const styles = StyleSheet.create({
   },
   secondaryShadow: {
     shadowColor: '#000',
-    
-    
-    
-    
-    borderRadius: 28,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+    borderRadius: 26,
   },
   secondaryButton: {
-    height: 56,
-    borderRadius: 28,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -327,30 +371,65 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: 0.3,
   },
-  ssoButton: {
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.6)',
-    borderWidth: 1,
-    borderColor: '#E0F2FE',
+  otherOptionsLabel: {
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 8,
+    marginBottom: 4,
   },
-  ssoIconWrap: {
-    width: 28,
-    height: 28,
+  otherOptionsLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.gray[200],
+  },
+  otherOptionsText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.gray[400],
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  linkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 58,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    gap: 14,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  linkButtonParent: {
+    borderColor: '#A7F3D0',
+  },
+  linkButtonEnterprise: {
+    borderColor: '#BAE6FD',
+  },
+  linkIconWrap: {
+    width: 40,
+    height: 40,
     borderRadius: 10,
-    backgroundColor: '#E0F2FE',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ssoText: {
-    color: Colors.gray[600],
-    fontWeight: '600',
-    fontSize: 14,
+  linkTextWrap: {
     flex: 1,
+  },
+  linkLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.gray[900],
+  },
+  linkDesc: {
+    fontSize: 12,
+    color: Colors.gray[500],
+    marginTop: 2,
   },
 
   // ── Footer ────────────────────────────────────────────

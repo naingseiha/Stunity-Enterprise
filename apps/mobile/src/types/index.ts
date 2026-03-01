@@ -41,6 +41,16 @@ export interface User {
   school?: { id: string; name: string; logo?: string };
   teacher?: { id: string; position?: string; degree?: string; hireDate?: string; major1?: string; major2?: string };
   student?: { id: string; firstName: string; lastName: string; class?: { id: string; name: string; grade: string } };
+  // Parent: linked children
+  children?: Array<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    khmerName?: string;
+    studentId?: string;
+    relationship?: string;
+    isPrimary?: boolean;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -127,7 +137,8 @@ export interface AuthTokens {
 }
 
 export interface LoginCredentials {
-  email: string;
+  email?: string;
+  phone?: string;
   password: string;
   rememberMe?: boolean;
 }
@@ -136,10 +147,10 @@ export interface RegisterData {
   firstName: string;
   lastName: string;
   username?: string;
-  email: string;
+  email?: string;
+  phone?: string;
   password: string;
   role: UserRole;
-  phone?: string;
   organization?: string;
   organizationType?: 'university' | 'school' | 'corporate' | 'other';
 }

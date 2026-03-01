@@ -40,25 +40,27 @@ export default function LoginScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { login, logout, isLoading, error, clearError } = useAuthStore();
 
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  // Session persists until logout (like Facebook) - no remember me checkbox needed
   const [showPassword, setShowPassword] = useState(false);
   const [socialLoading, setSocialLoading] = useState<'google' | 'apple' | null>(null);
 
   const passwordRef = useRef<TextInput>(null);
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please enter your email and password');
+    const id = identifier.trim();
+    if (!id || !password.trim()) {
+      Alert.alert('Error', 'Please enter your email or phone and password');
       return;
     }
 
     clearError();
+    const isEmail = id.includes('@');
     const success = await login({
-      email: email.trim(),
+      ...(isEmail ? { email: id } : { phone: id }),
       password,
-      rememberMe,
+      rememberMe: true, // Always keep session until logout (like Facebook)
     });
 
     if (!success && error) {
@@ -165,13 +167,13 @@ export default function LoginScreen() {
 
             {/* Form */}
             <Animated.View entering={FadeInUp.delay(200).duration(500)}>
-              {/* Email */}
+              {/* Email or Phone */}
               <View style={styles.inputWrapper}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Email"
-                  value={email}
-                  onChangeText={setEmail}
+                  placeholder="Email or Phone"
+                  value={identifier}
+                  onChangeText={setIdentifier}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
@@ -209,17 +211,7 @@ export default function LoginScreen() {
 
               {/* Options */}
               <View style={styles.optionsRow}>
-                <TouchableOpacity
-                  onPress={() => setRememberMe(!rememberMe)}
-                  style={styles.rememberMe}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.checkbox, rememberMe && styles.checkboxActive]}>
-                    {!!rememberMe && <Ionicons name="checkmark" size={12} color="#fff" />}
-                  </View>
-                  <Text style={styles.rememberText}>Remember me</Text>
-                </TouchableOpacity>
-
+                <View style={{ flex: 1 }} />
                 <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
                   <Text style={styles.forgotText}>Forgot password?</Text>
                 </TouchableOpacity>
@@ -419,28 +411,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
     marginTop: 4,
-  },
-  rememberMe: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  checkbox: {
-    width: 18,
-    height: 18,
-    borderRadius: 5,
-    borderWidth: 1.5,
-    borderColor: Colors.gray[300],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  checkboxActive: {
-    backgroundColor: '#0EA5E9',
-    borderColor: '#0EA5E9',
-  },
-  rememberText: {
-    fontSize: 13,
-    color: Colors.gray[600],
   },
   forgotText: {
     fontSize: 13,

@@ -14,6 +14,7 @@ import {
   WelcomeScreen,
   LoginScreen,
   RegisterScreen,
+  ParentLoginScreen,
   ForgotPasswordScreen,
   ResetPasswordScreen,
   TwoFactorScreen,
@@ -46,6 +47,7 @@ const AuthNavigator: React.FC = () => {
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="ParentLogin" component={ParentLoginScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="VerifyOTP" component={VerifyOTPScreen} />
       <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />

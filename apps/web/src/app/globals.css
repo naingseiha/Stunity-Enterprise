@@ -26,12 +26,10 @@ textarea:focus {
   outline: none;
   box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(234, 88, 12, 0.22);
 }
-@media (prefers-color-scheme: dark) {
-  input:focus,
-  select:focus,
-  textarea:focus {
-    box-shadow: 0 0 0 2px rgb(30 41 59), 0 0 0 4px rgba(234, 88, 12, 0.3);
-  }
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+  box-shadow: 0 0 0 2px rgb(30 41 59), 0 0 0 4px rgba(234, 88, 12, 0.3);
 }
 /* Optional: softer border for inputs when not focused */
 input,

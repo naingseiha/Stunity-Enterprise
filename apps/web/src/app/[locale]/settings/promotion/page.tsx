@@ -80,8 +80,8 @@ export default function StudentPromotionPage({ params: { locale } }: { params: {
     try {
       const token = TokenManager.getAccessToken();
       const [eligible, preview] = await Promise.all([
-        getEligibleStudents(schoolId, fromYearId, token),
-        getPromotionPreview(schoolId, fromYearId, toYearId, token),
+        getEligibleStudents(schoolId, fromYearId, token || undefined),
+        getPromotionPreview(schoolId, fromYearId, toYearId, token || undefined),
       ]);
 
       setEligibleStudents(eligible);
@@ -130,7 +130,7 @@ export default function StudentPromotionPage({ params: { locale } }: { params: {
         toYearId,
         promotions,
         userId,
-        token
+        token || undefined
       );
 
       setResults(response);

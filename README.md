@@ -39,7 +39,7 @@ An enterprise-grade school management + social e-learning platform. Combines **s
 ## 🚀 Quick Start
 
 ```bash
-# Start all 14 services
+# Start all services (15 microservices + web)
 ./quick-start.sh
 
 # Open browser
@@ -73,7 +73,7 @@ npx expo start --tunnel
 
 ## 📊 System Architecture
 
-### Microservices (12 Services)
+### Microservices (15 Services)
 | Port | Service | Description |
 |------|---------|-------------|
 | 3000 | Web | Next.js frontend application |
@@ -86,8 +86,12 @@ npx expo start --tunnel
 | 3007 | Grade | Grade entry & calculations |
 | 3008 | Attendance | Attendance tracking |
 | 3009 | Timetable | Schedule management |
-| 3010 | Feed | Social feed posts, likes, comments |
-| 3011 | Messaging | Teacher-parent messaging 🆕 |
+| 3010 | Feed | Social feed posts, likes, comments, search |
+| 3011 | Messaging | Teacher-parent messaging |
+| 3012 | Club | Clubs, events, discussions |
+| 3013 | Notification | Push notification delivery |
+| 3014 | Analytics | Live quizzes, XP, achievements |
+| 3020 | AI | AI features (optional) |
 
 ### Mobile App
 | Platform | Technology | Status | Integration |

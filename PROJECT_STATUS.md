@@ -1,8 +1,8 @@
 # 🎓 Stunity Enterprise — Project Status
 
-**Last Updated:** February 21, 2026
-**Version:** 23.0
-**Status:** 98% Complete — Enterprise Security + Auth + Feed Complete 🚀
+**Last Updated:** March 1, 2026
+**Version:** 23.1
+**Status:** 98% Complete — Parent Portal Mobile + Auth Enhancements 🚀
 
 ---
 
@@ -19,11 +19,14 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 
 ## ✅ Completed Features (v23.0)
 
-### 🔐 Authentication & Enterprise Security (NEW in v23.0)
+### 🔐 Authentication & Enterprise Security
+- **Email OR phone** — Register and login with either (like Facebook); at least one required
+- **Organization optional** — Registration step 2; users can skip if not applicable
+- **Session persists until logout** — No "Remember me" checkbox; tokens persist like Facebook
 - Email/password login + registration with role selection
 - Claim code system (STNT-XXXX-XXXX) — school enrollment
 - JWT access tokens (1h) + refresh tokens (7d), bcrypt 12 rounds
-- Parent portal login (separate flow)
+- Parent portal login (separate flow) + **Parent Portal mobile app** (grades, attendance, report cards)
 - Enterprise SSO fully integrated (Azure AD, Google Workspace) with auto-provisioning
 - **Security headers** — Helmet + HPP on auth-service + feed-service
 - **Rate limiting** — 6 endpoint-specific limiters (global, auth, register, reset, 2FA, feed writes/uploads)
@@ -82,7 +85,8 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 - Timetable generation (shifts, constraints, drag-drop on web)
 - Grade entry (GPA scales, exam types, subject averages)
 - Attendance marking with session management
-- Parent portal (grades, attendance, report cards, parent-to-teacher messages)
+- **Parent portal mobile app** — ParentHomeScreen, ParentChildScreen, ParentChildGradesScreen, ParentChildAttendanceScreen, ParentChildReportCardScreen; login with phone; RootNavigator routes PARENT role to ParentNavigator
+- Parent portal web (grades, attendance, report cards, parent-to-teacher messages)
 - Academic year promotion workflow
 - Admin claim code generation + school templates
 
@@ -133,21 +137,21 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 ### 🟡 Priority 2 — Important Enhancements
 5. ~~**Web Feed: Repost button**~~ ✅ Already implemented (full repost-as-post)
 6. ~~**Web Feed: Real-time comments**~~ ✅ Already working via SSE
-7. **Enterprise SSO backend** — UI ready, Azure AD/Google Workspace integration not implemented
-8. **Video post support** — Currently images only. Need video upload + HLS streaming.
+7. ~~**Enterprise SSO backend**~~ ✅ Azure AD + Google Workspace (passport-azure-ad, passport-google-oauth20)
+8. ~~**Video post support (Web)**~~ ✅ CreatePostModal accepts video; MediaGallery renders video playback
 9. ~~**School-Feed notification bridge**~~ ✅ `/notifications/student` + `/notifications/batch`, grade/attendance services notify students
 
 ### 🟢 Priority 3 — Polish
 10. ~~**Web Profile page parity**~~ ✅ Activity tab: XP, Level, Streak, Learning Hours, completeness bar
-11. **Search service integration** — Search service (port 3016) exists but web search UI not fully built out.
-12. **Admin portal** — apps/admin-portal exists but needs review of completeness.
+11. ~~**Search**~~ ✅ Web search at `/[locale]/search` uses feed-service `/users/search` and `/posts?search=` (no separate search-service)
+12. ~~**Super Admin area**~~ ✅ Fully implemented in web app at `/[locale]/super-admin` (Dashboard, Schools, Users, Audit Logs, Settings, Analytics)
 13. ~~**FeedRanker author-affinity**~~ ✅ Full 6-factor model with interaction history
 
 ### 🆕 Next Up
-14. **Video post support** (upload pipeline, transcoding, player component)
-15. **Enterprise SSO** (Azure AD, Google Workspace backend)
-16. **Web quiz card UI** (full "Take Quiz" button and quiz stats in PostCard)
-17. **Audit logging dashboard** (track admin actions, security events)
+14. ~~**Web video post support**~~ ✅ CreatePostModal accepts video, MediaGallery renders video playback
+15. ~~**Enterprise SSO**~~ ✅ Backend integrated (Azure AD, Google Workspace via passport)
+16. **DB Migration: SHARE enum** — Run on production: `ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'SHARE';`
+17. **Audit logging dashboard** — Audit logs exist; dedicated analytics UI (optional polish)
 
 ---
 
@@ -157,10 +161,8 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 Stunity-Enterprise/
 ├── apps/
 │   ├── mobile/          # React Native + Expo SDK 54
-│   ├── web/             # Next.js 14 (admin/teacher/parent web)
-│   ├── admin-portal/    # Separate admin app (in progress)
-│   └── docs/            # Documentation site
-├── services/            # 14 microservices
+│   └── web/             # Next.js 14 (admin/teacher/parent/super-admin)
+├── services/            # 15 microservices
 ├── packages/
 │   └── database/        # Shared Prisma schema + client
 ├── docs/                # Architecture + feature docs
@@ -187,6 +189,7 @@ Stunity-Enterprise/
 | club-service | 3012 | Clubs, events, discussions |
 | notification-service | 3013 | Push notification delivery |
 | analytics-service | 3014 | Live quizzes, XP, achievements, leaderboards |
+| ai-service | 3020 | AI features (optional) |
 
 ---
 

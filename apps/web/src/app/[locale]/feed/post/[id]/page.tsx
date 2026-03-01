@@ -86,6 +86,20 @@ interface Comment {
   _count?: { replies: number };
 }
 
+const FEED_API = process.env.NEXT_PUBLIC_FEED_API_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';
+
+function resolveMediaUrl(url: string): string {
+  if (url.startsWith('/uploads/')) return `${FEED_API}${url}`;
+  const lanMatch = url.match(/^http:\/\/\d+\.\d+\.\d+\.\d+:\d+(\/uploads\/.*)/);
+  if (lanMatch) return `${FEED_API}${lanMatch[1]}`;
+  return url;
+}
+
+function isVideoUrl(url: string): boolean {
+  const u = url.toLowerCase().split('?')[0];
+  return /\.(mp4|webm|mov|m4v)(\?|$)/.test(u) || u.includes('/uploads/videos/') || u.includes('/videos/');
+}
+
 const POST_TYPE_CONFIG: Record<string, { icon: any; color: string; label: string; gradient: string }> = {
   ARTICLE: { icon: FileText, color: 'bg-emerald-100 text-emerald-700', label: 'Article', gradient: 'from-emerald-500 to-green-600' },
   POLL: { icon: BarChart3, color: 'bg-violet-100 text-violet-700', label: 'Poll', gradient: 'from-violet-500 to-purple-600' },
@@ -181,10 +195,10 @@ export default function PostDetailPage() {
       const token = TokenManager.getAccessToken();
       
       const [postRes, commentsRes] = await Promise.all([
-        fetch(`http://localhost:3010/posts/${postId}`, {
+        fetch(`${FEED_API}/posts/${postId}`, {
           headers: { 'Authorization': `Bearer ${token}` },
         }),
-        fetch(`http://localhost:3010/posts/${postId}/comments`, {
+        fetch(`${FEED_API}/posts/${postId}/comments`, {
           headers: { 'Authorization': `Bearer ${token}` },
         }),
       ]);
@@ -200,7 +214,7 @@ export default function PostDetailPage() {
       setComments(commentsData.data || []);
       
       // Track view
-      fetch(`http://localhost:3010/posts/${postId}/view`, {
+      fetch(`${FEED_API}/posts/${postId}/view`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
       }).catch(() => {});
@@ -538,20 +552,38 @@ export default function PostDetailPage() {
                 {post.mediaUrls && post.mediaUrls.length > 0 && (
                   <div className="relative">
                     {post.mediaUrls.length === 1 ? (
-                      <img
-                        src={post.mediaUrls[0]}
-                        alt=""
-                        className="w-full max-h-[600px] object-contain bg-gray-100 cursor-pointer hover:opacity-95 transition-opacity"
-                        onClick={() => setShowMediaModal(true)}
-                      />
-                    ) : (
-                      <div className="relative">
+                      isVideoUrl(post.mediaUrls[0]) ? (
+                        <video
+                          src={resolveMediaUrl(post.mediaUrls[0])}
+                          controls
+                          playsInline
+                          className="w-full max-h-[600px] object-contain bg-gray-100"
+                        />
+                      ) : (
                         <img
-                          src={post.mediaUrls[currentMediaIndex]}
+                          src={resolveMediaUrl(post.mediaUrls[0])}
                           alt=""
                           className="w-full max-h-[600px] object-contain bg-gray-100 cursor-pointer hover:opacity-95 transition-opacity"
                           onClick={() => setShowMediaModal(true)}
                         />
+                      )
+                    ) : (
+                      <div className="relative">
+                        {isVideoUrl(post.mediaUrls[currentMediaIndex]) ? (
+                          <video
+                            src={resolveMediaUrl(post.mediaUrls[currentMediaIndex])}
+                            controls
+                            playsInline
+                            className="w-full max-h-[600px] object-contain bg-gray-100"
+                          />
+                        ) : (
+                          <img
+                            src={resolveMediaUrl(post.mediaUrls[currentMediaIndex])}
+                            alt=""
+                            className="w-full max-h-[600px] object-contain bg-gray-100 cursor-pointer hover:opacity-95 transition-opacity"
+                            onClick={() => setShowMediaModal(true)}
+                          />
+                        )}
                         {currentMediaIndex > 0 && (
                           <button
                             onClick={() => setCurrentMediaIndex(i => i - 1)}
@@ -714,17 +746,28 @@ export default function PostDetailPage() {
           onClick={() => setShowMediaModal(false)}
         >
           <button 
-            className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors"
+            className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
             onClick={() => setShowMediaModal(false)}
           >
             <X className="w-8 h-8" />
           </button>
-          <img
-            src={post.mediaUrls[currentMediaIndex]}
-            alt=""
-            className="max-w-[90vw] max-h-[90vh] object-contain animate-in zoom-in-95 duration-300"
-            onClick={(e) => e.stopPropagation()}
-          />
+          {isVideoUrl(post.mediaUrls[currentMediaIndex]) ? (
+            <video
+              src={resolveMediaUrl(post.mediaUrls[currentMediaIndex])}
+              controls
+              autoPlay
+              playsInline
+              className="max-w-[90vw] max-h-[90vh] object-contain animate-in zoom-in-95 duration-300"
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <img
+              src={resolveMediaUrl(post.mediaUrls[currentMediaIndex])}
+              alt=""
+              className="max-w-[90vw] max-h-[90vh] object-contain animate-in zoom-in-95 duration-300"
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
           {post.mediaUrls.length > 1 && (
             <>
               {currentMediaIndex > 0 && (

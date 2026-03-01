@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { LogIn, AlertCircle, Mail, Phone, Users } from 'lucide-react';
+import { LogIn, AlertCircle, Users } from 'lucide-react';
 import { login, TokenManager } from '@/lib/api/auth';
 
 const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'http://localhost:3001';
@@ -16,9 +16,7 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
   const searchParams = useSearchParams();
   const ssoExchanged = useRef(false);
 
-  const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -95,49 +93,31 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
     setLoading(true);
 
     try {
-      let response;
-      
-      if (loginMethod === 'phone') {
-        // Phone login (for parents and users with phone auth)
-        const res = await fetch(`${AUTH_SERVICE_URL}/auth/parent/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone, password }),
-        });
-        response = await res.json();
-        
-        if (response.success && response.data) {
-          // Store tokens
-          TokenManager.setTokens(response.data.tokens.accessToken, response.data.tokens.refreshToken);
-          TokenManager.setUserData(response.data.user, response.data.school);
-          
-          await new Promise(resolve => setTimeout(resolve, 200));
-          const redirectPath = getRedirectPath(response.data.user);
-          window.location.href = redirectPath;
-          return;
-        } else {
-          setError(response.error || response.message || 'Login failed');
-          setLoading(false);
-        }
+      const id = identifier.trim();
+      if (!id || !password) {
+        setError('Please enter your email or phone and password');
+        setLoading(false);
+        return;
+      }
+
+      const isEmail = id.includes('@');
+      const credentials = isEmail ? { email: id, password } : { phone: id, password };
+      const response = await login(credentials);
+
+      if (response.success && response.tokens && response.user) {
+        TokenManager.setTokens(response.tokens.accessToken, response.tokens.refreshToken);
+        TokenManager.setUserData(response.user, response.school);
+
+        await new Promise(resolve => setTimeout(resolve, 200));
+        const redirectPath = getRedirectPath(response.user);
+        window.location.href = redirectPath;
+        return;
       } else {
-        // Email login (traditional)
-        response = await login({ email, password });
-
-        if (response.success && response.tokens && response.user) {
-          TokenManager.setTokens(response.tokens.accessToken, response.tokens.refreshToken);
-          TokenManager.setUserData(response.user, response.school);
-
-          await new Promise(resolve => setTimeout(resolve, 200));
-          const redirectPath = getRedirectPath(response.user);
-          window.location.href = redirectPath;
-          return;
-        } else {
-          setError(response.message || t('error'));
-          setLoading(false);
-        }
+        setError(response.message || t('error'));
       }
     } catch (err: any) {
-      setError(err.message || t('error'));
+      setError(err?.message || t('error'));
+    } finally {
       setLoading(false);
     }
   };
@@ -162,34 +142,6 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
           <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('title')}</h2>
           <p className="text-gray-500 text-sm mb-6">Teachers, Students, Parents, Staff - All login here</p>
 
-          {/* Login Method Toggle */}
-          <div className="flex bg-gray-100 rounded-lg p-1 mb-6">
-            <button
-              type="button"
-              onClick={() => setLoginMethod('email')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${
-                loginMethod === 'email'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Mail className="w-4 h-4" />
-              Email
-            </button>
-            <button
-              type="button"
-              onClick={() => setLoginMethod('phone')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${
-                loginMethod === 'phone'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Phone className="w-4 h-4" />
-              Phone
-            </button>
-          </div>
-
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -198,39 +150,22 @@ export default function LoginPage({ params: { locale } }: { params: { locale: st
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {loginMethod === 'email' ? (
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('email')}
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 transition-colors"
-                  placeholder="you@school.edu"
-                  disabled={loading}
-                />
-              </div>
-            ) : (
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number
-                </label>
-                <input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 transition-colors"
-                  placeholder="012345678"
-                  disabled={loading}
-                />
-              </div>
-            )}
+            <div>
+              <label htmlFor="identifier" className="block text-sm font-medium text-gray-700 mb-2">
+                Email or Phone
+              </label>
+              <input
+                id="identifier"
+                type="text"
+                inputMode="email"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                required
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 transition-colors"
+                placeholder="you@school.edu or 012345678"
+                disabled={loading}
+              />
+            </div>
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">

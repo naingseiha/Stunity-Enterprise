@@ -784,6 +784,54 @@ app.get('/attendance/class/:classId/month/:month/year/:year', authenticateToken,
 
 // ==================== C. Statistics ====================
 
+// GET /attendance/student/:studentId - Student attendance records (with startDate/endDate)
+app.get('/attendance/student/:studentId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { studentId } = req.params;
+    const { startDate, endDate } = req.query;
+    const schoolId = req.schoolId!;
+
+    const student = await prisma.student.findFirst({
+      where: { id: studentId, schoolId },
+    });
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student not found' });
+    }
+
+    let start: Date;
+    let end: Date;
+    if (startDate && endDate) {
+      start = startOfDay(parseISO(startDate as string));
+      end = endOfDay(parseISO(endDate as string));
+    } else {
+      const now = new Date();
+      start = startOfMonth(now);
+      end = endOfMonth(now);
+    }
+
+    const records = await prisma.attendance.findMany({
+      where: {
+        studentId,
+        date: { gte: start, lte: end },
+      },
+      orderBy: { date: 'asc' },
+    });
+
+    const data = records.map((r) => ({
+      id: r.id,
+      date: format(r.date, 'yyyy-MM-dd'),
+      status: r.status,
+      session: r.session,
+      remarks: r.remarks,
+    }));
+
+    res.json({ success: true, data });
+  } catch (error: any) {
+    console.error('Error fetching student attendance:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch attendance', error: error.message });
+  }
+});
+
 // GET /attendance/student/:studentId/summary - Student attendance summary
 app.get('/attendance/student/:studentId/summary', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {

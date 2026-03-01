@@ -19,7 +19,7 @@ interface MediaLightboxProps {
   onClose: () => void;
 }
 
-const FEED_API = process.env.NEXT_PUBLIC_FEED_API || 'http://localhost:3010';
+const FEED_API = process.env.NEXT_PUBLIC_FEED_API_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_API || 'http://localhost:3010';
 
 // Resolve relative or stale-IP media URLs to the current feed-service host
 function resolveUrl(url: string): string {
@@ -27,6 +27,12 @@ function resolveUrl(url: string): string {
   const lanMatch = url.match(/^http:\/\/\d+\.\d+\.\d+\.\d+:\d+(\/uploads\/.*)/);
   if (lanMatch) return `${FEED_API}${lanMatch[1]}`;
   return url;
+}
+
+// Detect if URL is a video (by extension or path)
+function isVideoUrl(url: string): boolean {
+  const u = url.toLowerCase().split('?')[0];
+  return /\.(mp4|webm|mov|m4v)(\?|$)/.test(u) || u.includes('/uploads/videos/') || u.includes('/videos/');
 }
 
 // Use native <img> for user-uploaded content to avoid next/image hostname restrictions
@@ -49,14 +55,26 @@ export default function MediaGallery({
   useEffect(() => {
     if (displayMode === 'AUTO') {
       mediaUrls.forEach((url, index) => {
-        const img = new window.Image();
-        img.onload = () => {
-          setImageDimensions(prev => ({
-            ...prev,
-            [index]: { width: img.naturalWidth, height: img.naturalHeight }
-          }));
-        };
-        img.src = url;
+        if (isVideoUrl(url)) {
+          const video = document.createElement('video');
+          video.preload = 'metadata';
+          video.onloadedmetadata = () => {
+            setImageDimensions(prev => ({
+              ...prev,
+              [index]: { width: video.videoWidth, height: video.videoHeight }
+            }));
+          };
+          video.src = url;
+        } else {
+          const img = new window.Image();
+          img.onload = () => {
+            setImageDimensions(prev => ({
+              ...prev,
+              [index]: { width: img.naturalWidth, height: img.naturalHeight }
+            }));
+          };
+          img.src = url;
+        }
       });
     }
   }, [mediaUrls, displayMode]);
@@ -79,11 +97,12 @@ export default function MediaGallery({
 
   if (count === 0) return null;
 
-  // Single image
+  // Single media (image or video)
   if (count === 1) {
     const aspectInfo = getAspectInfo(0);
     const isFullHeight = effectiveMode === 'FULL_HEIGHT' || aspectInfo.isPortrait;
-    
+    const video0 = isVideoUrl(mediaUrls[0]);
+
     return (
       <div className={`relative overflow-hidden rounded-xl ${className}`}>
         <div 
@@ -94,12 +113,23 @@ export default function MediaGallery({
           }`}
           onClick={() => handleClick(0)}
         >
-          <img
-            src={mediaUrls[0]}
-            alt="Post media"
-            className={`w-full h-full ${isFullHeight ? 'object-contain bg-gray-100' : 'object-cover'} transition-transform group-hover:scale-[1.02]`}
-          />
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+          {video0 ? (
+            <video
+              src={mediaUrls[0]}
+              className={`w-full h-full ${isFullHeight ? 'object-contain bg-gray-100' : 'object-cover'} transition-transform group-hover:scale-[1.02]`}
+              controls
+              playsInline
+              preload="metadata"
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <img
+              src={mediaUrls[0]}
+              alt="Post media"
+              className={`w-full h-full ${isFullHeight ? 'object-contain bg-gray-100' : 'object-cover'} transition-transform group-hover:scale-[1.02]`}
+            />
+          )}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center pointer-events-none">
             <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 rounded-full p-3">
               <Maximize2 className="w-6 h-6 text-white" />
             </div>
@@ -109,7 +139,7 @@ export default function MediaGallery({
     );
   }
 
-  // Two images
+  // Two media
   if (count === 2) {
     return (
       <div className={`grid grid-cols-2 gap-1 rounded-xl overflow-hidden ${className}`}>
@@ -121,19 +151,26 @@ export default function MediaGallery({
             }`}
             onClick={() => handleClick(index)}
           >
-            <img
-              src={url}
-              alt={`Post media ${index + 1}`}
-              className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]"
-            />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+            {isVideoUrl(url) ? (
+              <video src={url} className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]" controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} />
+            ) : (
+              <img src={url} alt={`Post media ${index + 1}`} className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]" />
+            )}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
           </div>
         ))}
       </div>
     );
   }
 
-  // Three images
+  // Three media
+  const MediaItem = ({ url, index }: { url: string; index: number }) =>
+    isVideoUrl(url) ? (
+      <video src={url} className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]" controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} />
+    ) : (
+      <img src={url} alt={`Post media ${index + 1}`} className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]" />
+    );
+
   if (count === 3) {
     return (
       <div className={`grid grid-cols-2 gap-1 rounded-xl overflow-hidden ${className}`}>
@@ -143,12 +180,8 @@ export default function MediaGallery({
           }`}
           onClick={() => handleClick(0)}
         >
-          <img
-            src={mediaUrls[0]}
-            alt="Post media 1"
-            className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]"
-          />
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+          <MediaItem url={mediaUrls[0]} index={0} />
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
         </div>
         <div className="flex flex-col gap-1">
           {mediaUrls.slice(1).map((url, index) => (
@@ -159,12 +192,8 @@ export default function MediaGallery({
               }`}
               onClick={() => handleClick(index + 1)}
             >
-              <img
-                src={url}
-                alt={`Post media ${index + 2}`}
-                className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+              <MediaItem url={url} index={index + 1} />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
             </div>
           ))}
         </div>
@@ -172,7 +201,7 @@ export default function MediaGallery({
     );
   }
 
-  // Four or more images
+  // Four or more media
   return (
     <div className={`grid grid-cols-2 gap-1 rounded-xl overflow-hidden ${className}`}>
       {mediaUrls.slice(0, 4).map((url, index) => (
@@ -183,14 +212,10 @@ export default function MediaGallery({
           }`}
           onClick={() => handleClick(index)}
         >
-          <img
-            src={url}
-            alt={`Post media ${index + 1}`}
-            className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]"
-          />
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+          <MediaItem url={url} index={index} />
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
           {index === 3 && count > 4 && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none">
               <span className="text-white text-2xl font-bold">+{count - 4}</span>
             </div>
           )}
@@ -200,8 +225,9 @@ export default function MediaGallery({
   );
 }
 
-// Media Lightbox Component - Full screen image viewer
-export function MediaLightbox({ mediaUrls, initialIndex, isOpen, onClose }: MediaLightboxProps) {
+// Media Lightbox Component - Full screen image/video viewer
+export function MediaLightbox({ mediaUrls: rawMediaUrls, initialIndex, isOpen, onClose }: MediaLightboxProps) {
+  const mediaUrls = rawMediaUrls.map(resolveUrl);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isZoomed, setIsZoomed] = useState(false);
 
@@ -245,22 +271,27 @@ export function MediaLightbox({ mediaUrls, initialIndex, isOpen, onClose }: Medi
 
   const handleDownload = async () => {
     try {
-      const response = await fetch(mediaUrls[currentIndex]);
+      const url = mediaUrls[currentIndex];
+      const response = await fetch(url);
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
-      link.download = `image-${currentIndex + 1}.jpg`;
+      link.href = blobUrl;
+      const ext = isVideoUrl(url) ? 'mp4' : 'jpg';
+      link.download = `media-${currentIndex + 1}.${ext}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error('Download failed:', error);
     }
   };
 
   if (!isOpen) return null;
+
+  const currentUrl = mediaUrls[currentIndex];
+  const currentIsVideo = isVideoUrl(currentUrl);
 
   return (
     <div 
@@ -278,13 +309,15 @@ export function MediaLightbox({ mediaUrls, initialIndex, isOpen, onClose }: Medi
         <span className="text-white/80 text-sm font-medium">
           {currentIndex + 1} / {mediaUrls.length}
         </span>
-        <button
-          onClick={() => setIsZoomed(!isZoomed)}
-          className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-          title={isZoomed ? 'Zoom out' : 'Zoom in'}
-        >
-          <ZoomIn className="w-5 h-5 text-white" />
-        </button>
+        {!currentIsVideo && (
+          <button
+            onClick={() => setIsZoomed(!isZoomed)}
+            className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            title={isZoomed ? 'Zoom out' : 'Zoom in'}
+          >
+            <ZoomIn className="w-5 h-5 text-white" />
+          </button>
+        )}
         <button
           onClick={handleDownload}
           className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
@@ -311,19 +344,30 @@ export function MediaLightbox({ mediaUrls, initialIndex, isOpen, onClose }: Medi
         </>
       )}
 
-      {/* Main image */}
+      {/* Main media (image or video) */}
       <div 
         className={`relative w-full h-full flex items-center justify-center p-4 sm:p-12 transition-transform ${
-          isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'
+          !currentIsVideo && (isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in')
         }`}
-        onClick={() => setIsZoomed(!isZoomed)}
+        onClick={() => !currentIsVideo && setIsZoomed(!isZoomed)}
       >
-        <div className={`transition-all duration-300 ${isZoomed ? 'scale-150' : 'scale-100'} max-w-full max-h-full`}>
-          <img
-            src={mediaUrls[currentIndex]}
-            alt={`Image ${currentIndex + 1}`}
-            className="max-w-full max-h-[85vh] object-contain"
-          />
+        <div className={`transition-all duration-300 ${!currentIsVideo && isZoomed ? 'scale-150' : 'scale-100'} max-w-full max-h-full`}>
+          {currentIsVideo ? (
+            <video
+              src={currentUrl}
+              controls
+              playsInline
+              autoPlay
+              className="max-w-full max-h-[85vh] object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <img
+              src={currentUrl}
+              alt={`Media ${currentIndex + 1}`}
+              className="max-w-full max-h-[85vh] object-contain"
+            />
+          )}
         </div>
       </div>
 
@@ -340,11 +384,11 @@ export function MediaLightbox({ mediaUrls, initialIndex, isOpen, onClose }: Medi
                   : 'opacity-60 hover:opacity-100'
               }`}
             >
-              <img
-                src={url}
-                alt={`Thumbnail ${index + 1}`}
-                className="w-full h-full object-cover"
-              />
+              {isVideoUrl(url) ? (
+                <video src={url} className="w-full h-full object-cover" muted preload="metadata" />
+              ) : (
+                <img src={url} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
+              )}
             </button>
           ))}
         </div>

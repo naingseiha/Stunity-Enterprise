@@ -285,11 +285,12 @@ app.get('/api/info', (req: Request, res: Response) => {
   });
 });
 
-// Login endpoint
+// Login endpoint — accepts email OR phone (like Facebook)
 app.post(
   '/auth/login',
   [
-    body('email').isEmail().withMessage('Valid email is required'),
+    body('email').optional().isEmail().withMessage('Email must be valid when provided'),
+    body('phone').optional().notEmpty().withMessage('Phone must be non-empty when provided'),
     body('password').notEmpty().withMessage('Password is required'),
   ],
   async (req: Request, res: Response) => {
@@ -302,42 +303,69 @@ app.post(
         });
       }
 
-      const { email, password } = req.body;
+      const { email, phone, password } = req.body;
+      const emailTrim = typeof email === 'string' ? email.trim() : '';
+      const phoneTrim = typeof phone === 'string' ? phone.trim() : '';
+
+      if (!emailTrim && !phoneTrim) {
+        return res.status(400).json({
+          success: false,
+          error: 'Please provide email or phone number',
+        });
+      }
 
       // Debug logging
       console.log('🔐 Login attempt:', {
-        email,
+        email: emailTrim || '(none)',
+        phone: phoneTrim || '(none)',
         passwordLength: password?.length,
         timestamp: new Date().toISOString()
       });
 
-      // Find user with school
-      const user = await prisma.user.findUnique({
-        where: { email },
-        include: {
-          school: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-              subscriptionTier: true,
-              subscriptionEnd: true,
-              isTrial: true,
-              isActive: true,
+      // Find user by email or phone
+      const user = emailTrim
+        ? await prisma.user.findUnique({
+            where: { email: emailTrim },
+            include: {
+              school: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                  subscriptionTier: true,
+                  subscriptionEnd: true,
+                  isTrial: true,
+                  isActive: true,
+                },
+              },
             },
-          },
-        },
-      });
+          })
+        : await prisma.user.findFirst({
+            where: { phone: phoneTrim },
+            include: {
+              school: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                  subscriptionTier: true,
+                  subscriptionEnd: true,
+                  isTrial: true,
+                  isActive: true,
+                },
+              },
+            },
+          });
 
       if (!user) {
-        console.log('❌ User not found:', email);
+        console.log('❌ User not found:', emailTrim || phoneTrim);
         return res.status(401).json({
           success: false,
           error: 'Invalid email or password',
         });
       }
 
-      console.log('✅ User found:', user.email);
+      console.log('✅ User found:', user.email || user.phone);
 
       // Check if user is active
       if (!user.isActive) {
@@ -383,12 +411,12 @@ app.post(
       const isPasswordValid = await bcrypt.compare(password, user.password);
 
       console.log('🔑 Password check:', {
-        email: user.email,
+        identifier: user.email || user.phone,
         valid: isPasswordValid
       });
 
       if (!isPasswordValid) {
-        console.log('❌ Invalid password for:', user.email);
+        console.log('❌ Invalid password for:', user.email || user.phone);
         await recordFailedAttempt(user);
         return res.status(401).json({
           success: false,
@@ -396,7 +424,7 @@ app.post(
         });
       }
 
-      console.log('✅ Login successful for:', user.email);
+      console.log('✅ Login successful for:', user.email || user.phone);
 
       // Reset failed attempts + update last login
       await recordSuccessfulLogin(user.id);
@@ -478,14 +506,16 @@ app.post(
 /**
  * POST /auth/register
  * Basic registration for social-only users (no school affiliation)
+ * Accepts email OR phone (at least one required, like Facebook)
  */
 app.post(
   '/auth/register',
   [
-    body('email').isEmail().withMessage('Valid email is required'),
     body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
     body('firstName').notEmpty().withMessage('First name is required'),
     body('lastName').notEmpty().withMessage('Last name is required'),
+    body('email').optional().isEmail().withMessage('Email must be valid when provided'),
+    body('phone').optional().notEmpty().withMessage('Phone must be non-empty when provided'),
   ],
   async (req: Request, res: Response) => {
     try {
@@ -498,6 +528,16 @@ app.post(
       }
 
       const { email, password, firstName, lastName, phone, role = 'STUDENT' } = req.body;
+      const emailTrim = typeof email === 'string' ? email.trim() : '';
+      const phoneTrim = typeof phone === 'string' ? phone.trim() : '';
+
+      // Require at least one of email or phone
+      if (!emailTrim && !phoneTrim) {
+        return res.status(400).json({
+          success: false,
+          error: 'Please provide email or phone number (at least one required)',
+        });
+      }
 
       // Enforce password policy
       const passwordCheck = validatePassword(password);
@@ -510,36 +550,51 @@ app.post(
       }
 
       console.log('📝 Registration attempt:', {
-        email,
+        email: emailTrim || '(none)',
+        phone: phoneTrim || '(none)',
         firstName,
         lastName,
         role,
         timestamp: new Date().toISOString()
       });
 
-      // Check if user already exists
-      const existingUser = await prisma.user.findUnique({
-        where: { email },
-      });
-
-      if (existingUser) {
-        return res.status(400).json({
-          success: false,
-          error: 'Email already registered',
+      // Check if email already exists (when provided)
+      if (emailTrim) {
+        const existingByEmail = await prisma.user.findUnique({
+          where: { email: emailTrim },
         });
+        if (existingByEmail) {
+          return res.status(400).json({
+            success: false,
+            error: 'Email already registered',
+          });
+        }
+      }
+
+      // Check if phone already exists (when provided)
+      if (phoneTrim) {
+        const existingByPhone = await prisma.user.findFirst({
+          where: { phone: phoneTrim },
+        });
+        if (existingByPhone) {
+          return res.status(400).json({
+            success: false,
+            error: 'Phone number already registered',
+          });
+        }
       }
 
       // Hash password
       const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-      // Create user
+      // Create user (email and phone are optional in schema)
       const user = await prisma.user.create({
         data: {
-          email,
+          email: emailTrim || null,
+          phone: phoneTrim || null,
           password: hashedPassword,
           firstName,
           lastName,
-          phone,
           role,
           accountType: 'SOCIAL_ONLY', // No school affiliation
           socialFeaturesEnabled: true,
@@ -548,7 +603,7 @@ app.post(
         },
       });
 
-      console.log('✅ User created:', user.email);
+      console.log('✅ User created:', user.email || user.phone);
 
       // Generate tokens
       const accessToken = jwt.sign(
@@ -1528,6 +1583,25 @@ app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Respons
             isActive: true,
           },
         },
+        ...(req.user!.role === 'PARENT' && {
+          parent: {
+            include: {
+              studentParents: {
+                include: {
+                  student: {
+                    select: {
+                      id: true,
+                      firstName: true,
+                      lastName: true,
+                      khmerName: true,
+                      studentId: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        }),
       },
     });
 
@@ -1537,6 +1611,19 @@ app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Respons
         error: 'User not found',
       });
     }
+
+    const children =
+      user.role === 'PARENT' && user.parent?.studentParents
+        ? user.parent.studentParents.map((sp: any) => ({
+            id: sp.student.id,
+            firstName: sp.student.firstName,
+            lastName: sp.student.lastName,
+            khmerName: sp.student.khmerName,
+            studentId: sp.student.studentId,
+            relationship: sp.relationship,
+            isPrimary: sp.isPrimary,
+          }))
+        : undefined;
 
     res.json({
       success: true,
@@ -1553,6 +1640,7 @@ app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Respons
           interests: user.interests,
           schoolId: user.schoolId,
           isSuperAdmin: !!user.isSuperAdmin,
+          ...(children && { children }),
         },
         school: user.school,
       },

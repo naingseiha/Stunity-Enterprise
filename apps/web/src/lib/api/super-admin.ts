@@ -194,7 +194,7 @@ export async function getSuperAdminUsers(params?: {
   return response.json();
 }
 
-export interface SuperAdminUserDetail extends SuperAdminUser {
+export interface SuperAdminUserDetail extends Omit<SuperAdminUser, 'lastLogin'> {
   phone?: string | null;
   lastLogin?: string | null;
   createdAt?: string;

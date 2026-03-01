@@ -206,7 +206,8 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
         });
 
         const token = TokenManager.getAccessToken();
-        const uploadRes = await fetch('http://localhost:3010/upload', {
+        const feedApi = process.env.NEXT_PUBLIC_FEED_API_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';
+        const uploadRes = await fetch(`${feedApi}/upload`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -287,17 +288,21 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
     }
   };
 
-  // Handle file selection
+  // Handle file selection (images and videos)
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
+    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedVideoTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v'];
+
     Array.from(files).forEach(file => {
-      if (file.type.startsWith('image/')) {
-        // Store the file for upload
-        setMediaFiles(prev => [...prev, file]);
-        
-        // Create preview URL
+      const isImage = file.type.startsWith('image/') && allowedImageTypes.includes(file.type);
+      const isVideo = file.type.startsWith('video/') && allowedVideoTypes.includes(file.type);
+      if (!isImage && !isVideo) return;
+
+      setMediaFiles(prev => [...prev, file]);
+      if (isImage) {
         const reader = new FileReader();
         reader.onload = (event) => {
           if (event.target?.result) {
@@ -305,16 +310,21 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
           }
         };
         reader.readAsDataURL(file);
+      } else {
+        setMediaPreviews(prev => [...prev, URL.createObjectURL(file)]);
       }
     });
-    
-    // Reset input
+
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
   const handleRemoveMedia = (index: number) => {
+    const file = mediaFiles[index];
+    if (file?.type.startsWith('video/') && mediaPreviews[index]?.startsWith('blob:')) {
+      URL.revokeObjectURL(mediaPreviews[index]);
+    }
     setMediaFiles(prev => prev.filter((_, i) => i !== index));
     setMediaPreviews(prev => prev.filter((_, i) => i !== index));
   };
@@ -971,22 +981,12 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
 
           {/* Media Upload Section */}
           <div className="mt-4 space-y-3">
-            {/* Hidden file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-
             {/* Media Preview Grid */}
             {mediaPreviews.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium text-gray-700">
-                    {mediaPreviews.length} {mediaPreviews.length === 1 ? 'image' : 'images'} added
+                    {mediaPreviews.length} {mediaPreviews.length === 1 ? 'media' : 'media'} added
                   </p>
                   
                   {/* Display Mode Selector */}
@@ -1034,33 +1034,46 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                   </div>
                 </div>
 
-                {/* Image Grid Preview */}
+                {/* Media Grid Preview (images + videos) */}
                 <div className={`grid gap-2 ${
                   mediaPreviews.length === 1 ? 'grid-cols-1' : 
                   mediaPreviews.length === 2 ? 'grid-cols-2' : 
                   'grid-cols-3'
                 }`}>
-                  {mediaPreviews.map((url, index) => (
-                    <div 
-                      key={index} 
-                      className={`relative rounded-lg overflow-hidden bg-gray-100 ${
-                        mediaDisplayMode === 'FULL_HEIGHT' ? 'aspect-[3/4]' : 'aspect-video'
-                      }`}
-                    >
-                      <Image
-                        src={url}
-                        alt={`Preview ${index + 1}`}
-                        fill
-                        className={mediaDisplayMode === 'FULL_HEIGHT' ? 'object-contain' : 'object-cover'}
-                      />
-                      <button
-                        onClick={() => handleRemoveMedia(index)}
-                        className="absolute top-1 right-1 p-1.5 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
+                  {mediaPreviews.map((url, index) => {
+                    const isVideo = mediaFiles[index]?.type?.startsWith('video/');
+                    return (
+                      <div 
+                        key={index} 
+                        className={`relative rounded-lg overflow-hidden bg-gray-100 ${
+                          mediaDisplayMode === 'FULL_HEIGHT' ? 'aspect-[3/4]' : 'aspect-video'
+                        }`}
                       >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
+                        {isVideo ? (
+                          <video
+                            src={url}
+                            className={`w-full h-full ${mediaDisplayMode === 'FULL_HEIGHT' ? 'object-contain' : 'object-cover'}`}
+                            muted
+                            playsInline
+                            preload="metadata"
+                          />
+                        ) : (
+                          <Image
+                            src={url}
+                            alt={`Preview ${index + 1}`}
+                            fill
+                            className={mediaDisplayMode === 'FULL_HEIGHT' ? 'object-contain' : 'object-cover'}
+                          />
+                        )}
+                        <button
+                          onClick={() => handleRemoveMedia(index)}
+                          className="absolute top-1 right-1 p-1.5 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Display Mode Info */}
@@ -1077,13 +1090,21 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
               </div>
             )}
 
-            {/* Add Photo Button */}
+            {/* Add Photo/Video Button */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime,video/x-m4v"
+              multiple
+              className="hidden"
+              onChange={handleFileSelect}
+            />
             <button 
               onClick={() => fileInputRef.current?.click()}
               className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-amber-50 rounded-full transition-colors text-sm"
             >
               <ImageIcon className="w-4 h-4" />
-              {mediaPreviews.length > 0 ? 'Add More Photos' : 'Add Photo'}
+              {mediaPreviews.length > 0 ? 'Add More' : 'Add Photo or Video'}
             </button>
           </div>
         </div>

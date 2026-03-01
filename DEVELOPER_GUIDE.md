@@ -40,7 +40,9 @@ npm install
 # Generate Prisma client
 cd packages/database && npx prisma generate && cd ../..
 
-# Start all 14 microservices
+# Start all services (15 microservices + web)
+./quick-start.sh
+# OR
 ./start-all-services.sh
 
 # Mobile dev (new terminal)
@@ -428,6 +430,30 @@ These bridges are NOT yet implemented but are the next integration milestone:
 ---
 
 ## Deployment
+
+### Production One-Time Setup (Supabase)
+
+Before deploying to production, run these once:
+
+**1. SHARE notification type** (required for repost notifications):
+```sql
+-- Run in Supabase Dashboard → SQL Editor
+-- Or use: scripts/migrations/add-share-notification-type.sql
+ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'SHARE';
+```
+
+**2. Web app environment variables** (for media URLs, feed API):
+```
+NEXT_PUBLIC_FEED_API_URL=https://feed.your-domain.com
+# OR
+NEXT_PUBLIC_FEED_SERVICE_URL=https://feed.your-domain.com
+```
+These are used to resolve `/uploads/` URLs and API calls. If unset, defaults to `http://localhost:3010`.
+
+**3. Enable Realtime** (Supabase Dashboard → Database → Replication):
+Enable for: `Post`, `Comment`, `Notification`, `Like`, `Story`
+
+---
 
 ### Google Cloud Run (feed-service)
 

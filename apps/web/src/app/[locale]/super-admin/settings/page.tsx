@@ -49,7 +49,7 @@ export default function SuperAdminSettingsPage() {
   const [flagForm, setFlagForm] = useState({ key: '', description: '', enabled: false });
   const [savingFlag, setSavingFlag] = useState(false);
   const [annModal, setAnnModal] = useState(false);
-  const [annForm, setAnnForm] = useState({ title: '', content: '', priority: 'INFO' as const, isActive: true });
+  const [annForm, setAnnForm] = useState<{ title: string; content: string; priority: 'INFO' | 'WARNING' | 'URGENT'; isActive: boolean }>({ title: '', content: '', priority: 'INFO', isActive: true });
   const [editingAnn, setEditingAnn] = useState<PlatformAnnouncement | null>(null);
   const [savingAnn, setSavingAnn] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);

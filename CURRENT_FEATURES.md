@@ -1,6 +1,6 @@
 # ✅ Stunity Enterprise — Current Features
 
-**Version:** 23.0 | **Updated:** February 21, 2026
+**Version:** 23.1 | **Updated:** March 1, 2026
 
 > This document lists all implemented and working features. For what's coming next, see NEXT_IMPLEMENTATION.md.
 
@@ -9,11 +9,15 @@
 ## 🔐 Authentication & Security (Enterprise-Grade)
 
 ### Core Auth
+- **Email OR phone** — Register and login with either (at least one required); single "Email or Phone" field on mobile and web
+- **Organization optional** — Registration step 2; users can skip organization name
+- **Session persists until logout** — No Remember me checkbox; tokens persist like Facebook
 - Email/password registration + login
 - Role selection: Student, Teacher, Admin, Parent
 - Claim code enrollment: `STNT-XXXX-XXXX` links users to a school
 - JWT access tokens (1h) + refresh tokens (7 days), bcrypt 12 rounds
 - Parent portal with separate login (linked to student accounts)
+- **Parent Portal mobile app** — ParentLoginScreen, ParentNavigator, ParentHomeScreen, ParentChildScreen, grades/attendance/report-card screens
 - Profile setup screen (bio, avatar, interests)
 
 ### Security Foundation
@@ -317,7 +321,7 @@ npm run seed:super-admin [email]
 - **Auth flows:** Login with social buttons, forgot-password page, reset-password page (with strength indicators)
 - **Profile page:** Activity tab with XP, Level, Streak, Learning Hours, profile completeness bar
 - Internationalization (next-intl, multi-locale routing)
-- Dark mode support
+- **Dark mode** — Theme toggle in nav bar (Moon/Sun icon), persists to localStorage, respects system preference as default
 
 ---
 

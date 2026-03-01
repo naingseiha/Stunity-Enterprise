@@ -80,7 +80,6 @@ export default function PromotionWizardPage() {
         
         // Get eligible students
         console.log('📚 Fetching eligible students...');
-        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
         const eligible = await getEligibleStudents(schoolId!, fromYearId, token || undefined);
         console.log('✅ Eligible students:', eligible.totalStudents);
         setEligibleStudents(eligible);

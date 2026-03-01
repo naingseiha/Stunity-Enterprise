@@ -16,6 +16,7 @@ import { Colors } from '@/config';
 // Import navigators
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
+import ParentNavigator from './ParentNavigator';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -38,6 +39,8 @@ const RootNavigator: React.FC = () => {
   const isDark = colorScheme === 'dark';
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isInitialized = useAuthStore((state) => state.isInitialized);
+  const user = useAuthStore((state) => state.user);
+  const isParent = (user as any)?.role === 'PARENT';
 
   // Show loading while initializing
   if (!isInitialized) {
@@ -66,6 +69,8 @@ const RootNavigator: React.FC = () => {
       >
         {!isAuthenticated ? (
           <Stack.Screen name="Auth" component={AuthNavigator} />
+        ) : isParent ? (
+          <Stack.Screen name="Parent" component={ParentNavigator} />
         ) : (
           <Stack.Screen name="Main" component={MainNavigator} />
         )}

@@ -60,6 +60,7 @@ export default function RegisterScreen() {
   const [organization, setOrganization] = useState('');
   const [organizationType, setOrganizationType] = useState<'university' | 'school' | 'corporate' | 'other'>('university');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<UserRole>('STUDENT');
@@ -140,12 +141,8 @@ export default function RegisterScreen() {
           Alert.alert('Required', 'Please validate your claim code first');
           return;
         }
-      } else {
-        if (!organization.trim()) {
-          Alert.alert('Required', 'Please enter your organization');
-          return;
-        }
       }
+      // Organization is optional when not using claim code
       setStep(3);
     } else if (step === 3) {
       setStep(4);
@@ -153,8 +150,8 @@ export default function RegisterScreen() {
   };
 
   const handleRegister = async () => {
-    if (!email.trim()) {
-      Alert.alert('Required', 'Please enter your email address');
+    if (!email.trim() && !phone.trim()) {
+      Alert.alert('Required', 'Please enter your email or phone number (at least one required)');
       return;
     }
     if (!passwordValidation.isValid) {
@@ -173,6 +170,10 @@ export default function RegisterScreen() {
     clearError();
 
     if (useClaimCode && claimCodeValidated && claimCodeData) {
+      if (!email.trim()) {
+        Alert.alert('Required', 'Email is required when using a claim code');
+        return;
+      }
       try {
         const response = await authApi.post('/auth/register/with-claim-code', {
           code: claimCode.trim(),
@@ -207,7 +208,8 @@ export default function RegisterScreen() {
     const success = await register({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      email: email.trim(),
+      email: email.trim() || undefined,
+      phone: phone.trim() || undefined,
       password,
       role,
       organization: organization.trim() || undefined,
@@ -298,7 +300,7 @@ export default function RegisterScreen() {
           <Ionicons name="business" size={22} color="#8B5CF6" />
         </View>
         <Text style={s.stepTitle}>Organization</Text>
-        <Text style={s.stepSubtitle}>Your institution or use a claim code</Text>
+        <Text style={s.stepSubtitle}>Optional — or use a claim code</Text>
       </View>
 
       {/* Claim Code Toggle */}
@@ -385,8 +387,8 @@ export default function RegisterScreen() {
           <>
             <Input
               ref={organizationRef}
-              label="Organization Name"
-              placeholder="e.g., Harvard University"
+              label="Organization Name (Optional)"
+              placeholder="e.g., Harvard University — leave blank if not applicable"
               value={organization}
               onChangeText={setOrganization}
               leftIcon="business-outline"
@@ -498,15 +500,27 @@ export default function RegisterScreen() {
       </View>
 
       <View style={s.formSection}>
+        <Text style={s.emailPhoneHint}>Enter at least one — no email? Use phone only. You can login with either later.</Text>
         <Input
           ref={emailRef}
-          label="Email Address"
+          label="Email (optional if you have phone)"
           placeholder="your.email@organization.edu"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
           leftIcon="mail-outline"
+          returnKeyType="next"
+          onSubmitEditing={() => passwordRef.current?.focus()}
+        />
+
+        <Input
+          label="Phone (optional if you have email)"
+          placeholder="e.g. 012345678"
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+          leftIcon="call-outline"
           returnKeyType="next"
           onSubmitEditing={() => passwordRef.current?.focus()}
         />
@@ -604,12 +618,14 @@ export default function RegisterScreen() {
         </LinearGradient>
       </TouchableOpacity>
 
-      <View style={s.verifyNote}>
-        <Ionicons name="mail-outline" size={14} color={Colors.gray[500]} />
-        <Text style={s.verifyText}>
-          You'll receive a verification email after registration
-        </Text>
-      </View>
+      {email.trim() && (
+        <View style={s.verifyNote}>
+          <Ionicons name="mail-outline" size={14} color={Colors.gray[500]} />
+          <Text style={s.verifyText}>
+            You may receive a verification email after registration
+          </Text>
+        </View>
+      )}
     </Animated.View>
   );
 
@@ -792,6 +808,11 @@ const s = StyleSheet.create({
   // ── Glass Card ────────────────────────────────────────
   formSection: {
     marginBottom: 8,
+  },
+  emailPhoneHint: {
+    fontSize: 13,
+    color: Colors.gray[600],
+    marginBottom: 12,
   },
 
   // ── CTA Button ────────────────────────────────────────

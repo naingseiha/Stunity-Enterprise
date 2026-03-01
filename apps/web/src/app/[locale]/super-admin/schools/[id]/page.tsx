@@ -189,7 +189,7 @@ export default function SuperAdminSchoolDetailPage() {
   }
 
   const tierLabel = TIER_LABELS[school.subscriptionTier || ''] || school.subscriptionTier || '–';
-  const counts = school._count || {};
+  const counts = (school._count || {}) as { users?: number; students?: number; teachers?: number; classes?: number; academicYears?: number };
 
   return (
     <div className="space-y-6">

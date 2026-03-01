@@ -34,8 +34,8 @@ export default function GenerateCodesModal({
 
     try {
       const codes = await claimCodeService.generate(schoolId, {
-        type,
-        count,
+        type: type as 'STUDENT' | 'TEACHER' | 'STAFF' | 'PARENT',
+        quantity: count,
         expiresInDays: expiresIn,
       });
 

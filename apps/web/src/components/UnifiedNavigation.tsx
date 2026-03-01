@@ -29,7 +29,10 @@ import {
   Shield,
   Archive,
   UserX,
+  Moon,
+  Sun,
 } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 import AcademicYearSelector from './AcademicYearSelector';
 import LanguageSwitcher from './LanguageSwitcher';
 import { prefetchStudents } from '@/hooks/useStudents';
@@ -45,6 +48,7 @@ interface UnifiedNavProps {
 export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNavProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const searchParams = useSearchParams();
   const locale = pathname.split('/')[1] || 'en';
   const [isPending, startTransition] = useTransition();
@@ -399,6 +403,19 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
               >
                 <MessageCircle className="w-[18px] h-[18px]" />
               </Link>
+
+              {/* Dark/Light mode toggle */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-lg hover:bg-gray-100/80 dark:hover:bg-gray-800 transition-all duration-200"
+                title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {resolvedTheme === 'dark' ? (
+                  <Sun className="w-[18px] h-[18px]" />
+                ) : (
+                  <Moon className="w-[18px] h-[18px]" />
+                )}
+              </button>
 
               {/* Notifications */}
               <button className="relative p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-lg hover:bg-gray-100/80 dark:hover:bg-gray-800 transition-all duration-200">

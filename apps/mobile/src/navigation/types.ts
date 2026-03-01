@@ -10,11 +10,23 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { Post } from '@/types';
 
+// Parent Stack (parent portal)
+export type ParentStackParamList = {
+  ParentHome: undefined;
+  ParentChild: { studentId: string };
+  ParentChildGrades: { studentId: string };
+  ParentChildAttendance: { studentId: string };
+  ParentChildReportCard: { studentId: string };
+  ParentMessages: undefined;
+  ParentNotifications: undefined;
+};
+
 // Root Stack
 export type RootStackParamList = {
   Onboarding: undefined;
   Auth: NavigatorScreenParams<AuthStackParamList>;
   Main: NavigatorScreenParams<MainTabParamList>;
+  Parent: NavigatorScreenParams<ParentStackParamList>;
   // Modal screens
   CreatePost: { initialPostType?: string } | undefined;
   EditPost: { post: Post };
@@ -59,6 +71,7 @@ export type AuthStackParamList = {
   Welcome: undefined;
   Login: undefined;
   Register: undefined;
+  ParentLogin: undefined;
   ForgotPassword: undefined;
   VerifyOTP: { email: string };
   ResetPassword: { token: string };

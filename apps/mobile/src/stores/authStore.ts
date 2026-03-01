@@ -32,6 +32,7 @@ interface AuthState {
   clearError: () => void;
   setLoading: (loading: boolean) => void;
   linkClaimCode: (code: string) => Promise<{ success: boolean; error?: string }>;
+  parentLogin: (credentials: { phone: string; password: string }) => Promise<boolean>;
 }
 
 // Helper to map backend API user response to app User type
@@ -60,6 +61,7 @@ const mapApiUserToUser = (apiUser: any): User => ({
   totalPoints: apiUser.totalPoints ?? 0,
   totalLearningHours: apiUser.totalLearningHours ?? 0,
   currentStreak: apiUser.currentStreak ?? 0,
+  children: apiUser.children || [],
   createdAt: apiUser.createdAt || new Date().toISOString(),
   updatedAt: apiUser.updatedAt || new Date().toISOString(),
 });
@@ -138,10 +140,15 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true, error: null });
 
-          const response = await authApi.post('/auth/login', {
-            email: credentials.email,
+          const payload: { email?: string; phone?: string; password: string } = {
             password: credentials.password,
-          });
+          };
+          if (credentials.email?.trim()) {
+            payload.email = credentials.email.trim();
+          } else if (credentials.phone?.trim()) {
+            payload.phone = credentials.phone.trim();
+          }
+          const response = await authApi.post('/auth/login', payload);
 
           if (!response.data.success) {
             throw new Error(response.data.error || 'Login failed');
@@ -225,6 +232,45 @@ export const useAuthStore = create<AuthState>()(
         } catch (error: any) {
           console.error('Registration error:', error);
           const message = error?.response?.data?.error || error?.message || 'Registration failed';
+          set({
+            isLoading: false,
+            error: message,
+          });
+          return false;
+        }
+      },
+
+      // Parent login (phone + password)
+      parentLogin: async (credentials) => {
+        try {
+          set({ isLoading: true, error: null });
+
+          const response = await authApi.post('/auth/parent/login', {
+            phone: credentials.phone.trim(),
+            password: credentials.password,
+          });
+
+          if (!response.data.success) {
+            throw new Error(response.data.error || 'Login failed');
+          }
+
+          const { user: apiUser, tokens } = response.data.data;
+
+          await tokenService.setTokens(tokens as AuthTokens);
+          await tokenService.setUserId(apiUser.id);
+
+          const user = mapApiUserToUser(apiUser);
+
+          set({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+
+          return true;
+        } catch (error: any) {
+          console.error('Parent login error:', error);
+          const message = error?.response?.data?.error || error?.message || 'Login failed';
           set({
             isLoading: false,
             error: message,

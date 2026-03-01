@@ -60,3 +60,6 @@ temp/
 *.apk
 *.ipa
 *.aab
+
+# User uploads
+services/feed-service/uploads/

@@ -1,8 +1,26 @@
 # 🚀 Stunity Enterprise — Implementation Roadmap
 
-**Version:** 23.0 | **Updated:** February 21, 2026
+**Version:** 23.1 | **Updated:** March 1, 2026
 
 > This document is the authoritative roadmap. Each item has enough context for a developer to implement it immediately after reading. Read DEVELOPER_GUIDE.md first.
+
+---
+
+## ✅ Recently Completed (v23.1 — March 1, 2026)
+
+### Parent Portal Mobile App
+- ✅ ParentLoginScreen, ParentNavigator, ParentHomeScreen, ParentChildScreen
+- ✅ ParentChildGradesScreen, ParentChildAttendanceScreen, ParentChildReportCardScreen
+- ✅ RootNavigator routes PARENT role to ParentNavigator
+- ✅ Auth verify returns children for PARENT users
+- ✅ Welcome screen: Parent Portal + Enterprise SSO buttons (card layout, scroll fit)
+- ✅ Parent Portal back button matches Register/Login standard (chevron-back, white, shadow)
+
+### Auth Enhancements (Facebook-style)
+- ✅ Registration: email OR phone (at least one); organization optional
+- ✅ Login: single "Email or Phone" field (mobile + web); backend accepts either
+- ✅ Session persists until logout (Remember me checkbox removed)
+- ✅ Backend: POST /auth/register and POST /auth/login accept email or phone
 
 ---
 
@@ -153,10 +171,11 @@ Added explicit `slide_from_right` transitions and swipe-to-go back gestures to a
 | School management | ✅ | ✅ | Grades, attendance, timetable |
 | Grade → student notify | ✅ | — | Bridge + push notification |
 | Profile (full) | ✅ | ✅ | XP, Level, Streak, completeness |
-| Video posts | ✅ | ❌ | Mobile `expo-av` + 50MB API limit |
+| Video posts | ✅ | ✅ | Both mobile and web; CreatePostModal + MediaGallery support video |
 | Live Quiz (Kahoot) | ✅ | — | analytics-service hosts it |
 | DM / Messaging | ✅ | Partial | Web exists but limited |
 | Clubs | ✅ | Partial | |
+| Dark mode | ✅ | ✅ | Mobile: Settings toggle; Web: Nav bar Moon/Sun toggle |
 
 ---
 
@@ -164,7 +183,8 @@ Added explicit `slide_from_right` transitions and swipe-to-go back gestures to a
 
 ```bash
 # 1. Run SHARE enum migration on Supabase production
-ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'SHARE';
+#    Use: scripts/migrations/add-share-notification-type.sql
+#    Or run directly: ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'SHARE';
 
 # 2. Apply Prisma schema changes (new models + indexes)
 #    Run when Supabase DB is reachable:

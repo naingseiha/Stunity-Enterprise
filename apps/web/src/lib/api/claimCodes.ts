@@ -247,17 +247,22 @@ class ClaimCodeService {
     formData.append('expiresInDays', String(options.expiresInDays || 30));
     formData.append('sendEmails', String(options.sendEmails !== false));
 
-    const response = await axios.post(
-      `${API_URL}/schools/${schoolId}/claim-codes/bulk-upload`,
-      formData,
+    const response = await fetch(
+      `${API_BASE_URL}/schools/${schoolId}/claim-codes/bulk-upload`,
       {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        method: 'POST',
+        body: formData,
+        headers: {},
       }
     );
 
-    return response.data.data;
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || err.message || 'Bulk upload failed');
+    }
+
+    const result = await response.json();
+    return result.data.data;
   }
 }
 

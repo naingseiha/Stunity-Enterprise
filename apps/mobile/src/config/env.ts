@@ -21,6 +21,9 @@ interface EnvironmentConfig {
   analyticsUrl: string;
   aiUrl: string;
   wsUrl: string;
+  studentUrl: string;
+  gradeUrl: string;
+  attendanceUrl: string;
   sentryDsn: string;
   analyticsKey: string;
   enableDebugMode: boolean;
@@ -81,6 +84,9 @@ const development: EnvironmentConfig = {
   analyticsUrl: `http://${API_HOST}:3014`,
   aiUrl: `http://${API_HOST}:3020`,
   wsUrl: `ws://${API_HOST}:3011`,
+  studentUrl: `http://${API_HOST}:3003`,
+  gradeUrl: `http://${API_HOST}:3007`,
+  attendanceUrl: `http://${API_HOST}:3008`,
   sentryDsn: '',
   analyticsKey: '',
   enableDebugMode: true,
@@ -100,6 +106,9 @@ const staging: EnvironmentConfig = {
   analyticsUrl: 'https://staging-analytics.stunity.com',
   aiUrl: 'https://staging-ai.stunity.com',
   wsUrl: 'wss://staging-ws.stunity.com',
+  studentUrl: 'https://staging-students.stunity.com',
+  gradeUrl: 'https://staging-grades.stunity.com',
+  attendanceUrl: 'https://staging-attendance.stunity.com',
   sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN || '',
   analyticsKey: process.env.EXPO_PUBLIC_ANALYTICS_KEY || '',
   enableDebugMode: true,
@@ -119,6 +128,9 @@ const production: EnvironmentConfig = {
   analyticsUrl: 'https://analytics.stunity.com',
   aiUrl: 'https://ai.stunity.com',
   wsUrl: 'wss://ws.stunity.com',
+  studentUrl: 'https://students.stunity.com',
+  gradeUrl: 'https://grades.stunity.com',
+  attendanceUrl: 'https://attendance.stunity.com',
   sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN || '',
   analyticsKey: process.env.EXPO_PUBLIC_ANALYTICS_KEY || '',
   enableDebugMode: false,
