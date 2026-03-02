@@ -37,11 +37,9 @@ export interface ClaimCode {
 
 export interface GenerateCodesParams {
   type: 'STUDENT' | 'TEACHER' | 'STAFF' | 'PARENT';
-  quantity?: number;
-  specificRecords?: {
-    studentId?: string;
-    teacherId?: string;
-  }[];
+  count?: number; // Backend uses count, not quantity
+  studentIds?: string[]; // Specifically requested by backend
+  teacherIds?: string[]; // Specifically requested by backend
   expiresInDays?: number;
   requiresVerification?: boolean;
 }
@@ -85,8 +83,9 @@ class ClaimCodeService {
 
   /**
    * Generate claim codes
+   * Returns full claim code objects for detailed display or string codes fallback
    */
-  async generate(schoolId: string, params: GenerateCodesParams): Promise<string[]> {
+  async generate(schoolId: string, params: GenerateCodesParams): Promise<any[]> {
     const response = await fetch(`${API_BASE_URL}/schools/${schoolId}/claim-codes/generate`, {
       method: 'POST',
       headers: this.getHeaders(),
@@ -99,8 +98,7 @@ class ClaimCodeService {
     }
 
     const result = await response.json();
-    // Extract just the code strings from the response
-    return result.data.codes.map((c: any) => typeof c === 'string' ? c : c.code);
+    return result.data.codes;
   }
 
   /**

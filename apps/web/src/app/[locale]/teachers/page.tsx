@@ -99,8 +99,8 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
       setIsGenerating(teacher.id);
       const codes = await claimCodeService.generate(schoolId, {
         type: 'TEACHER',
-        quantity: 1,
-        specificRecords: [{ teacherId: teacher.id }],
+        count: 1,
+        teacherIds: [teacher.id],
         expiresInDays: 30,
       });
       if (codes && codes.length > 0) {

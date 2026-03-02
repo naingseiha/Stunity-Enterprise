@@ -10,7 +10,7 @@ import { claimCodeService, type ClaimCode, type ClaimCodeStats } from '@/lib/api
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { TokenManager } from '@/lib/api/auth';
 import { useRouter } from 'next/navigation';
-import GenerateCodesModal from '@/components/claim-codes/GenerateCodesModal';
+import { GenerateCodesModal } from '@/components/claim-codes/GenerateCodesModal';
 import BulkUploadModal from '@/components/claim-codes/BulkUploadModal';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import AnimatedContent from '@/components/AnimatedContent';
@@ -450,7 +450,6 @@ export default function ClaimCodesPage() {
         open={generateModalOpen}
         onOpenChange={setGenerateModalOpen}
         onCodesGenerated={loadData}
-        schoolId={schoolId}
       />
 
       {/* Bulk Upload Modal */}

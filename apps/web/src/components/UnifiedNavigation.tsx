@@ -186,6 +186,12 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       badge: null,
     },
   ].filter(item => {
+    // If we are in school management context, only show Feed and School
+    // This matches the user's request to simplify the menu in admin pages
+    if (isSchoolContext) {
+      return item.name === 'Feed' || item.name === 'School';
+    }
+
     // Hide 'School' menu if the user is not part of any school
     if (item.name === 'School' && !school) {
       return false;
