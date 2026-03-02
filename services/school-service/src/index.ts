@@ -1147,6 +1147,7 @@ app.get('/super-admin/dashboard/stats', requireSuperAdmin, async (req: Request, 
       schoolCount, userCount, classCount, activeSchools,
       pendingApprovals, newSchoolsThisWeek, newSchoolsToday,
       totalStudents, totalTeachers, newUsersThisWeek,
+      totalPosts, totalClubs, totalComments, newPostsThisWeek,
     ] = await Promise.all([
       prisma.school.count(),
       prisma.user.count({ where: { schoolId: { not: null } } }),
@@ -1158,6 +1159,10 @@ app.get('/super-admin/dashboard/stats', requireSuperAdmin, async (req: Request, 
       prisma.student.count(),
       prisma.teacher.count(),
       prisma.user.count({ where: { schoolId: { not: null }, createdAt: { gte: weekAgo } } }),
+      prisma.post.count(),
+      prisma.studyClub.count(),
+      prisma.comment.count(),
+      prisma.post.count({ where: { createdAt: { gte: weekAgo } } }),
     ]);
 
     const [recentSchools, schoolsByTier, subscriptionBreakdown] = await Promise.all([
@@ -1205,6 +1210,11 @@ app.get('/super-admin/dashboard/stats', requireSuperAdmin, async (req: Request, 
         newSchoolsToday,
         newSchoolsThisWeek,
         newUsersThisWeek,
+        // Social / Feed
+        totalPosts,
+        totalClubs,
+        totalComments,
+        newPostsThisWeek,
         // Breakdown
         recentSchools,
         pendingSchools,
@@ -1553,6 +1563,82 @@ app.delete('/super-admin/announcements/:id', requireSuperAdmin, async (req: Requ
   } catch (error: any) {
     console.error('Super admin delete announcement error:', error);
     res.status(500).json({ success: false, error: 'Failed to delete announcement', message: error.message });
+  }
+});
+
+// ============================================================
+// SUPER ADMIN CONTENT MODERATION (Social / Feed)
+// ============================================================
+
+// GET /super-admin/posts - List posts for moderation (super admin only)
+app.get('/super-admin/posts', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { page = '1', limit = '20', search = '', schoolId = '' } = req.query;
+    const pageNum = Math.max(1, parseInt(String(page)) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(String(limit)) || 20));
+    const skip = (pageNum - 1) * limitNum;
+
+    const where: any = {};
+    if (search && String(search).trim()) {
+      where.OR = [
+        { content: { contains: String(search).trim(), mode: 'insensitive' } },
+        { title: { contains: String(search).trim(), mode: 'insensitive' } },
+      ];
+    }
+    if (schoolId && String(schoolId).trim()) {
+      where.author = { schoolId: String(schoolId).trim() };
+    }
+
+    const [posts, total] = await Promise.all([
+      prisma.post.findMany({
+        where,
+        skip,
+        take: limitNum,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          content: true,
+          title: true,
+          postType: true,
+          visibility: true,
+          likesCount: true,
+          commentsCount: true,
+          sharesCount: true,
+          createdAt: true,
+          authorId: true,
+          author: {
+            select: { id: true, firstName: true, lastName: true, email: true, schoolId: true, school: { select: { id: true, name: true, slug: true } } },
+          },
+        },
+      }),
+      prisma.post.count({ where }),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        posts,
+        pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) },
+      },
+    });
+  } catch (error: any) {
+    console.error('Super admin posts list error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch posts', message: error.message });
+  }
+});
+
+// DELETE /super-admin/posts/:postId - Delete post (super admin only)
+app.delete('/super-admin/posts/:postId', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { postId } = req.params;
+    await prisma.post.delete({ where: { id: postId } });
+    res.json({ success: true, message: 'Post deleted' });
+  } catch (error: any) {
+    if (error?.code === 'P2025') {
+      return res.status(404).json({ success: false, error: 'Post not found' });
+    }
+    console.error('Super admin delete post error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete post', message: error.message });
   }
 });
 

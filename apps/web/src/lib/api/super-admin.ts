@@ -47,6 +47,11 @@ export interface SuperAdminStats {
   }>;
   schoolsByTier?: Array<{ tier: string; count: number }>;
   subscriptionBreakdown?: Array<{ tier: string; isActive: boolean; count: number }>;
+  // Social / Feed
+  totalPosts?: number;
+  totalClubs?: number;
+  totalComments?: number;
+  newPostsThisWeek?: number;
 }
 
 export interface SuperAdminUser {
@@ -585,6 +590,84 @@ export async function approveSuperAdminSchool(schoolId: string): Promise<{ data:
     throw new Error(err.error || err.message || 'Failed to approve school');
   }
   return res.json();
+}
+
+export interface SuperAdminHealth {
+  status: string;
+  timestamp: string;
+  version: string;
+  service: string;
+  database: { status: string; latencyMs: number; schools: number; users: number };
+}
+
+export async function getSuperAdminDashboardHealth(): Promise<{ data: SuperAdminHealth }> {
+  const token = await getToken();
+  if (!token) throw new Error('Authentication required');
+  const res = await fetch(`${SCHOOL_SERVICE_URL}/super-admin/dashboard/health`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to fetch health');
+  }
+  return res.json();
+}
+
+export interface ModerationPost {
+  id: string;
+  content: string;
+  title: string | null;
+  postType: string;
+  visibility: string;
+  likesCount: number;
+  commentsCount: number;
+  sharesCount: number;
+  createdAt: string;
+  authorId: string;
+  author: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    schoolId: string | null;
+    school: { id: string; name: string; slug: string } | null;
+  };
+}
+
+export async function getSuperAdminPosts(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  schoolId?: string;
+}): Promise<{ data: { posts: ModerationPost[]; pagination: { page: number; limit: number; total: number; totalPages: number } } }> {
+  const token = await getToken();
+  if (!token) throw new Error('Authentication required');
+  const sp = new URLSearchParams();
+  if (params?.page) sp.set('page', String(params.page));
+  if (params?.limit) sp.set('limit', String(params.limit));
+  if (params?.search) sp.set('search', params.search);
+  if (params?.schoolId) sp.set('schoolId', params.schoolId);
+  const url = `${SCHOOL_SERVICE_URL}/super-admin/posts${sp.toString() ? `?${sp}` : ''}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to fetch posts');
+  }
+  return res.json();
+}
+
+export async function deleteSuperAdminPost(postId: string): Promise<void> {
+  const token = await getToken();
+  if (!token) throw new Error('Authentication required');
+  const res = await fetch(`${SCHOOL_SERVICE_URL}/super-admin/posts/${postId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (res.status === 404) throw new Error('Post not found');
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || err.error || 'Failed to delete post');
+  }
 }
 
 export async function rejectSuperAdminSchool(schoolId: string): Promise<void> {

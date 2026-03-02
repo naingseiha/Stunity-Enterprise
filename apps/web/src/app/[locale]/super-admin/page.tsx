@@ -28,6 +28,9 @@ import {
   XCircle,
   CheckCircle,
   CreditCard,
+  FileText,
+  MessageSquare,
+  UsersRound,
 } from 'lucide-react';
 
 const TIER_COLORS: Record<string, { bg: string; text: string; bar: string }> = {
@@ -239,6 +242,27 @@ export default function SuperAdminDashboardPage({
             icon={UserCheck}
             color="bg-rose-100 text-rose-600"
           />
+          <KpiCard
+            title="Posts"
+            value={stats.totalPosts ?? 0}
+            subtitle={`+${stats.newPostsThisWeek ?? 0} this week`}
+            icon={FileText}
+            color="bg-sky-100 text-sky-600"
+          />
+          <KpiCard
+            title="Study Clubs"
+            value={stats.totalClubs ?? 0}
+            subtitle="Platform-wide"
+            icon={UsersRound}
+            color="bg-teal-100 text-teal-600"
+          />
+          <KpiCard
+            title="Comments"
+            value={stats.totalComments ?? 0}
+            subtitle="Total engagement"
+            icon={MessageSquare}
+            color="bg-indigo-100 text-indigo-600"
+          />
         </div>
       </AnimatedContent>
 
@@ -286,7 +310,9 @@ export default function SuperAdminDashboardPage({
                 {[
                   { href: `/${locale}/super-admin/schools`, label: 'Manage Schools', icon: School, color: 'text-blue-600' },
                   { href: `/${locale}/super-admin/users`, label: 'Platform Users', icon: Users, color: 'text-purple-600' },
+                  { href: `/${locale}/super-admin/content`, label: 'Content Moderation', icon: FileText, color: 'text-sky-600' },
                   { href: `/${locale}/super-admin/analytics`, label: 'Analytics & Reports', icon: TrendingUp, color: 'text-cyan-600' },
+                  { href: `/${locale}/super-admin/health`, label: 'Platform Health', icon: CheckCircle2, color: 'text-emerald-600' },
                   { href: `/${locale}/super-admin/settings`, label: 'Platform Settings', icon: BookOpen, color: 'text-gray-600' },
                 ].map(({ href, label, icon: Icon, color }) => (
                   <Link

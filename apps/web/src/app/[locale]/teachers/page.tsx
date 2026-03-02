@@ -27,8 +27,7 @@ import {
 import { TokenManager } from '@/lib/api/auth';
 import { claimCodeService } from '@/lib/api/claimCodes';
 import { deleteTeacher } from '@/lib/api/teachers';
-import { Teacher, Gender } from '@/types/models';
-import { useTeachers } from '@/hooks/useTeachers';
+import { useTeachers, type Teacher } from '@/hooks/useTeachers';
 import TeacherModal from '@/components/teachers/TeacherModal';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import AcademicYearSelector from '@/components/AcademicYearSelector';
@@ -80,7 +79,7 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
 
   const handleLogout = async () => {
     await TokenManager.logout();
-    router.push(`/${locale}/login`);
+    router.push(`/${locale}/auth/login`);
   };
 
   useEffect(() => {
@@ -107,7 +106,7 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
       if (codes && codes.length > 0) {
         // Automatically copy to clipboard and alert the user
         navigator.clipboard.writeText(codes[0]);
-        alert(`Claim code generated for ${teacher.firstName} ${teacher.lastName}:\n\n${codes[0]}\n\nThis code has been copied to your clipboard.`);
+        alert(`Claim code generated for ${teacher.firstNameLatin} ${teacher.lastNameLatin}:\n\n${codes[0]}\n\nThis code has been copied to your clipboard.`);
       }
     } catch (error: any) {
       alert(error.message || 'Failed to generate claim code for this teacher.');
@@ -545,7 +544,7 @@ export default function TeachersPage({ params: { locale } }: { params: { locale:
           user={{
             id: selectedTeacher.id,
             name: `${selectedTeacher.firstNameLatin} ${selectedTeacher.lastNameLatin}`,
-            email: selectedTeacher.email,
+            email: selectedTeacher.email ?? undefined,
           }}
           onClose={() => {
             setShowResetModal(false);

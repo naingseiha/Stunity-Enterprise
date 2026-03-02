@@ -1,8 +1,8 @@
 # 🎓 Stunity Enterprise - School Management + Social E-Learning Platform
 
-**Version:** 22.0  
-**Status:** Production Ready 🚀 | 97% Complete  
-**Last Updated:** February 20, 2026
+**Version:** 23.1  
+**Status:** Production Ready 🚀 | 98% Complete  
+**Last Updated:** March 2, 2026
 
 An enterprise-grade school management + social e-learning platform. Combines **school management** (grades, attendance, timetables, enrollment) with a **social learning feed** (posts, quizzes, clubs, real-time messaging) — designed for global multi-school deployment.
 
@@ -21,15 +21,13 @@ An enterprise-grade school management + social e-learning platform. Combines **s
 
 ---
 
-## ✅ v22.0 Highlights (February 2026)
+## ✅ v23.1 Highlights (March 2026)
 
-- 🚀 **Feed scaled for millions** — parallel DB queries, Redis SCAN, batch view inserts, ETag caching
-- 📱 **60fps scroll** — FlashList tuned (drawDistance=600, iOS removeClippedSubviews fix, granular Zustand selectors)
-- 🧠 **Quiz detail complete** — Start/Retake Quiz, previous attempt result, full quiz include in API
-- 💬 **Real-time comments** — no double-display, own-INSERT skip, DELETE in-state
-- 🔁 **Repost notification** — SHARE notification type, SSE event to original author
-- 📊 **Analytics redesigned** — gradient header, period toggle, skeleton, DB-level aggregates (no OOM)
-- ☁️ **Cloud Run ready** — CORS env var, PORT env var, keepAliveTimeout 620s, Dockerfile fixed
+- 🎮 **Live Quiz (Kahoot) Web** — Join, Lobby, Play, Leaderboard, Results; Host from quiz posts
+- 🔍 **Enhanced Search** — Post type filter (Article, Quiz, Poll, etc.) wired to feed-service
+- 👩‍🏫 **Teachers Page Fix** — Resolved @/types/models import; useTeachers cache key; data display for school admins
+- 👑 **Super Admin** — Content moderation, Platform health, Social KPIs, Maintenance mode
+- 🏘️ **Web Clubs & Messaging** — Full handlers, FEED_SERVICE_URL config, PostCard analytics
 
 **Full Feature List:** [CURRENT_FEATURES.md](./CURRENT_FEATURES.md)  
 **What's Next:** [NEXT_IMPLEMENTATION.md](./NEXT_IMPLEMENTATION.md)
@@ -242,22 +240,20 @@ Child: Chanthy Kong (S9A-025)
 ## 🚀 Next Implementation (Priority Roadmap)
 
 ### Priority 1 (Critical - 2-3 weeks)
-- 🔔 **Push Notifications** - Firebase FCM integration
-- 🎥 **Video Upload & Playback** - Video content support
-- 🔍 **Enhanced Search** - Full-text search, filters
-- ⚡ **Performance Optimization** - Caching, lazy loading
+- 🔔 **Push Notifications (Web)** - Web push (mobile has Expo Push)
+- ⚡ **Performance Optimization** - Caching, lazy loading, bundle splitting
 
 ### Priority 2 (High Value - 1-2 weeks)
 - 💾 **Offline Mode** - Local caching, sync
-- 🌙 **Dark Mode** - Theme switcher
-- 👨‍👩‍👧‍👦 **Parent Portal App** - Mobile parent access
-- ♿ **Accessibility** - Screen reader support
+- ♿ **Accessibility** - Screen reader support, ARIA, focus management
 
 ### Priority 3 (New Features - 2-4 weeks)
 - 📹 **Live Streaming Classes** - Video conferencing
 - 🎮 **Enhanced Gamification** - More achievements
-- 🌍 **Multi-Language** - i18n support
-- 💻 **Web Application** - PWA version
+- 🌍 **Multi-Language** - Full i18n support
+- 💻 **PWA** - Installable web app, service worker
+
+> ✅ *Done:* Video upload & playback, Enhanced Search (post type filter), Dark Mode, Parent Portal App
 
 **Full Roadmap:** [NEXT_IMPLEMENTATION.md](./NEXT_IMPLEMENTATION.md)
 

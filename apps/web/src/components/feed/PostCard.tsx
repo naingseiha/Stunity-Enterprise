@@ -47,6 +47,7 @@ import {
   BadgeCheck,
   ShieldCheck,
   Repeat2,
+  Gamepad2,
 } from 'lucide-react';
 
 interface PollOption {
@@ -111,6 +112,7 @@ export interface PostData {
     timeLimit?: number;
     passingScore?: number;
   };
+  quiz?: { id: string };
   userAttempt?: {
     score: number;
     passed: boolean;
@@ -646,12 +648,24 @@ export default function PostCard({
                 <span>Previous: {post.userAttempt.score}% — {post.userAttempt.passed ? 'Passed ✅' : 'Failed'}</span>
               </div>
             )}
-            <Link
-              href={`/${locale}/feed/post/${post.id}`}
-              className="block text-center bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors"
-            >
-              {post.userAttempt ? '🔄 Retake Quiz' : '🚀 Take Quiz'}
-            </Link>
+            <div className="flex gap-2">
+              <Link
+                href={`/${locale}/feed/post/${post.id}`}
+                className="flex-1 text-center bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors"
+              >
+                {post.userAttempt ? '🔄 Retake Quiz' : '🚀 Take Quiz'}
+              </Link>
+              {(post.quiz?.id || post.quizData?.questions?.length) && (
+                <Link
+                  href={`/${locale}/live-quiz/host?quizId=${post.quiz?.id || post.id}`}
+                  className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                  title="Start live quiz session"
+                >
+                  <Gamepad2 className="w-4 h-4" />
+                  Live
+                </Link>
+              )}
+            </div>
           </div>
         )}
 

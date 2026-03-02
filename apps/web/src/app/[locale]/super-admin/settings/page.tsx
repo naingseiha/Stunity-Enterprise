@@ -53,11 +53,15 @@ export default function SuperAdminSettingsPage() {
   const [editingAnn, setEditingAnn] = useState<PlatformAnnouncement | null>(null);
   const [savingAnn, setSavingAnn] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [maintenanceFlag, setMaintenanceFlag] = useState<FeatureFlag | null>(null);
+  const [togglingMaintenance, setTogglingMaintenance] = useState(false);
 
   const loadFlags = useCallback(async () => {
     try {
       const res = await getSuperAdminFeatureFlags('platform');
       setFlags(res.data);
+      const maint = res.data.find((f) => f.key === 'MAINTENANCE_MODE') ?? null;
+      setMaintenanceFlag(maint);
     } catch (e: any) {
       setError(e.message);
     }
@@ -129,11 +133,41 @@ export default function SuperAdminSettingsPage() {
     try {
       await updateSuperAdminFeatureFlag(f.id, { enabled: !f.enabled });
       setFlags((prev) => prev.map((x) => (x.id === f.id ? { ...x, enabled: !x.enabled } : x)));
+      if (f.key === 'MAINTENANCE_MODE') setMaintenanceFlag((p) => (p ? { ...p, enabled: !p.enabled } : null));
       setError(null);
     } catch (e: any) {
       setError(e.message);
     } finally {
       setTogglingId(null);
+    }
+  };
+
+  const handleCreateMaintenanceMode = async () => {
+    setTogglingMaintenance(true);
+    try {
+      const res = await createSuperAdminFeatureFlag({ key: 'MAINTENANCE_MODE', description: 'Platform maintenance mode - non–super-admin users see full-screen overlay', enabled: true });
+      setMaintenanceFlag(res.data);
+      setFlags((prev) => [...prev, res.data]);
+      setError(null);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setTogglingMaintenance(false);
+    }
+  };
+
+  const handleToggleMaintenance = async () => {
+    if (!maintenanceFlag) return handleCreateMaintenanceMode();
+    setTogglingMaintenance(true);
+    try {
+      await updateSuperAdminFeatureFlag(maintenanceFlag.id, { enabled: !maintenanceFlag.enabled });
+      setMaintenanceFlag((p) => (p ? { ...p, enabled: !p.enabled } : null));
+      setFlags((prev) => prev.map((x) => (x.key === 'MAINTENANCE_MODE' ? { ...x, enabled: !x.enabled } : x)));
+      setError(null);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setTogglingMaintenance(false);
     }
   };
 
@@ -255,6 +289,27 @@ export default function SuperAdminSettingsPage() {
 
       {tab === 'feature-flags' && (
         <AnimatedContent animation="slide-up" delay={150}>
+          {/* Maintenance Mode - prominent card */}
+          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-6 shadow-sm">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h3 className="font-semibold text-amber-900">Maintenance Mode</h3>
+                <p className="text-sm text-amber-700 mt-1">When enabled, non–super-admin users see a full-screen maintenance overlay. Super admins bypass.</p>
+              </div>
+              <button
+                onClick={handleToggleMaintenance}
+                disabled={togglingMaintenance}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 ${
+                  maintenanceFlag?.enabled
+                    ? 'bg-amber-600 text-white hover:bg-amber-700'
+                    : 'bg-white border border-amber-300 text-amber-700 hover:bg-amber-100'
+                }`}
+              >
+                {togglingMaintenance ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {maintenanceFlag ? (maintenanceFlag.enabled ? 'Maintenance ON' : 'Maintenance OFF') : 'Create & Enable'}
+              </button>
+            </div>
+          </div>
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900">Platform Feature Flags</h3>

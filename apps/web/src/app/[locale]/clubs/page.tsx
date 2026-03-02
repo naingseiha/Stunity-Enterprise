@@ -31,6 +31,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
+import { FEED_SERVICE_URL } from '@/lib/api/config';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import FeedZoomLoader from '@/components/feed/FeedZoomLoader';
 
@@ -123,13 +124,13 @@ export default function StudyClubsPage() {
 
   const handleLogout = async () => {
     await TokenManager.logout();
-    router.push(`/${locale}/login`);
+    router.replace(`/${locale}/auth/login`);
   };
 
   const fetchMyClubs = useCallback(async () => {
     try {
       const token = TokenManager.getAccessToken();
-      const response = await fetch('http://localhost:3010/clubs', {
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -148,7 +149,7 @@ export default function StudyClubsPage() {
       if (searchQuery) params.set('search', searchQuery);
       if (selectedType) params.set('clubType', selectedType);
       
-      const response = await fetch(`http://localhost:3010/clubs/discover?${params}`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs/discover?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -163,7 +164,7 @@ export default function StudyClubsPage() {
   const fetchClubTypes = useCallback(async () => {
     try {
       const token = TokenManager.getAccessToken();
-      const response = await fetch('http://localhost:3010/clubs/types', {
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs/types`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -194,7 +195,7 @@ export default function StudyClubsPage() {
     try {
       setJoiningClubId(clubId);
       const token = TokenManager.getAccessToken();
-      const response = await fetch(`http://localhost:3010/clubs/${clubId}/join`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs/${clubId}/join`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -586,7 +587,7 @@ function CreateClubModal({
       setCreating(true);
       setError('');
       const token = TokenManager.getAccessToken();
-      const response = await fetch('http://localhost:3010/clubs', {
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

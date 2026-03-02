@@ -28,6 +28,7 @@ import {
   Camera,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
+import { FEED_SERVICE_URL } from '@/lib/api/config';
 
 interface StudyClub {
   id: string;
@@ -86,7 +87,7 @@ export default function ClubSettingsPage() {
   const fetchClub = useCallback(async () => {
     try {
       const token = TokenManager.getAccessToken();
-      const response = await fetch(`http://localhost:3010/clubs/${clubId}`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs/${clubId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -128,7 +129,7 @@ export default function ClubSettingsPage() {
       setError('');
       setSuccess('');
       const token = TokenManager.getAccessToken();
-      const response = await fetch(`http://localhost:3010/clubs/${clubId}`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs/${clubId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -163,7 +164,7 @@ export default function ClubSettingsPage() {
     try {
       setDeleting(true);
       const token = TokenManager.getAccessToken();
-      const response = await fetch(`http://localhost:3010/clubs/${clubId}`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs/${clubId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

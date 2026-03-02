@@ -6,16 +6,29 @@ import Link from 'next/link';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import PostCard from '@/components/feed/PostCard';
+import PostAnalyticsModal from '@/components/feed/PostAnalyticsModal';
 import {
     Search,
     Users,
     FileText,
     Loader2,
     ArrowLeft,
-    MessageCircle
+    MessageCircle,
+    Filter
 } from 'lucide-react';
+import { FEED_SERVICE_URL } from '@/lib/api/config';
 
-const FEED_API = process.env.NEXT_PUBLIC_FEED_API_URL || 'http://localhost:3010';
+const POST_TYPE_OPTIONS: { value: string; label: string }[] = [
+    { value: '', label: 'All types' },
+    { value: 'ARTICLE', label: 'Article' },
+    { value: 'QUESTION', label: 'Question' },
+    { value: 'QUIZ', label: 'Quiz' },
+    { value: 'POLL', label: 'Poll' },
+    { value: 'ANNOUNCEMENT', label: 'Announcement' },
+    { value: 'EVENT', label: 'Event' },
+    { value: 'COURSE', label: 'Course' },
+    { value: 'TUTORIAL', label: 'Tutorial' },
+];
 
 export default function SearchPage({ params: { locale } }: { params: { locale: string } }) {
     const router = useRouter();
@@ -32,6 +45,9 @@ export default function SearchPage({ params: { locale } }: { params: { locale: s
 
     // Tab state: 'all', 'users', 'posts'
     const [activeTab, setActiveTab] = useState<'all' | 'users' | 'posts'>('all');
+    const [postTypeFilter, setPostTypeFilter] = useState<string>('');
+    const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+    const [selectedPostForAnalytics, setSelectedPostForAnalytics] = useState<string | null>(null);
 
     useEffect(() => {
         const token = TokenManager.getAccessToken();
@@ -59,12 +75,14 @@ export default function SearchPage({ params: { locale } }: { params: { locale: s
         setIsSearching(true);
         try {
             // Fetch matching users
-            const usersRes = fetch(`${FEED_API}/users/search?q=${encodeURIComponent(query)}`, {
+            const usersRes = fetch(`${FEED_SERVICE_URL}/users/search?q=${encodeURIComponent(query)}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
-            // Fetch matching posts
-            const postsRes = fetch(`${FEED_API}/posts?search=${encodeURIComponent(query)}&limit=20`, {
+            // Fetch matching posts (optionally filter by post type)
+            const postsParams = new URLSearchParams({ search: query, limit: '20' });
+            if (postTypeFilter) postsParams.set('type', postTypeFilter);
+            const postsRes = fetch(`${FEED_SERVICE_URL}/posts?${postsParams}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -87,7 +105,7 @@ export default function SearchPage({ params: { locale } }: { params: { locale: s
         } finally {
             setIsSearching(false);
         }
-    }, [query, user?.id]);
+    }, [query, postTypeFilter, user?.id]);
 
     useEffect(() => {
         if (user && query) {
@@ -104,7 +122,132 @@ export default function SearchPage({ params: { locale } }: { params: { locale: s
         return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
     };
 
-    // Provide no-op handlers for the PostCard in a read-only search view
+    const handleLike = async (postId: string) => {
+        const token = TokenManager.getAccessToken();
+        if (!token) return;
+        try {
+            const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/like`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                setPosts(prev => prev.map(p =>
+                    p.id === postId
+                        ? { ...p, likesCount: data.liked ? p.likesCount + 1 : p.likesCount - 1, isLiked: data.liked }
+                        : p
+                ));
+            }
+        } catch (err) {
+            console.error('Like error:', err);
+        }
+    };
+
+    const handleComment = async (postId: string, content: string) => {
+        const token = TokenManager.getAccessToken();
+        if (!token || !content?.trim()) return;
+        try {
+            const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/comments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ content: content.trim() })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setPosts(prev => prev.map(p =>
+                    p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p
+                ));
+            }
+        } catch (err) {
+            console.error('Comment error:', err);
+        }
+    };
+
+    const handleBookmark = async (postId: string) => {
+        const token = TokenManager.getAccessToken();
+        if (!token) return;
+        try {
+            const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/bookmark`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                setPosts(prev => prev.map(p =>
+                    p.id === postId ? { ...p, isBookmarked: data.bookmarked } : p
+                ));
+            }
+        } catch (err) {
+            console.error('Bookmark error:', err);
+        }
+    };
+
+    const handleShare = async (postId: string) => {
+        const token = TokenManager.getAccessToken();
+        if (!token) return;
+        try {
+            await fetch(`${FEED_SERVICE_URL}/posts/${postId}/share`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+        } catch (err) {
+            console.error('Share error:', err);
+        }
+    };
+
+    const handleRepost = async (postId: string) => {
+        const token = TokenManager.getAccessToken();
+        if (!token) return;
+        try {
+            const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/repost`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ type: 'REPOST' })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setPosts(prev => prev.map(p =>
+                    p.id === postId ? { ...p, sharesCount: p.sharesCount + 1 } : p
+                ));
+            }
+        } catch (err) {
+            console.error('Repost error:', err);
+        }
+    };
+
+    const handleVote = async (postId: string, optionId: string) => {
+        const token = TokenManager.getAccessToken();
+        if (!token) return;
+        try {
+            const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/vote`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ optionId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setPosts(prev => prev.map(post => {
+                    if (post.id !== postId) return post;
+                    return {
+                        ...post,
+                        userVotedOptionId: optionId,
+                        pollOptions: post.pollOptions?.map((opt: any) => ({
+                            ...opt,
+                            _count: { votes: opt.id === optionId ? ((opt._count?.votes || 0) + 1) : (opt._count?.votes || 0) }
+                        }))
+                    };
+                }));
+            }
+        } catch (err) {
+            console.error('Vote error:', err);
+        }
+    };
+
+    const handleViewAnalytics = (postId: string) => {
+        setSelectedPostForAnalytics(postId);
+        setShowAnalyticsModal(true);
+    };
+
     const noop = () => { };
 
     if (loading) {
@@ -133,6 +276,22 @@ export default function SearchPage({ params: { locale } }: { params: { locale: s
                 </div>
 
                 <div className="pl-64">
+                    {/* Post type filter (when searching posts) */}
+                    {query && (
+                        <div className="flex items-center gap-3 mb-4">
+                            <Filter className="w-4 h-4 text-gray-500" />
+                            <select
+                                value={postTypeFilter}
+                                onChange={(e) => setPostTypeFilter(e.target.value)}
+                                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            >
+                                {POST_TYPE_OPTIONS.map(opt => (
+                                    <option key={opt.value || 'all'} value={opt.value}>{opt.label}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
                     {/* Tabs */}
                     <div className="flex space-x-1 bg-white p-1 rounded-xl shadow-sm border border-gray-200 mb-6 max-w-md">
                         <button
@@ -235,15 +394,15 @@ export default function SearchPage({ params: { locale } }: { params: { locale: s
                                                 <PostCard
                                                     key={post.id}
                                                     post={post}
-                                                    onLike={noop}
-                                                    onComment={noop}
-                                                    onBookmark={noop}
-                                                    onShare={noop}
-                                                    onRepost={noop}
+                                                    onLike={handleLike}
+                                                    onComment={handleComment}
+                                                    onBookmark={handleBookmark}
+                                                    onShare={handleShare}
+                                                    onRepost={handleRepost}
                                                     onDelete={noop}
                                                     onEdit={noop}
-                                                    onVote={noop}
-                                                    onViewAnalytics={noop}
+                                                    onVote={handleVote}
+                                                    onViewAnalytics={handleViewAnalytics}
                                                     currentUserId={user?.id}
                                                 />
                                             ))}
@@ -283,6 +442,15 @@ export default function SearchPage({ params: { locale } }: { params: { locale: s
                     )}
                 </div>
             </main>
+
+            {selectedPostForAnalytics && (
+                <PostAnalyticsModal
+                    isOpen={showAnalyticsModal}
+                    onClose={() => { setShowAnalyticsModal(false); setSelectedPostForAnalytics(null); }}
+                    postId={selectedPostForAnalytics}
+                    apiUrl={FEED_SERVICE_URL}
+                />
+            )}
         </div>
     );
 }

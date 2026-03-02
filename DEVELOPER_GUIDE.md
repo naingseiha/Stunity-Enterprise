@@ -1,6 +1,6 @@
 # 👨‍💻 Stunity Enterprise — Developer Guide
 
-**Version:** 22.0 | **Updated:** February 20, 2026
+**Version:** 23.1 | **Updated:** March 2, 2026
 
 > Complete reference for developers working on Stunity Enterprise. Read this before writing any code.
 
@@ -209,10 +209,12 @@ apps/web/src/
 ```
 
 ### Web Feature Gaps (vs Mobile)
-- Quiz post cards: web shows label badge only, no quiz card with questions/start button
-- Repost: web has "share" link, no repost-as-post functionality  
-- CreatePostModal: missing QUIZ, COURSE, EXAM post type forms with their special fields
-- Comments: inline in PostCard but no Supabase Realtime subscription (no live updates)
+- ✅ ~~Quiz post cards~~ — Web PostCard has full quiz UI (questions, start/retake)
+- ✅ ~~Repost~~ — Full repost-as-post on web
+- ✅ ~~CreatePostModal QUIZ/COURSE/EXAM~~ — CreatePostModal has all builders
+- ✅ ~~Comments real-time~~ — Web uses SSE with reconnection for live comments
+- 🔲 **Push notifications** — Web push not implemented (mobile has Expo Push)
+- 🔲 **Offline mode** — Local caching not implemented
 
 ---
 

@@ -37,7 +37,9 @@ import {
   Calendar,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
+import { FEED_SERVICE_URL } from '@/lib/api/config';
 import PostCard, { PostData } from '@/components/feed/PostCard';
+import PostAnalyticsModal from '@/components/feed/PostAnalyticsModal';
 import FeedZoomLoader from '@/components/feed/FeedZoomLoader';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 
@@ -145,6 +147,8 @@ export default function ClubDetailPage() {
   const [showContent, setShowContent] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [selectedPostForAnalytics, setSelectedPostForAnalytics] = useState<string | null>(null);
 
   useEffect(() => {
     // Load user and school from localStorage for navigation
@@ -164,7 +168,7 @@ export default function ClubDetailPage() {
   const fetchClub = useCallback(async () => {
     try {
       const token = TokenManager.getAccessToken();
-      const response = await fetch(`http://localhost:3010/clubs/${clubId}`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs/${clubId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -182,7 +186,7 @@ export default function ClubDetailPage() {
     try {
       setLoadingPosts(true);
       const token = TokenManager.getAccessToken();
-      const response = await fetch(`http://localhost:3010/clubs/${clubId}/posts`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs/${clubId}/posts`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -199,7 +203,7 @@ export default function ClubDetailPage() {
   const fetchAllMembers = useCallback(async () => {
     try {
       const token = TokenManager.getAccessToken();
-      const response = await fetch(`http://localhost:3010/clubs/${clubId}/members?limit=100`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs/${clubId}/members?limit=100`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -234,7 +238,7 @@ export default function ClubDetailPage() {
     try {
       setJoining(true);
       const token = TokenManager.getAccessToken();
-      const response = await fetch(`http://localhost:3010/clubs/${clubId}/join`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs/${clubId}/join`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -254,7 +258,7 @@ export default function ClubDetailPage() {
     try {
       setLeaving(true);
       const token = TokenManager.getAccessToken();
-      const response = await fetch(`http://localhost:3010/clubs/${clubId}/leave`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs/${clubId}/leave`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -273,23 +277,126 @@ export default function ClubDetailPage() {
 
   const handleLike = async (postId: string) => {
     const token = TokenManager.getAccessToken();
-    await fetch(`http://localhost:3010/posts/${postId}/like`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (!token) return;
+    try {
+      const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/like`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPosts(prev => prev.map(p =>
+          p.id === postId ? { ...p, likesCount: data.liked ? p.likesCount + 1 : p.likesCount - 1, isLiked: data.liked } : p
+        ));
+      }
+    } catch (err) {
+      console.error('Like error:', err);
+    }
   };
 
   const handleComment = async (postId: string, content: string) => {
     const token = TokenManager.getAccessToken();
-    await fetch(`http://localhost:3010/posts/${postId}/comments`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ content }),
-    });
-    fetchPosts();
+    if (!token || !content?.trim()) return;
+    try {
+      const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ content: content.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPosts(prev => prev.map(p =>
+          p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p
+        ));
+      }
+    } catch (err) {
+      console.error('Comment error:', err);
+    }
+  };
+
+  const handleBookmark = async (postId: string) => {
+    const token = TokenManager.getAccessToken();
+    if (!token) return;
+    try {
+      const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/bookmark`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPosts(prev => prev.map(p =>
+          p.id === postId ? { ...p, isBookmarked: data.bookmarked } : p
+        ));
+      }
+    } catch (err) {
+      console.error('Bookmark error:', err);
+    }
+  };
+
+  const handleShare = async (postId: string) => {
+    const token = TokenManager.getAccessToken();
+    if (!token) return;
+    try {
+      await fetch(`${FEED_SERVICE_URL}/posts/${postId}/share`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (err) {
+      console.error('Share error:', err);
+    }
+  };
+
+  const handleRepost = async (postId: string) => {
+    const token = TokenManager.getAccessToken();
+    if (!token) return;
+    try {
+      const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/repost`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ type: 'REPOST' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPosts(prev => prev.map(p =>
+          p.id === postId ? { ...p, sharesCount: p.sharesCount + 1 } : p
+        ));
+      }
+    } catch (err) {
+      console.error('Repost error:', err);
+    }
+  };
+
+  const handleVote = async (postId: string, optionId: string) => {
+    const token = TokenManager.getAccessToken();
+    if (!token) return;
+    try {
+      const res = await fetch(`${FEED_SERVICE_URL}/posts/${postId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ optionId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPosts(prev => prev.map(post => {
+          if (post.id !== postId) return post;
+          return {
+            ...post,
+            userVotedOptionId: optionId,
+            pollOptions: post.pollOptions?.map((opt: any) => ({
+              ...opt,
+              _count: { votes: opt.id === optionId ? ((opt._count?.votes || 0) + 1) : (opt._count?.votes || 0) },
+            })),
+          };
+        }));
+      }
+    } catch (err) {
+      console.error('Vote error:', err);
+    }
+  };
+
+  const handleViewAnalytics = (postId: string) => {
+    setSelectedPostForAnalytics(postId);
+    setShowAnalyticsModal(true);
   };
 
   const handleCreatePost = async () => {
@@ -298,7 +405,7 @@ export default function ClubDetailPage() {
     try {
       setPosting(true);
       const token = TokenManager.getAccessToken();
-      const response = await fetch('http://localhost:3010/posts', {
+      const response = await fetch(`${FEED_SERVICE_URL}/posts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -327,7 +434,7 @@ export default function ClubDetailPage() {
   const handleUpdateMemberRole = async (memberId: string, userId: string, newRole: string) => {
     try {
       const token = TokenManager.getAccessToken();
-      const response = await fetch(`http://localhost:3010/clubs/${clubId}/members/${userId}`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs/${clubId}/members/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -353,7 +460,7 @@ export default function ClubDetailPage() {
     
     try {
       const token = TokenManager.getAccessToken();
-      const response = await fetch(`http://localhost:3010/clubs/${clubId}/members/${userId}`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs/${clubId}/members/${userId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -376,7 +483,7 @@ export default function ClubDetailPage() {
 
   const handleLogout = async () => {
     await TokenManager.logout();
-    router.push(`/${locale}/login`);
+    router.replace(`/${locale}/auth/login`);
   };
 
   // Show zoom loader during initial load (same pattern as feed/profile)
@@ -708,6 +815,13 @@ export default function ClubDetailPage() {
                       post={post}
                       onLike={handleLike}
                       onComment={handleComment}
+                      onBookmark={handleBookmark}
+                      onShare={handleShare}
+                      onRepost={handleRepost}
+                      onVote={handleVote}
+                      onViewAnalytics={handleViewAnalytics}
+                      onDelete={() => {}}
+                      onEdit={() => {}}
                       currentUserId={currentUserId}
                     />
                   ))
@@ -850,6 +964,15 @@ export default function ClubDetailPage() {
       </div>
 
       {/* Invite Modal */}
+      {selectedPostForAnalytics && (
+        <PostAnalyticsModal
+          isOpen={showAnalyticsModal}
+          onClose={() => { setShowAnalyticsModal(false); setSelectedPostForAnalytics(null); }}
+          postId={selectedPostForAnalytics}
+          apiUrl={FEED_SERVICE_URL}
+        />
+      )}
+
       {showInviteModal && (
         <InviteModal
           clubId={clubId}
@@ -1018,8 +1141,7 @@ function InviteModal({
     try {
       setSearching(true);
       const token = TokenManager.getAccessToken();
-      // Search users - using the existing users endpoint
-      const response = await fetch(`http://localhost:3001/users/search?q=${encodeURIComponent(query)}`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/users/search?q=${encodeURIComponent(query)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -1056,7 +1178,7 @@ function InviteModal({
     try {
       setInviting(true);
       const token = TokenManager.getAccessToken();
-      const response = await fetch(`http://localhost:3010/clubs/${clubId}/invite`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs/${clubId}/invite`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

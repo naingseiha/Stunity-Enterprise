@@ -155,12 +155,12 @@ Added explicit `slide_from_right` transitions and swipe-to-go back gestures to a
 | Social feed | ✅ | ✅ | Both have real-time new post pill |
 | Comments real-time | ✅ | ✅ | Web uses SSE with reconnection |
 | Repost | ✅ | ✅ | Full repost-as-post on both |
-| Quiz post card | ✅ | 🟡 | Web: badge only (full card next) |
+| Quiz post card | ✅ | ✅ | Web: full quiz UI in PostCard |
 | Course/Exam post forms | ✅ | ✅ | CreatePostModal has full builders |
 | Analytics modal | ✅ | ✅ | Both redesigned with gradient header |
 | Stories | ✅ | ✅ | |
 | Bookmarks | ✅ | ✅ | |
-| Search | ✅ | ✅ | Combined Users + Posts layout |
+| Search | ✅ | ✅ | Combined Users + Posts, post type filter |
 | Push notifications | ✅ | — | Expo Push (FCM/APNs) |
 | OAuth2 social login | ✅ | ✅ | Backend ready, env vars needed |
 | 2FA/MFA | ✅ | ✅ | TOTP + backup codes |
@@ -172,9 +172,9 @@ Added explicit `slide_from_right` transitions and swipe-to-go back gestures to a
 | Grade → student notify | ✅ | — | Bridge + push notification |
 | Profile (full) | ✅ | ✅ | XP, Level, Streak, completeness |
 | Video posts | ✅ | ✅ | Both mobile and web; CreatePostModal + MediaGallery support video |
-| Live Quiz (Kahoot) | ✅ | — | analytics-service hosts it |
-| DM / Messaging | ✅ | Partial | Web exists but limited |
-| Clubs | ✅ | Partial | |
+| Live Quiz (Kahoot) | ✅ | ✅ | Web: Join, Lobby, Play, Leaderboard, Results; Host from quiz posts |
+| DM / Messaging | ✅ | ✅ | Web: full DM via feed-service |
+| Clubs | ✅ | ✅ | Web: full handlers, env config |
 | Dark mode | ✅ | ✅ | Mobile: Settings toggle; Web: Nav bar Moon/Sun toggle |
 
 ---

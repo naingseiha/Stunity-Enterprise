@@ -60,16 +60,13 @@ function transformTeachers(data: any[]): Teacher[] {
   }));
 }
 
-function createTeachersCacheKey(params?: TeachersParams): string | null {
-  if (typeof window === 'undefined') return null;
-  
+function createTeachersCacheKey(params?: TeachersParams): string {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());
   if (params?.limit) queryParams.append('limit', params.limit.toString());
   if (params?.gender) queryParams.append('gender', params.gender);
   if (params?.search) queryParams.append('search', params.search);
   if (params?.academicYearId) queryParams.append('academicYearId', params.academicYearId);
-  
   return `${TEACHER_SERVICE_URL}/teachers/lightweight?${queryParams}`;
 }
 
@@ -107,12 +104,13 @@ export function useTeachers(params?: TeachersParams) {
     }
   );
 
-  const teachers = data ? transformTeachers(data.data) : [];
+  const rawData = Array.isArray(data?.data) ? data.data : [];
+  const teachers = data ? transformTeachers(rawData) : [];
   const pagination = data?.pagination || {
-    total: 0,
+    total: teachers.length,
     page: params?.page || 1,
     limit: params?.limit || 20,
-    totalPages: 1,
+    totalPages: Math.max(1, Math.ceil(teachers.length / (params?.limit || 20))),
   };
 
   return {

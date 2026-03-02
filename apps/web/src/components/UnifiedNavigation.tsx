@@ -31,6 +31,7 @@ import {
   UserX,
   Moon,
   Sun,
+  Gamepad2,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import AcademicYearSelector from './AcademicYearSelector';
@@ -118,6 +119,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   const isFeedContext = useMemo(() => pathname.includes('/feed'), [pathname]);
   const isClubsContext = useMemo(() => pathname.includes('/clubs'), [pathname]);
   const isEventsContext = useMemo(() => pathname.includes('/events'), [pathname]);
+  const isLiveQuizContext = useMemo(() => pathname.includes('/live-quiz'), [pathname]);
   const isLearnContext = useMemo(() => pathname.includes('/learn'), [pathname]);
 
   // Optimistic active state - uses pending path if navigating, otherwise actual path
@@ -163,6 +165,13 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       badge: null,
     },
     {
+      name: 'Live Quiz',
+      icon: Gamepad2,
+      path: `/${locale}/live-quiz/join`,
+      active: isLiveQuizContext,
+      badge: null,
+    },
+    {
       name: 'Learn',
       icon: BookOpen,
       path: `/${locale}/learn`,
@@ -182,7 +191,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       return false;
     }
     return true;
-  }), [locale, isFeedContext, isClubsContext, isEventsContext, isSchoolContext, isLearnContext, school]);
+  }), [locale, isFeedContext, isClubsContext, isEventsContext, isLiveQuizContext, isSchoolContext, isLearnContext, school]);
 
   // Memoized school menu sections with grouped items
   const schoolMenuSections = useMemo(() => [

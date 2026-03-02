@@ -17,6 +17,7 @@ import {
   AlertCircle,
   User,
   GraduationCap,
+  MessageCircle,
 } from 'lucide-react';
 
 const STUDENT_SERVICE_URL = process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003';
@@ -220,6 +221,23 @@ export default function ChildDetailPage({
                 View Grades
               </h3>
               <p className="text-sm text-gray-500">Subject grades & trends</p>
+            </div>
+          </div>
+        </Link>
+
+        <Link
+          href={`/${locale}/parent/messages`}
+          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:border-amber-300 hover:shadow-md transition-all group"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white">
+              <MessageCircle className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 group-hover:text-amber-600 transition-colors">
+                Message Teacher
+              </h3>
+              <p className="text-sm text-gray-500">Chat with your child&apos;s teacher</p>
             </div>
           </div>
         </Link>

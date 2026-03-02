@@ -161,25 +161,42 @@ const generateSessionCode = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
+const FEED_SERVICE_URL = process.env.FEED_SERVICE_URL || 'http://localhost:3010';
+
 // POST /live/create - Host creates a live quiz session
 app.post('/live/create', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { quizId, settings } = req.body;
     const hostId = req.user!.id;
 
-    // TODO: Fetch quiz details from feed service via API call
-    // For now, we'll create the session without quiz validation
-    const quiz = { id: quizId }; // Stub for now
-
-    // Comment out quiz lookup since quiz model doesn't exist in analytics schema
-    // const quiz = await prisma.quiz.findUnique({
-    //   where: { id: quizId },
-    //   include: { post: true },
-    // });
-
-    // if (!quiz) {
-    //   return res.status(404).json({ success: false, error: 'Quiz not found' });
-    // }
+    // Fetch quiz details from feed service
+    let quiz: any = { id: quizId };
+    const authHeader = req.headers.authorization;
+    try {
+      const feedRes = await fetch(`${FEED_SERVICE_URL}/quizzes/${quizId}`, {
+        headers: authHeader ? { Authorization: authHeader } : {},
+      });
+      if (feedRes.ok) {
+        const feedData = await feedRes.json();
+        if (feedData.success && feedData.data) {
+          const d = feedData.data;
+          quiz = {
+            id: d.id,
+            post: { title: d.title },
+            questions: (d.questions || []).map((q: any, i: number) => ({
+              id: q.id || `q_${i}`,
+              text: q.text,
+              type: q.type || 'MULTIPLE_CHOICE',
+              options: q.options || [],
+              correctAnswer: q.correctAnswer ?? q.correctAnswerIndex ?? 0,
+              points: q.points ?? 100,
+            })),
+          };
+        }
+      }
+    } catch (err: any) {
+      console.warn('[LIVE QUIZ] Could not fetch quiz from feed-service:', err.message);
+    }
 
     // Generate unique session code
     let sessionCode = generateSessionCode();
@@ -214,8 +231,8 @@ app.post('/live/create', authenticateToken, async (req: AuthRequest, res: Respon
       data: {
         sessionCode,
         sessionId: session.id,
-        quizTitle: 'Quiz', // Would get from feed service
-        questionCount: 0, // Would get from feed service
+        quizTitle: quiz.post?.title || 'Quiz',
+        questionCount: (quiz.questions as any[])?.length ?? 0,
       },
     });
   } catch (error: any) {
@@ -308,16 +325,87 @@ app.get('/live/:code/lobby', authenticateToken, async (req: AuthRequest, res: Re
       data: {
         sessionCode: code,
         status: session.status,
+        hostId: session.hostId,
         participantCount: session.participants.size,
         participants,
-        quizTitle: session.quiz?.post.title,
-        questionCount: (session.quiz?.questions as any[]).length,
+        quizTitle: session.quiz?.post?.title,
+        questionCount: (session.quiz?.questions as any[])?.length ?? 0,
         settings: session.settings,
       },
     });
   } catch (error: any) {
     console.error('Get lobby error:', error);
     res.status(500).json({ success: false, error: 'Failed to get lobby status' });
+  }
+});
+
+// GET /live/:code/current - Get current question (for host & participants to poll)
+app.get('/live/:code/current', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { code } = req.params;
+    const session = liveSessions.get(code);
+
+    if (!session) {
+      return res.status(404).json({ success: false, error: 'Session not found' });
+    }
+
+    const questions = session.quiz?.questions as any[];
+    const questionCount = questions?.length ?? 0;
+
+    if (session.status === 'lobby') {
+      return res.json({
+        success: true,
+        data: {
+          status: 'lobby',
+          currentQuestionIndex: -1,
+          questionCount,
+        },
+      });
+    }
+
+    if (session.status === 'completed') {
+      return res.json({
+        success: true,
+        data: {
+          status: 'completed',
+          currentQuestionIndex: questionCount - 1,
+          questionCount,
+        },
+      });
+    }
+
+    const currentQuestion = questions?.[session.currentQuestionIndex];
+    if (!currentQuestion) {
+      return res.json({
+        success: true,
+        data: {
+          status: session.status,
+          currentQuestionIndex: session.currentQuestionIndex,
+          questionCount,
+        },
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        status: 'active',
+        hostId: session.hostId,
+        currentQuestionIndex: session.currentQuestionIndex,
+        question: {
+          id: currentQuestion.id,
+          text: currentQuestion.text,
+          type: currentQuestion.type,
+          options: currentQuestion.options,
+          points: currentQuestion.points,
+        },
+        timeLimit: session.settings.questionTime,
+        questionCount,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get current question error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get current question' });
   }
 });
 
@@ -347,8 +435,14 @@ app.post('/live/:code/start', authenticateToken, async (req: AuthRequest, res: R
 
     console.log(`🚀 [LIVE QUIZ] Session ${code} started with ${session.participants.size} participants`);
 
-    const questions = session.quiz?.questions as any[];
+    const questions = (session.quiz?.questions as any[]) ?? [];
     const currentQuestion = questions[0];
+    if (!currentQuestion) {
+      return res.status(400).json({
+        success: false,
+        error: 'Quiz has no questions. Create a session with a valid quiz that has questions (fetch quiz from feed-service).',
+      });
+    }
 
     res.json({
       success: true,

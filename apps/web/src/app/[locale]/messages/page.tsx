@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useMessageUpdates, SSEEvent } from '@/hooks/useEventStream';
 import { TokenManager } from '@/lib/api/auth';
+import { FEED_SERVICE_URL } from '@/lib/api/config';
 
 interface Conversation {
   id: string;
@@ -76,8 +77,6 @@ interface User {
   profilePictureUrl: string | null;
   headline?: string;
 }
-
-const FEED_API = process.env.NEXT_PUBLIC_FEED_API_URL || 'http://localhost:3010';
 
 export default function MessagesPage() {
   const params = useParams();
@@ -137,7 +136,7 @@ export default function MessagesPage() {
     if (!token) return;
 
     try {
-      const res = await fetch(`${FEED_API}/dm/conversations`, {
+      const res = await fetch(`${FEED_SERVICE_URL}/dm/conversations`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -157,7 +156,7 @@ export default function MessagesPage() {
     if (!token) return;
 
     try {
-      const res = await fetch(`${FEED_API}/dm/conversations/${conversationId}`, {
+      const res = await fetch(`${FEED_SERVICE_URL}/dm/conversations/${conversationId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -232,7 +231,7 @@ export default function MessagesPage() {
 
     setIsSending(true);
     try {
-      const res = await fetch(`${FEED_API}/dm/conversations/${activeConversation.id}/messages`, {
+      const res = await fetch(`${FEED_SERVICE_URL}/dm/conversations/${activeConversation.id}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -275,7 +274,7 @@ export default function MessagesPage() {
 
     if (!isTyping) {
       setIsTyping(true);
-      fetch(`${FEED_API}/dm/conversations/${activeConversation.id}/typing`, {
+      fetch(`${FEED_SERVICE_URL}/dm/conversations/${activeConversation.id}/typing`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -293,7 +292,7 @@ export default function MessagesPage() {
     // Set new timeout to stop typing indicator
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
-      fetch(`${FEED_API}/dm/conversations/${activeConversation.id}/typing`, {
+      fetch(`${FEED_SERVICE_URL}/dm/conversations/${activeConversation.id}/typing`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -318,7 +317,7 @@ export default function MessagesPage() {
     setIsSearching(true);
     try {
       // Using the profile search endpoint (you may need to create this)
-      const res = await fetch(`${FEED_API}/users/search?q=${encodeURIComponent(query)}`, {
+      const res = await fetch(`${FEED_SERVICE_URL}/users/search?q=${encodeURIComponent(query)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -338,7 +337,7 @@ export default function MessagesPage() {
     if (!token) return;
 
     try {
-      const res = await fetch(`${FEED_API}/dm/conversations`, {
+      const res = await fetch(`${FEED_SERVICE_URL}/dm/conversations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
