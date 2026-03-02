@@ -449,22 +449,40 @@ export default function ProfileScreen() {
                   )}
                 </View>
 
-                {/* Role Badge — Teacher or Student */}
+                {/* Role Badge — shows the actual role for all user types */}
                 {profile.role && (
                   <Animated.View entering={FadeInDown.delay(220).duration(400)} style={styles.roleBadgeWrap}>
                     <LinearGradient
-                      colors={profile.role === 'TEACHER' ? ['#6366F1', '#8B5CF6'] : ['#0EA5E9', '#0284C7']}
+                      colors={
+                        profile.role === 'TEACHER' ? ['#6366F1', '#8B5CF6'] :
+                          profile.role === 'ADMIN' ? ['#DC2626', '#B91C1C'] :
+                            profile.role === 'SCHOOL_ADMIN' ? ['#D97706', '#B45309'] :
+                              profile.role === 'PARENT' ? ['#059669', '#047857'] :
+                                profile.role === 'STAFF' ? ['#7C3AED', '#6D28D9'] :
+                                  ['#0EA5E9', '#0284C7'] // STUDENT default
+                      }
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
                       style={styles.roleBadgeGradient}
                     >
                       <Ionicons
-                        name={profile.role === 'TEACHER' ? 'school' : 'person'}
+                        name={
+                          profile.role === 'TEACHER' ? 'school' :
+                            profile.role === 'ADMIN' || profile.role === 'SCHOOL_ADMIN' ? 'shield-checkmark' :
+                              profile.role === 'PARENT' ? 'people' :
+                                profile.role === 'STAFF' ? 'briefcase' :
+                                  'person'
+                        }
                         size={12}
                         color="#fff"
                       />
                       <Text style={styles.roleBadgeText}>
-                        {profile.role === 'TEACHER' ? 'Teacher' : 'Student'}
+                        {profile.role === 'TEACHER' ? 'Teacher' :
+                          profile.role === 'ADMIN' ? 'Admin' :
+                            profile.role === 'SCHOOL_ADMIN' ? 'School Admin' :
+                              profile.role === 'PARENT' ? 'Parent' :
+                                profile.role === 'STAFF' ? 'Staff' :
+                                  'Student'}
                       </Text>
                     </LinearGradient>
                   </Animated.View>
