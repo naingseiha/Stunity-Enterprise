@@ -232,6 +232,7 @@ npm run seed:super-admin [email]
 - Define subjects with credit hours and curriculum
 - Assign subjects to classes
 - View class roster with student list
+- **Bug Fix**: Fixed 500 error on `GET /classes/:id/students` caused by invalid `khmerName` Prisma query, and actively deduplicates `StudentClass` records.
 
 ### Grades
 - Enter grades by subject, exam type (midterm, final, quiz, assignment, project)

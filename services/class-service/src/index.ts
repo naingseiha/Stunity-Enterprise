@@ -808,7 +808,7 @@ app.post('/classes', async (req: AuthRequest, res: Response) => {
         homeroomTeacher: {
           select: {
             id: true,
-            khmerName: true,
+            customFields: true,
             firstName: true,
             lastName: true,
           },
@@ -945,7 +945,7 @@ app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
         homeroomTeacher: {
           select: {
             id: true,
-            khmerName: true,
+            customFields: true,
             firstName: true,
             lastName: true,
           },
@@ -1159,10 +1159,10 @@ app.get('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: R
             studentId: true,
             firstName: true,
             lastName: true,
-            khmerName: true,
             gender: true,
             dateOfBirth: true,
             photoUrl: true,
+            customFields: true,
           },
         },
       },
@@ -1173,15 +1173,35 @@ app.get('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: R
       },
     });
 
-    const students = studentClasses.map(sc => ({
-      ...sc.student,
-      nameKh: sc.student.khmerName, // Map to match frontend interface
-      status: sc.status, // Get status from StudentClass, not Student
-      enrolledAt: sc.enrolledAt,
-      studentClassId: sc.id,
-    }));
+    const uniqueStudentsMap = new Map();
+    studentClasses.forEach(sc => {
+      // Keep the active one, or the first one we see
+      if (!uniqueStudentsMap.has(sc.student.id)) {
+        uniqueStudentsMap.set(sc.student.id, {
+          ...sc.student,
+          nameKh: sc.student.customFields ? (sc.student.customFields as any).khmerName : undefined,
+          status: sc.status,
+          enrolledAt: sc.enrolledAt,
+          studentClassId: sc.id,
+        });
+      } else {
+        // If we already have one, but this one is explicitly ACTIVE and the other isn't, prefer this one
+        const existing = uniqueStudentsMap.get(sc.student.id);
+        if (sc.status === 'ACTIVE' && existing.status !== 'ACTIVE') {
+          uniqueStudentsMap.set(sc.student.id, {
+            ...sc.student,
+            nameKh: sc.student.customFields ? (sc.student.customFields as any).khmerName : undefined,
+            status: sc.status,
+            enrolledAt: sc.enrolledAt,
+            studentClassId: sc.id,
+          });
+        }
+      }
+    });
 
-    console.log(`✅ [School ${schoolId}] Found ${students.length} students in class`);
+    const students = Array.from(uniqueStudentsMap.values());
+
+    console.log(`✅ [School ${schoolId}] Found ${students.length} unique students in class (from ${studentClasses.length} records)`);
 
     res.json({
       success: true,
@@ -1306,7 +1326,7 @@ app.post('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: 
             id: true,
             firstName: true,
             lastName: true,
-            khmerName: true,
+            customFields: true,
           },
         },
       },
