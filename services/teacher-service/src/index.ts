@@ -334,10 +334,9 @@ app.get('/teachers/lightweight', async (req: AuthRequest, res: Response) => {
       select: {
         id: true,
         employeeId: true,
+        teacherId: true,
         firstName: true,
         lastName: true,
-        khmerName: true,
-        englishName: true,
         email: true,
         phone: true,
         gender: true,
@@ -345,10 +344,10 @@ app.get('/teachers/lightweight', async (req: AuthRequest, res: Response) => {
         dateOfBirth: true,
         hireDate: true,
         address: true,
-        position: true,
         homeroomClassId: true,
         createdAt: true,
         updatedAt: true,
+        customFields: true,
         // Only essential relations
         homeroomClass: {
           select: {
@@ -409,6 +408,7 @@ app.get('/teachers/lightweight', async (req: AuthRequest, res: Response) => {
     // Transform to match expected format
     const transformedTeachers = teachers.map((teacher) => ({
       ...teacher,
+      teacherId: teacher.employeeId || teacher.id,
       subjectIds: teacher.subjectTeachers.map((sa) => sa.subjectId),
       teachingClassIds: teacher.teacherClasses.map((tc) => tc.classId),
       subjects: teacher.subjectTeachers.map((sa) => sa.subject),
@@ -534,6 +534,8 @@ app.get('/teachers', async (req: AuthRequest, res: Response) => {
       select: {
         id: true,
         schoolId: true,
+        employeeId: true,
+        teacherId: true,
         firstName: true,
         lastName: true,
         email: true,
@@ -545,6 +547,7 @@ app.get('/teachers', async (req: AuthRequest, res: Response) => {
         createdAt: true,
         updatedAt: true,
         homeroomClassId: true,
+        customFields: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -611,6 +614,7 @@ app.get('/teachers', async (req: AuthRequest, res: Response) => {
 
       return {
         ...teacher,
+        teacherId: teacher.employeeId || teacher.id,
         subjectIds: sts.map(st => st.subjectId),
         teachingClassIds: tcs.map(tc => tc.classId),
         subjects: sts.map(st => st.subject),
@@ -662,7 +666,7 @@ app.get('/teachers/:id', async (req: AuthRequest, res: Response) => {
                 id: true,
                 firstName: true,
                 lastName: true,
-                khmerName: true,
+                customFields: true,
                 email: true,
                 studentId: true,
               },
@@ -683,7 +687,7 @@ app.get('/teachers/:id', async (req: AuthRequest, res: Response) => {
                     id: true,
                     firstName: true,
                     lastName: true,
-                    khmerName: true,
+                    customFields: true,
                     email: true,
                     studentId: true,
                   },
@@ -807,6 +811,7 @@ app.post('/teachers', async (req: AuthRequest, res: Response) => {
       nationality,
       passport,
       salaryRange,
+      workingLevel,
       // Relations
       homeroomClassId,
       subjectIds,
@@ -920,28 +925,33 @@ app.post('/teachers', async (req: AuthRequest, res: Response) => {
         hireYear: teacherParams.hireYear,
         firstName,
         lastName,
-        khmerName,
-        englishName,
         email,
         phone,
         employeeId,
-        gender,
+        gender: gender || 'MALE',
         dateOfBirth,
-        position,
         hireDate,
         address,
         role: role || 'TEACHER',
-        degree,
-        emergencyContact,
-        emergencyPhone,
-        idCard,
-        major1,
-        major2,
-        nationality,
-        passport,
         salaryRange,
         schoolId: schoolId, // ✅ Multi-tenant
         homeroomClassId,
+        customFields: {
+          regional: {
+            khmerName: khmerName || null,
+            englishName: englishName || null,
+            position: position || null,
+            degree: degree || null,
+            major1: major1 || null,
+            major2: major2 || null,
+            nationality: nationality || null,
+            idCard: idCard || null,
+            passport: passport || null,
+            workingLevel: workingLevel || null,
+            emergencyContact: emergencyContact || null,
+            emergencyPhone: emergencyPhone || null,
+          }
+        },
         // Connect subjects (many-to-many)
         ...(subjectIds && subjectIds.length > 0
           ? {
@@ -1209,6 +1219,7 @@ app.put('/teachers/:id', async (req: AuthRequest, res: Response) => {
       passport,
       salaryRange,
       homeroomClassId,
+      workingLevel,
     } = req.body;
 
     // Verify new homeroom class belongs to school (if provided)
@@ -1228,34 +1239,42 @@ app.put('/teachers/:id', async (req: AuthRequest, res: Response) => {
       }
     }
 
+    // Prepare updated teacher data
+    const updateData: any = {
+      firstName,
+      lastName,
+      email,
+      phone,
+      employeeId,
+      gender,
+      dateOfBirth,
+      hireDate,
+      address,
+      role,
+      salaryRange,
+      homeroomClassId,
+      customFields: {
+        regional: {
+          khmerName: khmerName || undefined,
+          englishName: englishName || undefined,
+          position: position || undefined,
+          degree: degree || undefined,
+          major1: major1 || undefined,
+          major2: major2 || undefined,
+          nationality: nationality || undefined,
+          idCard: idCard || undefined,
+          passport: passport || undefined,
+          workingLevel: workingLevel || undefined,
+          emergencyContact: emergencyContact || undefined,
+          emergencyPhone: emergencyPhone || undefined,
+        }
+      }
+    };
+
     // Update teacher
     const updatedTeacher = await prisma.teacher.update({
       where: { id },
-      data: {
-        firstName,
-        lastName,
-        khmerName,
-        englishName,
-        email,
-        phone,
-        employeeId,
-        gender,
-        dateOfBirth,
-        position,
-        hireDate,
-        address,
-        role,
-        degree,
-        emergencyContact,
-        emergencyPhone,
-        idCard,
-        major1,
-        major2,
-        nationality,
-        passport,
-        salaryRange,
-        homeroomClassId,
-      },
+      data: updateData,
       include: {
         homeroomClass: true,
         subjectTeachers: {
@@ -1398,7 +1417,7 @@ app.get('/teachers/:id/history', async (req: AuthRequest, res: Response) => {
     // Verify teacher belongs to school
     const teacher = await prisma.teacher.findFirst({
       where: { id, schoolId },
-      select: { id: true, firstName: true, lastName: true, khmerName: true, photoUrl: true }
+      select: { id: true, firstName: true, lastName: true, customFields: true, photoUrl: true }
     });
 
     if (!teacher) {

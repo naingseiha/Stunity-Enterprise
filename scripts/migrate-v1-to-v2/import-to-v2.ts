@@ -408,22 +408,51 @@ async function main() {
       try {
         const cf = buildTeacherCustomFields(t);
         const teacherData = {
-          id: t.id, schoolId, teacherId: t.teacherId ?? null, firstName: t.firstName, lastName: t.lastName,
-          khmerName: t.khmerName ?? null, email: t.email ?? null, phone: t.phone ?? null,
-          employeeId: t.employeeId ?? null, gender: t.gender ?? null, dateOfBirth: sanitizeDate(t.dateOfBirth),
-          position: t.position ?? null, address: t.address ?? null, hireDate: sanitizeDate(t.hireDate),
-          role: sanitizeTeacherRole(t.role), englishName: t.englishName ?? null, degree: t.degree ?? null,
-          emergencyContact: t.emergencyContact ?? null, emergencyPhone: t.emergencyPhone ?? null,
-          idCard: t.idCard ?? null, major1: t.major1 ?? null, major2: t.major2 ?? null,
-          nationality: t.nationality ?? null, passport: t.passport ?? null,
-          phoneNumber: t.phoneNumber ?? null, salaryRange: t.salaryRange ?? null,
-          workingLevel: sanitizeWorkingLevel(t.workingLevel) as any,
-          customFields: Object.keys(cf).length > 0 ? cf : undefined,
+          id: t.id,
+          schoolId,
+          teacherId: t.teacherId ?? null,
+          firstName: t.firstName,
+          lastName: t.lastName,
+          email: t.email ?? null,
+          phone: t.phone ?? null,
+          employeeId: t.employeeId ?? null,
+          gender: t.gender ?? null,
+          dateOfBirth: sanitizeDate(t.dateOfBirth),
+          address: t.address ?? null,
+          hireDate: sanitizeDate(t.hireDate),
+          role: sanitizeTeacherRole(t.role),
+          phoneNumber: t.phoneNumber ?? null,
+          salaryRange: t.salaryRange ?? null,
+          photoUrl: t.photoUrl ?? null,
+          hireYear: t.hireYear ?? null,
+          permanentId: t.permanentId ?? null,
+          customFields: {
+            regional: {
+              khmerName: t.khmerName ?? null,
+              englishName: t.englishName ?? null,
+              position: t.position ?? null,
+              degree: t.degree ?? null,
+              major1: t.major1 ?? null,
+              major2: t.major2 ?? null,
+              nationality: t.nationality ?? null,
+              idCard: t.idCard ?? null,
+              passport: t.passport ?? null,
+              workingLevel: sanitizeWorkingLevel(t.workingLevel) as any,
+              emergencyContact: t.emergencyContact ?? null,
+              emergencyPhone: t.emergencyPhone ?? null,
+            },
+            ...(Object.keys(cf).length > 0 ? cf : {})
+          },
         };
         const result = await prisma.teacher.upsert({
           where: { id: t.id },
           create: teacherData,
-          update: { schoolId, firstName: t.firstName, lastName: t.lastName },
+          update: {
+            schoolId,
+            firstName: t.firstName,
+            lastName: t.lastName,
+            customFields: teacherData.customFields
+          },
         });
         const isNew = result.createdAt?.getTime() === result.updatedAt?.getTime();
         idMap.teacher[t.id] = result.id;
@@ -467,31 +496,61 @@ async function main() {
       const classId = s.classId ? (idMap.class[s.classId] ?? null) : null;
       const cf = buildStudentCustomFields(s);
       const studentData: any = {
-        id: s.id, schoolId, studentId: s.studentId ?? null, firstName: s.firstName,
-        lastName: s.lastName, khmerName: s.khmerName ?? '', dateOfBirth: s.dateOfBirth || '',
-        gender: s.gender, englishName: s.englishName ?? null, email: s.email ?? null,
-        placeOfBirth: s.placeOfBirth ?? null, currentAddress: s.currentAddress ?? null,
-        phoneNumber: s.phoneNumber ?? null, classId, fatherName: s.fatherName ?? null,
-        motherName: s.motherName ?? null, parentPhone: s.parentPhone ?? null,
-        parentOccupation: s.parentOccupation ?? null, previousGrade: s.previousGrade ?? null,
-        remarks: s.remarks ?? null, photoUrl: s.photoUrl ?? null,
-        grade12ExamCenter: s.grade12ExamCenter ?? null, grade12ExamDesk: s.grade12ExamDesk ?? null,
-        grade12ExamRoom: s.grade12ExamRoom ?? null, grade12ExamSession: s.grade12ExamSession ?? null,
-        grade12PassStatus: s.grade12PassStatus ?? null, grade12Track: s.grade12Track ?? null,
-        grade9ExamCenter: s.grade9ExamCenter ?? null, grade9ExamDesk: s.grade9ExamDesk ?? null,
-        grade9ExamRoom: s.grade9ExamRoom ?? null, grade9ExamSession: s.grade9ExamSession ?? null,
-        grade9PassStatus: s.grade9PassStatus ?? null, previousSchool: s.previousSchool ?? null,
-        repeatingGrade: s.repeatingGrade ?? null, transferredFrom: s.transferredFrom ?? null,
+        id: s.id,
+        schoolId,
+        studentId: s.studentId ?? null,
+        firstName: s.firstName,
+        lastName: s.lastName,
+        dateOfBirth: s.dateOfBirth || '',
+        gender: s.gender,
+        email: s.email ?? null,
+        phoneNumber: s.phoneNumber ?? null,
+        classId,
+        photoUrl: s.photoUrl ?? null,
         accountDeactivatedAt: s.accountDeactivatedAt ? new Date(s.accountDeactivatedAt) : null,
-        deactivationReason: s.deactivationReason ?? null, isAccountActive: s.isAccountActive ?? true,
+        deactivationReason: s.deactivationReason ?? null,
+        isAccountActive: s.isAccountActive ?? true,
         studentRole: s.studentRole || 'GENERAL',
-        customFields: Object.keys(cf).length > 0 ? cf : undefined,
+        customFields: {
+          regional: {
+            khmerName: s.khmerName ?? '',
+            englishName: s.englishName ?? null,
+            placeOfBirth: s.placeOfBirth ?? null,
+            currentAddress: s.currentAddress ?? null,
+            fatherName: s.fatherName ?? null,
+            motherName: s.motherName ?? null,
+            parentPhone: s.parentPhone ?? null,
+            parentOccupation: s.parentOccupation ?? null,
+            previousGrade: s.previousGrade ?? null,
+            grade12ExamCenter: s.grade12ExamCenter ?? null,
+            grade12ExamDesk: s.grade12ExamDesk ?? null,
+            grade12ExamRoom: s.grade12ExamRoom ?? null,
+            grade12ExamSession: s.grade12ExamSession ?? null,
+            grade12PassStatus: s.grade12PassStatus ?? null,
+            grade12Track: s.grade12Track ?? null,
+            grade9ExamCenter: s.grade9ExamCenter ?? null,
+            grade9ExamDesk: s.grade9ExamDesk ?? null,
+            grade9ExamRoom: s.grade9ExamRoom ?? null,
+            grade9ExamSession: s.grade9ExamSession ?? null,
+            grade9PassStatus: s.grade9PassStatus ?? null,
+            previousSchool: s.previousSchool ?? null,
+            repeatingGrade: s.repeatingGrade ?? null,
+            transferredFrom: s.transferredFrom ?? null,
+            remarks: s.remarks ?? null,
+          },
+          ...(Object.keys(cf).length > 0 ? cf : {})
+        },
       };
       try {
         const result = await prisma.student.upsert({
           where: { id: s.id },
           create: studentData,
-          update: { firstName: s.firstName, lastName: s.lastName, classId },
+          update: {
+            firstName: s.firstName,
+            lastName: s.lastName,
+            classId,
+            customFields: studentData.customFields
+          },
         });
         idMap.student[s.id] = result.id;
         stdCreated++;

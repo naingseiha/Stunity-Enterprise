@@ -138,7 +138,7 @@ app.get('/conversations', authenticateToken, async (req: Request, res: Response)
               id: true,
               firstName: true,
               lastName: true,
-              khmerName: true,
+              customFields: true,
               photoUrl: true,
               phone: true,
             },
@@ -148,7 +148,7 @@ app.get('/conversations', authenticateToken, async (req: Request, res: Response)
               id: true,
               firstName: true,
               lastName: true,
-              khmerName: true,
+              customFields: true,
               phone: true,
             },
           },
@@ -157,7 +157,7 @@ app.get('/conversations', authenticateToken, async (req: Request, res: Response)
               id: true,
               firstName: true,
               lastName: true,
-              khmerName: true,
+              customFields: true,
               studentId: true,
             },
           },
@@ -254,7 +254,7 @@ app.post('/conversations', authenticateToken, async (req: Request, res: Response
             id: true,
             firstName: true,
             lastName: true,
-            khmerName: true,
+            customFields: true,
             photoUrl: true,
           },
         },
@@ -263,7 +263,7 @@ app.post('/conversations', authenticateToken, async (req: Request, res: Response
             id: true,
             firstName: true,
             lastName: true,
-            khmerName: true,
+            customFields: true,
           },
         },
         student: {
@@ -271,7 +271,7 @@ app.post('/conversations', authenticateToken, async (req: Request, res: Response
             id: true,
             firstName: true,
             lastName: true,
-            khmerName: true,
+            customFields: true,
             studentId: true,
           },
         },
@@ -293,7 +293,7 @@ app.post('/conversations', authenticateToken, async (req: Request, res: Response
               id: true,
               firstName: true,
               lastName: true,
-              khmerName: true,
+              customFields: true,
               photoUrl: true,
             },
           },
@@ -302,7 +302,7 @@ app.post('/conversations', authenticateToken, async (req: Request, res: Response
               id: true,
               firstName: true,
               lastName: true,
-              khmerName: true,
+              customFields: true,
             },
           },
           student: {
@@ -310,7 +310,7 @@ app.post('/conversations', authenticateToken, async (req: Request, res: Response
               id: true,
               firstName: true,
               lastName: true,
-              khmerName: true,
+              customFields: true,
               studentId: true,
             },
           },
@@ -342,7 +342,7 @@ app.get('/conversations/:id', authenticateToken, async (req: Request, res: Respo
             id: true,
             firstName: true,
             lastName: true,
-            khmerName: true,
+            customFields: true,
             photoUrl: true,
             phone: true,
           },
@@ -352,7 +352,7 @@ app.get('/conversations/:id', authenticateToken, async (req: Request, res: Respo
             id: true,
             firstName: true,
             lastName: true,
-            khmerName: true,
+            customFields: true,
             phone: true,
           },
         },
@@ -361,7 +361,7 @@ app.get('/conversations/:id', authenticateToken, async (req: Request, res: Respo
             id: true,
             firstName: true,
             lastName: true,
-            khmerName: true,
+            customFields: true,
             studentId: true,
           },
         },
@@ -685,7 +685,7 @@ app.get('/teachers', authenticateToken, async (req: Request, res: Response) => {
         id: true,
         firstName: true,
         lastName: true,
-        khmerName: true,
+        customFields: true,
         photoUrl: true,
         phone: true,
         position: true,
@@ -701,7 +701,16 @@ app.get('/teachers', authenticateToken, async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      data: teachers,
+      data: teachers.map(t => ({
+        id: t.id,
+        firstName: t.firstName,
+        lastName: t.lastName,
+        name: (t.customFields as any)?.regional?.khmerName || `${t.firstName} ${t.lastName}`,
+        photoUrl: t.photoUrl,
+        phone: t.phone,
+        position: (t.customFields as any)?.regional?.position || t.position,
+        homeroomClass: t.homeroomClass,
+      })),
     });
   } catch (error: any) {
     console.error('Get teachers error:', error);
@@ -760,7 +769,7 @@ app.get('/parents', authenticateToken, async (req: Request, res: Response) => {
                 id: true,
                 firstName: true,
                 lastName: true,
-                khmerName: true,
+                customFields: true,
                 phone: true,
                 relationship: true,
               },
@@ -793,7 +802,7 @@ app.get('/parents', authenticateToken, async (req: Request, res: Response) => {
           id: student.id,
           firstName: student.firstName,
           lastName: student.lastName,
-          khmerName: student.khmerName,
+          khmerName: (student.customFields as any)?.regional?.khmerName || `${student.firstName} ${student.lastName}`,
           studentId: student.studentId,
           class: student.class,
         });
@@ -808,7 +817,7 @@ app.get('/parents', authenticateToken, async (req: Request, res: Response) => {
       parents = parents.filter(p =>
         p.firstName.toLowerCase().includes(searchLower) ||
         p.lastName.toLowerCase().includes(searchLower) ||
-        p.khmerName?.toLowerCase().includes(searchLower) ||
+        (p.customFields as any)?.regional?.khmerName?.toLowerCase().includes(searchLower) ||
         p.phone.includes(search) ||
         p.children.some((c: any) =>
           c.firstName.toLowerCase().includes(searchLower) ||

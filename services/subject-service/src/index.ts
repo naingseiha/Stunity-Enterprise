@@ -171,7 +171,7 @@ app.get('/subjects', authenticateToken, async (req: AuthRequest, res: Response) 
                 teacherId: true,
                 firstName: true,
                 lastName: true,
-                khmerName: true,
+                customFields: true,
                 email: true,
                 phone: true,
                 schoolId: true,
@@ -397,7 +397,7 @@ app.get('/subjects/:id', authenticateToken, async (req: AuthRequest, res: Respon
                 teacherId: true,
                 firstName: true,
                 lastName: true,
-                khmerName: true,
+                customFields: true,
                 email: true,
                 phone: true,
                 schoolId: true,
@@ -718,7 +718,7 @@ app.post('/subjects/:id/teachers', authenticateToken, async (req: AuthRequest, r
             teacherId: true,
             firstName: true,
             lastName: true,
-            khmerName: true,
+            customFields: true,
             email: true,
           },
         },
@@ -734,7 +734,7 @@ app.post('/subjects/:id/teachers', authenticateToken, async (req: AuthRequest, r
       },
     });
 
-    console.log(`✅ Assigned teacher ${teacher.khmerName} to subject ${assignment.subject.name}`);
+    console.log(`✅ Assigned teacher ${assignment.teacher.firstName} ${assignment.teacher.lastName} to subject ${assignment.subject.name}`);
 
     res.status(201).json(assignment);
   } catch (error: any) {
@@ -779,7 +779,7 @@ app.delete('/subjects/:id/teachers/:teacherId', authenticateToken, async (req: A
       },
     });
 
-    console.log(`✅ Removed teacher ${assignment.teacher.khmerName} from subject ${assignment.subject.name}`);
+    console.log(`✅ Removed teacher ${assignment.teacher.firstName} ${assignment.teacher.lastName} from subject ${assignment.subject.name}`);
 
     res.json({
       message: 'Teacher assignment removed successfully',

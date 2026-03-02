@@ -53,22 +53,28 @@ interface StudentsResponse {
 
 // Transform backend response to frontend format
 function transformStudents(data: any[]): Student[] {
-  return (data || []).map((student: any) => ({
-    ...student,
-    studentId: student.studentId || student.id,
-    firstNameLatin: student.firstName || student.englishName || '',
-    lastNameLatin: student.lastName || '',
-    firstNameKhmer: student.khmerName || null,
-    lastNameKhmer: null,
-    // Ensure class is preserved for unassigned filtering
-    class: student.class || null,
-  }));
+  return (data || []).map((student: any) => {
+    // Flatten regional fields from customFields if they exist
+    const regional = student.customFields?.regional || {};
+
+    return {
+      ...student,
+      ...regional,
+      studentId: student.studentId || student.id,
+      firstNameLatin: student.firstName || regional.englishName?.split(' ')[0] || '',
+      lastNameLatin: student.lastName || regional.englishName?.split(' ').slice(1).join(' ') || '',
+      firstNameKhmer: regional.khmerName || student.khmerName || null,
+      lastNameKhmer: null,
+      // Ensure class is preserved for unassigned filtering
+      class: student.class || null,
+    };
+  });
 }
 
 // Create stable cache key from params
 function createStudentsCacheKey(params?: StudentsParams): string | null {
   if (typeof window === 'undefined') return null;
-  
+
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());
   if (params?.limit) queryParams.append('limit', params.limit.toString());
@@ -76,14 +82,14 @@ function createStudentsCacheKey(params?: StudentsParams): string | null {
   if (params?.gender) queryParams.append('gender', params.gender);
   if (params?.search) queryParams.append('search', params.search);
   if (params?.academicYearId) queryParams.append('academicYearId', params.academicYearId);
-  
+
   return `${STUDENT_SERVICE_URL}/students/lightweight?${queryParams}`;
 }
 
 // Custom fetcher with auth
 async function fetchStudents(url: string) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-  
+
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
@@ -108,7 +114,7 @@ async function fetchStudents(url: string) {
  */
 export function useStudents(params?: StudentsParams) {
   const cacheKey = createStudentsCacheKey(params);
-  
+
   const { data, error, isLoading, isValidating, mutate } = useSWR<StudentsResponse>(
     cacheKey,
     fetchStudents,
@@ -143,7 +149,7 @@ export function useStudents(params?: StudentsParams) {
 async function mutateStudents(url: string, { arg }: { arg: { action: string; id?: string; data?: any } }) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
   const baseUrl = STUDENT_SERVICE_URL;
-  
+
   let endpoint = `${baseUrl}/students`;
   let method = 'POST';
   let body = arg.data;
@@ -196,6 +202,6 @@ export function prefetchStudents(params?: StudentsParams) {
   const cacheKey = createStudentsCacheKey(params);
   if (cacheKey) {
     // This will populate SWR cache for instant access
-    fetchStudents(cacheKey).catch(() => {}); // Silent prefetch
+    fetchStudents(cacheKey).catch(() => { }); // Silent prefetch
   }
 }

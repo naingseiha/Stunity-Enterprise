@@ -49,15 +49,22 @@ interface TeachersResponse {
 }
 
 function transformTeachers(data: any[]): Teacher[] {
-  return (data || []).map((teacher: any) => ({
-    ...teacher,
-    teacherId: teacher.employeeId || teacher.id,
-    firstNameLatin: teacher.firstName || teacher.englishName || '',
-    lastNameLatin: teacher.lastName || '',
-    firstNameKhmer: teacher.khmerName || null,
-    lastNameKhmer: null,
-    phoneNumber: teacher.phone || null,
-  }));
+  return (data || []).map((teacher: any) => {
+    // Flatten regional fields from customFields if they exist
+    const regional = teacher.customFields?.regional || {};
+
+    return {
+      ...teacher,
+      ...regional,
+      teacherId: teacher.employeeId || teacher.teacherId || teacher.id,
+      firstNameLatin: teacher.firstName || regional.englishName?.split(' ')[0] || '',
+      lastNameLatin: teacher.lastName || regional.englishName?.split(' ').slice(1).join(' ') || '',
+      firstNameKhmer: regional.khmerName || teacher.khmerName || null,
+      lastNameKhmer: null,
+      phoneNumber: teacher.phone || teacher.phoneNumber || null,
+      position: regional.position || teacher.position || null,
+    };
+  });
 }
 
 function createTeachersCacheKey(params?: TeachersParams): string {
@@ -72,7 +79,7 @@ function createTeachersCacheKey(params?: TeachersParams): string {
 
 async function fetchTeachers(url: string) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-  
+
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
@@ -93,7 +100,7 @@ async function fetchTeachers(url: string) {
  */
 export function useTeachers(params?: TeachersParams) {
   const cacheKey = createTeachersCacheKey(params);
-  
+
   const { data, error, isLoading, isValidating, mutate } = useSWR<TeachersResponse>(
     cacheKey,
     fetchTeachers,
@@ -127,6 +134,6 @@ export function useTeachers(params?: TeachersParams) {
 export function prefetchTeachers(params?: TeachersParams) {
   const cacheKey = createTeachersCacheKey(params);
   if (cacheKey) {
-    fetchTeachers(cacheKey).catch(() => {});
+    fetchTeachers(cacheKey).catch(() => { });
   }
 }

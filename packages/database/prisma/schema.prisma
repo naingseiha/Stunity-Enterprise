@@ -255,38 +255,14 @@ model Student {
   studentId            String?                 @unique
   firstName            String
   lastName             String
-  khmerName            String
   dateOfBirth          String
   gender               Gender
-  englishName          String?
   email                String?                 @unique
-  placeOfBirth         String?                 @default("ភ្នំពេញ")
-  currentAddress       String?                 @default("ភ្នំពេញ")
   phoneNumber          String?
   classId              String?
-  fatherName           String?                 @default("ឪពុក")
-  motherName           String?                 @default("ម្តាយ")
-  parentPhone          String?
-  parentOccupation     String?                 @default("កសិករ")
-  previousGrade        String?
-  remarks              String?
   photoUrl             String?
   createdAt            DateTime                @default(now())
   updatedAt            DateTime                @updatedAt
-  grade12ExamCenter    String?
-  grade12ExamDesk      String?
-  grade12ExamRoom      String?
-  grade12ExamSession   String?
-  grade12PassStatus    String?
-  grade12Track         String?
-  grade9ExamCenter     String?
-  grade9ExamDesk       String?
-  grade9ExamRoom       String?
-  grade9ExamSession    String?
-  grade9PassStatus     String?
-  previousSchool       String?
-  repeatingGrade       String?
-  transferredFrom      String?
   accountDeactivatedAt DateTime?
   deactivationReason   String?
   isAccountActive      Boolean                 @default(true)
@@ -310,7 +286,6 @@ model Student {
 
   @@index([schoolId])
   @@index([classId])
-  @@index([grade12PassStatus])
   @@index([gender])
   @@index([isAccountActive])
   @@index([classId, studentRole])
@@ -328,7 +303,6 @@ model Parent {
   parentId        String?            @unique
   firstName       String
   lastName        String
-  khmerName       String
   englishName     String?
   gender          Gender?
   email           String?            @unique
@@ -446,31 +420,17 @@ model Teacher {
   teacherId                 String?                    @unique
   firstName                 String
   lastName                  String
-  khmerName                 String?
   email                     String?                    @unique
   phone                     String?                    @unique
   employeeId                String?                    @unique
   gender                    Gender?
   dateOfBirth               String?
-  position                  String?
   createdAt                 DateTime                   @default(now())
   updatedAt                 DateTime                   @updatedAt
   address                   String?
   hireDate                  String?
   homeroomClassId           String?                    @unique
   role                      TeacherRole                @default(TEACHER)
-  englishName               String?
-  degree                    DegreeLevel?
-  emergencyContact          String?
-  emergencyPhone            String?
-  idCard                    String?
-  major1                    String?
-  major2                    String?
-  nationality               String?
-  passport                  String?
-  phoneNumber               String?
-  salaryRange               String?
-  workingLevel              WorkingLevel?
   photoUrl                  String?
   hireYear                  Int?
   permanentId               String?                    @unique
@@ -489,7 +449,6 @@ model Teacher {
   user                      User?
 
   @@index([schoolId])
-  @@index([schoolId, position])
   @@index([schoolId, createdAt])
   @@index([email])
   @@index([permanentId])

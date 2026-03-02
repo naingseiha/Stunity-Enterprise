@@ -308,10 +308,11 @@ async function refreshCache(
         prisma.student.findMany({
           where,
           select: {
-            id: true, studentId: true, firstName: true, lastName: true, khmerName: true, englishName: true,
+            id: true, studentId: true, firstName: true, lastName: true,
             email: true, dateOfBirth: true, gender: true, phoneNumber: true, classId: true, isAccountActive: true,
             class: { select: { id: true, name: true, grade: true } },
-            fatherName: true, motherName: true, parentPhone: true, createdAt: true,
+            createdAt: true,
+            customFields: true,
           },
           orderBy: { createdAt: 'desc' },
           skip,
@@ -341,9 +342,10 @@ async function refreshCache(
         prisma.student.findMany({
           where: studentWhere,
           select: {
-            id: true, studentId: true, firstName: true, lastName: true, khmerName: true, englishName: true,
+            id: true, studentId: true, firstName: true, lastName: true,
             email: true, dateOfBirth: true, gender: true, phoneNumber: true, classId: true, isAccountActive: true,
-            fatherName: true, motherName: true, parentPhone: true, createdAt: true,
+            createdAt: true,
+            customFields: true,
           },
           orderBy: { createdAt: 'desc' },
           skip,
@@ -442,8 +444,6 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
             studentId: true,
             firstName: true,
             lastName: true,
-            khmerName: true,
-            englishName: true,
             email: true,
             dateOfBirth: true,
             gender: true,
@@ -453,10 +453,8 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
             class: {
               select: { id: true, name: true, grade: true },
             },
-            fatherName: true,
-            motherName: true,
-            parentPhone: true,
             createdAt: true,
+            customFields: true,
           },
           orderBy: { createdAt: 'desc' },
           skip,
@@ -498,18 +496,14 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
             studentId: true,
             firstName: true,
             lastName: true,
-            khmerName: true,
-            englishName: true,
             email: true,
             dateOfBirth: true,
             gender: true,
             phoneNumber: true,
             classId: true,
             isAccountActive: true,
-            fatherName: true,
-            motherName: true,
-            parentPhone: true,
             createdAt: true,
+            customFields: true,
           },
           orderBy: { createdAt: 'desc' },
           skip,
@@ -569,7 +563,22 @@ app.get('/students', async (req: AuthRequest, res: Response) => {
 
     const students = await prisma.student.findMany({
       where: { schoolId }, // Multi-tenant filter
-      include: {
+      select: {
+        id: true,
+        schoolId: true,
+        studentId: true,
+        firstName: true,
+        lastName: true,
+        dateOfBirth: true,
+        gender: true,
+        email: true,
+        phoneNumber: true,
+        classId: true,
+        photoUrl: true,
+        isAccountActive: true,
+        createdAt: true,
+        updatedAt: true,
+        customFields: true,
         class: {
           select: {
             id: true,
@@ -578,7 +587,7 @@ app.get('/students', async (req: AuthRequest, res: Response) => {
             section: true,
           },
         },
-      },
+      } as any,
       orderBy: {
         createdAt: "desc",
       },
@@ -640,7 +649,7 @@ app.get('/students/promote/eligible/:yearId', async (req: AuthRequest, res: Resp
                 studentId: true,
                 firstName: true,
                 lastName: true,
-                khmerName: true,
+                customFields: true,
                 gender: true,
                 dateOfBirth: true,
                 photoUrl: true,
@@ -666,7 +675,7 @@ app.get('/students/promote/eligible/:yearId', async (req: AuthRequest, res: Resp
         studentId: sc.student.studentId,
         firstName: sc.student.firstName,
         lastName: sc.student.lastName,
-        khmerName: sc.student.khmerName,
+        khmerName: (sc.student.customFields as any)?.regional?.khmerName || null,
         gender: sc.student.gender,
         dateOfBirth: sc.student.dateOfBirth,
         photoUrl: sc.student.photoUrl,
@@ -923,24 +932,25 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
       entryYear: new Date().getFullYear(),
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      khmerName: khmerName.trim(),
-      englishName: englishName?.trim() || null,
       email: studentEmail,
       dateOfBirth,
       gender: gender as Gender,
-      placeOfBirth: placeOfBirth?.trim() || "ភ្នំពេញ",
-      currentAddress: currentAddress?.trim() || "ភ្នំពេញ",
       phoneNumber: phoneNumber?.trim() || null,
-      fatherName: fatherName?.trim() || "ឪពុក",
-      motherName: motherName?.trim() || "ម្តាយ",
-      parentPhone: parentPhone?.trim() || null,
-      parentOccupation: parentOccupation?.trim() || "កសិករ",
-      remarks: remarks?.trim() || null,
+      classId: (classId && classId.trim() !== "") ? classId : null,
+      customFields: {
+        regional: {
+          khmerName: khmerName.trim(),
+          englishName: englishName?.trim() || null,
+          placeOfBirth: placeOfBirth?.trim() || "ភ្នំពេញ",
+          currentAddress: currentAddress?.trim() || "ភ្នំពេញ",
+          fatherName: fatherName?.trim() || "ឪពុក",
+          motherName: motherName?.trim() || "ម្តាយ",
+          parentPhone: parentPhone?.trim() || null,
+          parentOccupation: parentOccupation?.trim() || "កសិករ",
+          remarks: remarks?.trim() || null,
+        }
+      }
     };
-
-    if (classId && classId.trim() !== "") {
-      studentData.classId = classId;
-    }
 
     console.log("💾 Creating student in database...");
 
@@ -1272,41 +1282,49 @@ app.put('/students/:id', async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // Build update data
-    const updateData: any = {};
+    // Build regional fields object
+    const regionalData: any = {};
+    if (khmerName !== undefined) regionalData.khmerName = khmerName?.trim();
+    if (englishName !== undefined) regionalData.englishName = englishName?.trim();
+    if (placeOfBirth !== undefined) regionalData.placeOfBirth = placeOfBirth?.trim();
+    if (currentAddress !== undefined) regionalData.currentAddress = currentAddress?.trim();
+    if (fatherName !== undefined) regionalData.fatherName = fatherName?.trim();
+    if (motherName !== undefined) regionalData.motherName = motherName?.trim();
+    if (parentPhone !== undefined) regionalData.parentPhone = parentPhone?.trim();
+    if (parentOccupation !== undefined) regionalData.parentOccupation = parentOccupation?.trim();
+    if (previousGrade !== undefined) regionalData.previousGrade = previousGrade?.trim();
+    if (previousSchool !== undefined) regionalData.previousSchool = previousSchool?.trim();
+    if (repeatingGrade !== undefined) regionalData.repeatingGrade = repeatingGrade?.trim();
+    if (transferredFrom !== undefined) regionalData.transferredFrom = transferredFrom?.trim();
+    if (grade9ExamSession !== undefined) regionalData.grade9ExamSession = grade9ExamSession?.trim();
+    if (grade9ExamCenter !== undefined) regionalData.grade9ExamCenter = grade9ExamCenter?.trim();
+    if (grade9ExamRoom !== undefined) regionalData.grade9ExamRoom = grade9ExamRoom?.trim();
+    if (grade9ExamDesk !== undefined) regionalData.grade9ExamDesk = grade9ExamDesk?.trim();
+    if (grade9PassStatus !== undefined) regionalData.grade9PassStatus = grade9PassStatus?.trim();
+    if (grade12ExamSession !== undefined) regionalData.grade12ExamSession = grade12ExamSession?.trim();
+    if (grade12ExamCenter !== undefined) regionalData.grade12ExamCenter = grade12ExamCenter?.trim();
+    if (grade12ExamRoom !== undefined) regionalData.grade12ExamRoom = grade12ExamRoom?.trim();
+    if (grade12ExamDesk !== undefined) regionalData.grade12ExamDesk = grade12ExamDesk?.trim();
+    if (grade12PassStatus !== undefined) regionalData.grade12PassStatus = grade12PassStatus?.trim();
+    if (grade12Track !== undefined) regionalData.grade12Track = grade12Track?.trim();
+    if (remarks !== undefined) regionalData.remarks = remarks?.trim();
 
-    if (firstName !== undefined) updateData.firstName = firstName?.trim() || "";
-    if (lastName !== undefined) updateData.lastName = lastName?.trim() || "";
-    if (khmerName !== undefined) updateData.khmerName = khmerName?.trim() || "";
-    if (gender !== undefined) updateData.gender = gender;
+    const updateData: any = {};
+    if (firstName !== undefined) updateData.firstName = firstName.trim();
+    if (lastName !== undefined) updateData.lastName = lastName.trim();
     if (dateOfBirth !== undefined) updateData.dateOfBirth = dateOfBirth;
-    if (englishName !== undefined) updateData.englishName = englishName?.trim() === "" ? null : englishName?.trim();
+    if (gender !== undefined) updateData.gender = gender;
     if (email !== undefined) updateData.email = email?.trim() === "" ? null : email?.trim();
-    if (placeOfBirth !== undefined) updateData.placeOfBirth = placeOfBirth?.trim() === "" ? null : placeOfBirth?.trim();
-    if (currentAddress !== undefined) updateData.currentAddress = currentAddress?.trim() === "" ? null : currentAddress?.trim();
     if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber?.trim() === "" ? null : phoneNumber?.trim();
     if (classId !== undefined) updateData.classId = classId?.trim() === "" ? null : classId?.trim();
-    if (fatherName !== undefined) updateData.fatherName = fatherName?.trim() === "" ? null : fatherName?.trim();
-    if (motherName !== undefined) updateData.motherName = motherName?.trim() === "" ? null : motherName?.trim();
-    if (parentPhone !== undefined) updateData.parentPhone = parentPhone?.trim() === "" ? null : parentPhone?.trim();
-    if (parentOccupation !== undefined) updateData.parentOccupation = parentOccupation?.trim() === "" ? null : parentOccupation?.trim();
-    if (previousGrade !== undefined) updateData.previousGrade = previousGrade?.trim() === "" ? null : previousGrade?.trim();
-    if (previousSchool !== undefined) updateData.previousSchool = previousSchool?.trim() === "" ? null : previousSchool?.trim();
-    if (repeatingGrade !== undefined) updateData.repeatingGrade = repeatingGrade?.trim() === "" ? null : repeatingGrade?.trim();
-    if (transferredFrom !== undefined) updateData.transferredFrom = transferredFrom?.trim() === "" ? null : transferredFrom?.trim();
-    if (grade9ExamSession !== undefined) updateData.grade9ExamSession = grade9ExamSession?.trim() === "" ? null : grade9ExamSession?.trim();
-    if (grade9ExamCenter !== undefined) updateData.grade9ExamCenter = grade9ExamCenter?.trim() === "" ? null : grade9ExamCenter?.trim();
-    if (grade9ExamRoom !== undefined) updateData.grade9ExamRoom = grade9ExamRoom?.trim() === "" ? null : grade9ExamRoom?.trim();
-    if (grade9ExamDesk !== undefined) updateData.grade9ExamDesk = grade9ExamDesk?.trim() === "" ? null : grade9ExamDesk?.trim();
-    if (grade9PassStatus !== undefined) updateData.grade9PassStatus = grade9PassStatus?.trim() === "" ? null : grade9PassStatus?.trim();
-    if (grade12ExamSession !== undefined) updateData.grade12ExamSession = grade12ExamSession?.trim() === "" ? null : grade12ExamSession?.trim();
-    if (grade12ExamCenter !== undefined) updateData.grade12ExamCenter = grade12ExamCenter?.trim() === "" ? null : grade12ExamCenter?.trim();
-    if (grade12ExamRoom !== undefined) updateData.grade12ExamRoom = grade12ExamRoom?.trim() === "" ? null : grade12ExamRoom?.trim();
-    if (grade12ExamDesk !== undefined) updateData.grade12ExamDesk = grade12ExamDesk?.trim() === "" ? null : grade12ExamDesk?.trim();
-    if (grade12PassStatus !== undefined) updateData.grade12PassStatus = grade12PassStatus?.trim() === "" ? null : grade12PassStatus?.trim();
-    if (grade12Track !== undefined) updateData.grade12Track = grade12Track?.trim() === "" ? null : grade12Track?.trim();
-    if (remarks !== undefined) updateData.remarks = remarks?.trim() === "" ? null : remarks?.trim();
     if (photoUrl !== undefined) updateData.photoUrl = photoUrl?.trim() === "" ? null : photoUrl?.trim();
+
+    // Add regional fields to customFields
+    if (Object.keys(regionalData).length > 0) {
+      updateData.customFields = {
+        regional: regionalData
+      };
+    }
 
     console.log(`💾 Updating student ${id} in school ${schoolId}...`);
 
@@ -1493,7 +1511,7 @@ app.post('/students/promote/preview', async (req: AuthRequest, res: Response) =>
                 studentId: true,
                 firstName: true,
                 lastName: true,
-                khmerName: true,
+                customFields: true,
                 gender: true,
                 photoUrl: true,
               },
@@ -1539,7 +1557,7 @@ app.post('/students/promote/preview', async (req: AuthRequest, res: Response) =>
           studentId: sc.student.studentId,
           name: {
             latin: `${sc.student.firstName} ${sc.student.lastName}`,
-            khmer: sc.student.khmerName,
+            khmer: (sc.student.customFields as any)?.regional?.khmerName || null,
           },
           gender: sc.student.gender,
           photo: sc.student.photoUrl,

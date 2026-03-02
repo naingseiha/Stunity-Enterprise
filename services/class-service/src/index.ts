@@ -331,7 +331,7 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
             id: true,
             firstName: true,
             lastName: true,
-            khmerName: true,
+            customFields: true,
           },
         },
       },
@@ -385,12 +385,11 @@ app.get('/classes', async (req: AuthRequest, res: Response) => {
         homeroomTeacher: {
           select: {
             id: true,
-            khmerName: true,
-            englishName: true,
             firstName: true,
             lastName: true,
             email: true,
             role: true,
+            customFields: true,
           },
         },
         academicYear: {
@@ -408,12 +407,12 @@ app.get('/classes', async (req: AuthRequest, res: Response) => {
             student: {
               select: {
                 id: true,
-                khmerName: true,
                 firstName: true,
                 lastName: true,
                 gender: true,
                 studentId: true,
                 photoUrl: true,
+                customFields: true,
               },
             },
           },
@@ -462,9 +461,9 @@ app.get('/classes/grade/:grade', async (req: AuthRequest, res: Response) => {
         homeroomTeacher: {
           select: {
             id: true,
-            khmerName: true,
             firstName: true,
             lastName: true,
+            customFields: true,
           },
         },
         _count: {
@@ -547,7 +546,6 @@ app.get('/classes/unassigned-students/:academicYearId', authMiddleware, async (r
       where.OR = [
         { firstName: { contains: search, mode: 'insensitive' } },
         { lastName: { contains: search, mode: 'insensitive' } },
-        { khmerName: { contains: search, mode: 'insensitive' } },
         { studentId: { contains: search, mode: 'insensitive' } },
       ];
     }
@@ -565,10 +563,10 @@ app.get('/classes/unassigned-students/:academicYearId', authMiddleware, async (r
           studentId: true,
           firstName: true,
           lastName: true,
-          khmerName: true,
           gender: true,
           dateOfBirth: true,
           photoUrl: true,
+          customFields: true,
         },
         orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
         take: limitNum,
@@ -618,13 +616,12 @@ app.get('/classes/:id', async (req: AuthRequest, res: Response) => {
         homeroomTeacher: {
           select: {
             id: true,
-            khmerName: true,
-            englishName: true,
             firstName: true,
             lastName: true,
             email: true,
             phone: true,
             role: true,
+            customFields: true,
           },
         },
         academicYear: {
@@ -643,7 +640,6 @@ app.get('/classes/:id', async (req: AuthRequest, res: Response) => {
               select: {
                 id: true,
                 studentId: true,
-                khmerName: true,
                 firstName: true,
                 lastName: true,
                 gender: true,
@@ -651,6 +647,7 @@ app.get('/classes/:id', async (req: AuthRequest, res: Response) => {
                 phoneNumber: true,
                 photoUrl: true,
                 dateOfBirth: true,
+                customFields: true,
               },
             },
           },
@@ -663,10 +660,10 @@ app.get('/classes/:id', async (req: AuthRequest, res: Response) => {
             teacher: {
               select: {
                 id: true,
-                khmerName: true,
                 firstName: true,
                 lastName: true,
                 email: true,
+                customFields: true,
               },
             },
           },

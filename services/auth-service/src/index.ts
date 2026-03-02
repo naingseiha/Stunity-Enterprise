@@ -916,7 +916,13 @@ app.get('/auth/parent/find-student', async (req: Request, res: Response) => {
       // Find students by parent phone
       students = await prisma.student.findMany({
         where: {
-          parentPhone: phone as string,
+          studentParents: {
+            some: {
+              parent: {
+                phone: phone as string,
+              }
+            }
+          },
           isAccountActive: true,
         },
         select: {
@@ -924,7 +930,7 @@ app.get('/auth/parent/find-student', async (req: Request, res: Response) => {
           studentId: true,
           firstName: true,
           lastName: true,
-          khmerName: true,
+          customFields: true,
           class: {
             select: {
               name: true,
@@ -945,7 +951,7 @@ app.get('/auth/parent/find-student', async (req: Request, res: Response) => {
           studentId: true,
           firstName: true,
           lastName: true,
-          khmerName: true,
+          customFields: true,
           class: {
             select: {
               name: true,
@@ -1060,12 +1066,16 @@ app.post(
           data: {
             firstName,
             lastName,
-            khmerName,
+            customFields: {
+              regional: {
+                khmerName,
+              }
+            },
             email: email || null,
             phone,
             relationship,
             isAccountActive: true,
-          },
+          } as any,
         });
 
         // Create StudentParent link
@@ -1155,7 +1165,7 @@ app.post(
                       id: true,
                       firstName: true,
                       lastName: true,
-                      khmerName: true,
+                      customFields: true,
                       studentId: true,
                       schoolId: true,
                     },
@@ -1225,7 +1235,7 @@ app.post(
         id: sp.student.id,
         firstName: sp.student.firstName,
         lastName: sp.student.lastName,
-        khmerName: sp.student.khmerName,
+        khmerName: (sp.student.customFields as any)?.regional?.khmerName || `${sp.student.firstName} ${sp.student.lastName}`,
         studentId: sp.student.studentId,
         relationship: sp.relationship,
         isPrimary: sp.isPrimary,
@@ -1674,7 +1684,7 @@ app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Respons
                       id: true,
                       firstName: true,
                       lastName: true,
-                      khmerName: true,
+                      customFields: true,
                       studentId: true,
                     },
                   },
@@ -1699,7 +1709,7 @@ app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Respons
           id: sp.student.id,
           firstName: sp.student.firstName,
           lastName: sp.student.lastName,
-          khmerName: sp.student.khmerName,
+          khmerName: (sp.student.customFields as any)?.regional?.khmerName || `${sp.student.firstName} ${sp.student.lastName}`,
           studentId: sp.student.studentId,
           relationship: sp.relationship,
           isPrimary: sp.isPrimary,
@@ -1992,7 +2002,11 @@ app.post('/auth/claim-codes/link', authenticateToken, async (req: AuthRequest, r
             email: currentUser.email,
             phone: currentUser.phone || null,
             gender: 'MALE',
-            position: 'Teacher',
+            customFields: {
+              regional: {
+                position: 'Teacher',
+              }
+            } as any,
           }
         });
         finalTeacherId = newTeacher.id;
@@ -2006,10 +2020,14 @@ app.post('/auth/claim-codes/link', authenticateToken, async (req: AuthRequest, r
             firstName: currentUser.firstName,
             lastName: currentUser.lastName,
             email: currentUser.email,
-            khmerName: `${currentUser.firstName} ${currentUser.lastName}`,
+            customFields: {
+              regional: {
+                khmerName: `${currentUser.firstName} ${currentUser.lastName}`,
+              }
+            },
             dateOfBirth: verificationData?.dateOfBirth || new Date().toISOString(),
             gender: 'MALE',
-          }
+          } as any
         });
         finalStudentId = newStudent.id;
       }
@@ -2196,7 +2214,11 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
             email: email || null,
             phone: phone || null,
             gender: 'MALE',
-            position: 'Teacher',
+            customFields: {
+              regional: {
+                position: 'Teacher',
+              }
+            } as any,
           }
         });
         finalTeacherId = newTeacher.id;
@@ -2208,11 +2230,15 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
             schoolId: claimCode.school.id,
             firstName,
             lastName,
-            khmerName: `${firstName} ${lastName}`,
+            customFields: {
+              regional: {
+                khmerName: `${firstName} ${lastName}`,
+              }
+            },
             dateOfBirth: verificationData?.dateOfBirth || new Date().toISOString(),
             gender: 'MALE',
             email: email || null,
-          }
+          } as any
         });
         finalStudentId = newStudent.id;
       }

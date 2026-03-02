@@ -5,7 +5,12 @@
  * Keeps Prisma, FeedRanker, and multer in one place.
  */
 
+import dotenv from 'dotenv';
 import path from 'path';
+
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config();
+
 import { PrismaClient } from '@prisma/client';
 import multer from 'multer';
 import { FeedRanker } from './feedRanker';

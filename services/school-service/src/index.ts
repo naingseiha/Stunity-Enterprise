@@ -2244,7 +2244,7 @@ app.get('/schools/:schoolId/academic-years/:yearId/promotion/eligible-students',
             studentId: true,
             firstName: true,
             lastName: true,
-            khmerName: true,
+            customFields: true,
             gender: true,
             dateOfBirth: true,
           },
@@ -3064,7 +3064,7 @@ app.get('/schools/:schoolId/students/:studentId/history', async (req: Request, r
           id: student.id,
           studentId: student.studentId,
           name: `${student.firstName} ${student.lastName}`,
-          khmerName: student.khmerName,
+          khmerName: (student.customFields as any)?.regional?.khmerName || null,
           gender: student.gender,
           dateOfBirth: student.dateOfBirth,
           createdAt: student.createdAt,
@@ -3226,7 +3226,7 @@ app.get('/schools/:schoolId/academic-years/:yearId/comprehensive', async (req: R
       where: { schoolId, academicYearId: yearId },
       include: {
         _count: { select: { students: true } },
-        homeroomTeacher: { select: { id: true, firstName: true, lastName: true, khmerName: true } },
+        homeroomTeacher: { select: { id: true, firstName: true, lastName: true, customFields: true } },
       },
       orderBy: [{ grade: 'asc' }, { section: 'asc' }],
     });
@@ -3235,7 +3235,7 @@ app.get('/schools/:schoolId/academic-years/:yearId/comprehensive', async (req: R
     const teacherAssignments = await prisma.teacherClass.findMany({
       where: { class: { academicYearId: yearId, schoolId } },
       include: {
-        teacher: { select: { id: true, firstName: true, lastName: true, khmerName: true, position: true } },
+        teacher: { select: { id: true, firstName: true, lastName: true, customFields: true } },
         class: { select: { id: true, name: true, grade: true } },
       },
     });
@@ -3247,7 +3247,7 @@ app.get('/schools/:schoolId/academic-years/:yearId/comprehensive', async (req: R
     const promotionsOut = await prisma.studentProgression.findMany({
       where: { fromAcademicYearId: yearId },
       include: {
-        student: { select: { id: true, firstName: true, lastName: true, khmerName: true, gender: true } },
+        student: { select: { id: true, firstName: true, lastName: true, customFields: true, gender: true } },
         fromClass: { select: { name: true, grade: true } },
         toClass: { select: { name: true, grade: true } },
         toAcademicYear: { select: { id: true, name: true } },
@@ -3258,7 +3258,7 @@ app.get('/schools/:schoolId/academic-years/:yearId/comprehensive', async (req: R
     const promotionsIn = await prisma.studentProgression.findMany({
       where: { toAcademicYearId: yearId },
       include: {
-        student: { select: { id: true, firstName: true, lastName: true, khmerName: true, gender: true } },
+        student: { select: { id: true, firstName: true, lastName: true, customFields: true, gender: true } },
         fromClass: { select: { name: true, grade: true } },
         toClass: { select: { name: true, grade: true } },
         fromAcademicYear: { select: { id: true, name: true } },
@@ -3355,13 +3355,13 @@ app.get('/schools/:schoolId/academic-years/:yearId/comprehensive', async (req: R
           isAtCapacity: c.capacity ? c._count.students >= c.capacity : false,
           homeroomTeacher: c.homeroomTeacher ? {
             id: c.homeroomTeacher.id,
-            name: c.homeroomTeacher.khmerName || `${c.homeroomTeacher.firstName} ${c.homeroomTeacher.lastName}`,
+            name: (c.homeroomTeacher.customFields as any)?.regional?.khmerName || `${c.homeroomTeacher.firstName} ${c.homeroomTeacher.lastName}`,
           } : null,
         })),
         teachers: uniqueTeachers.map(t => ({
           id: t.id,
-          name: t.khmerName || `${t.firstName} ${t.lastName}`,
-          position: t.position,
+          name: (t.customFields as any)?.regional?.khmerName || `${t.firstName} ${t.lastName}`,
+          position: (t.customFields as any)?.regional?.position || null,
           classCount: teacherAssignments.filter(ta => ta.teacher.id === t.id).length,
         })),
         terms: academicYear.terms,
@@ -3371,7 +3371,7 @@ app.get('/schools/:schoolId/academic-years/:yearId/comprehensive', async (req: R
         promotionHistory: {
           promotedOut: promotionsOut.slice(0, 20).map(p => ({
             studentId: p.student.id,
-            studentName: p.student.khmerName || `${p.student.firstName} ${p.student.lastName}`,
+            studentName: (p.student.customFields as any)?.regional?.khmerName || `${p.student.firstName} ${p.student.lastName}`,
             gender: p.student.gender,
             fromClass: p.fromClass.name,
             toClass: p.toClass.name,
@@ -3381,7 +3381,7 @@ app.get('/schools/:schoolId/academic-years/:yearId/comprehensive', async (req: R
           })),
           promotedIn: promotionsIn.slice(0, 20).map(p => ({
             studentId: p.student.id,
-            studentName: p.student.khmerName || `${p.student.firstName} ${p.student.lastName}`,
+            studentName: (p.student.customFields as any)?.regional?.khmerName || `${p.student.firstName} ${p.student.lastName}`,
             gender: p.student.gender,
             fromClass: p.fromClass.name,
             toClass: p.toClass.name,

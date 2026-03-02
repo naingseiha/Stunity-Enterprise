@@ -24,28 +24,40 @@ async function main() {
             await prisma.teacher.upsert({
                 where: { id: t.id },
                 update: {
+                    firstName: t.firstName || 'Unknown',
+                    lastName: t.lastName || 'Teacher',
+                    gender: (t.gender === 'M' || t.gender === 'MALE' ? 'MALE' : t.gender === 'F' || t.gender === 'FEMALE' ? 'FEMALE' : 'OTHER') as any,
+                    email: t.email || null,
+                    phone: t.phoneNumber || t.phone || null,
                     dateOfBirth: safeDate(t.dateOfBirth),
-                    hireDate: safeDate(t.hireDate) || new Date().toISOString()
+                    hireDate: safeDate(t.hireDate) || new Date().toISOString(),
+                    customFields: {
+                        regional: {
+                            khmerName: t.khmerName || null,
+                            englishName: t.englishName || `${t.firstName || ''} ${t.lastName || ''}`.trim() || null,
+                            position: t.position || 'Teacher',
+                        }
+                    }
                 },
                 create: {
                     id: t.id, // KEEP V1 ID for SubjectTeacher/TeacherClass links
                     schoolId: school.id,
-                    employeeId: t.teacherId || `T-${Math.floor(1000 + Math.random() * 9000)}`,
-                    firstName: t.firstNameLatin || t.firstNameKhmer || 'Unknown',
-                    lastName: t.lastNameLatin || t.lastNameKhmer || 'Teacher',
-                    khmerName: t.firstNameKhmer
-                        ? `${t.lastNameKhmer || ''} ${t.firstNameKhmer}`.trim()
-                        : null,
-                    englishName: t.firstNameLatin
-                        ? `${t.firstNameLatin} ${t.lastNameLatin || ''}`.trim()
-                        : null,
-                    gender: t.gender === 'M' || t.gender === 'MALE' ? 'MALE' : t.gender === 'F' || t.gender === 'FEMALE' ? 'FEMALE' : 'OTHER',
+                    employeeId: t.employeeId || t.teacherId || `T-${Math.floor(1000 + Math.random() * 9000)}`,
+                    firstName: t.firstName || 'Unknown',
+                    lastName: t.lastName || 'Teacher',
+                    gender: (t.gender === 'M' || t.gender === 'MALE' ? 'MALE' : t.gender === 'F' || t.gender === 'FEMALE' ? 'FEMALE' : 'OTHER') as any,
                     email: t.email || null,
                     phone: t.phoneNumber || t.phone || null,
                     dateOfBirth: safeDate(t.dateOfBirth),
                     address: t.address || null,
                     hireDate: safeDate(t.hireDate) || new Date().toISOString(),
-                    position: t.position || 'Teacher',
+                    customFields: {
+                        regional: {
+                            khmerName: t.khmerName || null,
+                            englishName: t.englishName || `${t.firstName || ''} ${t.lastName || ''}`.trim() || null,
+                            position: t.position || 'Teacher',
+                        }
+                    }
                 }
             });
             created++;
