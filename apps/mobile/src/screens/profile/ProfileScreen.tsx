@@ -15,13 +15,13 @@ import {
   TouchableOpacity,
   RefreshControl,
   Dimensions,
-  StatusBar,
   Image,
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { FlashList } from '@shopify/flash-list';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -54,7 +54,7 @@ import { PerformanceTab, ActivityTab, CertificationsSection, SkillsSection, Prof
 import * as ImagePicker from 'expo-image-picker';
 
 const { width } = Dimensions.get('window');
-const COVER_HEIGHT = 200;
+const COVER_HEIGHT = 162;
 
 type RouteProp = ProfileStackScreenProps<'Profile'>['route'];
 type NavigationProp = ProfileStackScreenProps<'Profile'>['navigation'];
@@ -106,6 +106,7 @@ export default function ProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp>();
   const { user: currentUser } = useAuthStore();
+  const insets = useSafeAreaInsets();
 
   const userId = route.params?.userId;
   const isOwnProfile = !userId || userId === currentUser?.id;
@@ -256,67 +257,69 @@ export default function ProfileScreen() {
   // ── Shimmer Loading State — matches actual profile layout ──────
   if (loading || !profile) {
     return (
-      <View style={styles.container}>
-        <StatusBar barStyle="dark-content" />
-        {/* Cover shimmer */}
-        <LinearGradient
-          colors={['#BAE6FD', '#E0F2FE', '#F0F9FF']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ height: COVER_HEIGHT }}
-        />
+      <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: '#fff' }]}>
+        <StatusBar style="dark" />
+        <View style={{ flex: 1, backgroundColor: '#BAE6FD' }}>
+          {/* Cover shimmer */}
+          <LinearGradient
+            colors={['#BAE6FD', '#E0F2FE', '#F0F9FF']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ height: COVER_HEIGHT }}
+          />
 
-        <View style={{ flex: 1, marginTop: -90, alignItems: 'center' }}>
-          <Animated.View entering={FadeIn.duration(400)} style={{ width: '100%', alignItems: 'center' }}>
-            {/* Avatar */}
-            <Skeleton width={100} height={100} borderRadius={50} />
+          <View style={{ flex: 1, marginTop: -90, alignItems: 'center' }}>
+            <Animated.View entering={FadeIn.duration(400)} style={{ width: '100%', alignItems: 'center' }}>
+              {/* Avatar */}
+              <Skeleton width={100} height={100} borderRadius={50} />
 
-            {/* Name + headline + level badge */}
-            <View style={{ alignItems: 'center', marginTop: 12, gap: 8 }}>
-              <Skeleton width={180} height={22} borderRadius={11} />
-              <Skeleton width={80} height={24} borderRadius={12} />
-              <Skeleton width={140} height={14} borderRadius={7} />
-            </View>
-
-            {/* Stats row — 3 cards */}
-            <View style={{ flexDirection: 'row', gap: 10, marginTop: 20, paddingHorizontal: 16, width: '100%' }}>
-              <View style={{ flex: 1, alignItems: 'center' }}>
-                <Skeleton width="100%" height={90} borderRadius={18} />
+              {/* Name + headline + level badge */}
+              <View style={{ alignItems: 'center', marginTop: 12, gap: 8 }}>
+                <Skeleton width={180} height={22} borderRadius={11} />
+                <Skeleton width={80} height={24} borderRadius={12} />
+                <Skeleton width={140} height={14} borderRadius={7} />
               </View>
-              <View style={{ flex: 1, alignItems: 'center' }}>
-                <Skeleton width="100%" height={90} borderRadius={18} />
-              </View>
-              <View style={{ flex: 1, alignItems: 'center' }}>
-                <Skeleton width="100%" height={90} borderRadius={18} />
-              </View>
-            </View>
 
-            {/* Action buttons */}
-            <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-              <Skeleton width={80} height={36} borderRadius={18} />
-              <Skeleton width={36} height={36} borderRadius={18} />
-              <Skeleton width={36} height={36} borderRadius={18} />
-            </View>
-
-            {/* Hero performance card */}
-            <View style={{ width: '100%', paddingHorizontal: 16, marginTop: 20 }}>
-              <Skeleton width="100%" height={120} borderRadius={20} />
-            </View>
-
-            {/* Stat grid 2x3 */}
-            <View style={{ width: '100%', paddingHorizontal: 16, marginTop: 12, gap: 10 }}>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <Skeleton width="48%" height={80} borderRadius={16} />
-                <Skeleton width="48%" height={80} borderRadius={16} />
+              {/* Stats row — 3 cards */}
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 20, paddingHorizontal: 16, width: '100%' }}>
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <Skeleton width="100%" height={90} borderRadius={18} />
+                </View>
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <Skeleton width="100%" height={90} borderRadius={18} />
+                </View>
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <Skeleton width="100%" height={90} borderRadius={18} />
+                </View>
               </View>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <Skeleton width="48%" height={80} borderRadius={16} />
-                <Skeleton width="48%" height={80} borderRadius={16} />
+
+              {/* Action buttons */}
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
+                <Skeleton width={80} height={36} borderRadius={18} />
+                <Skeleton width={36} height={36} borderRadius={18} />
+                <Skeleton width={36} height={36} borderRadius={18} />
               </View>
-            </View>
-          </Animated.View>
+
+              {/* Hero performance card */}
+              <View style={{ width: '100%', paddingHorizontal: 16, marginTop: 20 }}>
+                <Skeleton width="100%" height={120} borderRadius={20} />
+              </View>
+
+              {/* Stat grid 2x3 */}
+              <View style={{ width: '100%', paddingHorizontal: 16, marginTop: 12, gap: 10 }}>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <Skeleton width="48%" height={80} borderRadius={16} />
+                  <Skeleton width="48%" height={80} borderRadius={16} />
+                </View>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <Skeleton width="48%" height={80} borderRadius={16} />
+                  <Skeleton width="48%" height={80} borderRadius={16} />
+                </View>
+              </View>
+            </Animated.View>
+          </View>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -334,447 +337,480 @@ export default function ProfileScreen() {
   ];
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView
+      edges={['top']}
+      style={[
+        styles.container,
+        { backgroundColor: '#fff' }
+      ]}
+    >
+      <StatusBar style="dark" />
+      <View style={{ flex: 1, backgroundColor: '#F1F5F9' }}>
 
-      <FlashList
-        data={[{ key: 'tabContent', type: activeTab }]}
-        keyExtractor={(item) => item.key}
-        showsVerticalScrollIndicator={false}
-        // @ts-ignore ignore type error with flash list sizes
-        estimatedItemSize={1000}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-        ListHeaderComponent={
-          <>
-            {/* Cover Photo Section */}
-            <View style={styles.coverSection}>
-              {(profile as any)?.coverPhotoUrl ? (
-                <Image source={{ uri: (profile as any).coverPhotoUrl }} style={styles.coverGradient} />
-              ) : (
-                <LinearGradient
-                  colors={['#0EA5E9', '#6366F1', '#8B5CF6']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.coverGradient}
-                >
-                  {/* Decorative overlay circles for depth */}
-                  <View style={[styles.coverDecorCircle, { width: 200, height: 200, top: -60, left: -40, opacity: 0.12 }]} />
-                  <View style={[styles.coverDecorCircle, { width: 140, height: 140, top: 20, right: -30, opacity: 0.1 }]} />
-                  <View style={[styles.coverDecorCircle, { width: 80, height: 80, bottom: -20, left: '40%', opacity: 0.15 }]} />
-                  {/* Subtle grid pattern suggestion via thin lines */}
-                  <View style={styles.coverPatternOverlay} />
-                </LinearGradient>
-              )}
+        <FlashList
+          data={[{ key: 'tabContent', type: activeTab }]}
+          keyExtractor={(item) => item.key}
+          showsVerticalScrollIndicator={false}
+          // @ts-ignore ignore type error with flash list sizes
+          estimatedItemSize={1000}
+          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) + 100 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+          ListHeaderComponent={
+            <>
+              {/* Cover Photo Section */}
+              <View style={styles.coverSection}>
+                {(profile as any)?.coverPhotoUrl ? (
+                  <Image source={{ uri: (profile as any).coverPhotoUrl }} style={styles.coverGradient} />
+                ) : (
+                  <LinearGradient
+                    colors={[Colors.primary, '#0284C7']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.coverGradient}
+                  >
+                    {/* Decorative overlay circles for depth */}
+                    <View style={[styles.coverDecorCircle, { width: 160, height: 160, top: -40, left: -30, opacity: 0.1 }]} />
+                    <View style={[styles.coverDecorCircle, { width: 100, height: 100, bottom: -10, right: -20, opacity: 0.08 }]} />
+                    {/* Subtle grid pattern suggestion via thin lines */}
+                    <View style={styles.coverPatternOverlay} />
+                  </LinearGradient>
+                )}
 
-              {/* Header Buttons */}
-              <SafeAreaView edges={['top']} style={styles.headerButtons}>
-                <View style={styles.headerTopRow}>
-                  {/* Back Button — only when viewing someone else's profile */}
-                  {!isOwnProfile && (
-                    <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.goBack()}>
-                      <Ionicons name="chevron-back" size={22} color="#fff" />
-                    </TouchableOpacity>
+                {/* Header Buttons — Restored to absolute overlay */}
+                <View style={[styles.headerButtons, { paddingTop: 12 }]}>
+                  <View style={styles.headerTopRow}>
+                    {/* Back Button — only when viewing someone else's profile */}
+                    {!isOwnProfile && (
+                      <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.goBack()}>
+                        <Ionicons name="chevron-back" size={22} color="#fff" />
+                      </TouchableOpacity>
+                    )}
+
+                    <View style={{ flex: 1 }} />
+
+                    {/* Settings, Messages & Camera — own profile only */}
+                    {isOwnProfile && (
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.navigate('Messages' as any, { screen: 'Conversations' })}>
+                          <Ionicons name="chatbubbles-outline" size={20} color="#fff" />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.navigate('Settings' as any)}>
+                          <Ionicons name="settings-outline" size={20} color="#fff" />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.headerCircleBtn} onPress={handlePickCoverPhoto}>
+                          <Ionicons name="camera-outline" size={20} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+
+                    {/* More options — other user's profile */}
+                    {!isOwnProfile && (
+                      <TouchableOpacity style={styles.headerCircleBtn}>
+                        <Ionicons name="ellipsis-horizontal" size={20} color="#fff" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+
+              </View>
+
+              {/* Profile Content */}
+              <View style={styles.contentContainer}>
+                {/* Avatar Section — Reverted to overlapping */}
+                <Animated.View entering={FadeInDown.delay(100).duration(500).springify()} style={styles.avatarSection}>
+                  <View style={styles.avatarWrapper}>
+                    <Avatar
+                      uri={profile.profilePictureUrl}
+                      name={fullName}
+                      size="2xl"
+                      showBorder
+                      gradientBorder="none"
+                      borderColor="#fff"
+                    />
+
+                    {/* Edit Avatar Button */}
+                    {isOwnProfile && (
+                      <TouchableOpacity style={styles.editAvatarButton} onPress={handlePickProfilePhoto}>
+                        <View style={styles.editAvatarCircle}>
+                          <Ionicons name="camera-outline" size={16} color="#0EA5E9" />
+                        </View>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </Animated.View>
+
+                {/* Name & Bio Section */}
+                <Animated.View entering={FadeInDown.delay(200).duration(500).springify()} style={styles.nameSection}>
+                  <View style={styles.nameRow}>
+                    <Text style={styles.name}>{fullName}</Text>
+                    {profile.isVerified && (
+                      <Ionicons name="checkmark-circle" size={20} color="#3B82F6" />
+                    )}
+                  </View>
+
+                  {/* Role Badge — shows the actual role for all user types */}
+                  {profile.role && (
+                    <Animated.View entering={FadeInDown.delay(220).duration(400)} style={styles.roleBadgeWrap}>
+                      <LinearGradient
+                        colors={
+                          profile.role === 'TEACHER' ? ['#6366F1', '#8B5CF6'] :
+                            profile.role === 'ADMIN' ? ['#DC2626', '#B91C1C'] :
+                              profile.role === 'SCHOOL_ADMIN' ? ['#D97706', '#B45309'] :
+                                profile.role === 'SUPER_ADMIN' ? ['#DC2626', '#991B1B'] : // SUPER_ADMIN theme
+                                  profile.role === 'PARENT' ? ['#059669', '#047857'] :
+                                    profile.role === 'STAFF' ? ['#7C3AED', '#6D28D9'] :
+                                      ['#0EA5E9', '#0284C7'] // STUDENT default
+                        }
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.roleBadgeGradient}
+                      >
+                        <Ionicons
+                          name={
+                            profile.role === 'TEACHER' ? 'school' :
+                              profile.role === 'ADMIN' || profile.role === 'SUPER_ADMIN' || profile.role === 'SCHOOL_ADMIN' ? 'shield-checkmark' :
+                                profile.role === 'PARENT' ? 'people' :
+                                  profile.role === 'STAFF' ? 'briefcase' :
+                                    'person'
+                          }
+                          size={12}
+                          color="#fff"
+                        />
+                        <Text style={styles.roleBadgeText}>
+                          {profile.role === 'TEACHER' ? 'Teacher' :
+                            profile.role === 'ADMIN' ? 'Admin' :
+                              profile.role === 'SUPER_ADMIN' ? 'Stunity Admin' :
+                                profile.role === 'SCHOOL_ADMIN' ? 'School Admin' :
+                                  profile.role === 'PARENT' ? 'Parent' :
+                                    profile.role === 'STAFF' ? 'Staff' :
+                                      'Student'}
+                        </Text>
+                      </LinearGradient>
+                    </Animated.View>
                   )}
 
-                  <View style={{ flex: 1 }} />
+                  {profile.headline ? (
+                    <Text style={styles.headline}>{profile.headline || profile.professionalTitle}</Text>
+                  ) : null}
 
-                  {/* Settings, Messages & Camera — own profile only */}
-                  {isOwnProfile && (
-                    <>
-                      {currentUser?.role === 'TEACHER' && (
+                  {/* Open to Opportunities Banner */}
+                  {(profile as any).isOpenToOpportunities && (
+                    <Animated.View entering={FadeInDown.delay(250).duration(400)} style={styles.openToWorkBanner}>
+                      <LinearGradient
+                        colors={['#10B981', '#059669']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.openToWorkGradient}
+                      >
+                        <Ionicons name="briefcase" size={12} color="#fff" />
+                        <Text style={styles.openToWorkText}>Open to Opportunities</Text>
+                      </LinearGradient>
+                    </Animated.View>
+                  )}
+
+                  {profile.bio ? (
+                    <Text style={styles.bio}>{profile.bio}</Text>
+                  ) : null}
+
+                  {/* Social Links & Meta */}
+                  <View style={styles.socialRow}>
+                    {profile.location && (
+                      <View style={styles.socialBadge}>
+                        <Ionicons name="location-outline" size={14} color="#6B7280" />
+                        <Text style={styles.socialBadgeText}>{profile.location}</Text>
+                      </View>
+                    )}
+                    {(profile as any).linkedinUrl && (
+                      <TouchableOpacity style={styles.socialBadge} onPress={() => { const { Linking } = require('react-native'); Linking.openURL((profile as any).linkedinUrl); }}>
+                        <Ionicons name="logo-linkedin" size={14} color="#0077B5" />
+                        <Text style={[styles.socialBadgeText, { color: '#0077B5' }]}>LinkedIn</Text>
+                      </TouchableOpacity>
+                    )}
+                    {(profile as any).githubUrl && (
+                      <TouchableOpacity style={styles.socialBadge} onPress={() => { const { Linking } = require('react-native'); Linking.openURL((profile as any).githubUrl); }}>
+                        <Ionicons name="logo-github" size={14} color="#1a1a1a" />
+                        <Text style={styles.socialBadgeText}>GitHub</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </Animated.View>
+
+                {/* Instagram-style Header Stats */}
+                <Animated.View entering={FadeInDown.delay(250).duration(400).springify()} style={styles.textStatsRow}>
+                  <TouchableOpacity style={styles.textStat} activeOpacity={0.6}>
+                    <Text style={styles.textStatValue}>{formatNumber(stats.posts)}</Text>
+                    <Text style={styles.textStatLabel}>Posts</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.textStat} activeOpacity={0.6}>
+                    <Text style={styles.textStatValue}>{formatNumber(stats.followers)}</Text>
+                    <Text style={styles.textStatLabel}>Followers</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.textStat} activeOpacity={0.6}>
+                    <Text style={styles.textStatValue}>{formatNumber(stats.following)}</Text>
+                    <Text style={styles.textStatLabel}>Following</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+
+                {/* Action Buttons */}
+                <Animated.View entering={FadeInDown.delay(300).duration(400).springify()} style={styles.capsuleRow}>
+                  {isOwnProfile ? (
+                    <View style={{ flex: 1, gap: 10 }}>
+                      {/* Main Edit Profile Action */}
+                      <TouchableOpacity
+                        style={styles.capsuleBtnFilled}
+                        onPress={handleEditProfile}
+                        activeOpacity={0.8}
+                      >
+                        <LinearGradient
+                          colors={['#0EA5E9', '#0284C7']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={StyleSheet.absoluteFill}
+                        />
+                        <Ionicons name="create-outline" size={16} color="#fff" style={{ marginRight: 4 }} />
+                        <Text style={styles.capsuleBtnFilledText}>Edit Profile</Text>
+                      </TouchableOpacity>
+
+                      {/* Secondary Actions Row */}
+                      <View style={styles.secondaryActionRow}>
+                        {currentUser?.role === 'TEACHER' && (
+                          <TouchableOpacity
+                            style={[styles.secondaryActionBtn, { backgroundColor: '#F0F9FF', borderColor: '#BAE6FD', borderWidth: 1 }]}
+                            onPress={() => navigation.navigate('AttendanceCheckIn' as any)}
+                            activeOpacity={0.7}
+                          >
+                            <View style={styles.secondaryActionContent}>
+                              <Ionicons name="finger-print-outline" size={18} color="#0284C7" style={{ marginRight: 6 }} />
+                              <Text style={[styles.secondaryActionText, { color: '#0284C7' }]}>Attendance</Text>
+                            </View>
+                          </TouchableOpacity>
+                        )}
                         <TouchableOpacity
-                          style={[styles.headerCircleBtn, { marginRight: 8, backgroundColor: 'rgba(255,255,255,0.2)' }]}
-                          onPress={() => navigation.navigate('AttendanceCheckIn' as any)}
+                          style={[styles.secondaryActionBtn, { backgroundColor: '#FFFBEB', borderColor: '#FEF08A', borderWidth: 1 }]}
+                          onPress={() => navigation.navigate('QuizStudio' as any)}
+                          activeOpacity={0.7}
                         >
-                          <Ionicons name="finger-print" size={20} color="#fff" />
+                          <View style={styles.secondaryActionContent}>
+                            <Ionicons name="cube-outline" size={18} color="#D97706" style={{ marginRight: 6 }} />
+                            <Text style={[styles.secondaryActionText, { color: '#D97706' }]}>Quiz Studio</Text>
+                          </View>
                         </TouchableOpacity>
-                      )}
-                      <TouchableOpacity style={[styles.headerCircleBtn, { marginRight: 8 }]} onPress={() => navigation.navigate('QuizStudio' as any)}>
-                        <Ionicons name="cube-outline" size={20} color="#fff" />
+                      </View>
+                    </View>
+                  ) : (
+                    // Other user's profile: Follow + Message
+                    <>
+                      <TouchableOpacity
+                        style={isFollowing ? styles.capsuleBtn : styles.capsuleBtnFilled}
+                        onPress={handleFollow}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={isFollowing ? styles.capsuleBtnText : styles.capsuleBtnFilledText}>
+                          {isFollowing ? 'Following' : 'Follow'}
+                        </Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.navigate('Messages' as any, { screen: 'Conversations' })}>
-                        <Ionicons name="chatbubbles-outline" size={20} color="#fff" />
-                      </TouchableOpacity>
-                      <TouchableOpacity style={[styles.headerCircleBtn, { marginLeft: 8 }]} onPress={() => navigation.navigate('Settings' as any)}>
-                        <Ionicons name="settings-outline" size={20} color="#fff" />
-                      </TouchableOpacity>
-                      <TouchableOpacity style={[styles.headerCircleBtn, { marginLeft: 8 }]} onPress={handlePickCoverPhoto}>
-                        <Ionicons name="camera-outline" size={20} color="#fff" />
+                      <TouchableOpacity style={styles.capsuleBtn} activeOpacity={0.8}>
+                        <Text style={styles.capsuleBtnText}>Message</Text>
                       </TouchableOpacity>
                     </>
                   )}
+                </Animated.View>
 
-                  {/* More options — other user's profile */}
-                  {!isOwnProfile && (
-                    <TouchableOpacity style={styles.headerCircleBtn}>
-                      <Ionicons name="ellipsis-horizontal" size={20} color="#fff" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </SafeAreaView>
-            </View>
-
-            {/* Profile Content */}
-            <View style={styles.contentContainer}>
-              {/* Avatar Section */}
-              <Animated.View entering={FadeInDown.delay(100).duration(500).springify()} style={styles.avatarSection}>
-                <View style={styles.avatarWrapper}>
-                  <Avatar
-                    uri={profile.profilePictureUrl}
-                    name={fullName}
-                    size="2xl"
-                    gradientBorder="orange"
-                    showBorder
-                  />
-
-                  {/* Edit Avatar Button */}
-                  {isOwnProfile && (
-                    <TouchableOpacity style={styles.editAvatarButton} onPress={handlePickProfilePhoto}>
-                      <View style={styles.editAvatarCircle}>
-                        <Ionicons name="camera-outline" size={16} color="#0EA5E9" />
-                      </View>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </Animated.View>
-
-              {/* Name & Bio Section */}
-              <Animated.View entering={FadeInDown.delay(200).duration(500).springify()} style={styles.nameSection}>
-                <View style={styles.nameRow}>
-                  <Text style={styles.name}>{fullName}</Text>
-                  {profile.isVerified && (
-                    <Ionicons name="checkmark-circle" size={20} color="#3B82F6" />
-                  )}
-                </View>
-
-                {/* Role Badge — shows the actual role for all user types */}
-                {profile.role && (
-                  <Animated.View entering={FadeInDown.delay(220).duration(400)} style={styles.roleBadgeWrap}>
-                    <LinearGradient
-                      colors={
-                        profile.role === 'TEACHER' ? ['#6366F1', '#8B5CF6'] :
-                          profile.role === 'ADMIN' ? ['#DC2626', '#B91C1C'] :
-                            profile.role === 'SCHOOL_ADMIN' ? ['#D97706', '#B45309'] :
-                              profile.role === 'SUPER_ADMIN' ? ['#DC2626', '#991B1B'] : // SUPER_ADMIN theme
-                                profile.role === 'PARENT' ? ['#059669', '#047857'] :
-                                  profile.role === 'STAFF' ? ['#7C3AED', '#6D28D9'] :
-                                    ['#0EA5E9', '#0284C7'] // STUDENT default
-                      }
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.roleBadgeGradient}
-                    >
-                      <Ionicons
-                        name={
-                          profile.role === 'TEACHER' ? 'school' :
-                            profile.role === 'ADMIN' || profile.role === 'SUPER_ADMIN' || profile.role === 'SCHOOL_ADMIN' ? 'shield-checkmark' :
-                              profile.role === 'PARENT' ? 'people' :
-                                profile.role === 'STAFF' ? 'briefcase' :
-                                  'person'
-                        }
-                        size={12}
-                        color="#fff"
-                      />
-                      <Text style={styles.roleBadgeText}>
-                        {profile.role === 'TEACHER' ? 'Teacher' :
-                          profile.role === 'ADMIN' ? 'Admin' :
-                            profile.role === 'SUPER_ADMIN' ? 'Stunity Admin' :
-                              profile.role === 'SCHOOL_ADMIN' ? 'School Admin' :
-                                profile.role === 'PARENT' ? 'Parent' :
-                                  profile.role === 'STAFF' ? 'Staff' :
-                                    'Student'}
-                      </Text>
-                    </LinearGradient>
-                  </Animated.View>
-                )}
-
-                {profile.headline ? (
-                  <Text style={styles.headline}>{profile.headline || profile.professionalTitle}</Text>
-                ) : null}
-
-                {/* Open to Opportunities Banner */}
-                {(profile as any).isOpenToOpportunities && (
-                  <Animated.View entering={FadeInDown.delay(250).duration(400)} style={styles.openToWorkBanner}>
-                    <LinearGradient
-                      colors={['#10B981', '#059669']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.openToWorkGradient}
-                    >
-                      <Ionicons name="briefcase" size={12} color="#fff" />
-                      <Text style={styles.openToWorkText}>Open to Opportunities</Text>
-                    </LinearGradient>
-                  </Animated.View>
-                )}
-
-                {profile.bio ? (
-                  <Text style={styles.bio}>{profile.bio}</Text>
-                ) : null}
-
-                {/* Social Links & Meta */}
-                <View style={styles.socialRow}>
-                  {profile.location && (
-                    <View style={styles.socialBadge}>
-                      <Ionicons name="location-outline" size={14} color="#6B7280" />
-                      <Text style={styles.socialBadgeText}>{profile.location}</Text>
-                    </View>
-                  )}
-                  {(profile as any).linkedinUrl && (
-                    <TouchableOpacity style={styles.socialBadge} onPress={() => { const { Linking } = require('react-native'); Linking.openURL((profile as any).linkedinUrl); }}>
-                      <Ionicons name="logo-linkedin" size={14} color="#0077B5" />
-                      <Text style={[styles.socialBadgeText, { color: '#0077B5' }]}>LinkedIn</Text>
-                    </TouchableOpacity>
-                  )}
-                  {(profile as any).githubUrl && (
-                    <TouchableOpacity style={styles.socialBadge} onPress={() => { const { Linking } = require('react-native'); Linking.openURL((profile as any).githubUrl); }}>
-                      <Ionicons name="logo-github" size={14} color="#1a1a1a" />
-                      <Text style={styles.socialBadgeText}>GitHub</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </Animated.View>
-
-              {/* Instagram-style Header Stats */}
-              <Animated.View entering={FadeInDown.delay(250).duration(400).springify()} style={styles.textStatsRow}>
-                <TouchableOpacity style={styles.textStat} activeOpacity={0.6}>
-                  <Text style={styles.textStatValue}>{formatNumber(stats.posts)}</Text>
-                  <Text style={styles.textStatLabel}>Posts</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.textStat} activeOpacity={0.6}>
-                  <Text style={styles.textStatValue}>{formatNumber(stats.followers)}</Text>
-                  <Text style={styles.textStatLabel}>Followers</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.textStat} activeOpacity={0.6}>
-                  <Text style={styles.textStatValue}>{formatNumber(stats.following)}</Text>
-                  <Text style={styles.textStatLabel}>Following</Text>
-                </TouchableOpacity>
-              </Animated.View>
-
-              {/* Action Buttons */}
-              <Animated.View entering={FadeInDown.delay(300).duration(400).springify()} style={styles.capsuleRow}>
-                {isOwnProfile ? (
-                  // Own profile: prominent Edit Profile button
-                  <TouchableOpacity
-                    style={styles.capsuleBtnFilled}
-                    onPress={handleEditProfile}
-                    activeOpacity={0.8}
+                {/* Tabs */}
+                <View style={styles.tabsSection}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.tabsScroll}
                   >
-                    <Ionicons name="create-outline" size={16} color="#fff" style={{ marginRight: 4 }} />
-                    <Text style={styles.capsuleBtnFilledText}>Edit Profile</Text>
-                  </TouchableOpacity>
-                ) : (
-                  // Other user's profile: Follow + Message
-                  <>
-                    <TouchableOpacity
-                      style={isFollowing ? styles.capsuleBtn : styles.capsuleBtnFilled}
-                      onPress={handleFollow}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={isFollowing ? styles.capsuleBtnText : styles.capsuleBtnFilledText}>
-                        {isFollowing ? 'Following' : 'Follow'}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.capsuleBtn} activeOpacity={0.8}>
-                      <Text style={styles.capsuleBtnText}>Message</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </Animated.View>
-
-              {/* Tabs */}
-              <View style={styles.tabsSection}>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.tabsScroll}
-                >
-                  {tabs.map((tab) => {
-                    const isActive = activeTab === tab.id;
-                    return (
-                      <TouchableOpacity
-                        key={tab.id}
-                        style={[styles.tab, isActive && styles.tabActive]}
-                        onPress={() => setActiveTab(tab.id as any)}
-                        activeOpacity={0.7}
-                      >
-                        {isActive ? (
-                          <View style={styles.tabActiveContent}>
-                            <Ionicons name={tab.icon as any} size={18} color="#0EA5E9" />
-                            <Text style={styles.tabTextActive}>{tab.label}</Text>
-                            <View style={styles.tabActiveLine} />
-                          </View>
-                        ) : (
-                          <>
-                            <Ionicons name={tab.icon as any} size={18} color="#9CA3AF" />
-                            <Text style={styles.tabText}>{tab.label}</Text>
-                          </>
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
+                    {tabs.map((tab) => {
+                      const isActive = activeTab === tab.id;
+                      return (
+                        <TouchableOpacity
+                          key={tab.id}
+                          style={[styles.tab, isActive && styles.tabActive]}
+                          onPress={() => setActiveTab(tab.id as any)}
+                          activeOpacity={0.7}
+                        >
+                          {isActive ? (
+                            <View style={styles.tabActiveContent}>
+                              <Ionicons name={tab.icon as any} size={18} color="#0EA5E9" />
+                              <Text style={styles.tabTextActive}>{tab.label}</Text>
+                              <View style={styles.tabActiveLine} />
+                            </View>
+                          ) : (
+                            <>
+                              <Ionicons name={tab.icon as any} size={18} color="#9CA3AF" />
+                              <Text style={styles.tabText}>{tab.label}</Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
               </View>
-            </View>
-          </>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.tabContent}>
-            {activeTab === 'performance' && (
-              <PerformanceTab
-                quizStats={quizStats}
-                profileStats={profileStats}
-                streak={streak}
-                achievements={userAchievements}
-                totalAchievements={allAchievements.length || 12}
-                level={quizStats?.level ?? profile.level ?? 1}
-                totalPoints={quizStats?.totalPoints ?? profile.totalPoints ?? 0}
-                profile={profile}
-                onViewAchievements={() => navigation.navigate('Achievements' as any)}
-                onViewLeaderboard={() => navigation.navigate('Leaderboard' as any)}
-                onViewStats={() => navigation.navigate('Stats' as any)}
-              />
-            )}
-            {activeTab === 'about' && (
-              <View style={styles.aboutSection}>
-                {/* Link School via Claim Code - Only for own profile when no school is assigned */}
-                {isOwnProfile && !profile.school && (
-                  <LinkSchoolCard />
-                )}
+            </>
+          }
+          renderItem={({ item }: { item: any }) => (
+            <View style={styles.tabContent}>
+              {activeTab === 'performance' && (
+                <PerformanceTab
+                  quizStats={quizStats}
+                  profileStats={profileStats}
+                  streak={streak}
+                  achievements={userAchievements}
+                  totalAchievements={allAchievements.length || 12}
+                  level={quizStats?.level ?? profile.level ?? 1}
+                  totalPoints={quizStats?.totalPoints ?? profile.totalPoints ?? 0}
+                  profile={profile}
+                  onViewAchievements={() => navigation.navigate('Achievements' as any)}
+                  onViewLeaderboard={() => navigation.navigate('Leaderboard' as any)}
+                  onViewStats={() => navigation.navigate('Stats' as any)}
+                />
+              )}
+              {activeTab === 'about' && (
+                <View style={styles.aboutSection}>
+                  {/* Link School via Claim Code - Only for own profile when no school is assigned */}
+                  {isOwnProfile && !profile.school && (
+                    <LinkSchoolCard />
+                  )}
 
-                {/* Profile Completeness — own profile only */}
-                {isOwnProfile && (
-                  <ProfileCompletenessCard
-                    profile={profile}
+                  {/* Profile Completeness — own profile only */}
+                  {isOwnProfile && (
+                    <ProfileCompletenessCard
+                      profile={profile}
+                      onEdit={handleEditProfile}
+                    />
+                  )}
+
+                  {/* Career Goals */}
+                  <CareerGoalsCard
+                    careerGoals={(profile as any).careerGoals}
+                    isOwnProfile={isOwnProfile}
                     onEdit={handleEditProfile}
                   />
-                )}
 
-                {/* Career Goals */}
-                <CareerGoalsCard
-                  careerGoals={(profile as any).careerGoals}
-                  isOwnProfile={isOwnProfile}
-                  onEdit={handleEditProfile}
+                  {/* Bio */}
+                  {profile.bio ? (
+                    <View style={styles.aboutCard}>
+                      <View style={styles.aboutCardHeader}>
+                        <Ionicons name="person-circle-outline" size={20} color="#0EA5E9" />
+                        <Text style={styles.aboutCardTitle}>Bio</Text>
+                      </View>
+                      <Text style={styles.aboutCardText}>{profile.bio}</Text>
+                    </View>
+                  ) : null}
+
+                  {/* Headline & Location */}
+                  {(profile.headline || profile.location || profile.school) && (
+                    <View style={styles.aboutCard}>
+                      <View style={styles.aboutCardHeader}>
+                        <Ionicons name="information-circle-outline" size={20} color="#0EA5E9" />
+                        <Text style={styles.aboutCardTitle}>Info</Text>
+                      </View>
+                      {profile.headline ? (
+                        <View style={styles.aboutInfoRow}>
+                          <Ionicons name="briefcase-outline" size={16} color="#6B7280" />
+                          <Text style={styles.aboutInfoText}>{profile.headline}</Text>
+                        </View>
+                      ) : null}
+                      {profile.location ? (
+                        <View style={styles.aboutInfoRow}>
+                          <Ionicons name="location-outline" size={16} color="#6B7280" />
+                          <Text style={styles.aboutInfoText}>{profile.location}</Text>
+                        </View>
+                      ) : null}
+                      {profile.school ? (
+                        <View style={styles.aboutInfoRow}>
+                          <Ionicons name="school-outline" size={16} color="#6B7280" />
+                          <Text style={styles.aboutInfoText}>{profile.school.name}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  )}
+
+                  {/* Education */}
+                  {education.length > 0 && (
+                    <View style={styles.aboutCard}>
+                      <View style={styles.aboutCardHeader}>
+                        <Ionicons name="school-outline" size={20} color="#8B5CF6" />
+                        <Text style={styles.aboutCardTitle}>Education</Text>
+                      </View>
+                      {education.map((edu) => (
+                        <View key={edu.id} style={styles.timelineItem}>
+                          <View style={[styles.timelineDot, { backgroundColor: '#8B5CF6' }]} />
+                          <View style={styles.timelineContent}>
+                            <Text style={styles.timelineTitle}>{edu.degree ? `${edu.degree} in ${edu.fieldOfStudy || ''}` : edu.school}</Text>
+                            <Text style={styles.timelineSubtitle}>{edu.school}</Text>
+                            <Text style={styles.timelineDate}>
+                              {new Date(edu.startDate).getFullYear()} – {edu.isCurrent ? 'Present' : edu.endDate ? new Date(edu.endDate).getFullYear() : ''}
+                            </Text>
+                            {edu.description ? <Text style={styles.timelineDesc}>{edu.description}</Text> : null}
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Experience */}
+                  {experiences.length > 0 && (
+                    <View style={styles.aboutCard}>
+                      <View style={styles.aboutCardHeader}>
+                        <Ionicons name="briefcase-outline" size={20} color="#10B981" />
+                        <Text style={styles.aboutCardTitle}>Experience</Text>
+                      </View>
+                      {experiences.map((exp) => (
+                        <View key={exp.id} style={styles.timelineItem}>
+                          <View style={[styles.timelineDot, { backgroundColor: '#10B981' }]} />
+                          <View style={styles.timelineContent}>
+                            <Text style={styles.timelineTitle}>{exp.title}</Text>
+                            <Text style={styles.timelineSubtitle}>{exp.organization}{exp.location ? ` · ${exp.location}` : ''}</Text>
+                            <Text style={styles.timelineDate}>
+                              {new Date(exp.startDate).getFullYear()} – {exp.isCurrent ? 'Present' : exp.endDate ? new Date(exp.endDate).getFullYear() : ''}
+                            </Text>
+                            {exp.description ? <Text style={styles.timelineDesc}>{exp.description}</Text> : null}
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Project Showcase */}
+                  <ProjectShowcase stats={profileStats} isOwnProfile={isOwnProfile} />
+
+                  {/* Certifications */}
+                  <CertificationsSection certifications={certifications} />
+
+                  {/* Skills & Interests */}
+                  <SkillsSection skills={profile.skills || []} interests={profile.interests || []} />
+
+                  {/* Empty state — only if absolutely nothing */}
+                  {!profile.bio && education.length === 0 && experiences.length === 0 && certifications.length === 0 && (!profile.skills || profile.skills.length === 0) && profile.interests.length === 0 && (profileStats?.projects ?? 0) === 0 && !(profile as any).careerGoals && (
+                    <View style={styles.contentPlaceholder}>
+                      <Ionicons name="person-outline" size={48} color="#E5E7EB" />
+                      <Text style={styles.placeholderText}>No about information yet</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+              {activeTab === 'activity' && (
+                <ActivityTab
+                  stats={profileStats}
+                  posts={stats.posts}
+                  followers={stats.followers}
+                  recentAttempts={quizStats?.recentAttempts ?? []}
+                  achievements={userAchievements}
+                  streak={streak}
                 />
-
-                {/* Bio */}
-                {profile.bio ? (
-                  <View style={styles.aboutCard}>
-                    <View style={styles.aboutCardHeader}>
-                      <Ionicons name="person-circle-outline" size={20} color="#0EA5E9" />
-                      <Text style={styles.aboutCardTitle}>Bio</Text>
-                    </View>
-                    <Text style={styles.aboutCardText}>{profile.bio}</Text>
-                  </View>
-                ) : null}
-
-                {/* Headline & Location */}
-                {(profile.headline || profile.location || profile.school) && (
-                  <View style={styles.aboutCard}>
-                    <View style={styles.aboutCardHeader}>
-                      <Ionicons name="information-circle-outline" size={20} color="#0EA5E9" />
-                      <Text style={styles.aboutCardTitle}>Info</Text>
-                    </View>
-                    {profile.headline ? (
-                      <View style={styles.aboutInfoRow}>
-                        <Ionicons name="briefcase-outline" size={16} color="#6B7280" />
-                        <Text style={styles.aboutInfoText}>{profile.headline}</Text>
-                      </View>
-                    ) : null}
-                    {profile.location ? (
-                      <View style={styles.aboutInfoRow}>
-                        <Ionicons name="location-outline" size={16} color="#6B7280" />
-                        <Text style={styles.aboutInfoText}>{profile.location}</Text>
-                      </View>
-                    ) : null}
-                    {profile.school ? (
-                      <View style={styles.aboutInfoRow}>
-                        <Ionicons name="school-outline" size={16} color="#6B7280" />
-                        <Text style={styles.aboutInfoText}>{profile.school.name}</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                )}
-
-                {/* Education */}
-                {education.length > 0 && (
-                  <View style={styles.aboutCard}>
-                    <View style={styles.aboutCardHeader}>
-                      <Ionicons name="school-outline" size={20} color="#8B5CF6" />
-                      <Text style={styles.aboutCardTitle}>Education</Text>
-                    </View>
-                    {education.map((edu) => (
-                      <View key={edu.id} style={styles.timelineItem}>
-                        <View style={[styles.timelineDot, { backgroundColor: '#8B5CF6' }]} />
-                        <View style={styles.timelineContent}>
-                          <Text style={styles.timelineTitle}>{edu.degree ? `${edu.degree} in ${edu.fieldOfStudy || ''}` : edu.school}</Text>
-                          <Text style={styles.timelineSubtitle}>{edu.school}</Text>
-                          <Text style={styles.timelineDate}>
-                            {new Date(edu.startDate).getFullYear()} – {edu.isCurrent ? 'Present' : edu.endDate ? new Date(edu.endDate).getFullYear() : ''}
-                          </Text>
-                          {edu.description ? <Text style={styles.timelineDesc}>{edu.description}</Text> : null}
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                )}
-
-                {/* Experience */}
-                {experiences.length > 0 && (
-                  <View style={styles.aboutCard}>
-                    <View style={styles.aboutCardHeader}>
-                      <Ionicons name="briefcase-outline" size={20} color="#10B981" />
-                      <Text style={styles.aboutCardTitle}>Experience</Text>
-                    </View>
-                    {experiences.map((exp) => (
-                      <View key={exp.id} style={styles.timelineItem}>
-                        <View style={[styles.timelineDot, { backgroundColor: '#10B981' }]} />
-                        <View style={styles.timelineContent}>
-                          <Text style={styles.timelineTitle}>{exp.title}</Text>
-                          <Text style={styles.timelineSubtitle}>{exp.organization}{exp.location ? ` · ${exp.location}` : ''}</Text>
-                          <Text style={styles.timelineDate}>
-                            {new Date(exp.startDate).getFullYear()} – {exp.isCurrent ? 'Present' : exp.endDate ? new Date(exp.endDate).getFullYear() : ''}
-                          </Text>
-                          {exp.description ? <Text style={styles.timelineDesc}>{exp.description}</Text> : null}
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                )}
-
-                {/* Project Showcase */}
-                <ProjectShowcase stats={profileStats} isOwnProfile={isOwnProfile} />
-
-                {/* Certifications */}
-                <CertificationsSection certifications={certifications} />
-
-                {/* Skills & Interests */}
-                <SkillsSection skills={profile.skills || []} interests={profile.interests || []} />
-
-                {/* Empty state — only if absolutely nothing */}
-                {!profile.bio && education.length === 0 && experiences.length === 0 && certifications.length === 0 && (!profile.skills || profile.skills.length === 0) && profile.interests.length === 0 && (profileStats?.projects ?? 0) === 0 && !(profile as any).careerGoals && (
-                  <View style={styles.contentPlaceholder}>
-                    <Ionicons name="person-outline" size={48} color="#E5E7EB" />
-                    <Text style={styles.placeholderText}>No about information yet</Text>
-                  </View>
-                )}
-              </View>
-            )}
-            {activeTab === 'activity' && (
-              <ActivityTab
-                stats={profileStats}
-                posts={stats.posts}
-                followers={stats.followers}
-                recentAttempts={quizStats?.recentAttempts ?? []}
-                achievements={userAchievements}
-                streak={streak}
-              />
-            )}
-          </View>
-        )}
-      />
-    </View>
+              )}
+            </View>
+          )}
+        />
+      </View>
+    </SafeAreaView >
   );
 }
 
@@ -898,7 +934,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    marginTop: -90,
+    marginTop: -70,
   },
   avatarSection: {
     alignItems: 'center',
@@ -906,6 +942,9 @@ const styles = StyleSheet.create({
   },
   avatarWrapper: {
     position: 'relative',
+    ...Shadows.xl,
+    backgroundColor: '#fff',
+    borderRadius: 60,
   },
   editAvatarButton: {
     position: 'absolute',
@@ -926,13 +965,13 @@ const styles = StyleSheet.create({
   nameSection: {
     alignItems: 'center',
     paddingHorizontal: 24,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   name: {
     fontSize: 22,
@@ -970,8 +1009,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   roleBadgeWrap: {
-    marginTop: 6,
-    marginBottom: 2,
+    marginTop: 4,
+    marginBottom: 8,
     borderRadius: 20,
     overflow: 'hidden',
     alignSelf: 'center',
@@ -994,7 +1033,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
-    marginTop: 4,
+    marginTop: 8,
     marginBottom: 8,
   },
   socialBadge: {
@@ -1041,7 +1080,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginHorizontal: 16,
     gap: 10,
-    marginBottom: 28,
+    marginBottom: 16,
   },
   capsuleBtn: {
     flex: 1,
@@ -1065,13 +1104,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingVertical: 14,
     borderRadius: 50,
-    backgroundColor: '#0EA5E9',
-    ...Shadows.sm,
+    overflow: 'hidden',
+    ...Shadows.md,
   },
   capsuleBtnFilledText: {
     fontSize: 15,
     fontWeight: '700',
     color: '#fff',
+  },
+  secondaryActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  secondaryActionBtn: {
+    flex: 1,
+    borderRadius: 50,
+  },
+  secondaryActionContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+  },
+  secondaryActionText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0284C7',
   },
   // ── Legacy (kept for followPill if needed elsewhere) ──
   editPill: {
@@ -1341,7 +1400,6 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     paddingHorizontal: 16,
-    paddingBottom: 100,
   },
   contentPlaceholder: {
     backgroundColor: '#fff',
