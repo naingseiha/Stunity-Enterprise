@@ -44,7 +44,7 @@ router.get('/users/suggested', authenticateToken, async (req: AuthRequest, res: 
     let users: any[] = await prisma.user.findMany({
       where: {
         id: { notIn: excludeIds },
-        role: { in: ['TEACHER', 'ADMIN', 'STAFF'] as any[] },
+        role: { in: ['TEACHER', 'ADMIN', 'SUPER_ADMIN', 'STAFF'] as any[] },
       },
       select: selectFields,
       orderBy: { createdAt: 'desc' },
@@ -329,7 +329,7 @@ router.put('/users/:id/academic-profile', authenticateToken, async (req: AuthReq
 
     // Usually restricted to admin or internal system overrides
     const currentUser = await prisma.user.findUnique({ where: { id: currentUserId } });
-    if (!currentUser || currentUser.role !== 'ADMIN') {
+    if (!currentUser || (currentUser.role !== 'ADMIN' && currentUser.role !== 'SUPER_ADMIN')) {
       return res.status(403).json({ success: false, error: 'Forbidden: Admins only' });
     }
 

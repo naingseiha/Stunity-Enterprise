@@ -656,7 +656,7 @@ const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) 
       email: decoded.email || '',
       role: decoded.role,
       schoolId: decoded.schoolId ?? null,
-      isSuperAdmin: !!decoded.isSuperAdmin,
+      isSuperAdmin: decoded.role === 'SUPER_ADMIN', // derived from role
     };
     next();
   } catch (error) {
@@ -665,7 +665,7 @@ const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) 
 };
 
 const requireSuperAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (!req.user?.isSuperAdmin) {
+  if (req.user?.role !== 'SUPER_ADMIN') {
     return res.status(403).json({ success: false, message: 'Super admin access required' });
   }
   next();
@@ -696,7 +696,7 @@ app.use(authenticateToken);
 const requireSchoolAccess = (req: AuthRequest, res: Response, next: NextFunction) => {
   const schoolIdParam = (req.params as any).schoolId ?? (req.params as any).id;
   if (!schoolIdParam) return next();
-  if (req.user?.isSuperAdmin) return next();
+  if (req.user?.role === 'SUPER_ADMIN') return next();
   if (req.user?.schoolId !== schoolIdParam) {
     return res.status(403).json({
       success: false,
@@ -943,7 +943,7 @@ app.get('/super-admin/users', requireSuperAdmin, async (req: Request, res: Respo
     const limitNum = Math.min(100, Math.max(1, parseInt(String(limit))));
     const skip = (pageNum - 1) * limitNum;
 
-    const where: any = { schoolId: { not: null }, isSuperAdmin: false };
+    const where: any = { role: { not: 'SUPER_ADMIN' } };
     if (schoolId) where.schoolId = schoolId;
     if (role) where.role = role;
     if (search) {
@@ -1005,7 +1005,7 @@ app.get('/super-admin/users/:userId', requireSuperAdmin, async (req: Request, re
       },
     });
     if (!user) return res.status(404).json({ success: false, error: 'User not found' });
-    if (user.isSuperAdmin) return res.status(403).json({ success: false, error: 'Cannot view super admin' });
+    if (user.role === 'SUPER_ADMIN') return res.status(403).json({ success: false, error: 'Cannot view super admin' });
     res.json({ success: true, data: user });
   } catch (error: any) {
     console.error('Super admin user detail error:', error);
@@ -1020,7 +1020,7 @@ app.patch('/super-admin/users/:userId', requireSuperAdmin, async (req: Request, 
     const { isActive } = req.body;
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return res.status(404).json({ success: false, error: 'User not found' });
-    if (user.isSuperAdmin) return res.status(403).json({ success: false, error: 'Cannot modify super admin' });
+    if (user.role === 'SUPER_ADMIN') return res.status(403).json({ success: false, error: 'Cannot modify super admin' });
     const updated = await prisma.user.update({
       where: { id: userId },
       data: typeof isActive === 'boolean' ? { isActive } : {},

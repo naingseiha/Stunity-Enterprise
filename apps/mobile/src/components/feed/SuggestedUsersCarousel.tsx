@@ -20,7 +20,7 @@ export const SuggestedUsersCarousel: React.FC<Props> = ({ users }) => {
         const name = item.name || `${item.firstName || ''} ${item.lastName || ''}`.trim();
         const subtitle = item.headline || (
             item.role === 'TEACHER' ? 'Teacher' :
-                item.role === 'ADMIN' || item.role === 'SCHOOL_ADMIN' ? 'Admin' :
+                (item.role === 'ADMIN' || item.role === 'SUPER_ADMIN' || item.role === 'SCHOOL_ADMIN') ? 'Admin' :
                     'Student'
         );
         return (

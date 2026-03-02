@@ -273,8 +273,8 @@ app.post(
       const requester = req.user!;
 
       // 1. Authorization: User must be an ADMIN or SUPER_ADMIN
-      // (Super Admins have isSuperAdmin: true, School Admins have role: 'ADMIN')
-      const isSuper = (requester as any).isSuperAdmin === true;
+      // SUPER_ADMIN = platform admin (full access), ADMIN = school admin (school-scoped)
+      const isSuper = requester.role === 'SUPER_ADMIN';
       const isAdmin = requester.role === 'ADMIN' || isSuper;
 
       if (!isAdmin) {
@@ -465,7 +465,7 @@ app.post(
       }
 
       // Super admins bypass school/subscription checks
-      const isSuperAdmin = !!(user as any).isSuperAdmin;
+      const isSuperAdmin = user.role === 'SUPER_ADMIN';
       if (!isSuperAdmin) {
         // Check if school is active
         if (user.school && !user.school.isActive) {
@@ -516,7 +516,7 @@ app.post(
           email: user.email,
           role: user.role,
           schoolId: user.schoolId,
-          isSuperAdmin: !!(user as any).isSuperAdmin,
+          isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role for backward compat
           school: user.school ? {
             id: user.school.id,
             name: user.school.name,
@@ -557,7 +557,7 @@ app.post(
             role: user.role,
             profilePictureUrl: user.profilePictureUrl,
             schoolId: user.schoolId,
-            isSuperAdmin: !!(user as any).isSuperAdmin,
+            isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role
           },
           school: user.school,
           tokens: {
@@ -852,7 +852,7 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
         email: user.email,
         role: user.role,
         schoolId: user.schoolId,
-        isSuperAdmin: !!(user as any).isSuperAdmin,
+        isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role for backward compat
         school: user.school ? {
           id: user.school.id,
           name: user.school.name,
@@ -1730,7 +1730,7 @@ app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Respons
           headline: user.headline,
           interests: user.interests,
           schoolId: user.schoolId,
-          isSuperAdmin: !!user.isSuperAdmin,
+          isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role
           ...(children && { children }),
         },
         school: user.school,

@@ -75,7 +75,7 @@ async function main() {
         data: {
           isSuperAdmin: true,
           password: hashedPassword,
-          role: 'ADMIN',
+          role: 'SUPER_ADMIN',
           isActive: true,
         },
       });
@@ -92,7 +92,7 @@ async function main() {
           lastName,
           email,
           password: hashedPassword,
-          role: 'ADMIN',
+          role: 'SUPER_ADMIN',
           isSuperAdmin: true,
           isActive: true,
           isDefaultPassword: false,
@@ -131,7 +131,7 @@ async function main() {
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { isSuperAdmin: true },
+      data: { isSuperAdmin: true, role: 'SUPER_ADMIN' },
     });
 
     console.log('');

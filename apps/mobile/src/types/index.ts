@@ -62,6 +62,7 @@ export type UserRole =
   | 'TEACHER'
   | 'PARENT'
   | 'ADMIN'
+  | 'SUPER_ADMIN'
   | 'SCHOOL_ADMIN'
   | 'STAFF';
 

@@ -80,7 +80,7 @@ router.get('/posts/:id/analytics', authenticateToken, async (req: AuthRequest, r
     if (!post) {
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
-    if (post.authorId !== req.user!.id && req.user!.role !== 'ADMIN') {
+    if (post.authorId !== req.user!.id && req.user!.role !== 'ADMIN' && req.user!.role !== 'SUPER_ADMIN') {
       return res.status(403).json({ success: false, error: 'Not authorized' });
     }
 

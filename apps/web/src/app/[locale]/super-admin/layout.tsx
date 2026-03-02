@@ -42,7 +42,7 @@ export default function SuperAdminLayout({
     }
 
     const userData = TokenManager.getUserData();
-    if (!userData.user?.isSuperAdmin) {
+    if (!userData.user?.isSuperAdmin && userData.user?.role !== 'SUPER_ADMIN') {
       router.replace(`/${locale}/feed`);
       return;
     }
@@ -58,14 +58,16 @@ export default function SuperAdminLayout({
 
   const navItems = [
     { section: 'Overview', items: [{ href: `/${locale}/super-admin`, label: 'Dashboard', icon: LayoutDashboard }] },
-    { section: 'Platform', items: [
-      { href: `/${locale}/super-admin/schools`, label: 'Schools', icon: School },
-      { href: `/${locale}/super-admin/users`, label: 'Users', icon: Users },
-      { href: `/${locale}/super-admin/content`, label: 'Content Moderation', icon: MessageSquare },
-      { href: `/${locale}/super-admin/analytics`, label: 'Analytics', icon: TrendingUp },
-      { href: `/${locale}/super-admin/audit-logs`, label: 'Audit Logs', icon: FileText },
-      { href: `/${locale}/super-admin/health`, label: 'Platform Health', icon: Activity },
-    ]},
+    {
+      section: 'Platform', items: [
+        { href: `/${locale}/super-admin/schools`, label: 'Schools', icon: School },
+        { href: `/${locale}/super-admin/users`, label: 'Users', icon: Users },
+        { href: `/${locale}/super-admin/content`, label: 'Content Moderation', icon: MessageSquare },
+        { href: `/${locale}/super-admin/analytics`, label: 'Analytics', icon: TrendingUp },
+        { href: `/${locale}/super-admin/audit-logs`, label: 'Audit Logs', icon: FileText },
+        { href: `/${locale}/super-admin/health`, label: 'Platform Health', icon: Activity },
+      ]
+    },
     { section: 'Settings', items: [{ href: `/${locale}/super-admin/settings`, label: 'Platform Settings', icon: Settings }] },
   ];
 
@@ -92,9 +94,8 @@ export default function SuperAdminLayout({
 
       {/* Sidebar - matches main app w-64, full viewport height */}
       <aside
-        className={`fixed top-0 left-0 bottom-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform lg:translate-x-0 lg:static lg:min-h-screen flex flex-col shadow-sm ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed top-0 left-0 bottom-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform lg:translate-x-0 lg:static lg:min-h-screen flex flex-col shadow-sm ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         {/* Logo / Brand */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 flex-shrink-0">
@@ -120,13 +121,12 @@ export default function SuperAdminLayout({
                   const navItem = item as { href: string; label: string; icon: React.ElementType; disabled?: boolean };
                   const isActive = pathname === navItem.href || (navItem.href !== `/${locale}/super-admin` && pathname.startsWith(navItem.href));
                   const content = (
-                    <span className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                      navItem.disabled
+                    <span className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${navItem.disabled
                         ? 'opacity-50 cursor-not-allowed text-gray-400'
                         : isActive
-                        ? 'bg-stunity-primary-50 text-stunity-primary-700'
-                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                    }`}>
+                          ? 'bg-stunity-primary-50 text-stunity-primary-700'
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      }`}>
                       <navItem.icon className="w-5 h-5 flex-shrink-0" />
                       <span>{navItem.label}</span>
                       {!navItem.disabled && <ChevronRight className={`w-4 h-4 ml-auto ${isActive ? 'text-stunity-primary-500' : 'text-gray-400'}`} />}

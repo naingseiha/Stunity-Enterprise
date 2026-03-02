@@ -353,7 +353,7 @@ export class FeedRanker {
         const primaryWhere: any = {
             ...baseWhere,
             OR: [
-                { role: { in: ['TEACHER', 'ADMIN', 'STAFF'] } },
+                { role: { in: ['TEACHER', 'ADMIN', 'SUPER_ADMIN', 'STAFF'] } },
                 ...(userTopics.length > 0 ? [{ interests: { hasSome: userTopics } }] : []),
             ],
         };

@@ -558,7 +558,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
       certificateUrl: string | null;
     } | null = null;
     let lessonProgress: Record<string, boolean> = {};
-    
+
     if (userId) {
       enrollment = await prisma.enrollment.findUnique({
         where: {
@@ -767,7 +767,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
-    if (course.instructorId !== userId && req.user?.role !== 'ADMIN') {
+    if (course.instructorId !== userId && req.user?.role !== 'ADMIN' && req.user?.role !== 'SUPER_ADMIN') {
       return res.status(403).json({ message: 'Not authorized to edit this course' });
     }
 
@@ -799,7 +799,7 @@ router.post('/:id/publish', async (req: AuthRequest, res: Response) => {
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
-    if (course.instructorId !== userId && req.user?.role !== 'ADMIN') {
+    if (course.instructorId !== userId && req.user?.role !== 'ADMIN' && req.user?.role !== 'SUPER_ADMIN') {
       return res.status(403).json({ message: 'Not authorized' });
     }
     if (course._count.lessons === 0) {

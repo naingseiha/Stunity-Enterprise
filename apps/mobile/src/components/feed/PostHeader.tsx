@@ -54,7 +54,7 @@ const PostHeader = ({
     const role = author.role;
     if (role === 'TEACHER') {
       return { icon: 'school', color: '#3B82F6', label: 'Teacher' };
-    } else if (role === 'ADMIN' || role === 'SCHOOL_ADMIN') {
+    } else if (role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SCHOOL_ADMIN') {
       return { icon: 'shield-checkmark', color: '#8B5CF6', label: 'Admin' };
     }
     return null;

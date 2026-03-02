@@ -149,7 +149,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
   const [postTypeFilter, setPostTypeFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [showContent, setShowContent] = useState(false);
-  
+
   // Feed state
   const [posts, setPosts] = useState<Post[]>([]);
   const [myPosts, setMyPosts] = useState<Post[]>([]);
@@ -162,11 +162,11 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
   const [loadingComments, setLoadingComments] = useState<Set<string>>(new Set());
   const [newComment, setNewComment] = useState<Record<string, string>>({});
   const [submittingComment, setSubmittingComment] = useState<Set<string>>(new Set());
-  
+
   // Analytics state
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [selectedPostForAnalytics, setSelectedPostForAnalytics] = useState<string | null>(null);
-  
+
   // Real-time state
   const [newPostsAvailable, setNewPostsAvailable] = useState(0);
   const pendingPostsRef = useRef<Post[]>([]);
@@ -174,7 +174,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
   // SSE Real-time event handler
   const handleSSEEvent = useCallback((event: SSEEvent) => {
     console.log('📡 SSE Event:', event.type, event.data);
-    
+
     switch (event.type) {
       case 'NEW_POST':
         // Fetch the new post and add to pending
@@ -182,7 +182,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
           setNewPostsAvailable(prev => prev + 1);
         }
         break;
-        
+
       case 'NEW_LIKE':
         // Update like count for the post
         if (event.data.postId) {
@@ -194,7 +194,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
           }));
         }
         break;
-        
+
       case 'NEW_COMMENT':
         // Update comment count and refresh comments if expanded
         if (event.data.postId) {
@@ -210,14 +210,14 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
           }
         }
         break;
-        
+
       case 'POST_UPDATED':
         // Refresh the updated post
         if (event.data.postId) {
           fetchSinglePost(event.data.postId);
         }
         break;
-        
+
       case 'POST_DELETED':
         // Remove the deleted post
         if (event.data.postId) {
@@ -238,14 +238,14 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
   const fetchSinglePost = async (postId: string) => {
     const token = TokenManager.getAccessToken();
     if (!token) return null;
-    
+
     try {
       const res = await fetch(`${FEED_API}/posts/${postId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
       if (data.success && data.data) {
-        setPosts(prev => prev.map(post => 
+        setPosts(prev => prev.map(post =>
           post.id === postId ? data.data : post
         ));
         return data.data;
@@ -270,9 +270,9 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
       if (!token) return;
       await fetch(`${FEED_API}/posts/${postId}/view`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}` 
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({ source: 'feed' }),
       });
@@ -284,7 +284,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
   const fetchPosts = useCallback(async () => {
     const token = TokenManager.getAccessToken();
     if (!token) return;
-    
+
     setLoadingPosts(true);
     try {
       const res = await fetch(`${FEED_API}/posts?limit=50`, {
@@ -308,7 +308,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
   const fetchMyPosts = useCallback(async () => {
     const token = TokenManager.getAccessToken();
     if (!token) return;
-    
+
     try {
       const res = await fetch(`${FEED_API}/my-posts?limit=50`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -325,7 +325,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
   const fetchBookmarks = useCallback(async () => {
     const token = TokenManager.getAccessToken();
     if (!token) return;
-    
+
     try {
       const res = await fetch(`${FEED_API}/bookmarks?limit=50`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -364,7 +364,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
           TokenManager.setUserData(freshUser, res.data.school || userData.school);
         }
       })
-      .catch(() => {}); // silently ignore refresh failures
+      .catch(() => { }); // silently ignore refresh failures
   }, [locale, router]);
 
   useEffect(() => {
@@ -430,7 +430,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
       const data = await res.json();
       if (data.success) {
         // Update local state
-        setPosts(prev => prev.map(p => 
+        setPosts(prev => prev.map(p =>
           p.id === postId ? { ...p, isBookmarked: data.bookmarked } : p
         ));
         if (data.bookmarked) {
@@ -499,10 +499,10 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
       const data = await res.json();
       if (data.success) {
         // Update local state
-        setPosts(prev => prev.map(p => 
+        setPosts(prev => prev.map(p =>
           p.id === postId ? { ...p, content } : p
         ));
-        setMyPosts(prev => prev.map(p => 
+        setMyPosts(prev => prev.map(p =>
           p.id === postId ? { ...p, content } : p
         ));
       }
@@ -680,7 +680,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
-    
+
     if (minutes < 1) return 'Just now';
     if (minutes < 60) return `${minutes}m ago`;
     if (hours < 24) return `${hours}h ago`;
@@ -703,8 +703,8 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
   if (loading || !user || !showContent) {
     return (
       <>
-        <FeedZoomLoader 
-          isLoading={loading || !user} 
+        <FeedZoomLoader
+          isLoading={loading || !user}
           onAnimationComplete={() => setShowContent(true)}
           minimumDuration={600}
         />
@@ -737,7 +737,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
       {/* LinkedIn-style 3-column layout - cleaner proportions */}
       <div className="max-w-6xl mx-auto px-4 py-5">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          
+
           {/* Left Sidebar - Compact Profile & Navigation */}
           <aside className="hidden lg:block lg:col-span-3">
             <div className="sticky top-20 space-y-3">
@@ -752,7 +752,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                     <Award className="absolute bottom-2 left-1/3 w-4 h-4 text-white" />
                   </div>
                 </div>
-                
+
                 {/* Avatar - Centered, overlapping cover */}
                 <div className="flex justify-center -mt-8 relative z-10">
                   {user.profilePictureUrl ? (
@@ -763,26 +763,27 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                     </div>
                   )}
                 </div>
-                
+
                 {/* User Info - Centered */}
                 <div className="text-center px-4 pt-2 pb-3">
                   <Link href={`/${locale}/profile/me`} className="hover:underline">
                     <h3 className="font-bold text-gray-900 text-sm">{user.firstName} {user.lastName}</h3>
                   </Link>
                   <div className="flex items-center justify-center gap-1.5 mt-1">
-                    {user.role === 'ADMIN' && <Settings className="w-3 h-3 text-[#F9A825]" />}
+                    {(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') && <Settings className="w-3 h-3 text-[#F9A825]" />}
                     {user.role === 'TEACHER' && <GraduationCap className="w-3 h-3 text-[#F9A825]" />}
                     {user.role === 'STUDENT' && <BookOpen className="w-3 h-3 text-[#F9A825]" />}
                     {user.role === 'STAFF' && <Users className="w-3 h-3 text-[#F9A825]" />}
                     <span className="text-xs text-[#F9A825] font-medium">
-                      {user.role === 'ADMIN' ? 'Administrator' : 
-                       user.role === 'TEACHER' ? 'Educator' : 
-                       user.role === 'STUDENT' ? 'Learner' : 
-                       user.role === 'STAFF' ? 'Staff Member' : 
-                       user.role?.toLowerCase().replace('_', ' ')}
+                      {user.role === 'ADMIN' ? 'Administrator' :
+                        user.role === 'SUPER_ADMIN' ? 'Platform Admin' :
+                          user.role === 'TEACHER' ? 'Teacher' :
+                            user.role === 'STUDENT' ? 'Learner' :
+                              user.role === 'STAFF' ? 'Staff Member' :
+                                user.role?.toLowerCase().replace('_', ' ')}
                     </span>
                   </div>
-                  <Link 
+                  <Link
                     href={`/${locale}/profile/me`}
                     className="inline-flex items-center gap-1 mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
                   >
@@ -795,7 +796,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                 <div className="border-t border-gray-100 px-3 py-3">
                   <div className="grid grid-cols-2 gap-2">
                     {/* Engagement Score */}
-                    <button 
+                    <button
                       onClick={() => setActiveTab('insights')}
                       className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-2.5 text-center group hover:from-amber-100 hover:to-orange-100 transition-all"
                     >
@@ -805,9 +806,9 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                       </div>
                       <p className="text-[10px] text-gray-500 mt-0.5">Engagement</p>
                     </button>
-                    
+
                     {/* Impact Score - Role-based */}
-                    <button 
+                    <button
                       onClick={() => setActiveTab('activity')}
                       className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-2.5 text-center group hover:from-blue-100 hover:to-indigo-100 transition-all"
                     >
@@ -815,17 +816,17 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                         <Target className="w-3.5 h-3.5 text-blue-500" />
                         <span className="text-sm font-bold text-gray-900">
                           {user.role === 'TEACHER' ? Math.floor(posts.reduce((sum, p) => sum + (p.commentsCount || 0), 0) * 1.5) :
-                           user.role === 'ADMIN' ? Math.floor((myPosts.length || 0) * 2.5) :
-                           posts.reduce((sum, p) => sum + (p.commentsCount || 0), 0)}
+                            (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') ? Math.floor((myPosts.length || 0) * 2.5) :
+                              posts.reduce((sum, p) => sum + (p.commentsCount || 0), 0)}
                         </span>
                       </div>
                       <p className="text-[10px] text-gray-500 mt-0.5">
-                        {user.role === 'TEACHER' ? 'Impact' : user.role === 'ADMIN' ? 'Reach' : 'Learning'}
+                        {user.role === 'TEACHER' ? 'Impact' : (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') ? 'Reach' : 'Learning'}
                       </p>
                     </button>
-                    
+
                     {/* Contributions */}
-                    <button 
+                    <button
                       onClick={() => setActiveTab('posts')}
                       className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg p-2.5 text-center group hover:from-emerald-100 hover:to-teal-100 transition-all"
                     >
@@ -834,27 +835,27 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                         <span className="text-sm font-bold text-gray-900">{myPosts.length || 0}</span>
                       </div>
                       <p className="text-[10px] text-gray-500 mt-0.5">
-                        {user.role === 'TEACHER' ? 'Lessons' : user.role === 'ADMIN' ? 'Updates' : 'Shares'}
+                        {user.role === 'TEACHER' ? 'Lessons' : (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') ? 'Updates' : 'Shares'}
                       </p>
                     </button>
-                    
+
                     {/* Achievement/Level */}
-                    <button 
+                    <button
                       onClick={() => setActiveTab('insights')}
                       className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-2.5 text-center group hover:from-purple-100 hover:to-pink-100 transition-all"
                     >
                       <div className="flex items-center justify-center gap-1">
                         <Trophy className="w-3.5 h-3.5 text-purple-500" />
                         <span className="text-sm font-bold text-gray-900">
-                          {user.role === 'TEACHER' ? 'Expert' : 
-                           user.role === 'ADMIN' ? 'Leader' : 
-                           user.role === 'STUDENT' ? 'Rising' : 'Active'}
+                          {user.role === 'TEACHER' ? 'Expert' :
+                            (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') ? 'Leader' :
+                              user.role === 'STUDENT' ? 'Rising' : 'Active'}
                         </span>
                       </div>
                       <p className="text-[10px] text-gray-500 mt-0.5">
-                        {user.role === 'TEACHER' ? 'Educator' : 
-                         user.role === 'ADMIN' ? 'Role' : 
-                         user.role === 'STUDENT' ? 'Star' : 'Status'}
+                        {user.role === 'TEACHER' ? 'Educator' :
+                          (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') ? 'Role' :
+                            user.role === 'STUDENT' ? 'Star' : 'Status'}
                       </p>
                     </button>
                   </div>
@@ -887,11 +888,10 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                       <button
                         key={item.id}
                         onClick={() => setActiveTab(item.id)}
-                        className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
-                          activeTab === item.id
+                        className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${activeTab === item.id
                             ? 'bg-amber-50 text-[#F9A825] font-medium'
                             : 'text-gray-600 hover:bg-gray-50'
-                        }`}
+                          }`}
                       >
                         <Icon className="w-4 h-4" />
                         <span>{item.label}</span>
@@ -913,11 +913,10 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-full font-medium text-xs transition-all whitespace-nowrap ${
-                      activeTab === tab.id
+                    className={`flex items-center gap-2 px-3 py-2 rounded-full font-medium text-xs transition-all whitespace-nowrap ${activeTab === tab.id
                         ? 'bg-[#F9A825] text-white'
                         : 'bg-white text-gray-600 border border-gray-200'
-                    }`}
+                      }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
                     <span>{tab.label}</span>
@@ -939,7 +938,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                     {getInitials(user.firstName, user.lastName)}
                   </div>
                 )}
-                <button 
+                <button
                   onClick={() => setShowCreateModal(true)}
                   className="flex-1 text-left px-4 py-2.5 bg-white rounded-full text-gray-500 hover:bg-gray-100 transition-colors text-sm border border-gray-300"
                 >
@@ -947,28 +946,28 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                 </button>
               </div>
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-                <button 
+                <button
                   onClick={() => setShowCreateModal(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
                 >
                   <ImageIcon className="w-5 h-5 text-blue-500" />
                   <span className="text-xs font-medium hidden sm:inline">Photo</span>
                 </button>
-                <button 
+                <button
                   onClick={() => setShowCreateModal(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
                 >
                   <BarChart3 className="w-5 h-5 text-amber-500" />
                   <span className="text-xs font-medium hidden sm:inline">Poll</span>
                 </button>
-                <button 
+                <button
                   onClick={() => setShowCreateModal(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
                 >
                   <Megaphone className="w-5 h-5 text-rose-500" />
                   <span className="text-xs font-medium hidden sm:inline">Announce</span>
                 </button>
-                <button 
+                <button
                   onClick={() => setShowCreateModal(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
                 >
@@ -986,18 +985,17 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                   <div className="relative">
                     <button
                       onClick={() => setShowFilters(!showFilters)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs border transition-colors ${
-                        postTypeFilter !== 'all' 
-                          ? 'bg-amber-50 border-[#F9A825] text-[#F9A825]' 
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs border transition-colors ${postTypeFilter !== 'all'
+                          ? 'bg-amber-50 border-[#F9A825] text-[#F9A825]'
                           : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-                      }`}
+                        }`}
                     >
                       <Filter className="w-3.5 h-3.5" />
                       <span className="font-medium">
                         {POST_TYPE_FILTERS.find(f => f.id === postTypeFilter)?.label}
                       </span>
                     </button>
-                    
+
                     {showFilters && (
                       <div className="absolute left-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
                         {POST_TYPE_FILTERS.map((filter) => {
@@ -1009,9 +1007,8 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                                 setPostTypeFilter(filter.id);
                                 setShowFilters(false);
                               }}
-                              className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-amber-50 transition-colors ${
-                                postTypeFilter === filter.id ? 'bg-gradient-to-r from-amber-50 to-[#F9A825]/10 border-l-2 border-[#F9A825]' : ''
-                              }`}
+                              className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-amber-50 transition-colors ${postTypeFilter === filter.id ? 'bg-gradient-to-r from-amber-50 to-[#F9A825]/10 border-l-2 border-[#F9A825]' : ''
+                                }`}
                             >
                               <Icon className={`w-4 h-4 ${postTypeFilter === filter.id ? 'text-[#F9A825]' : 'text-gray-500'}`} />
                               <span className={`text-sm ${postTypeFilter === filter.id ? 'text-[#F9A825] font-medium' : 'text-gray-700'}`}>{filter.label}</span>
@@ -1021,7 +1018,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                       </div>
                     )}
                   </div>
-                  
+
                   <button
                     onClick={fetchPosts}
                     disabled={loadingPosts}
@@ -1030,13 +1027,12 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                     <RefreshCw className={`w-4 h-4 ${loadingPosts ? 'animate-spin' : ''}`} />
                     Refresh
                   </button>
-                  
+
                   {/* Real-time connection indicator */}
-                  <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs ${
-                    isConnected 
-                      ? 'bg-green-50 text-green-600' 
+                  <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs ${isConnected
+                      ? 'bg-green-50 text-green-600'
                       : 'bg-gray-100 text-gray-500'
-                  }`}>
+                    }`}>
                     {isConnected ? (
                       <>
                         <Wifi className="w-3 h-3" />
@@ -1092,7 +1088,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                 {posts
                   .filter(post => postTypeFilter === 'all' || post.postType === postTypeFilter)
                   .map((post, index) => (
-                    <div 
+                    <div
                       key={post.id}
                       className="animate-fadeInUp"
                       style={{ animationDelay: `${index * 50}ms` }}
@@ -1149,7 +1145,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                           // Directly submit the comment with the content passed from PostCard
                           const token = TokenManager.getAccessToken();
                           if (!token || !content.trim()) return;
-                          
+
                           try {
                             const res = await fetch(`${FEED_API}/posts/${postId}/comments`, {
                               method: 'POST',
@@ -1165,7 +1161,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                                 ...prev,
                                 [postId]: [data.data, ...(prev[postId] || [])]
                               }));
-                              setPosts(prev => prev.map(p => 
+                              setPosts(prev => prev.map(p =>
                                 p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p
                               ));
                             }
@@ -1190,7 +1186,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                       />
                     </div>
                   ))}
-                  
+
                 {/* Empty Filter State */}
                 {!loadingPosts && posts.length > 0 && posts.filter(post => postTypeFilter === 'all' || post.postType === postTypeFilter).length === 0 && (
                   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
@@ -1230,7 +1226,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                   </div>
                 ) : (
                   myPosts.map((post, index) => (
-                    <div 
+                    <div
                       key={post.id}
                       className="animate-fadeInUp"
                       style={{ animationDelay: `${index * 50}ms` }}
@@ -1301,7 +1297,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                                 ...prev,
                                 [postId]: [data.data, ...(prev[postId] || [])]
                               }));
-                              setMyPosts(prev => prev.map(p => 
+                              setMyPosts(prev => prev.map(p =>
                                 p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p
                               ));
                             }
@@ -1353,7 +1349,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                   </div>
                 ) : (
                   bookmarkedPosts.map((post, index) => (
-                    <div 
+                    <div
                       key={post.id}
                       className="animate-fadeInUp"
                       style={{ animationDelay: `${index * 50}ms` }}
@@ -1424,7 +1420,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                                 ...prev,
                                 [postId]: [data.data, ...(prev[postId] || [])]
                               }));
-                              setBookmarkedPosts(prev => prev.map(p => 
+                              setBookmarkedPosts(prev => prev.map(p =>
                                 p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p
                               ));
                             }

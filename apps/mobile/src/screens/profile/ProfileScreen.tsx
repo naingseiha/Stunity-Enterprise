@@ -457,9 +457,10 @@ export default function ProfileScreen() {
                         profile.role === 'TEACHER' ? ['#6366F1', '#8B5CF6'] :
                           profile.role === 'ADMIN' ? ['#DC2626', '#B91C1C'] :
                             profile.role === 'SCHOOL_ADMIN' ? ['#D97706', '#B45309'] :
-                              profile.role === 'PARENT' ? ['#059669', '#047857'] :
-                                profile.role === 'STAFF' ? ['#7C3AED', '#6D28D9'] :
-                                  ['#0EA5E9', '#0284C7'] // STUDENT default
+                              profile.role === 'SUPER_ADMIN' ? ['#DC2626', '#991B1B'] : // SUPER_ADMIN theme
+                                profile.role === 'PARENT' ? ['#059669', '#047857'] :
+                                  profile.role === 'STAFF' ? ['#7C3AED', '#6D28D9'] :
+                                    ['#0EA5E9', '#0284C7'] // STUDENT default
                       }
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
@@ -468,7 +469,7 @@ export default function ProfileScreen() {
                       <Ionicons
                         name={
                           profile.role === 'TEACHER' ? 'school' :
-                            profile.role === 'ADMIN' || profile.role === 'SCHOOL_ADMIN' ? 'shield-checkmark' :
+                            profile.role === 'ADMIN' || profile.role === 'SUPER_ADMIN' || profile.role === 'SCHOOL_ADMIN' ? 'shield-checkmark' :
                               profile.role === 'PARENT' ? 'people' :
                                 profile.role === 'STAFF' ? 'briefcase' :
                                   'person'
@@ -479,10 +480,11 @@ export default function ProfileScreen() {
                       <Text style={styles.roleBadgeText}>
                         {profile.role === 'TEACHER' ? 'Teacher' :
                           profile.role === 'ADMIN' ? 'Admin' :
-                            profile.role === 'SCHOOL_ADMIN' ? 'School Admin' :
-                              profile.role === 'PARENT' ? 'Parent' :
-                                profile.role === 'STAFF' ? 'Staff' :
-                                  'Student'}
+                            profile.role === 'SUPER_ADMIN' ? 'Stunity Admin' :
+                              profile.role === 'SCHOOL_ADMIN' ? 'School Admin' :
+                                profile.role === 'PARENT' ? 'Parent' :
+                                  profile.role === 'STAFF' ? 'Staff' :
+                                    'Student'}
                       </Text>
                     </LinearGradient>
                   </Animated.View>

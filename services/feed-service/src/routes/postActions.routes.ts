@@ -542,7 +542,7 @@ router.post('/posts/:postId/comments/:commentId/verify', authenticateToken, asyn
       return res.status(400).json({ success: false, error: 'Only questions can have verified answers' });
     }
 
-    if (post.authorId !== userId && req.user!.role !== 'ADMIN') {
+    if (post.authorId !== userId && req.user!.role !== 'ADMIN' && req.user!.role !== 'SUPER_ADMIN') {
       return res.status(403).json({ success: false, error: 'Only the author can verify an answer' });
     }
 
@@ -1001,7 +1001,7 @@ router.delete('/comments/:id', authenticateToken, async (req: AuthRequest, res: 
       return res.status(404).json({ success: false, error: 'Comment not found' });
     }
 
-    if (comment.authorId !== req.user!.id && req.user!.role !== 'ADMIN') {
+    if (comment.authorId !== req.user!.id && req.user!.role !== 'ADMIN' && req.user!.role !== 'SUPER_ADMIN') {
       return res.status(403).json({ success: false, error: 'Not authorized' });
     }
 

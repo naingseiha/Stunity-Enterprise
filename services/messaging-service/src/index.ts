@@ -120,7 +120,7 @@ app.get('/conversations', authenticateToken, async (req: Request, res: Response)
     // Filter based on user role
     if (role === 'PARENT' && parentId) {
       where.parentId = parentId;
-    } else if ((role === 'TEACHER' || role === 'ADMIN') && teacherId) {
+    } else if ((role === 'TEACHER' || role === 'ADMIN' || role === 'SUPER_ADMIN') && teacherId) {
       where.teacherId = teacherId;
     } else {
       return res.status(403).json({ success: false, error: 'Access denied' });
@@ -230,7 +230,7 @@ app.post('/conversations', authenticateToken, async (req: Request, res: Response
       }
       finalTeacherId = targetTeacherId;
       finalParentId = parentId;
-    } else if ((role === 'TEACHER' || role === 'ADMIN') && teacherId) {
+    } else if ((role === 'TEACHER' || role === 'ADMIN' || role === 'SUPER_ADMIN') && teacherId) {
       if (!targetParentId) {
         return res.status(400).json({ success: false, error: 'Target parent ID is required' });
       }
@@ -376,7 +376,7 @@ app.get('/conversations/:id', authenticateToken, async (req: Request, res: Respo
     if (role === 'PARENT' && conversation.parentId !== parentId) {
       return res.status(403).json({ success: false, error: 'Access denied' });
     }
-    if ((role === 'TEACHER' || role === 'ADMIN') && conversation.teacherId !== teacherId) {
+    if ((role === 'TEACHER' || role === 'ADMIN' || role === 'SUPER_ADMIN') && conversation.teacherId !== teacherId) {
       return res.status(403).json({ success: false, error: 'Access denied' });
     }
 
@@ -408,7 +408,7 @@ app.put('/conversations/:id/archive', authenticateToken, async (req: Request, re
     if (role === 'PARENT' && conversation.parentId !== parentId) {
       return res.status(403).json({ success: false, error: 'Access denied' });
     }
-    if ((role === 'TEACHER' || role === 'ADMIN') && conversation.teacherId !== teacherId) {
+    if ((role === 'TEACHER' || role === 'ADMIN' || role === 'SUPER_ADMIN') && conversation.teacherId !== teacherId) {
       return res.status(403).json({ success: false, error: 'Access denied' });
     }
 
@@ -447,7 +447,7 @@ app.get('/conversations/:id/messages', authenticateToken, async (req: Request, r
     if (role === 'PARENT' && conversation.parentId !== parentId) {
       return res.status(403).json({ success: false, error: 'Access denied' });
     }
-    if ((role === 'TEACHER' || role === 'ADMIN') && conversation.teacherId !== teacherId) {
+    if ((role === 'TEACHER' || role === 'ADMIN' || role === 'SUPER_ADMIN') && conversation.teacherId !== teacherId) {
       return res.status(403).json({ success: false, error: 'Access denied' });
     }
 
@@ -520,7 +520,7 @@ app.post('/conversations/:id/messages', authenticateToken, async (req: Request, 
       }
       senderType = 'PARENT';
       senderId = parentId;
-    } else if ((role === 'TEACHER' || role === 'ADMIN') && teacherId) {
+    } else if ((role === 'TEACHER' || role === 'ADMIN' || role === 'SUPER_ADMIN') && teacherId) {
       if (conversation.teacherId !== teacherId) {
         return res.status(403).json({ success: false, error: 'Access denied' });
       }
@@ -622,7 +622,7 @@ app.get('/unread-count', authenticateToken, async (req: Request, res: Response) 
     if (role === 'PARENT' && parentId) {
       conversationFilter = { parentId };
       senderTypeFilter = 'TEACHER';
-    } else if ((role === 'TEACHER' || role === 'ADMIN') && teacherId) {
+    } else if ((role === 'TEACHER' || role === 'ADMIN' || role === 'SUPER_ADMIN') && teacherId) {
       conversationFilter = { teacherId };
       senderTypeFilter = 'PARENT';
     } else {
@@ -724,7 +724,7 @@ app.get('/parents', authenticateToken, async (req: Request, res: Response) => {
     const { role, teacherId } = req.user!;
     const { classId, search } = req.query;
 
-    if (role !== 'TEACHER' && role !== 'ADMIN') {
+    if (role !== 'TEACHER' && role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
       return res.status(403).json({ success: false, error: 'Only teachers can access this endpoint' });
     }
 

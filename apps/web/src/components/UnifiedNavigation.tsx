@@ -469,7 +469,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
 
                     {/* Menu Items */}
                     <div className="py-1">
-                      {user?.isSuperAdmin && (
+                      {(user?.isSuperAdmin || user?.role === 'SUPER_ADMIN') && (
                         <Link
                           href={`/${locale}/super-admin`}
                           prefetch={true}

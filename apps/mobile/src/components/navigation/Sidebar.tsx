@@ -114,7 +114,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
 
   const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
   const userRole = user?.role === 'TEACHER' ? 'Teacher'
-    : user?.role === 'ADMIN' || user?.role === 'SCHOOL_ADMIN' ? 'Admin'
+    : user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'SCHOOL_ADMIN' ? 'Admin'
       : 'Student';
 
   return (

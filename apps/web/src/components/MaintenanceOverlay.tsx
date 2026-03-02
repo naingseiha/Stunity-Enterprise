@@ -19,7 +19,7 @@ export default function MaintenanceOverlay() {
           return;
         }
         const user = TokenManager.getUserData();
-        if (user?.user?.isSuperAdmin) {
+        if (user?.user?.isSuperAdmin || user?.user?.role === 'SUPER_ADMIN') {
           setMaintenanceMode(false);
         } else {
           setMaintenanceMode(true);

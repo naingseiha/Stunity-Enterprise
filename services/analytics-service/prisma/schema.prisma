@@ -1641,6 +1641,7 @@ enum TeacherRole {
 }
 
 enum UserRole {
+  SUPER_ADMIN
   ADMIN
   TEACHER
   STUDENT
