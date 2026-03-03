@@ -1,6 +1,6 @@
 # ✅ Stunity Enterprise — Current Features
 
-**Version:** 23.1 | **Updated:** March 1, 2026
+**Version:** 23.1 | **Updated:** March 3, 2026
 
 > This document lists all implemented and working features. For what's coming next, see NEXT_IMPLEMENTATION.md.
 
@@ -105,7 +105,7 @@ npm run seed:super-admin [email]
 - 3-pool mixing: 60% relevance + 25% trending + 15% explore
 - Diversity enforcement across post types
 - New posts always appear (two-query candidate pool: 75 trending + 25 fresh/last-6h)
-- Real-time "New Posts" pill (Twitter-style) via Supabase postgres_changes
+- Real-time "New Posts" pill (Twitter-style) via Supabase postgres_changes; **Background/Foreground lifecycle aware**
 - ETag/304 caching (saves bandwidth on unchanged feeds)
 - Cursor-based pagination (no offset, scales to billions of posts)
 - Feed payload reduced 76% via `stripToMinimal` field projection

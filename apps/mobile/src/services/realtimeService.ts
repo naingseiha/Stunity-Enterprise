@@ -251,12 +251,15 @@ class RealtimeService {
     private handleAppStateChange = (state: AppStateStatus) => {
         if (state === 'active') {
             if (__DEV__) {
-                console.log('🔌 [RealtimeService] App active — connections maintained by Supabase SDK');
+                console.log('🔌 [RealtimeService] App active — Resume connections');
             }
-        } else if (state === 'background') {
+            // individual stores should handle re-subscribing as they know what they need
+        } else if (state === 'background' || state === 'inactive') {
             if (__DEV__) {
-                console.log('🔌 [RealtimeService] App backgrounded — Supabase SDK handles gracefully');
+                console.log('🔌 [RealtimeService] App backgrounded — Cleaning up channels');
             }
+            // Safety cleanup of all channels when backgrounded to prevent stale connections
+            this.unsubscribeAll();
         }
     };
 }

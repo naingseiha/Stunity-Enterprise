@@ -1683,10 +1683,10 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             }
           }, 30_000);
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ [FeedStore] Realtime CHANNEL_ERROR — check Supabase RLS or network');
+          console.warn('⚠️ [FeedStore] Realtime CHANNEL_ERROR — check Supabase RLS or network');
           if (_livenessTimer) { clearTimeout(_livenessTimer); _livenessTimer = null; }
         } else if (status === 'TIMED_OUT') {
-          console.error('❌ [FeedStore] Realtime TIMED_OUT — network issue or Supabase outage');
+          console.warn('⚠️ [FeedStore] Realtime TIMED_OUT — network issue or Supabase outage');
           if (_livenessTimer) { clearTimeout(_livenessTimer); _livenessTimer = null; }
         } else {
           console.log(`🔌 [FeedStore] Realtime status: ${status}`);

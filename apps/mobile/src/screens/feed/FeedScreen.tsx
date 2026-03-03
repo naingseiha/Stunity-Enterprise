@@ -339,57 +339,60 @@ export default function FeedScreen() {
 
   // No useFocusEffect re-fetch — polling + realtime handle freshness
 
-  // Real-time subscription
+  // Real-time subscription & AppState lifecycle management
   useEffect(() => {
+    // Initial subscription
     subscribeToFeed();
-    return () => unsubscribeFromFeed();
-  }, []);
 
-  // Foreground refresh: check for new posts when app returns from background
-  // Replaces the old 30s polling — at scale, polling wastes 333+ req/s
-  useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
-        // App came to foreground — check for new posts
+        console.log('🔌 [FeedScreen] App foregrounded — Re-subscribing to feed');
+        subscribeToFeed();
+
+        // Foreground refresh: check for new posts missed while backgrounded
         const { lastFeedTimestamp, feedItems: currentFeedItems, pendingPosts: currentPending } = useFeedStore.getState();
         const firstPost = currentFeedItems.find(i => i.type === 'POST');
         const latestCreatedAt = lastFeedTimestamp || (firstPost?.type === 'POST' ? firstPost.data.createdAt : undefined);
-        if (!latestCreatedAt) return;
 
-        feedApi.get('/posts/feed', {
-          params: { mode: 'RECENT', limit: 5, page: 1 },
-        }).then((response) => {
-          if (response.data?.success && response.data.data) {
-            const existingIds = new Set([
-              ...currentFeedItems.filter(i => i.type === 'POST').map(p => (p.data as Post).id),
-              ...currentPending.map(p => p.id),
-            ]);
+        if (latestCreatedAt) {
+          feedApi.get('/posts/feed', {
+            params: { mode: 'RECENT', limit: 5, page: 1 },
+          }).then((response) => {
+            if (response.data?.success && response.data.data) {
+              const existingIds = new Set([
+                ...currentFeedItems.filter(i => i.type === 'POST').map(p => (p.data as Post).id),
+                ...currentPending.map(p => p.id),
+              ]);
 
-            // /posts/feed returns FeedItem[] — extract only POST items and unwrap data
-            const feedItemsFromApi: any[] = response.data.data;
-            const rawNewPosts = feedItemsFromApi
-              .filter((p: any) => p.type === 'POST' && p.data)
-              .map((p: any) => p.data)
-              .filter(
-                (p: any) => new Date(p.createdAt) > new Date(latestCreatedAt) &&
-                  !existingIds.has(p.id)
-              );
+              const feedItemsFromApi: any[] = response.data.data;
+              const rawNewPosts = feedItemsFromApi
+                .filter((p: any) => p.type === 'POST' && p.data)
+                .map((p: any) => p.data)
+                .filter(
+                  (p: any) => new Date(p.createdAt) > new Date(latestCreatedAt) &&
+                    !existingIds.has(p.id)
+                );
 
-            if (rawNewPosts.length > 0) {
-              const transformed = transformPosts(rawNewPosts);
-              useFeedStore.setState(state => ({
-                pendingPosts: [...transformed, ...state.pendingPosts],
-              }));
+              if (rawNewPosts.length > 0) {
+                const transformed = transformPosts(rawNewPosts);
+                useFeedStore.setState(state => ({
+                  pendingPosts: [...transformed, ...state.pendingPosts],
+                }));
+              }
             }
-          }
-        }).catch(() => {
-          // Silent fail — foreground refresh is a convenience, not critical
-        });
+          }).catch(() => { });
+        }
+      } else if (nextState === 'background' || nextState === 'inactive') {
+        console.log('🔌 [FeedScreen] App backgrounded — Unsubscribing from feed');
+        unsubscribeFromFeed();
       }
     });
 
-    return () => subscription.remove();
-  }, []);
+    return () => {
+      subscription.remove();
+      unsubscribeFromFeed();
+    };
+  }, [subscribeToFeed, unsubscribeFromFeed]);
 
   // Memory pressure: reduce in-memory posts when iOS warns about low memory
   useEffect(() => {

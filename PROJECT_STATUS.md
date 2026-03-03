@@ -1,8 +1,8 @@
 # 🎓 Stunity Enterprise — Project Status
 
-**Last Updated:** March 2, 2026
+**Last Updated:** March 3, 2026
 **Version:** 23.1
-**Status:** 98% Complete — Live Quiz Web, Enhanced Search, Teachers Fix 🚀
+**Status:** 99% Complete — Realtime Lifecycle Fixed, Live Quiz Web, Enhanced Search 🚀
 
 ---
 
@@ -41,7 +41,7 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 
 ### 📱 Mobile Social Feed (Complete + Optimized)
 - **7 post types:** Text, Poll, Quiz, Course, Project, Question, Exam, Announcement
-- **Real-time feed:** Supabase postgres_changes → "New Posts" pill (Twitter-style)
+- **Real-time feed:** Supabase postgres_changes → "New Posts" pill (Twitter-style); **Optimized background/foreground lifecycle** (auto-recon on resume)
 - **Feed algorithm:** 6-factor scoring with **author affinity** (0–0.4 boost) — 3-pool mixing (60% relevance + 25% trending + 15% explore)
 - **Scroll performance:** FlashList, drawDistance=800, `React.memo()` on PostCard with deep equality checks, removeClippedSubviews=Android-only
 - **Optimistic UI:** Like, comment, repost update instantly before API confirms
