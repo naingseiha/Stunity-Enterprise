@@ -93,13 +93,15 @@ export default function TeacherSubjectsPage() {
       setLoading(true);
       setError(null);
       const token = TokenManager.getAccessToken();
+      const teacherBase = process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004';
+      const subjectBase = process.env.NEXT_PUBLIC_SUBJECT_SERVICE_URL || 'http://localhost:3006';
 
       // Fetch teacher's assigned subjects and all available subjects
       const [teacherSubjectsRes, allSubjectsRes] = await Promise.all([
-        fetch(`http://localhost:3004/teachers/${teacherId}/subjects`, {
+        fetch(`${teacherBase}/teachers/${teacherId}/subjects`, {
           headers: { 'Authorization': `Bearer ${token}` },
         }),
-        fetch('http://localhost:3006/subjects?limit=200', {
+        fetch(`${subjectBase}/subjects?limit=200`, {
           headers: { 'Authorization': `Bearer ${token}` },
         }),
       ]);
@@ -131,19 +133,20 @@ export default function TeacherSubjectsPage() {
       setIsSaving(true);
       setActionMessage(null);
       const token = TokenManager.getAccessToken();
+      const teacherBase = process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004';
 
       // Calculate new subject list
       const currentIds = new Set(assignedSubjects.map(s => s.id));
-      
+
       // Add new selections
       selectedToAdd.forEach(id => currentIds.add(id));
-      
+
       // Remove deselected
       selectedToRemove.forEach(id => currentIds.delete(id));
 
       const newSubjectIds = Array.from(currentIds);
 
-      const response = await fetch(`http://localhost:3004/teachers/${teacherId}/subjects`, {
+      const response = await fetch(`${teacherBase}/teachers/${teacherId}/subjects`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -197,7 +200,7 @@ export default function TeacherSubjectsPage() {
 
   // Filter subjects
   const filteredSubjects = allSubjects.filter(s => {
-    const matchesSearch = !searchQuery || 
+    const matchesSearch = !searchQuery ||
       s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.nameKh?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -244,7 +247,7 @@ export default function TeacherSubjectsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <UnifiedNavigation />
-      
+
       <main className="lg:ml-64 p-4 lg:p-8">
         {/* Breadcrumb */}
         <nav className="flex items-center text-sm text-gray-600 mb-6">
@@ -303,9 +306,8 @@ export default function TeacherSubjectsPage() {
 
         {/* Action Message */}
         {actionMessage && (
-          <div className={`mb-4 p-4 rounded-lg flex items-center gap-2 ${
-            actionMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-          }`}>
+          <div className={`mb-4 p-4 rounded-lg flex items-center gap-2 ${actionMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+            }`}>
             <AlertCircle className="w-5 h-5" />
             {actionMessage.text}
             <button onClick={() => setActionMessage(null)} className="ml-auto text-gray-500 hover:text-gray-700">×</button>
@@ -394,9 +396,8 @@ export default function TeacherSubjectsPage() {
                       <div
                         key={subject.id}
                         onClick={() => toggleSubjectSelection(subject.id)}
-                        className={`flex items-center gap-3 p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
-                          willBeRemoved ? 'bg-red-50 opacity-60' : ''
-                        }`}
+                        className={`flex items-center gap-3 p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${willBeRemoved ? 'bg-red-50 opacity-60' : ''
+                          }`}
                       >
                         {willBeRemoved ? (
                           <X className="w-5 h-5 text-red-500" />
@@ -440,7 +441,7 @@ export default function TeacherSubjectsPage() {
               <div className="max-h-[500px] overflow-y-auto">
                 {displayAvailable.length === 0 ? (
                   <div className="p-8 text-center text-gray-500">
-                    {searchQuery || filterGrade || filterCategory 
+                    {searchQuery || filterGrade || filterCategory
                       ? 'No matching subjects'
                       : 'All subjects are already assigned'}
                   </div>
@@ -451,9 +452,8 @@ export default function TeacherSubjectsPage() {
                       <div
                         key={subject.id}
                         onClick={() => toggleSubjectSelection(subject.id)}
-                        className={`flex items-center gap-3 p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
-                          willBeAdded ? 'bg-green-50' : ''
-                        }`}
+                        className={`flex items-center gap-3 p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${willBeAdded ? 'bg-green-50' : ''
+                          }`}
                       >
                         {willBeAdded ? (
                           <CheckSquare className="w-5 h-5 text-green-600" />

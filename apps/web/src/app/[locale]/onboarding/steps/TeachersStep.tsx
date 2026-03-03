@@ -42,7 +42,7 @@ export default function TeachersStep({ onNext, onBack, onSkip, schoolId }: Teach
 
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:3004/teachers/batch`, {
+      const response = await fetch(`(process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004')/teachers/batch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

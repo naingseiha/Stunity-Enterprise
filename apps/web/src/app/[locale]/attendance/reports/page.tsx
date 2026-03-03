@@ -148,7 +148,7 @@ export default function AttendanceReportsPage() {
     setError('');
     try {
       const response = await fetch(
-        `http://localhost:3008/attendance/class/${selectedClass}/month/${selectedMonth}/year/${selectedYear}`,
+        `(process.env.NEXT_PUBLIC_ATTENDANCE_SERVICE_URL || 'http://localhost:3008')/attendance/class/${selectedClass}/month/${selectedMonth}/year/${selectedYear}`,
         {
           headers: {
             Authorization: `Bearer ${TokenManager.getAccessToken()}`,

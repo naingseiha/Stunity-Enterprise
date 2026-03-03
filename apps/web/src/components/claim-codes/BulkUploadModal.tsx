@@ -79,7 +79,7 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess, schoolId }
       formData.append('expiresInDays', '30');
       formData.append('sendEmails', 'false'); // Don't auto-send for now
 
-      const response = await fetch(`http://localhost:3002/schools/${schoolId}/claim-codes/bulk-upload`, {
+      const response = await fetch(`(process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002')/schools/${schoolId}/claim-codes/bulk-upload`, {
         method: 'POST',
         body: formData,
       });
