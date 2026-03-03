@@ -19,7 +19,7 @@ interface MediaLightboxProps {
   onClose: () => void;
 }
 
-const FEED_API = process.env.NEXT_PUBLIC_FEED_API_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_API || 'http://localhost:3010';
+const FEED_API = process.env.NEXT_PUBLIC_FEED_API_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_API || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
 
 // Resolve relative or stale-IP media URLs to the current feed-service host
 function resolveUrl(url: string): string {

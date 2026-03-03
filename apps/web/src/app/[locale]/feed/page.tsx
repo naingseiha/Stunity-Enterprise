@@ -58,7 +58,7 @@ import {
   WifiOff,
 } from 'lucide-react';
 
-const FEED_API = 'http://localhost:3010';
+const FEED_API = process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
 
 interface Post {
   id: string;
@@ -352,7 +352,7 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
     setLoading(false);
 
     // Refresh user data from server (localStorage may have stale profile picture)
-    const AUTH_API = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'http://localhost:3001';
+    const AUTH_API = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
     fetch(`${AUTH_API}/auth/verify`, {
       headers: { 'Authorization': `Bearer ${token}` },
     })

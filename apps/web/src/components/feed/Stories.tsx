@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Plus, ChevronLeft, ChevronRight, Eye, Heart, Send, Camera, Type, Palette } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 
-const FEED_SERVICE = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';
+const FEED_SERVICE = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
 
 // Story group from API
 interface StoryGroup {

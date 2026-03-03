@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { LogIn, AlertCircle, Users, School, UserPlus } from 'lucide-react';
 import { login, TokenManager } from '@/lib/api/auth';
 
-const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'http://localhost:3001';
+const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
 
 export default function LoginPage(props: { params: { locale: string } }) {
   const locale = props.params.locale;

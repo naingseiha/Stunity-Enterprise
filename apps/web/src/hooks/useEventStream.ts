@@ -61,7 +61,7 @@ interface UseEventStreamOptions {
   enabled?: boolean;
 }
 
-const FEED_API = process.env.NEXT_PUBLIC_FEED_API_URL || 'http://localhost:3010';
+const FEED_API = process.env.NEXT_PUBLIC_FEED_API_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
 
 export function useEventStream(userId: string | undefined, options: UseEventStreamOptions = {}) {
   const { onEvent, onConnect, onDisconnect, onError, enabled = true } = options;

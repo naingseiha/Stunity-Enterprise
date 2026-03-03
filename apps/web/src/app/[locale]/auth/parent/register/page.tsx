@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 
-const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'http://localhost:3001';
+const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
 
 interface Student {
   id: string;

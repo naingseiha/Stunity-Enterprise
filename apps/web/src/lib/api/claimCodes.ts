@@ -66,7 +66,7 @@ export interface ClaimCodeStats {
   };
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL;
 
 class ClaimCodeService {
   private getHeaders(isFormData = false): Record<string, string> {

@@ -35,11 +35,5 @@
                 }
             ]
         }
-    ],
-    "rewrites": [
-        {
-            "source": "/api/:path*",
-            "destination": "https://api.stunity.com/:path*"
-        }
     ]
 }

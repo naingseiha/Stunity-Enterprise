@@ -202,7 +202,7 @@ export default function EditProfilePage() {
   const coverPhotoRef = useRef<HTMLInputElement>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState<'profile' | 'cover' | null>(null);
 
-  const feedUrl = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';
+  const feedUrl = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
 
   useEffect(() => {
     // Redirect if not own profile

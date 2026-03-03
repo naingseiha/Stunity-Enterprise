@@ -74,7 +74,7 @@ interface Course {
 // CONSTANTS
 // ============================================
 
-const FEED_SERVICE = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';
+const FEED_SERVICE = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
 
 // ============================================
 // MAIN COMPONENT

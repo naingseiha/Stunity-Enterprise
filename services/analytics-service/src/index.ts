@@ -39,82 +39,15 @@ const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split('
 
 app.use(cors({
   origin: (origin, callback) => {
-  }
-}));
-app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
-app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 200, standardHeaders: true, legacyHeaders: false, message: { success: false, error: 'Too many requests' } }));
-app.use(express.json({ limit: '1mb' }));
-
-// Extend Express Request
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        id: string;
-        userId: string;
-        email: string;
-        role: string;
-      };
-    }
-  }
-}
-
-// Keep AuthRequest for backwards compatibility in this file if needed
-interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    userId: string;
-    email: string;
-    role: string;
-  };
-}
-
-const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    console.log('❌ [ANALYTICS AUTH] No token provided');
-    return res.status(401).json({ success: false, error: 'Access token required' });
-  }
-
-  console.log('🔐 [ANALYTICS AUTH] Verifying token for:', req.method, req.path);
-  console.log('🔑 [ANALYTICS AUTH] Token preview:', token.substring(0, 30) + '...');
-  console.log('🔑 [ANALYTICS AUTH] JWT_SECRET:', JWT_SECRET);
-
-  try {
-    const user = jwt.verify(token, JWT_SECRET) as any;
-    console.log('✅ [ANALYTICS AUTH] Token verified for user:', user);
-    req.user = {
-      id: user.userId, // Map userId from JWT to id
-      userId: user.userId,
-      email: user.email,
-      role: user.role,
-    };
-    next();
-  } catch (error: any) {
-    console.error('❌ [ANALYTICS AUTH] Token verification failed:', error.message);
-    console.error('🔍 [ANALYTICS AUTH] Error name:', error.name);
-    return res.status(403).json({ success: false, error: 'Invalid token' });
-  }
-};
-
-// ========================================
-// Health Check
-// ========================================
-
-app.get('/health', (req: Request, res: Response) => {
-  res.json({
-    service: 'analytics-service',
-    status: 'healthy',
-    port: PORT,
-    timestamp: new Date().toISOString(),
-    features: {
-      liveQuiz: true,
-      leaderboards: true,
-      streaks: true,
-      achievements: true,
-    },
+    // Allow all origins in production if CORS_ORIGIN is set to *
+    if (process.env.CORS_ORIGIN === '*') return callback(null, true);
+    
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
   });
 });
 

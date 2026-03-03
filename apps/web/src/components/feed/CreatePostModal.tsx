@@ -206,7 +206,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
         });
 
         const token = TokenManager.getAccessToken();
-        const feedApi = process.env.NEXT_PUBLIC_FEED_API_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';
+        const feedApi = process.env.NEXT_PUBLIC_FEED_API_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
         const uploadRes = await fetch(`${feedApi}/upload`, {
           method: 'POST',
           headers: {

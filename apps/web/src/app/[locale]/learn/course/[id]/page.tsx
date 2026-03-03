@@ -96,7 +96,7 @@ interface Enrollment {
 // CONSTANTS
 // ============================================
 
-const FEED_SERVICE = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';
+const FEED_SERVICE = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
 
 const LEVEL_COLORS: Record<string, string> = {
   'BEGINNER': 'bg-green-100 text-green-700',

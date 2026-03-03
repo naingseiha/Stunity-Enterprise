@@ -5,7 +5,7 @@ import { Flame, Diamond, BookOpen, Trophy, ChevronRight } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import Link from 'next/link';
 
-const FEED_SERVICE = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';
+const FEED_SERVICE = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
 
 interface PerformanceCardProps {
   user: {

@@ -86,7 +86,7 @@ interface Comment {
   _count?: { replies: number };
 }
 
-const FEED_API = process.env.NEXT_PUBLIC_FEED_API_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';
+const FEED_API = process.env.NEXT_PUBLIC_FEED_API_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
 
 function resolveMediaUrl(url: string): string {
   if (url.startsWith('/uploads/')) return `${FEED_API}${url}`;

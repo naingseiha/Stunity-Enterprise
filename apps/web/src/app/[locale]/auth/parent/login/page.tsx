@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 
-const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'http://localhost:3001';
+const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
 
 export default function ParentLoginPage({ params: { locale } }: { params: { locale: string } }) {
   const router = useRouter();

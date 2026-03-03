@@ -8,9 +8,17 @@
 # =============================================
 
 # Stage 1: Build
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
+
+# Install build dependencies for Debian
+RUN apt-get update && apt-get install -y \
+  openssl \
+  python3 \
+  make \
+  g++ \
+  && rm -rf /var/lib/apt/lists/*
 
 # Copy package files for student-service (layer caching)
 COPY services/student-service/package.json services/student-service/package-lock.json* ./
@@ -28,13 +36,20 @@ COPY services/student-service/src/ ./src/
 RUN npm run build
 
 # Stage 2: Production runtime
-FROM node:20-alpine AS runtime
+FROM node:20-slim AS runtime
 
 WORKDIR /app
 
+# Install runtime dependencies for Debian (Prisma needs openssl)
+RUN apt-get update && apt-get install -y \
+  openssl \
+  ca-certificates \
+  wget \
+  && rm -rf /var/lib/apt/lists/*
+
 # Security: run as non-root
-RUN addgroup -g 1001 -S nodejs && \
-  adduser -S studentservice -u 1001
+RUN groupadd -g 1001 nodejs && \
+  useradd -m -u 1001 -g nodejs studentservice
 
 # Copy package files and install production deps only
 COPY services/student-service/package.json services/student-service/package-lock.json* ./

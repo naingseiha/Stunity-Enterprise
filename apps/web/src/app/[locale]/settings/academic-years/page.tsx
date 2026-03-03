@@ -113,7 +113,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years`,
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -157,7 +157,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years`,
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years`,
         {
           method: 'POST',
           headers: {
@@ -199,7 +199,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
       if (!token || !schoolId) return;
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years/${yearId}/set-current`,
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${yearId}/set-current`,
         {
           method: 'PUT',
           headers: {
@@ -242,7 +242,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
       if (!token || !schoolId) return;
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years/${selectedYear.id}`,
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${selectedYear.id}`,
         {
           method: 'PUT',
           headers: {
@@ -290,7 +290,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
       if (!token || !schoolId) return;
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years/${selectedYear.id}`,
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${selectedYear.id}`,
         {
           method: 'DELETE',
           headers: {
@@ -329,7 +329,7 @@ export default function AcademicYearsManagementPage({ params }: { params: { loca
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years/${year.id}/archive`,
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${year.id}/archive`,
         {
           method: 'PUT',
           headers: {

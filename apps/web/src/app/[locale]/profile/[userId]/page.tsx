@@ -238,7 +238,7 @@ export default function ProfilePage() {
       }
 
       const headers = { Authorization: `Bearer ${token}` };
-      const feedUrl = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';
+      const feedUrl = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
 
       // Fetch all profile data in parallel
       const [profileRes, skillsRes, expRes, projectsRes, certsRes, eduRes, achievementsRes, recsRes] = await Promise.all([
@@ -287,7 +287,7 @@ export default function ProfilePage() {
     if (!profile) return;
     try {
       const token = TokenManager.getAccessToken();
-      const feedUrl = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';
+      const feedUrl = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
       const res = await fetch(`${feedUrl}/users/${profile.id}/follow`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },

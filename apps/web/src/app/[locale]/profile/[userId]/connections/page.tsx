@@ -86,7 +86,7 @@ export default function ConnectionsPage() {
         }
 
         const headers = { Authorization: `Bearer ${token}` };
-        const feedUrl = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';
+        const feedUrl = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
 
         // Fetch all data in parallel
         const [followersRes, followingRes, profileRes, myFollowingRes] = await Promise.all([
@@ -142,7 +142,7 @@ export default function ConnectionsPage() {
 
     try {
       const token = TokenManager.getAccessToken();
-      const feedUrl = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';
+      const feedUrl = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
 
       const res = await fetch(`${feedUrl}/users/${targetUserId}/follow`, {
         method: 'POST',
