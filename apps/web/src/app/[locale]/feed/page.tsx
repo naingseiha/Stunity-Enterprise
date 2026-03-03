@@ -58,7 +58,7 @@ import {
   WifiOff,
 } from 'lucide-react';
 
-const FEED_API = process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
+const FEED_API = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';
 
 interface Post {
   id: string;
@@ -889,8 +889,8 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                         key={item.id}
                         onClick={() => setActiveTab(item.id)}
                         className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${activeTab === item.id
-                            ? 'bg-amber-50 text-[#F9A825] font-medium'
-                            : 'text-gray-600 hover:bg-gray-50'
+                          ? 'bg-amber-50 text-[#F9A825] font-medium'
+                          : 'text-gray-600 hover:bg-gray-50'
                           }`}
                       >
                         <Icon className="w-4 h-4" />
@@ -914,8 +914,8 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex items-center gap-2 px-3 py-2 rounded-full font-medium text-xs transition-all whitespace-nowrap ${activeTab === tab.id
-                        ? 'bg-[#F9A825] text-white'
-                        : 'bg-white text-gray-600 border border-gray-200'
+                      ? 'bg-[#F9A825] text-white'
+                      : 'bg-white text-gray-600 border border-gray-200'
                       }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -986,8 +986,8 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
                     <button
                       onClick={() => setShowFilters(!showFilters)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs border transition-colors ${postTypeFilter !== 'all'
-                          ? 'bg-amber-50 border-[#F9A825] text-[#F9A825]'
-                          : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                        ? 'bg-amber-50 border-[#F9A825] text-[#F9A825]'
+                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
                         }`}
                     >
                       <Filter className="w-3.5 h-3.5" />
@@ -1030,8 +1030,8 @@ export default function FeedPage({ params: { locale } }: { params: { locale: str
 
                   {/* Real-time connection indicator */}
                   <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs ${isConnected
-                      ? 'bg-green-50 text-green-600'
-                      : 'bg-gray-100 text-gray-500'
+                    ? 'bg-green-50 text-green-600'
+                    : 'bg-gray-100 text-gray-500'
                     }`}>
                     {isConnected ? (
                       <>
