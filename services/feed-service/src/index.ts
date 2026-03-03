@@ -42,6 +42,7 @@ import experienceRouter from './routes/experience.routes';
 import achievementsRouter from './routes/achievements.routes';
 
 const app = express();
+app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
 const PORT = parseInt(process.env.PORT || process.env.FEED_SERVICE_PORT || '3010', 10);
 
 // ─── Graceful Shutdown ─────────────────────────────────────────────

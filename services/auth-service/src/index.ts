@@ -19,6 +19,7 @@ import ssoRoutes from './routes/sso.routes';
 dotenv.config({ path: '../../.env' });
 
 const app = express();
+app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
 const PORT = process.env.PORT || process.env.AUTH_SERVICE_PORT || 3001;
 // Security: fail startup in production if JWT_SECRET is unset
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {

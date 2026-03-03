@@ -11,6 +11,7 @@ import notificationRoutes from './routes/notification.routes';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const app = express();
+app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
 const PORT = process.env.PORT || process.env.NOTIFICATION_SERVICE_PORT || 3013;
 
 const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'];

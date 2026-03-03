@@ -25,6 +25,7 @@ import {
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
 const PORT = process.env.PORT || process.env.SCHOOL_SERVICE_PORT || 3002;
 
 // ✅ Singleton pattern to prevent multiple Prisma instances

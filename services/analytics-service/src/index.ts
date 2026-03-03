@@ -27,6 +27,7 @@ import shopRoutes from './gamification/routes/shop.routes';
 dotenv.config({ path: '../../.env' });
 
 const app = express();
+app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || process.env.ANALYTICS_SERVICE_PORT || 3014;
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {

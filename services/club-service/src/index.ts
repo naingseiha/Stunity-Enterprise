@@ -13,6 +13,7 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
 }
 
 const app = express();
+app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
 
 // Singleton Prisma pattern
 const globalForPrisma = global as unknown as { prisma: PrismaClient };

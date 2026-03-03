@@ -20,6 +20,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const STALE_TTL = 10 * 60 * 1000; // 10 minutes (serve stale while refreshing)
 
 const app = express();
+app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
 
 // ✅ Singleton pattern to prevent multiple Prisma instances
 const globalForPrisma = global as unknown as { prisma: PrismaClient };

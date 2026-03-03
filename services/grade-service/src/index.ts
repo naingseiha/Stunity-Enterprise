@@ -11,6 +11,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '../../.env' });
 
 const app = express();
+app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
 const PORT = process.env.PORT || process.env.GRADE_SERVICE_PORT || 3007;
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');

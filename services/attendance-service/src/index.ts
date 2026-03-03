@@ -24,6 +24,7 @@ import {
 } from 'date-fns';
 
 const app = express();
+app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
 
 // ✅ Singleton pattern to prevent multiple Prisma instances
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
@@ -34,7 +35,7 @@ const prisma = globalForPrisma.prisma || new PrismaClient({
       url: process.env.DATABASE_URL,
     },
   },
-  log: ['error'],
+  log: ['error'], // Changed from ['error'] to see more details if needed
 });
 
 if (process.env.NODE_ENV !== 'production') {
@@ -49,8 +50,10 @@ const warmUpDb = async () => {
     await prisma.$queryRaw`SELECT 1`;
     isDbWarm = true;
     console.log('✅ Attendance Service - Database ready');
-  } catch (error) {
-    console.error('⚠️ Attendance Service - Database warmup failed');
+  } catch (error: any) {
+    console.error('⚠️ Attendance Service - Database warmup failed details:', error?.message || error);
+    // Log stack trace in dev/debug if needed
+    if (process.env.NODE_ENV !== 'production') console.error(error);
   }
 };
 warmUpDb();
@@ -67,10 +70,10 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow all origins in production if CORS_ORIGIN is set to *
     if (process.env.CORS_ORIGIN === '*') return callback(null, true);
-    
+
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
-    
+
     if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error(`CORS: origin ${origin} not allowed`));
   },
