@@ -12,17 +12,19 @@ function walkDir(dir, callback) {
 }
 
 const replacements = [
-    { pattern: /'http:\/\/localhost:3001'/g, env: 'process.env.NEXT_PUBLIC_AUTH_SERVICE_URL' },
-    { pattern: /"http:\/\/localhost:3001"/g, env: 'process.env.NEXT_PUBLIC_AUTH_SERVICE_URL' },
-    { pattern: /`http:\/\/localhost:3001`/g, env: 'process.env.NEXT_PUBLIC_AUTH_SERVICE_URL' },
+    { pattern: /'http:\/\/localhost:3001'/g, env: "(process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'http://localhost:3001')" },
+    { pattern: /"http:\/\/localhost:3001"/g, env: "(process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'http://localhost:3001')" },
+    { pattern: /`http:\/\/localhost:3001`/g, env: "(process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'http://localhost:3001')" },
 
-    { pattern: /'http:\/\/localhost:3010'/g, env: 'process.env.NEXT_PUBLIC_FEED_SERVICE_URL' },
-    { pattern: /"http:\/\/localhost:3010"/g, env: 'process.env.NEXT_PUBLIC_FEED_SERVICE_URL' },
-    { pattern: /`http:\/\/localhost:3010`/g, env: 'process.env.NEXT_PUBLIC_FEED_SERVICE_URL' },
+    // Specifically target the FEED_API variable assignment to prevent string coercion issues
+    { pattern: /const FEED_API = 'http:\/\/localhost:3010';/g, env: "const FEED_API = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';" },
+    // Then handle explicit usages of the string just in case
+    { pattern: /'http:\/\/localhost:3010'/g, env: "(process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010')" },
+    { pattern: /"http:\/\/localhost:3010"/g, env: "(process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010')" },
 
-    { pattern: /'http:\/\/localhost:3002'/g, env: 'process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL' },
-    { pattern: /"http:\/\/localhost:3002"/g, env: 'process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL' },
-    { pattern: /`http:\/\/localhost:3002`/g, env: 'process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL' },
+    { pattern: /'http:\/\/localhost:3002'/g, env: "(process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002')" },
+    { pattern: /"http:\/\/localhost:3002"/g, env: "(process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002')" },
+    { pattern: /`http:\/\/localhost:3002`/g, env: "(process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002')" },
 ];
 
 walkDir(WEB_SRC_DIR, (filePath) => {
