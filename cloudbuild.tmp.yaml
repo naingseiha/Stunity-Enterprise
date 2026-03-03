@@ -1,0 +1,5 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/stunity-enterprise/stunity-auth-service', '-f', 'services/auth-service/Dockerfile', '.']
+images:
+- 'gcr.io/stunity-enterprise/stunity-auth-service'

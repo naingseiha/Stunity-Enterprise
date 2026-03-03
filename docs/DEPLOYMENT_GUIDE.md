@@ -30,11 +30,16 @@ We have standardized Dockerfiles for all 18 microservices.
 
 ### Automated Deployment
 1. Ensure `gcloud` CLI is authenticated: `gcloud auth login`
-2. Run the deployment script:
+2. **Deploy All Services** (standard):
    ```bash
    ./scripts/deploy-cloud-run.sh
    ```
-   *This script builds images via Cloud Build and deploys with `minScale: 0` to stay in the free tier.*
+3. **Selective Deployment** (faster for updates):
+   ```bash
+   # Deploy only specific services
+   ./scripts/deploy-cloud-run.sh auth-service feed-service
+   ```
+   *This script builds images via Cloud Build and deploys with `minScale: 0` to stay in the free tier. Selective deployment skips rebuilding unchanged services.*
 
 ### Environment Variables
 For each service in Cloud Run, set the following:
@@ -45,7 +50,21 @@ For each service in Cloud Run, set the following:
 
 ---
 
-## 3. Web Frontend Deployment (Vercel)
+## 3. Continuous Integration (CI/CD)
+
+For maximum efficiency, set up **Google Cloud Build Triggers**:
+
+1. **Connect Repository**: In GCP, go to Cloud Build > Triggers and connect your GitHub repo.
+2. **Create Triggers**: Create a trigger for each service (e.g., `deploy-auth`).
+3. **Configuration**:
+   - **Event**: Push to a branch (`main`).
+   - **Included Files Filter**: `services/auth-service/**`
+   - **Build Configuration**: Use the existing `Dockerfile` or a `cloudbuild.yaml`.
+4. **Benefit**: Only the service you modified will automatically redeploy when you push code.
+
+---
+
+## 4. Web Frontend Deployment (Vercel)
 
 1. **Connect Repository**: Link your GitHub repo to Vercel.
 2. **Root Directory**: Select `apps/web`.

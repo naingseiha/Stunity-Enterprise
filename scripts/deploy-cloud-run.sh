@@ -20,23 +20,35 @@ fi
 
 echo "🚀 Deploying Stunity Enterprise to Cloud Run in project: $PROJECT_ID"
 
-SERVICES=(
-  "auth-service"
-  "feed-service"
-  "school-service"
-  "student-service"
-  "teacher-service"
-  "attendance-service"
-  "class-service"
-  "subject-service"
-  "grade-service"
-  "analytics-service"
-  "club-service"
-  "notification-service"
-  "messaging-service"
-  "ai-service"
-  "timetable-service"
-)
+# Default all services if no arguments provided
+if [ $# -gt 0 ]; then
+  SERVICES=("$@")
+  echo "🎯 Deploying target services: ${SERVICES[*]}"
+else
+  SERVICES=(
+    "auth-service"
+    "feed-service"
+    "school-service"
+    "student-service"
+    "teacher-service"
+    "attendance-service"
+    "class-service"
+    "subject-service"
+    "grade-service"
+    "analytics-service"
+    "club-service"
+    "notification-service"
+    "messaging-service"
+    "ai-service"
+    "timetable-service"
+  )
+  echo "🚀 Deploying ALL services to Cloud Run..."
+  read -p "Are you sure you want to deploy all 15 services? (y/n) " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    exit 1
+  fi
+fi
 
 # Build and Push Images
 for SERVICE in "${SERVICES[@]}"; do
