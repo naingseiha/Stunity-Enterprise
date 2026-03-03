@@ -12,7 +12,7 @@ import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const app = express();
-const PORT = 3011; // Messaging service uses port 3011
+const PORT = process.env.PORT || process.env.MESSAGING_SERVICE_PORT || 3011;
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
 }
@@ -54,8 +54,16 @@ warmUpDb();
 setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000);
 
 // Middleware
+const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'];
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3011'],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -688,7 +696,6 @@ app.get('/teachers', authenticateToken, async (req: Request, res: Response) => {
         customFields: true,
         photoUrl: true,
         phone: true,
-        position: true,
         homeroomClass: {
           select: {
             id: true,
@@ -707,9 +714,9 @@ app.get('/teachers', authenticateToken, async (req: Request, res: Response) => {
         lastName: t.lastName,
         name: (t.customFields as any)?.regional?.khmerName || `${t.firstName} ${t.lastName}`,
         photoUrl: t.photoUrl,
-        phone: t.phone,
-        position: (t.customFields as any)?.regional?.position || t.position,
-        homeroomClass: t.homeroomClass,
+        phone: (t as any).phone,
+        position: (t.customFields as any)?.regional?.position || null,
+        homeroomClass: (t as any).homeroomClass,
       })),
     });
   } catch (error: any) {

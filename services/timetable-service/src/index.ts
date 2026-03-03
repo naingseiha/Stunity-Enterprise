@@ -11,7 +11,7 @@ dotenv.config({ path: '../../.env' });
 dotenv.config({ path: '../../packages/database/.env' });
 
 const app = express();
-const PORT = process.env.TIMETABLE_SERVICE_PORT || 3009;
+const PORT = process.env.PORT || process.env.TIMETABLE_SERVICE_PORT || 3009;
 
 // Prisma Singleton with connection pooling
 let prisma: PrismaClient;
@@ -29,8 +29,16 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
 }
 
+const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'];
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005', 'http://localhost:3006', 'http://localhost:3007', 'http://localhost:3008', 'http://localhost:3009'],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -1463,7 +1471,7 @@ app.get('/timetable/teacher-availability', authenticate, async (req, res) => {
         id: true,
         firstName: true,
         lastName: true,
-        khmerName: true,
+        customFields: true,
       },
     });
 
@@ -1763,7 +1771,7 @@ app.get('/timetable/all-teacher-workloads', authenticate, async (req, res) => {
         id: true,
         firstName: true,
         lastName: true,
-        khmerName: true,
+        customFields: true,
       },
     });
 

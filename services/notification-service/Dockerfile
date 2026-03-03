@@ -1,9 +1,9 @@
 # =============================================
-# Feed Service — Multi-stage Docker Build
+# Notification Service — Multi-stage Docker Build
 # Optimized for Google Cloud Run deployment
 #
 # BUILD CONTEXT must be monorepo root:
-#   docker build -f services/feed-service/Dockerfile .
+#   docker build -f services/notification-service/Dockerfile .
 #   OR: from Cloud Build with cloudbuild.yaml
 # =============================================
 
@@ -12,8 +12,8 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files for feed-service (layer caching)
-COPY services/feed-service/package.json services/feed-service/package-lock.json* ./
+# Copy package files for notification-service (layer caching)
+COPY services/notification-service/package.json services/notification-service/package-lock.json* ./
 
 # Install ALL dependencies (including devDependencies for build)
 RUN npm install --ignore-scripts
@@ -23,8 +23,8 @@ COPY packages/database/prisma ./prisma/
 RUN npx prisma@5.22.0 generate --schema=./prisma/schema.prisma
 
 # Copy source and build
-COPY services/feed-service/tsconfig.json ./
-COPY services/feed-service/src/ ./src/
+COPY services/notification-service/tsconfig.json ./
+COPY services/notification-service/src/ ./src/
 RUN npm run build
 
 # Stage 2: Production runtime
@@ -34,10 +34,10 @@ WORKDIR /app
 
 # Security: run as non-root
 RUN addgroup -g 1001 -S nodejs && \
-  adduser -S feedservice -u 1001
+  adduser -S notificationservice -u 1001
 
 # Copy package files and install production deps only
-COPY services/feed-service/package.json services/feed-service/package-lock.json* ./
+COPY services/notification-service/package.json services/notification-service/package-lock.json* ./
 RUN npm install --omit=dev --ignore-scripts
 
 # Copy Prisma schema & generate client for runtime
@@ -57,7 +57,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/health || exit 1
 
 # Switch to non-root user
-USER feedservice
+USER notificationservice
 
 EXPOSE 8080
 

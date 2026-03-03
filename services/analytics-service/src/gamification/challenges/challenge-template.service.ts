@@ -28,6 +28,7 @@ export class ChallengeTemplateService {
         return await prisma.challengeTemplate.create({
             data: {
                 ...data,
+                criteria: data.criteria as any,
                 weight: data.weight ?? 1,
                 isActive: true,
             },

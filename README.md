@@ -12,6 +12,7 @@ An enterprise-grade school management + social e-learning platform. Combines **s
 
 | Document | Purpose |
 |----------|---------|
+| **[DEPLOYMENT_GUIDE.md](./docs/DEPLOYMENT_GUIDE.md)** | 🚀 **Production deployment instructions (Cloud Run, Vercel, App Store)** |
 | **[PROJECT_STATUS.md](./PROJECT_STATUS.md)** | What's done, what remains, service map |
 | **[DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)** | Architecture, patterns, deployment — read first |
 | **[CURRENT_FEATURES.md](./CURRENT_FEATURES.md)** | Complete feature inventory |

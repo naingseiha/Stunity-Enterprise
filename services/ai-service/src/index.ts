@@ -14,7 +14,7 @@ import { geminiService } from './services/gemini.service';
 import generateRoutes from './routes/generate.routes';
 
 const app = express();
-const PORT = parseInt(process.env.PORT || '3020', 10);
+const PORT = parseInt(process.env.PORT || process.env.AI_SERVICE_PORT || '3020', 10);
 
 // ─── CORS ──────────────────────────────────────────────────────────
 const defaultOrigins = [

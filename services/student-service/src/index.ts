@@ -58,8 +58,16 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
 }
 
 // Middleware - CORS configuration
+const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'];
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -230,7 +238,11 @@ app.post('/students/batch', async (req: Request, res: Response) => {
             schoolId,
             firstName,
             lastName,
-            khmerName: `${firstName} ${lastName}`, // Default Khmer name
+            customFields: {
+              regional: {
+                khmerName: `${firstName} ${lastName}`
+              }
+            },
             gender: gender || 'M',
             dateOfBirth: dateOfBirth || '2008-01-01',
             classId: classId || null,
@@ -939,14 +951,6 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
       classId: (classId && classId.trim() !== "") ? classId : null,
       customFields: {
         regional: {
-          khmerName: khmerName.trim(),
-          englishName: englishName?.trim() || null,
-          placeOfBirth: placeOfBirth?.trim() || "ភ្នំពេញ",
-          currentAddress: currentAddress?.trim() || "ភ្នំពេញ",
-          fatherName: fatherName?.trim() || "ឪពុក",
-          motherName: motherName?.trim() || "ម្តាយ",
-          parentPhone: parentPhone?.trim() || null,
-          parentOccupation: parentOccupation?.trim() || "កសិករ",
           remarks: remarks?.trim() || null,
         }
       }
@@ -990,7 +994,7 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
     console.log(`   ID: ${student.id}`);
     console.log(`   Student ID: ${student.studentId}`);
     console.log(`   Permanent ID: ${student.permanentId}`);
-    console.log(`   Name: ${student.khmerName}`);
+    console.log(`   Name: ${(student.customFields as any)?.regional?.khmerName || student.firstName}`);
     console.log(`   School: ${schoolId}`);
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
@@ -1120,32 +1124,15 @@ app.post('/students/bulk', async (req: AuthRequest, res: Response) => {
             studentId,
             firstName,
             lastName,
-            khmerName: fullName,
-            dateOfBirth,
             gender,
+            dateOfBirth,
             classId,
-            email: `${studentId}@student.edu.kh`,
-            previousGrade: studentData.previousGrade?.trim() || null,
-            previousSchool: studentData.previousSchool?.trim() || null,
-            repeatingGrade: studentData.repeatingGrade?.trim() || null,
-            transferredFrom: studentData.transferredFrom?.trim() || null,
-            grade9ExamSession: studentData.grade9ExamSession?.trim() || null,
-            grade9ExamCenter: studentData.grade9ExamCenter?.trim() || null,
-            grade9ExamRoom: studentData.grade9ExamRoom?.trim() || null,
-            grade9ExamDesk: studentData.grade9ExamDesk?.trim() || null,
-            grade9PassStatus: studentData.grade9PassStatus?.trim() || null,
-            grade12ExamSession: studentData.grade12ExamSession?.trim() || null,
-            grade12ExamCenter: studentData.grade12ExamCenter?.trim() || null,
-            grade12ExamRoom: studentData.grade12ExamRoom?.trim() || null,
-            grade12ExamDesk: studentData.grade12ExamDesk?.trim() || null,
-            grade12PassStatus: studentData.grade12PassStatus?.trim() || null,
-            grade12Track: studentData.grade12Track?.trim() || null,
-            remarks: studentData.remarks?.trim() || null,
-            placeOfBirth: "ភ្នំពេញ",
-            currentAddress: "ភ្នំពេញ",
-            fatherName: "ឪពុក",
-            motherName: "ម្តាយ",
-            parentOccupation: "កសិករ",
+            customFields: {
+              regional: {
+                khmerName: fullName,
+                parentOccupation: "កសិករ",
+              }
+            }
           },
           include: {
             class: {
@@ -1157,10 +1144,10 @@ app.post('/students/bulk', async (req: AuthRequest, res: Response) => {
         results.success.push({
           row: rowNumber,
           studentId: newStudent.studentId,
-          name: newStudent.khmerName,
+          name: (newStudent.customFields as any)?.regional?.khmerName || fullName,
         });
 
-        console.log(`  ✅ Row ${rowNumber}: ${newStudent.khmerName} (${newStudent.studentId})`);
+        console.log(`  ✅ Row ${rowNumber}: ${(newStudent.customFields as any)?.regional?.khmerName || newStudent.firstName} (${newStudent.studentId})`);
       } catch (error: any) {
         results.failed.push({
           row: rowNumber,
@@ -1933,7 +1920,7 @@ app.get('/students/:id/progression', async (req: AuthRequest, res: Response) => 
           studentId: student.studentId,
           name: {
             latin: `${student.firstName} ${student.lastName}`,
-            khmer: student.khmerName,
+            khmer: (student.customFields as any)?.regional?.khmerName || null,
           },
         },
         progressions,
@@ -2342,7 +2329,7 @@ function getLetterGrade(percentage: number): string {
 }
 
 // Start server
-const PORT = process.env.STUDENT_SERVICE_PORT || 3003;
+const PORT = process.env.PORT || process.env.STUDENT_SERVICE_PORT || 3003;
 
 app.listen(PORT, () => {
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");

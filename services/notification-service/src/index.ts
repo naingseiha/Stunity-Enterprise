@@ -11,9 +11,14 @@ import notificationRoutes from './routes/notification.routes';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const app = express();
-const PORT = process.env.NOTIFICATION_SERVICE_PORT || 3013;
+const PORT = process.env.PORT || process.env.NOTIFICATION_SERVICE_PORT || 3013;
 
-app.use(cors());
+const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+  }
+}));
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 200, standardHeaders: true, legacyHeaders: false, message: { success: false, error: 'Too many requests' } }));
 app.use(morgan('dev'));
@@ -22,9 +27,9 @@ app.use(express.json({ limit: '1mb' }));
 app.use('/notifications', notificationRoutes);
 
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', service: 'notification-service' });
+  res.json({ status: 'ok', service: 'notification-service' });
 });
 
 app.listen(PORT, () => {
-    console.log(`Notification Service running on port ${PORT}`);
+  console.log(`Notification Service running on port ${PORT}`);
 });

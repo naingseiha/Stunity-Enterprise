@@ -61,8 +61,16 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
 }
 
 // Middleware - CORS configuration
+const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'];
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -1673,7 +1681,7 @@ app.get('/attendance/teacher/today', authenticateToken, async (req: AuthRequest,
 });
 
 // Start server
-const PORT = process.env.ATTENDANCE_SERVICE_PORT || 3008;
+const PORT = process.env.PORT || process.env.ATTENDANCE_SERVICE_PORT || 3008;
 app.listen(PORT, () => {
   console.log(`✅ Attendance Service running on port ${PORT}`);
 });

@@ -19,7 +19,7 @@ import ssoRoutes from './routes/sso.routes';
 dotenv.config({ path: '../../.env' });
 
 const app = express();
-const PORT = process.env.AUTH_SERVICE_PORT || 3001;
+const PORT = process.env.PORT || process.env.AUTH_SERVICE_PORT || 3001;
 // Security: fail startup in production if JWT_SECRET is unset
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
@@ -67,8 +67,16 @@ setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000); // Every 4 
 };
 
 // Middleware - CORS configuration
+const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'];
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -998,7 +1006,6 @@ app.post(
   [
     body('firstName').notEmpty().withMessage('First name is required'),
     body('lastName').notEmpty().withMessage('Last name is required'),
-    body('khmerName').notEmpty().withMessage('Khmer name is required'),
     body('phone').notEmpty().withMessage('Phone number is required'),
     body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
     body('studentId').notEmpty().withMessage('Student ID is required'),
@@ -1014,7 +1021,7 @@ app.post(
         });
       }
 
-      const { firstName, lastName, khmerName, email, phone, password, studentId, relationship } = req.body;
+      const { firstName, lastName, email, phone, password, studentId, relationship } = req.body;
 
       console.log('👨‍👩‍👧 Parent registration attempt:', { firstName, lastName, phone, studentId });
 
@@ -1066,11 +1073,6 @@ app.post(
           data: {
             firstName,
             lastName,
-            customFields: {
-              regional: {
-                khmerName,
-              }
-            },
             email: email || null,
             phone,
             relationship,
@@ -1235,7 +1237,7 @@ app.post(
         id: sp.student.id,
         firstName: sp.student.firstName,
         lastName: sp.student.lastName,
-        khmerName: (sp.student.customFields as any)?.regional?.khmerName || `${sp.student.firstName} ${sp.student.lastName}`,
+        fullName: `${sp.student.firstName} ${sp.student.lastName}`,
         studentId: sp.student.studentId,
         relationship: sp.relationship,
         isPrimary: sp.isPrimary,
@@ -1709,7 +1711,7 @@ app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Respons
           id: sp.student.id,
           firstName: sp.student.firstName,
           lastName: sp.student.lastName,
-          khmerName: (sp.student.customFields as any)?.regional?.khmerName || `${sp.student.firstName} ${sp.student.lastName}`,
+          fullName: `${sp.student.firstName} ${sp.student.lastName}`,
           studentId: sp.student.studentId,
           relationship: sp.relationship,
           isPrimary: sp.isPrimary,
@@ -2022,7 +2024,7 @@ app.post('/auth/claim-codes/link', authenticateToken, async (req: AuthRequest, r
             email: currentUser.email,
             customFields: {
               regional: {
-                khmerName: `${currentUser.firstName} ${currentUser.lastName}`,
+                displayName: `${currentUser.firstName} ${currentUser.lastName}`,
               }
             },
             dateOfBirth: verificationData?.dateOfBirth || new Date().toISOString(),
@@ -2232,7 +2234,7 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
             lastName,
             customFields: {
               regional: {
-                khmerName: `${firstName} ${lastName}`,
+                displayName: `${firstName} ${lastName}`,
               }
             },
             dateOfBirth: verificationData?.dateOfBirth || new Date().toISOString(),

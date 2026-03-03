@@ -37,7 +37,7 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
-const PORT = process.env.TEACHER_SERVICE_PORT || 3004;
+const PORT = process.env.PORT || process.env.TEACHER_SERVICE_PORT || 3004;
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
 }
@@ -59,8 +59,16 @@ warmUpDb();
 setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000);
 
 // Middleware - CORS configuration
+const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'];
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -933,7 +941,6 @@ app.post('/teachers', async (req: AuthRequest, res: Response) => {
         hireDate,
         address,
         role: role || 'TEACHER',
-        salaryRange,
         schoolId: schoolId, // ✅ Multi-tenant
         homeroomClassId,
         customFields: {
@@ -948,6 +955,7 @@ app.post('/teachers', async (req: AuthRequest, res: Response) => {
             idCard: idCard || null,
             passport: passport || null,
             workingLevel: workingLevel || null,
+            salaryRange: salaryRange || null,
             emergencyContact: emergencyContact || null,
             emergencyPhone: emergencyPhone || null,
           }
@@ -1118,17 +1126,21 @@ app.post('/teachers/bulk', async (req: AuthRequest, res: Response) => {
           data: {
             firstName,
             lastName,
-            khmerName,
             email,
             phone,
             employeeId,
             gender,
             dateOfBirth,
-            position,
             hireDate,
             address,
             role: role || 'TEACHER',
             schoolId: schoolId, // ✅ Multi-tenant
+            customFields: {
+              regional: {
+                khmerName: khmerName || null,
+                position: position || null,
+              }
+            }
           },
         });
 
@@ -1251,7 +1263,6 @@ app.put('/teachers/:id', async (req: AuthRequest, res: Response) => {
       hireDate,
       address,
       role,
-      salaryRange,
       homeroomClassId,
       customFields: {
         regional: {
@@ -1265,6 +1276,7 @@ app.put('/teachers/:id', async (req: AuthRequest, res: Response) => {
           idCard: idCard || undefined,
           passport: passport || undefined,
           workingLevel: workingLevel || undefined,
+          salaryRange: salaryRange || undefined,
           emergencyContact: emergencyContact || undefined,
           emergencyPhone: emergencyPhone || undefined,
         }

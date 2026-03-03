@@ -1,0 +1,42 @@
+# Google Cloud Ignore - Ultra Aggressive
+.gcloudignore
+.git
+.gitignore
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+dist/
+**/dist/
+build/
+**/build/
+.expo/
+**/.expo/
+ios/
+**/ios/
+android/
+**/android/
+.turbo/
+**/.turbo/
+.vscode/
+**/.vscode/
+*.log
+*.tgz
+*.zip
+*.db
+*.sqlite
+.env*
+!.env.production.example
+
+# EXCLUDE APPS - Not needed for backend builds
+apps/
+**/apps/
+
+# Monorepo specific exclusions
+packages/database/node_modules/
+services/*/node_modules/
+
+# Media
+**/assets/media/
+**/public/uploads/
+**/uploads/

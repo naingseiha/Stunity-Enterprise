@@ -42,7 +42,7 @@ import experienceRouter from './routes/experience.routes';
 import achievementsRouter from './routes/achievements.routes';
 
 const app = express();
-const PORT = parseInt(process.env.PORT || '3010', 10);
+const PORT = parseInt(process.env.PORT || process.env.FEED_SERVICE_PORT || '3010', 10);
 
 // ─── Graceful Shutdown ─────────────────────────────────────────────
 let server: any;

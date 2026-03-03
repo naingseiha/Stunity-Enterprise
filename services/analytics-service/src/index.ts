@@ -28,14 +28,19 @@ dotenv.config({ path: '../../.env' });
 
 const app = express();
 const prisma = new PrismaClient();
-const PORT = process.env.ANALYTICS_SERVICE_PORT || 3014;
+const PORT = process.env.PORT || process.env.ANALYTICS_SERVICE_PORT || 3014;
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
 }
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 
 // Middleware
-app.use(cors());
+const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+  }
+}));
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 200, standardHeaders: true, legacyHeaders: false, message: { success: false, error: 'Too many requests' } }));
 app.use(express.json({ limit: '1mb' }));
@@ -177,7 +182,7 @@ app.post('/live/create', authenticateToken, async (req: AuthRequest, res: Respon
         headers: authHeader ? { Authorization: authHeader } : {},
       });
       if (feedRes.ok) {
-        const feedData = await feedRes.json();
+        const feedData = await feedRes.json() as any;
         if (feedData.success && feedData.data) {
           const d = feedData.data;
           quiz = {

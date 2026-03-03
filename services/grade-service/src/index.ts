@@ -11,7 +11,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '../../.env' });
 
 const app = express();
-const PORT = process.env.GRADE_SERVICE_PORT || 3007;
+const PORT = process.env.PORT || process.env.GRADE_SERVICE_PORT || 3007;
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
 }
@@ -52,8 +52,16 @@ setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000); // Every 4 
 // Middleware
 // ========================================
 
+const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'];
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -207,7 +215,7 @@ app.get('/grades/class/:classId', authenticateToken, async (req: AuthRequest, re
             studentId: true,
             firstName: true,
             lastName: true,
-            khmerName: true,
+            customFields: true,
             photoUrl: true,
           },
         },
@@ -259,7 +267,7 @@ app.get(
           studentId: true,
           firstName: true,
           lastName: true,
-          khmerName: true,
+          customFields: true,
           photoUrl: true,
         },
         orderBy: [
@@ -525,7 +533,7 @@ app.put('/grades/:id', authenticateToken, async (req: AuthRequest, res: Response
       },
     });
 
-    console.log(`✅ Updated grade for student ${updatedGrade.student.khmerName}`);
+    console.log(`✅ Updated grade for student ${(updatedGrade.student.customFields as any)?.regional?.khmerName || updatedGrade.student.firstName}`);
 
     res.json(updatedGrade);
   } catch (error: any) {
@@ -684,7 +692,7 @@ app.get('/grades/summary/:studentId/:month', authenticateToken, async (req: Auth
             studentId: true,
             firstName: true,
             lastName: true,
-            khmerName: true,
+            customFields: true,
           },
         },
         class: {
@@ -896,7 +904,7 @@ app.get('/grades/export/template', authenticateToken, async (req: AuthRequest, r
     students.forEach((student) => {
       worksheet.addRow({
         studentId: student.studentId || student.id,
-        studentName: student.khmerName,
+        studentName: (student.customFields as any)?.regional?.khmerName || `${student.firstName} ${student.lastName}`,
       });
     });
 
@@ -1055,7 +1063,7 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
         studentId: student.studentId,
         firstName: student.firstName,
         lastName: student.lastName,
-        khmerName: student.khmerName,
+        khmerName: (student.customFields as any)?.regional?.khmerName || null,
         photoUrl: student.photoUrl,
         gender: student.gender,
         dateOfBirth: student.dateOfBirth,
@@ -1077,7 +1085,7 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
       generatedAt: new Date().toISOString(),
     };
 
-    console.log(`✅ Generated report card for student ${student.khmerName}`);
+    console.log(`✅ Generated report card for student ${(student.customFields as any)?.regional?.khmerName || student.firstName}`);
 
     res.json(reportCard);
   } catch (error: any) {
@@ -1171,7 +1179,7 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
           studentId: student.studentId,
           firstName: student.firstName,
           lastName: student.lastName,
-          khmerName: student.khmerName,
+          khmerName: (student.customFields as any)?.regional?.khmerName || null,
           photoUrl: student.photoUrl,
         },
       });

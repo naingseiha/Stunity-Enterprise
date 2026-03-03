@@ -25,7 +25,7 @@ import {
 dotenv.config();
 
 const app = express();
-const PORT = process.env.SCHOOL_SERVICE_PORT || 3002;
+const PORT = process.env.PORT || process.env.SCHOOL_SERVICE_PORT || 3002;
 
 // ✅ Singleton pattern to prevent multiple Prisma instances
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
@@ -69,8 +69,16 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
 }
 
 // Middleware - CORS configuration
+const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'];
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -3122,10 +3130,10 @@ app.get('/schools/:schoolId/teachers/:teacherId/history', async (req: Request, r
         firstName: true,
         lastName: true,
         email: true,
-        phoneNumber: true,
+        phone: true,
         hireDate: true,
         role: true,
-        position: true,
+        customFields: true,
       },
     });
 
@@ -3175,10 +3183,10 @@ app.get('/schools/:schoolId/teachers/:teacherId/history', async (req: Request, r
           id: teacher.id,
           name: `${teacher.firstName} ${teacher.lastName}`,
           email: teacher.email,
-          phone: teacher.phoneNumber,
+          phone: teacher.phone,
           hireDate: teacher.hireDate,
           role: teacher.role,
-          position: teacher.position,
+          position: (teacher.customFields as any)?.position,
         },
         assignmentHistory: Object.values(byYear),
         summary: {
