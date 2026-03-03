@@ -129,7 +129,7 @@ export default function AcademicYearDetailPage({ params }: { params: { locale: s
       }
 
       const response = await fetch(
-        `(process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002')/schools/${schoolId}/academic-years/${id}/comprehensive`,
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years/${id}/comprehensive`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,

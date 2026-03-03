@@ -166,7 +166,7 @@ export default function EditPostPage() {
         setLoading(true);
         const token = TokenManager.getAccessToken();
         
-        const res = await fetch(`(process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010')/posts/${postId}`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/posts/${postId}`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
 
@@ -292,7 +292,7 @@ export default function EditPostPage() {
         newMediaFiles.forEach(file => formData.append('files', file));
 
         try {
-          const uploadRes = await fetch('(process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010')/upload', {
+          const uploadRes = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/upload`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` },
             body: formData,
@@ -321,7 +321,7 @@ export default function EditPostPage() {
         updatePayload.pollOptions = pollOptions.filter(opt => opt.trim());
       }
 
-      const res = await fetch(`(process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010')/posts/${post.id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/posts/${post.id}`, {
         method: 'PUT',
         headers: { 
           'Authorization': `Bearer ${token}`,

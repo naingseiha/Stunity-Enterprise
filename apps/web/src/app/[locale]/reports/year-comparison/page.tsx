@@ -111,7 +111,7 @@ export default function YearComparisonPage({ params }: { params: { locale: strin
       if (!schoolId) return;
 
       const response = await fetch(
-        `(process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002')/schools/${schoolId}/academic-years/comparison?yearIds=all`,
+        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years/comparison?yearIds=all`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const result = await response.json();

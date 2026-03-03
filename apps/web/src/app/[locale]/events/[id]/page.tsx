@@ -105,7 +105,7 @@ export default function EventDetailPage() {
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
-      const response = await fetch(`(process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010')/calendar/${eventId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/calendar/${eventId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -134,7 +134,7 @@ export default function EventDetailPage() {
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
-      const response = await fetch(`(process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010')/calendar/${eventId}/rsvp`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/calendar/${eventId}/rsvp`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -158,7 +158,7 @@ export default function EventDetailPage() {
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
-      const response = await fetch(`(process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010')/calendar/${eventId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/calendar/${eventId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

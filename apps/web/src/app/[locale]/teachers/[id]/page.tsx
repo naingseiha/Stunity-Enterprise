@@ -152,7 +152,7 @@ export default function TeacherDetailPage({
   const loadTeacher = async () => {
     try {
       const token = TokenManager.getAccessToken();
-      const response = await fetch(`(process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004')/teachers/${id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004'}/teachers/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -173,7 +173,7 @@ export default function TeacherDetailPage({
     setLoadingHistory(true);
     try {
       const token = TokenManager.getAccessToken();
-      const response = await fetch(`(process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004')/teachers/${id}/history`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004'}/teachers/${id}/history`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();

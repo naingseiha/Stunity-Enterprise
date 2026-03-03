@@ -238,7 +238,7 @@ export default function PostDetailPage() {
     
     try {
       const token = TokenManager.getAccessToken();
-      const res = await fetch(`(process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010')/posts/${post.id}/like`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/posts/${post.id}/like`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -262,7 +262,7 @@ export default function PostDetailPage() {
     
     try {
       const token = TokenManager.getAccessToken();
-      const res = await fetch(`(process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010')/posts/${post.id}/value`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/posts/${post.id}/value`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -286,7 +286,7 @@ export default function PostDetailPage() {
     
     try {
       const token = TokenManager.getAccessToken();
-      const res = await fetch(`(process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010')/posts/${post.id}/bookmark`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/posts/${post.id}/bookmark`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -319,7 +319,7 @@ export default function PostDetailPage() {
     try {
       setSubmitting(true);
       const token = TokenManager.getAccessToken();
-      const res = await fetch(`(process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010')/posts/${post.id}/comments`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/posts/${post.id}/comments`, {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -347,7 +347,7 @@ export default function PostDetailPage() {
 
     try {
       const token = TokenManager.getAccessToken();
-      const res = await fetch(`(process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010')/posts/${post.id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/posts/${post.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       });

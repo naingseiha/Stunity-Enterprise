@@ -134,7 +134,7 @@ export default function EventsPage() {
       if (selectedType) params.append('eventType', selectedType);
       params.append('startAfter', new Date().toISOString());
 
-      const response = await fetch(`(process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010')/calendar?${params}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/calendar?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -153,7 +153,7 @@ export default function EventsPage() {
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
-      const response = await fetch('(process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010')/calendar/upcoming?limit=5', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/calendar/upcoming?limit=5`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -173,7 +173,7 @@ export default function EventsPage() {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth() + 1;
 
-      const response = await fetch(`(process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010')/calendar/month/${year}/${month}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/calendar/month/${year}/${month}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -201,7 +201,7 @@ export default function EventsPage() {
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
-      const response = await fetch(`(process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010')/calendar/${eventId}/rsvp`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/calendar/${eventId}/rsvp`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -701,7 +701,7 @@ function CreateEventModal({
           : new Date(`${formData.endDate}T${formData.endTime || '23:59'}`).toISOString();
       }
 
-      const response = await fetch('(process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010')/calendar', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/calendar`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
