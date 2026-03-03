@@ -15,11 +15,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Colors, ColorScale, Typography, Shadows } from '@/config';
+import { useAuthStore } from '@/stores';
+import { Colors, Typography, Shadows } from '@/config';
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeInUp, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { useAuthStore } from '@/stores';
+import { attendanceService } from '@/services/attendance';
 
 const { width } = Dimensions.get('window');
 
@@ -82,22 +83,22 @@ const SessionCard = ({
             ]}
         >
             <View style={styles.sessionHeader}>
-                <View style={[styles.sessionIconBg, { backgroundColor: isCurrent ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255,255,255,0.05)' }]}>
+                <View style={[styles.sessionIconBg, { backgroundColor: isCurrent ? '#F0F9FF' : '#F1F5F9' }]}>
                     <Ionicons
                         name={session === 'MORNING' ? "sunny" : "partly-sunny"}
                         size={22}
-                        color={isCurrent ? '#38BDF8' : 'rgba(255,255,255,0.4)'}
+                        color={isCurrent ? '#0EA5E9' : '#6B7280'}
                     />
                 </View>
                 <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={[styles.sessionTitle, isCurrent && { color: '#38BDF8' }]}>{session}</Text>
+                    <Text style={[styles.sessionTitle, isCurrent && { color: '#0EA5E9' }]}>{session}</Text>
                     <Text style={styles.sessionTimeWindow}>
                         {session === 'MORNING' ? '07:00 AM - 12:00 PM' : '12:00 PM - 06:00 PM'}
                     </Text>
                 </View>
                 {isCheckedOut ? (
                     <View style={styles.completedBadge}>
-                        <Ionicons name="checkmark-circle" size={14} color="#34D399" />
+                        <Ionicons name="checkmark-circle" size={14} color="#10B981" />
                         <Text style={styles.completedBadgeText}>DONE</Text>
                     </View>
                 ) : isCurrent && (
@@ -238,9 +239,9 @@ export const AttendanceCheckInScreen = () => {
     if (loading) {
         return (
             <View style={styles.centerContainer}>
-                <LinearGradient colors={['#0f172a', '#1e293b']} style={StyleSheet.absoluteFill} />
-                <ActivityIndicator size="large" color="#38BDF8" />
-                <Text style={[styles.loadingText, { color: '#38BDF8' }]}>Syncing with enterprise server...</Text>
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: '#F8FAFC' }]} />
+                <ActivityIndicator size="large" color="#0EA5E9" />
+                <Text style={[styles.loadingText, { color: '#0EA5E9' }]}>Syncing with enterprise server...</Text>
             </View>
         );
     }
@@ -248,26 +249,21 @@ export const AttendanceCheckInScreen = () => {
     if (!isLinkedToSchool) {
         return (
             <View style={styles.container}>
-                <LinearGradient
-                    colors={['#4c1d95', '#1e1b4b', '#0f172a']}
-                    style={StyleSheet.absoluteFill}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                />
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: '#F8FAFC' }]} />
                 <SafeAreaView style={styles.safeArea} edges={['top']}>
                     <View style={styles.navHeader}>
-                        <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()}>
-                            <Ionicons name="chevron-back" size={24} color="#fff" />
+                        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                            <Ionicons name="chevron-back" size={20} color="#1F2937" />
                         </TouchableOpacity>
                         <Text style={styles.headerTitle}>ATTENDANCE</Text>
                         <View style={{ width: 44 }} />
                     </View>
                     <View style={[styles.centerContainer, { paddingHorizontal: 30 }]}>
                         <View style={styles.sessionIconBg}>
-                            <Ionicons name="business-outline" size={64} color="rgba(255,255,255,0.4)" />
+                            <Ionicons name="business-outline" size={64} color="#9CA3AF" />
                         </View>
-                        <Text style={[styles.dateDisplay, { marginTop: 20, textAlign: 'center' }]}>Not Linked to a School</Text>
-                        <Text style={[styles.infoText, { textAlign: 'center', marginTop: 12, fontSize: 14 }]}>
+                        <Text style={[styles.dateDisplay, { marginTop: 20, textAlign: 'center', color: '#1F2937' }]}>Not Linked to a School</Text>
+                        <Text style={[styles.infoText, { textAlign: 'center', marginTop: 12, fontSize: 14, color: '#6B7280' }]}>
                             You must be linked to a school to use the attendance feature. Please ask your administrator to invite you or provide a claim code.
                         </Text>
                     </View>
@@ -281,34 +277,29 @@ export const AttendanceCheckInScreen = () => {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" />
-            <LinearGradient
-                colors={['#4c1d95', '#1e1b4b', '#0f172a']}
-                style={StyleSheet.absoluteFill}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-            />
+            <StatusBar barStyle="dark-content" />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: '#F8FAFC' }]} />
 
             <SafeAreaView style={styles.safeArea} edges={['top']}>
                 <View style={styles.navHeader}>
                     <TouchableOpacity
-                        style={styles.iconBtn}
+                        style={styles.backButton}
                         onPress={() => {
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                             navigation.goBack();
                         }}
                     >
-                        <Ionicons name="chevron-back" size={24} color="#fff" />
+                        <Ionicons name="chevron-back" size={20} color="#374151" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>ATTENDANCE</Text>
                     <TouchableOpacity
-                        style={styles.iconBtn}
+                        style={styles.refreshButton}
                         onPress={() => {
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                             fetchTodayStatus();
                         }}
                     >
-                        <Ionicons name="refresh" size={20} color="#fff" />
+                        <Ionicons name="refresh" size={20} color="#374151" />
                     </TouchableOpacity>
                 </View>
 
@@ -322,7 +313,7 @@ export const AttendanceCheckInScreen = () => {
                             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                         </Text>
                         <View style={styles.gpsRow}>
-                            <View style={[styles.gpsDot, { backgroundColor: locationPermGranted ? '#34D399' : '#F87171' }]} />
+                            <View style={[styles.gpsDot, { backgroundColor: locationPermGranted ? '#10B981' : '#F43F5E' }]} />
                             <Text style={styles.gpsStatusText}>{gpsText}</Text>
                         </View>
                     </Animated.View>
@@ -347,12 +338,27 @@ export const AttendanceCheckInScreen = () => {
                         isCurrent={!isMorningActual}
                     />
 
+                    <Animated.View entering={FadeInUp.delay(350)} style={styles.reportActionCard}>
+                        <View style={styles.reportIconBg}>
+                            <Ionicons name="bar-chart" size={20} color="#0EA5E9" />
+                        </View>
+                        <View style={styles.reportTextContainer}>
+                            <Text style={styles.reportTitle}>Summary Reports</Text>
+                            <Text style={styles.reportSubtitle}>View your attendance performance</Text>
+                        </View>
+                        <TouchableOpacity
+                            style={styles.viewReportButton}
+                            onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                navigation.navigate('AttendanceReport' as never);
+                            }}
+                        >
+                            <Text style={styles.viewReportText}>View</Text>
+                        </TouchableOpacity>
+                    </Animated.View>
+
                     <Animated.View entering={FadeInUp.delay(400)} style={styles.infoCard}>
-                        <LinearGradient
-                            colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.03)']}
-                            style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
-                        />
-                        <Ionicons name="shield-checkmark-outline" size={20} color="rgba(56, 189, 248, 0.6)" />
+                        <Ionicons name="shield-checkmark-outline" size={20} color="#0EA5E9" />
                         <Text style={styles.infoText}>
                             Enterprise Geofencing Active. Your location is only recorded during check-in/out for verification.
                         </Text>
@@ -364,7 +370,7 @@ export const AttendanceCheckInScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
+    container: { flex: 1, backgroundColor: '#F8FAFC' },
     safeArea: { flex: 1 },
     centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     loadingText: { marginTop: 16, fontSize: 14, fontWeight: '700', letterSpacing: 0.5 },
@@ -376,20 +382,28 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 12,
     },
-    iconBtn: {
-        width: 44,
-        height: 44,
+    backButton: {
+        width: 40,
+        height: 40,
         borderRadius: 14,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: '#EFF6FF',
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        ...Shadows.sm,
+    },
+    refreshButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 14,
+        backgroundColor: '#EFF6FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        ...Shadows.sm,
     },
     headerTitle: {
         fontSize: 16,
         fontWeight: '900',
-        color: '#fff',
+        color: '#1F2937',
         letterSpacing: 2,
     },
     headerContent: {
@@ -400,19 +414,18 @@ const styles = StyleSheet.create({
     dateDisplay: {
         fontSize: 24,
         fontWeight: '800',
-        color: '#fff',
+        color: '#1F2937',
         letterSpacing: -0.5,
     },
     gpsRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.3)',
+        backgroundColor: '#fff',
         paddingHorizontal: 14,
         paddingVertical: 8,
         borderRadius: 20,
         marginTop: 16,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
+        ...Shadows.sm,
     },
     gpsDot: {
         width: 8,
@@ -421,7 +434,7 @@ const styles = StyleSheet.create({
         marginRight: 8,
     },
     gpsStatusText: {
-        color: 'rgba(255,255,255,0.8)',
+        color: '#4B5563',
         fontSize: 11,
         fontWeight: '700',
         letterSpacing: 0.5,
@@ -441,44 +454,43 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: 'rgba(255,255,255,0.05)',
+        backgroundColor: '#fff',
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: '#F1F5F9',
+        ...Shadows.sm,
     },
     todayDot: {
-        backgroundColor: 'rgba(56, 189, 248, 0.2)',
-        borderColor: '#38BDF8',
+        backgroundColor: '#F0F9FF',
+        borderColor: '#0EA5E9',
         borderWidth: 2,
     },
     pastDot: {
-        backgroundColor: '#34D399',
-        borderColor: '#34D399',
+        backgroundColor: '#10B981',
+        borderColor: '#10B981',
     },
     dayLabel: {
         fontSize: 10,
-        color: 'rgba(255,255,255,0.4)',
+        color: '#9CA3AF',
         fontWeight: '700',
     },
     todayLabel: {
-        color: '#38BDF8',
+        color: '#0EA5E9',
     },
 
     content: { flex: 1 },
     scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
 
     sessionCard: {
-        backgroundColor: 'rgba(255,255,255,0.06)',
+        backgroundColor: '#fff',
         borderRadius: 24,
         padding: 24,
         marginBottom: 20,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        ...Shadows.md,
     },
     currentSessionCard: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        borderColor: 'rgba(56, 189, 248, 0.4)',
+        borderColor: '#0EA5E9',
         borderWidth: 1.5,
     },
     completedSessionCard: {
@@ -495,22 +507,23 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
+        backgroundColor: '#F1F5F9',
     },
     sessionTitle: {
         fontSize: 18,
         fontWeight: '800',
-        color: '#fff',
+        color: '#1F2937',
     },
     sessionTimeWindow: {
         fontSize: 12,
-        color: 'rgba(255,255,255,0.4)',
+        color: '#6B7280',
         marginTop: 4,
         fontWeight: '600',
     },
     completedBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(52, 211, 153, 0.15)',
+        backgroundColor: '#ECFDF5',
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderRadius: 10,
@@ -519,10 +532,10 @@ const styles = StyleSheet.create({
     completedBadgeText: {
         fontSize: 11,
         fontWeight: '900',
-        color: '#34D399',
+        color: '#10B981',
     },
     currentBadge: {
-        backgroundColor: 'rgba(56, 189, 248, 0.15)',
+        backgroundColor: '#F0F9FF',
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderRadius: 10,
@@ -530,12 +543,12 @@ const styles = StyleSheet.create({
     currentBadgeText: {
         fontSize: 11,
         fontWeight: '900',
-        color: '#38BDF8',
+        color: '#0EA5E9',
     },
 
     timeInfoRow: {
         flexDirection: 'row',
-        backgroundColor: 'rgba(0,0,0,0.2)',
+        backgroundColor: '#F8FAFC',
         borderRadius: 18,
         padding: 18,
         marginBottom: 24,
@@ -546,7 +559,7 @@ const styles = StyleSheet.create({
     },
     timeLabel: {
         fontSize: 10,
-        color: 'rgba(255,255,255,0.3)',
+        color: '#9CA3AF',
         fontWeight: '800',
         marginBottom: 6,
         letterSpacing: 1,
@@ -554,15 +567,15 @@ const styles = StyleSheet.create({
     timeValue: {
         fontSize: 20,
         fontWeight: '800',
-        color: 'rgba(255,255,255,0.15)',
+        color: '#E2E8F0',
     },
     activeTimeValue: {
-        color: '#fff',
+        color: '#1F2937',
     },
     timeSeparator: {
         width: 1,
         height: '100%',
-        backgroundColor: 'rgba(255,255,255,0.05)',
+        backgroundColor: '#E2E8F0',
         marginHorizontal: 12,
     },
 
@@ -579,7 +592,7 @@ const styles = StyleSheet.create({
         opacity: 0.5,
     },
     sessionBtnIn: {
-        backgroundColor: '#38BDF8',
+        backgroundColor: '#0EA5E9',
     },
     sessionBtnOut: {
         backgroundColor: '#F43F5E',
@@ -599,16 +612,59 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 20,
         borderRadius: 20,
+        backgroundColor: '#fff',
         marginTop: 8,
         gap: 16,
-        overflow: 'hidden',
+        ...Shadows.sm,
     },
     infoText: {
         flex: 1,
         fontSize: 12,
-        color: 'rgba(255,255,255,0.5)',
+        color: '#6B7280',
         lineHeight: 18,
         fontWeight: '500',
+    },
+    reportActionCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 16,
+        marginBottom: 16,
+        ...Shadows.sm,
+    },
+    reportIconBg: {
+        width: 44,
+        height: 44,
+        borderRadius: 14,
+        backgroundColor: '#F0F9FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    reportTextContainer: {
+        flex: 1,
+        marginLeft: 12,
+    },
+    reportTitle: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#1F2937',
+    },
+    reportSubtitle: {
+        fontSize: 12,
+        color: '#64748B',
+        marginTop: 2,
+    },
+    viewReportButton: {
+        backgroundColor: '#0EA5E9',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 10,
+    },
+    viewReportText: {
+        color: '#fff',
+        fontSize: 13,
+        fontWeight: '700',
     },
 });
 

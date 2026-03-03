@@ -77,4 +77,56 @@ export const attendanceService = {
         if (!response.ok) throw new Error(data.message || 'Failed to fetch status');
         return data;
     },
+
+    getSummary: async (studentId: string, startDate?: string, endDate?: string) => {
+        const token = await tokenService.getAccessToken();
+        let url = `${getBaseUrl()}/attendance/student/${studentId}/summary`;
+        const params = new URLSearchParams();
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
+        if (params.toString()) url += `?${params.toString()}`;
+
+        const response = await fetch(url, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`);
+        }
+
+        if (!response.ok) throw new Error(data.message || 'Failed to fetch summary');
+        return data;
+    },
+
+    getTeacherSummary: async (teacherId: string, startDate?: string, endDate?: string) => {
+        const token = await tokenService.getAccessToken();
+        let url = `${getBaseUrl()}/attendance/teacher/${teacherId}/summary`;
+        const params = new URLSearchParams();
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
+        if (params.toString()) url += `?${params.toString()}`;
+
+        const response = await fetch(url, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`);
+        }
+
+        if (!response.ok) throw new Error(data.message || 'Failed to fetch teacher summary');
+        return data;
+    },
 };

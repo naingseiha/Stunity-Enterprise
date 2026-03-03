@@ -155,6 +155,8 @@ export type ProfileStackParamList = {
   MyPosts: undefined;
   AcademicProfile: undefined;
   ManageDeadlines: undefined;
+  AttendanceCheckIn: undefined;
+  AttendanceReport: undefined;
 };
 
 // Screen Props Types

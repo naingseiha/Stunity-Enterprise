@@ -460,7 +460,10 @@ export default function PerformanceTab({
     );
 }
 
-// ── Styles ───────────────────────────────────────────────────────
+const GRID_GAP = 12;
+const GRID_PADDING = 16;
+const PARENT_PADDING = 16; // From ProfileScreen's tabContent
+const CARD_WIDTH = (SCREEN_WIDTH - (PARENT_PADDING * 2) - (GRID_PADDING * 2) - (GRID_GAP * 2)) / 3 - 0.5;
 
 const s = StyleSheet.create({
     container: { gap: 16 },
@@ -555,17 +558,16 @@ const s = StyleSheet.create({
 
     // Core Stat Grid
     statGridWrapper: {
-        paddingHorizontal: 16,
+        paddingHorizontal: GRID_PADDING,
         paddingBottom: 20,
     },
     statGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 12,
-        justifyContent: 'center',
+        gap: GRID_GAP,
     },
     statGridCardWrapper: {
-        width: '31%',
+        width: CARD_WIDTH,
         borderRadius: 16,
         ...Shadows.sm,
         shadowOpacity: 0.08,

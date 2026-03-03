@@ -23,6 +23,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Avatar } from '@/components/common';
 import { useMessagingStore, useAuthStore } from '@/stores';
+import { Shadows } from '@/config';
 import { MessagesStackScreenProps } from '@/navigation/types';
 import { DMConversation } from '@/stores/messagingStore';
 
@@ -147,9 +148,9 @@ export default function NewMessageScreen() {
                 <View style={styles.header}>
                     <TouchableOpacity
                         onPress={() => navigation.goBack()}
-                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                        style={styles.backButton}
                     >
-                        <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                        <Ionicons name="chevron-back" size={20} color="#374151" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>New Message</Text>
                     <View style={{ width: 24 }} />
@@ -215,6 +216,15 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 20,
         paddingVertical: 12,
+    },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 14,
+        backgroundColor: '#EFF6FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        ...Shadows.sm,
     },
     headerTitle: {
         fontSize: 17,

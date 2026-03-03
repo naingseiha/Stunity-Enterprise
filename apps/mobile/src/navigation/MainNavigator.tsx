@@ -60,6 +60,7 @@ import { LeaderboardScreen } from '@/screens/gamification/LeaderboardScreen';
 import { AchievementsScreen } from '@/screens/achievements';
 import { NotificationsScreen } from '@/screens/notifications';
 import { AttendanceCheckInScreen } from '@/screens/attendance/AttendanceCheckInScreen';
+import { AttendanceReportScreen } from '@/screens/attendance/AttendanceReportScreen';
 
 // Placeholder screens (will be implemented)
 const PlaceholderScreen = ({ title }: { title: string }) => (
@@ -178,6 +179,7 @@ const ProfileStackNavigator = () => (
     <ProfileStack.Screen name="AcademicProfile" component={AcademicProfileScreen} />
     <ProfileStack.Screen name="ManageDeadlines" component={ManageDeadlinesScreen} />
     <ProfileStack.Screen name="AttendanceCheckIn" component={AttendanceCheckInScreen as any} />
+    <ProfileStack.Screen name="AttendanceReport" component={AttendanceReportScreen as any} />
   </ProfileStack.Navigator>
 );
 

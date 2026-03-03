@@ -339,7 +339,7 @@ export default function ChatScreen() {
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <Ionicons name="chevron-back" size={24} color={Colors.gray[700]} />
+          <Ionicons name="chevron-back" size={20} color="#374151" />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -462,7 +462,7 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
+  container: {
     flex: 1,
     backgroundColor: '#F0F4F8',
   },
@@ -478,9 +478,12 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
+    borderRadius: 14,
+    backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing[1],
+    ...Shadows.sm,
   },
   userInfo: {
     flex: 1,

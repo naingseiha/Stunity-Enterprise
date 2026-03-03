@@ -17,6 +17,7 @@ import {
   parseISO,
   startOfDay,
   endOfDay,
+  subMonths,
   isWeekend,
   eachDayOfInterval,
   differenceInDays
@@ -1061,6 +1062,309 @@ app.get('/attendance/class/:classId/summary', authenticateToken, async (req: Aut
       message: 'Failed to fetch class attendance summary',
       error: error.message,
     });
+  }
+});
+
+// GET /attendance/school/summary - School-wide aggregate stats for admin
+app.get('/attendance/school/summary', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.schoolId!;
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ success: false, message: 'Missing date range' });
+    }
+
+    // Use literal dates from query to avoid timezone shifts during startOfDay/endOfDay
+    // We assume startDate and endDate are YYYY-MM-DD
+    const start = startOfDay(new Date(startDate as string));
+    const end = endOfDay(new Date(endDate as string));
+
+    // For database matching, we also check for the exact midnight UTC version
+    // because some records (TeacherAttendance) might be stored as midnight UTC
+    const dbStart = new Date(start);
+    const dbEnd = new Date(end);
+
+    // Get all attendance records for the school in the date range
+    const [attendanceRecords, teacherRecords] = await Promise.all([
+      prisma.attendance.findMany({
+        where: {
+          student: { schoolId },
+          OR: [
+            { date: { gte: dbStart, lte: dbEnd } },
+            // Fallback for records stored as UTC midnight of the intended local day
+            { date: { gte: new Date(dbStart.getTime() - 24 * 60 * 60 * 1000), lte: dbEnd } }
+          ]
+        },
+      }),
+      prisma.teacherAttendance.findMany({
+        where: {
+          teacher: { schoolId },
+          OR: [
+            { date: { gte: dbStart, lte: dbEnd } },
+            // Fallback for records stored as UTC midnight of the intended local day
+            { date: { gte: new Date(dbStart.getTime() - 24 * 60 * 60 * 1000), lte: dbEnd } }
+          ]
+        },
+        include: {
+          teacher: {
+            select: {
+              firstName: true,
+              lastName: true,
+              photoUrl: true,
+              user: { select: { email: true } }
+            }
+          }
+        }
+      }),
+    ]);
+
+    const studentCount = await prisma.student.count({ where: { schoolId } });
+    const teacherCount = await prisma.teacher.count({ where: { schoolId } });
+    const totalSchoolDays = eachDayOfInterval({ start, end }).filter(date => !isWeekend(date)).length;
+
+    // Calculate totals and session breakdown for students
+    const totals = {
+      present: 0,
+      absent: 0,
+      late: 0,
+      excused: 0,
+      permission: 0,
+    };
+
+    const sessions = {
+      MORNING: { present: 0, absent: 0, late: 0, total: 0 },
+      AFTERNOON: { present: 0, absent: 0, late: 0, total: 0 },
+    };
+
+    // Calculate totals for teachers
+    const teacherTotals = {
+      present: teacherRecords.filter(r => r.status === 'PRESENT').length,
+      absent: teacherRecords.filter(r => r.status === 'ABSENT').length,
+    };
+
+    const attendanceRate = (totalSchoolDays * 2 * studentCount) > 0
+      ? Number(((attendanceRecords.filter(r => r.status === 'PRESENT' || r.status === 'LATE').length / (totalSchoolDays * 2 * studentCount)) * 100).toFixed(1))
+      : 0;
+
+    const teacherAttendanceRate = (totalSchoolDays * teacherCount) > 0
+      ? Number(((teacherTotals.present / (totalSchoolDays * teacherCount)) * 100).toFixed(1))
+      : 0;
+
+    const classStats: { [key: string]: { name: string, present: number, total: number } } = {};
+
+    attendanceRecords.forEach(r => {
+      // Global totals
+      if (r.status === 'PRESENT') totals.present++;
+      else if (r.status === 'ABSENT') totals.absent++;
+      else if (r.status === 'LATE') totals.late++;
+      else if (r.status === 'EXCUSED') totals.excused++;
+      else if (r.status === 'PERMISSION') totals.permission++;
+
+      // Session breakdown
+      const session = r.session as 'MORNING' | 'AFTERNOON';
+      if (sessions[session]) {
+        sessions[session].total++;
+        if (r.status === 'PRESENT') sessions[session].present++;
+        else if (r.status === 'LATE') sessions[session].late++;
+        else if (r.status === 'ABSENT') sessions[session].absent++;
+      }
+
+      // Class stats for "at risk" analysis
+      if (r.classId) {
+        if (!classStats[r.classId]) {
+          classStats[r.classId] = { name: `Class ${r.classId}`, present: 0, total: 0 };
+        }
+        classStats[r.classId].total++;
+        if (r.status === 'PRESENT' || r.status === 'LATE') {
+          classStats[r.classId].present++;
+        }
+      }
+    });
+
+    // Day-by-day trend
+    const dailyTrend: { [key: string]: any } = {};
+    attendanceRecords.forEach(record => {
+      const dateKey = format(record.date, 'yyyy-MM-dd');
+      if (!dailyTrend[dateKey]) {
+        dailyTrend[dateKey] = {
+          date: dateKey,
+          present: 0,
+          absent: 0,
+          late: 0,
+        };
+      }
+      if (record.status === 'PRESENT' || record.status === 'LATE') dailyTrend[dateKey].present++;
+      if (record.status === 'ABSENT') dailyTrend[dateKey].absent++;
+    });
+
+    // Top and Bottom performing classes
+    const performingClasses = Object.entries(classStats)
+      .map(([id, stats]) => ({
+        id,
+        name: stats.name,
+        rate: stats.total > 0 ? (stats.present / stats.total) * 100 : 0,
+      }))
+      .sort((a, b) => b.rate - a.rate);
+
+    const topClasses = performingClasses.slice(0, 5);
+    const atRiskClasses = performingClasses.slice(-5).filter(c => c.rate < 80);
+
+    const classCount = Object.keys(classStats).length;
+
+    const recentCheckIns = teacherRecords
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    res.json({
+      success: true,
+      data: {
+        stats: {
+          studentCount,
+          teacherCount,
+          classCount,
+          attendanceRate,
+          teacherAttendanceRate,
+          totals,
+          teacherTotals,
+          sessions,
+        },
+        trend: Object.values(dailyTrend),
+        topClasses,
+        atRiskClasses,
+        recentCheckIns,
+      },
+    });
+  } catch (error: any) {
+    console.error('Error fetching school summary:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch school summary', error: error.message });
+  }
+});
+
+// GET /attendance/teacher/:teacherId/summary - Summary of attendance recorded by a teacher (for their classes)
+app.get('/attendance/teacher/:teacherId/summary', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { teacherId: teacherIdParam } = req.params;
+    const { startDate, endDate } = req.query;
+
+    const start = startDate ? startOfDay(new Date(startDate as string)) : startOfDay(subMonths(new Date(), 1));
+    const end = endDate ? endOfDay(new Date(endDate as string)) : endOfDay(new Date());
+
+    const dbStart = new Date(start);
+    const dbEnd = new Date(end);
+
+    // Find the actual teacher record (handle both teacherId and userId)
+    const teacher = await prisma.teacher.findFirst({
+      where: {
+        OR: [
+          { id: teacherIdParam },
+          { user: { id: teacherIdParam } }
+        ]
+      },
+      select: { id: true }
+    });
+
+    if (!teacher) {
+      return res.status(404).json({ success: false, message: 'Teacher not found' });
+    }
+
+    const teacherId = teacher.id;
+
+    // Find all classes for this teacher
+    const classes = await prisma.class.findMany({
+      where: {
+        OR: [
+          { homeroomTeacherId: teacherId },
+          { teacherClasses: { some: { teacherId } } }
+        ]
+      },
+      select: { id: true, name: true }
+    });
+
+    const classIds = classes.map(c => c.id);
+
+    // Get attendance records for these classes (Student Attendance)
+    const [attendanceRecords, teacherAttendances] = await Promise.all([
+      prisma.attendance.findMany({
+        where: {
+          classId: { in: classIds },
+          OR: [
+            { date: { gte: dbStart, lte: dbEnd } },
+            // Fallback for midnight UTC storage
+            { date: { gte: new Date(dbStart.getTime() - 24 * 60 * 60 * 1000), lte: dbEnd } }
+          ]
+        },
+      }),
+      prisma.teacherAttendance.findMany({
+        where: {
+          teacherId,
+          OR: [
+            { date: { gte: dbStart, lte: dbEnd } },
+            // Fallback for midnight UTC storage
+            { date: { gte: new Date(dbStart.getTime() - 24 * 60 * 60 * 1000), lte: dbEnd } }
+          ]
+        },
+      }),
+    ]);
+
+    // Aggregate stats
+    const totals = {
+      present: attendanceRecords.filter(r => r.status === 'PRESENT').length,
+      absent: attendanceRecords.filter(r => r.status === 'ABSENT').length,
+      late: attendanceRecords.filter(r => r.status === 'LATE').length,
+      excused: attendanceRecords.filter(r => r.status === 'EXCUSED').length,
+      permission: attendanceRecords.filter(r => r.status === 'PERMISSION').length,
+    };
+
+    // Staff stats (their own record)
+    const staffTotals = {
+      present: teacherAttendances.filter(r => r.status === 'PRESENT').length,
+      absent: teacherAttendances.filter(r => r.status === 'ABSENT').length,
+    };
+
+    const totalSchoolDays = eachDayOfInterval({ start, end }).filter(date => !isWeekend(date)).length;
+
+    const totalRecords = attendanceRecords.length;
+    const attendanceRate = totalRecords > 0
+      ? Number(((totals.present + totals.late) / totalRecords * 100).toFixed(1))
+      : 0;
+
+    const personalAttendanceRate = totalSchoolDays > 0
+      ? Number((staffTotals.present / totalSchoolDays * 100).toFixed(1))
+      : 0;
+
+    // Breakdown by class
+    const classBreakdown = classes.map(c => {
+      const records = attendanceRecords.filter(r => r.classId === c.id);
+      const p = records.filter(r => r.status === 'PRESENT').length;
+      const l = records.filter(r => r.status === 'LATE').length;
+      return {
+        id: c.id,
+        name: c.name,
+        total: records.length,
+        present: p,
+        late: l,
+        rate: records.length > 0 ? calculateAttendancePercentage(p + l, records.length) : 0
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        stats: {
+          attendanceRate,
+          totals,
+          totalRecords,
+          staffTotals,
+          personalAttendanceRate,
+          totalSchoolDays
+        },
+        classBreakdown,
+        checkInHistory: teacherAttendances.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+      },
+    });
+  } catch (error: any) {
+    console.error('Error fetching teacher summary:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch teacher summary', error: error.message });
   }
 });
 

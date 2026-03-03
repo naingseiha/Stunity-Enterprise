@@ -230,6 +230,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
         { name: 'Grade Entry', icon: ClipboardList, path: `/${locale}/grades/entry`, prefetch: null },
         { name: 'Report Cards', icon: FileText, path: `/${locale}/grades/reports`, prefetch: null },
         { name: 'Grade Analytics', icon: TrendingUp, path: `/${locale}/grades/analytics`, prefetch: null },
+        { name: 'Attendance Dashboard', icon: BarChart3, path: `/${locale}/attendance/dashboard`, prefetch: null },
         { name: 'Mark Attendance', icon: ClipboardCheck, path: `/${locale}/attendance/mark`, prefetch: null },
         { name: 'Attendance Reports', icon: ClipboardCheck, path: `/${locale}/attendance/reports`, prefetch: null },
       ],

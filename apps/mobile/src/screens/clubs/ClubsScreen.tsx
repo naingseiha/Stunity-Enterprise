@@ -233,7 +233,7 @@ export default function ClubsScreen() {
           <Ionicons name="menu" size={28} color="#374151" />
         </TouchableOpacity>
 
-        <StunityLogo width={110} height={30} />
+        <StunityLogo width={130} height={36} />
 
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerButton}>
@@ -276,10 +276,10 @@ export default function ClubsScreen() {
                     isActive && {
                       backgroundColor: filterConfig.color,
                       shadowColor: filterConfig.color,
-                      
+
                       shadowOpacity: 0.3,
-                      
-                      
+
+
                     },
                   ]}>
                     <Ionicons name={filterConfig.icon} size={24} color={isActive ? '#fff' : filterConfig.color} />
@@ -311,10 +311,10 @@ export default function ClubsScreen() {
                     isActive && {
                       backgroundColor: type.color,
                       shadowColor: type.color,
-                      
+
                       shadowOpacity: 0.3,
-                      
-                      
+
+
                     },
                   ]}>
                     <Ionicons name={type.icon as any} size={24} color={isActive ? '#fff' : type.color} />
@@ -455,13 +455,13 @@ const styles = StyleSheet.create({
   },
   headerDivider: {
     height: 1,
-    backgroundColor: '#EDE9FE',
+    backgroundColor: '#DBEAFE',
   },
   menuButton: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#F5F3FF',
+    backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#F5F3FF',
+    backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -528,10 +528,10 @@ const styles = StyleSheet.create({
     minHeight: 200,
     justifyContent: 'space-between',
     shadowColor: '#000',
-    
-    
-    
-    
+
+
+
+
   },
   cardTopSection: {
     flexDirection: 'row',
@@ -547,17 +547,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    
-    
+
+
     shadowRadius: 4,
-    
+
   },
   typeBadgeNew: {
     backgroundColor: 'rgba(255,255,255,0.25)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
-    
+
     borderColor: 'rgba(255,255,255,0.3)',
   },
   typeBadgeTextNew: {
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
-    
+
     borderColor: 'rgba(255,255,255,0.3)',
   },
   tagTextNew: {
@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
-    
+
     borderColor: 'rgba(255,255,255,0.3)',
   },
   memberCountNew: {
@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.25)',
     justifyContent: 'center',
     alignItems: 'center',
-    
+
     borderColor: 'rgba(255,255,255,0.3)',
   },
   // OLD STYLES - Remove these later
@@ -689,10 +689,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 4,
     shadowColor: '#000',
-    
-    
+
+
     shadowRadius: 4,
-    
+
   },
   typeBadgeCornerText: {
     fontSize: 11,
@@ -793,15 +793,15 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: '#0EA5E9',
     shadowColor: '#0284C7',
-    
+
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    
+
   },
   joinedButton: {
     backgroundColor: '#fff',
     borderWidth: 2,
-    
+
     shadowColor: '#000',
     shadowOpacity: 0.05,
   },
@@ -856,8 +856,8 @@ const styles = StyleSheet.create({
     shadowColor: '#0284C7',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
-    
-    
+
+
   },
   fabGradient: {
     width: 58,
