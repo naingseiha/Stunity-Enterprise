@@ -2751,8 +2751,6 @@ model TeacherAttendance {
   updatedAt  DateTime       @updatedAt
   location   SchoolLocation @relation(fields: [locationId], references: [id])
   teacher    Teacher        @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-
-  @@unique([teacherId, date])
   @@index([teacherId, date])
   @@index([locationId, date])
   @@map("teacher_attendance")

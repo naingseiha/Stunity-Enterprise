@@ -83,15 +83,15 @@ const SessionCard = ({
             ]}
         >
             <View style={styles.sessionHeader}>
-                <View style={[styles.sessionIconBg, { backgroundColor: isCurrent ? '#F0F9FF' : '#F1F5F9' }]}>
+                <View style={[styles.sessionIconBg, { backgroundColor: isCurrent ? '#F0FDFA' : '#F1F5F9' }]}>
                     <Ionicons
                         name={session === 'MORNING' ? "sunny" : "partly-sunny"}
                         size={22}
-                        color={isCurrent ? '#0EA5E9' : '#6B7280'}
+                        color={isCurrent ? '#0D9488' : '#6B7280'}
                     />
                 </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={[styles.sessionTitle, isCurrent && { color: '#0EA5E9' }]}>{session}</Text>
+                <View style={{ flex: 1, marginLeft: 16 }}>
+                    <Text style={[styles.sessionTitle, isCurrent && { color: '#0D9488' }]}>{session}</Text>
                     <Text style={styles.sessionTimeWindow}>
                         {session === 'MORNING' ? '07:00 AM - 12:00 PM' : '12:00 PM - 06:00 PM'}
                     </Text>
@@ -127,25 +127,31 @@ const SessionCard = ({
             {!isCheckedOut && (
                 <TouchableOpacity
                     style={[
-                        styles.sessionBtn,
-                        isOnDuty ? styles.sessionBtnOut : styles.sessionBtnIn,
-                        processing && styles.btnDisabled,
-                        !isCurrent && !isCheckedIn && styles.btnInactive
+                        styles.sessionBtnContainer,
+                        !isCurrent && !isCheckedIn && styles.btnInactive,
+                        processing && styles.btnDisabled
                     ]}
                     onPress={handlePress}
                     disabled={processing}
                     activeOpacity={0.8}
                 >
-                    {processing ? (
-                        <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                        <>
-                            <Ionicons name={isOnDuty ? "log-out-outline" : "finger-print"} size={20} color="#fff" />
-                            <Text style={styles.sessionBtnText}>
-                                {isOnDuty ? 'Finish Session' : `Start ${session}`}
-                            </Text>
-                        </>
-                    )}
+                    <LinearGradient
+                        colors={isOnDuty ? ['#F43F5E', '#E11D48'] : ['#14B8A6', '#0D9488']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.sessionBtn}
+                    >
+                        {processing ? (
+                            <ActivityIndicator color="#fff" size="small" />
+                        ) : (
+                            <>
+                                <Ionicons name={isOnDuty ? "log-out-outline" : "finger-print"} size={22} color="#fff" />
+                                <Text style={styles.sessionBtnText}>
+                                    {isOnDuty ? 'Finish Session' : `Start ${session}`}
+                                </Text>
+                            </>
+                        )}
+                    </LinearGradient>
                 </TouchableOpacity>
             )}
         </Animated.View>
@@ -278,7 +284,10 @@ export const AttendanceCheckInScreen = () => {
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" />
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: '#F8FAFC' }]} />
+            <LinearGradient
+                colors={['#CCFBF1', '#F8FAFC', '#F8FAFC']}
+                style={StyleSheet.absoluteFill}
+            />
 
             <SafeAreaView style={styles.safeArea} edges={['top']}>
                 <View style={styles.navHeader}>
@@ -289,7 +298,7 @@ export const AttendanceCheckInScreen = () => {
                             navigation.goBack();
                         }}
                     >
-                        <Ionicons name="chevron-back" size={20} color="#374151" />
+                        <Ionicons name="chevron-back" size={20} color="#0D9488" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>ATTENDANCE</Text>
                     <TouchableOpacity
@@ -299,7 +308,7 @@ export const AttendanceCheckInScreen = () => {
                             fetchTodayStatus();
                         }}
                     >
-                        <Ionicons name="refresh" size={20} color="#374151" />
+                        <Ionicons name="refresh" size={20} color="#0D9488" />
                     </TouchableOpacity>
                 </View>
 
@@ -340,7 +349,7 @@ export const AttendanceCheckInScreen = () => {
 
                     <Animated.View entering={FadeInUp.delay(350)} style={styles.reportActionCard}>
                         <View style={styles.reportIconBg}>
-                            <Ionicons name="bar-chart" size={20} color="#0EA5E9" />
+                            <Ionicons name="bar-chart" size={22} color="#0D9488" />
                         </View>
                         <View style={styles.reportTextContainer}>
                             <Text style={styles.reportTitle}>Summary Reports</Text>
@@ -358,7 +367,7 @@ export const AttendanceCheckInScreen = () => {
                     </Animated.View>
 
                     <Animated.View entering={FadeInUp.delay(400)} style={styles.infoCard}>
-                        <Ionicons name="shield-checkmark-outline" size={20} color="#0EA5E9" />
+                        <Ionicons name="shield-checkmark-outline" size={24} color="#0D9488" />
                         <Text style={styles.infoText}>
                             Enterprise Geofencing Active. Your location is only recorded during check-in/out for verification.
                         </Text>
@@ -458,12 +467,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-        borderColor: '#F1F5F9',
+        borderColor: '#E2E8F0',
         ...Shadows.sm,
     },
     todayDot: {
-        backgroundColor: '#F0F9FF',
-        borderColor: '#0EA5E9',
+        backgroundColor: '#F0FDFA',
+        borderColor: '#0D9488',
         borderWidth: 2,
     },
     pastDot: {
@@ -476,7 +485,7 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     todayLabel: {
-        color: '#0EA5E9',
+        color: '#0D9488',
     },
 
     content: { flex: 1 },
@@ -487,10 +496,14 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         padding: 24,
         marginBottom: 20,
-        ...Shadows.md,
+        shadowColor: '#0D9488',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 12,
+        elevation: 4,
     },
     currentSessionCard: {
-        borderColor: '#0EA5E9',
+        borderColor: '#0D9488',
         borderWidth: 1.5,
     },
     completedSessionCard: {
@@ -535,7 +548,7 @@ const styles = StyleSheet.create({
         color: '#10B981',
     },
     currentBadge: {
-        backgroundColor: '#F0F9FF',
+        backgroundColor: '#F0FDFA',
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderRadius: 10,
@@ -543,7 +556,7 @@ const styles = StyleSheet.create({
     currentBadgeText: {
         fontSize: 11,
         fontWeight: '900',
-        color: '#0EA5E9',
+        color: '#0D9488',
     },
 
     timeInfoRow: {
@@ -579,23 +592,20 @@ const styles = StyleSheet.create({
         marginHorizontal: 12,
     },
 
+    sessionBtnContainer: {
+        borderRadius: 18,
+        overflow: 'hidden',
+        ...Shadows.md,
+    },
     sessionBtn: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 16,
-        borderRadius: 18,
         gap: 12,
-        ...Shadows.md,
     },
     btnInactive: {
         opacity: 0.5,
-    },
-    sessionBtnIn: {
-        backgroundColor: '#0EA5E9',
-    },
-    sessionBtnOut: {
-        backgroundColor: '#F43F5E',
     },
     btnDisabled: {
         opacity: 0.6,
@@ -637,7 +647,7 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 14,
-        backgroundColor: '#F0F9FF',
+        backgroundColor: '#F0FDFA',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -656,7 +666,7 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     viewReportButton: {
-        backgroundColor: '#0EA5E9',
+        backgroundColor: '#0D9488',
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 10,

@@ -1137,9 +1137,15 @@ app.get('/attendance/school/summary', authenticateToken, async (req: AuthRequest
       AFTERNOON: { present: 0, absent: 0, late: 0, total: 0 },
     };
 
-    // Calculate totals for teachers
+    // Calculate totals for teachers (unique days present)
+    const uniqueTeacherPresence = new Set(
+      teacherRecords
+        .filter(r => r.status === 'PRESENT')
+        .map(r => `${r.teacherId}_${new Date(r.date).toISOString().split('T')[0]}`)
+    ).size;
+
     const teacherTotals = {
-      present: teacherRecords.filter(r => r.status === 'PRESENT').length,
+      present: uniqueTeacherPresence,
       absent: teacherRecords.filter(r => r.status === 'ABSENT').length,
     };
 
@@ -1148,7 +1154,7 @@ app.get('/attendance/school/summary', authenticateToken, async (req: AuthRequest
       : 0;
 
     const teacherAttendanceRate = (totalSchoolDays * teacherCount) > 0
-      ? Number(((teacherTotals.present / (totalSchoolDays * teacherCount)) * 100).toFixed(1))
+      ? Math.min(100, Number(((teacherTotals.present / (totalSchoolDays * teacherCount)) * 100).toFixed(1)))
       : 0;
 
     const classStats: { [key: string]: { name: string, present: number, total: number } } = {};
@@ -1315,9 +1321,15 @@ app.get('/attendance/teacher/:teacherId/summary', authenticateToken, async (req:
       permission: attendanceRecords.filter(r => r.status === 'PERMISSION').length,
     };
 
-    // Staff stats (their own record)
+    // Staff stats (unique days present)
+    const uniqueStaffPresence = new Set(
+      teacherAttendances
+        .filter(r => r.status === 'PRESENT')
+        .map(r => new Date(r.date).toISOString().split('T')[0])
+    ).size;
+
     const staffTotals = {
-      present: teacherAttendances.filter(r => r.status === 'PRESENT').length,
+      present: uniqueStaffPresence,
       absent: teacherAttendances.filter(r => r.status === 'ABSENT').length,
     };
 
@@ -1329,7 +1341,7 @@ app.get('/attendance/teacher/:teacherId/summary', authenticateToken, async (req:
       : 0;
 
     const personalAttendanceRate = totalSchoolDays > 0
-      ? Number((staffTotals.present / totalSchoolDays * 100).toFixed(1))
+      ? Math.min(100, Number((staffTotals.present / totalSchoolDays * 100).toFixed(1)))
       : 0;
 
     // Breakdown by class
@@ -1499,18 +1511,19 @@ app.post('/attendance/teacher/check-in', authenticateToken, async (req: AuthRequ
     }
 
     const todayDate = startOfDay(new Date());
+    const utcStartStr = new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
+    const utcStart = new Date(utcStartStr);
 
-    const existingAttendance = await prisma.teacherAttendance.findUnique({
+    const activeAttendance = await prisma.teacherAttendance.findFirst({
       where: {
-        teacherId_date: {
-          teacherId: teacher.id,
-          date: todayDate,
-        }
+        teacherId: teacher.id,
+        OR: [{ date: todayDate }, { date: utcStart }],
+        timeOut: null
       }
     });
 
-    if (existingAttendance) {
-      return res.status(400).json({ success: false, message: `Already checked in today` });
+    if (activeAttendance) {
+      return res.status(400).json({ success: false, message: `You are already checked in without checking out.` });
     }
 
     const attendance = await prisma.teacherAttendance.create({
@@ -1575,12 +1588,14 @@ app.post('/attendance/teacher/check-out', authenticateToken, async (req: AuthReq
     }
 
     const todayDate = startOfDay(new Date());
+    const utcStartStr = new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
+    const utcStart = new Date(utcStartStr);
 
     // Find active check-in session that isn't checked out
     const activeSession = await prisma.teacherAttendance.findFirst({
       where: {
         teacherId: teacher.id,
-        date: todayDate,
+        OR: [{ date: todayDate }, { date: utcStart }],
         timeOut: null,
       },
       orderBy: { timeIn: 'desc' }
@@ -1618,22 +1633,38 @@ app.get('/attendance/teacher/today', authenticateToken, async (req: AuthRequest,
     }
 
     const todayDate = startOfDay(new Date());
+    const utcStartStr = new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
+    const utcStart = new Date(utcStartStr);
 
     const attendanceRecords = await prisma.teacherAttendance.findMany({
       where: {
         teacherId: teacher.id,
-        date: todayDate,
+        OR: [{ date: todayDate }, { date: utcStart }],
       },
       include: {
         location: true,
-      }
+      },
+      orderBy: { timeIn: 'asc' }
     });
 
-    // Structure result as session map for easier mobile consumption
+    // Structure result as session map depending on the check-in time
     const sessions = {
-      MORNING: attendanceRecords[0] || null,
-      AFTERNOON: null,
+      MORNING: null as any,
+      AFTERNOON: null as any,
     };
+
+    attendanceRecords.forEach(record => {
+      const hour = new Date(record.timeIn).getHours();
+      if (hour < 12 && !sessions.MORNING) {
+        sessions.MORNING = record;
+      } else if (hour >= 12 && !sessions.AFTERNOON) {
+        sessions.AFTERNOON = record;
+      } else {
+        // Fallback: if two morning records exist, assign second to afternoon, etc.
+        if (!sessions.MORNING) sessions.MORNING = record;
+        else if (!sessions.AFTERNOON) sessions.AFTERNOON = record;
+      }
+    });
 
     res.json({ success: true, data: sessions });
   } catch (error: any) {
