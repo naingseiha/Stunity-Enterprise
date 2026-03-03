@@ -11,7 +11,7 @@ export const CLASS_SERVICE_URL =
 export const MESSAGING_SERVICE_URL =
   process.env.NEXT_PUBLIC_MESSAGING_SERVICE_URL || 'http://localhost:3011';
 export const FEED_SERVICE_URL =
-  process.env.NEXT_PUBLIC_FEED_API_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL || (process.env.NEXT_PUBLIC_FEED_SERVICE_URL || (process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'));
+  process.env.NEXT_PUBLIC_FEED_API_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL || (process.env.NEXT_PUBLIC_FEED_SERVICE_URL || (process.env.NEXT_PUBLIC_FEED_SERVICE_URL || (process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010')));
 export const ANALYTICS_SERVICE_URL =
   process.env.NEXT_PUBLIC_ANALYTICS_SERVICE_URL || 'http://localhost:3014';
 export const ATTENDANCE_SERVICE_URL =
