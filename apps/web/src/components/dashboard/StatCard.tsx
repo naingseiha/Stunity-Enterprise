@@ -33,24 +33,24 @@ export default function StatCard({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{value}</p>
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200/80 dark:border-gray-700 p-6 shadow-sm hover:shadow-md hover:border-slate-300/80 dark:hover:border-gray-600 transition-all duration-200">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</p>
+          <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">{value}</p>
           {subtitle && (
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{subtitle}</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 truncate" title={subtitle}>{subtitle}</p>
           )}
           {change && (
-            <div className={`mt-2 inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${changeStyles[changeType]}`}>
+            <div className={`mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium ${changeStyles[changeType]}`}>
               {changeType === 'positive' && '↑'}
               {changeType === 'negative' && '↓'}
               {change}
             </div>
           )}
         </div>
-        <div className={`p-3 rounded-lg ${iconStyles[iconColor as keyof typeof iconStyles]}`}>
-          <Icon className="w-6 h-6" />
+        <div className={`flex-shrink-0 p-3 rounded-xl ${iconStyles[iconColor as keyof typeof iconStyles]}`}>
+          <Icon className="w-6 h-6" aria-hidden />
         </div>
       </div>
     </div>

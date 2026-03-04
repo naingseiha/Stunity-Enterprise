@@ -20,12 +20,12 @@ export default function ActionCard({
   href,
 }: ActionCardProps) {
   const iconStyles = {
-    blue: 'bg-blue-100 text-blue-600',
-    purple: 'bg-purple-100 text-purple-600',
-    green: 'bg-green-100 text-green-600',
-    amber: 'bg-amber-100 text-amber-600',
-    cyan: 'bg-cyan-100 text-cyan-600',
-    red: 'bg-red-100 text-red-600',
+    blue: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400',
+    purple: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400',
+    green: 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400',
+    amber: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400',
+    cyan: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-400',
+    red: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400',
   };
 
   const cardContent = (
@@ -34,14 +34,14 @@ export default function ActionCard({
         <Icon className="w-5 h-5" />
       </div>
       <div className="flex-1">
-        <h3 className="font-semibold text-gray-900">{title}</h3>
-        <p className="text-sm text-gray-500 mt-0.5">{description}</p>
+        <h3 className="font-semibold text-slate-900 dark:text-white">{title}</h3>
+        <p className="text-sm text-slate-500 dark:text-gray-400 mt-0.5">{description}</p>
       </div>
-      <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+      <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
     </div>
   );
 
-  const className = "w-full bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md hover:scale-[1.01] transition-all text-left group block";
+  const className = "w-full bg-white dark:bg-gray-800 rounded-xl border border-slate-200/80 dark:border-gray-700 p-4 shadow-sm hover:shadow hover:border-slate-300/80 dark:hover:border-gray-600 transition-all text-left group block";
 
   if (href) {
     return (
