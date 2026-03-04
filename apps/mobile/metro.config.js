@@ -1,5 +1,5 @@
 // Learn more https://docs.expo.io/guides/customizing-metro
-const { getDefaultConfig } = require('expo/metro-config');
+const { getDefaultConfig } = require('@expo/metro-config');
 const path = require('path');
 
 // Find the project and workspace directories
@@ -17,19 +17,9 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
-// Force Metro to resolve (sub)dependencies only from the root node_modules
-config.resolver.disableHierarchicalLookup = true;
-
 // SVG transformer — allows importing .svg files as React components
-const { transformer, resolver } = config;
-config.transformer = {
-  ...transformer,
-  babelTransformerPath: require.resolve('react-native-svg-transformer'),
-};
-config.resolver = {
-  ...resolver,
-  assetExts: resolver.assetExts.filter((ext) => ext !== 'svg'),
-  sourceExts: [...resolver.sourceExts, 'svg'],
-};
+config.transformer.babelTransformerPath = require.resolve('react-native-svg-transformer');
+config.resolver.assetExts = config.resolver.assetExts.filter((ext) => ext !== 'svg');
+config.resolver.sourceExts = [...config.resolver.sourceExts, 'svg'];
 
 module.exports = config;

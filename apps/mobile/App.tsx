@@ -15,6 +15,7 @@ import { LogBox } from 'react-native';
 import { RootNavigator } from '@/navigation';
 import { useAuthStore } from '@/stores';
 import { SplashScreen } from '@/components/common';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { NotificationProvider } from '@/contexts';
 
 // Ignore specific warnings in development
@@ -74,20 +75,22 @@ export default function App() {
   };
 
   return (
-    <GestureHandlerRootView style={styles.container}>
-      <SafeAreaProvider>
-        <NotificationProvider>
-          <StatusBar style="dark" />
-          {appIsReady && <RootNavigator />}
-          {showSplash && (
-            <SplashScreen
-              onComplete={handleSplashComplete}
-              duration={2500}
-            />
-          )}
-        </NotificationProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={styles.container}>
+        <SafeAreaProvider>
+          <NotificationProvider>
+            <StatusBar style="dark" />
+            {appIsReady && <RootNavigator />}
+            {showSplash && (
+              <SplashScreen
+                onComplete={handleSplashComplete}
+                duration={2500}
+              />
+            )}
+          </NotificationProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
 

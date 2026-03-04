@@ -1,13 +1,14 @@
 {
   "project_info": {
-    "project_number": "134959767505",
-    "project_id": "stunityapp",
-    "storage_bucket": "stunityapp.firebasestorage.app"
+    "project_number": "000000000000",
+    "project_id": "stunity-placeholder",
+    "firebase_url": "https://stunity-placeholder-default-rtdb.firebaseio.com",
+    "storage_bucket": "stunity-placeholder.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:134959767505:android:7b3e8ad9a957bda62f8af0",
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
         "android_client_info": {
           "package_name": "com.stunity.mobile"
         }
@@ -15,7 +16,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBRxalmkhSw1tR5FZ89RhYaxb-RIsyl580"
+          "current_key": "placeholder_api_key"
         }
       ],
       "services": {
