@@ -35,6 +35,28 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
 }
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 
+// Auth middleware (Express.Request.user is augmented in src/types/express.d.ts)
+const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    res.status(401).json({ success: false, error: 'Access token required' });
+    return;
+  }
+
+  try {
+    const user = jwt.verify(token, JWT_SECRET) as { id: string; email: string; role: string };
+    req.user = user;
+    next();
+  } catch {
+    res.status(403).json({ success: false, error: 'Invalid token' });
+    return;
+  }
+};
+
+// Use Request in route handlers; after authenticateToken, req.user is set (see src/types/express.d.ts).
+
 // Middleware
 const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'];
 
@@ -49,8 +71,7 @@ app.use(cors({
     if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error(`CORS: origin ${origin} not allowed`));
   },
-  });
-});
+}));
 
 // ========================================
 // Live Quiz Mode - Phase 1 Feature 1
@@ -103,7 +124,7 @@ const generateSessionCode = (): string => {
 const FEED_SERVICE_URL = process.env.FEED_SERVICE_URL || 'http://localhost:3010';
 
 // POST /live/create - Host creates a live quiz session
-app.post('/live/create', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/live/create', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { quizId, settings } = req.body;
     const hostId = req.user!.id;
@@ -181,7 +202,7 @@ app.post('/live/create', authenticateToken, async (req: AuthRequest, res: Respon
 });
 
 // POST /live/:code/join - Student joins a live session
-app.post('/live/:code/join', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/live/:code/join', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { code } = req.params;
     const userId = req.user!.id;
@@ -243,7 +264,7 @@ app.post('/live/:code/join', authenticateToken, async (req: AuthRequest, res: Re
 });
 
 // GET /live/:code/lobby - Get lobby status
-app.get('/live/:code/lobby', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.get('/live/:code/lobby', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { code } = req.params;
     const session = liveSessions.get(code);
@@ -279,7 +300,7 @@ app.get('/live/:code/lobby', authenticateToken, async (req: AuthRequest, res: Re
 });
 
 // GET /live/:code/current - Get current question (for host & participants to poll)
-app.get('/live/:code/current', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.get('/live/:code/current', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { code } = req.params;
     const session = liveSessions.get(code);
@@ -349,7 +370,7 @@ app.get('/live/:code/current', authenticateToken, async (req: AuthRequest, res: 
 });
 
 // POST /live/:code/start - Host starts the quiz
-app.post('/live/:code/start', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/live/:code/start', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { code } = req.params;
     const userId = req.user!.id;
@@ -405,7 +426,7 @@ app.post('/live/:code/start', authenticateToken, async (req: AuthRequest, res: R
 });
 
 // POST /live/:code/submit - Submit answer for current question
-app.post('/live/:code/submit', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/live/:code/submit', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { code } = req.params;
     const { answer } = req.body;
@@ -482,7 +503,7 @@ app.post('/live/:code/submit', authenticateToken, async (req: AuthRequest, res: 
 });
 
 // POST /live/:code/next - Host moves to next question
-app.post('/live/:code/next', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/live/:code/next', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { code } = req.params;
     const userId = req.user!.id;
@@ -541,7 +562,7 @@ app.post('/live/:code/next', authenticateToken, async (req: AuthRequest, res: Re
 });
 
 // GET /live/:code/leaderboard - Get current leaderboard
-app.get('/live/:code/leaderboard', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.get('/live/:code/leaderboard', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { code } = req.params;
     const session = liveSessions.get(code);
@@ -579,7 +600,7 @@ app.get('/live/:code/leaderboard', authenticateToken, async (req: AuthRequest, r
 });
 
 // GET /live/:code/results - Get final results
-app.get('/live/:code/results', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.get('/live/:code/results', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { code } = req.params;
     const session = liveSessions.get(code);
@@ -664,7 +685,7 @@ const calculateXPForQuiz = (score: number, totalPoints: number, timeSpent: numbe
 };
 
 // GET /stats/:userId - Get user stats
-app.get('/stats/:userId', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.get('/stats/:userId', authenticateToken, async (req: Request, res: Response) => {
   try {
     let { userId } = req.params;
 
@@ -723,7 +744,7 @@ app.get('/stats/:userId', authenticateToken, async (req: AuthRequest, res: Respo
 });
 
 // POST /stats/record-attempt - Record quiz attempt & award XP
-app.post('/stats/record-attempt', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/stats/record-attempt', authenticateToken, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
     console.log('📝 [Analytics] Recording attempt for user:', userId);
@@ -832,7 +853,7 @@ app.post('/stats/record-attempt', authenticateToken, async (req: AuthRequest, re
 });
 
 // GET /leaderboard/global - Global leaderboard
-app.get('/leaderboard/global', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.get('/leaderboard/global', authenticateToken, async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 50;
@@ -921,7 +942,7 @@ app.get('/leaderboard/global', authenticateToken, async (req: AuthRequest, res: 
 });
 
 // GET /leaderboard/weekly - Weekly leaderboard
-app.get('/leaderboard/weekly', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.get('/leaderboard/weekly', authenticateToken, async (req: Request, res: Response) => {
   try {
     const now = new Date();
     const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
@@ -986,7 +1007,7 @@ app.get('/leaderboard/weekly', authenticateToken, async (req: AuthRequest, res: 
 });
 
 // POST /challenge/create - Challenge a friend
-app.post('/challenge/create', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/challenge/create', authenticateToken, async (req: Request, res: Response) => {
   try {
     const challengerId = req.user!.id;
     const { opponentId, quizId } = req.body;
@@ -1028,7 +1049,7 @@ app.post('/challenge/create', authenticateToken, async (req: AuthRequest, res: R
 });
 
 // POST /challenge/:id/accept - Accept challenge
-app.post('/challenge/:id/accept', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/challenge/:id/accept', authenticateToken, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
     const { id } = req.params;
@@ -1065,7 +1086,7 @@ app.post('/challenge/:id/accept', authenticateToken, async (req: AuthRequest, re
 });
 
 // GET /challenge/my-challenges - Get user's challenges
-app.get('/challenge/my-challenges', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.get('/challenge/my-challenges', authenticateToken, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
 
@@ -1093,7 +1114,7 @@ app.get('/challenge/my-challenges', authenticateToken, async (req: AuthRequest, 
 });
 
 // POST /challenge/:id/submit - Submit challenge result
-app.post('/challenge/:id/submit', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/challenge/:id/submit', authenticateToken, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
     const { id } = req.params;
@@ -1226,7 +1247,7 @@ app.listen(PORT, () => {
 // ============================================================
 
 // GET /streak/:userId - Get user's streak
-app.get('/streak/:userId', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.get('/streak/:userId', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
@@ -1255,7 +1276,7 @@ app.get('/streak/:userId', authenticateToken, async (req: AuthRequest, res: Resp
 });
 
 // POST /streak/update - Update streak after quiz
-app.post('/streak/update', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/streak/update', authenticateToken, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
 
@@ -1346,7 +1367,7 @@ app.post('/streak/update', authenticateToken, async (req: AuthRequest, res: Resp
 });
 
 // POST /streak/freeze - Use streak freeze
-app.post('/streak/freeze', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/streak/freeze', authenticateToken, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
 
@@ -1377,7 +1398,7 @@ app.post('/streak/freeze', authenticateToken, async (req: AuthRequest, res: Resp
 });
 
 // GET /achievements - Get all available achievements
-app.get('/achievements', authenticateToken, async (_req: AuthRequest, res: Response) => {
+app.get('/achievements', authenticateToken, async (_req: Request, res: Response) => {
   try {
     const achievements = await prisma.achievement.findMany({
       orderBy: { type: 'asc' },
@@ -1391,7 +1412,7 @@ app.get('/achievements', authenticateToken, async (_req: AuthRequest, res: Respo
 });
 
 // GET /achievements/:userId - Get user's achievements
-app.get('/achievements/:userId', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.get('/achievements/:userId', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
@@ -1409,7 +1430,7 @@ app.get('/achievements/:userId', authenticateToken, async (req: AuthRequest, res
 });
 
 // POST /achievements/unlock - Unlock achievement
-app.post('/achievements/unlock', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/achievements/unlock', authenticateToken, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
     const { achievementId } = req.body;
@@ -1445,7 +1466,7 @@ app.post('/achievements/unlock', authenticateToken, async (req: AuthRequest, res
 });
 
 // POST /achievements/check - Check and auto-unlock achievements
-app.post('/achievements/check', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/achievements/check', authenticateToken, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
 

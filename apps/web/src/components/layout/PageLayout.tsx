@@ -27,12 +27,10 @@ export default function PageLayout({
   onLogout,
 }: PageLayoutProps) {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-gray-900/50">
       <UnifiedNavigation user={user} school={school} onLogout={onLogout} />
-      
-      {/* Main Content - Left margin for sidebar */}
-      <div className="lg:ml-64 min-h-screen">
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="lg:ml-64 min-h-screen bg-slate-50 dark:bg-gray-900/50">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
           <AnimatedContent animation="fade" delay={0}>
             {children}
           </AnimatedContent>
@@ -66,13 +64,13 @@ export function PageHeader({ title, subtitle, icon, action, breadcrumb }: PageHe
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           {icon && (
-            <div className="p-3 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl text-white shadow-lg">
+            <div className="p-3 rounded-xl bg-white dark:bg-gray-800 border border-slate-200/80 dark:border-gray-700 shadow-sm [&>svg]:text-stunity-primary-600 dark:[&>svg]:text-stunity-primary-400">
               {icon}
             </div>
           )}
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
-            {subtitle && <p className="text-gray-600 mt-1">{subtitle}</p>}
+            <h1 className="text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white">{title}</h1>
+            {subtitle && <p className="text-slate-500 dark:text-gray-400 mt-1">{subtitle}</p>}
           </div>
         </div>
         {action && <div>{action}</div>}
@@ -94,7 +92,7 @@ interface PageCardProps {
 
 export function PageCard({ children, className = '', noPadding = false }: PageCardProps) {
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 ${noPadding ? '' : 'p-6'} ${className}`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200/80 dark:border-gray-700 ${noPadding ? '' : 'p-6'} ${className}`}>
       {children}
     </div>
   );
@@ -116,7 +114,7 @@ export function PageSection({ children, title, className = '' }: PageSectionProp
     <AnimatedContent animation="slide-up" delay={100}>
       <div className={className}>
         {title && (
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">{title}</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{title}</h2>
         )}
         {children}
       </div>

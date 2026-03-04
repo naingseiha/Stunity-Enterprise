@@ -8,9 +8,18 @@
  * `npm run seed:test-data` (adds more academic years, teachers, students).
  *
  * Usage: npm run seed:school-management
+ *
+ * Production protection: blocks if DATABASE_URL points at Supabase production
+ * unless ALLOW_PRODUCTION_DB=1 (CI/deploy only).
  */
 
+import { config } from 'dotenv';
+import { resolve } from 'path';
 import { PrismaClient } from '@prisma/client';
+import { runDbSafetyCheck } from './db-safety-check';
+
+config({ path: resolve(process.cwd(), '.env') });
+config({ path: resolve(process.cwd(), '../../.env') });
 
 const prisma = new PrismaClient();
 
@@ -44,6 +53,7 @@ const DEFAULT_PERIODS = [
 const DAYS: ('MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY')[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
 
 async function main() {
+  runDbSafetyCheck();
   console.log('🌱 Starting comprehensive school management test data seed...\n');
 
   const school = await prisma.school.findFirst({

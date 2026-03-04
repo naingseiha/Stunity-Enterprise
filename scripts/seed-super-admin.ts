@@ -1,6 +1,9 @@
 /**
  * Create or promote a Super Admin user.
  *
+ * Production protection: blocks if DATABASE_URL points at Supabase production
+ * unless ALLOW_PRODUCTION_DB=1 (CI/deploy only).
+ *
  * Usage:
  *   # Promote existing user by email:
  *   npx tsx scripts/seed-super-admin.ts admin@stunity.com
@@ -18,8 +21,14 @@
  *     npx tsx scripts/seed-super-admin.ts --create
  */
 
+import { config } from 'dotenv';
+import { resolve } from 'path';
 import { PrismaClient } from '@prisma/client';
 import { hash } from 'bcryptjs';
+import { runDbSafetyCheck } from './db-safety-check';
+
+config({ path: resolve(process.cwd(), '.env') });
+config({ path: resolve(process.cwd(), '../../.env') });
 
 const prisma = new PrismaClient();
 
@@ -40,6 +49,7 @@ const firstName = getArg('--first') || process.env.SUPER_ADMIN_FIRST || 'Platfor
 const lastName = getArg('--last') || process.env.SUPER_ADMIN_LAST || 'Admin';
 
 async function main() {
+  runDbSafetyCheck();
   if (!email) {
     console.error('');
     console.error('❌  Email is required.');

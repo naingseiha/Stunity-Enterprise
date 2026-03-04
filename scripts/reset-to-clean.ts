@@ -4,6 +4,9 @@
  * Safely removes ALL test/seed data from V2, leaving the database clean
  * and ready for real production data (V1 migration).
  *
+ * ⚠️  Production protection: if DATABASE_URL points at Supabase production,
+ * this script will exit unless ALLOW_PRODUCTION_DB=1 is set (use only in CI/deploy).
+ *
  * Usage:
  *   # Preview what will be deleted (SAFE – no writes):
  *   npx tsx scripts/reset-to-clean.ts
@@ -18,7 +21,13 @@
  *     --password SecurePass123!
  */
 
+import { config } from 'dotenv';
+import { resolve } from 'path';
 import { PrismaClient } from '@prisma/client';
+import { runDbSafetyCheck } from './db-safety-check';
+
+config({ path: resolve(process.cwd(), '.env') });
+config({ path: resolve(process.cwd(), '../../.env') });
 
 const prisma = new PrismaClient();
 
@@ -70,6 +79,8 @@ async function safeDel(label: string, fn: () => Promise<{ count: number } | any>
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
+    runDbSafetyCheck();
+
     console.log('');
     console.log(BOLD('┌──────────────────────────────────────────────────────┐'));
     if (CONFIRM) {

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { use, useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -50,7 +51,8 @@ interface ClassOption {
   studentCount?: number;
 }
 
-export default function StudentsPage({ params: { locale } }: { params: { locale: string } }) {
+export default function StudentsPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = use(params);
   const t = useTranslations('students');
   const tc = useTranslations('common');
   const router = useRouter();
@@ -358,22 +360,19 @@ export default function StudentsPage({ params: { locale } }: { params: { locale:
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      {/* Main Content */}
-      <div className="lg:ml-64 min-h-screen bg-[#f8fafc]">
-        <main className="p-6 lg:p-8 max-w-[1600px] mx-auto">
-
-          {/* Page Header - Clean & Minimal */}
+      <div className="lg:ml-64 min-h-screen bg-slate-50 dark:bg-gray-900/50">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
           <AnimatedContent animation="fade" delay={0}>
             <div className="mb-8">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
-                  <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                    <span>Dashboard</span>
-                    <ChevronRight className="h-3.5 w-3.5" />
-                    <span className="text-gray-900">Students</span>
-                  </div>
-                  <h1 className="text-2xl font-semibold text-gray-900">Students</h1>
-                  <p className="text-gray-500 mt-1">
+                  <nav className="flex items-center gap-2 text-sm text-slate-500 dark:text-gray-400 mb-2">
+                    <Link href={`/${locale}/dashboard`} className="hover:text-slate-700 dark:hover:text-gray-200">Dashboard</Link>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                    <span className="font-medium text-slate-900 dark:text-white">Students</span>
+                  </nav>
+                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Students</h1>
+                  <p className="text-slate-500 dark:text-gray-400 mt-1">
                     Manage and organize your student records
                   </p>
                 </div>

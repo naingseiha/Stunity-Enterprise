@@ -584,16 +584,16 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
         )}
       </nav>
 
-      {/* School Context Sidebar - Refined */}
+      {/* School Context Sidebar - Clean, scannable */}
       {isSchoolContext && (
-        <aside className="hidden lg:block fixed left-0 top-14 w-60 h-[calc(100vh-3.5rem)] bg-gray-50/50 dark:bg-gray-900/50 border-r border-gray-200/80 dark:border-gray-800 overflow-y-auto">
-          <div className="p-3 space-y-4">
-            <p className="px-3 py-2 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+        <aside className="hidden lg:block fixed left-0 top-14 w-64 h-[calc(100vh-3.5rem)] bg-white dark:bg-gray-900 border-r border-slate-200/80 dark:border-gray-800 overflow-y-auto z-40">
+          <div className="py-4 px-3 space-y-6">
+            <p className="px-3 py-1 text-[11px] font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">
               School Management
             </p>
             {schoolMenuSections.map((section) => (
               <div key={section.label} className="space-y-0.5">
-                <p className="px-3 py-1.5 text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                <p className="px-3 py-1.5 text-[11px] font-medium text-slate-400 dark:text-gray-500 uppercase tracking-wider">
                   {section.label}
                 </p>
                 {section.items.map((item) => {
@@ -617,19 +617,19 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                       }}
                       onMouseLeave={() => setActiveHover(null)}
                       className={`
-                        flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150
+                        flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150
                         ${isActive
-                          ? 'text-orange-600 dark:text-orange-400 bg-white dark:bg-gray-800 shadow-sm border border-gray-200/80 dark:border-gray-700'
+                          ? 'text-stunity-primary-600 dark:text-stunity-primary-400 bg-stunity-primary-50 dark:bg-stunity-primary-900/20'
                           : isHovered
-                            ? 'text-gray-900 dark:text-white bg-white/60 dark:bg-gray-800/60'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                            ? 'text-slate-900 dark:text-white bg-slate-50 dark:bg-gray-800/80'
+                            : 'text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50/80 dark:hover:bg-gray-800/50'
                         }
                       `}
                     >
-                      <Icon className={`w-4 h-4 transition-all duration-150 ${isActive ? 'text-orange-500' : ''}`} />
-                      <span className="flex-1">{item.name}</span>
+                      <Icon className={`w-4 h-4 flex-shrink-0 transition-colors ${isActive ? 'text-stunity-primary-500' : ''}`} />
+                      <span className="flex-1 truncate">{item.name}</span>
                       {isNavigating && (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-500" />
+                        <Loader2 className="w-3.5 h-3.5 flex-shrink-0 animate-spin text-stunity-primary-500" />
                       )}
                     </Link>
                   );

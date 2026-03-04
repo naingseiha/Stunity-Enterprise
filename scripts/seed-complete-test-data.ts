@@ -1,8 +1,15 @@
+import { config } from 'dotenv';
+import { resolve } from 'path';
 import { PrismaClient, Gender } from '@prisma/client';
+import { runDbSafetyCheck } from './db-safety-check';
+
+config({ path: resolve(process.cwd(), '.env') });
+config({ path: resolve(process.cwd(), '../../.env') });
 
 const prisma = new PrismaClient();
 
 async function main() {
+  runDbSafetyCheck();
   console.log('🌱 Starting comprehensive test data seeding...\n');
 
   // Find existing school

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import {
   Users,
@@ -160,29 +161,26 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      {/* Main Content */}
-      <div className="lg:ml-64 min-h-screen bg-gray-50">
-        <main className="p-4 lg:p-8">
-          {/* Header */}
+      <div className="lg:ml-64 min-h-screen bg-slate-50 dark:bg-gray-900/50">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
           <AnimatedContent animation="fade" delay={0}>
-            <div className="mb-6">
-              {/* Breadcrumb */}
-              <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-                <button onClick={() => router.push(`/${locale}/dashboard`)} className="hover:text-green-600 flex items-center gap-1">
+            <div className="mb-8">
+              <nav className="flex items-center gap-2 text-sm text-slate-500 dark:text-gray-400 mb-4">
+                <Link href={`/${locale}/dashboard`} className="flex items-center gap-1 hover:text-slate-700 dark:hover:text-gray-200">
                   <Home className="h-4 w-4" />
-                </button>
-                <ChevronRight className="h-4 w-4" />
-                <span className="text-gray-900 font-medium">Classes</span>
+                  <span>Dashboard</span>
+                </Link>
+                <ChevronRight className="h-4 w-4 text-slate-300" />
+                <span className="font-medium text-slate-900 dark:text-white">Classes</span>
               </nav>
-
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-gradient-to-br from-green-400 to-emerald-600 rounded-2xl shadow-lg">
-                    <School className="h-8 w-8 text-white" />
+                  <div className="p-3 rounded-xl bg-white dark:bg-gray-800 border border-slate-200/80 dark:border-gray-700 shadow-sm">
+                    <School className="h-6 w-6 text-stunity-primary-600 dark:text-stunity-primary-400" />
                   </div>
                   <div>
-                    <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Class Management</h1>
-                    <p className="text-gray-500 mt-1">
+                    <h1 className="text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white">Class Management</h1>
+                    <p className="text-slate-500 dark:text-gray-400 mt-1">
                       {selectedYear ? `Academic Year ${selectedYear.name}` : 'Select an academic year'} 
                       {classes.length > 0 && ` • ${classes.length} classes`}
                     </p>

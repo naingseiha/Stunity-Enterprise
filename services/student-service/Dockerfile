@@ -26,9 +26,9 @@ COPY services/student-service/package.json services/student-service/package-lock
 # Install ALL dependencies (including devDependencies for build)
 RUN npm install --ignore-scripts
 
-# Copy Prisma schema from packages/database and generate client
+# Copy Prisma schema from packages/database and generate client (output to /node_modules; copy into app for tsc)
 COPY packages/database/prisma ./prisma/
-RUN npx prisma@5.22.0 generate --schema=./prisma/schema.prisma
+RUN npx prisma@5.22.0 generate --schema=./prisma/schema.prisma && cp -r /node_modules/.prisma ./node_modules/
 
 # Copy source and build
 COPY services/student-service/tsconfig.json ./
@@ -55,9 +55,9 @@ RUN groupadd -g 1001 nodejs && \
 COPY services/student-service/package.json services/student-service/package-lock.json* ./
 RUN npm install --omit=dev --ignore-scripts
 
-# Copy Prisma schema & generate client for runtime
+# Copy Prisma schema & generate client for runtime (output goes to /node_modules; copy into app)
 COPY --from=builder /app/prisma ./prisma/
-RUN npx prisma@5.22.0 generate --schema=./prisma/schema.prisma
+RUN npx prisma@5.22.0 generate --schema=./prisma/schema.prisma && cp -r /node_modules/.prisma ./node_modules/
 
 # Copy compiled JavaScript
 COPY --from=builder /app/dist ./dist/

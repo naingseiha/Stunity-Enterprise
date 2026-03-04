@@ -19,6 +19,8 @@ An enterprise-grade school management + social e-learning platform. Combines **s
 | **[NEXT_IMPLEMENTATION.md](./NEXT_IMPLEMENTATION.md)** | Prioritized roadmap with code examples |
 | **[docs/SUPER_ADMIN_AND_ENTERPRISE_FEATURES.md](./docs/SUPER_ADMIN_AND_ENTERPRISE_FEATURES.md)** | Super Admin area, platform management, enterprise features |
 | **[docs/](./docs/README.md)** | Technical deep dives (feed, realtime, school integration) |
+| **[docs/DATABASE_SAFETY.md](./docs/DATABASE_SAFETY.md)** | Database safety when using real Supabase for local dev |
+| **[docs/LOCAL_DEVELOPMENT_AND_PRODUCTION.md](./docs/LOCAL_DEVELOPMENT_AND_PRODUCTION.md)** | Prisma parity, local vs production, recent fixes |
 
 ---
 
@@ -29,6 +31,14 @@ An enterprise-grade school management + social e-learning platform. Combines **s
 - 👩‍🏫 **Teachers Page Fix** — Resolved @/types/models import; useTeachers cache key; data display for school admins
 - 👑 **Super Admin** — Content moderation, Platform health, Social KPIs, Maintenance mode
 - 🏘️ **Web Clubs & Messaging** — Full handlers, FEED_SERVICE_URL config, PostCard analytics
+
+### Recent updates (March 2026)
+
+- **Database safety** — Destructive commands (`db:push`, `db:migrate`, seed, reset) are blocked when `DATABASE_URL` points at Supabase, so you can safely use real data for local dev. See [docs/DATABASE_SAFETY.md](./docs/DATABASE_SAFETY.md).
+- **Prisma** — Same schema and generated client locally and in production; run `npm run db:generate` from repo root after clone. See [docs/LOCAL_DEVELOPMENT_AND_PRODUCTION.md](./docs/LOCAL_DEVELOPMENT_AND_PRODUCTION.md).
+- **Web UI** — Login page redesigned; dashboard and school management pages (students, classes, teachers) updated for consistent layout, breadcrumbs, and card styling.
+- **Analytics service** — Auth middleware and `req.user` typing fixed; CORS and Express types corrected so the service builds and runs.
+- **Next.js params** — Students (and other `[locale]` pages) use `params` as a Promise with `React.use()` for compatibility with current and future Next.js.
 
 **Full Feature List:** [CURRENT_FEATURES.md](./CURRENT_FEATURES.md)  
 **What's Next:** [NEXT_IMPLEMENTATION.md](./NEXT_IMPLEMENTATION.md)
@@ -127,7 +137,7 @@ npx expo start --tunnel
 - ✅ **Profile & Stats** - Gamification, achievements, leaderboards
 - ✅ **Analytics** - Comprehensive insights & tracking
 
-### Backend Services (13 Microservices)
+### Backend Services (15 Microservices)
 - ✅ **Auth Service** - JWT tokens, claim codes, SSO-ready
 - ✅ **Feed Service** - Posts, comments, likes, analytics
 - ✅ **Club Service** - Clubs, assignments, submissions
@@ -194,16 +204,18 @@ Stunity-Enterprise/
 
 ```bash
 # Service Management
-./quick-start.sh           # Start all 11 services
+./quick-start.sh           # Start all 15 services + web
 ./stop-all-services.sh     # Stop all services
 ./restart-all-services.sh  # Restart all services
 ./check-services.sh        # Check status
 
 # Database
+npm run db:generate       # Generate Prisma client (run once after clone / before running services locally)
 cd packages/database
-npm run seed              # Seed test data
+npm run seed              # Seed test data (blocked when DATABASE_URL is Supabase — see docs/DATABASE_SAFETY.md)
 npx prisma studio         # Open database GUI
-npx prisma migrate dev    # Run migrations
+npm run db:migrate        # Run migrations from repo root (blocks production URL unless ALLOW_PRODUCTION_DB=1)
+npm run db:push           # Push schema (also protected by db-safety-check)
 ```
 
 ---
@@ -269,6 +281,8 @@ Child: Chanthy Kong (S9A-025)
 | **[DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)** | Architecture, patterns, deployment |
 | **[CURRENT_FEATURES.md](./CURRENT_FEATURES.md)** | Complete feature inventory |
 | **[NEXT_IMPLEMENTATION.md](./NEXT_IMPLEMENTATION.md)** | Prioritized roadmap with code examples |
+| **[docs/DATABASE_SAFETY.md](./docs/DATABASE_SAFETY.md)** | Database safety (blocked destructive commands when using Supabase) |
+| **[docs/LOCAL_DEVELOPMENT_AND_PRODUCTION.md](./docs/LOCAL_DEVELOPMENT_AND_PRODUCTION.md)** | Prisma parity, local vs production, recent fixes |
 
 ### Technical Deep Dives
 | Location | Description |
@@ -334,9 +348,9 @@ cd packages/database && npm run seed
 ---
 
 **System Status:** ✅ 95% Complete - Production Ready  
-**Current Version:** 21.10  
+**Current Version:** 23.1  
 **Mobile App:** 55+ screens, fully operational  
-**Backend:** 13 services running  
+**Backend:** 15 services (Auth, School, Student, Teacher, Class, Subject, Grade, Attendance, Timetable, Feed, Messaging, Club, Notification, Analytics, AI)  
 **Database:** 90+ models, optimized
 
 ---
@@ -345,9 +359,11 @@ cd packages/database && npm run seed
 
 **New to the project?**
 1. Read [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) - Complete setup guide
-2. Review [CURRENT_FEATURES.md](./CURRENT_FEATURES.md) - Understand what exists
-3. Check [NEXT_IMPLEMENTATION.md](./NEXT_IMPLEMENTATION.md) - See what's next
-4. Follow quick start above to run the project
+2. Run `npm run db:generate` from repo root (once after clone) so Prisma client is available to all services
+3. Review [CURRENT_FEATURES.md](./CURRENT_FEATURES.md) - Understand what exists
+4. See [docs/LOCAL_DEVELOPMENT_AND_PRODUCTION.md](./docs/LOCAL_DEVELOPMENT_AND_PRODUCTION.md) - Prisma parity, database safety, local vs production
+5. Check [NEXT_IMPLEMENTATION.md](./NEXT_IMPLEMENTATION.md) - See what's next
+6. Follow quick start above to run the project
 
 **Need API docs?** Check `docs/api/` or service endpoints:
 - Auth: `http://localhost:3001/api-docs`
@@ -356,4 +372,4 @@ cd packages/database && npm run seed
 
 ---
 
-*Last updated: February 17, 2026*
+*Last updated: March 2, 2026*

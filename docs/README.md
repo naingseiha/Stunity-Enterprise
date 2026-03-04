@@ -1,6 +1,6 @@
 # 📚 Stunity Enterprise — Documentation
 
-**Version:** 22.0 | **Updated:** February 20, 2026
+**Version:** 22.0 | **Updated:** March 2, 2026
 
 > **New developer?** Start with the root-level docs, then come here for deep dives.
 
@@ -47,9 +47,11 @@ Reference these when working on a specific subsystem:
 | [`admin-system/ADMIN_PERMISSION_SYSTEM.md`](./admin-system/ADMIN_PERMISSION_SYSTEM.md) | Role-based access control |
 | [`admin-system/ADMIN_PERMISSION_QUICK_REFERENCE.md`](./admin-system/ADMIN_PERMISSION_QUICK_REFERENCE.md) | Quick reference card |
 
-### Deployment
+### Deployment & local dev
 | Doc | What it covers |
 |-----|---------------|
+| [`DATABASE_SAFETY.md`](./DATABASE_SAFETY.md) | Blocked destructive DB commands when using real Supabase for local dev |
+| [`LOCAL_DEVELOPMENT_AND_PRODUCTION.md`](./LOCAL_DEVELOPMENT_AND_PRODUCTION.md) | Prisma parity, frontend–backend parity, recent fixes (params, analytics, UI) |
 | [`deployment-setup/R2_PRODUCTION_READY.md`](./deployment-setup/R2_PRODUCTION_READY.md) | Cloudflare R2 setup |
 | [`deployment-setup/DEPLOYMENT_CHECKLIST.md`](./archive/deployment/DEPLOYMENT_CHECKLIST.md) | Step-by-step Cloud Run deploy |
 | [`deployment-setup/PRISMA_BINARY_FIX.md`](./deployment-setup/PRISMA_BINARY_FIX.md) | Prisma in Docker fix |
