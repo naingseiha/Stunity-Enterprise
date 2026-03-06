@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import path from 'path';
 
 // Phase 1 Day 6: Optional Sharp import for image optimization
@@ -151,21 +152,10 @@ const processImage = async (
     };
   } catch (error: any) {
     console.error('⚠️ Image processing failed, using original:', error.message);
-    // Fallback: return original with basic metadata
-    if (sharp) {
-      const metadata = await sharp(fileBuffer).metadata();
-      const blurHash = await generateBlurHash(fileBuffer);
-      return {
-        buffer: fileBuffer,
-        mimeType: 'image/jpeg',
-        width: metadata.width || 0,
-        height: metadata.height || 0,
-        blurHash,
-      };
-    }
+    // Fallback: return original without metadata since it failed parsing
     return {
       buffer: fileBuffer,
-      mimeType: 'image/jpeg',
+      mimeType: 'application/octet-stream', // Avoid claiming it's a valid JPEG if parsing failed
       width: 0,
       height: 0,
       blurHash: 'LEHV6nWB2yk8pyo0adR*.7kCMdnj',
@@ -186,18 +176,32 @@ export const uploadToR2 = async (
   let imageMetadata: { width?: number; height?: number; blurHash?: string } = {};
 
   if (mimeType.startsWith('image/')) {
-    const processed = await processImage(fileBuffer, originalName);
-    finalBuffer = processed.buffer;
-    finalMimeType = processed.mimeType;
-    imageMetadata = {
-      width: processed.width,
-      height: processed.height,
-      blurHash: processed.blurHash,
-    };
+    // Verify magic bytes so Android `.mp4` videos disguised as `.jpg` don't instantly crash libvips.
+    const isJpeg = fileBuffer.length > 2 && fileBuffer[0] === 0xFF && fileBuffer[1] === 0xD8;
+    const isPng = fileBuffer.length > 4 && fileBuffer[0] === 0x89 && fileBuffer[1] === 0x50 && fileBuffer[2] === 0x4E && fileBuffer[3] === 0x47;
+    const isGif = fileBuffer.length > 3 && fileBuffer[0] === 0x47 && fileBuffer[1] === 0x49 && fileBuffer[2] === 0x46;
+    const isWebp = fileBuffer.length > 12 && fileBuffer.slice(8, 12).toString('ascii') === 'WEBP';
 
-    // Update filename extension to .webp
-    const ext = path.extname(originalName);
-    originalName = originalName.replace(ext, '.webp');
+    if (isJpeg || isPng || isGif || isWebp) {
+      const processed = await processImage(fileBuffer, originalName);
+      finalBuffer = processed.buffer;
+      finalMimeType = processed.mimeType;
+      imageMetadata = {
+        width: processed.width,
+        height: processed.height,
+        blurHash: processed.blurHash,
+      };
+
+      if (finalMimeType === 'image/webp') {
+        const ext = path.extname(originalName);
+        originalName = ext ? originalName.replace(ext, '.webp') : `${originalName}.webp`;
+      }
+    } else {
+      console.warn(`⚠️ Android compatibility: File ${originalName} was uploaded as image but failed magic byte check. Treating as video/mp4 format.`);
+      finalMimeType = 'video/mp4';
+      const ext = path.extname(originalName);
+      originalName = ext ? originalName.replace(ext, '.mp4') : `${originalName}.mp4`;
+    }
   }
 
   const key = generateFileName(originalName, folder);
@@ -223,7 +227,7 @@ export const uploadToR2 = async (
 
   // Return the public URL with metadata
   const url = R2_PUBLIC_URL ? `${R2_PUBLIC_URL}/${key}` : key;
-  
+
   return { url, key, ...imageMetadata };
 };
 
@@ -248,9 +252,35 @@ export const uploadMultipleToR2 = async (
   return results;
 };
 
+// Generate a Presigned URL for Direct Client Uploads
+export const generatePresignedUploadUrl = async (
+  originalName: string,
+  contentType: string,
+  folder: string = 'posts'
+): Promise<{ presignedUrl: string; key: string; publicUrl: string; expiresAt: string }> => {
+  const key = generateFileName(originalName, folder);
+
+  const command = new PutObjectCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: key,
+    ContentType: contentType,
+    CacheControl: `public, max-age=${ONE_YEAR_SECONDS}, immutable`,
+  });
+
+  // URL expires in 15 minutes (900 seconds)
+  const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
+  const publicUrl = R2_PUBLIC_URL ? `${R2_PUBLIC_URL}/${key}` : key;
+  const expiresAt = new Date(Date.now() + 900 * 1000).toISOString();
+
+  console.log(`🎟️  Generated Presigned URL for: ${key} (${contentType})`);
+
+  return { presignedUrl, key, publicUrl, expiresAt };
+};
+
 export default {
   isR2Configured,
   uploadToR2,
   deleteFromR2,
   uploadMultipleToR2,
+  generatePresignedUploadUrl,
 };

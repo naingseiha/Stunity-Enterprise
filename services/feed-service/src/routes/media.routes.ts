@@ -5,7 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
-import { uploadMultipleToR2, isR2Configured } from '../utils/r2';
+import { uploadMultipleToR2, isR2Configured, generatePresignedUploadUrl } from '../utils/r2';
 
 const router = express.Router();
 
@@ -141,8 +141,46 @@ router.post('/upload/video', authenticateToken, videoUpload.single('video'), asy
             },
         });
     } catch (error: any) {
-        console.error('Video upload error:', error);
         res.status(500).json({ success: false, error: 'Failed to upload video' });
+    }
+});
+
+// ==========================================
+// POST /presigned-url — Generate direct upload tickets for R2
+// Accepts: { requests: [{ originalName, mimeType }] }
+// Returns: { success: true, data: [{ presignedUrl, key, publicUrl, expiresAt }] }
+// ==========================================
+router.post('/presigned-url', authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+        if (!isR2Configured()) {
+            return res.status(503).json({ success: false, error: 'R2 storage is not configured' });
+        }
+
+        const { requests } = req.body;
+
+        if (!requests || !Array.isArray(requests) || requests.length === 0) {
+            return res.status(400).json({ success: false, error: 'Invalid requests payload' });
+        }
+
+        // Prevent abuse: max 10 tickets per request
+        if (requests.length > 10) {
+            return res.status(400).json({ success: false, error: 'Too many files requested at once' });
+        }
+
+        const urls = await Promise.all(
+            requests.map(async (reqItem: any) => {
+                const { originalName, mimeType } = reqItem;
+                if (!originalName || !mimeType) {
+                    throw new Error('Missing originalName or mimeType in request item');
+                }
+                return generatePresignedUploadUrl(originalName, mimeType, 'posts');
+            })
+        );
+
+        res.json({ success: true, data: urls });
+    } catch (error: any) {
+        console.error('❌ Presigned URL generation error:', error);
+        res.status(500).json({ success: false, error: error.message || 'Failed to generate upload urls' });
     }
 });
 
