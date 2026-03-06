@@ -579,57 +579,71 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           const FileSystem = await import('expo-file-system/legacy');
           const token = await tokenService.getAccessToken();
 
+          const localFiles = mediaUrls.filter(isLocalUri);
+          const mappedRequests = localFiles.map(uri => {
+            const filename = uri.split('/').pop() || `file-${Date.now()}`;
+            const ext = /\.(\w+)$/.exec(filename)?.[1]?.toLowerCase() || 'jpg';
+            let type = 'image/jpeg';
+            if (['png', 'webp', 'gif'].includes(ext)) type = `image/${ext}`;
+            else if (['mp4', 'mov', 'avi', 'webm'].includes(ext)) type = ext === 'mov' ? 'video/quicktime' : `video/${ext}`;
+            return { originalName: filename, mimeType: type, uri };
+          });
+
+          // 1. Ask backend for direct R2 Presigned upload tickets
+          console.log(`🎟️ [FeedStore] Requesting ${mappedRequests.length} Presigned URLs...`);
+          const ticketRes = await fetch(`${Config.feedUrl}/presigned-url`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ requests: mappedRequests })
+          });
+
+          if (!ticketRes.ok) {
+            throw new Error(`Failed to get presigned URLs: ${ticketRes.status}`);
+          }
+          const ticketData = await ticketRes.json();
+          if (!ticketData.success || !ticketData.data) throw new Error('Invalid presigned ticket response');
+
+          // 2. Upload directly to Cloudflare R2 bypassing Google Cloud Run limits
+          const tickets = ticketData.data; // [{ presignedUrl, key, publicUrl }]
           uploadedMediaUrls = [];
 
-          for (const uri of mediaUrls) {
+          for (let i = 0; i < mediaUrls.length; i++) {
+            const uri = mediaUrls[i];
             if (isLocalUri(uri)) {
-              const filename = uri.split('/').pop() || `file-${Date.now()}`;
-              const match = /\.(\w+)$/.exec(filename);
-              const ext = match ? match[1].toLowerCase() : 'jpg';
+              const reqMeta = mappedRequests.find(r => r.uri === uri);
+              const ticket = tickets[mappedRequests.indexOf(reqMeta!)];
 
-              let type = 'image/jpeg';
-              if (['png', 'webp', 'gif'].includes(ext)) type = `image/${ext}`;
-              else if (['mp4', 'mov', 'avi', 'webm'].includes(ext)) {
-                type = ext === 'mov' ? 'video/quicktime' : `video/${ext}`;
-              }
+              console.log(`📤 [FeedStore] Direct PUT to Cloudflare R2: ${reqMeta?.originalName}`);
 
               try {
-                console.log(`📤 [FeedStore] Uploading file with FileSystem: ${filename}`);
                 const response = await FileSystem.uploadAsync(
-                  `${Config.feedUrl}/upload`,
+                  ticket.presignedUrl,
                   uri,
                   {
-                    httpMethod: 'POST',
-                    uploadType: 1, // FileSystemUploadType.MULTIPART
-                    fieldName: 'files',
-                    mimeType: type,
+                    httpMethod: 'PUT',
+                    uploadType: 0, // FileSystemUploadType.BINARY_CONTENT (Raw direct upload)
                     headers: {
-                      'Authorization': `Bearer ${token}`,
-                      'Accept': 'application/json',
-                    },
+                      'Content-Type': reqMeta!.mimeType
+                    }
                   }
                 );
 
                 if (response.status !== 200) {
-                  throw new Error(`Upload returned status ${response.status}: ${response.body}`);
+                  throw new Error(`Direct R2 PUT failed (${response.status}): ${response.body}`);
                 }
 
-                const result = JSON.parse(response.body);
-                if (result.success && result.data && result.data.length > 0) {
-                  uploadedMediaUrls.push(result.data[0].url);
-                } else {
-                  throw new Error(`Upload failed parsing: ${response.body}`);
-                }
+                // Push the final read-optimized URL to the array
+                uploadedMediaUrls.push(ticket.publicUrl);
               } catch (err: any) {
-                console.error('❌ [FeedStore] Individual file upload failed:', err);
-                const errorMsg = err.message || JSON.stringify(err);
-
-                // Show detailed error to user automatically so we can read it on-screen
+                console.error('❌ [FeedStore] Direct R2 Upload failed:', err);
+                // Alert user for debugging
                 import('react-native').then(({ Alert }) => {
-                  Alert.alert('Upload Error Debug', `URL: ${Config.feedUrl}/upload\nError: ${errorMsg}`);
+                  Alert.alert('R2 Direct Upload Error', `Error: ${err.message || String(err)}`);
                 });
-
-                throw new Error(`Upload failed: ${errorMsg}`);
+                throw new Error(`Direct upload failed: ${err.message}`);
               }
             } else {
               uploadedMediaUrls.push(uri);

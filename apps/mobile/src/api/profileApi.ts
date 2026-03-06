@@ -112,34 +112,55 @@ export async function uploadProfilePhoto(fileUri: string, fileName: string, mime
     const token = await tokenService.getAccessToken();
 
     try {
-        console.log(`📤 [profileApi] Uploading profile photo with FileSystem: ${fileName}`);
+        console.log(`🎟️ [profileApi] Requesting Presigned URL for profile photo: ${fileName}`);
+
+        // 1. Get Presigned URL
+        const ticketRes = await fetch(`${Config.feedUrl}/presigned-url`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ requests: [{ originalName: fileName, mimeType }] })
+        });
+
+        if (!ticketRes.ok) {
+            throw new Error(`Failed to get presigned URL: ${ticketRes.status}`);
+        }
+
+        const ticketData = await ticketRes.json();
+        if (!ticketData.success || !ticketData.data || ticketData.data.length === 0) {
+            throw new Error('Invalid presigned ticket response');
+        }
+
+        const ticket = ticketData.data[0];
+
+        // 2. Direct PUT to Cloudflare R2
+        console.log(`📤 [profileApi] Direct PUT to R2 for profile photo...`);
         const response = await FileSystem.uploadAsync(
-            `${Config.feedUrl}/users/me/profile-photo`,
+            ticket.presignedUrl,
             fileUri,
             {
-                httpMethod: 'POST',
-                uploadType: 1, // FileSystemUploadType.MULTIPART
-                fieldName: 'file', // Matches multer name in backend
-                mimeType: mimeType,
+                httpMethod: 'PUT',
+                uploadType: 0, // BINARY_CONTENT
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json',
-                },
+                    'Content-Type': mimeType
+                }
             }
         );
 
         if (response.status !== 200) {
-            throw new Error(`Upload returned status ${response.status}: ${response.body}`);
+            throw new Error(`Direct R2 PUT failed (${response.status}): ${response.body}`);
         }
 
-        const data = JSON.parse(response.body);
-        return data.data || data;
+        // Return the final public URL mimicking the old backend response structure
+        return { url: ticket.publicUrl };
     } catch (err: any) {
         console.error('❌ [profileApi] Profile photo upload failed:', err);
         const errorMsg = err.message || JSON.stringify(err);
 
         import('react-native').then(({ Alert }) => {
-            Alert.alert('Upload Error Debug (Profile)', `URL: ${Config.feedUrl}/users/me/profile-photo\nError: ${errorMsg}`);
+            Alert.alert('Upload Error Debug (Profile)', `URL: Direct R2\nError: ${errorMsg}`);
         });
 
         throw new Error(`Upload failed: ${errorMsg}`);
@@ -155,34 +176,55 @@ export async function uploadCoverPhoto(fileUri: string, fileName: string, mimeTy
     const token = await tokenService.getAccessToken();
 
     try {
-        console.log(`📤 [profileApi] Uploading cover photo with FileSystem: ${fileName}`);
+        console.log(`🎟️ [profileApi] Requesting Presigned URL for cover photo: ${fileName}`);
+
+        // 1. Get Presigned URL
+        const ticketRes = await fetch(`${Config.feedUrl}/presigned-url`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ requests: [{ originalName: fileName, mimeType }] })
+        });
+
+        if (!ticketRes.ok) {
+            throw new Error(`Failed to get presigned URL: ${ticketRes.status}`);
+        }
+
+        const ticketData = await ticketRes.json();
+        if (!ticketData.success || !ticketData.data || ticketData.data.length === 0) {
+            throw new Error('Invalid presigned ticket response');
+        }
+
+        const ticket = ticketData.data[0];
+
+        // 2. Direct PUT to Cloudflare R2
+        console.log(`📤 [profileApi] Direct PUT to R2 for cover photo...`);
         const response = await FileSystem.uploadAsync(
-            `${Config.feedUrl}/users/me/cover-photo`,
+            ticket.presignedUrl,
             fileUri,
             {
-                httpMethod: 'POST',
-                uploadType: 1, // FileSystemUploadType.MULTIPART
-                fieldName: 'file', // Matches multer name in backend
-                mimeType: mimeType,
+                httpMethod: 'PUT',
+                uploadType: 0, // BINARY_CONTENT
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json',
-                },
+                    'Content-Type': mimeType
+                }
             }
         );
 
         if (response.status !== 200) {
-            throw new Error(`Upload returned status ${response.status}: ${response.body}`);
+            throw new Error(`Direct R2 PUT failed (${response.status}): ${response.body}`);
         }
 
-        const data = JSON.parse(response.body);
-        return data.data || data;
+        // Return the final public URL mimicking the old backend response structure
+        return { url: ticket.publicUrl };
     } catch (err: any) {
         console.error('❌ [profileApi] Cover photo upload failed:', err);
         const errorMsg = err.message || JSON.stringify(err);
 
         import('react-native').then(({ Alert }) => {
-            Alert.alert('Upload Error Debug (Cover)', `URL: ${Config.feedUrl}/users/me/cover-photo\nError: ${errorMsg}`);
+            Alert.alert('Upload Error Debug (Cover)', `URL: Direct R2\nError: ${errorMsg}`);
         });
 
         throw new Error(`Upload failed: ${errorMsg}`);

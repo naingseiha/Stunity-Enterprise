@@ -44,55 +44,68 @@ const uploadImages = async (localUris: string[]): Promise<string[]> => {
     const FileSystem = await import('expo-file-system/legacy');
     const token = await tokenService.getAccessToken();
 
-    const uploadedUrls: string[] = [];
-
-    for (const uri of localUris) {
+    const localFiles = localUris;
+    const mappedRequests = localFiles.map(uri => {
       const filename = uri.split('/').pop() || `file-${Date.now()}`;
-      const match = /\.(\w+)$/.exec(filename);
-      const ext = match ? match[1].toLowerCase() : 'jpg';
-
+      const ext = /\.(\w+)$/.exec(filename)?.[1]?.toLowerCase() || 'jpg';
       let type = 'image/jpeg';
       if (['png', 'webp', 'gif'].includes(ext)) type = `image/${ext}`;
-      else if (['mp4', 'mov', 'avi', 'webm'].includes(ext)) {
-        type = ext === 'mov' ? 'video/quicktime' : `video/${ext}`;
-      }
+      else if (['mp4', 'mov', 'avi', 'webm'].includes(ext)) type = ext === 'mov' ? 'video/quicktime' : `video/${ext}`;
+      return { originalName: filename, mimeType: type, uri };
+    });
+
+    // 1. Ask backend for direct R2 Presigned upload tickets
+    console.log(`🎟️ [EditPost] Requesting ${mappedRequests.length} Presigned URLs...`);
+    const ticketRes = await fetch(`${Config.feedUrl}/presigned-url`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ requests: mappedRequests })
+    });
+
+    if (!ticketRes.ok) {
+      throw new Error(`Failed to get presigned URLs: ${ticketRes.status}`);
+    }
+    const ticketData = await ticketRes.json();
+    if (!ticketData.success || !ticketData.data) throw new Error('Invalid presigned ticket response');
+
+    // 2. Upload directly to Cloudflare R2 bypassing Google Cloud Run limits
+    const tickets = ticketData.data; // [{ presignedUrl, key, publicUrl }]
+    const uploadedUrls: string[] = [];
+
+    for (let i = 0; i < localUris.length; i++) {
+      const uri = localUris[i];
+      const reqMeta = mappedRequests.find(r => r.uri === uri);
+      const ticket = tickets[mappedRequests.indexOf(reqMeta!)];
+
+      console.log(`📤 [EditPost] Direct PUT to Cloudflare R2: ${reqMeta?.originalName}`);
 
       try {
-        console.log(`📤 [EditPost] Uploading file with FileSystem: ${filename}`);
         const response = await FileSystem.uploadAsync(
-          `${Config.feedUrl}/upload`,
+          ticket.presignedUrl,
           uri,
           {
-            httpMethod: 'POST',
-            uploadType: 1, // FileSystemUploadType.MULTIPART
-            fieldName: 'files',
-            mimeType: type,
+            httpMethod: 'PUT',
+            uploadType: 0, // FileSystemUploadType.BINARY_CONTENT
             headers: {
-              'Authorization': `Bearer ${token}`,
-              'Accept': 'application/json',
-            },
+              'Content-Type': reqMeta!.mimeType
+            }
           }
         );
 
         if (response.status !== 200) {
-          throw new Error(`Upload returned status ${response.status}: ${response.body}`);
+          throw new Error(`Direct R2 PUT failed (${response.status}): ${response.body}`);
         }
 
-        const result = JSON.parse(response.body);
-        if (result.success && result.data && result.data.length > 0) {
-          uploadedUrls.push(result.data[0].url);
-        } else {
-          throw new Error(`Upload failed parsing: ${response.body}`);
-        }
+        uploadedUrls.push(ticket.publicUrl);
       } catch (err: any) {
-        console.error('❌ [EditPost] Individual file upload failed:', err);
-        const errorMsg = err.message || JSON.stringify(err);
-
+        console.error('❌ [EditPost] Direct R2 Upload failed:', err);
         import('react-native').then(({ Alert }) => {
-          Alert.alert('Upload Error Debug (Edit)', `URL: ${Config.feedUrl}/upload\nError: ${errorMsg}`);
+          Alert.alert('R2 Direct Upload Error (Edit)', `Error: ${err.message || String(err)}`);
         });
-
-        throw new Error(`Upload failed: ${errorMsg}`);
+        throw new Error(`Direct upload failed: ${err.message}`);
       }
     }
 
