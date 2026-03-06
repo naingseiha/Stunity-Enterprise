@@ -15,7 +15,7 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
-  Platform,
+  Platform, Animated
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -29,7 +29,7 @@ import { Post } from '@/types';
 import { feedApi } from '@/api/client';
 import { QuizForm, QuizData } from './create-post/forms/QuizForm';
 import { PollForm, PollData } from './create-post/forms/PollForm';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+
 
 // Upload helper
 const uploadImages = async (localUris: string[]): Promise<string[]> => {
@@ -38,30 +38,66 @@ const uploadImages = async (localUris: string[]): Promise<string[]> => {
   try {
     console.log('📤 [EditPost] Uploading', localUris.length, 'images...');
 
-    const formData = new FormData();
+    const { Config } = await import('@/config/env');
+    const { tokenService } = await import('@/services/token');
+    // Use legacy expo-file-system api for native Android multipart support
+    const FileSystem = await import('expo-file-system/legacy');
+    const token = await tokenService.getAccessToken();
+
+    const uploadedUrls: string[] = [];
 
     for (const uri of localUris) {
-      const filename = uri.split('/').pop() || 'image.jpg';
+      const filename = uri.split('/').pop() || `file-${Date.now()}`;
+      const match = /\.(\w+)$/.exec(filename);
+      const ext = match ? match[1].toLowerCase() : 'jpg';
 
-      formData.append('files', {
-        uri,
-        type: 'image/jpeg',
-        name: filename,
-      } as any);
+      let type = 'image/jpeg';
+      if (['png', 'webp', 'gif'].includes(ext)) type = `image/${ext}`;
+      else if (['mp4', 'mov', 'avi', 'webm'].includes(ext)) {
+        type = ext === 'mov' ? 'video/quicktime' : `video/${ext}`;
+      }
+
+      try {
+        console.log(`📤 [EditPost] Uploading file with FileSystem: ${filename}`);
+        const response = await FileSystem.uploadAsync(
+          `${Config.feedUrl}/upload`,
+          uri,
+          {
+            httpMethod: 'POST',
+            uploadType: 1, // FileSystemUploadType.MULTIPART
+            fieldName: 'files',
+            mimeType: type,
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json',
+            },
+          }
+        );
+
+        if (response.status !== 200) {
+          throw new Error(`Upload returned status ${response.status}: ${response.body}`);
+        }
+
+        const result = JSON.parse(response.body);
+        if (result.success && result.data && result.data.length > 0) {
+          uploadedUrls.push(result.data[0].url);
+        } else {
+          throw new Error(`Upload failed parsing: ${response.body}`);
+        }
+      } catch (err: any) {
+        console.error('❌ [EditPost] Individual file upload failed:', err);
+        const errorMsg = err.message || JSON.stringify(err);
+
+        import('react-native').then(({ Alert }) => {
+          Alert.alert('Upload Error Debug (Edit)', `URL: ${Config.feedUrl}/upload\nError: ${errorMsg}`);
+        });
+
+        throw new Error(`Upload failed: ${errorMsg}`);
+      }
     }
 
-    const response = await feedApi.post('/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 60000,
-    });
-
-    if (response.data.success && response.data.data) {
-      const uploadedUrls = response.data.data.map((file: any) => file.url);
-      console.log('✅ [EditPost] Upload successful:', uploadedUrls.length, 'images');
-      return uploadedUrls;
-    }
-
-    throw new Error('Upload response invalid');
+    console.log('✅ [EditPost] Upload successful:', uploadedUrls.length, 'images');
+    return uploadedUrls;
   } catch (error) {
     console.error('❌ [EditPost] Upload failed:', error);
     throw error;
@@ -118,7 +154,7 @@ export default function EditPostScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Helpers
-  const isLocalUri = (uri: string) => uri.startsWith('file://');
+  const isLocalUri = (uri: string) => uri && !uri.startsWith('http') && !uri.startsWith('https') && !uri.startsWith('data:');
   const getLocalUris = () => mediaUrls.filter(isLocalUri);
   const hasChanges =
     content.trim() !== post.content.trim() ||
@@ -524,8 +560,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderRadius: 12,
-    
-    
+
+
     gap: 8,
   },
   visibilityLabel: {

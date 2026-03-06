@@ -106,30 +106,87 @@ export async function updateProfile(profileData: UpdateProfileData) {
 
 /** Upload a new profile photo. Accepts a local file URI. */
 export async function uploadProfilePhoto(fileUri: string, fileName: string, mimeType: string = 'image/jpeg') {
-    const formData = new FormData();
-    formData.append('file', {
-        uri: fileUri,
-        name: fileName,
-        type: mimeType,
-    } as any);
-    const { data } = await feedApi.post('/users/me/profile-photo', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return data;
+    const { Config } = await import('@/config/env');
+    const { tokenService } = await import('@/services/token');
+    const FileSystem = await import('expo-file-system/legacy');
+    const token = await tokenService.getAccessToken();
+
+    try {
+        console.log(`📤 [profileApi] Uploading profile photo with FileSystem: ${fileName}`);
+        const response = await FileSystem.uploadAsync(
+            `${Config.feedUrl}/users/me/profile-photo`,
+            fileUri,
+            {
+                httpMethod: 'POST',
+                uploadType: 1, // FileSystemUploadType.MULTIPART
+                fieldName: 'file', // Matches multer name in backend
+                mimeType: mimeType,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json',
+                },
+            }
+        );
+
+        if (response.status !== 200) {
+            throw new Error(`Upload returned status ${response.status}: ${response.body}`);
+        }
+
+        const data = JSON.parse(response.body);
+        return data.data || data;
+    } catch (err: any) {
+        console.error('❌ [profileApi] Profile photo upload failed:', err);
+        const errorMsg = err.message || JSON.stringify(err);
+
+        import('react-native').then(({ Alert }) => {
+            Alert.alert('Upload Error Debug (Profile)', `URL: ${Config.feedUrl}/users/me/profile-photo\nError: ${errorMsg}`);
+        });
+
+        throw new Error(`Upload failed: ${errorMsg}`);
+    }
 }
 
 /** Upload a new cover photo. Accepts a local file URI. */
 export async function uploadCoverPhoto(fileUri: string, fileName: string, mimeType: string = 'image/jpeg') {
-    const formData = new FormData();
-    formData.append('file', {
-        uri: fileUri,
-        name: fileName,
-        type: mimeType,
-    } as any);
-    const { data } = await feedApi.post('/users/me/cover-photo', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return data;
+    // Bypass Axios entirely for file uploads
+    const { Config } = await import('@/config/env');
+    const { tokenService } = await import('@/services/token');
+    const FileSystem = await import('expo-file-system/legacy');
+    const token = await tokenService.getAccessToken();
+
+    try {
+        console.log(`📤 [profileApi] Uploading cover photo with FileSystem: ${fileName}`);
+        const response = await FileSystem.uploadAsync(
+            `${Config.feedUrl}/users/me/cover-photo`,
+            fileUri,
+            {
+                httpMethod: 'POST',
+                uploadType: 1, // FileSystemUploadType.MULTIPART
+                fieldName: 'file', // Matches multer name in backend
+                mimeType: mimeType,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json',
+                },
+            }
+        );
+
+        if (response.status !== 200) {
+            throw new Error(`Upload returned status ${response.status}: ${response.body}`);
+        }
+
+        const data = JSON.parse(response.body);
+        return data.data || data;
+    } catch (err: any) {
+        console.error('❌ [profileApi] Cover photo upload failed:', err);
+        const errorMsg = err.message || JSON.stringify(err);
+
+        import('react-native').then(({ Alert }) => {
+            Alert.alert('Upload Error Debug (Cover)', `URL: ${Config.feedUrl}/users/me/cover-photo\nError: ${errorMsg}`);
+        });
+
+        throw new Error(`Upload failed: ${errorMsg}`);
+    }
 }
 
 /** Remove cover photo. */

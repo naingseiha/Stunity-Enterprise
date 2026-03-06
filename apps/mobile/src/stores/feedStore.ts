@@ -566,54 +566,80 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       // Upload local images to R2 before creating post
       let uploadedMediaUrls = mediaUrls;
 
-      if (mediaUrls.length > 0 && mediaUrls.some(url => url.startsWith('file://'))) {
+      const isLocalUri = (uri: string) => uri && !uri.startsWith('http') && !uri.startsWith('https') && !uri.startsWith('data:');
+      const hasLocalImages = mediaUrls.some(isLocalUri);
+
+      if (mediaUrls.length > 0 && hasLocalImages) {
         console.log('📤 [FeedStore] Uploading images to R2...');
 
         try {
-          // Create FormData with images
-          const formData = new FormData();
+          // Upload to backend using expo-file-system to avoid RN fetch boundary issues on Android
+          const { Config } = await import('@/config/env');
+          const { tokenService } = await import('@/services/token');
+          const FileSystem = await import('expo-file-system/legacy');
+          const token = await tokenService.getAccessToken();
+
+          uploadedMediaUrls = [];
 
           for (const uri of mediaUrls) {
-            if (uri.startsWith('file://')) {
-              // Extract file extension and determine mime type
+            if (isLocalUri(uri)) {
               const filename = uri.split('/').pop() || `file-${Date.now()}`;
               const match = /\.(\w+)$/.exec(filename);
               const ext = match ? match[1].toLowerCase() : 'jpg';
 
               let type = 'image/jpeg';
-              if (ext === 'png') type = 'image/png';
-              else if (ext === 'gif') type = 'image/gif';
-              else if (ext === 'mp4') type = 'video/mp4';
-              else if (ext === 'mov') type = 'video/quicktime';
-              else if (ext === 'avi') type = 'video/x-msvideo';
+              if (['png', 'webp', 'gif'].includes(ext)) type = `image/${ext}`;
+              else if (['mp4', 'mov', 'avi', 'webm'].includes(ext)) {
+                type = ext === 'mov' ? 'video/quicktime' : `video/${ext}`;
+              }
 
-              // Append file to form data
-              formData.append('files', {
-                uri,
-                type,
-                name: filename,
-              } as any);
+              try {
+                console.log(`📤 [FeedStore] Uploading file with FileSystem: ${filename}`);
+                const response = await FileSystem.uploadAsync(
+                  `${Config.feedUrl}/upload`,
+                  uri,
+                  {
+                    httpMethod: 'POST',
+                    uploadType: 1, // FileSystemUploadType.MULTIPART
+                    fieldName: 'files',
+                    mimeType: type,
+                    headers: {
+                      'Authorization': `Bearer ${token}`,
+                      'Accept': 'application/json',
+                    },
+                  }
+                );
+
+                if (response.status !== 200) {
+                  throw new Error(`Upload returned status ${response.status}: ${response.body}`);
+                }
+
+                const result = JSON.parse(response.body);
+                if (result.success && result.data && result.data.length > 0) {
+                  uploadedMediaUrls.push(result.data[0].url);
+                } else {
+                  throw new Error(`Upload failed parsing: ${response.body}`);
+                }
+              } catch (err: any) {
+                console.error('❌ [FeedStore] Individual file upload failed:', err);
+                const errorMsg = err.message || JSON.stringify(err);
+
+                // Show detailed error to user automatically so we can read it on-screen
+                import('react-native').then(({ Alert }) => {
+                  Alert.alert('Upload Error Debug', `URL: ${Config.feedUrl}/upload\nError: ${errorMsg}`);
+                });
+
+                throw new Error(`Upload failed: ${errorMsg}`);
+              }
+            } else {
+              uploadedMediaUrls.push(uri);
             }
           }
 
-          // Upload to backend
-          const uploadResponse = await feedApi.post('/upload', formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-            timeout: 60000, // 60s for file uploads
-          });
-
-          if (uploadResponse.data.success && uploadResponse.data.data) {
-            uploadedMediaUrls = uploadResponse.data.data.map((file: any) => file.url);
-            console.log('✅ [FeedStore] Images uploaded successfully:', uploadedMediaUrls);
-          } else {
-            console.error('❌ [FeedStore] Upload failed:', uploadResponse.data);
-            throw new Error('Failed to upload images');
-          }
+          console.log('✅ [FeedStore] All images uploaded successfully:', uploadedMediaUrls);
         } catch (uploadError: any) {
           console.error('❌ [FeedStore] Upload error:', uploadError);
-          throw new Error('Failed to upload images. Please check your connection.');
+          throw uploadError;
         }
       }
 
@@ -1493,225 +1519,236 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     console.log('🔌 [FeedStore] Subscribing to realtime feed...');
     const { unsubscribeFromFeed } = get();
 
-    // Unsubscribe existing if any
-    unsubscribeFromFeed();
+    // Guard: if Supabase URL is missing or placeholder, skip realtime (safe degradation)
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+    if (!supabaseUrl || supabaseUrl.includes('your-project')) {
+      console.warn('⚠️ [FeedStore] Supabase URL not configured — realtime disabled. Set EXPO_PUBLIC_SUPABASE_URL.');
+      return;
+    }
 
-    const isActuallyNewPost = (postCreatedAt: string): boolean => {
-      const { lastFeedTimestamp, feedItems } = get();
-      // Use lastFeedTimestamp if available, else fall back to most recent post
-      const firstPost = feedItems.find(i => i.type === 'POST');
-      const referenceTime = lastFeedTimestamp || (firstPost?.type === 'POST' ? firstPost.data.createdAt : undefined);
-      if (!referenceTime) return true; // No reference = treat as new
-      return new Date(postCreatedAt) > new Date(referenceTime);
-    };
+    try {
+      // Unsubscribe existing if any
+      unsubscribeFromFeed();
 
-    // Helper: check if post ID is already known (dedup)
-    const isKnownPostId = (postId: string): boolean => {
-      const { feedItems, pendingPosts } = get();
-      return feedItems.some(i => i.type === 'POST' && i.data.id === postId) || pendingPosts.some(p => p.id === postId);
-    };
+      const isActuallyNewPost = (postCreatedAt: string): boolean => {
+        const { lastFeedTimestamp, feedItems } = get();
+        // Use lastFeedTimestamp if available, else fall back to most recent post
+        const firstPost = feedItems.find(i => i.type === 'POST');
+        const referenceTime = lastFeedTimestamp || (firstPost?.type === 'POST' ? firstPost.data.createdAt : undefined);
+        if (!referenceTime) return true; // No reference = treat as new
+        return new Date(postCreatedAt) > new Date(referenceTime);
+      };
 
-    // Helper: get current user ID (skip own posts — they're added optimistically)
-    const getCurrentUserId = (): string | undefined => {
-      try {
-        return useAuthStore.getState().user?.id;
-      } catch { return undefined; }
-    };
+      // Helper: check if post ID is already known (dedup)
+      const isKnownPostId = (postId: string): boolean => {
+        const { feedItems, pendingPosts } = get();
+        return feedItems.some(i => i.type === 'POST' && i.data.id === postId) || pendingPosts.some(p => p.id === postId);
+      };
 
-    let _livenessTimer: ReturnType<typeof setTimeout> | null = null;
-    let _receivedAnyEvent = false;
+      // Helper: get current user ID (skip own posts — they're added optimistically)
+      const getCurrentUserId = (): string | undefined => {
+        try {
+          return useAuthStore.getState().user?.id;
+        } catch { return undefined; }
+      };
 
-    const channelName = `feed:realtime:${Date.now()}`; // Unique per subscription
-    const channel = supabase
-      .channel(channelName)
-      // New posts
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'posts' },
-        async (payload) => {
-          _receivedAnyEvent = true; // Liveness: at least one event arrived
-          const newPostRaw = payload.new as any;
-          const newPostId = newPostRaw?.id;
-          if (!newPostId) return;
+      let _livenessTimer: ReturnType<typeof setTimeout> | null = null;
+      let _receivedAnyEvent = false;
 
-          // Skip if already known (dedup) — includes optimistic update on creating device
-          // Note: Don't skip "own posts" here — same user on Device B needs to receive
-          // posts created on Device A; isKnownPostId handles the creating device.
-          if (isKnownPostId(newPostId)) {
-            console.log('🔔 [FeedStore] Skipping duplicate INSERT:', newPostId);
-            return;
-          }
+      const channelName = `feed:realtime:${Date.now()}`; // Unique per subscription
+      const channel = supabase
+        .channel(channelName)
+        // New posts
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'posts' },
+          async (payload) => {
+            _receivedAnyEvent = true; // Liveness: at least one event arrived
+            const newPostRaw = payload.new as any;
+            const newPostId = newPostRaw?.id;
+            if (!newPostId) return;
 
-          console.log('🔔 [FeedStore] New post INSERT:', newPostId);
-
-          try {
-            // Fetch full post via API (preserves business logic, author data, etc.)
-            const response = await feedApi.get(`/posts/${newPostId}`);
-            if (response.data.success && (response.data.data || response.data.post)) {
-              const transformed = transformPost(response.data.data || response.data.post);
-              if (transformed) {
-                // Final dedup check (race condition guard)
-                if (!isKnownPostId(transformed.id)) {
-                  set(state => ({
-                    pendingPosts: [transformed, ...state.pendingPosts]
-                  }));
-                  console.log('✅ [FeedStore] Added to pendingPosts, count:', get().pendingPosts.length);
-                }
-              }
+            // Skip if already known (dedup) — includes optimistic update on creating device
+            // Note: Don't skip "own posts" here — same user on Device B needs to receive
+            // posts created on Device A; isKnownPostId handles the creating device.
+            if (isKnownPostId(newPostId)) {
+              console.log('🔔 [FeedStore] Skipping duplicate INSERT:', newPostId);
+              return;
             }
-          } catch (e) {
-            console.error('Error fetching realtime post:', e);
-          }
-        }
-      )
-      // Post updates (edits, like/comment count changes)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'posts' },
-        async (payload) => {
-          _receivedAnyEvent = true; // Liveness: at least one event arrived
-          const updated = payload.new as any;
-          if (!updated?.id) return;
 
-          // Check if we already have this post in our feed or pending
-          const { feedItems, pendingPosts } = get();
-          const isInFeed = feedItems.some(i => i.type === 'POST' && i.data.id === updated.id);
-          const isInPending = pendingPosts.some(p => p.id === updated.id);
+            console.log('🔔 [FeedStore] New post INSERT:', newPostId);
 
-          if (isInFeed) {
-            // Known post in feed → just update counts inline (NO "New Posts" button)
-            console.log('🔔 [FeedStore] Post updated:', updated.id, 'likes:', updated.likesCount);
-            set(state => ({
-              feedItems: state.feedItems.map(item =>
-                item.type === 'POST' && item.data.id === updated.id
-                  ? {
-                    ...item,
-                    data: {
-                      ...item.data,
-                      content: updated.content ?? item.data.content,
-                      title: updated.title ?? item.data.title,
-                      likes: updated.likesCount ?? item.data.likes,
-                      comments: updated.commentsCount ?? item.data.comments,
-                      shares: updated.sharesCount ?? item.data.shares,
-                    }
-                  }
-                  : item
-              ),
-            }));
-          } else if (isInPending) {
-            // Already in pending → update it in place, don't add again
-            console.log('🔔 [FeedStore] Updating pending post:', updated.id);
-            set(state => ({
-              pendingPosts: state.pendingPosts.map(p =>
-                p.id === updated.id
-                  ? {
-                    ...p,
-                    likes: updated.likesCount ?? p.likes,
-                    comments: updated.commentsCount ?? p.comments,
-                  }
-                  : p
-              ),
-            }));
-          } else {
-            // Unknown post — only treat as new if it was ACTUALLY created recently
-            // This prevents old posts getting a like from triggering "New Posts"
-            const postCreatedAt = updated.createdAt;
-            if (postCreatedAt && isActuallyNewPost(postCreatedAt)) {
-              // Skip own posts
-              const currentUserId = getCurrentUserId();
-              if (currentUserId && updated.authorId === currentUserId) return;
-
-              console.log('🆕 [FeedStore] Genuinely new post via UPDATE:', updated.id);
-              try {
-                const response = await feedApi.get(`/posts/${updated.id}`);
-                if (response.data.success && (response.data.data || response.data.post)) {
-                  const transformed = transformPost(response.data.data || response.data.post);
-                  if (transformed && !isKnownPostId(transformed.id)) {
+            try {
+              // Fetch full post via API (preserves business logic, author data, etc.)
+              const response = await feedApi.get(`/posts/${newPostId}`);
+              if (response.data.success && (response.data.data || response.data.post)) {
+                const transformed = transformPost(response.data.data || response.data.post);
+                if (transformed) {
+                  // Final dedup check (race condition guard)
+                  if (!isKnownPostId(transformed.id)) {
                     set(state => ({
                       pendingPosts: [transformed, ...state.pendingPosts]
                     }));
-                    console.log('✅ [FeedStore] Added genuinely new post to pendingPosts, count:', get().pendingPosts.length);
+                    console.log('✅ [FeedStore] Added to pendingPosts, count:', get().pendingPosts.length);
                   }
                 }
-              } catch (e) {
-                console.error('Failed to fetch new post:', e);
               }
+            } catch (e) {
+              console.error('Error fetching realtime post:', e);
+            }
+          }
+        )
+        // Post updates (edits, like/comment count changes)
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'posts' },
+          async (payload) => {
+            _receivedAnyEvent = true; // Liveness: at least one event arrived
+            const updated = payload.new as any;
+            if (!updated?.id) return;
+
+            // Check if we already have this post in our feed or pending
+            const { feedItems, pendingPosts } = get();
+            const isInFeed = feedItems.some(i => i.type === 'POST' && i.data.id === updated.id);
+            const isInPending = pendingPosts.some(p => p.id === updated.id);
+
+            if (isInFeed) {
+              // Known post in feed → just update counts inline (NO "New Posts" button)
+              console.log('🔔 [FeedStore] Post updated:', updated.id, 'likes:', updated.likesCount);
+              set(state => ({
+                feedItems: state.feedItems.map(item =>
+                  item.type === 'POST' && item.data.id === updated.id
+                    ? {
+                      ...item,
+                      data: {
+                        ...item.data,
+                        content: updated.content ?? item.data.content,
+                        title: updated.title ?? item.data.title,
+                        likes: updated.likesCount ?? item.data.likes,
+                        comments: updated.commentsCount ?? item.data.comments,
+                        shares: updated.sharesCount ?? item.data.shares,
+                      }
+                    }
+                    : item
+                ),
+              }));
+            } else if (isInPending) {
+              // Already in pending → update it in place, don't add again
+              console.log('🔔 [FeedStore] Updating pending post:', updated.id);
+              set(state => ({
+                pendingPosts: state.pendingPosts.map(p =>
+                  p.id === updated.id
+                    ? {
+                      ...p,
+                      likes: updated.likesCount ?? p.likes,
+                      comments: updated.commentsCount ?? p.comments,
+                    }
+                    : p
+                ),
+              }));
             } else {
-              // Old post received an update (like, comment, etc.) — ignore silently
-              if (__DEV__) {
-                console.log('🔕 [FeedStore] Ignoring UPDATE for old/unknown post:', updated.id);
+              // Unknown post — only treat as new if it was ACTUALLY created recently
+              // This prevents old posts getting a like from triggering "New Posts"
+              const postCreatedAt = updated.createdAt;
+              if (postCreatedAt && isActuallyNewPost(postCreatedAt)) {
+                // Skip own posts
+                const currentUserId = getCurrentUserId();
+                if (currentUserId && updated.authorId === currentUserId) return;
+
+                console.log('🆕 [FeedStore] Genuinely new post via UPDATE:', updated.id);
+                try {
+                  const response = await feedApi.get(`/posts/${updated.id}`);
+                  if (response.data.success && (response.data.data || response.data.post)) {
+                    const transformed = transformPost(response.data.data || response.data.post);
+                    if (transformed && !isKnownPostId(transformed.id)) {
+                      set(state => ({
+                        pendingPosts: [transformed, ...state.pendingPosts]
+                      }));
+                      console.log('✅ [FeedStore] Added genuinely new post to pendingPosts, count:', get().pendingPosts.length);
+                    }
+                  }
+                } catch (e) {
+                  console.error('Failed to fetch new post:', e);
+                }
+              } else {
+                // Old post received an update (like, comment, etc.) — ignore silently
+                if (__DEV__) {
+                  console.log('🔕 [FeedStore] Ignoring UPDATE for old/unknown post:', updated.id);
+                }
               }
             }
           }
-        }
-      )
-      // Post deletes
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'posts' },
-        (payload) => {
-          _receivedAnyEvent = true; // Liveness: at least one event arrived
-          const deletedId = (payload.old as any)?.id;
-          if (!deletedId) return;
+        )
+        // Post deletes
+        .on(
+          'postgres_changes',
+          { event: 'DELETE', schema: 'public', table: 'posts' },
+          (payload) => {
+            _receivedAnyEvent = true; // Liveness: at least one event arrived
+            const deletedId = (payload.old as any)?.id;
+            if (!deletedId) return;
 
-          set(state => ({
-            feedItems: state.feedItems.filter(i => !(i.type === 'POST' && i.data.id === deletedId)),
-            pendingPosts: state.pendingPosts.filter(p => p.id !== deletedId),
-          }));
-        }
-      )
-      .subscribe((status, err) => {
-        if (err) console.error('❌ [FeedStore] Subscription error:', err);
-
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ [FeedStore] Realtime ACTIVE — listening for post changes');
-          // Reset retry counter
-          set({ ...(get() as any), _realtimeRetries: 0 } as any);
-
-          // Liveness check: if no event arrives within 30s of subscribing,
-          // warn about possible RLS blocking (silent failure mode).
-          // In production with active users this fires rarely — posts are created often.
-          if (_livenessTimer) clearTimeout(_livenessTimer);
-          _livenessTimer = setTimeout(() => {
-            if (!_receivedAnyEvent && __DEV__) {
-              console.warn(
-                '⚠️ [FeedStore] No real-time events received 30s after SUBSCRIBED.\n' +
-                '  → Check Supabase dashboard: is RLS enabled on the `posts` table?\n' +
-                '  → Run: ALTER TABLE public.posts DISABLE ROW LEVEL SECURITY;\n' +
-                '  → See implementation_plan.md for full details.'
-              );
-            }
-          }, 30_000);
-        } else if (status === 'CHANNEL_ERROR') {
-          console.warn('⚠️ [FeedStore] Realtime CHANNEL_ERROR — check Supabase RLS or network');
-          if (_livenessTimer) { clearTimeout(_livenessTimer); _livenessTimer = null; }
-        } else if (status === 'TIMED_OUT') {
-          console.warn('⚠️ [FeedStore] Realtime TIMED_OUT — network issue or Supabase outage');
-          if (_livenessTimer) { clearTimeout(_livenessTimer); _livenessTimer = null; }
-        } else {
-          console.log(`🔌 [FeedStore] Realtime status: ${status}`);
-        }
-
-        // Auto-reconnect on error with exponential backoff
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          const currentRetries = (get() as any)._realtimeRetries || 0;
-          if (currentRetries < 5) {
-            const delay = Math.min(2000 * Math.pow(2, currentRetries), 32000);
-            console.log(`🔄 [FeedStore] Reconnecting in ${delay / 1000}s (attempt ${currentRetries + 1}/5)...`);
-            set({ ...(get() as any), _realtimeRetries: currentRetries + 1 } as any);
-            setTimeout(() => {
-              console.log('🔄 [FeedStore] Attempting reconnect...');
-              const { unsubscribeFromFeed, subscribeToFeed } = get();
-              unsubscribeFromFeed();
-              subscribeToFeed();
-            }, delay);
-          } else {
-            console.warn('🔌 [FeedStore] Max retries reached, giving up on realtime');
+            set(state => ({
+              feedItems: state.feedItems.filter(i => !(i.type === 'POST' && i.data.id === deletedId)),
+              pendingPosts: state.pendingPosts.filter(p => p.id !== deletedId),
+            }));
           }
-        }
-      });
+        )
+        .subscribe((status, err) => {
+          if (err) console.error('❌ [FeedStore] Subscription error:', err);
 
-    set({ realtimeSubscription: channel });
+          if (status === 'SUBSCRIBED') {
+            console.log('✅ [FeedStore] Realtime ACTIVE — listening for post changes');
+            // Reset retry counter
+            set({ ...(get() as any), _realtimeRetries: 0 } as any);
+
+            // Liveness check: if no event arrives within 30s of subscribing,
+            // warn about possible RLS blocking (silent failure mode).
+            // In production with active users this fires rarely — posts are created often.
+            if (_livenessTimer) clearTimeout(_livenessTimer);
+            _livenessTimer = setTimeout(() => {
+              if (!_receivedAnyEvent && __DEV__) {
+                console.warn(
+                  '⚠️ [FeedStore] No real-time events received 30s after SUBSCRIBED.\n' +
+                  '  → Check Supabase dashboard: is RLS enabled on the `posts` table?\n' +
+                  '  → Run: ALTER TABLE public.posts DISABLE ROW LEVEL SECURITY;\n' +
+                  '  → See implementation_plan.md for full details.'
+                );
+              }
+            }, 30_000);
+          } else if (status === 'CHANNEL_ERROR') {
+            console.warn('⚠️ [FeedStore] Realtime CHANNEL_ERROR — check Supabase RLS or network');
+            if (_livenessTimer) { clearTimeout(_livenessTimer); _livenessTimer = null; }
+          } else if (status === 'TIMED_OUT') {
+            console.warn('⚠️ [FeedStore] Realtime TIMED_OUT — network issue or Supabase outage');
+            if (_livenessTimer) { clearTimeout(_livenessTimer); _livenessTimer = null; }
+          } else {
+            console.log(`🔌 [FeedStore] Realtime status: ${status}`);
+          }
+
+          // Auto-reconnect on error with exponential backoff
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            const currentRetries = (get() as any)._realtimeRetries || 0;
+            if (currentRetries < 5) {
+              const delay = Math.min(2000 * Math.pow(2, currentRetries), 32000);
+              console.log(`🔄 [FeedStore] Reconnecting in ${delay / 1000}s (attempt ${currentRetries + 1}/5)...`);
+              set({ ...(get() as any), _realtimeRetries: currentRetries + 1 } as any);
+              setTimeout(() => {
+                console.log('🔄 [FeedStore] Attempting reconnect...');
+                const { unsubscribeFromFeed, subscribeToFeed } = get();
+                unsubscribeFromFeed();
+                subscribeToFeed();
+              }, delay);
+            } else {
+              console.warn('🔌 [FeedStore] Max retries reached, giving up on realtime');
+            }
+          }
+        });
+
+      set({ realtimeSubscription: channel });
+    } catch (realtimeError) {
+      console.warn('⚠️ [FeedStore] Realtime subscription failed (non-fatal), app continues without realtime:', realtimeError);
+    }
   },
 
   unsubscribeFromFeed: () => {
