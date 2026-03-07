@@ -1,199 +1,218 @@
-/**
- * Welcome Screen — Premium Enterprise Design
- * 
- * Animated floating circles, feature highlights, glassmorphism buttons
- * Matches the premium sky-blue design language of Feed/Profile/Course
- */
-
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Dimensions,
-  StatusBar,
   TouchableOpacity,
-  ScrollView, Animated} from 'react-native';
+  Dimensions,
+  Animated,
+  StatusBar,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-
 import { Ionicons } from '@expo/vector-icons';
-import StunityLogo from '../../../assets/Stunity.svg';
+import Svg, { Path } from 'react-native-svg';
 
-import { Colors, Typography, Spacing } from '@/config';
+import StunityLogo from '../../../assets/Stunity.svg';
 import { AuthStackScreenProps } from '@/navigation/types';
 
 const { width, height } = Dimensions.get('window');
 
+// Brand Colors (Exact SVG Matches)
+const BRAND_TEAL = '#09CFF7';
+const BRAND_YELLOW = '#FFA600';
+
 type NavigationProp = AuthStackScreenProps<'Welcome'>['navigation'];
 
-const FEATURES = [
-  { icon: 'school' as const, color: '#0EA5E9', bg: '#E0F2FE', label: 'Learn', desc: 'Courses & Quizzes' },
-  { icon: 'people' as const, color: '#8B5CF6', bg: '#F3E8FF', label: 'Connect', desc: 'Social Learning' },
-  { icon: 'trophy' as const, color: '#F59E0B', bg: '#FEF3C7', label: 'Achieve', desc: 'Track Progress' },
-];
+const WavyDivider = () => (
+  <View style={styles.wavyContainer}>
+    <Svg
+      height={120}
+      width={width}
+      viewBox={`0 0 ${width} 120`}
+      style={styles.wavySvg}
+    >
+      {/* Deep Shadow Layer */}
+      <Path
+        d={`M0 20 C${width * 0.3} 10, ${width * 0.6} 90, ${width} 50 V120 H0 Z`}
+        fill="white"
+        opacity={0.3}
+      />
+      {/* Mid Accent Layer */}
+      <Path
+        d={`M0 40 C${width * 0.4} 30, ${width * 0.7} 110, ${width} 70 V120 H0 Z`}
+        fill="white"
+        opacity={0.6}
+      />
+      {/* Main Solid Transition */}
+      <Path
+        d={`M0 60 C${width * 0.35} 50, ${width * 0.65} 130, ${width} 90 V120 H0 Z`}
+        fill="white"
+      />
+    </Svg>
+  </View>
+);
 
 export default function WelcomeScreen() {
   const navigation = useNavigation<NavigationProp>();
+
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const logoScale = useRef(new Animated.Value(0.9)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 20,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.spring(logoScale, {
+        toValue: 1,
+        tension: 15,
+        friction: 6,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  const PremiumButton = ({ onPress, icon, label, primary = false }: any) => {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.8}
+        style={styles.buttonWrapper}
+      >
+        <LinearGradient
+          colors={primary ? [BRAND_TEAL, '#00B8DB'] : ['transparent', 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[
+            styles.button,
+            !primary && styles.outlineButton,
+            primary && styles.primaryShadow
+          ]}
+        >
+          {icon && <Ionicons name={icon} size={20} color={primary ? "#fff" : BRAND_TEAL} style={{ marginRight: 10 }} />}
+          <Text style={[styles.buttonText, primary ? styles.primaryButtonText : styles.secondaryButtonText]}>
+            {label}
+          </Text>
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Premium Gradient Background */}
-      <LinearGradient
-        colors={['#E0F2FE', '#F0F9FF', '#FFFFFF']}
-        style={StyleSheet.absoluteFill}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-      />
+      {/* Top Section - Premium Teal Header */}
+      <View style={styles.headerSection}>
+        <LinearGradient
+          colors={['#FFFFFF', '#ECFEFF', BRAND_TEAL]} // "Crystal Teal" Gradient
+          locations={[0, 0.4, 1]} // White top for logo contrast
+          style={StyleSheet.absoluteFill}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+        />
 
-      {/* Decorative Floating Circles */}
-      <View style={styles.decorCircle1} />
-      <View style={styles.decorCircle2} />
-      <View style={styles.decorCircle3} />
-      <View style={styles.decorCircle4} />
-
-      <SafeAreaView style={styles.content}>
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-        {/* Logo and Branding */}
-        <Animated.View
-          style={styles.brandingContainer}
-        >
-          <Animated.View>
-            <StunityLogo width={130} height={130} style={{ marginBottom: 10 }} />
+        <SafeAreaView style={styles.logoSafeArea}>
+          <Animated.View
+            style={[
+              styles.logoWrapper,
+              styles.logoContainer, // Subtle shadow for light-on-light contrast
+              {
+                opacity: fadeAnim,
+                transform: [{ scale: logoScale }]
+              }
+            ]}
+          >
+            <StunityLogo width={width * 0.7} height={width * 0.25} />
           </Animated.View>
+        </SafeAreaView>
 
-          <Text style={styles.tagline}>
-            Welcome to{'\n'}
-            <Text style={styles.taglineBrand}>Stunity</Text>
-          </Text>
+        <WavyDivider />
+      </View>
 
-          <Text style={styles.description}>
-            Enterprise Social Learning Platform {'\n'}for Educational Excellence
-          </Text>
-        </Animated.View>
-
-        {/* Feature Highlights */}
+      {/* Bottom Section - Action Content */}
+      <View style={styles.contentSection}>
         <Animated.View
-          style={styles.featuresRow}
+          style={[
+            styles.actionCenter,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }]
+            }
+          ]}
         >
-          {FEATURES.map((f, i) => (
-            <Animated.View
-              key={f.label}
-              style={styles.featureCard}
-            >
-              <View style={[styles.featureIcon, { backgroundColor: f.bg }]}>
-                <Ionicons name={f.icon} size={22} color={f.color} />
-              </View>
-              <Text style={styles.featureLabel}>{f.label}</Text>
-              <Text style={styles.featureDesc}>{f.desc}</Text>
-            </Animated.View>
-          ))}
-        </Animated.View>
-
-        <View style={styles.spacer} />
-
-        {/* Buttons */}
-        <Animated.View
-          style={styles.buttonsContainer}
-        >
-          {/* Create Account — Primary CTA */}
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Register')}
-            activeOpacity={0.85}
-            accessibilityLabel="Create new account"
-            accessibilityRole="button"
-            style={styles.primaryShadow}
-          >
-            <LinearGradient
-              colors={['#0EA5E9', '#0284C7']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.primaryButton}
-            >
-              <Ionicons name="person-add-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-              <Text style={styles.primaryButtonText}>Create Account</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          {/* Sign In — Secondary */}
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Login')}
-            activeOpacity={0.85}
-            accessibilityLabel="Sign in with existing account"
-            accessibilityRole="button"
-            style={styles.secondaryShadow}
-          >
-            <View style={styles.secondaryButton}>
-              <Ionicons name="log-in-outline" size={20} color="#0284C7" style={{ marginRight: 8 }} />
-              <Text style={styles.secondaryButtonText}>Sign In</Text>
-            </View>
-          </TouchableOpacity>
-
-          {/* Other sign-in options */}
-          <View style={styles.otherOptionsLabel}>
-            <View style={styles.otherOptionsLine} />
-            <Text style={styles.otherOptionsText}>Other sign-in options</Text>
-            <View style={styles.otherOptionsLine} />
-          </View>
-
-          {/* Parent Portal */}
-          <TouchableOpacity
-            onPress={() => navigation.navigate('ParentLogin')}
-            activeOpacity={0.85}
-            accessibilityLabel="Parent portal login"
-            accessibilityRole="button"
-            style={[styles.linkButton, styles.linkButtonParent]}
-          >
-            <View style={[styles.linkIconWrap, { backgroundColor: '#D1FAE5' }]}>
-              <Ionicons name="people" size={20} color="#059669" />
-            </View>
-            <View style={styles.linkTextWrap}>
-              <Text style={styles.linkLabel}>Parent Portal</Text>
-              <Text style={styles.linkDesc}>{"View your child's grades and attendance"}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={Colors.gray[400]} />
-          </TouchableOpacity>
-
-          {/* Enterprise SSO */}
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Login')}
-            activeOpacity={0.85}
-            accessibilityLabel="Enterprise SSO login"
-            accessibilityRole="button"
-            style={[styles.linkButton, styles.linkButtonEnterprise]}
-          >
-            <View style={[styles.linkIconWrap, { backgroundColor: '#E0F2FE' }]}>
-              <Ionicons name="business" size={20} color="#0EA5E9" />
-            </View>
-            <View style={styles.linkTextWrap}>
-              <Text style={styles.linkLabel}>Enterprise SSO</Text>
-              <Text style={styles.linkDesc}>Sign in with your organization</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={Colors.gray[400]} />
-          </TouchableOpacity>
-
-          {/* Trust Footer */}
-          <View style={styles.footer}>
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Ionicons name="shield-checkmark" size={14} color={Colors.gray[400]} />
-              <View style={styles.dividerLine} />
-            </View>
-            <Text style={styles.footerText}>
-              Trusted by educational institutions worldwide
+          <View style={styles.introContainer}>
+            <Text style={styles.introTitle}>Excellence in Education</Text>
+            <Text style={styles.introSubtitle}>
+              Connecting students, teachers, and parents in one seamless enterprise platform.
             </Text>
           </View>
+
+          <PremiumButton
+            primary
+            label="Create Account"
+            icon="person-add-outline"
+            onPress={() => navigation.navigate('Register')}
+          />
+
+          <View style={styles.spacing} />
+
+          <PremiumButton
+            label="Sign In"
+            icon="shield-checkmark-outline"
+            onPress={() => navigation.navigate('Login')}
+          />
+
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>FOR PARENTS</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ParentLogin')}
+            style={styles.portalButton}
+            activeOpacity={0.7}
+          >
+            <LinearGradient
+              colors={['#FFFBEB', '#FEF3C7']}
+              style={styles.portalGradient}
+            >
+              <View style={styles.portalIconContainer}>
+                <Ionicons name="school" size={20} color={BRAND_YELLOW} />
+              </View>
+              <View style={styles.portalTextContainer}>
+                <Text style={styles.portalText}>Parent Portal Access</Text>
+              </View>
+              <View style={styles.portalArrowContainer}>
+                <Ionicons name="chevron-forward" size={18} color={BRAND_YELLOW} />
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
         </Animated.View>
-        </ScrollView>
-      </SafeAreaView>
+
+        {/* Minimalist Footer */}
+        <Animated.View style={[styles.footer, { opacity: fadeAnim }]}>
+          <View style={styles.legalLinks}>
+            <TouchableOpacity><Text style={styles.legalText}>Terms of Service</Text></TouchableOpacity>
+            <View style={styles.legalDot} />
+            <TouchableOpacity><Text style={styles.legalText}>Privacy Policy</Text></TouchableOpacity>
+          </View>
+        </Animated.View>
+      </View>
     </View>
   );
 }
@@ -201,247 +220,193 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: Math.max(24, height * 0.05),
-    paddingTop: 0,
-  },
-
-  // ── Decorative Circles ────────────────────────────────
-  decorCircle1: {
-    position: 'absolute', top: -40, right: -50,
-    width: 180, height: 180, borderRadius: 90,
-    backgroundColor: 'rgba(14,165,233,0.08)',
-  },
-  decorCircle2: {
-    position: 'absolute', top: height * 0.25, left: -60,
-    width: 140, height: 140, borderRadius: 70,
-    backgroundColor: 'rgba(139,92,246,0.06)',
-  },
-  decorCircle3: {
-    position: 'absolute', bottom: height * 0.18, right: -30,
-    width: 100, height: 100, borderRadius: 50,
-    backgroundColor: 'rgba(14,165,233,0.05)',
-  },
-  decorCircle4: {
-    position: 'absolute', bottom: -30, left: 30,
-    width: 80, height: 80, borderRadius: 40,
-    backgroundColor: 'rgba(245,158,11,0.06)',
-  },
-
-  // ── Branding ──────────────────────────────────────────
-  brandingContainer: {
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  logo: {
-    width: 160,
-    height: 160,
-    marginBottom: 16,
-  },
-  tagline: {
-    fontSize: 26,
-    fontWeight: '300',
-    color: Colors.gray[700],
-    textAlign: 'center',
-    lineHeight: 34,
-    letterSpacing: -0.3,
-  },
-  taglineBrand: {
-    fontWeight: '800',
-    color: Colors.gray[900],
-    letterSpacing: -0.5,
-  },
-  description: {
-    fontSize: 13,
-    color: Colors.gray[500],
-    textAlign: 'center',
-    lineHeight: 20,
-    marginTop: 6,
-  },
-
-  // ── Feature Highlights ────────────────────────────────
-  featuresRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 14,
-  },
-  featureCard: {
-    flex: 1,
     backgroundColor: '#fff',
-    borderRadius: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 6,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  featureIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  featureLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.gray[900],
-    marginBottom: 1,
-  },
-  featureDesc: {
-    fontSize: 10,
-    color: Colors.gray[500],
-    textAlign: 'center',
   },
 
-  spacer: {
+  // Header Section
+  headerSection: {
+    height: height * 0.42,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoSafeArea: {
     flex: 1,
-    minHeight: 8,
-    maxHeight: 32,
-  },
-
-  // ── Buttons ───────────────────────────────────────────
-  buttonsContainer: {
-    marginBottom: 20,
-    gap: 10,
-  },
-  primaryShadow: {
-    shadowColor: '#0EA5E9',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 14,
-    elevation: 8,
-    borderRadius: 26,
-  },
-  primaryButton: {
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
+    alignItems: 'center',
+    paddingBottom: 40,
   },
-  primaryButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 16,
-    letterSpacing: 0.3,
-  },
-  secondaryShadow: {
+  logoContainer: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
-    shadowRadius: 6,
+    shadowRadius: 8,
     elevation: 2,
-    borderRadius: 26,
   },
-  secondaryButton: {
-    height: 52,
-    borderRadius: 26,
+  logoWrapper: {
+    alignItems: 'center',
+  },
+  wavyContainer: {
+    position: 'absolute',
+    bottom: -1,
+    width: '100%',
+  },
+  wavySvg: {
+    bottom: 0,
+  },
+
+  // Content Section
+  contentSection: {
+    flex: 1,
+    backgroundColor: '#fff',
+    paddingHorizontal: 32,
+  },
+  actionCenter: {
+    flex: 1,
+    width: '100%',
+    paddingTop: 10,
+  },
+  introContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  introTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 8,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+  },
+  introSubtitle: {
+    fontSize: 15,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: 10,
+  },
+
+  // Buttons
+  buttonWrapper: {
+    width: '100%',
+  },
+  button: {
+    height: 64,
+    borderRadius: 999,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
-    backgroundColor: '#fff',
+  },
+  outlineButton: {
     borderWidth: 2,
-    borderColor: '#BAE6FD',
+    borderColor: 'rgba(9, 207, 247, 0.15)',
+    backgroundColor: 'white',
+  },
+  buttonText: {
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  primaryButtonText: {
+    color: '#fff',
   },
   secondaryButtonText: {
-    color: '#0284C7',
-    fontWeight: '700',
-    fontSize: 16,
-    letterSpacing: 0.3,
+    color: BRAND_TEAL,
   },
-  otherOptionsLabel: {
+  primaryShadow: {
+    shadowColor: BRAND_TEAL,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  spacing: {
+    height: 16,
+  },
+  dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginTop: 8,
-    marginBottom: 4,
+    marginVertical: 24,
+    width: '100%',
+    paddingHorizontal: 10,
   },
-  otherOptionsLine: {
+  dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: Colors.gray[200],
+    backgroundColor: '#E2E8F0',
   },
-  otherOptionsText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.gray[400],
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  dividerText: {
+    marginHorizontal: 12,
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 1.5,
   },
-  linkButton: {
+
+  // Parent Portal
+  portalButton: {
+    width: '100%',
+    height: 64,
+    borderRadius: 999,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: '#FEF3C7',
+  },
+  portalGradient: {
+    flex: 1,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    height: 58,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    gap: 14,
+  },
+  portalIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#fff',
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: BRAND_YELLOW,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
-  linkButtonParent: {
-    borderColor: '#A7F3D0',
+  portalTextContainer: {
+    flex: 1,
+    alignItems: 'center',
+    paddingRight: 8,
   },
-  linkButtonEnterprise: {
-    borderColor: '#BAE6FD',
+  portalText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#B45309',
   },
-  linkIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+  portalArrowContainer: {
+    width: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  linkTextWrap: {
-    flex: 1,
-  },
-  linkLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.gray[900],
-  },
-  linkDesc: {
-    fontSize: 12,
-    color: Colors.gray[500],
-    marginTop: 2,
-  },
 
-  // ── Footer ────────────────────────────────────────────
+  // Footer
   footer: {
+    paddingVertical: 20,
     alignItems: 'center',
-    marginTop: 4,
   },
-  divider: {
+  legalLinks: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
+    opacity: 0.4,
   },
-  dividerLine: {
-    width: 36,
-    height: 1,
-    backgroundColor: Colors.gray[300],
+  legalText: {
+    fontSize: 12,
+    color: '#475569',
+    fontWeight: '600',
   },
-  footerText: {
-    fontSize: 11,
-    color: Colors.gray[500],
-    fontWeight: '500',
+  legalDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: '#CBD5E1',
+    marginHorizontal: 12,
   },
 });

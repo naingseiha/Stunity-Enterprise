@@ -41,7 +41,7 @@ const uploadImages = async (localUris: string[]): Promise<string[]> => {
     const { Config } = await import('@/config/env');
     const { tokenService } = await import('@/services/token');
     // Use legacy expo-file-system api for native Android multipart support
-    const FileSystem = await import('expo-file-system/legacy');
+    const FileSystem = await import('expo-file-system');
     const token = await tokenService.getAccessToken();
 
     const localFiles = localUris;

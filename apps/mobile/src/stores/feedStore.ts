@@ -576,7 +576,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           // Upload to backend using expo-file-system to avoid RN fetch boundary issues on Android
           const { Config } = await import('@/config/env');
           const { tokenService } = await import('@/services/token');
-          const FileSystem = await import('expo-file-system/legacy');
+          const FileSystem = await import('expo-file-system');
           const token = await tokenService.getAccessToken();
 
           const localFiles = mediaUrls.filter(isLocalUri);

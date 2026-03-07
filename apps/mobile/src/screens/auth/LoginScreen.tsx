@@ -15,7 +15,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert, Animated} from 'react-native';
+  Alert, Animated
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -28,6 +29,9 @@ import StunityLogo from '../../../assets/Stunity.svg';
 import { Colors, Typography, Spacing } from '@/config';
 import { useAuthStore } from '@/stores';
 import { AuthStackScreenProps } from '@/navigation/types';
+
+const BRAND_TEAL = '#09CFF7';
+const BRAND_TEAL_DARK = '#00B8DB';
 
 type NavigationProp = AuthStackScreenProps<'Login'>['navigation'];
 
@@ -219,7 +223,7 @@ export default function LoginScreen() {
                 style={styles.signInShadow}
               >
                 <LinearGradient
-                  colors={isLoading ? ['#94A3B8', '#94A3B8'] : ['#0EA5E9', '#0284C7']}
+                  colors={isLoading ? ['#94A3B8', '#94A3B8'] : [BRAND_TEAL, BRAND_TEAL_DARK]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.signInButton}
@@ -263,7 +267,7 @@ export default function LoginScreen() {
                 activeOpacity={0.7}
                 onPress={handleSSOLogin}
               >
-                <Ionicons name="business-outline" size={22} color="#0EA5E9" />
+                <Ionicons name="business-outline" size={22} color={BRAND_TEAL} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -408,13 +412,13 @@ const styles = StyleSheet.create({
   },
   forgotText: {
     fontSize: 13,
-    color: '#0EA5E9',
+    color: BRAND_TEAL,
     fontWeight: '600',
   },
 
   // ── Sign In Button ────────────────────────────────────
   signInShadow: {
-    shadowColor: '#0EA5E9',
+    shadowColor: BRAND_TEAL,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 10,
@@ -493,7 +497,7 @@ const styles = StyleSheet.create({
     color: Colors.gray[600],
   },
   footerLink: {
-    color: '#0EA5E9',
+    color: BRAND_TEAL,
     fontWeight: '700',
   },
 });

@@ -35,7 +35,7 @@ const APP_INIT_TIMEOUT_MS = 15000;
 
 export default function App() {
   const [appIsReady, setAppIsReady] = useState(false);
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(false);
   const { initialize } = useAuthStore();
 
   useEffect(() => {
@@ -65,9 +65,15 @@ export default function App() {
   useEffect(() => {
     if (!appIsReady) return;
 
-    ExpoSplashScreen.hideAsync().catch((error) => {
-      console.warn('Failed to hide native splash screen:', error);
-    });
+    // Small delay to ensure layout is ready
+    const timer = setTimeout(() => {
+      ExpoSplashScreen.hideAsync().catch((error) => {
+        console.warn('Failed to hide native splash screen:', error);
+      });
+      setShowSplash(true); // Start our custom animated splash
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [appIsReady]);
 
   const handleSplashComplete = () => {
@@ -80,7 +86,7 @@ export default function App() {
         <SafeAreaProvider>
           <NotificationProvider>
             <StatusBar style="dark" />
-            {appIsReady && <RootNavigator />}
+            {appIsReady && !showSplash && <RootNavigator />}
             {showSplash && (
               <SplashScreen
                 onComplete={handleSplashComplete}

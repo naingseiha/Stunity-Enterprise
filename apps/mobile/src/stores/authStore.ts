@@ -33,6 +33,7 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
   linkClaimCode: (code: string) => Promise<{ success: boolean; error?: string }>;
   parentLogin: (credentials: { phone: string; password: string }) => Promise<boolean>;
+  parentRegister: (data: { firstName: string; lastName: string; phone: string; password: string; claimCode?: string }) => Promise<boolean>;
 }
 
 // Helper to map backend API user response to app User type
@@ -291,6 +292,47 @@ export const useAuthStore = create<AuthState>()(
         } catch (error: any) {
           console.error('Parent login error:', error);
           const message = error?.response?.data?.error || error?.message || 'Login failed';
+          set({
+            isLoading: false,
+            error: message,
+          });
+          return false;
+        }
+      },
+
+      // Parent register
+      parentRegister: async (data) => {
+        try {
+          set({ isLoading: true, error: null });
+          const response = await authApi.post('/auth/parent/register', {
+            firstName: data.firstName,
+            lastName: data.lastName,
+            phone: data.phone.trim(),
+            password: data.password,
+            claimCode: data.claimCode,
+          });
+
+          if (!response.data.success) {
+            throw new Error(response.data.error || 'Registration failed');
+          }
+
+          const { user: apiUser, tokens } = response.data.data;
+
+          await tokenService.setTokens(tokens as AuthTokens);
+          await tokenService.setUserId(apiUser.id);
+
+          const user = mapApiUserToUser(apiUser);
+
+          set({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+
+          return true;
+        } catch (error: any) {
+          console.error('Parent registration error:', error);
+          const message = error?.response?.data?.error || error?.message || 'Registration failed';
           set({
             isLoading: false,
             error: message,

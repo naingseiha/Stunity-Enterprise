@@ -13,7 +13,8 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Alert, Animated} from 'react-native';
+  Alert, Animated
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing } from '@/config';
 import { authApi } from '@/api/client';
 import { AuthStackScreenProps } from '@/navigation/types';
+
+const BRAND_TEAL = '#09CFF7';
 
 type NavigationProp = AuthStackScreenProps<'ForgotPassword'>['navigation'];
 
@@ -55,7 +58,7 @@ export default function ForgotPasswordScreen() {
       <SafeAreaView style={styles.container}>
         <Animated.View style={styles.content}>
           <View style={styles.iconCircle}>
-            <Ionicons name="mail-outline" size={48} color={Colors.primary} />
+            <Ionicons name="mail-outline" size={48} color={BRAND_TEAL} />
           </View>
           <Text style={styles.title}>Check Your Email</Text>
           <Text style={styles.subtitle}>
@@ -84,7 +87,7 @@ export default function ForgotPasswordScreen() {
 
         <Animated.View style={styles.content}>
           <View style={styles.iconCircle}>
-            <Ionicons name="lock-closed-outline" size={48} color={Colors.primary} />
+            <Ionicons name="lock-closed-outline" size={48} color={BRAND_TEAL} />
           </View>
           <Text style={styles.title}>Forgot Password?</Text>
           <Text style={styles.subtitle}>
@@ -146,7 +149,7 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: `${Colors.primary}15`,
+    backgroundColor: `${BRAND_TEAL}15`,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.lg,
@@ -186,7 +189,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   primaryButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: BRAND_TEAL,
     borderRadius: 12,
     height: 52,
     width: '100%',

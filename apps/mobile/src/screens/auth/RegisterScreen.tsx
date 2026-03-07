@@ -16,7 +16,8 @@ import {
   Platform,
   ScrollView,
   Alert,
-  Dimensions, Animated} from 'react-native';
+  Dimensions, Animated
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -31,12 +32,15 @@ import { UserRole } from '@/types';
 import { validatePassword } from '@/utils';
 import { authApi } from '@/api/client';
 
+const BRAND_TEAL = '#09CFF7';
+const BRAND_TEAL_DARK = '#00B8DB';
+
 const { width } = Dimensions.get('window');
 
 type NavigationProp = AuthStackScreenProps<'Register'>['navigation'];
 
 const ROLES: { value: UserRole; label: string; icon: keyof typeof Ionicons.glyphMap; description: string; color: string; bg: string }[] = [
-  { value: 'STUDENT', label: 'Student', icon: 'school-outline', description: 'I want to learn', color: '#0EA5E9', bg: '#E0F2FE' },
+  { value: 'STUDENT', label: 'Student', icon: 'school-outline', description: 'I want to learn', color: BRAND_TEAL, bg: '#ECFEFF' },
   { value: 'TEACHER', label: 'Educator', icon: 'easel-outline', description: 'I want to teach', color: '#8B5CF6', bg: '#F3E8FF' },
   { value: 'PARENT', label: 'Parent', icon: 'people-outline', description: "I'm a parent", color: '#F59E0B', bg: '#FEF3C7' },
 ];
@@ -243,8 +247,8 @@ export default function RegisterScreen() {
       {renderProgress()}
 
       <View style={s.stepHeader}>
-        <View style={[s.stepIconBg, { backgroundColor: '#E0F2FE' }]}>
-          <Ionicons name="person" size={22} color="#0EA5E9" />
+        <View style={[s.stepIconBg, { backgroundColor: '#ECFEFF' }]}>
+          <Ionicons name="person" size={22} color={BRAND_TEAL} />
         </View>
         <Text style={s.stepTitle}>Personal Information</Text>
         <Text style={s.stepSubtitle}>Let's start with your name</Text>
@@ -312,13 +316,13 @@ export default function RegisterScreen() {
           <Ionicons
             name={useClaimCode ? "checkmark-circle" : "radio-button-off-outline"}
             size={20}
-            color={useClaimCode ? "#0EA5E9" : Colors.gray[400]}
+            color={useClaimCode ? BRAND_TEAL : Colors.gray[400]}
           />
-          <Text style={[s.claimToggleText, useClaimCode && { color: '#0EA5E9' }]}>
+          <Text style={[s.claimToggleText, useClaimCode && { color: BRAND_TEAL }]}>
             I have a school claim code
           </Text>
         </View>
-        <Ionicons name="ticket-outline" size={16} color={useClaimCode ? '#0EA5E9' : Colors.gray[400]} />
+        <Ionicons name="ticket-outline" size={16} color={useClaimCode ? BRAND_TEAL : Colors.gray[400]} />
       </TouchableOpacity>
 
       <View style={s.formSection}>
@@ -394,7 +398,7 @@ export default function RegisterScreen() {
             <View style={s.orgTypeGrid}>
               {[
                 { value: 'university', label: 'University', icon: 'school-outline' as const, color: '#8B5CF6' },
-                { value: 'school', label: 'School', icon: 'book-outline' as const, color: '#0EA5E9' },
+                { value: 'school', label: 'School', icon: 'book-outline' as const, color: BRAND_TEAL },
                 { value: 'corporate', label: 'Corporate', icon: 'briefcase-outline' as const, color: '#10B981' },
                 { value: 'other', label: 'Other', icon: 'ellipsis-horizontal-outline' as const, color: '#F59E0B' },
               ].map((type) => (
@@ -627,7 +631,7 @@ export default function RegisterScreen() {
     <View style={s.container}>
       {/* Premium Background */}
       <LinearGradient
-        colors={['#E0F2FE', '#F0F9FF', '#FFFFFF']}
+        colors={['#ECFEFF', '#F0F9FF', '#FFFFFF']}
         style={StyleSheet.absoluteFill}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
@@ -725,7 +729,7 @@ const s = StyleSheet.create({
     textAlign: 'center',
   },
   stepBadge: {
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#ECFEFF',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 10,
@@ -733,7 +737,7 @@ const s = StyleSheet.create({
   stepBadgeText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#0EA5E9',
+    color: BRAND_TEAL,
   },
   content: { flex: 1 },
   stepContent: { flex: 1 },
@@ -757,8 +761,8 @@ const s = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   progressStepActive: {
-    backgroundColor: '#0EA5E9',
-    borderColor: '#0EA5E9',
+    backgroundColor: BRAND_TEAL,
+    borderColor: BRAND_TEAL,
   },
   progressStepComplete: {
     backgroundColor: '#10B981',
@@ -771,7 +775,7 @@ const s = StyleSheet.create({
     marginHorizontal: 4,
   },
   progressLineActive: {
-    backgroundColor: '#0EA5E9',
+    backgroundColor: BRAND_TEAL,
   },
 
   // ── Step Header ───────────────────────────────────────

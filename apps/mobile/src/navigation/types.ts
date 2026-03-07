@@ -73,6 +73,7 @@ export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
   ParentLogin: undefined;
+  ParentRegister: undefined;
   ForgotPassword: undefined;
   VerifyOTP: { email: string };
   ResetPassword: { token: string };

@@ -108,7 +108,7 @@ export async function updateProfile(profileData: UpdateProfileData) {
 export async function uploadProfilePhoto(fileUri: string, fileName: string, mimeType: string = 'image/jpeg') {
     const { Config } = await import('@/config/env');
     const { tokenService } = await import('@/services/token');
-    const FileSystem = await import('expo-file-system/legacy');
+    const FileSystem = await import('expo-file-system');
     const token = await tokenService.getAccessToken();
 
     try {
@@ -172,7 +172,7 @@ export async function uploadCoverPhoto(fileUri: string, fileName: string, mimeTy
     // Bypass Axios entirely for file uploads
     const { Config } = await import('@/config/env');
     const { tokenService } = await import('@/services/token');
-    const FileSystem = await import('expo-file-system/legacy');
+    const FileSystem = await import('expo-file-system');
     const token = await tokenService.getAccessToken();
 
     try {

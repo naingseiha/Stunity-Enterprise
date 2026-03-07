@@ -10,3 +10,4 @@ export { default as ResetPasswordScreen } from './ResetPasswordScreen';
 export { default as TwoFactorScreen } from './TwoFactorScreen';
 export { default as ForceChangePasswordScreen } from './ForceChangePasswordScreen';
 export { default as ParentLoginScreen } from './ParentLoginScreen';
+export { default as ParentRegisterScreen } from './ParentRegisterScreen';
