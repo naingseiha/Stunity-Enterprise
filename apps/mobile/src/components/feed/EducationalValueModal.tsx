@@ -13,11 +13,10 @@ import {
   Modal,
   TouchableOpacity,
   ActivityIndicator,
-  Dimensions,
-} from 'react-native';
+  Dimensions, Animated} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+
 import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
@@ -171,7 +170,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
       <View style={styles.overlay}>
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={handleClose} />
 
-        <Animated.View entering={SlideInDown.duration(300).springify()} style={styles.modal}>
+        <Animated.View style={styles.modal}>
           {/* Handle bar */}
           <View style={styles.handleBar} />
 
@@ -258,7 +257,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
           {/* ── Summary + Submit ──────────────────────────── */}
           <View style={styles.footer}>
             {isComplete && (
-              <Animated.View entering={FadeIn.duration(200)} style={styles.summaryRow}>
+              <Animated.View style={styles.summaryRow}>
                 <Ionicons name="analytics" size={18} color="#8B5CF6" />
                 <Text style={styles.summaryText}>
                   Your rating: <Text style={styles.summaryBold}>{averageRating}/5.0</Text>

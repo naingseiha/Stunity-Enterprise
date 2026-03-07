@@ -16,13 +16,12 @@ import {
   FlatList,
   RefreshControl,
   TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
+  ActivityIndicator, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+
 import * as Haptics from 'expo-haptics';
 
 import { PostCard } from '@/components/feed';
@@ -71,8 +70,7 @@ export default function BookmarksScreen() {
   };
   
   const renderPost = ({ item, index }: { item: Post; index: number }) => (
-    <Animated.View 
-      entering={FadeInDown.delay(50 * Math.min(index, 3)).duration(300)}
+    <Animated.View
       style={styles.postWrapper}
     >
       <PostCard

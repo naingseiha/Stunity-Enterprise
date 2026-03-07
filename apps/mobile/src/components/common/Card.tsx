@@ -1,23 +1,20 @@
 /**
  * Card Component
- * 
+ *
  * Flexible card container with shadows and press animation
+ * Uses built-in Animated API (no Reanimated) to prevent worklet crash on Android
  */
 
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   StyleSheet,
   ViewStyle,
   Pressable,
   PressableProps,
+  Animated,
 } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
-import { Colors, Spacing, BorderRadius, Shadows } from '@/config';
+import { Colors, Spacing, BorderRadius } from '@/config';
 
 interface CardProps extends Omit<PressableProps, 'style'> {
   children: React.ReactNode;
@@ -27,8 +24,6 @@ interface CardProps extends Omit<PressableProps, 'style'> {
   pressable?: boolean;
   animated?: boolean;
 }
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export const Card: React.FC<CardProps> = ({
   children,
@@ -40,21 +35,27 @@ export const Card: React.FC<CardProps> = ({
   onPress,
   ...rest
 }) => {
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  const scale = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
     if (animated && pressable) {
-      scale.value = withSpring(0.98, { damping: 15, stiffness: 400 });
+      Animated.spring(scale, {
+        toValue: 0.98,
+        useNativeDriver: true,
+        damping: 15,
+        stiffness: 400,
+      }).start();
     }
   };
 
   const handlePressOut = () => {
     if (animated && pressable) {
-      scale.value = withSpring(1, { damping: 15, stiffness: 400 });
+      Animated.spring(scale, {
+        toValue: 1,
+        useNativeDriver: true,
+        damping: 15,
+        stiffness: 400,
+      }).start();
     }
   };
 
@@ -67,15 +68,17 @@ export const Card: React.FC<CardProps> = ({
 
   if (pressable) {
     return (
-      <AnimatedPressable
-        style={[cardStyles, animated && animatedStyle]}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        onPress={onPress}
-        {...rest}
-      >
-        {children}
-      </AnimatedPressable>
+      <Animated.View style={[{ transform: [{ scale }] }]}>
+        <Pressable
+          style={cardStyles}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          onPress={onPress}
+          {...rest}
+        >
+          {children}
+        </Pressable>
+      </Animated.View>
     );
   }
 
@@ -92,7 +95,6 @@ const styles = StyleSheet.create({
   },
   outlined: {
     backgroundColor: Colors.white,
-    
     borderColor: Colors.gray[200],
   },
   filled: {

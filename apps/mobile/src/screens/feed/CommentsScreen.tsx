@@ -21,20 +21,13 @@ import {
   FlatList,
   TextInput,
   ActivityIndicator,
-  ScrollView,
-} from 'react-native';
+  ScrollView, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import Animated, {
-  FadeInDown,
-  FadeIn,
-  FadeOut,
-  Layout,
-  SlideInRight,
-} from 'react-native-reanimated';
+
 
 import { Avatar } from '@/components/common';
 import { useFeedStore, feedStore, useAuthStore } from '@/stores';
@@ -153,9 +146,6 @@ export default function CommentsScreen() {
 
     return (
       <Animated.View
-        entering={FadeInDown.delay(50 * Math.min(index, 5)).duration(400)}
-        exiting={FadeOut.duration(200)}
-        layout={Layout.springify()}
         style={styles.commentWrapper}
       >
         <View style={styles.commentItem}>
@@ -240,7 +230,6 @@ export default function CommentsScreen() {
       {[1, 2, 3].map((i) => (
         <Animated.View
           key={i}
-          entering={FadeIn.delay(i * 100)}
           style={styles.skeletonComment}
         >
           <View style={styles.skeletonAvatar} />
@@ -255,7 +244,7 @@ export default function CommentsScreen() {
   );
 
   const renderEmptyState = () => (
-    <Animated.View entering={FadeIn.duration(500)} style={styles.emptyContainer}>
+    <Animated.View style={styles.emptyContainer}>
       <View style={styles.emptyIconContainer}>
         <View style={styles.emptyIconGradient}>
           <Ionicons name="chatbubbles-outline" size={44} color="#0066FF" />
@@ -298,7 +287,7 @@ export default function CommentsScreen() {
 
       {/* Post Preview Card */}
       {post && (
-        <Animated.View entering={FadeInDown.duration(400)} style={styles.postPreviewCard}>
+        <Animated.View style={styles.postPreviewCard}>
           <View style={styles.postPreviewHeader}>
             <Avatar
               uri={post.author.profilePictureUrl || undefined}

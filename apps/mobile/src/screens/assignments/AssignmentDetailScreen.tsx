@@ -13,11 +13,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  Alert,
-} from 'react-native';
+  Alert, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { format, isPast, isFuture, differenceInDays, differenceInHours } from 'date-fns';
 
@@ -173,7 +172,7 @@ export default function AssignmentDetailScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         {/* Title Section */}
-        <Animated.View entering={FadeIn} style={styles.titleSection}>
+        <Animated.View style={styles.titleSection}>
           <View style={styles.typeHeader}>
             <View style={[styles.typeIconLarge, { backgroundColor: `${getTypeColor(assignment.type)}15` }]}>
               <Ionicons name={getTypeIcon(assignment.type) as any} size={32} color={getTypeColor(assignment.type)} />
@@ -194,7 +193,7 @@ export default function AssignmentDetailScreen() {
 
         {/* Submission Status */}
         {isSubmitted && (
-          <Animated.View entering={FadeInDown.delay(100)} style={styles.statusCard}>
+          <Animated.View style={styles.statusCard}>
             {isGraded ? (
               <>
                 <View style={styles.statusHeader}>
@@ -239,7 +238,7 @@ export default function AssignmentDetailScreen() {
 
         {/* Due Date Warning */}
         {!isSubmitted && (
-          <Animated.View entering={FadeInDown.delay(150)} style={[
+          <Animated.View style={[
             styles.dueDateCard,
             isOverdue && styles.dueDateCardOverdue,
             !isOverdue && daysUntilDue <= 2 && styles.dueDateCardSoon,
@@ -275,7 +274,7 @@ export default function AssignmentDetailScreen() {
         )}
 
         {/* Assignment Info */}
-        <Animated.View entering={FadeInDown.delay(200)} style={styles.infoCard}>
+        <Animated.View style={styles.infoCard}>
           <Text style={styles.sectionTitle}>Assignment Details</Text>
           
           <View style={styles.infoGrid}>
@@ -309,7 +308,7 @@ export default function AssignmentDetailScreen() {
 
         {/* Description */}
         {assignment.description && (
-          <Animated.View entering={FadeInDown.delay(250)} style={styles.descriptionCard}>
+          <Animated.View style={styles.descriptionCard}>
             <Text style={styles.sectionTitle}>Description</Text>
             <Text style={styles.descriptionText}>{assignment.description}</Text>
           </Animated.View>
@@ -317,7 +316,7 @@ export default function AssignmentDetailScreen() {
 
         {/* Instructions */}
         {assignment.instructions && (
-          <Animated.View entering={FadeInDown.delay(300)} style={styles.instructionsCard}>
+          <Animated.View style={styles.instructionsCard}>
             <Text style={styles.sectionTitle}>Instructions</Text>
             <Text style={styles.instructionsText}>{assignment.instructions}</Text>
           </Animated.View>
@@ -325,7 +324,7 @@ export default function AssignmentDetailScreen() {
 
         {/* Attachments */}
         {assignment.attachments && assignment.attachments.length > 0 && (
-          <Animated.View entering={FadeInDown.delay(350)} style={styles.attachmentsCard}>
+          <Animated.View style={styles.attachmentsCard}>
             <Text style={styles.sectionTitle}>Attachments</Text>
             {assignment.attachments.map((attachment, index) => (
               <TouchableOpacity key={index} style={styles.attachmentItem}>

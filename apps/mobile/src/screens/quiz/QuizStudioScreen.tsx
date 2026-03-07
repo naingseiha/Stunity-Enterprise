@@ -9,11 +9,11 @@ import {
     RefreshControl,
     SafeAreaView,
     StatusBar
-} from 'react-native';
+, Animated} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+
 import { quizService, QuizItem } from '@/services/quiz';
 import { liveQuizService } from '@/services/liveQuiz';
 import { useFeedStore } from '@/stores';
@@ -116,7 +116,7 @@ export function QuizStudioScreen() {
 
     const renderQuizItem = ({ item, index }: { item: QuizItem; index: number }) => {
         return (
-            <Animated.View entering={FadeInDown.delay(index * 100).duration(400)} style={styles.cardContainer}>
+            <Animated.View style={styles.cardContainer}>
                 <LinearGradient
                     colors={['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)']}
                     style={styles.card}

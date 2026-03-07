@@ -33,7 +33,7 @@ class TokenService {
     try {
       // Add timeout to prevent hanging
       const timeout = new Promise<boolean>((_, reject) =>
-        setTimeout(() => reject(new Error('SecureStore timeout')), 3000)
+        setTimeout(() => reject(new Error('SecureStore timeout')), 15000)
       );
 
       const loadTokens = async (): Promise<boolean> => {
@@ -135,11 +135,18 @@ class TokenService {
       }
 
       throw new Error('Token refresh failed');
-    } catch (error) {
-      console.error('Failed to refresh token:', error);
+    } catch (error: any) {
       this.notifyRefreshSubscribers(null);
-      await this.clearTokens();
-      return null;
+
+      const status = error?.response?.status;
+      if (status === 401 || status === 403) {
+        console.warn('Token: Refresh token rejected by server, clearing session');
+        await this.clearTokens();
+        throw error; // Rethrow to trigger terminal logout in API client
+      }
+
+      console.warn('Token: Refresh failed due to network/server error, tokens preserved');
+      return null; // Return null to indicate transient failure (no logout)
     } finally {
       this.isRefreshing = false;
     }

@@ -17,7 +17,7 @@ import {
   Dimensions,
   Image,
   Alert,
-  ActivityIndicator,
+  ActivityIndicator, Animated
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { FlashList } from '@shopify/flash-list';
@@ -25,19 +25,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSpring,
-  withDelay,
-  Easing,
-  interpolate,
-  runOnJS,
-  FadeInDown,
-  FadeIn,
-  ZoomIn,
-} from 'react-native-reanimated';
+
+
 
 import { Avatar, Button } from '@/components/common';
 import { Skeleton } from '@/components/common/Loading';
@@ -71,21 +60,21 @@ export const STAT_CARDS = [
 
 export function StatCard({ icon, value, label, index = 0 }: { icon: string; value: string | number; label: string; index?: number }) {
   const cfg = STAT_CARDS[index % STAT_CARDS.length];
-  const scale = useSharedValue(0.92);
-  const translateY = useSharedValue(12);
+  const scale = useRef(new Animated.Value(0.92)).current;
+  const translateY = useRef(new Animated.Value(12)).current;
 
   useEffect(() => {
     const d = 200 + index * 50;
-    scale.value = withDelay(d, withSpring(1, { damping: 16, stiffness: 140 }));
-    translateY.value = withDelay(d, withSpring(0, { damping: 16, stiffness: 140 }));
+    const timeout = setTimeout(() => {
+      Animated.parallel([
+        Animated.spring(scale, { toValue: 1, damping: 16, stiffness: 140, useNativeDriver: true }), Animated.spring(translateY, { toValue: 0, damping: 16, stiffness: 140, useNativeDriver: true }),
+      ]).start();
+    }, d);
+    return () => clearTimeout(timeout);
   }, []);
 
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }, { translateY: translateY.value }],
-  }));
-
   return (
-    <Animated.View style={[styles.statGridCardWrapper, animStyle]}>
+    <Animated.View style={[styles.statGridCardWrapper, { transform: [{ scale }, { translateY }] }]}>
       <LinearGradient
         colors={[cfg.bgStart, cfg.bgEnd]}
         start={{ x: 0, y: 0 }}
@@ -212,8 +201,7 @@ export default function ProfileScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
+      allowsEditing: false,
       quality: 0.8,
     });
 
@@ -236,8 +224,7 @@ export default function ProfileScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [16, 9],
+      allowsEditing: false,
       quality: 0.8,
     });
 
@@ -269,7 +256,7 @@ export default function ProfileScreen() {
           />
 
           <View style={{ flex: 1, marginTop: -90, alignItems: 'center' }}>
-            <Animated.View entering={FadeIn.duration(400)} style={{ width: '100%', alignItems: 'center' }}>
+            <Animated.View style={{ width: '100%', alignItems: 'center' }}>
               {/* Avatar */}
               <Skeleton width={100} height={100} borderRadius={50} />
 
@@ -419,7 +406,7 @@ export default function ProfileScreen() {
               {/* Profile Content */}
               <View style={styles.contentContainer}>
                 {/* Avatar Section — Reverted to overlapping */}
-                <Animated.View entering={FadeInDown.delay(100).duration(500).springify()} style={styles.avatarSection}>
+                <Animated.View style={styles.avatarSection}>
                   <View style={styles.avatarWrapper}>
                     <Avatar
                       uri={profile.profilePictureUrl}
@@ -442,7 +429,7 @@ export default function ProfileScreen() {
                 </Animated.View>
 
                 {/* Name & Bio Section */}
-                <Animated.View entering={FadeInDown.delay(200).duration(500).springify()} style={styles.nameSection}>
+                <Animated.View style={styles.nameSection}>
                   <View style={styles.nameRow}>
                     <Text style={styles.name}>{fullName}</Text>
                     {profile.isVerified && (
@@ -452,7 +439,7 @@ export default function ProfileScreen() {
 
                   {/* Role Badge — shows the actual role for all user types */}
                   {profile.role && (
-                    <Animated.View entering={FadeInDown.delay(220).duration(400)} style={styles.roleBadgeWrap}>
+                    <Animated.View style={styles.roleBadgeWrap}>
                       <LinearGradient
                         colors={
                           profile.role === 'TEACHER' ? ['#6366F1', '#8B5CF6'] :
@@ -497,7 +484,7 @@ export default function ProfileScreen() {
 
                   {/* Open to Opportunities Banner */}
                   {(profile as any).isOpenToOpportunities && (
-                    <Animated.View entering={FadeInDown.delay(250).duration(400)} style={styles.openToWorkBanner}>
+                    <Animated.View style={styles.openToWorkBanner}>
                       <LinearGradient
                         colors={['#10B981', '#059669']}
                         start={{ x: 0, y: 0 }}
@@ -538,7 +525,7 @@ export default function ProfileScreen() {
                 </Animated.View>
 
                 {/* Instagram-style Header Stats */}
-                <Animated.View entering={FadeInDown.delay(250).duration(400).springify()} style={styles.textStatsRow}>
+                <Animated.View style={styles.textStatsRow}>
                   <TouchableOpacity style={styles.textStat} activeOpacity={0.6}>
                     <Text style={styles.textStatValue}>{formatNumber(stats.posts)}</Text>
                     <Text style={styles.textStatLabel}>Posts</Text>
@@ -554,7 +541,7 @@ export default function ProfileScreen() {
                 </Animated.View>
 
                 {/* Action Buttons */}
-                <Animated.View entering={FadeInDown.delay(300).duration(400).springify()} style={styles.capsuleRow}>
+                <Animated.View style={styles.capsuleRow}>
                   {isOwnProfile ? (
                     <View style={{ flex: 1, gap: 10 }}>
                       {/* Main Edit Profile Action */}

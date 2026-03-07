@@ -31,15 +31,15 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 
 app.use(cors({
     origin: (origin, callback) => {
-    // Allow all origins in production if CORS_ORIGIN is set to *
-    if (process.env.CORS_ORIGIN === '*') return callback(null, true);
-    
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error(`CORS: origin ${origin} not allowed`));
-  },
+        // Allow all origins in production if CORS_ORIGIN is set to *
+        if (process.env.CORS_ORIGIN === '*') return callback(null, true);
+
+        // Allow requests with no origin (mobile apps, Postman, etc.)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Platform', 'X-Client-Version'],
@@ -67,6 +67,25 @@ app.get('/health', async (_req: Request, res: Response) => {
 
 // ─── Routes ────────────────────────────────────────────────────────
 app.use('/ai', generateRoutes);
+
+// ─── Error Handling ───────────────────────────────────────────────
+app.use((err: any, req: Request, res: Response, next: any) => {
+    console.error('❌ [Global Error Handler]:', err);
+
+    const status = err.status || 500;
+
+    // User-friendly messages for common errors
+    let errorMessage = err.message || 'Internal Server Error';
+    if (status === 429) {
+        errorMessage = 'AI service is busy (too many requests). Please wait about 30-60 seconds and try again.';
+    }
+
+    res.status(status).json({
+        success: false,
+        error: errorMessage,
+        code: status === 429 ? 'RATE_LIMITED' : 'SERVER_ERROR'
+    });
+});
 
 // ─── Start Server ──────────────────────────────────────────────────
 const server = app.listen(PORT, '0.0.0.0', () => {

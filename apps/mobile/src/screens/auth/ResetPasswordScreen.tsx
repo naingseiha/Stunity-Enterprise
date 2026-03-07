@@ -13,12 +13,11 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Alert,
-} from 'react-native';
+  Alert, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInUp } from 'react-native-reanimated';
+
 
 import { Colors, Spacing } from '@/config';
 import { authApi } from '@/api/client';
@@ -73,7 +72,7 @@ export default function ResetPasswordScreen() {
   if (success) {
     return (
       <SafeAreaView style={styles.container}>
-        <Animated.View entering={FadeInUp.duration(400)} style={styles.content}>
+        <Animated.View style={styles.content}>
           <View style={styles.iconCircle}>
             <Ionicons name="checkmark-circle-outline" size={48} color="#10B981" />
           </View>
@@ -98,7 +97,7 @@ export default function ResetPasswordScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <Animated.View entering={FadeInUp.delay(100).duration(400)} style={styles.content}>
+        <Animated.View style={styles.content}>
           <View style={styles.iconCircle}>
             <Ionicons name="key-outline" size={48} color={Colors.primary} />
           </View>

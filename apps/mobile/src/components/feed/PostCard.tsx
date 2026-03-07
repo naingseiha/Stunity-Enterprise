@@ -13,7 +13,7 @@
  * - Rich content indicators (PDF, Code, Formula)
  */
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -23,20 +23,13 @@ import {
   Share,
   ActivityIndicator,
   Platform,
+  Animated,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import * as Haptics from 'expo-haptics';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withSequence,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
 
 import { Avatar, ImageCarousel } from '@/components/common';
 import {
@@ -217,20 +210,18 @@ const ActionBar = React.memo<ActionBarProps>(({
 
 // LIVE badge — isolated so animation only runs on LIVE posts
 const LiveBadge = React.memo<{ viewers?: number }>(({ viewers }) => {
-  const livePulse = useSharedValue(1);
+  const livePulse = useRef(new Animated.Value(1)).current;
   React.useEffect(() => {
-    livePulse.value = withRepeat(
-      withSequence(
-        withTiming(1.2, { duration: 500 }),
-        withTiming(1, { duration: 500 })
-      ),
-      -1,
-      true
-    );
-  }, []);
-  const liveAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: livePulse.value }],
-  }));
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(livePulse, { toValue: 1.2, duration: 500, useNativeDriver: true }),
+        Animated.timing(livePulse, { toValue: 1, duration: 500, useNativeDriver: true })
+      ])
+    ).start();
+  }, [livePulse]);
+  const liveAnimatedStyle = {
+    transform: [{ scale: livePulse }],
+  };
   return (
     <Animated.View style={[styles.liveBadge, liveAnimatedStyle]}>
       <LinearGradient
@@ -300,29 +291,29 @@ const PostCardInner: React.FC<PostCardProps> = ({
 
   // Only create shared values for commonly-used animations (like + value)
   // Other button animations use a single shared scale to reduce per-card overhead
-  const likeScale = useSharedValue(1);
-  const valueScale = useSharedValue(1);
-  const btnScale = useSharedValue(1); // Shared for comment/repost/share
+  const likeScale = useRef(new Animated.Value(1)).current;
+  const valueScale = useRef(new Animated.Value(1)).current;
+  const btnScale = useRef(new Animated.Value(1)).current; // Shared for comment/repost/share
 
-  const likeAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: likeScale.value }],
-  }));
+  const likeAnimatedStyle = {
+    transform: [{ scale: likeScale }],
+  };
 
-  const valueAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: valueScale.value }],
-  }));
+  const valueAnimatedStyle = {
+    transform: [{ scale: valueScale }],
+  };
 
   // Single animated style shared by comment/repost/share buttons
-  const btnAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: btnScale.value }],
-  }));
+  const btnAnimatedStyle = {
+    transform: [{ scale: btnScale }],
+  };
 
   const handleLike = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
-    likeScale.value = withSequence(
-      withSpring(1.3, { damping: 10 }),
-      withSpring(1, { damping: 15 })
-    );
+    Animated.sequence([
+      Animated.spring(likeScale, { toValue: 1.3, friction: 3, tension: 40, useNativeDriver: true }),
+      Animated.spring(likeScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
+    ]).start();
 
     if (liked) {
       setLikeCount((prev) => prev - 1);
@@ -335,10 +326,10 @@ const PostCardInner: React.FC<PostCardProps> = ({
 
   const handleValue = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 0);
-    valueScale.value = withSequence(
-      withSpring(1.4, { damping: 8 }),
-      withSpring(1, { damping: 12 })
-    );
+    Animated.sequence([
+      Animated.spring(valueScale, { toValue: 1.4, friction: 4, tension: 40, useNativeDriver: true }),
+      Animated.spring(valueScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
+    ]).start();
     onValue?.();
   }, [onValue]);
 
@@ -351,10 +342,10 @@ const PostCardInner: React.FC<PostCardProps> = ({
 
   const handleComment = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
-    btnScale.value = withSequence(
-      withSpring(1.2, { damping: 10 }),
-      withSpring(1, { damping: 15 })
-    );
+    Animated.sequence([
+      Animated.spring(btnScale, { toValue: 1.2, friction: 3, tension: 40, useNativeDriver: true }),
+      Animated.spring(btnScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
+    ]).start();
     onComment?.();
   }, [onComment]);
 
@@ -364,10 +355,10 @@ const PostCardInner: React.FC<PostCardProps> = ({
       return;
     }
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 0);
-    btnScale.value = withSequence(
-      withSpring(1.3, { damping: 8 }),
-      withSpring(1, { damping: 12 })
-    );
+    Animated.sequence([
+      Animated.spring(btnScale, { toValue: 1.3, friction: 4, tension: 40, useNativeDriver: true }),
+      Animated.spring(btnScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
+    ]).start();
     // Show repost confirmation
     Alert.alert(
       'Repost',
@@ -429,10 +420,10 @@ const PostCardInner: React.FC<PostCardProps> = ({
 
   const handleShare = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
-    btnScale.value = withSequence(
-      withSpring(1.2, { damping: 10 }),
-      withSpring(1, { damping: 15 })
-    );
+    Animated.sequence([
+      Animated.spring(btnScale, { toValue: 1.2, friction: 3, tension: 40, useNativeDriver: true }),
+      Animated.spring(btnScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
+    ]).start();
     onShare?.();
   }, [onShare]);
 

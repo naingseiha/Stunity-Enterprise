@@ -15,12 +15,11 @@ import {
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+  Platform, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+
 import { useNavigation } from '@react-navigation/native';
 
 import { Colors } from '@/config';
@@ -154,7 +153,7 @@ export default function CreateClubScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Club Name */}
-          <Animated.View entering={FadeInDown.delay(100)} style={styles.section}>
+          <Animated.View style={styles.section}>
             <Text style={styles.sectionLabel}>Club Name *</Text>
             <TextInput
               style={styles.input}
@@ -169,7 +168,7 @@ export default function CreateClubScreen() {
           </Animated.View>
 
           {/* Description */}
-          <Animated.View entering={FadeInDown.delay(150)} style={styles.section}>
+          <Animated.View style={styles.section}>
             <Text style={styles.sectionLabel}>Description *</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
@@ -186,7 +185,7 @@ export default function CreateClubScreen() {
           </Animated.View>
 
           {/* Club Type */}
-          <Animated.View entering={FadeInDown.delay(200)} style={styles.section}>
+          <Animated.View style={styles.section}>
             <Text style={styles.sectionLabel}>Club Type *</Text>
             <View style={styles.optionsGrid}>
               {CLUB_TYPES.map((type, index) => (
@@ -219,7 +218,7 @@ export default function CreateClubScreen() {
           </Animated.View>
 
           {/* Privacy Mode */}
-          <Animated.View entering={FadeInDown.delay(250)} style={styles.section}>
+          <Animated.View style={styles.section}>
             <Text style={styles.sectionLabel}>Privacy *</Text>
             <View style={styles.modeOptions}>
               {CLUB_MODES.map((mode) => (
@@ -255,7 +254,7 @@ export default function CreateClubScreen() {
           </Animated.View>
 
           {/* Tags */}
-          <Animated.View entering={FadeInDown.delay(300)} style={styles.section}>
+          <Animated.View style={styles.section}>
             <Text style={styles.sectionLabel}>Tags (Optional)</Text>
             <TextInput
               style={styles.input}
@@ -268,7 +267,7 @@ export default function CreateClubScreen() {
           </Animated.View>
 
           {/* Preview Card */}
-          <Animated.View entering={FadeInDown.delay(350)} style={styles.previewSection}>
+          <Animated.View style={styles.previewSection}>
             <Text style={styles.previewLabel}>Preview</Text>
             <View style={styles.previewCard}>
               <LinearGradient

@@ -49,25 +49,33 @@ interface EnvironmentConfig {
  * 3. Restart the app with: npx expo start --clear
  */
 const getApiHost = (): string => {
-  // Allow manual override via .env
+  // 1. Manual override via .env
   const envHost = process.env.EXPO_PUBLIC_API_HOST;
   if (envHost) {
-    console.log('📡 [ENV] Using manual API host:', envHost);
+    if (__DEV__) console.log('📡 [ENV] Using manual API host:', envHost);
     return envHost;
   }
 
-  // In development, use Expo's auto-detected debugger host
-  // This automatically adapts when WiFi changes!
-  if (__DEV__ && Constants.expoConfig?.hostUri) {
+  // 2. Production/Staging check
+  const appEnv = process.env.EXPO_PUBLIC_APP_ENV;
+  if (appEnv === 'production' || appEnv === 'staging') {
+    return 'production'; // Host unused for prod/staging configs anyway
+  }
+
+  // 3. In development, use Expo's auto-detected debugger host
+  if (Constants.expoConfig?.hostUri) {
     const debuggerHost = Constants.expoConfig.hostUri.split(':').shift();
     if (debuggerHost) {
-      console.log('📡 [ENV] Auto-detected API host from Expo:', debuggerHost);
+      if (__DEV__) console.log('📡 [ENV] Auto-detected API host from Expo:', debuggerHost);
       return debuggerHost;
     }
   }
 
-  // Fallback: localhost (works for iOS simulator on same machine)
-  console.log('📡 [ENV] Using localhost fallback');
+  // 4. Fallback: localhost
+  if (__DEV__) {
+    console.warn('⚠️ [ENV] Could not auto-detect API host. Using localhost fallback.');
+    console.warn('   To fix: ensure you are using the same WiFi as your computer or set EXPO_PUBLIC_API_HOST');
+  }
   return 'localhost';
 };
 
@@ -75,14 +83,14 @@ const API_HOST = getApiHost();
 
 const development: EnvironmentConfig = {
   apiBaseUrl: `http://${API_HOST}:3001`,
-  authUrl: `http://${API_HOST}:3001`,
+  authUrl: 'https://stunity-auth-service-936508661701.us-central1.run.app', // Failover to production for stable testing
   feedUrl: `http://${API_HOST}:3010`,
   mediaUrl: `http://${API_HOST}:3010`,
   clubUrl: `http://${API_HOST}:3012`,
   notificationUrl: `http://${API_HOST}:3013`,
   quizUrl: `http://${API_HOST}:3010`,
   analyticsUrl: `http://${API_HOST}:3014`,
-  aiUrl: `http://${API_HOST}:3020`,
+  aiUrl: 'https://stunity-ai-service-936508661701.us-central1.run.app', // Failover to production for stable testing
   wsUrl: `ws://${API_HOST}:3011`,
   studentUrl: `http://${API_HOST}:3003`,
   gradeUrl: `http://${API_HOST}:3007`,
@@ -118,19 +126,19 @@ const staging: EnvironmentConfig = {
 };
 
 const production: EnvironmentConfig = {
-  apiBaseUrl: 'https://stunity-auth-service-mc7wnjp2kq-uc.a.run.app',
-  authUrl: 'https://stunity-auth-service-mc7wnjp2kq-uc.a.run.app',
-  feedUrl: 'https://stunity-feed-service-mc7wnjp2kq-uc.a.run.app',
-  mediaUrl: 'https://stunity-feed-service-mc7wnjp2kq-uc.a.run.app',
-  clubUrl: 'https://stunity-club-service-mc7wnjp2kq-uc.a.run.app',
-  notificationUrl: 'https://stunity-notification-service-mc7wnjp2kq-uc.a.run.app',
-  quizUrl: 'https://stunity-feed-service-mc7wnjp2kq-uc.a.run.app',
-  analyticsUrl: 'https://stunity-analytics-service-mc7wnjp2kq-uc.a.run.app',
-  aiUrl: 'https://stunity-ai-service-mc7wnjp2kq-uc.a.run.app',
-  wsUrl: 'wss://stunity-messaging-service-mc7wnjp2kq-uc.a.run.app',
-  studentUrl: 'https://stunity-student-service-mc7wnjp2kq-uc.a.run.app',
-  gradeUrl: 'https://stunity-grade-service-mc7wnjp2kq-uc.a.run.app',
-  attendanceUrl: 'https://stunity-attendance-service-mc7wnjp2kq-uc.a.run.app',
+  apiBaseUrl: 'https://stunity-auth-service-936508661701.us-central1.run.app',
+  authUrl: 'https://stunity-auth-service-936508661701.us-central1.run.app',
+  feedUrl: 'https://stunity-feed-service-936508661701.us-central1.run.app',
+  mediaUrl: 'https://stunity-feed-service-936508661701.us-central1.run.app',
+  clubUrl: 'https://stunity-club-service-936508661701.us-central1.run.app',
+  notificationUrl: 'https://stunity-notification-service-936508661701.us-central1.run.app',
+  quizUrl: 'https://stunity-feed-service-936508661701.us-central1.run.app',
+  analyticsUrl: 'https://stunity-analytics-service-936508661701.us-central1.run.app',
+  aiUrl: 'https://stunity-ai-service-936508661701.us-central1.run.app',
+  wsUrl: 'wss://stunity-messaging-service-936508661701.us-central1.run.app',
+  studentUrl: 'https://stunity-student-service-936508661701.us-central1.run.app',
+  gradeUrl: 'https://stunity-grade-service-936508661701.us-central1.run.app',
+  attendanceUrl: 'https://stunity-attendance-service-936508661701.us-central1.run.app',
   sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN || '',
   analyticsKey: process.env.EXPO_PUBLIC_ANALYTICS_KEY || '',
   enableDebugMode: false,
@@ -150,6 +158,11 @@ const getEnvironment = (): Environment => {
   const env = process.env.EXPO_PUBLIC_APP_ENV;
   if (env === 'staging') return 'staging';
   if (env === 'production') return 'production';
+  // Allow forcing production API targeting in development mode
+  if (process.env.EXPO_PUBLIC_USE_PROD_API === 'true') {
+    if (__DEV__) console.log('🌐 [ENV] Forcing PRODUCTION environment via EXPO_PUBLIC_USE_PROD_API');
+    return 'production';
+  }
   return 'development';
 };
 
@@ -163,7 +176,7 @@ export const APP_CONFIG = {
   BUILD_NUMBER: '1',
 
   // API Settings
-  API_TIMEOUT: 60000, // 60 seconds (increased for WiFi switching scenarios)
+  API_TIMEOUT: 120000, // 120 seconds (increased for AI backoff-retries)
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 2000, // 2 seconds between retries
 

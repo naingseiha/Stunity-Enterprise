@@ -10,8 +10,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Image, StyleSheet, ActivityIndicator, ImageProps } from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { View, Image, StyleSheet, ActivityIndicator, ImageProps , Animated} from 'react-native';
+
 import { imageCacheService } from '@/services/imageCache';
 
 interface OptimizedImageProps extends Omit<ImageProps, 'source'> {
@@ -118,9 +118,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
 
       {/* Loading Indicator */}
       {loading && showLoader && !error && (
-        <Animated.View 
-          entering={FadeIn.duration(200)}
-          exiting={FadeOut.duration(200)}
+        <Animated.View
           style={styles.loader}
         >
           <ActivityIndicator size="small" color="#9CA3AF" />
@@ -130,7 +128,6 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
       {/* Actual Image */}
       {cachedUri && !error && (
         <Animated.Image
-          entering={FadeIn.duration(300)}
           source={{ uri: cachedUri }}
           style={imageStyle}
           onLoad={handleLoad}

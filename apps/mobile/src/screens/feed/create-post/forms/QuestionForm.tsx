@@ -4,9 +4,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, LayoutAnimation, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, LayoutAnimation, Alert , Animated} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
+
 import * as Haptics from 'expo-haptics';
 import { AIGenerateButton } from '@/components/ai/AIGenerateButton';
 import { AIPromptModal } from '@/components/ai/AIPromptModal';
@@ -214,8 +214,6 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
             {tags.map((tag) => (
               <Animated.View
                 key={tag}
-                entering={FadeIn.duration(200)}
-                layout={Layout.springify()}
                 style={styles.tag}
               >
                 <Text style={styles.tagText}>#{tag}</Text>

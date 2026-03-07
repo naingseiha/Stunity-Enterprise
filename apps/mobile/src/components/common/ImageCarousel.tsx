@@ -234,8 +234,6 @@ function ImageCarouselInner({
             cachePolicy="memory-disk" // Cache decoded images in memory
             priority="normal" // Avoid decode spikes while fast-scrolling the feed
             recyclingKey={uri} // Reuse decoded bitmap across instances
-            placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
-            placeholderContentFit="cover"
             // GPU acceleration hints
             blurRadius={0} // No blur = faster
             allowDownscaling={true} // Decode at optimal size

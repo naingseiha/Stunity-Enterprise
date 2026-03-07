@@ -13,12 +13,11 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Alert,
-} from 'react-native';
+  Alert, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+
 
 import { Colors, Spacing } from '@/config';
 import { authApi } from '@/api/client';
@@ -54,7 +53,7 @@ export default function ForgotPasswordScreen() {
   if (sent) {
     return (
       <SafeAreaView style={styles.container}>
-        <Animated.View entering={FadeInUp.duration(400)} style={styles.content}>
+        <Animated.View style={styles.content}>
           <View style={styles.iconCircle}>
             <Ionicons name="mail-outline" size={48} color={Colors.primary} />
           </View>
@@ -77,13 +76,13 @@ export default function ForgotPasswordScreen() {
         style={styles.keyboardView}
       >
         {/* Back Button */}
-        <Animated.View entering={FadeInDown.duration(300)}>
+        <Animated.View>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
         </Animated.View>
 
-        <Animated.View entering={FadeInUp.delay(100).duration(400)} style={styles.content}>
+        <Animated.View style={styles.content}>
           <View style={styles.iconCircle}>
             <Ionicons name="lock-closed-outline" size={48} color={Colors.primary} />
           </View>

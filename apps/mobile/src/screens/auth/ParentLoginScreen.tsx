@@ -15,13 +15,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
-} from 'react-native';
+  Alert, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+
 
 import { Colors, Typography, Spacing } from '@/config';
 import { useAuthStore } from '@/stores';
@@ -76,7 +75,7 @@ export default function ParentLoginScreen() {
             showsVerticalScrollIndicator={false}
           >
             {/* Header — back button matches Register/Login standard */}
-            <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.header}>
+            <Animated.View style={styles.header}>
               <TouchableOpacity
                 onPress={() => navigation.goBack()}
                 style={styles.backButton}
@@ -94,7 +93,7 @@ export default function ParentLoginScreen() {
             </Animated.View>
 
             {/* Form */}
-            <Animated.View entering={FadeInUp.delay(200).duration(500)} style={styles.form}>
+            <Animated.View style={styles.form}>
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Phone Number</Text>
                 <TextInput

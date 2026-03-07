@@ -43,7 +43,7 @@ class GeminiService {
         }
 
         this.model = this.client.getGenerativeModel({
-            model: 'gemini-flash-latest',
+            model: 'gemini-2.0-flash',
             generationConfig: GENERATION_CONFIG,
             safetySettings: SAFETY_SETTINGS,
         });
@@ -59,9 +59,15 @@ class GeminiService {
         }
 
         const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
-        const result = await this.model.generateContent(fullPrompt);
-        const response = result.response;
-        return response.text();
+
+        return this.withRetry(async () => {
+            console.log(`🤖 [Gemini] Generating content... (Prompt length: ${fullPrompt.length})`);
+            const result = await this.model.generateContent(fullPrompt);
+            const response = result.response;
+            const text = response.text();
+            console.log(`✅ [Gemini] Generation successful (Response length: ${text.length})`);
+            return text;
+        });
     }
 
     /**
@@ -69,23 +75,76 @@ class GeminiService {
      * Strips markdown code fences if present.
      */
     async generateJSON<T>(systemPrompt: string, userPrompt: string): Promise<T> {
-        const raw = await this.generate(systemPrompt, userPrompt);
+        if (!this.isInitialized) {
+            throw new Error('Gemini API key not configured. Please set GEMINI_API_KEY.');
+        }
 
-        // Strip markdown code fences (```json ... ```)
-        const cleaned = raw
-            .replace(/^```(?:json)?\s*/i, '')
-            .replace(/\s*```$/, '')
-            .trim();
+        const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
 
-        try {
-            return JSON.parse(cleaned) as T;
-        } catch {
-            // Try to extract JSON if surrounded by other text
-            const jsonMatch = cleaned.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
-            if (jsonMatch) {
-                return JSON.parse(jsonMatch[1]) as T;
+        return this.withRetry(async () => {
+            console.log(`🤖 [Gemini] Generating JSON for prompt length: ${fullPrompt.length}`);
+            const result = await this.model.generateContent(fullPrompt);
+            const response = result.response;
+            const text = response.text();
+
+            try {
+                // Find JSON block if it exists
+                const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) ||
+                    text.match(/{[\s\S]*}/);
+                const jsonStr = jsonMatch ? jsonMatch[1] || jsonMatch[0] : text;
+                const cleanedJson = jsonStr.replace(/\\n/g, '').trim();
+
+                const data = JSON.parse(cleanedJson) as T;
+                console.log('✅ [Gemini] JSON generated and parsed successfully');
+                return data;
+            } catch (err) {
+                console.error('❌ [Gemini] JSON parse error:', err);
+                console.error('Full response text:', text);
+                throw new Error('Failed to parse AI response as JSON');
             }
-            throw new Error(`Failed to parse Gemini JSON response: ${cleaned.slice(0, 200)}`);
+        });
+    }
+
+    private async withRetry<T>(fn: () => Promise<T>, retries = 5, delay = 2000): Promise<T> {
+        try {
+            return await fn();
+        } catch (error: any) {
+            // Check for 429 (Too Many Requests) or other quota/rate limit errors
+            const isQuotaError =
+                error?.status === 429 ||
+                error?.message?.includes('429') ||
+                error?.message?.includes('Quota') ||
+                error?.message?.includes('Rate limit');
+
+            if (isQuotaError && retries > 0) {
+                let nextDelay = delay * 2;
+
+                // Parse retryDelay from error details if available (e.g., in error.response.data.error.details)
+                try {
+                    const details = error?.response?.data?.error?.details || [];
+                    const quotaInfo = details.find((d: any) => d.retryDelay);
+                    if (quotaInfo?.retryDelay) {
+                        const seconds = parseInt(quotaInfo.retryDelay, 10);
+                        if (!isNaN(seconds)) {
+                            // Add 1s buffer for safety
+                            nextDelay = (seconds + 1) * 1000;
+                            console.log(`📡 [Gemini] Using suggested retry delay: ${nextDelay}ms`);
+                        }
+                    }
+                } catch (e) {
+                    // Fallback to exponential backoff
+                }
+
+                console.warn(`⚠️ [Gemini] Quota limit reached (429). Retrying in ${nextDelay}ms... (${retries} retries left)`);
+                await new Promise(resolve => setTimeout(resolve, nextDelay));
+                return this.withRetry(fn, retries - 1, nextDelay);
+            }
+
+            // Attach status so global error handler can return 429
+            if (isQuotaError) {
+                error.status = 429;
+            }
+            throw error;
         }
     }
 

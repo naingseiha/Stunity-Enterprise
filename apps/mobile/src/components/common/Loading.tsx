@@ -4,15 +4,8 @@
  * Various loading states for the app with shimmer animations
  */
 
-import React, { useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  interpolate,
-} from 'react-native-reanimated';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, ActivityIndicator, Text, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Typography, Spacing } from '@/config';
 
@@ -63,27 +56,17 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   borderRadius = 4,
   style,
 }) => {
-  const shimmerTranslate = useSharedValue(-1);
+  const shimmerTranslate = useRef(new Animated.Value(-300)).current;
 
   useEffect(() => {
-    shimmerTranslate.value = withRepeat(
-      withTiming(1, { duration: 1500 }),
-      -1,
-      false
-    );
+    Animated.loop(
+      Animated.timing(shimmerTranslate, {
+        toValue: 300,
+        duration: 1500,
+        useNativeDriver: true,
+      })
+    ).start();
   }, []);
-
-  const animatedStyle = useAnimatedStyle(() => {
-    const translateX = interpolate(
-      shimmerTranslate.value,
-      [-1, 1],
-      [-300, 300]
-    );
-
-    return {
-      transform: [{ translateX }],
-    };
-  });
 
   return (
     <View
@@ -97,7 +80,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
         style,
       ]}
     >
-      <Animated.View style={[styles.shimmer, animatedStyle]}>
+      <Animated.View style={[styles.shimmer, { transform: [{ translateX: shimmerTranslate }] }]}>
         <LinearGradient
           colors={['transparent', 'rgba(255, 255, 255, 0.5)', 'transparent']}
           start={{ x: 0, y: 0 }}

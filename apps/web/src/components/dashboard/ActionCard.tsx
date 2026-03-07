@@ -20,28 +20,34 @@ export default function ActionCard({
   href,
 }: ActionCardProps) {
   const iconStyles = {
-    blue: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400',
-    purple: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400',
-    green: 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400',
-    amber: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400',
-    cyan: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-400',
-    red: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400',
+    blue: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 ring-1 ring-blue-500/10',
+    purple: 'bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 ring-1 ring-purple-500/10',
+    green: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 ring-1 ring-emerald-500/10',
+    amber: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 ring-1 ring-amber-500/10',
+    cyan: 'bg-cyan-50 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400 ring-1 ring-cyan-500/10',
+    red: 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 ring-1 ring-rose-500/10',
   };
 
   const cardContent = (
-    <div className="flex items-center gap-4">
-      <div className={`p-3 rounded-lg ${iconStyles[iconColor as keyof typeof iconStyles]}`}>
-        <Icon className="w-5 h-5" />
+    <div className="flex items-center gap-5">
+      <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center ${iconStyles[iconColor as keyof typeof iconStyles]} transition-transform duration-300 group-hover:scale-110`}>
+        <Icon className="w-6 h-6" />
       </div>
-      <div className="flex-1">
-        <h3 className="font-semibold text-slate-900 dark:text-white">{title}</h3>
-        <p className="text-sm text-slate-500 dark:text-gray-400 mt-0.5">{description}</p>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-base font-black text-slate-800 dark:text-white group-hover:text-stunity-primary-600 dark:group-hover:text-stunity-primary-400 transition-colors duration-300">
+          {title}
+        </h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1 font-medium">
+          {description}
+        </p>
       </div>
-      <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
+      <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center bg-slate-50 dark:bg-slate-800 text-slate-400 group-hover:bg-slate-900 group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-slate-900 transition-all duration-300">
+        <ChevronRight className="w-5 h-5" />
+      </div>
     </div>
   );
 
-  const className = "w-full bg-white dark:bg-gray-800 rounded-xl border border-slate-200/80 dark:border-gray-700 p-4 shadow-sm hover:shadow hover:border-slate-300/80 dark:hover:border-gray-600 transition-all text-left group block";
+  const className = "w-full bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 dark:hover:shadow-black/30 hover:border-transparent transition-all duration-300 text-left group block relative overflow-hidden";
 
   if (href) {
     return (

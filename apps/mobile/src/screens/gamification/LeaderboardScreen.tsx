@@ -7,14 +7,13 @@ import {
     RefreshControl,
     Dimensions,
     Platform,
-    FlatList,
-} from 'react-native';
+    FlatList, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
-import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
+
 import * as Haptics from 'expo-haptics';
 import { useLeaderboardStore } from '../../stores';
 import { LeaderboardEntry } from '../../api/leaderboard';
@@ -49,7 +48,7 @@ export const LeaderboardScreen = ({ navigation }: any) => {
         const badge = getRankBadgeProps(item.rank);
 
         return (
-            <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
+            <Animated.View>
                 <View style={[styles.entryCard, isTop3 && styles.top3Card]}>
                     <LinearGradient
                         colors={isTop3 ? ['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.05)'] : ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)']}
@@ -93,7 +92,7 @@ export const LeaderboardScreen = ({ navigation }: any) => {
     };
 
     const renderHeader = () => (
-        <Animated.View entering={ZoomIn.duration(800)} style={styles.headerTitleContainer}>
+        <Animated.View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitleMain}>Global Leaderboard</Text>
             <Text style={styles.headerSubtitle}>Compete with students worldwide</Text>
         </Animated.View>
@@ -167,7 +166,7 @@ export const LeaderboardScreen = ({ navigation }: any) => {
 
             {/* Sticky User Position Card */}
             {userGlobalStanding && (
-                <Animated.View entering={FadeInDown.delay(300).springify()} style={styles.stickyFooterOverlay}>
+                <Animated.View style={styles.stickyFooterOverlay}>
                     <LinearGradient
                         colors={['rgba(15, 23, 42, 0.9)', 'rgba(15, 23, 42, 0.95)']}
                         style={styles.stickyFooterGradient}

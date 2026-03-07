@@ -4,9 +4,9 @@
  */
 
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView , Animated} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
+
 import * as Haptics from 'expo-haptics';
 
 export type QuestionType = 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER' | 'FILL_IN_BLANK' | 'ORDERING' | 'MATCHING';
@@ -379,7 +379,6 @@ export function QuizQuestionInput({
 
   return (
     <Animated.View
-      layout={Layout.springify()}
       style={[
         styles.card,
         isExpanded && [styles.cardExpanded, { borderColor: theme.color, shadowColor: theme.color }]
@@ -388,7 +387,7 @@ export function QuizQuestionInput({
       {renderHeader()}
 
       {isExpanded && (
-        <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.content}>
+        <Animated.View style={styles.content}>
           {/* Question Text */}
           <View style={styles.inputGroup}>
             <TextInput

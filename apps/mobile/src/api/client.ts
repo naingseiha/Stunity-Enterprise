@@ -145,10 +145,12 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
             return client(originalRequest);
           }
+          // If newToken is null, refresh failed due to network/server error.
+          // Don't logout, just fail this request.
+          return Promise.reject(error);
         } catch (refreshError) {
-          // Token refresh failed, logout user
-          await tokenService.clearTokens();
-          // Emit logout event
+          // Token refresh failed TERMINALLY (401/403 rejection from server).
+          // Logout user.
           eventEmitter.emit('auth:logout');
           return Promise.reject(refreshError);
         }
@@ -186,24 +188,27 @@ const transformError = (error: AxiosError<ApiResponse<unknown>>): ApiError => {
   const response = error.response;
 
   if (!response) {
+    const targetUrl = error.config?.url ? `${error.config.baseURL}${error.config.url}` : 'unknown';
+    const diagnostics = `[Code: ${error.code}, Message: ${error.message}, Target: ${targetUrl}]`;
+
     // Network error - check if it's a timeout or connection issue
     if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
       return {
         code: 'TIMEOUT_ERROR',
-        message: 'Connection timeout. If you changed WiFi, the app will reconnect automatically.',
+        message: `Connection timeout ${diagnostics}. If you changed WiFi, the app will reconnect automatically.`,
       };
     }
 
-    if (error.code === 'ERR_NETWORK' || !navigator.onLine) {
+    if (error.code === 'ERR_NETWORK') {
       return {
         code: 'NETWORK_ERROR',
-        message: 'Network unavailable. Checking connection...',
+        message: `Network unavailable ${diagnostics}. Checking connection...`,
       };
     }
 
     return {
       code: 'NETWORK_ERROR',
-      message: 'Connection issue. Retrying...',
+      message: `Connection issue ${diagnostics}. Retrying...`,
     };
   }
 
@@ -244,14 +249,15 @@ const transformError = (error: AxiosError<ApiResponse<unknown>>): ApiError => {
     case 429:
       return {
         code: 'RATE_LIMITED',
-        message: 'Too many requests. Please try again later.',
+        message: data?.error || data?.message || 'Too many requests. Please try again later.',
       };
     case 500:
     case 502:
     case 503:
+      const serverError = data?.error || data?.message || 'Something went wrong on our end.';
       return {
         code: 'SERVER_ERROR',
-        message: 'Something went wrong on our end. Please try again later.',
+        message: `${serverError} (Target: ${error.config?.baseURL || 'unknown'})`,
       };
     default:
       return {

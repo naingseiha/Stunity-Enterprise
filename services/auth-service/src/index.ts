@@ -27,7 +27,7 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
 }
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 // Remember-me style: long-lived tokens until explicit logout
-const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '24h';       // Access token: 24h (reduces refresh calls)
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '30d';       // Access token: 30d (reduces refresh calls)
 const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d'; // Refresh: 1 year
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
 
@@ -74,10 +74,10 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow all origins in production if CORS_ORIGIN is set to *
     if (process.env.CORS_ORIGIN === '*') return callback(null, true);
-    
+
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
-    
+
     if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error(`CORS: origin ${origin} not allowed`));
   },

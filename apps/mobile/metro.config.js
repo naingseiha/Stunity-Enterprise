@@ -8,18 +8,28 @@ const workspaceRoot = path.resolve(projectRoot, '../..');
 
 const config = getDefaultConfig(projectRoot);
 
-// Watch all files within the monorepo
+// 1. Watch all files within the monorepo
 config.watchFolders = [workspaceRoot];
 
-// Let Metro know where to resolve packages, and in what order
+// 2. Let Metro know where to resolve packages and in what order
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
-// SVG transformer — allows importing .svg files as React components
-config.transformer.babelTransformerPath = require.resolve('react-native-svg-transformer');
-config.resolver.assetExts = config.resolver.assetExts.filter((ext) => ext !== 'svg');
-config.resolver.sourceExts = [...config.resolver.sourceExts, 'svg'];
+// 3. SVG transformer — allows importing .svg files as React components
+const defaultAssetExts = config.resolver.assetExts || [];
+const defaultSourceExts = config.resolver.sourceExts || [];
+
+config.transformer = {
+  ...config.transformer,
+  babelTransformerPath: require.resolve('react-native-svg-transformer'),
+};
+
+config.resolver = {
+  ...config.resolver,
+  assetExts: defaultAssetExts.filter((ext) => ext !== 'svg'),
+  sourceExts: [...defaultSourceExts, 'svg'],
+};
 
 module.exports = config;

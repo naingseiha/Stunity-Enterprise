@@ -4,9 +4,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, LayoutAnimation } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, LayoutAnimation , Animated} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, Layout } from 'react-native-reanimated';
+
 import * as Haptics from 'expo-haptics';
 import { AIGenerateButton } from '@/components/ai/AIGenerateButton';
 import { AIPromptModal } from '@/components/ai/AIPromptModal';
@@ -259,8 +259,6 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
           {milestones.map((milestone, index) => (
             <Animated.View
               key={milestone.id}
-              entering={FadeIn.duration(200)}
-              layout={Layout.springify()}
               style={styles.milestoneCard}
             >
               <View style={styles.milestoneHeader}>
@@ -357,8 +355,6 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
             {deliverables.map((deliverable) => (
               <Animated.View
                 key={deliverable}
-                entering={FadeIn.duration(200)}
-                layout={Layout.springify()}
                 style={styles.deliverableItem}
               >
                 <Ionicons name="checkmark-circle" size={20} color="#10B981" />
@@ -390,8 +386,6 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
             {skills.map((skill) => (
               <Animated.View
                 key={skill}
-                entering={FadeIn.duration(200)}
-                layout={Layout.springify()}
                 style={styles.skillChip}
               >
                 <Text style={styles.skillChipText}>{skill}</Text>

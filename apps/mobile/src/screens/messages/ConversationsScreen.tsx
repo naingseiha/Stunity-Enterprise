@@ -15,13 +15,12 @@ import {
   RefreshControl,
   StatusBar,
   TextInput,
-  Image,
-} from 'react-native';
+  Image, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+
 
 import { Avatar } from '@/components/common';
 import { Colors } from '@/config';
@@ -97,7 +96,7 @@ export default function ConversationsScreen() {
     const displayAvatar = item.displayAvatar || firstParticipant?.profilePictureUrl;
 
     return (
-      <Animated.View entering={FadeInDown.delay(20 * Math.min(index, 8)).duration(300)}>
+      <Animated.View>
         <TouchableOpacity
           onPress={() => handleConversationPress(item)}
           style={styles.conversationRow}
@@ -207,7 +206,7 @@ export default function ConversationsScreen() {
 
         {/* Search bar */}
         {showSearch && (
-          <Animated.View entering={FadeIn.duration(200)} style={styles.searchWrap}>
+          <Animated.View style={styles.searchWrap}>
             <View style={styles.searchBar}>
               <Ionicons name="search" size={16} color="#9CA3AF" />
               <TextInput

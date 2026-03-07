@@ -1,7 +1,6 @@
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@env';
 
 /**
  * Supabase client — used ONLY for Realtime `postgres_changes` subscriptions.
@@ -16,10 +15,14 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@env';
  *   for this anonymous client. Run:
  *     ALTER TABLE public.posts DISABLE ROW LEVEL SECURITY;
  *     ALTER TABLE public.comments DISABLE ROW LEVEL SECURITY;
+ *
+ *   ENV NOTE: These vars are prefixed with EXPO_PUBLIC_ so Metro bakes them into the JS bundle
+ *   at build time. This works reliably in EAS builds (unlike react-native-dotenv @env imports).
  */
 
-const supabaseUrl = SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseAnonKey = SUPABASE_ANON_KEY || 'your-anon-key';
+// process.env.EXPO_PUBLIC_* is inlined by Metro at build time — always available in EAS builds.
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {

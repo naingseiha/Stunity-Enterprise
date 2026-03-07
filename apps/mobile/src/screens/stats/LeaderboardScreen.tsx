@@ -6,18 +6,13 @@ import {
     TouchableOpacity,
     RefreshControl,
     StatusBar,
-    Dimensions,
-} from 'react-native';
+    Dimensions, Animated} from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, {
-    FadeInDown,
-    FadeInUp,
-    ZoomIn,
-} from 'react-native-reanimated';
+
 
 import { Avatar } from '@/components/common';
 import { Skeleton } from '@/components/common/Loading';
@@ -68,7 +63,7 @@ export function LeaderboardScreen() {
         return (
             <View style={styles.podiumContainer}>
                 {/* Silver - 2nd Place */}
-                <Animated.View entering={FadeInUp.delay(200).duration(500).springify()} style={[styles.podiumItem, { marginTop: 40 }]}>
+                <Animated.View style={[styles.podiumItem, { marginTop: 40 }]}>
                     <View style={styles.podiumAvatarWrapper}>
                         <Avatar uri={second.profilePictureUrl} name={`${second.firstName} ${second.lastName}`} size="xl" />
                         <View style={[styles.podiumRankBadge, { backgroundColor: PODIUM_COLORS[2].border }]}>
@@ -83,7 +78,7 @@ export function LeaderboardScreen() {
                 </Animated.View>
 
                 {/* Gold - 1st Place */}
-                <Animated.View entering={ZoomIn.delay(100).duration(500).springify()} style={[styles.podiumItem, { zIndex: 10 }]}>
+                <Animated.View style={[styles.podiumItem, { zIndex: 10 }]}>
                     <View style={styles.podiumAvatarWrapper}>
                         <LinearGradient
                             colors={PODIUM_COLORS[1].grad as any}
@@ -102,7 +97,7 @@ export function LeaderboardScreen() {
                 </Animated.View>
 
                 {/* Bronze - 3rd Place */}
-                <Animated.View entering={FadeInUp.delay(300).duration(500).springify()} style={[styles.podiumItem, { marginTop: 50 }]}>
+                <Animated.View style={[styles.podiumItem, { marginTop: 50 }]}>
                     <View style={styles.podiumAvatarWrapper}>
                         <Avatar uri={third.profilePictureUrl} name={`${third.firstName} ${third.lastName}`} size="xl" />
                         <View style={[styles.podiumRankBadge, { backgroundColor: PODIUM_COLORS[3].border }]}>
@@ -125,7 +120,7 @@ export function LeaderboardScreen() {
         if (actualRank <= 3) return null;
 
         return (
-            <Animated.View entering={FadeInDown.delay(index * 50).duration(400)}>
+            <Animated.View>
                 <TouchableOpacity
                     style={styles.listItem}
                     activeOpacity={0.7}

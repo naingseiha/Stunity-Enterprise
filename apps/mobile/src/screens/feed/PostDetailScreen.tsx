@@ -23,6 +23,7 @@ import {
   Share,
   Alert,
   RefreshControl,
+  Animated,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -30,15 +31,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeInUp,
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withSequence,
-} from 'react-native-reanimated';
+
 
 import { Avatar, ImageCarousel } from '@/components/common';
 import { PollVoting } from '@/components/feed';
@@ -113,7 +106,7 @@ const CommentItem: React.FC<{ comment: Comment; onReply: (id: string) => void }>
   };
 
   return (
-    <Animated.View entering={FadeInDown.duration(250)} style={styles.commentItem}>
+    <Animated.View style={styles.commentItem}>
       <Avatar uri={comment.author.profilePictureUrl} name={authorName} size="sm" variant="post" />
       <View style={styles.commentContent}>
         <View style={styles.commentBubble}>
@@ -188,8 +181,8 @@ export default function PostDetailScreen() {
   const [isCommentsLoading, setIsCommentsLoading] = useState(true);
 
   const scrollViewRef = useRef<ScrollView>(null);
-  const likeScale = useSharedValue(1);
-  const bookmarkScale = useSharedValue(1);
+  const likeScale = useRef(new Animated.Value(1)).current;
+  const bookmarkScale = useRef(new Animated.Value(1)).current;
 
   // Try to find post in store, or fetch from API
   const postItem = feedItems.find(i => i.type === 'POST' && (i.data as Post).id === postId);
@@ -235,20 +228,20 @@ export default function PostDetailScreen() {
   }, [loadPost, postId, fetchComments]);
 
   // ─── Animated styles ────────────────────────────────
-  const likeAnimStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: likeScale.value }],
-  }));
-  const bookmarkAnimStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: bookmarkScale.value }],
-  }));
+  const likeAnimStyle = {
+    transform: [{ scale: likeScale }],
+  };
+  const bookmarkAnimStyle = {
+    transform: [{ scale: bookmarkScale }],
+  };
 
   // ─── Handlers ───────────────────────────────────────
   const handleLike = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    likeScale.value = withSequence(
-      withSpring(1.3, { damping: 10 }),
-      withSpring(1, { damping: 15 })
-    );
+    Animated.sequence([
+      Animated.spring(likeScale, { toValue: 1.3, friction: 3, tension: 40, useNativeDriver: true }),
+      Animated.spring(likeScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
+    ]).start();
     if (liked) {
       setLikeCount(prev => prev - 1);
       unlikePost(postId);
@@ -261,10 +254,10 @@ export default function PostDetailScreen() {
 
   const handleBookmark = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    bookmarkScale.value = withSequence(
-      withSpring(1.25, { damping: 8 }),
-      withSpring(1, { damping: 12 })
-    );
+    Animated.sequence([
+      Animated.spring(bookmarkScale, { toValue: 1.25, friction: 4, tension: 40, useNativeDriver: true }),
+      Animated.spring(bookmarkScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
+    ]).start();
     setBookmarked(!bookmarked);
     bookmarkPost(postId);
     setShowMenu(false);
@@ -411,7 +404,7 @@ export default function PostDetailScreen() {
 
         {/* Dropdown Menu */}
         {showMenu && (
-          <Animated.View entering={FadeIn.duration(150)} style={styles.dropdown}>
+          <Animated.View style={styles.dropdown}>
             <TouchableOpacity style={styles.menuItem} onPress={handleShare}>
               <Ionicons name="share-outline" size={18} color="#374151" />
               <Text style={styles.menuText}>Share</Text>
@@ -451,7 +444,7 @@ export default function PostDetailScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" />}
         >
           {/* ── Author Section ── */}
-          <Animated.View entering={FadeInDown.duration(300)} style={styles.authorCard}>
+          <Animated.View style={styles.authorCard}>
             <TouchableOpacity
               style={styles.authorRow}
               onPress={() => navigation.navigate('UserProfile' as any, { userId: post.author.id })}
@@ -489,7 +482,7 @@ export default function PostDetailScreen() {
 
           {/* ── Deadline Banner ── */}
           {deadlineInfo && (
-            <Animated.View entering={FadeInDown.delay(50).duration(300)} style={[
+            <Animated.View style={[
               styles.deadlineBanner,
               deadlineInfo.isUrgent && styles.deadlineBannerUrgent
             ]}>
@@ -506,7 +499,7 @@ export default function PostDetailScreen() {
 
           {/* ── Media ── */}
           {post.mediaUrls && post.mediaUrls.length > 0 && (
-            <Animated.View entering={FadeInDown.delay(80).duration(400)} style={styles.mediaContainer}>
+            <Animated.View style={styles.mediaContainer}>
               <ImageCarousel images={post.mediaUrls} borderRadius={0} mode="auto" />
               {/* View count overlay */}
               <View style={styles.viewCountOverlay}>
@@ -520,13 +513,13 @@ export default function PostDetailScreen() {
 
           {/* ── Title (if present) ── */}
           {post.title && (
-            <Animated.View entering={FadeInDown.delay(120).duration(300)} style={styles.titleSection}>
+            <Animated.View style={styles.titleSection}>
               <Text style={styles.postTitle}>{post.title}</Text>
             </Animated.View>
           )}
 
           {/* ── Content ── */}
-          <Animated.View entering={FadeInDown.delay(150).duration(400)} style={styles.contentCard}>
+          <Animated.View style={styles.contentCard}>
             <Text style={styles.contentText}>{post.content}</Text>
 
             {/* Poll Voting */}
@@ -651,7 +644,7 @@ export default function PostDetailScreen() {
 
           {/* ── Progress Bar ── */}
           {learningMeta?.progress !== undefined && ['COURSE', 'QUIZ', 'TUTORIAL'].includes(post.postType) && (
-            <Animated.View entering={FadeInDown.delay(200).duration(300)} style={styles.progressCard}>
+            <Animated.View style={styles.progressCard}>
               <View style={styles.progressHeader}>
                 <Text style={styles.progressLabel}>Your Progress</Text>
                 <Text style={styles.progressPercent}>{learningMeta.progress}%</Text>
@@ -668,7 +661,7 @@ export default function PostDetailScreen() {
           )}
 
           {/* ── Engagement Stats ── */}
-          <Animated.View entering={FadeInDown.delay(250).duration(300)} style={styles.engagementCard}>
+          <Animated.View style={styles.engagementCard}>
             <View style={styles.statsRow}>
               <TouchableOpacity style={styles.statItem}>
                 <Ionicons name="heart" size={16} color="#EF4444" />

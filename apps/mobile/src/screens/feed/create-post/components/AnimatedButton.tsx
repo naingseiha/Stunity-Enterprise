@@ -3,14 +3,8 @@
  * Button with smooth press animation and haptic feedback
  */
 
-import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, ActivityIndicator } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withSequence,
-} from 'react-native-reanimated';
+import React, { useRef } from 'react';
+import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, ActivityIndicator, Animated } from 'react-native';
 import { haptics } from '../animations';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
@@ -36,22 +30,18 @@ export function AnimatedButton({
   textStyle,
   icon,
 }: AnimatedButtonProps) {
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  const scale = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
     if (!disabled && !loading) {
       haptics.light();
-      scale.value = withSpring(0.95, { damping: 10, stiffness: 150 });
+      Animated.spring(scale, { toValue: 0.95, friction: 5, tension: 150, useNativeDriver: true }).start();
     }
   };
 
   const handlePressOut = () => {
     if (!disabled && !loading) {
-      scale.value = withSpring(1, { damping: 10, stiffness: 150 });
+      Animated.spring(scale, { toValue: 1, friction: 5, tension: 150, useNativeDriver: true }).start();
     }
   };
 
@@ -59,17 +49,16 @@ export function AnimatedButton({
     if (!disabled && !loading) {
       haptics.medium();
       // Subtle pulse animation
-      scale.value = withSequence(
-        withSpring(0.95, { damping: 10 }),
-        withSpring(1, { damping: 10 })
-      );
+      Animated.sequence([
+        Animated.spring(scale, { toValue: 0.95, friction: 5, tension: 150, useNativeDriver: true }), Animated.spring(scale, { toValue: 1, friction: 5, tension: 150, useNativeDriver: true })
+      ]).start();
       onPress();
     }
   };
 
   const getBackgroundColor = () => {
     if (disabled || loading) return '#E5E7EB';
-    
+
     switch (variant) {
       case 'primary':
         return '#6366F1';
@@ -99,7 +88,7 @@ export function AnimatedButton({
         styles.button,
         { backgroundColor: getBackgroundColor() },
         style,
-        animatedStyle,
+        { transform: [{ scale }] },
       ]}
       activeOpacity={0.8}
     >

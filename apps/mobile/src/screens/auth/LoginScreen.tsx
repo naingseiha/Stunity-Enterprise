@@ -15,17 +15,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
-} from 'react-native';
+  Alert, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  FadeInDown,
-  FadeInUp,
-  FadeIn,
-} from 'react-native-reanimated';
+
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import StunityLogo from '../../../assets/Stunity.svg';
@@ -138,7 +133,7 @@ export default function LoginScreen() {
             showsVerticalScrollIndicator={false}
           >
             {/* Back */}
-            <Animated.View entering={FadeIn.delay(50).duration(400)}>
+            <Animated.View>
               <TouchableOpacity
                 onPress={() => navigation.goBack()}
                 style={styles.backButton}
@@ -150,7 +145,6 @@ export default function LoginScreen() {
 
             {/* Header */}
             <Animated.View
-              entering={FadeInDown.delay(100).duration(500)}
               style={styles.header}
             >
               <StunityLogo width={140} height={140} style={{ marginBottom: 12 }} />
@@ -159,14 +153,14 @@ export default function LoginScreen() {
 
             {/* Error */}
             {error && (
-              <Animated.View entering={FadeInDown.duration(300)} style={styles.errorBanner}>
+              <Animated.View style={styles.errorBanner}>
                 <Ionicons name="alert-circle" size={16} color="#DC2626" />
                 <Text style={styles.errorText}>{error}</Text>
               </Animated.View>
             )}
 
             {/* Form */}
-            <Animated.View entering={FadeInUp.delay(200).duration(500)}>
+            <Animated.View>
               {/* Email or Phone */}
               <View style={styles.inputWrapper}>
                 <TextInput
@@ -238,14 +232,14 @@ export default function LoginScreen() {
             </Animated.View>
 
             {/* Divider */}
-            <Animated.View entering={FadeIn.delay(400).duration(400)} style={styles.divider}>
+            <Animated.View style={styles.divider}>
               <View style={styles.dividerLine} />
               <Text style={styles.dividerText}>or</Text>
               <View style={styles.dividerLine} />
             </Animated.View>
 
             {/* OAuth Buttons — flat icon-only row */}
-            <Animated.View entering={FadeInUp.delay(500).duration(400)} style={styles.oauthRow}>
+            <Animated.View style={styles.oauthRow}>
               <TouchableOpacity
                 style={styles.oauthButton}
                 activeOpacity={0.7}
@@ -312,7 +306,7 @@ export default function LoginScreen() {
             <View style={{ flex: 1 }} />
 
             {/* Footer */}
-            <Animated.View entering={FadeIn.delay(600).duration(400)}>
+            <Animated.View>
               <TouchableOpacity
                 onPress={() => navigation.navigate('Register')}
                 style={styles.footer}

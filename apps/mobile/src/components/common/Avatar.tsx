@@ -193,8 +193,6 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
                 cachePolicy="memory-disk" // Cache avatars aggressively
                 priority="normal" // Lower priority than feed images
                 recyclingKey={uri} // Reuse across list
-                placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
-                placeholderContentFit="cover"
               />
             ) : (
               <LinearGradient
@@ -251,8 +249,6 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
           transition={150}
           cachePolicy="memory-disk"
           recyclingKey={uri}
-          placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
-          placeholderContentFit="cover"
         />
       ) : (
         <LinearGradient

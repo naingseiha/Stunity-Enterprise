@@ -11,11 +11,10 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
-} from 'react-native';
+  Image, Animated} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn } from 'react-native-reanimated';
+
 
 import { StoryGroup } from '@/types';
 
@@ -94,7 +93,7 @@ export const StoryCircles: React.FC<StoryCirclesProps> = ({
   };
 
   return (
-    <Animated.View entering={FadeIn.duration(400)} style={styles.container}>
+    <Animated.View style={styles.container}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

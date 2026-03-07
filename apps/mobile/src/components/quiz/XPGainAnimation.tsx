@@ -31,8 +31,7 @@ export const XPGainAnimation: React.FC<XPGainAnimationProps> = ({
         duration: 500,
         delay,
         useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
+      }), Animated.spring(scaleAnim, {
         toValue: 1,
         tension: 50,
         friction: 7,

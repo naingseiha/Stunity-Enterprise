@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -15,14 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { statsAPI, type UserStats } from '@/services/stats';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '@/navigation/types';
-import Animated, {
-  FadeInDown,
-  ZoomIn,
-  useAnimatedStyle,
-  withTiming,
-  useSharedValue,
-  withSpring
-} from 'react-native-reanimated';
+
 import Svg, { Path, Circle, Line, Text as SvgText } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 
@@ -83,7 +77,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
   const [userId, setUserId] = useState('current-user-id');
 
   // Animation values
-  const progressValue = useSharedValue(0);
+  const progressValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     loadStats();
@@ -91,7 +85,11 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
 
   useEffect(() => {
     if (stats) {
-      progressValue.value = withTiming(stats.xpProgress / stats.xpToNextLevel, { duration: 1000 });
+      Animated.timing(progressValue, {
+        toValue: stats.xpProgress / stats.xpToNextLevel,
+        duration: 1000,
+        useNativeDriver: false,
+      }).start();
     }
   }, [stats]);
 
@@ -101,8 +99,6 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
       setStats(data);
     } catch (error: any) {
       console.error('Load stats error:', error);
-      // Fallback for demo if API fails
-      // setStats(MOCK_STATS); 
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -115,10 +111,10 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
     loadStats();
   };
 
-  const progressStyle = useAnimatedStyle(() => {
-    return {
-      width: `${progressValue.value * 100}%`,
-    };
+  const progressWidth = progressValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+    extrapolate: 'clamp',
   });
 
   if (loading || !stats) {
@@ -177,7 +173,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
           contentContainerStyle={styles.scrollContent}
         >
           {/* Main Level Card */}
-          <Animated.View entering={FadeInDown.delay(100)} style={styles.levelCard}>
+          <Animated.View style={styles.levelCard}>
             <LinearGradient
               colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
               style={styles.levelCardGradient}
@@ -198,7 +194,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
                   <Text style={styles.xpText}>{stats.xpToNextLevel} XP</Text>
                 </View>
                 <View style={styles.progressBarBg}>
-                  <Animated.View style={[styles.progressBarFill, progressStyle]} />
+                  <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
                 </View>
                 <Text style={styles.xpNextLevel}>
                   {stats.xpToNextLevel - stats.xpProgress} XP to Level {stats.level + 1}
@@ -210,7 +206,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
           {/* Grid Stats */}
           <View style={styles.gridContainer}>
             {/* Quizzes Taken */}
-            <Animated.View entering={ZoomIn.delay(200)} style={styles.gridItem}>
+            <Animated.View style={styles.gridItem}>
               <LinearGradient
                 colors={['rgba(59, 130, 246, 0.2)', 'rgba(59, 130, 246, 0.1)']}
                 style={styles.gridGradient}
@@ -222,7 +218,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
             </Animated.View>
 
             {/* Avg Score */}
-            <Animated.View entering={ZoomIn.delay(300)} style={styles.gridItem}>
+            <Animated.View style={styles.gridItem}>
               <LinearGradient
                 colors={['rgba(16, 185, 129, 0.2)', 'rgba(16, 185, 129, 0.1)']}
                 style={styles.gridGradient}
@@ -234,7 +230,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
             </Animated.View>
 
             {/* Streak */}
-            <Animated.View entering={ZoomIn.delay(400)} style={styles.gridItem}>
+            <Animated.View style={styles.gridItem}>
               <LinearGradient
                 colors={['rgba(249, 115, 22, 0.2)', 'rgba(249, 115, 22, 0.1)']}
                 style={styles.gridGradient}
@@ -246,7 +242,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
             </Animated.View>
 
             {/* Win Rate */}
-            <Animated.View entering={ZoomIn.delay(500)} style={styles.gridItem}>
+            <Animated.View style={styles.gridItem}>
               <LinearGradient
                 colors={['rgba(139, 92, 246, 0.2)', 'rgba(139, 92, 246, 0.1)']}
                 style={styles.gridGradient}
@@ -259,7 +255,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
           </View>
 
           {/* Performance Chart */}
-          <Animated.View entering={FadeInDown.delay(600)} style={styles.sectionContainer}>
+          <Animated.View style={styles.sectionContainer}>
             <Text style={styles.sectionTitle}>Recent Performance</Text>
             <View style={styles.chartCard}>
               <SimpleLineChart
@@ -272,7 +268,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
           </Animated.View>
 
           {/* Detailed Performance */}
-          <Animated.View entering={FadeInDown.delay(700)} style={styles.sectionContainer}>
+          <Animated.View style={styles.sectionContainer}>
             <Text style={styles.sectionTitle}>Detailed Breakdown</Text>
             <View style={styles.detailCard}>
               <View style={styles.detailRow}>
@@ -332,7 +328,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    
+
     borderColor: 'rgba(255,255,255,0.1)',
   },
   headerTitle: {
@@ -348,7 +344,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    
+
     borderColor: 'rgba(255,255,255,0.1)',
   },
   scrollContent: {
@@ -370,7 +366,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderRadius: 24,
     overflow: 'hidden',
-    
+
     borderColor: 'rgba(255,255,255,0.1)',
   },
   levelCardGradient: {
@@ -401,7 +397,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(251, 191, 36, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    
+
     borderColor: 'rgba(251, 191, 36, 0.3)',
   },
   progressContainer: {
@@ -450,7 +446,7 @@ const styles = StyleSheet.create({
     padding: 16,
     justifyContent: 'center',
     alignItems: 'flex-start',
-    
+
     borderColor: 'rgba(255,255,255,0.1)',
   },
   gridValue: {
@@ -481,7 +477,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 20,
     alignItems: 'center',
-    
+
     borderColor: 'rgba(255,255,255,0.05)',
   },
   chartSubtitle: {
@@ -495,7 +491,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    
+
     borderColor: 'rgba(255,255,255,0.05)',
   },
   detailRow: {

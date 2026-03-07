@@ -7,8 +7,7 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
-  RefreshControl,
-} from 'react-native';
+  RefreshControl, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,14 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { statsAPI, type Achievement, type UserAchievement } from '@/services/stats';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '@/navigation/types';
-import Animated, {
-  FadeInDown,
-  ZoomIn,
-  useAnimatedStyle,
-  withTiming,
-  useSharedValue,
-  withSpring
-} from 'react-native-reanimated';
+
 import Svg, { Polygon } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 
@@ -161,7 +153,6 @@ export const AchievementsScreen: React.FC<Props> = ({ navigation }) => {
               return (
                 <Animated.View
                   key={item.id}
-                  entering={ZoomIn.delay(index * 50)}
                   style={styles.badgeItem}
                 >
                   <HexagonBadge
@@ -214,7 +205,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    
+
     borderColor: 'rgba(255,255,255,0.1)',
   },
   headerTitle: {
@@ -232,7 +223,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 20,
     marginBottom: 24,
-    
+
     borderColor: 'rgba(255,255,255,0.1)',
   },
   progressHeader: {
@@ -289,7 +280,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     alignItems: 'center',
-    
+
     borderColor: 'rgba(255,255,255,0.05)',
     marginBottom: 16,
   },

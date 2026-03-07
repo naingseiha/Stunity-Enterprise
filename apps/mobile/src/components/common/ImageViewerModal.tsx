@@ -105,8 +105,6 @@ export default function ImageViewerModal({
                 style={styles.image}
                 contentFit="contain"
                 transition={300}
-                placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
-                placeholderContentFit="contain"
               />
             </View>
           ))}

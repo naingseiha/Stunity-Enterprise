@@ -16,12 +16,11 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
-} from 'react-native';
+  Dimensions, Animated} from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeIn } from 'react-native-reanimated';
+
 
 import { Avatar } from '@/components/common';
 import { Course } from '@/types';
@@ -73,7 +72,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   // ── Row variant (horizontal compact list item) ──────────────────
   if (isRow) {
     return (
-      <Animated.View entering={FadeIn.duration(300)}>
+      <Animated.View>
         <TouchableOpacity onPress={onPress} activeOpacity={0.72} style={styles.rowContainer}>
           {/* Small square thumbnail */}
           <LinearGradient
@@ -120,7 +119,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   }
 
   return (
-    <Animated.View entering={FadeIn.duration(300)}>
+    <Animated.View>
       <TouchableOpacity
         onPress={onPress}
         activeOpacity={0.72}

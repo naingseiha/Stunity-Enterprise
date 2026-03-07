@@ -28,8 +28,7 @@ export function AILoadingOverlay({ isVisible, message = 'AI is writing...' }: AI
                         duration: 800,
                         easing: Easing.inOut(Easing.ease),
                         useNativeDriver: true,
-                    }),
-                    Animated.timing(pulseAnim, {
+                    }), Animated.timing(pulseAnim, {
                         toValue: 1,
                         duration: 800,
                         easing: Easing.inOut(Easing.ease),

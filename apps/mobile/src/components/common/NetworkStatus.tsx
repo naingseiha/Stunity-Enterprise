@@ -1,11 +1,7 @@
 /**
  * NetworkStatus Component
- * 
- * Shows online/offline status banner like web version
- * - Smooth slide in/out animations
- * - Auto-hide when online
- * - Retry button when offline
- * - Debounced to prevent rapid changes during WiFi switching
+ *
+ * Shows online/offline status banner - uses built-in Animated API (no Reanimated)
  */
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -15,14 +11,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   Platform,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
 import NetInfo from '@react-native-community/netinfo';
 
 interface NetworkStatusProps {
@@ -32,62 +23,59 @@ interface NetworkStatusProps {
 export default function NetworkStatus({ onRetry }: NetworkStatusProps) {
   const [isConnected, setIsConnected] = useState(true);
   const [showBanner, setShowBanner] = useState(false);
-  const translateY = useSharedValue(-100);
+  const translateY = useRef(new Animated.Value(-100)).current;
   const [hasInitialized, setHasInitialized] = useState(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const slideIn = () => {
+    Animated.spring(translateY, {
+      toValue: 0,
+      damping: 15,
+      stiffness: 150,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const slideOut = (onDone?: () => void) => {
+    Animated.timing(translateY, {
+      toValue: -100,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(onDone);
+  };
+
   useEffect(() => {
-    // Subscribe to network state updates
     const unsubscribe = NetInfo.addEventListener(state => {
-      // Debounce network state changes to prevent rapid updates during WiFi switching
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
 
       debounceTimerRef.current = setTimeout(() => {
-        const connected = state.isConnected && state.isInternetReachable !== false;
-        
-        // Only log if there's an actual change or issue
-        if (!connected || (connected && !isConnected && hasInitialized)) {
-          console.log('Network Status Changed:', {
-            status: connected ? 'Online' : 'Offline',
-            type: state.type,
-          });
-        }
+        const connected = (state.isConnected ?? false) && state.isInternetReachable !== false;
 
-        const wasConnected = isConnected;
         setIsConnected(connected);
 
         if (!connected) {
-          // Show offline banner immediately
           setShowBanner(true);
-          translateY.value = withSpring(0, {
-            damping: 15,
-            stiffness: 150,
-          });
-        } else if (!wasConnected && connected && hasInitialized) {
-          // Only show "back online" message if we were previously offline
+          slideIn();
+        } else if (hasInitialized) {
           setShowBanner(true);
-          translateY.value = withSpring(0);
-          // Hide banner after 2 seconds when back online
+          slideIn();
           setTimeout(() => {
-            translateY.value = withTiming(-100, { duration: 300 });
-            setTimeout(() => setShowBanner(false), 300);
+            slideOut(() => setShowBanner(false));
           }, 2000);
         }
-      }, 500); // 500ms debounce delay
+      }, 500);
     });
 
-    // Initial check
     NetInfo.fetch().then(state => {
-      const connected = state.isConnected && state.isInternetReachable !== false;
+      const connected = (state.isConnected ?? false) && state.isInternetReachable !== false;
       setIsConnected(connected);
       setHasInitialized(true);
-      
+
       if (!connected) {
-        console.log('Initial network status: Offline');
         setShowBanner(true);
-        translateY.value = withSpring(0);
+        slideIn();
       }
     });
 
@@ -97,16 +85,11 @@ export default function NetworkStatus({ onRetry }: NetworkStatusProps) {
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, []); // Remove showBanner dependency to prevent re-subscriptions
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
+  }, []);
 
   const handleRetry = () => {
-    // Trigger a network check
     NetInfo.fetch().then(state => {
-      const connected = state.isConnected && state.isInternetReachable !== false;
+      const connected = (state.isConnected ?? false) && state.isInternetReachable !== false;
       if (connected && onRetry) {
         onRetry();
       }
@@ -116,11 +99,11 @@ export default function NetworkStatus({ onRetry }: NetworkStatusProps) {
   if (!showBanner) return null;
 
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.container,
         isConnected ? styles.containerOnline : styles.containerOffline,
-        animatedStyle,
+        { transform: [{ translateY }] },
       ]}
     >
       <View style={styles.content}>
@@ -130,9 +113,7 @@ export default function NetworkStatus({ onRetry }: NetworkStatusProps) {
           color="#fff"
         />
         <Text style={styles.text}>
-          {isConnected 
-            ? 'Back online! 🎉' 
-            : 'No internet connection'}
+          {isConnected ? 'Back online! 🎉' : 'No internet connection'}
         </Text>
         {!isConnected && onRetry && (
           <TouchableOpacity onPress={handleRetry} style={styles.retryButton}>
@@ -157,8 +138,6 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        
-        
         shadowRadius: 4,
       },
       android: {

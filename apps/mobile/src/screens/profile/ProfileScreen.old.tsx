@@ -13,13 +13,12 @@ import {
   TouchableOpacity,
   RefreshControl,
   Dimensions,
-  StatusBar,
-} from 'react-native';
+  StatusBar, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+
 
 import { Avatar, Button, Card, Loading } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows, BorderRadius } from '@/config';
@@ -152,7 +151,7 @@ export default function ProfileScreen() {
         }
       >
         {/* Profile Card */}
-        <Animated.View entering={FadeInDown.duration(400)} style={styles.profileCard}>
+        <Animated.View style={styles.profileCard}>
           <View style={styles.avatarContainer}>
             <Avatar
               uri={profile.profilePictureUrl}
@@ -233,7 +232,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Tab Content */}
-        <Animated.View entering={FadeIn} style={styles.tabContent}>
+        <Animated.View style={styles.tabContent}>
           {activeTab === 'posts' && (
             <View style={styles.emptyTab}>
               <Ionicons name="newspaper-outline" size={48} color={Colors.gray[300]} />

@@ -9,11 +9,11 @@ import {
     Dimensions,
     StatusBar,
     RefreshControl
-} from 'react-native';
+, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import Animated, { FadeInUp, FadeInDown, ZoomIn } from 'react-native-reanimated';
+
 import * as Haptics from 'expo-haptics';
 import { attendanceService } from '@/services/attendance';
 import { useAuthStore } from '@/stores';
@@ -24,7 +24,6 @@ const { width } = Dimensions.get('window');
 
 const StatCard = ({ label, value, color, icon, delay = 0 }: any) => (
     <Animated.View
-        entering={FadeInDown.delay(delay).duration(600)}
         style={styles.statCard}
     >
         <View style={[styles.statIconBg, { backgroundColor: `${color}10` }]}>
@@ -129,7 +128,7 @@ export const AttendanceReportScreen = () => {
                     }
                 >
                     {/* Attendance Percentage Card */}
-                    <Animated.View entering={FadeInUp.duration(800)} style={styles.overviewCard}>
+                    <Animated.View style={styles.overviewCard}>
                         <LinearGradient
                             colors={isTeacher ? ['#F59E0B', '#D97706'] : ['#0EA5E9', '#2563EB']}
                             style={styles.gradient}
@@ -181,7 +180,7 @@ export const AttendanceReportScreen = () => {
 
                     {/* Class Breakdown for Teacher */}
                     {isTeacher && summary?.classBreakdown?.length > 0 && (
-                        <Animated.View entering={FadeInUp.delay(400)} style={styles.infoSection}>
+                        <Animated.View style={styles.infoSection}>
                             <Text style={styles.sectionTitle}>Class Recording Breakdown</Text>
                             {summary.classBreakdown.map((item: any, index: number) => (
                                 <View key={item.id} style={[styles.infoCard, { marginBottom: 12 }]}>
@@ -214,7 +213,7 @@ export const AttendanceReportScreen = () => {
 
                     {/* Teacher Check-in History */}
                     {isTeacher && summary?.checkInHistory?.length > 0 && (
-                        <Animated.View entering={FadeInUp.delay(500)} style={styles.infoSection}>
+                        <Animated.View style={styles.infoSection}>
                             <Text style={styles.sectionTitle}>Recent Check-ins</Text>
                             {summary.checkInHistory.slice(0, 7).map((log: any, index: number) => (
                                 <View key={log.id || index} style={[styles.infoCard, { marginBottom: 12 }]}>
@@ -264,7 +263,7 @@ export const AttendanceReportScreen = () => {
 
                     {/* Monthly Breakdown / Info */}
                     {!isTeacher && (
-                        <Animated.View entering={FadeInUp.delay(400)} style={styles.infoSection}>
+                        <Animated.View style={styles.infoSection}>
                             <Text style={styles.sectionTitle}>Performance Summary</Text>
                             <View style={styles.infoCard}>
                                 <View style={styles.infoRow}>

@@ -532,6 +532,7 @@ export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   message?: string;
+  error?: string; // Add for simple error responses
   errors?: ApiError[];
 }
 

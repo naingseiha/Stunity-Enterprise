@@ -12,19 +12,10 @@ import {
   StatusBar,
   Dimensions,
   Modal,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  FadeInDown,
-  ZoomIn,
-  FadeInUp,
-  useSharedValue,
-  withSpring,
-  useAnimatedStyle,
-  withTiming,
-  withSequence,
-  withRepeat,
-} from 'react-native-reanimated';
+
 import * as Haptics from 'expo-haptics';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -105,13 +96,24 @@ export function QuizResultsScreen() {
   const correctCount = calculatedResults.filter(r => r.isCorrect).length;
   const incorrectCount = calculatedResults.length - correctCount;
 
+  // Animated ring scale
+  const ringScale = useRef(new Animated.Value(1)).current;
+
   useEffect(() => {
     if (isPassed && !viewMode) {
       setShowConfetti(true);
       setTimeout(() => confettiRef.current?.start(), 500);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
-  }, []);
+
+    // Ring pulse animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(ringScale, { toValue: 1.05, duration: 1000, useNativeDriver: true }),
+        Animated.timing(ringScale, { toValue: 1, duration: 1000, useNativeDriver: true })
+      ])
+    ).start();
+  }, [isPassed, viewMode, ringScale]);
 
   const getPerformanceColor = () => {
     if (scorePercentage >= 80) return '#10B981'; // Green
@@ -119,11 +121,6 @@ export function QuizResultsScreen() {
     return '#EF4444'; // Red
   };
 
-  const ringAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: withRepeat(withSequence(withTiming(1.05, { duration: 1000 }), withTiming(1, { duration: 1000 })), -1, true) }]
-    };
-  });
 
   return (
     <View style={styles.container}>
@@ -154,7 +151,7 @@ export function QuizResultsScreen() {
         >
           {/* Score Circle */}
           <View style={styles.scoreContainer}>
-            <Animated.View style={[styles.scoreRing, { borderColor: getPerformanceColor() }, ringAnimatedStyle]}>
+            <Animated.View style={[styles.scoreRing, { borderColor: getPerformanceColor(), transform: [{ scale: ringScale }] }]}>
               <View style={styles.scoreInner}>
                 <Text style={[styles.scoreText, { color: getPerformanceColor() }]}>
                   {scorePercentage}%
@@ -167,27 +164,27 @@ export function QuizResultsScreen() {
           </View>
 
           {/* Message */}
-          <Animated.Text entering={FadeInDown.delay(300)} style={styles.messageText}>
+          <Animated.Text style={styles.messageText}>
             {isPassed ? "Outstanding Performance! 🎉" : "Keep Practicing! 📚"}
           </Animated.Text>
 
           {/* Stats Grid */}
           <View style={styles.statsGrid}>
-            <Animated.View entering={ZoomIn.delay(400)} style={styles.statCard}>
+            <Animated.View style={styles.statCard}>
               <LinearGradient colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']} style={styles.statGradient}>
                 <Ionicons name="checkmark-circle" size={24} color="#10B981" />
                 <Text style={styles.statValue}>{correctCount}</Text>
                 <Text style={styles.statLabel}>Correct</Text>
               </LinearGradient>
             </Animated.View>
-            <Animated.View entering={ZoomIn.delay(500)} style={styles.statCard}>
+            <Animated.View style={styles.statCard}>
               <LinearGradient colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']} style={styles.statGradient}>
                 <Ionicons name="close-circle" size={24} color="#EF4444" />
                 <Text style={styles.statValue}>{incorrectCount}</Text>
                 <Text style={styles.statLabel}>Incorrect</Text>
               </LinearGradient>
             </Animated.View>
-            <Animated.View entering={ZoomIn.delay(600)} style={styles.statCard}>
+            <Animated.View style={styles.statCard}>
               <LinearGradient colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']} style={styles.statGradient}>
                 <Ionicons name="trophy" size={24} color="#FBBF24" />
                 <Text style={styles.statValue}>{pointsEarned}</Text>
@@ -233,7 +230,7 @@ export function QuizResultsScreen() {
           </View>
 
           {/* Action Buttons */}
-          <Animated.View entering={FadeInUp.delay(800)} style={styles.buttonContainer}>
+          <Animated.View style={styles.buttonContainer}>
             <TouchableOpacity
               style={styles.primaryButton}
               onPress={() => setShowDetails(!showDetails)}
@@ -253,7 +250,7 @@ export function QuizResultsScreen() {
 
           {/* Details Section */}
           {showDetails && (
-            <Animated.View entering={FadeInDown} style={styles.detailsContainer}>
+            <Animated.View style={styles.detailsContainer}>
               {calculatedResults.map((result, index) => (
                 <View key={index} style={styles.questionCard}>
                   <View style={styles.questionHeader}>

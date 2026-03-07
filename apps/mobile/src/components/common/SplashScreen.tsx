@@ -32,8 +32,8 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
   // Animation values
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const logoScale = useRef(new Animated.Value(0.85)).current;
+  const logoOpacity = useRef(new Animated.Value(1)).current; // Start visible to match native splash
+  const logoScale = useRef(new Animated.Value(1)).current; // Start at full size
   const dotsOpacity = useRef(new Animated.Value(0)).current;
 
   // Floating bubbles
@@ -46,31 +46,18 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
   const dot3Anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Logo entrance animation - Twitter style zoom in
-    Animated.sequence([
-      // First: fade in while scaling from small
-      Animated.parallel([
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoScale, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
+    // Logo entrance animation removed. 
+    // The logo is already on screen from the OS Native Splash Screen,
+    // so we start fully visible to seamlessly take over the animation without a flicker.
 
-    // Show dots after logo appears
+    // Show loading dots shortly after taking over
     setTimeout(() => {
       Animated.timing(dotsOpacity, {
         toValue: 1,
         duration: 400,
         useNativeDriver: true,
       }).start();
-    }, 600);
+    }, 200);
 
     // Floating bubbles animation
     const createBubbleAnimation = (anim: Animated.Value, duration: number) => {
@@ -347,7 +334,7 @@ const styles = StyleSheet.create({
     shadowColor: '#0EA5E9',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
-    
+
     elevation: 4,
   },
   dotGradient: {

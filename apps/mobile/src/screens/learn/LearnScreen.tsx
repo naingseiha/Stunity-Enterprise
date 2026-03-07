@@ -21,13 +21,12 @@ import {
   Dimensions,
   StatusBar,
   TextInput,
-  Platform,
-} from 'react-native';
+  Platform, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+
 
 import StunityLogo from '../../../assets/Stunity.svg';
 import { CourseCard } from '@/components/learn';
@@ -229,7 +228,7 @@ export default function LearnScreen() {
     }
 
     return (
-      <Animated.View entering={FadeInDown.duration(400)} style={styles.subjectSection}>
+      <Animated.View style={styles.subjectSection}>
         <Text style={styles.sectionTitle}>Explore subjects</Text>
         <View style={styles.subjectGrid}>
           {rows.map((row, rowIdx) => (
@@ -265,7 +264,7 @@ export default function LearnScreen() {
   const renderSuggestedCard = () => {
     const course = courses[1]; // Feature ML course
     return (
-      <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.suggestedSection}>
+      <Animated.View style={styles.suggestedSection}>
         <View style={styles.suggestedHeader}>
           <Text style={styles.suggestedSponsored}>Featured  ·  </Text>
           <Text style={styles.sectionTitle}>Suggested for you</Text>
@@ -308,7 +307,7 @@ export default function LearnScreen() {
 
   // ─── Continue Learning ────────────────────────────────────────
   const renderContinueLearning = () => (
-    <Animated.View entering={FadeInDown.delay(200).duration(400)} style={styles.continueLearningSection}>
+    <Animated.View style={styles.continueLearningSection}>
       <View style={styles.sectionHeaderRow}>
         <Text style={styles.sectionTitle}>Continue learning</Text>
         <TouchableOpacity>
@@ -426,7 +425,7 @@ export default function LearnScreen() {
         </View>
       ) : (
         filteredCourses.map((course, i) => (
-          <Animated.View key={course.id} entering={FadeInDown.delay(40 * i).duration(300)}>
+          <Animated.View key={course.id}>
             <CourseCard course={course} onPress={() => handleCoursePress(course)} variant="row" />
           </Animated.View>
         ))
@@ -444,7 +443,7 @@ export default function LearnScreen() {
         </TouchableOpacity>
       </View>
       {paths.map((path, i) => (
-        <Animated.View key={path.id} entering={FadeInDown.delay(60 * i).duration(350)}>
+        <Animated.View key={path.id}>
           <TouchableOpacity activeOpacity={0.88} style={styles.pathCard}>
             <LinearGradient
               colors={FEATURED_GRADIENTS[i % FEATURED_GRADIENTS.length]}

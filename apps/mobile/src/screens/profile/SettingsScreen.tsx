@@ -20,25 +20,14 @@ import {
     Linking,
     Platform,
     Dimensions,
+    Animated,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import Animated, {
-    FadeIn,
-    FadeInDown,
-    FadeInUp,
-    SlideInRight,
-    ZoomIn,
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring,
-    withTiming,
-    interpolate,
-    runOnJS,
-} from 'react-native-reanimated';
+
 
 import { Avatar } from '@/components/common';
 import { useAuthStore } from '@/stores';
@@ -73,20 +62,19 @@ interface SettingSection {
 
 // ── Animated Row Component ───────────────────────────────────────
 
-const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 function SettingRow({ item, index, sectionDelay }: { item: SettingItem; index: number; sectionDelay: number }) {
-    const scale = useSharedValue(1);
-
-    const animStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: scale.value }],
-    }));
+    const scale = React.useRef(new Animated.Value(1)).current;
 
     const handlePressIn = () => {
-        scale.value = withSpring(0.97, { damping: 15, stiffness: 300 });
+        if (item.type !== 'toggle' && item.type !== 'info') {
+            Animated.spring(scale, { toValue: 0.97, friction: 5, tension: 300, useNativeDriver: true }).start();
+        }
     };
     const handlePressOut = () => {
-        scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+        if (item.type !== 'toggle' && item.type !== 'info') {
+            Animated.spring(scale, { toValue: 1, friction: 5, tension: 300, useNativeDriver: true }).start();
+        }
     };
 
     const handlePress = () => {
@@ -95,54 +83,56 @@ function SettingRow({ item, index, sectionDelay }: { item: SettingItem; index: n
     };
 
     return (
-        <AnimatedTouchable
-            style={[styles.settingRow, animStyle]}
-            activeOpacity={item.type === 'toggle' ? 1 : 0.7}
-            onPress={handlePress}
-            onPressIn={item.type !== 'toggle' && item.type !== 'info' ? handlePressIn : undefined}
-            onPressOut={item.type !== 'toggle' && item.type !== 'info' ? handlePressOut : undefined}
-            disabled={item.type === 'info'}
-        >
-            {/* Icon */}
-            <View style={[styles.settingIcon, { backgroundColor: item.iconBg }]}>
-                <Ionicons name={item.icon} size={18} color={item.iconColor} />
-            </View>
+        <Animated.View style={{ transform: [{ scale }] }}>
+            <TouchableOpacity
+                style={styles.settingRow}
+                activeOpacity={item.type === 'toggle' ? 1 : 0.7}
+                onPress={handlePress}
+                onPressIn={item.type !== 'toggle' && item.type !== 'info' ? handlePressIn : undefined}
+                onPressOut={item.type !== 'toggle' && item.type !== 'info' ? handlePressOut : undefined}
+                disabled={item.type === 'info'}
+            >
+                {/* Icon */}
+                <View style={[styles.settingIcon, { backgroundColor: item.iconBg }]}>
+                    <Ionicons name={item.icon} size={18} color={item.iconColor} />
+                </View>
 
-            {/* Label */}
-            <View style={styles.settingContent}>
-                <Text style={[styles.settingLabel, item.danger && styles.settingLabelDanger]}>
-                    {item.label}
-                </Text>
-                {item.sublabel && (
-                    <Text style={styles.settingSublabel} numberOfLines={1}>{item.sublabel}</Text>
+                {/* Label */}
+                <View style={styles.settingContent}>
+                    <Text style={[styles.settingLabel, item.danger && styles.settingLabelDanger]}>
+                        {item.label}
+                    </Text>
+                    {item.sublabel && (
+                        <Text style={styles.settingSublabel} numberOfLines={1}>{item.sublabel}</Text>
+                    )}
+                </View>
+
+                {/* Right Side */}
+                {item.type === 'toggle' && (
+                    <Switch
+                        value={item.value}
+                        onValueChange={item.onToggle}
+                        trackColor={{ false: '#E5E7EB', true: '#7DD3FC' }}
+                        thumbColor={item.value ? '#0EA5E9' : '#FAFAFA'}
+                        ios_backgroundColor="#E5E7EB"
+                        style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
+                    />
                 )}
-            </View>
-
-            {/* Right Side */}
-            {item.type === 'toggle' && (
-                <Switch
-                    value={item.value}
-                    onValueChange={item.onToggle}
-                    trackColor={{ false: '#E5E7EB', true: '#7DD3FC' }}
-                    thumbColor={item.value ? '#0EA5E9' : '#FAFAFA'}
-                    ios_backgroundColor="#E5E7EB"
-                    style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
-                />
-            )}
-            {item.type === 'navigate' && (
-                <View style={styles.chevronCircle}>
-                    <Ionicons name="chevron-forward" size={14} color="#C7D2FE" />
-                </View>
-            )}
-            {item.type === 'action' && !item.danger && (
-                <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
-            )}
-            {item.badge && (
-                <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{item.badge}</Text>
-                </View>
-            )}
-        </AnimatedTouchable>
+                {item.type === 'navigate' && (
+                    <View style={styles.chevronCircle}>
+                        <Ionicons name="chevron-forward" size={14} color="#C7D2FE" />
+                    </View>
+                )}
+                {item.type === 'action' && !item.danger && (
+                    <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+                )}
+                {item.badge && (
+                    <View style={styles.badge}>
+                        <Text style={styles.badgeText}>{item.badge}</Text>
+                    </View>
+                )}
+            </TouchableOpacity>
+        </Animated.View>
     );
 }
 
@@ -513,7 +503,7 @@ export default function SettingsScreen() {
     const ListHeader = useCallback(() => (
         <>
             {/* ─── Profile Card ─────────────────────────────────── */}
-            <Animated.View entering={FadeInDown.delay(50).duration(500).springify().damping(16)}>
+            <Animated.View>
                 <View style={styles.profileCard}>
                     {/* Top: Avatar + Info */}
                     <View style={styles.profileTop}>
@@ -583,7 +573,6 @@ export default function SettingsScreen() {
 
             {/* ─── Quick Stats Row ──────────────────────────────── */}
             <Animated.View
-                entering={FadeInDown.delay(120).duration(400).springify().damping(16)}
                 style={styles.quickStatsRow}
             >
                 <QuickStat icon="bookmark-outline" label="Bookmarks" color="#6366F1" onPress={() => navigation.navigate('Bookmarks')} />
@@ -596,7 +585,6 @@ export default function SettingsScreen() {
 
     const ListFooter = useCallback(() => (
         <Animated.View
-            entering={FadeInDown.delay(800).duration(500).springify()}
             style={styles.footer}
         >
             <View style={styles.footerLogoRow}>
@@ -615,7 +603,7 @@ export default function SettingsScreen() {
             <StatusBar barStyle="dark-content" />
 
             {/* Animated Header */}
-            <Animated.View entering={FadeIn.duration(300)}>
+            <Animated.View>
                 <SafeAreaView edges={['top']} style={styles.header}>
                     <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                         <Ionicons name="chevron-back" size={22} color="#1F2937" />

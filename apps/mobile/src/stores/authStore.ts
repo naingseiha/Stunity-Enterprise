@@ -97,10 +97,10 @@ export const useAuthStore = create<AuthState>()(
             return;
           }
 
-          // Verify token with backend (short timeout to avoid blocking app startup)
+          // Verify token with backend (longer timeout, resilient to network blips)
           try {
             const response = await authApi.get('/auth/verify', {
-              timeout: 5000,
+              timeout: 15000, // 15 seconds
               headers: { 'X-No-Retry': 'true' },
             });
 
@@ -116,9 +116,27 @@ export const useAuthStore = create<AuthState>()(
               });
               return;
             }
-          } catch (verifyError) {
-            console.warn('Auth: Token verification failed, clearing session');
-            await tokenService.clearTokens();
+          } catch (verifyError: any) {
+            // ONLY clear tokens if the server explicitly rejects the session (401/403)
+            // If it's a network error (no response) or 500, we keep the session active
+            // so the user can still access the app (using cached data of course)
+            const status = verifyError?.response?.status;
+            if (status === 401 || status === 403) {
+              console.warn('Auth: Token rejected by server, clearing session');
+              await tokenService.clearTokens();
+            } else {
+              console.warn('Auth: Network/Server error during verification, keeping session active');
+              // We'll keep the persisted user/auth state as the best guess
+              const state = get();
+              if (state.user) {
+                set({
+                  isAuthenticated: true,
+                  isLoading: false,
+                  isInitialized: true,
+                });
+                return;
+              }
+            }
           }
 
           set({

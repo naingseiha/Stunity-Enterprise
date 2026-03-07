@@ -15,11 +15,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  Alert,
-} from 'react-native';
+  Alert, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { format } from 'date-fns';
 
@@ -104,7 +103,7 @@ export default function SubmissionsListScreen() {
       : 0;
 
     return (
-      <Animated.View entering={FadeInDown.delay(100)} style={styles.statsCard}>
+      <Animated.View style={styles.statsCard}>
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{statistics.submittedCount}</Text>
@@ -153,7 +152,7 @@ export default function SubmissionsListScreen() {
     ];
 
     return (
-      <Animated.View entering={FadeInDown.delay(200)} style={styles.filterContainer}>
+      <Animated.View style={styles.filterContainer}>
         <ScrollView 
           horizontal 
           showsHorizontalScrollIndicator={false}
@@ -215,7 +214,6 @@ export default function SubmissionsListScreen() {
     return (
       <Animated.View
         key={submission.id}
-        entering={FadeInDown.delay(300 + index * 50)}
       >
         <TouchableOpacity
           style={styles.submissionCard}
@@ -273,7 +271,7 @@ export default function SubmissionsListScreen() {
   };
 
   const renderEmptyState = () => (
-    <Animated.View entering={FadeIn} style={styles.emptyState}>
+    <Animated.View style={styles.emptyState}>
       <Ionicons name="document-text-outline" size={64} color={Colors.gray[300]} />
       <Text style={styles.emptyTitle}>No submissions yet</Text>
       <Text style={styles.emptyMessage}>

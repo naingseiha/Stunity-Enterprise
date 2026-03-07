@@ -16,13 +16,10 @@ import {
   TouchableOpacity,
   LayoutAnimation,
   Platform,
-  UIManager,
-} from 'react-native';
+  UIManager, Animated} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import Animated, {
-  FadeIn,
-} from 'react-native-reanimated';
+
 import { LinearGradient } from 'expo-linear-gradient';
 
 // Enable LayoutAnimation on Android
@@ -145,13 +142,11 @@ export const PollVoting: React.FC<PollVotingProps> = ({
     return (
       <Animated.View
         key={option.id}
-        entering={FadeIn.duration(300)}
         style={styles.resultContainer}
       >
         <View style={[styles.resultPill, isHighlighted && { backgroundColor: colorSet.bg }]}>
           {/* Progress fill */}
           <Animated.View
-            entering={FadeIn.duration(400)}
             style={[styles.progressFill, { width: `${Math.max(percentage, 2)}%` }]}
           >
             <LinearGradient

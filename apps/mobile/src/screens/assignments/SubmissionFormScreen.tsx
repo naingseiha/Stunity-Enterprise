@@ -16,11 +16,10 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  ActionSheetIOS,
-} from 'react-native';
+  ActionSheetIOS, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -236,7 +235,7 @@ export default function SubmissionFormScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Instructions */}
-          <Animated.View entering={FadeInDown.delay(100)} style={styles.instructionCard}>
+          <Animated.View style={styles.instructionCard}>
             <Ionicons name="information-circle" size={20} color={Colors.primary} />
             <Text style={styles.instructionText}>
               Write your answer below or attach files. You can do both.
@@ -244,7 +243,7 @@ export default function SubmissionFormScreen() {
           </Animated.View>
 
           {/* Text Content */}
-          <Animated.View entering={FadeInDown.delay(150)} style={styles.contentSection}>
+          <Animated.View style={styles.contentSection}>
             <Text style={styles.sectionLabel}>Your Answer</Text>
             <TextInput
               style={styles.contentInput}
@@ -260,7 +259,7 @@ export default function SubmissionFormScreen() {
           </Animated.View>
 
           {/* Attachments */}
-          <Animated.View entering={FadeInDown.delay(200)} style={styles.attachmentsSection}>
+          <Animated.View style={styles.attachmentsSection}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionLabel}>Attachments</Text>
               <TouchableOpacity
@@ -318,7 +317,7 @@ export default function SubmissionFormScreen() {
           </Animated.View>
 
           {/* Guidelines */}
-          <Animated.View entering={FadeInDown.delay(250)} style={styles.guidelinesCard}>
+          <Animated.View style={styles.guidelinesCard}>
             <Text style={styles.guidelinesTitle}>Submission Guidelines</Text>
             <View style={styles.guidelineItem}>
               <Ionicons name="checkmark-circle" size={16} color="#10B981" />

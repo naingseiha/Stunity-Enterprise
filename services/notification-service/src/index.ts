@@ -18,7 +18,18 @@ const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split('
 
 app.use(cors({
   origin: (origin, callback) => {
-  }
+    // Allow all origins in production if CORS_ORIGIN is set to *
+    if (process.env.CORS_ORIGIN === '*') return callback(null, true);
+
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 200, standardHeaders: true, legacyHeaders: false, message: { success: false, error: 'Too many requests' } }));

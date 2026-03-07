@@ -24,7 +24,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeIn, FadeOut, Layout, SlideInRight, SlideOutLeft } from 'react-native-reanimated';
+
 import * as Haptics from 'expo-haptics';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { quizService } from '@/services';
@@ -451,10 +451,8 @@ export function TakeQuizScreen() {
 
         {/* Question Content */}
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          <Animated.View
+          <RNAnimated.View
             key={currentQuestion.id}
-            entering={SlideInRight.duration(300)}
-            exiting={SlideOutLeft.duration(300)}
             style={styles.questionCard}
           >
             {/* Question Header */}
@@ -688,7 +686,7 @@ export function TakeQuizScreen() {
               )}
 
             </View>
-          </Animated.View>
+          </RNAnimated.View>
 
           {/* Answer Status Grid */}
           <View style={styles.answerGrid}>

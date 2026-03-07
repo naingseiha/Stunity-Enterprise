@@ -10,7 +10,7 @@ import {
     Dimensions,
     StatusBar,
     Platform
-} from 'react-native';
+, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
@@ -18,7 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '@/stores';
 import { Colors, Typography, Shadows } from '@/config';
 import { useNavigation } from '@react-navigation/native';
-import Animated, { FadeInUp, FadeInDown, ZoomIn } from 'react-native-reanimated';
+
 import * as Haptics from 'expo-haptics';
 import { attendanceService } from '@/services/attendance';
 
@@ -75,7 +75,6 @@ const SessionCard = ({
 
     return (
         <Animated.View
-            entering={FadeInUp.delay(session === 'MORNING' ? 100 : 200).duration(600)}
             style={[
                 styles.sessionCard,
                 isCurrent && styles.currentSessionCard,
@@ -317,7 +316,7 @@ export const AttendanceCheckInScreen = () => {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    <Animated.View entering={FadeInDown.duration(800)} style={styles.headerContent}>
+                    <Animated.View style={styles.headerContent}>
                         <Text style={styles.dateDisplay}>
                             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                         </Text>
@@ -327,7 +326,7 @@ export const AttendanceCheckInScreen = () => {
                         </View>
                     </Animated.View>
 
-                    <Animated.View entering={FadeInDown.delay(200).duration(800)}>
+                    <Animated.View>
                         <WeeklyStrip />
                     </Animated.View>
 
@@ -347,7 +346,7 @@ export const AttendanceCheckInScreen = () => {
                         isCurrent={!isMorningActual}
                     />
 
-                    <Animated.View entering={FadeInUp.delay(350)} style={styles.reportActionCard}>
+                    <Animated.View style={styles.reportActionCard}>
                         <View style={styles.reportIconBg}>
                             <Ionicons name="bar-chart" size={22} color="#0D9488" />
                         </View>
@@ -366,7 +365,7 @@ export const AttendanceCheckInScreen = () => {
                         </TouchableOpacity>
                     </Animated.View>
 
-                    <Animated.View entering={FadeInUp.delay(400)} style={styles.infoCard}>
+                    <Animated.View style={styles.infoCard}>
                         <Ionicons name="shield-checkmark-outline" size={24} color="#0D9488" />
                         <Text style={styles.infoText}>
                             Enterprise Geofencing Active. Your location is only recorded during check-in/out for verification.

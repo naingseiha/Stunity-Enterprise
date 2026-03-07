@@ -19,12 +19,11 @@ import {
   StatusBar,
   FlatList,
   RefreshControl,
-  ActivityIndicator,
-} from 'react-native';
+  ActivityIndicator, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
+
 import { useNavigation } from '@react-navigation/native';
 
 import StunityLogo from '../../../assets/Stunity.svg';
@@ -133,7 +132,6 @@ export default function ClubsScreen() {
 
     return (
       <Animated.View
-        entering={FadeInDown.delay(index * 50).springify()}
         style={styles.clubCard}
       >
         <TouchableOpacity
@@ -249,7 +247,7 @@ export default function ClubsScreen() {
       <View style={styles.headerDivider} />
 
       {/* Filter Tabs — Circle style matching course screen */}
-      <Animated.View entering={FadeInDown.duration(300)} style={styles.filterSection}>
+      <Animated.View style={styles.filterSection}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -264,7 +262,7 @@ export default function ClubsScreen() {
               discover: { label: 'Discover', icon: 'compass' as const, color: '#6366F1', bg: '#EEF2FF' },
             }[filter];
             return (
-              <Animated.View key={filter} entering={FadeInRight.delay(50 * index).duration(300)}>
+              <Animated.View key={filter}>
                 <TouchableOpacity
                   style={styles.tabCircleItem}
                   onPress={() => setSelectedFilter(filter)}
@@ -299,7 +297,7 @@ export default function ClubsScreen() {
           {CLUB_TYPES.map((type, index) => {
             const isActive = selectedType === type.id;
             return (
-              <Animated.View key={type.id} entering={FadeInRight.delay(50 * (index + 3)).duration(300)}>
+              <Animated.View key={type.id}>
                 <TouchableOpacity
                   style={styles.tabCircleItem}
                   onPress={() => setSelectedType(isActive ? 'all' : type.id)}

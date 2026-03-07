@@ -32,6 +32,7 @@ import {
   Moon,
   Sun,
   Gamepad2,
+  LayoutDashboard,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import AcademicYearSelector from './AcademicYearSelector';
@@ -586,20 +587,22 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
 
       {/* School Context Sidebar - Clean, scannable */}
       {isSchoolContext && (
-        <aside className="hidden lg:block fixed left-0 top-14 w-64 h-[calc(100vh-3.5rem)] bg-white dark:bg-gray-900 border-r border-slate-200/80 dark:border-gray-800 overflow-y-auto z-40">
-          <div className="py-4 px-3 space-y-6">
-            <p className="px-3 py-1 text-[11px] font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">
-              School Management
-            </p>
+        <aside className="hidden lg:block fixed left-0 top-14 w-64 h-[calc(100vh-3.5rem)] bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 overflow-y-auto z-40 transition-all duration-300">
+          <div className="py-6 px-4 space-y-8">
+            <div className="px-3">
+              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">
+                Stunity Enterprise
+              </p>
+            </div>
+
             {schoolMenuSections.map((section) => (
-              <div key={section.label} className="space-y-0.5">
-                <p className="px-3 py-1.5 text-[11px] font-medium text-slate-400 dark:text-gray-500 uppercase tracking-wider">
+              <div key={section.label} className="space-y-1.5">
+                <p className="px-3 py-1 text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest">
                   {section.label}
                 </p>
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   const isActive = optimisticPath ? optimisticPath === item.path : pathname === item.path;
-                  const isHovered = activeHover === item.path;
                   const isNavigating = optimisticPath === item.path && pathname !== item.path;
 
                   return (
@@ -607,29 +610,19 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                       key={item.path}
                       href={item.path}
                       prefetch={true}
-                      onClick={(e) => {
-                        setOptimisticPath(item.path);
-                        handleLinkHover(item.prefetch);
-                      }}
-                      onMouseEnter={() => {
-                        setActiveHover(item.path);
-                        handleLinkHover(item.prefetch);
-                      }}
-                      onMouseLeave={() => setActiveHover(null)}
+                      onClick={() => setOptimisticPath(item.path)}
                       className={`
-                        flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150
+                        flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-300
                         ${isActive
-                          ? 'text-stunity-primary-600 dark:text-stunity-primary-400 bg-stunity-primary-50 dark:bg-stunity-primary-900/20'
-                          : isHovered
-                            ? 'text-slate-900 dark:text-white bg-slate-50 dark:bg-gray-800/80'
-                            : 'text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50/80 dark:hover:bg-gray-800/50'
+                          ? 'text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20 shadow-sm'
+                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50'
                         }
                       `}
                     >
-                      <Icon className={`w-4 h-4 flex-shrink-0 transition-colors ${isActive ? 'text-stunity-primary-500' : ''}`} />
-                      <span className="flex-1 truncate">{item.name}</span>
+                      <Icon className={`w-4 h-4 flex-shrink-0 transition-colors ${isActive ? 'text-blue-600' : ''}`} />
+                      <span className="flex-1 truncate tracking-tight">{item.name}</span>
                       {isNavigating && (
-                        <Loader2 className="w-3.5 h-3.5 flex-shrink-0 animate-spin text-stunity-primary-500" />
+                        <Loader2 className="w-3.5 h-3.5 flex-shrink-0 animate-spin text-blue-500" />
                       )}
                     </Link>
                   );

@@ -157,6 +157,7 @@ const generalLimiter = rateLimit({
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: { success: false, error: 'Too many requests, please try again later' },
 });
 
@@ -166,6 +167,7 @@ const writeLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: { success: false, error: 'Too many write requests, slow down' },
 });
 
@@ -174,6 +176,7 @@ const uploadLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: { success: false, error: 'Upload limit reached, try again later' },
 });
 
@@ -189,10 +192,10 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow all origins in production if CORS_ORIGIN is set to *
     if (process.env.CORS_ORIGIN === '*') return callback(null, true);
-    
+
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
-    
+
     if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error(`CORS: origin ${origin} not allowed`));
   },
@@ -206,8 +209,6 @@ app.use(helmet({
   contentSecurityPolicy: false, // CSP handled at reverse proxy level
   crossOriginEmbedderPolicy: false, // Allow media embeds
 }));
-app.use(hpp()); // HTTP Parameter Pollution protection
-
 app.use(generalLimiter);
 
 // ─── HTTP Compression (Phase 1 Optimization) ───────────────────────
@@ -228,8 +229,11 @@ app.use(compression({
 app.use(performanceMonitoring);
 app.use(requestSizeTracking);
 
-app.use(express.json({ limit: '5mb' }));
-app.use(express.urlencoded({ limit: '5mb', extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Apply HPP *after* body parsers so it doesn't try to buffer multipart binary streams
+app.use(hpp());
 
 // ─── Health Check ──────────────────────────────────────────────────
 app.get('/health', async (_req: Request, res: Response) => {

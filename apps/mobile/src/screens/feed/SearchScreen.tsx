@@ -19,8 +19,7 @@ import {
     TextInput,
     ActivityIndicator,
     Keyboard,
-    Platform,
-} from 'react-native';
+    Platform, Animated} from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,7 +27,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Avatar } from '@/components/common';
@@ -161,7 +160,7 @@ export default function SearchScreen() {
         const isPoll = item.postType === 'POLL';
 
         return (
-            <Animated.View entering={FadeInDown.delay(30 * Math.min(index, 10)).duration(300)}>
+            <Animated.View>
                 <TouchableOpacity
                     style={styles.postResultCard}
                     activeOpacity={0.9}
@@ -276,7 +275,7 @@ export default function SearchScreen() {
     const renderUserResult = ({ item, index }: { item: SearchUser; index: number }) => {
         const name = `${item.firstName} ${item.lastName}`;
         return (
-            <Animated.View entering={FadeInDown.delay(30 * Math.min(index, 10)).duration(300)}>
+            <Animated.View>
                 <TouchableOpacity
                     style={styles.userResultCard}
                     activeOpacity={0.9}
@@ -313,7 +312,7 @@ export default function SearchScreen() {
 
         if (hasSearched) {
             return (
-                <Animated.View entering={FadeIn.duration(400)} style={styles.emptyContainer}>
+                <Animated.View style={styles.emptyContainer}>
                     <View style={styles.emptyIconContainer}>
                         <Ionicons name="search" size={48} color="#D1D5DB" />
                     </View>
@@ -344,7 +343,6 @@ export default function SearchScreen() {
                         {recentSearches.map((term, index) => (
                             <Animated.View
                                 key={term}
-                                entering={FadeInDown.delay(30 * index).duration(300)}
                             >
                                 <TouchableOpacity
                                     style={styles.recentItem}

@@ -7,11 +7,10 @@ import {
     TouchableOpacity,
     FlatList,
     ActivityIndicator,
-    Platform,
-} from 'react-native';
+    Platform, Animated} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInUp, SlideInDown, Layout } from 'react-native-reanimated';
+
 import { Image } from 'expo-image';
 import { BlurView } from 'expo-blur';
 import { formatDistanceToNow } from 'date-fns';
@@ -56,8 +55,6 @@ export const QuizAnalyticsModal: React.FC<Props> = ({
 
     const renderAttempt = ({ item, index }: { item: any, index: number }) => (
         <Animated.View
-            entering={FadeInUp.delay(index * 100).springify()}
-            layout={Layout.springify()}
             style={styles.attemptCard}
         >
             <View style={styles.attemptHeader}>
@@ -108,7 +105,7 @@ export const QuizAnalyticsModal: React.FC<Props> = ({
             onRequestClose={onClose}
         >
             <View style={styles.overlay}>
-                <Animated.View entering={SlideInDown.springify()} style={styles.modalContent}>
+                <Animated.View style={styles.modalContent}>
                     {/* Header */}
                     <View style={styles.header}>
                         <View style={styles.handle} />

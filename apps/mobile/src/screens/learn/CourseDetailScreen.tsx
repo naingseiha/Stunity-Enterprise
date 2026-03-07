@@ -20,21 +20,15 @@ import {
   Dimensions,
   StatusBar,
   Platform,
+  ScrollView,
+  Animated,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
-import Animated, {
-  FadeInDown,
-  FadeInRight,
-  useAnimatedScrollHandler,
-  useSharedValue,
-  useAnimatedStyle,
-  interpolate,
-  Extrapolate,
-} from 'react-native-reanimated';
+
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 
@@ -132,29 +126,37 @@ export default function CourseDetailScreen() {
   const [expandedSections, setExpandedSections] = useState<string[]>(['1']);
   const [isFavorited, setIsFavorited] = useState(false);
 
-  const scrollY = useSharedValue(0);
-  const scrollViewRef = useRef<Animated.ScrollView>(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      scrollY.value = event.contentOffset.y;
-    },
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    { useNativeDriver: false }
+  );
+
+  const headerHeight = scrollY.interpolate({
+    inputRange: [0, HEADER_HEIGHT],
+    outputRange: [HEADER_HEIGHT, insets.top + 60],
+    extrapolate: 'clamp',
   });
 
-  const headerStyle = useAnimatedStyle(() => ({
-    height: interpolate(scrollY.value, [0, HEADER_HEIGHT], [HEADER_HEIGHT, insets.top + 60], Extrapolate.CLAMP),
-  }));
+  const imageOpacity = scrollY.interpolate({
+    inputRange: [0, HEADER_HEIGHT / 2],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
 
-  const imageStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollY.value, [0, HEADER_HEIGHT / 2], [1, 0], Extrapolate.CLAMP),
-    transform: [
-      { scale: interpolate(scrollY.value, [-100, 0], [1.2, 1], Extrapolate.CLAMP) },
-    ],
-  }));
+  const imageScale = scrollY.interpolate({
+    inputRange: [-100, 0],
+    outputRange: [1.2, 1],
+    extrapolate: 'clamp',
+  });
 
-  const headerTitleStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollY.value, [HEADER_HEIGHT - 100, HEADER_HEIGHT - 50], [0, 1], Extrapolate.CLAMP),
-  }));
+  const headerTitleOpacity = scrollY.interpolate({
+    inputRange: [HEADER_HEIGHT - 100, HEADER_HEIGHT - 50],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
 
   const handleBack = () => navigation.goBack();
 
@@ -201,9 +203,9 @@ export default function CourseDetailScreen() {
 
   // ── About Tab ──
   const renderAbout = () => (
-    <Animated.View entering={FadeInDown.duration(400)} style={styles.tabContent}>
+    <Animated.View style={styles.tabContent}>
       {/* Quick Stats Row */}
-      <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+      <Animated.View>
         <View style={styles.quickStatsRow}>
           <View style={styles.quickStat}>
             <View style={[styles.quickStatIconBg, { backgroundColor: '#E8F0FE' }]}>
@@ -237,7 +239,7 @@ export default function CourseDetailScreen() {
       </Animated.View>
 
       {/* Description */}
-      <Animated.View entering={FadeInDown.delay(200).duration(400)}>
+      <Animated.View>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>What you'll learn</Text>
           <Text style={styles.description}>{SAMPLE_COURSE.description}</Text>
@@ -253,7 +255,7 @@ export default function CourseDetailScreen() {
       </Animated.View>
 
       {/* Instructor */}
-      <Animated.View entering={FadeInDown.delay(300).duration(400)}>
+      <Animated.View>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Instructor</Text>
           <View style={styles.instructorCard}>
@@ -308,7 +310,7 @@ export default function CourseDetailScreen() {
       </Animated.View>
 
       {/* Course Info Grid */}
-      <Animated.View entering={FadeInDown.delay(400).duration(400)}>
+      <Animated.View>
         <View style={styles.infoGrid}>
           <View style={styles.infoItem}>
             <View style={[styles.infoIconBg, { backgroundColor: '#E8F0FE' }]}>
@@ -338,7 +340,7 @@ export default function CourseDetailScreen() {
 
   // ── Curriculum Tab ──
   const renderCurriculum = () => (
-    <Animated.View entering={FadeInDown.duration(400)} style={styles.tabContent}>
+    <Animated.View style={styles.tabContent}>
       <View style={styles.curriculumHeader}>
         <View style={styles.curriculumStatsRow}>
           <View style={[styles.curriculumStatBadge, { backgroundColor: '#E8F0FE' }]}>
@@ -367,7 +369,6 @@ export default function CourseDetailScreen() {
         return (
           <Animated.View
             key={section.id}
-            entering={FadeInDown.delay(80 * index).duration(400)}
           >
             <View style={styles.accordionItem}>
               <TouchableOpacity
@@ -448,9 +449,9 @@ export default function CourseDetailScreen() {
 
   // ── Reviews Tab ──
   const renderReviews = () => (
-    <Animated.View entering={FadeInDown.duration(400)} style={styles.tabContent}>
+    <Animated.View style={styles.tabContent}>
       {/* Review Summary */}
-      <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+      <Animated.View>
         <View style={styles.reviewSummary}>
           <View style={styles.reviewScoreContainer}>
             <Text style={styles.reviewScore}>{SAMPLE_COURSE.rating}</Text>
@@ -471,7 +472,6 @@ export default function CourseDetailScreen() {
       {SAMPLE_COURSE.reviews.map((review, index) => (
         <Animated.View
           key={review.id}
-          entering={FadeInDown.delay(150 + 80 * index).duration(400)}
         >
           <View style={styles.reviewCard}>
             <View style={styles.reviewHeader}>
@@ -506,8 +506,8 @@ export default function CourseDetailScreen() {
       <StatusBar barStyle="light-content" />
 
       {/* Animated Sticky Header */}
-      <Animated.View style={[styles.stickyHeader, headerStyle]}>
-        <Animated.View style={[styles.stickyHeaderImageContainer, imageStyle]}>
+      <Animated.View style={[styles.stickyHeader, { height: headerHeight }]}>
+        <Animated.View style={[styles.stickyHeaderImageContainer, { opacity: imageOpacity, transform: [{ scale: imageScale }] }]}>
           <Image source={{ uri: SAMPLE_COURSE.thumbnail }} style={styles.stickyHeaderImage} contentFit="cover" />
           <LinearGradient
             colors={['rgba(79,70,229,0.1)', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.85)']}
@@ -524,7 +524,7 @@ export default function CourseDetailScreen() {
             </BlurView>
           </TouchableOpacity>
 
-          <Animated.Text style={[styles.headerTitle, headerTitleStyle]} numberOfLines={1}>
+          <Animated.Text style={[styles.headerTitle, { opacity: headerTitleOpacity }]} numberOfLines={1}>
             {SAMPLE_COURSE.title}
           </Animated.Text>
 
@@ -547,7 +547,7 @@ export default function CourseDetailScreen() {
         </SafeAreaView>
 
         {/* Hero Content */}
-        <Animated.View style={[styles.heroContent, imageStyle]}>
+        <Animated.View style={[styles.heroContent, { opacity: imageOpacity }]}>
           <View style={styles.badgeContainer}>
             <LinearGradient
               colors={['#1A73E8', '#1557B0']}
@@ -567,9 +567,9 @@ export default function CourseDetailScreen() {
       </Animated.View>
 
       {/* Main Content */}
-      <Animated.ScrollView
+      <ScrollView
         ref={scrollViewRef}
-        onScroll={scrollHandler}
+        onScroll={handleScroll}
         scrollEventThrottle={16}
         contentContainerStyle={{ paddingTop: HEADER_HEIGHT }}
         showsVerticalScrollIndicator={false}
@@ -581,7 +581,7 @@ export default function CourseDetailScreen() {
           {activeTab === 'reviews' && renderReviews()}
           <View style={{ height: 120 }} />
         </View>
-      </Animated.ScrollView>
+      </ScrollView>
 
       {/* Sticky Bottom Bar */}
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom || 20 }]}>

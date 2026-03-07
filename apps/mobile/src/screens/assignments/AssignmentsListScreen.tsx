@@ -12,11 +12,10 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
-  ActivityIndicator,
-} from 'react-native';
+  ActivityIndicator, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { format, isPast, isFuture } from 'date-fns';
 
@@ -118,7 +117,6 @@ export default function AssignmentsListScreen() {
 
     return (
       <Animated.View
-        entering={FadeInDown.delay(index * 50).duration(400)}
         style={styles.assignmentCard}
       >
         <TouchableOpacity

@@ -4,13 +4,13 @@ import { Poppins, Inter } from 'next/font/google';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import ClientProviders from '@/components/ClientProviders';
 
-const poppins = Poppins({ 
+const poppins = Poppins({
   weight: ['400', '500', '600', '700'],
   subsets: ['latin'],
   variable: '--font-poppins',
 });
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
 });
@@ -34,7 +34,7 @@ export default async function LocaleLayout({
         />
         <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Koulen&family=Moul&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-poppins bg-gradient-to-br from-stunity-primary-50 via-white to-stunity-primary-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950 min-h-screen text-gray-900 dark:text-gray-100 transition-colors">
+      <body className="font-poppins bg-slate-50 dark:bg-gray-900 min-h-screen text-gray-900 dark:text-gray-100 transition-colors">
         <NextIntlClientProvider messages={messages}>
           <ClientProviders>
             {children}

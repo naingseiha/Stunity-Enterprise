@@ -13,10 +13,9 @@ import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
-  Alert,
-} from 'react-native';
+  Alert, Animated} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
+
 import * as Haptics from 'expo-haptics';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -233,7 +232,7 @@ export function QuizResultsScreen() {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Score Card */}
-        <Animated.View entering={ZoomIn.duration(500).delay(100)} style={styles.scoreCard}>
+        <Animated.View style={styles.scoreCard}>
           <LinearGradient
             colors={isPassed ? ['#10B981', '#059669'] : ['#EF4444', '#DC2626']}
             style={styles.scoreGradient}
@@ -258,7 +257,7 @@ export function QuizResultsScreen() {
         </Animated.View>
 
         {/* Summary Stats */}
-        <Animated.View entering={FadeInDown.duration(500).delay(300)} style={styles.summaryCard}>
+        <Animated.View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>Summary</Text>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
@@ -289,14 +288,14 @@ export function QuizResultsScreen() {
 
         {/* XP Gain Animation */}
         {xpGained > 0 && (
-          <Animated.View entering={FadeInDown.duration(500).delay(500)}>
+          <Animated.View>
             <XPGainAnimation xpGained={xpGained} delay={500} />
           </Animated.View>
         )}
 
         {/* Streak Notification */}
         {streakIncreased && (
-          <Animated.View entering={FadeInDown.duration(500).delay(700)} style={styles.streakCard}>
+          <Animated.View style={styles.streakCard}>
             <LinearGradient
               colors={['#ef4444', '#dc2626']}
               start={{ x: 0, y: 0 }}
@@ -313,7 +312,7 @@ export function QuizResultsScreen() {
         )}
 
         {/* Performance Breakdown */}
-        <Animated.View entering={FadeInDown.duration(500).delay(900)}>
+        <Animated.View>
           <PerformanceBreakdown
             correctCount={correctCount}
             totalQuestions={quiz.questions.length}
@@ -322,7 +321,7 @@ export function QuizResultsScreen() {
         </Animated.View>
 
         {/* Action Buttons */}
-        <Animated.View entering={FadeInDown.duration(500).delay(1100)} style={styles.actionsCard}>
+        <Animated.View style={styles.actionsCard}>
           <Text style={styles.actionsTitle}>What's Next?</Text>
           
           <TouchableOpacity
@@ -375,7 +374,7 @@ export function QuizResultsScreen() {
         </Animated.View>
 
         {/* Questions Review */}
-        <Animated.View entering={FadeInDown.duration(500).delay(500)} style={styles.reviewSection}>
+        <Animated.View style={styles.reviewSection}>
           <View style={styles.reviewHeader}>
             <Ionicons name="list-outline" size={20} color="#6366F1" />
             <Text style={styles.reviewTitle}>Review Answers</Text>
@@ -384,7 +383,6 @@ export function QuizResultsScreen() {
           {results.map((result, index) => (
             <Animated.View
               key={result.question.id}
-              entering={FadeInDown.duration(400).delay(600 + index * 50)}
               style={[
                 styles.questionReviewCard,
                 result.isCorrect
@@ -457,7 +455,7 @@ export function QuizResultsScreen() {
         </Animated.View>
 
         {/* Actions */}
-        <Animated.View entering={FadeInDown.duration(500).delay(800)} style={styles.actionsContainer}>
+        <Animated.View style={styles.actionsContainer}>
           <TouchableOpacity
             onPress={() => navigation.navigate('Feed')}
             style={styles.actionButtonPrimary}

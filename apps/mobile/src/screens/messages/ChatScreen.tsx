@@ -20,12 +20,11 @@ import {
   StatusBar,
   ActivityIndicator,
   Alert,
-  ActionSheetIOS,
-} from 'react-native';
+  ActionSheetIOS, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeInUp, SlideInRight, FadeOut } from 'react-native-reanimated';
+
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 
@@ -244,7 +243,6 @@ export default function ChatScreen() {
 
     return (
       <Animated.View
-        entering={FadeInUp.delay(50 * Math.min(index, 5)).duration(300)}
         style={[
           styles.messageRow,
           isMe && styles.myMessageRow,
@@ -334,7 +332,7 @@ export default function ChatScreen() {
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}
-      <Animated.View entering={FadeIn.duration(300)} style={styles.header}>
+      <Animated.View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
@@ -401,14 +399,14 @@ export default function ChatScreen() {
 
         {/* Typing Indicator */}
         {typingText && (
-          <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.typingIndicator}>
+          <Animated.View style={styles.typingIndicator}>
             <Text style={styles.typingText}>{typingText}</Text>
           </Animated.View>
         )}
 
         {/* Reply/Edit Banner */}
         {(replyTo || editingMessage) && (
-          <Animated.View entering={FadeIn.duration(200)} style={styles.replyBanner}>
+          <Animated.View style={styles.replyBanner}>
             <View style={styles.replyBannerBar} />
             <View style={styles.replyBannerContent}>
               <Text style={styles.replyBannerTitle}>
@@ -425,7 +423,7 @@ export default function ChatScreen() {
         )}
 
         {/* Input Area */}
-        <Animated.View entering={SlideInRight.duration(300)} style={styles.inputContainer}>
+        <Animated.View style={styles.inputContainer}>
           <TouchableOpacity style={styles.attachButton} onPress={handlePickImage}>
             <Ionicons name="image-outline" size={24} color={Colors.gray[500]} />
           </TouchableOpacity>

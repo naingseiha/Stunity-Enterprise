@@ -44,7 +44,9 @@ class NetworkService {
   }
 
   private checkConnected(state: NetInfoState): boolean {
-    return state.isConnected === true && state.isInternetReachable !== false;
+    // isInternetReachable can be flaky on some Android devices (null or false erroneously)
+    // we trust isConnected more for the baseline status
+    return state.isConnected === true;
   }
 
   private handleNetworkChange(state: NetInfoState) {
@@ -107,7 +109,7 @@ class NetworkService {
         console.log(`❌ Retry failed: ${request.method} ${request.url}`);
         // If still failing, could re-queue, but let's not for now
       }
-      
+
       // Small delay between retries to avoid overwhelming the server
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
@@ -117,7 +119,7 @@ class NetworkService {
   }
 
   // Public methods
-  
+
   public getStatus(): boolean {
     return this.isConnected;
   }
@@ -135,7 +137,7 @@ class NetworkService {
     }
 
     this.requestQueue.push(request);
-    
+
     if (__DEV__) {
       console.log(`📥 Queued request: ${request.method} ${request.url}`);
     }

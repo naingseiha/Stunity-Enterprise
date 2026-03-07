@@ -17,12 +17,11 @@ import {
     TouchableOpacity,
     RefreshControl,
     StatusBar,
-    Platform,
-} from 'react-native';
+    Platform, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+
 
 import { useNotificationStore } from '@/stores/notificationStore';
 import { Avatar, EmptyState } from '@/components/common';
@@ -100,7 +99,7 @@ export default function NotificationsScreen() {
         const icon = getNotificationIcon(item.type);
 
         return (
-            <Animated.View entering={FadeInDown.delay(30 * Math.min(index, 10)).duration(250)}>
+            <Animated.View>
                 <TouchableOpacity
                     style={[
                         styles.notificationItem,

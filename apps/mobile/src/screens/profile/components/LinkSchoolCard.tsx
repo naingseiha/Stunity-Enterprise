@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator , Animated} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+
 import { useAuthStore } from '@/stores';
 
 export function LinkSchoolCard() {
@@ -36,7 +36,7 @@ export function LinkSchoolCard() {
     };
 
     return (
-        <Animated.View entering={FadeIn.delay(200).duration(400)} style={styles.card}>
+        <Animated.View style={styles.card}>
             <View style={styles.header}>
                 <View style={styles.iconContainer}>
                     <Ionicons name="school" size={20} color="#0EA5E9" />
@@ -88,13 +88,13 @@ export function LinkSchoolCard() {
             </View>
 
             {errorMsg ? (
-                <Animated.Text entering={SlideInDown.duration(200)} style={styles.errorText}>
+                <Animated.Text style={styles.errorText}>
                     {errorMsg}
                 </Animated.Text>
             ) : null}
 
             {successMsg ? (
-                <Animated.Text entering={SlideInDown.duration(200)} style={styles.successText}>
+                <Animated.Text style={styles.successText}>
                     {successMsg}
                 </Animated.Text>
             ) : null}

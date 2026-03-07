@@ -14,12 +14,11 @@ import {
     TouchableOpacity,
     TextInput,
     StatusBar,
-    ActivityIndicator,
-} from 'react-native';
+    ActivityIndicator, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+
 
 import { Avatar } from '@/components/common';
 import { useMessagingStore, useAuthStore } from '@/stores';
@@ -95,7 +94,7 @@ export default function NewMessageScreen() {
     }, [navigation, startConversation]);
 
     const renderContact = ({ item, index }: { item: ContactItem; index: number }) => (
-        <Animated.View entering={FadeInDown.delay(20 * Math.min(index, 10)).duration(300)}>
+        <Animated.View>
             <TouchableOpacity
                 style={styles.contactRow}
                 onPress={() => handleContactPress(item)}

@@ -1,23 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { statsAPI, Streak } from '@/services/stats';
-import Animated, {
-  useAnimatedStyle,
-  withRepeat,
-  withSequence,
-  withTiming,
-  useSharedValue,
-  withSpring,
-  Easing
-} from 'react-native-reanimated';
 
 interface StreakWidgetProps {
   userId: string;
@@ -34,8 +26,8 @@ export const StreakWidget: React.FC<StreakWidgetProps> = ({
   const [loading, setLoading] = useState(true);
 
   // Animation values
-  const flameScale = useSharedValue(1);
-  const glowOpacity = useSharedValue(0.5);
+  const flameScale = useRef(new Animated.Value(1)).current;
+  const glowOpacity = useRef(new Animated.Value(0.5)).current;
 
   useEffect(() => {
     loadStreak();
@@ -43,24 +35,27 @@ export const StreakWidget: React.FC<StreakWidgetProps> = ({
 
   useEffect(() => {
     // Pulsing Flame Animation
-    flameScale.value = withRepeat(
-      withSequence(
-        withTiming(1.1, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      true
+    const flameAnim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(flameScale, { toValue: 1.1, duration: 1000, useNativeDriver: true }),
+        Animated.timing(flameScale, { toValue: 1, duration: 1000, useNativeDriver: true }),
+      ])
     );
+    flameAnim.start();
 
     // Glow pulsing
-    glowOpacity.value = withRepeat(
-      withSequence(
-        withTiming(0.8, { duration: 1500 }),
-        withTiming(0.4, { duration: 1500 })
-      ),
-      -1,
-      true
+    const glowAnim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowOpacity, { toValue: 0.8, duration: 1500, useNativeDriver: true }),
+        Animated.timing(glowOpacity, { toValue: 0.4, duration: 1500, useNativeDriver: true }),
+      ])
     );
+    glowAnim.start();
+
+    return () => {
+      flameAnim.stop();
+      glowAnim.stop();
+    };
   }, []);
 
   const loadStreak = async () => {
@@ -69,19 +64,6 @@ export const StreakWidget: React.FC<StreakWidgetProps> = ({
       setStreak(data);
     } catch (error) {
       console.error('Failed to load streak:', error);
-      // Mock data for demo if API fails
-      /*
-      setStreak({
-        id: '1',
-        userId: userId,
-        currentStreak: 5,
-        longestStreak: 12,
-        lastQuizDate: new Date().toISOString(),
-        freezesAvailable: 2,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-      */
     } finally {
       setLoading(false);
     }
@@ -89,23 +71,13 @@ export const StreakWidget: React.FC<StreakWidgetProps> = ({
 
   if (loading || !streak) {
     return null;
-    // Or return a skeleton loader if preferred
   }
 
   const isActive = streak.currentStreak > 0;
-  const isOnFire = streak.currentStreak >= 3; // "On Fire" threshold
+  const isOnFire = streak.currentStreak >= 3;
 
-  const flameAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: flameScale.value }],
-    };
-  });
-
-  const glowAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: glowOpacity.value,
-    };
-  });
+  const flameAnimatedStyle = { transform: [{ scale: flameScale }] };
+  const glowAnimatedStyle = { opacity: glowOpacity };
 
   if (compact) {
     return (
@@ -194,10 +166,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     gap: 4,
     shadowColor: '#000',
-    
-    
+
+
     shadowRadius: 2,
-    
+
   },
   compactFlame: {
     fontSize: 16,
@@ -212,11 +184,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
     shadowColor: '#F97316',
-    
+
     shadowOpacity: 0.2,
-    
-    
-    
+
+
+
     borderColor: 'rgba(255,255,255,0.1)',
   },
   glowContainer: {
@@ -245,7 +217,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    
+
     borderColor: 'rgba(255,255,255,0.3)',
   },
   flameEmoji: {

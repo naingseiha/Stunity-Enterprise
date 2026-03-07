@@ -1,6 +1,6 @@
 generator client {
   provider      = "prisma-client-js"
-  binaryTargets = ["native", "darwin-arm64"]
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
   // Output to repo root node_modules so all workspace packages use the same client (local dev).
   // Dockerfiles copy the generated client into /app/node_modules after generate.
   output        = "../../../node_modules/.prisma/client"

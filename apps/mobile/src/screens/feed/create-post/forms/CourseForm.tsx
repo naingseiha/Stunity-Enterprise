@@ -4,9 +4,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, LayoutAnimation } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, LayoutAnimation , Animated} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, Layout } from 'react-native-reanimated';
+
 import * as Haptics from 'expo-haptics';
 import { AIGenerateButton } from '@/components/ai/AIGenerateButton';
 import { AIPromptModal } from '@/components/ai/AIPromptModal';
@@ -275,8 +275,6 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
           {syllabusSections.map((section, index) => (
             <Animated.View
               key={section.id}
-              entering={FadeIn.duration(200)}
-              layout={Layout.springify()}
               style={[
                 styles.sectionCard,
                 expandedSectionId === section.id && styles.sectionCardExpanded
@@ -381,8 +379,6 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
             {prerequisites.map((prereq) => (
               <Animated.View
                 key={prereq}
-                entering={FadeIn.duration(200)}
-                layout={Layout.springify()}
                 style={styles.tag}
               >
                 <Text style={styles.tagText}>{prereq}</Text>

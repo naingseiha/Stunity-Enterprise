@@ -17,13 +17,13 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
-  Image,
+  Image, Animated
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+
 import * as ImagePicker from 'expo-image-picker';
 
 import { useAuthStore } from '@/stores';
@@ -103,8 +103,7 @@ export default function EditProfileScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
+      allowsEditing: false,
       quality: 0.8,
     });
 
@@ -138,8 +137,7 @@ export default function EditProfileScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [16, 9],
+      allowsEditing: false,
       quality: 0.8,
     });
 
@@ -255,7 +253,7 @@ export default function EditProfileScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* ── Cover + Avatar ────────────────────────────── */}
-          <Animated.View entering={FadeInDown.delay(50).duration(400)} style={s.photoSection}>
+          <Animated.View style={s.photoSection}>
             <TouchableOpacity
               style={s.coverTouch}
               onPress={pickCoverPhoto}
@@ -306,7 +304,7 @@ export default function EditProfileScreen() {
           </Animated.View>
 
           {/* ── Name ──────────────────────────────────────── */}
-          <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+          <Animated.View>
             <Text style={s.label}>Name</Text>
             <View style={s.nameRow}>
               <View style={[s.inputWrap, { flex: 1 }]}>
@@ -331,7 +329,7 @@ export default function EditProfileScreen() {
           </Animated.View>
 
           {/* ── Headline ──────────────────────────────────── */}
-          <Animated.View entering={FadeInDown.delay(150).duration(400)}>
+          <Animated.View>
             <View style={s.labelRow}>
               <Text style={s.label}>Headline</Text>
               <Text style={s.charCount}>{formData.headline.length}/100</Text>
@@ -349,7 +347,7 @@ export default function EditProfileScreen() {
           </Animated.View>
 
           {/* ── Bio ───────────────────────────────────────── */}
-          <Animated.View entering={FadeInDown.delay(200).duration(400)}>
+          <Animated.View>
             <View style={s.labelRow}>
               <Text style={s.label}>About</Text>
               <Text style={s.charCount}>{formData.bio.length}/500</Text>
@@ -369,7 +367,7 @@ export default function EditProfileScreen() {
           </Animated.View>
 
           {/* ── Location ──────────────────────────────────── */}
-          <Animated.View entering={FadeInDown.delay(250).duration(400)}>
+          <Animated.View>
             <Text style={s.label}>Location</Text>
             <View style={s.inputWrap}>
               <Ionicons name="location-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
@@ -384,7 +382,7 @@ export default function EditProfileScreen() {
           </Animated.View>
 
           {/* ── Interests ─────────────────────────────────── */}
-          <Animated.View entering={FadeInDown.delay(300).duration(400)}>
+          <Animated.View>
             <Text style={s.label}>Interests</Text>
             <View style={s.inputWrap}>
               <Ionicons name="pricetag-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
@@ -400,7 +398,7 @@ export default function EditProfileScreen() {
           </Animated.View>
 
           {/* ── Social Links ──────────────────────────────── */}
-          <Animated.View entering={FadeInDown.delay(350).duration(400)}>
+          <Animated.View>
             <Text style={s.label}>Social Links</Text>
             {([
               { key: 'github' as const, icon: 'logo-github' as const, color: '#1F2937', placeholder: 'GitHub username' },
@@ -518,10 +516,10 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    
-    
+
+
     shadowRadius: 4,
-    
+
   },
 
   // ── Labels ────────────────────────────────────────────
@@ -567,7 +565,7 @@ const s = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     backgroundColor: '#fff',
-    
+
     borderColor: '#E2E8F0',
     paddingHorizontal: 16,
     marginBottom: 16,

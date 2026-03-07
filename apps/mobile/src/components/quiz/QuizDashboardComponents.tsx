@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity, Dimensions, Image, ScrollView,
+    View, Text, StyleSheet, TouchableOpacity, Dimensions, Image, ScrollView, Animated, Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, {
-    FadeInDown, FadeIn, FadeInRight, useSharedValue, useAnimatedStyle, withRepeat,
-    withTiming, Easing, withSequence, withDelay, withSpring, ZoomIn,
-} from 'react-native-reanimated';
+
+
 import { BlurView } from 'expo-blur';
 import { formatNumber } from '@/utils';
 import { QuizItem } from '@/services/quiz';
@@ -36,7 +34,7 @@ interface CategoryCardProps {
 // --------------- Header -------------------
 export const QuizHeader = ({ points }: { points: number }) => {
     return (
-        <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.headerContainer}>
+        <Animated.View style={styles.headerContainer}>
             <View style={styles.headerLeft}>
                 <View style={styles.headerIconWrap}>
                     <Ionicons name="game-controller" size={20} color="#A78BFA" />
@@ -57,22 +55,20 @@ export const QuizHeader = ({ points }: { points: number }) => {
 
 // --------------- Streak Card -------------------
 export const StreakCard = ({ streak = 7, longestStreak = 14 }: { streak?: number; longestStreak?: number }) => {
-    const glow = useSharedValue(0.6);
+    const glow = React.useRef(new Animated.Value(0.6)).current;
 
     useEffect(() => {
-        glow.value = withRepeat(
-            withSequence(
-                withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-                withTiming(0.6, { duration: 1000, easing: Easing.inOut(Easing.ease) })
-            ),
-            -1, true
-        );
-    }, []);
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(glow, { toValue: 1, duration: 1000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }), Animated.timing(glow, { toValue: 0.6, duration: 1000, easing: Easing.inOut(Easing.ease), useNativeDriver: true })
+            ])
+        ).start();
+    }, [glow]);
 
-    const glowStyle = useAnimatedStyle(() => ({
-        opacity: glow.value,
-        transform: [{ scale: 0.9 + glow.value * 0.1 }],
-    }));
+    const glowStyle = {
+        opacity: glow,
+        transform: [{ scale: glow.interpolate({ inputRange: [0.6, 1], outputRange: [0.96, 1] }) }],
+    };
 
     const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     // Assume 'streak' days from today going backward
@@ -81,7 +77,7 @@ export const StreakCard = ({ streak = 7, longestStreak = 14 }: { streak?: number
     const activeCount = Math.min(streak, 7);
 
     return (
-        <Animated.View entering={FadeInDown.delay(160).duration(500)} style={styles.streakCard}>
+        <Animated.View style={styles.streakCard}>
             <LinearGradient
                 colors={['rgba(251,146,60,0.18)', 'rgba(239,68,68,0.10)']}
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
@@ -134,7 +130,7 @@ export const QuickStatsRow = ({
     ];
 
     return (
-        <Animated.View entering={FadeInDown.delay(220).duration(500)} style={styles.statsRow}>
+        <Animated.View style={styles.statsRow}>
             {stats.map((s, i) => (
                 <View key={i} style={styles.statPill}>
                     <View style={[styles.statIcon, { backgroundColor: `${s.color}22` }]}>
@@ -153,31 +149,30 @@ export const KingBanner = ({
     onAvatarsPress,
     liveCount = 238,
 }: { onAvatarsPress?: () => void; liveCount?: number }) => {
-    const translateY = useSharedValue(0);
-    const pulse = useSharedValue(1);
+    const translateY = React.useRef(new Animated.Value(0)).current;
+    const pulse = React.useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
-        translateY.value = withRepeat(
-            withSequence(
-                withTiming(-5, { duration: 2200, easing: Easing.inOut(Easing.ease) }),
-                withTiming(0, { duration: 2200, easing: Easing.inOut(Easing.ease) })
-            ),
-            -1, true
-        );
-        pulse.value = withRepeat(
-            withSequence(
-                withTiming(1.3, { duration: 900 }),
-                withTiming(1, { duration: 900 })
-            ),
-            -1, true
-        );
-    }, []);
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(translateY, { toValue: -5, duration: 2200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }), Animated.timing(translateY, { toValue: 0, duration: 2200, easing: Easing.inOut(Easing.ease), useNativeDriver: true })
+            ])
+        ).start();
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulse, { toValue: 1.3, duration: 900, useNativeDriver: true }), Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: true })
+            ])
+        ).start();
+    }, [translateY, pulse]);
 
-    const floatStyle = useAnimatedStyle(() => ({ transform: [{ translateY: translateY.value }] }));
-    const pulseStyle = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }], opacity: 2 - pulse.value }));
+    const floatStyle = { transform: [{ translateY }] };
+    const pulseStyle = {
+        transform: [{ scale: pulse }],
+        opacity: pulse.interpolate({ inputRange: [1, 1.3], outputRange: [1, 0.7] })
+    };
 
     return (
-        <Animated.View entering={FadeInDown.delay(280).duration(500)} style={styles.kingContainer}>
+        <Animated.View style={styles.kingContainer}>
             <LinearGradient
                 colors={['#7C3AED', '#A855F7', '#EC4899']}
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
@@ -278,7 +273,7 @@ export const ActionGrid = ({
             </View>
 
             {/* Manage Quizzes Full-Width Button */}
-            <Animated.View entering={FadeInDown.delay(560).duration(500).springify()}>
+            <Animated.View>
                 <TouchableOpacity
                     style={styles.manageBtnContainer}
                     activeOpacity={0.8}
@@ -308,29 +303,31 @@ export const ActionGrid = ({
 };
 
 const ActionButton = ({ title, icon, colors, onPress, delay = 0, badge }: ActionButtonProps) => {
-    const scale = useSharedValue(1);
-    const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+    const scale = React.useRef(new Animated.Value(1)).current;
+    const pressStyle = { transform: [{ scale }] };
 
     return (
-        <Animated.View entering={FadeInDown.delay(delay).duration(400).springify()} style={[styles.actionBtnWrap, pressStyle]}>
-            <TouchableOpacity
-                activeOpacity={1}
-                onPress={onPress}
-                onPressIn={() => { scale.value = withSpring(0.93); }}
-                onPressOut={() => { scale.value = withSpring(1); }}
-            >
-                <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.actionBtnBg}>
-                    <View style={styles.actionBtnIconWrap}>
-                        <Ionicons name={icon} size={32} color="#FFF" />
-                        {badge != null && (
-                            <View style={styles.badgePill}>
-                                <Text style={styles.badgeText}>{badge}</Text>
-                            </View>
-                        )}
-                    </View>
-                    <Text style={styles.actionBtnTitle}>{title}</Text>
-                </LinearGradient>
-            </TouchableOpacity>
+        <Animated.View style={styles.actionBtnWrap}>
+            <Animated.View style={pressStyle}>
+                <TouchableOpacity
+                    activeOpacity={1}
+                    onPress={onPress}
+                    onPressIn={() => { Animated.spring(scale, { toValue: 0.93, friction: 5, tension: 200, useNativeDriver: true }).start(); }}
+                    onPressOut={() => { Animated.spring(scale, { toValue: 1, friction: 5, tension: 200, useNativeDriver: true }).start(); }}
+                >
+                    <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.actionBtnBg}>
+                        <View style={styles.actionBtnIconWrap}>
+                            <Ionicons name={icon} size={32} color="#FFF" />
+                            {badge != null && (
+                                <View style={styles.badgePill}>
+                                    <Text style={styles.badgeText}>{badge}</Text>
+                                </View>
+                            )}
+                        </View>
+                        <Text style={styles.actionBtnTitle}>{title}</Text>
+                    </LinearGradient>
+                </TouchableOpacity>
+            </Animated.View>
         </Animated.View>
     );
 };
@@ -360,17 +357,21 @@ export const DailyQuizCard = ({ onPress, dailyQuiz }: DailyQuizCardProps) => {
         return () => clearInterval(id);
     }, []);
 
-    const shimmer = useSharedValue(0);
+    const shimmer = React.useRef(new Animated.Value(0)).current;
     useEffect(() => {
-        shimmer.value = withRepeat(withTiming(1, { duration: 2500, easing: Easing.inOut(Easing.ease) }), -1, true);
-    }, []);
-    const shimmerStyle = useAnimatedStyle(() => ({
-        transform: [{ translateX: (shimmer.value - 0.5) * 60 }],
-        opacity: shimmer.value * 0.06,
-    }));
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(shimmer, { toValue: 1, duration: 2500, easing: Easing.inOut(Easing.ease), useNativeDriver: true }), Animated.timing(shimmer, { toValue: 0, duration: 2500, easing: Easing.inOut(Easing.ease), useNativeDriver: true })
+            ])
+        ).start();
+    }, [shimmer]);
+    const shimmerStyle = {
+        transform: [{ translateX: shimmer.interpolate({ inputRange: [0, 1], outputRange: [-30, 30] }) }],
+        opacity: shimmer.interpolate({ inputRange: [0, 1], outputRange: [0, 0.06] }),
+    };
 
     return (
-        <Animated.View entering={FadeInDown.delay(520).duration(500)} style={styles.dailyQuizContainer}>
+        <Animated.View style={styles.dailyQuizContainer}>
             <TouchableOpacity activeOpacity={0.88} onPress={onPress}>
                 <LinearGradient
                     colors={['#B45309', '#FBBF24', '#F59E0B']}
@@ -432,7 +433,7 @@ const CATEGORIES = [
 export const CategoryGrid = ({ onCategoryPress }: { onCategoryPress: (cat: string) => void }) => {
     return (
         <View style={styles.categoryWrap}>
-            <Animated.View entering={FadeIn.delay(580)}>
+            <Animated.View>
                 <View style={styles.categoryHeader}>
                     <Text style={styles.categoryTitle}>Browse Categories</Text>
                     <TouchableOpacity style={styles.seeAllBtn}>
@@ -460,31 +461,32 @@ export const CategoryGrid = ({ onCategoryPress }: { onCategoryPress: (cat: strin
 };
 
 const CategoryCard = ({ title, subTitle, icon, colors, onPress, delay = 0 }: CategoryCardProps) => {
-    const scale = useSharedValue(1);
-    const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+    const scale = React.useRef(new Animated.Value(1)).current;
+    const pressStyle = { transform: [{ scale }] };
 
     return (
         <Animated.View
-            entering={FadeInDown.delay(delay).duration(400).springify()}
-            style={[styles.catCardWrap, pressStyle]}
+            style={styles.catCardWrap}
         >
-            <TouchableOpacity
-                activeOpacity={1}
-                onPress={onPress}
-                onPressIn={() => { scale.value = withSpring(0.95); }}
-                onPressOut={() => { scale.value = withSpring(1); }}
-            >
-                <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.catCardBg}>
-                    <Ionicons name={icon} size={52} color="rgba(255,255,255,0.18)" style={styles.catIcon} />
-                    <View style={styles.catCardContent}>
-                        <Text style={styles.catTitle}>{title}</Text>
-                        <Text style={styles.catSub}>{subTitle}</Text>
-                    </View>
-                    <View style={styles.catArrow}>
-                        <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.6)" />
-                    </View>
-                </LinearGradient>
-            </TouchableOpacity>
+            <Animated.View style={pressStyle}>
+                <TouchableOpacity
+                    activeOpacity={1}
+                    onPress={onPress}
+                    onPressIn={() => { Animated.spring(scale, { toValue: 0.95, friction: 5, tension: 200, useNativeDriver: true }).start(); }}
+                    onPressOut={() => { Animated.spring(scale, { toValue: 1, friction: 5, tension: 200, useNativeDriver: true }).start(); }}
+                >
+                    <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.catCardBg}>
+                        <Ionicons name={icon} size={52} color="rgba(255,255,255,0.18)" style={styles.catIcon} />
+                        <View style={styles.catCardContent}>
+                            <Text style={styles.catTitle}>{title}</Text>
+                            <Text style={styles.catSub}>{subTitle}</Text>
+                        </View>
+                        <View style={styles.catArrow}>
+                            <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.6)" />
+                        </View>
+                    </LinearGradient>
+                </TouchableOpacity>
+            </Animated.View>
         </Animated.View>
     );
 };
@@ -1150,7 +1152,7 @@ interface RecommendedSectionProps {
 export const RecommendedQuizzesSection = ({ quizzes, onQuizPress, onSeeAll }: RecommendedSectionProps) => {
     return (
         <View style={{ marginBottom: 8 }}>
-            <Animated.View entering={FadeIn.delay(560)}>
+            <Animated.View>
                 <View style={[styles.categoryHeader, { paddingHorizontal: 20, marginBottom: 12 }]}>
                     <Text style={styles.categoryTitle}>Recommended for You</Text>
                     <TouchableOpacity style={styles.seeAllBtn} onPress={onSeeAll}>
@@ -1169,7 +1171,7 @@ export const RecommendedQuizzesSection = ({ quizzes, onQuizPress, onSeeAll }: Re
                     const qCount = quiz.questions?.length || 0;
                     const hasAttempt = !!quiz.userAttempt;
                     return (
-                        <Animated.View key={quiz.id} entering={FadeInRight.delay(i * 60).duration(400)}>
+                        <Animated.View key={quiz.id}>
                             <TouchableOpacity
                                 style={recStyles.card}
                                 onPress={() => onQuizPress(quiz)}

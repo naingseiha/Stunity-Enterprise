@@ -9,18 +9,10 @@
  * - Leaderboard Position
  */
 
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, {
-    useSharedValue,
-    useAnimatedStyle,
-    withTiming,
-    withSpring,
-    withDelay,
-    Easing,
-} from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path, Text as SvgText } from 'react-native-svg';
 import type { UserStats as QuizUserStats, UserAchievement, Streak } from '@/services/stats';
 import type { UserStats as ProfileUserStats } from '@/types';
@@ -56,21 +48,21 @@ const STAT_CARDS = [
 
 function StatCard({ icon, value, label, index = 0 }: { icon: string; value: string | number; label: string; index?: number }) {
     const cfg = STAT_CARDS[index % STAT_CARDS.length];
-    const scale = useSharedValue(0.92);
-    const translateY = useSharedValue(12);
+    const scale = useRef(new Animated.Value(0.92)).current;
+    const translateY = useRef(new Animated.Value(12)).current;
 
     useEffect(() => {
         const d = 200 + index * 50;
-        scale.value = withDelay(d, withSpring(1, { damping: 16, stiffness: 140 }));
-        translateY.value = withDelay(d, withSpring(0, { damping: 16, stiffness: 140 }));
+        const timeout = setTimeout(() => {
+            Animated.parallel([
+                Animated.spring(scale, { toValue: 1, damping: 16, stiffness: 140, useNativeDriver: true }), Animated.spring(translateY, { toValue: 0, damping: 16, stiffness: 140, useNativeDriver: true }),
+            ]).start();
+        }, d);
+        return () => clearTimeout(timeout);
     }, []);
 
-    const animStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: scale.value }, { translateY: translateY.value }],
-    }));
-
     return (
-        <Animated.View style={[s.statGridCardWrapper, animStyle]}>
+        <Animated.View style={[s.statGridCardWrapper, { transform: [{ scale }, { translateY }] }]}>
             <View style={[s.statGridCard, { backgroundColor: cfg.bgStart }]}>
                 <View style={[s.statGridIcon, { backgroundColor: cfg.accent }]}>
                     <Ionicons name={icon as any} size={18} color="#fff" />
@@ -227,15 +219,11 @@ export default function PerformanceTab({
     onViewLeaderboard,
     onViewStats,
 }: PerformanceTabProps) {
-    const cardScale = useSharedValue(0.95);
+    const cardScale = useRef(new Animated.Value(0.95)).current;
 
     useEffect(() => {
-        cardScale.value = withSpring(1, { damping: 15, stiffness: 120 });
+        Animated.spring(cardScale, { toValue: 1, damping: 15, stiffness: 120, useNativeDriver: true }).start();
     }, []);
-
-    const animStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: cardScale.value }],
-    }));
 
     const xp = quizStats?.xpProgress ?? 0;
     const xpToNext = quizStats?.xpToNextLevel ?? 1000;
@@ -244,7 +232,7 @@ export default function PerformanceTab({
     return (
         <View style={s.container}>
             {/* XP & Level Card */}
-            <Animated.View style={[s.card, animStyle]}>
+            <Animated.View style={[s.card, { transform: [{ scale: cardScale }] }]}>
                 <LinearGradient
                     colors={['#ffffff', '#F8FAFC']}
                     style={s.cardGradient}

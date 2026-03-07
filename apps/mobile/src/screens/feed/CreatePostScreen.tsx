@@ -23,6 +23,8 @@ import {
   ActivityIndicator,
   LayoutAnimation,
   Modal,
+  Animated,
+  Keyboard
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -30,7 +32,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeIn, FadeOut, Layout, ZoomIn, ZoomOut } from 'react-native-reanimated';
+
 import { LinearGradient } from 'expo-linear-gradient';
 import { ResizeMode } from 'expo-av';
 import { BlurView } from 'expo-blur';
@@ -94,8 +96,14 @@ const SUGGESTED_TAGS = [
 
 // Helper to check if URI is video
 const isVideo = (uri: string) => {
+  if (!uri) return false;
+  // Check extension
   const ext = uri.split('.').pop()?.toLowerCase();
-  return ext === 'mp4' || ext === 'mov' || ext === 'avi' || ext === 'mkv';
+  const hasVideoExt = ext === 'mp4' || ext === 'mov' || ext === 'avi' || ext === 'mkv' || ext === 'webm';
+  if (hasVideoExt) return true;
+
+  // Check Android content URI pattern
+  return uri.includes('video');
 };
 
 // Visibility options
@@ -364,6 +372,9 @@ export default function CreatePostScreen() {
       }
     }
 
+    // Dismiss keyboard immediately to prevent react-native-screens crash on goBack
+    Keyboard.dismiss();
+
     setIsPosting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
@@ -537,7 +548,7 @@ export default function CreatePostScreen() {
 
           {/* Title Input — for structured post types */}
           {TITLE_POST_TYPES.includes(postType) && (
-            <Animated.View entering={FadeIn.duration(200)} style={styles.titleSection}>
+            <View style={styles.titleSection}>
               <TextInput
                 style={styles.titleInput}
                 placeholder={`${currentTypeConfig.label} title...`}
@@ -547,7 +558,7 @@ export default function CreatePostScreen() {
                 maxLength={120}
               />
               <Text style={styles.titleCounter}>{postTitle.length}/120</Text>
-            </Animated.View>
+            </View>
           )}
 
           {/* Content Input */}
@@ -714,18 +725,13 @@ export default function CreatePostScreen() {
 
           {/* Media Preview */}
           {mediaUris.length > 0 && (
-            <Animated.View
-              entering={FadeIn.duration(300)}
-              exiting={FadeOut.duration(200)}
+            <View
               style={styles.mediaPreview}
             >
               {mediaUris.map((uri, index) => (
-                <Animated.View
+                <View
                   key={uri}
                   style={styles.mediaItem}
-                  entering={ZoomIn.duration(300).delay(index * 50)}
-                  exiting={ZoomOut.duration(200)}
-                  layout={Layout.springify()}
                 >
                   {isVideo(uri) ? (
                     <VideoPlayer
@@ -748,9 +754,9 @@ export default function CreatePostScreen() {
                       <Ionicons name="videocam" size={12} color="#fff" />
                     </View>
                   )}
-                </Animated.View>
+                </View>
               ))}
-            </Animated.View>
+            </View>
           )}
         </ScrollView>
 

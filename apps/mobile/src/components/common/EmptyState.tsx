@@ -13,11 +13,10 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
-} from 'react-native';
+  TouchableOpacity, Animated} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+
 
 interface EmptyStateProps {
   type?: 'posts' | 'search' | 'notifications' | 'comments' | 'generic';
@@ -86,8 +85,7 @@ export default function EmptyState({
   const displayActionLabel = actionLabel || config.actionLabel;
 
   return (
-    <Animated.View 
-      entering={FadeInDown.duration(500)}
+    <Animated.View
       style={styles.container}
     >
       {/* Icon Container with Gradient Background */}

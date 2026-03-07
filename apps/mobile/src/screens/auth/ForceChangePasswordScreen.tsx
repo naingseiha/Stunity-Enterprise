@@ -15,11 +15,10 @@ import {
     KeyboardAvoidingView,
     Platform,
     Alert,
-    ScrollView,
-} from 'react-native';
+    ScrollView, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInUp } from 'react-native-reanimated';
+
 
 import { Colors, Spacing } from '@/config';
 import { authApi } from '@/api/client';
@@ -80,7 +79,7 @@ export default function ForceChangePasswordScreen() {
                 style={styles.keyboardView}
             >
                 <ScrollView contentContainerStyle={styles.scrollContent}>
-                    <Animated.View entering={FadeInUp.delay(100).duration(400)} style={styles.content}>
+                    <Animated.View style={styles.content}>
                         <View style={styles.iconCircle}>
                             <Ionicons name="shield-checkmark-outline" size={48} color={Colors.primary} />
                         </View>

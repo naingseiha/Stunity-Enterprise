@@ -16,11 +16,10 @@ import {
   TextInput,
   Alert,
   KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+  Platform, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { format } from 'date-fns';
 
@@ -207,7 +206,7 @@ export default function GradeSubmissionScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Student Info */}
-          <Animated.View entering={FadeInDown.delay(100)} style={styles.studentCard}>
+          <Animated.View style={styles.studentCard}>
             <View style={styles.studentHeader}>
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>
@@ -238,13 +237,13 @@ export default function GradeSubmissionScreen() {
           </Animated.View>
 
           {/* Assignment Title */}
-          <Animated.View entering={FadeInDown.delay(200)} style={styles.assignmentCard}>
+          <Animated.View style={styles.assignmentCard}>
             <Text style={styles.assignmentLabel}>Assignment</Text>
             <Text style={styles.assignmentTitle}>{submission.assignment?.title}</Text>
           </Animated.View>
 
           {/* Submission Content */}
-          <Animated.View entering={FadeInDown.delay(300)} style={styles.submissionCard}>
+          <Animated.View style={styles.submissionCard}>
             <Text style={styles.sectionTitle}>Student's Work</Text>
             
             {submission.content ? (
@@ -285,7 +284,7 @@ export default function GradeSubmissionScreen() {
           </Animated.View>
 
           {/* Grading Section */}
-          <Animated.View entering={FadeInDown.delay(400)} style={styles.gradingCard}>
+          <Animated.View style={styles.gradingCard}>
             <Text style={styles.sectionTitle}>Grading</Text>
 
             {/* Score Input */}
@@ -334,7 +333,7 @@ export default function GradeSubmissionScreen() {
 
           {/* Previously Graded Info */}
           {submission.status === 'GRADED' && submission.gradedBy && (
-            <Animated.View entering={FadeInDown.delay(500)} style={styles.previousGradeCard}>
+            <Animated.View style={styles.previousGradeCard}>
               <Ionicons name="information-circle-outline" size={20} color={Colors.info} />
               <View style={styles.previousGradeInfo}>
                 <Text style={styles.previousGradeText}>
@@ -353,7 +352,7 @@ export default function GradeSubmissionScreen() {
           )}
 
           {/* Save Button (Mobile) */}
-          <Animated.View entering={FadeInDown.delay(600)} style={styles.saveButtonContainer}>
+          <Animated.View style={styles.saveButtonContainer}>
             <TouchableOpacity
               style={[
                 styles.saveButtonMobile,

@@ -114,54 +114,65 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
         console.log('🔔 [NotificationStore] Subscribing to realtime notifications...');
         const { unsubscribeFromNotifications } = get();
 
-        unsubscribeFromNotifications();
+        // Guard: if Supabase URL is missing, skip realtime (safe degradation)
+        const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+        if (!supabaseUrl || supabaseUrl.includes('your-project')) {
+            console.warn('⚠️ [NotificationStore] Supabase URL not configured — realtime disabled.');
+            return;
+        }
 
-        const channel = supabase
-            .channel(`notifications:user:${userId}`)
-            // New notifications
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'notifications',
-                    filter: `recipientId=eq.${userId}`,
-                },
-                async (payload) => {
-                    console.log('🔔 [NotificationStore] New notification:', payload);
-                    // Refresh to get full populated data (actor details, etc.)
-                    await get().fetchNotifications();
-                }
-            )
-            // Notification read status updates (sync across devices)
-            .on(
-                'postgres_changes',
-                {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'notifications',
-                    filter: `recipientId=eq.${userId}`,
-                },
-                (payload) => {
-                    const updated = payload.new as any;
-                    if (!updated?.id) return;
+        try {
+            unsubscribeFromNotifications();
 
-                    set(state => {
-                        const notifications = state.notifications.map(n =>
-                            n.id === updated.id
-                                ? { ...n, isRead: updated.isRead ?? n.isRead }
-                                : n
-                        );
-                        const unreadCount = notifications.filter(n => !n.isRead).length;
-                        return { notifications, unreadCount };
-                    });
-                }
-            )
-            .subscribe((status) => {
-                console.log('🔔 [NotificationStore] Subscription:', status);
-            });
+            const channel = supabase
+                .channel(`notifications:user:${userId}`)
+                // New notifications
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'notifications',
+                        filter: `recipientId=eq.${userId}`,
+                    },
+                    async (payload) => {
+                        console.log('🔔 [NotificationStore] New notification:', payload);
+                        // Refresh to get full populated data (actor details, etc.)
+                        await get().fetchNotifications();
+                    }
+                )
+                // Notification read status updates (sync across devices)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'notifications',
+                        filter: `recipientId=eq.${userId}`,
+                    },
+                    (payload) => {
+                        const updated = payload.new as any;
+                        if (!updated?.id) return;
 
-        set({ realtimeSubscription: channel });
+                        set(state => {
+                            const notifications = state.notifications.map(n =>
+                                n.id === updated.id
+                                    ? { ...n, isRead: updated.isRead ?? n.isRead }
+                                    : n
+                            );
+                            const unreadCount = notifications.filter(n => !n.isRead).length;
+                            return { notifications, unreadCount };
+                        });
+                    }
+                )
+                .subscribe((status) => {
+                    console.log('🔔 [NotificationStore] Subscription:', status);
+                });
+
+            set({ realtimeSubscription: channel });
+        } catch (realtimeError) {
+            console.warn('⚠️ [NotificationStore] Realtime subscription failed (non-fatal):', realtimeError);
+        }
     },
 
     unsubscribeFromNotifications: () => {

@@ -15,12 +15,11 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
-  Dimensions,
-} from 'react-native';
+  Dimensions, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 import { Avatar } from '@/components/common';
@@ -215,7 +214,7 @@ export default function ClubDetailsScreen() {
         }
       >
         {/* Cover with Type Badge */}
-        <Animated.View entering={FadeIn.duration(300)} style={styles.coverContainer}>
+        <Animated.View style={styles.coverContainer}>
           <LinearGradient
             colors={[typeConfig.lightColor, typeConfig.lightColorEnd]}
             start={{ x: 0, y: 0 }}
@@ -231,7 +230,7 @@ export default function ClubDetailsScreen() {
         </Animated.View>
 
         {/* Club Info Card */}
-        <Animated.View entering={FadeInDown.delay(100)} style={styles.infoCard}>
+        <Animated.View style={styles.infoCard}>
           {/* Club Name */}
           <Text style={styles.clubName}>{club.name}</Text>
 
@@ -316,13 +315,13 @@ export default function ClubDetailsScreen() {
         </Animated.View>
 
         {/* About Section */}
-        <Animated.View entering={FadeInDown.delay(150)} style={styles.section}>
+        <Animated.View style={styles.section}>
           <Text style={styles.sectionTitle}>About</Text>
           <Text style={styles.aboutText}>{club.description}</Text>
         </Animated.View>
 
         {/* Members Section */}
-        <Animated.View entering={FadeInDown.delay(200)} style={styles.section}>
+        <Animated.View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Members ({members?.length || 0})</Text>
             {(members?.length || 0) > 6 && (

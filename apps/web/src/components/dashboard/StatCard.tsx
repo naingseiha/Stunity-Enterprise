@@ -19,40 +19,68 @@ export default function StatCard({
   iconColor,
   subtitle,
 }: StatCardProps) {
-  const changeStyles = {
-    positive: 'text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-900/30',
-    negative: 'text-red-700 bg-red-50 dark:text-red-400 dark:bg-red-900/30',
-    neutral: 'text-gray-700 bg-gray-50 dark:text-gray-400 dark:bg-gray-800',
+  const themes = {
+    blue: 'from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 shadow-blue-200/50 dark:shadow-blue-900/20',
+    purple: 'from-fuchsia-500 to-purple-600 dark:from-fuchsia-600 dark:to-purple-700 shadow-purple-200/50 dark:shadow-purple-900/20',
+    green: 'from-emerald-400 to-teal-500 dark:from-emerald-500 dark:to-teal-600 shadow-emerald-200/50 dark:shadow-emerald-900/20',
+    amber: 'from-orange-400 to-amber-500 dark:from-orange-500 dark:to-amber-600 shadow-amber-200/50 dark:shadow-amber-900/20',
   };
 
-  const iconStyles = {
-    blue: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-    purple: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
-    green: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
-    amber: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
+  const changeStyles = {
+    positive: 'bg-white/20 text-white ring-1 ring-white/30',
+    negative: 'bg-white/20 text-white ring-1 ring-white/30',
+    neutral: 'bg-white/20 text-white ring-1 ring-white/30',
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200/80 dark:border-gray-700 p-6 shadow-sm hover:shadow-md hover:border-slate-300/80 dark:hover:border-gray-600 transition-all duration-200">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</p>
-          <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">{value}</p>
-          {subtitle && (
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 truncate" title={subtitle}>{subtitle}</p>
-          )}
-          {change && (
-            <div className={`mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium ${changeStyles[changeType]}`}>
-              {changeType === 'positive' && '↑'}
-              {changeType === 'negative' && '↓'}
-              {change}
-            </div>
-          )}
+    <div className={`group relative overflow-hidden rounded-2xl p-6 text-white bg-gradient-to-br ${themes[iconColor as keyof typeof themes]} shadow-xl transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1`}>
+      {/* Decorative Sparkline SVG */}
+      <div className="absolute bottom-0 right-0 left-0 h-24 opacity-20 transition-opacity group-hover:opacity-30">
+        <svg viewBox="0 0 100 40" className="h-full w-full preserve-3d" preserveAspectRatio="none">
+          <path
+            d="M0 35 Q 15 32, 25 35 T 45 30 T 65 35 T 85 25 T 100 30 V 40 H 0 Z"
+            fill="currentColor"
+            className="text-white/40"
+          />
+          <path
+            d="M0 35 Q 15 32, 25 35 T 45 30 T 65 35 T 85 25 T 100 30"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            className="text-white/60"
+          />
+        </svg>
+      </div>
+
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-6">
+          <div className="p-2.5 rounded-xl bg-white/20 backdrop-blur-md border border-white/30">
+            <Icon className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-white/40 group-hover:bg-white transition-colors" />
+            <div className="w-1.5 h-1.5 rounded-full bg-white/40 group-hover:bg-white transition-colors delay-75" />
+            <div className="w-1.5 h-1.5 rounded-full bg-white/40 group-hover:bg-white transition-colors delay-150" />
+          </div>
         </div>
-        <div className={`flex-shrink-0 p-3 rounded-xl ${iconStyles[iconColor as keyof typeof iconStyles]}`}>
-          <Icon className="w-6 h-6" aria-hidden />
+
+        <div className="space-y-1">
+          <p className="text-4xl font-black tracking-tight tabular-nums">{value}</p>
+          <div className="flex items-center justify-between">
+            <p className="text-[13px] font-bold text-white/90 uppercase tracking-widest">{title}</p>
+            {change && (
+              <div className={`px-2 py-0.5 rounded-full text-[10px] font-black ${changeStyles[changeType]}`}>
+                {changeType === 'positive' && '+'}
+                {change}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Glossy Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 pointer-events-none" />
     </div>
   );
 }

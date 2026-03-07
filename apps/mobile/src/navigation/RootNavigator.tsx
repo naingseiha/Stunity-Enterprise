@@ -7,11 +7,12 @@
 import React from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useColorScheme, StatusBar, View, Text, ActivityIndicator } from 'react-native';
+import { useColorScheme, StatusBar, View, Text, ActivityIndicator, ScrollView } from 'react-native';
 
 import { RootStackParamList } from './types';
 import { useAuthStore } from '@/stores';
 import { Colors } from '@/config';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
 
 // Import navigators
 import AuthNavigator from './AuthNavigator';
@@ -37,6 +38,12 @@ const createNavigationTheme = (isDark: boolean) => ({
   },
 });
 
+const MainStackScreen = () => (
+  <ErrorBoundary>
+    <MainNavigator />
+  </ErrorBoundary>
+);
+
 const RootNavigator: React.FC = () => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -50,7 +57,7 @@ const RootNavigator: React.FC = () => {
   if (!isInitialized) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: isDark ? Colors.gray[900] : Colors.white }}>
-        <ActivityIndicator size="large" color={Colors.primary} />
+        <ActivityIndicator size="large" color={Colors.primary[500]} />
         <Text style={{ marginTop: 16, color: isDark ? Colors.gray[400] : Colors.gray[600] }}>Loading...</Text>
       </View>
     );
@@ -92,7 +99,10 @@ const RootNavigator: React.FC = () => {
         ) : isParent ? (
           <Stack.Screen name="Parent" component={ParentNavigator} />
         ) : (
-          <Stack.Screen name="Main" component={MainNavigator} />
+          <Stack.Screen
+            name="Main"
+            component={MainStackScreen}
+          />
         )}
       </Stack.Navigator>
     </NavigationContainer>
@@ -100,3 +110,4 @@ const RootNavigator: React.FC = () => {
 };
 
 export default RootNavigator;
+

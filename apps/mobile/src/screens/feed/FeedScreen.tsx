@@ -20,6 +20,7 @@ import {
   Alert,
   AppState,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,15 +28,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle as SvgCircle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
-import Animated, {
-  FadeInDown,
-  FadeOutUp,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-  withDelay,
-  Easing,
-} from 'react-native-reanimated';
+
 
 import StunityLogo from '../../../assets/Stunity.svg';
 
@@ -94,11 +87,22 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
   ];
 
   // XP bar fill
-  const barWidth = useSharedValue(0);
+  const barWidth = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    barWidth.value = withDelay(300, withTiming(pct, { duration: 1100, easing: Easing.out(Easing.cubic) }));
+    const timeout = setTimeout(() => {
+      Animated.timing(barWidth, {
+        toValue: pct,
+        duration: 1100,
+        useNativeDriver: false,
+      }).start();
+    }, 300);
+    return () => clearTimeout(timeout);
   }, [pct]);
-  const barStyle = useAnimatedStyle(() => ({ width: `${barWidth.value}%` as any }));
+  const barWidthInterpolated = barWidth.interpolate({
+    inputRange: [0, 100],
+    outputRange: ['0%', '100%'],
+    extrapolate: 'clamp',
+  });
 
   return (
     <TouchableOpacity activeOpacity={0.9} style={perfCardStyles.card} onPress={onPress}>
@@ -183,7 +187,7 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
             <Text style={perfCardStyles.barRight}>Level {nextLevel}</Text>
           </View>
           <View style={perfCardStyles.barBg}>
-            <Animated.View style={[perfCardStyles.barFill, barStyle]}>
+            <Animated.View style={[perfCardStyles.barFill, { width: barWidthInterpolated }]}>
               <LinearGradient colors={['#38BDF8', '#0EA5E9', '#0284C7'] as any} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
             </Animated.View>
           </View>
@@ -739,8 +743,6 @@ export default function FeedScreen() {
       {/* New Posts Pill */}
       {pendingPosts.length > 0 && (
         <Animated.View
-          entering={FadeInDown.springify()}
-          exiting={FadeOutUp}
           style={styles.newPostsPillContainer}
         >
           <TouchableOpacity

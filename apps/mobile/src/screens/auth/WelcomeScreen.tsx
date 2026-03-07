@@ -13,16 +13,11 @@ import {
   Dimensions,
   StatusBar,
   TouchableOpacity,
-  ScrollView,
-} from 'react-native';
+  ScrollView, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import Animated, {
-  FadeInDown,
-  FadeInUp,
-  FadeIn,
-} from 'react-native-reanimated';
+
 import { Ionicons } from '@expo/vector-icons';
 import StunityLogo from '../../../assets/Stunity.svg';
 
@@ -69,10 +64,9 @@ export default function WelcomeScreen() {
         >
         {/* Logo and Branding */}
         <Animated.View
-          entering={FadeInDown.delay(200).duration(700).springify()}
           style={styles.brandingContainer}
         >
-          <Animated.View entering={FadeInDown.delay(100).duration(600)}>
+          <Animated.View>
             <StunityLogo width={130} height={130} style={{ marginBottom: 10 }} />
           </Animated.View>
 
@@ -88,13 +82,11 @@ export default function WelcomeScreen() {
 
         {/* Feature Highlights */}
         <Animated.View
-          entering={FadeIn.delay(500).duration(600)}
           style={styles.featuresRow}
         >
           {FEATURES.map((f, i) => (
             <Animated.View
               key={f.label}
-              entering={FadeInDown.delay(600 + i * 120).duration(500).springify()}
               style={styles.featureCard}
             >
               <View style={[styles.featureIcon, { backgroundColor: f.bg }]}>
@@ -110,7 +102,6 @@ export default function WelcomeScreen() {
 
         {/* Buttons */}
         <Animated.View
-          entering={FadeInUp.delay(900).duration(600)}
           style={styles.buttonsContainer}
         >
           {/* Create Account — Primary CTA */}

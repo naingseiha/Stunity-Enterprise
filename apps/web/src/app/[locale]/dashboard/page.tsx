@@ -17,6 +17,7 @@ import {
   Home,
   ChevronRight,
   LayoutDashboard,
+  Search,
 } from 'lucide-react';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import StatCard from '@/components/dashboard/StatCard';
@@ -202,7 +203,7 @@ export default function DashboardPage({ params }: { params: { locale: string } }
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100/80 dark:bg-slate-950">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-500">
       <UnifiedNavigation
         user={user}
         school={school}
@@ -210,175 +211,133 @@ export default function DashboardPage({ params }: { params: { locale: string } }
       />
 
       <div className="lg:ml-64 min-h-screen">
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
-          {/* Page header */}
-          <AnimatedContent animation="fade" delay={0}>
-            <nav className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-6">
-              <Link
-                href={`/${locale}/dashboard`}
-                className="flex items-center gap-1.5 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-              >
-                <Home className="h-4 w-4" aria-hidden />
-                <span>Dashboard</span>
-              </Link>
-              <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" aria-hidden />
-              <span className="font-medium text-slate-700 dark:text-slate-200">Overview</span>
-            </nav>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/80 shadow-sm">
-                  <LayoutDashboard className="h-7 w-7 text-stunity-primary-600 dark:text-stunity-primary-400" aria-hidden />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-                    Dashboard
-                  </h1>
-                  <p className="mt-1 text-slate-500 dark:text-slate-400">
-                    Welcome back, {user?.firstName || 'Admin'}. Here’s your school overview.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </AnimatedContent>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12">
 
-          {/* Stats row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5 mt-8">
-            {stats.map((stat, index) => (
-              <AnimatedContent key={index} animation="slide-up" delay={80 + index * 60}>
-                <StatCard {...stat} />
-              </AnimatedContent>
-            ))}
-          </div>
-
-          {/* Main content: Quick Actions + Activity | Sidebar */}
-          <div className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left: Quick Actions + Recent Activity in one card */}
-            <div className="lg:col-span-2 space-y-8">
-              <AnimatedContent animation="slide-up" delay={350}>
-                <section>
-                  <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">
-                    Quick Actions
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {quickActions.map((action, index) => (
-                      <ActionCard key={index} {...action} />
-                    ))}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            {/* Left Column: Stats & Actions (Main) */}
+            <div className="lg:col-span-8 space-y-12">
+              {/* Activity Section / Main Stats */}
+              <section>
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Activity Status</h2>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 rounded-full shadow-sm border border-slate-100 dark:border-slate-800 text-sm font-bold text-slate-500">
+                    <span>Weekly</span>
+                    <ChevronRight className="w-4 h-4 rotate-90" />
                   </div>
-                </section>
-              </AnimatedContent>
-
-              <AnimatedContent animation="slide-up" delay={450}>
-                <section className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/60 dark:border-slate-700/80 shadow-sm overflow-hidden">
-                  <div className="px-6 pt-6 pb-4">
-                    <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                      Recent Activity
-                    </h2>
-                  </div>
-                  <div className="px-6 pb-8 pt-2">
-                    <div className="rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-700/50 py-12 text-center">
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Recent activity will appear here once you enroll students, mark attendance, or submit grades.
-                      </p>
-                    </div>
-                  </div>
-                </section>
-              </AnimatedContent>
-            </div>
-
-            {/* Right: Single overview card with subsections */}
-            <AnimatedContent animation="slide-left" delay={500}>
-              <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/60 dark:border-slate-700/80 shadow-sm overflow-hidden">
-                <div className="px-6 pt-6 pb-4">
-                  <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    Overview
-                  </h2>
                 </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {stats.map((stat, index) => (
+                    <AnimatedContent key={index} animation="slide-up" delay={150 + index * 50}>
+                      <StatCard {...stat} />
+                    </AnimatedContent>
+                  ))}
+                </div>
+              </section>
 
-                {/* Academic Year */}
-                <div className="px-6 pb-6 border-b border-slate-200/60 dark:border-slate-700/80">
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">
-                    Current Academic Year
-                  </h3>
-                  <p className="text-xl font-bold text-slate-900 dark:text-white">
-                    {currentYear?.name ?? '—'}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    {currentYear
-                      ? `${new Date(currentYear.startDate).toLocaleDateString()} – ${new Date(currentYear.endDate).toLocaleDateString()}`
-                      : 'Set up in settings'}
-                  </p>
-                  {currentYear && (
-                    <div className="mt-3">
-                      <div className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-stunity-primary-500 to-stunity-primary-400 transition-all duration-500"
-                          style={{
-                            width:
-                              currentYear.status === 'ACTIVE'
-                                ? '60%'
-                                : currentYear.status === 'ENDED'
-                                  ? '100%'
-                                  : '30%',
-                          }}
-                        />
-                      </div>
-                      <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">{currentYear.status}</p>
-                    </div>
-                  )}
-                  <Link
-                    href={`/${locale}/settings/academic-years`}
-                    className="mt-4 flex items-center justify-center w-full py-2.5 px-4 rounded-xl bg-stunity-primary-600 text-white text-sm font-medium hover:bg-stunity-primary-700 transition-colors"
-                  >
-                    Manage Academic Years
+              {/* Quick Actions Section */}
+              <section>
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Main Functions</h2>
+                  <Link href={`/${locale}/settings`} className="text-sm font-black text-blue-600 dark:text-blue-400 hover:underline">
+                    View Portfolio
                   </Link>
                 </div>
-
-                {/* Subscription */}
-                <div className="px-6 py-6 border-b border-slate-200/60 dark:border-slate-700/80">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-stunity-primary-100 dark:bg-stunity-primary-900/40 text-stunity-primary-700 dark:text-stunity-primary-300 text-xs font-semibold">
-                      FREE TRIAL
-                    </span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">3 months</span>
-                  </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-300">
-                    You're on the free trial. Upgrade to unlock premium features.
-                  </p>
-                  <button
-                    type="button"
-                    className="mt-4 w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-200 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600/80 transition-colors border border-slate-200/60 dark:border-slate-600/60"
-                  >
-                    Upgrade Plan
-                  </button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {quickActions.map((action, index) => (
+                    <AnimatedContent key={index} animation="slide-up" delay={350 + index * 50}>
+                      <ActionCard key={index} {...action} />
+                    </AnimatedContent>
+                  ))}
                 </div>
+              </section>
+            </div>
 
-                {/* Today's attendance */}
-                <div className="px-6 py-6">
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-4">
-                    Today&apos;s Attendance
-                  </h3>
-                  <div className="space-y-3">
-                    {[
-                      { label: 'Present', value: '—' },
-                      { label: 'Absent', value: '—' },
-                      { label: 'Late', value: '—' },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="flex justify-between items-center">
-                        <span className="text-sm text-slate-500 dark:text-slate-400">{label}</span>
-                        <span className="text-sm font-semibold tabular-nums text-slate-900 dark:text-white">{value}</span>
+            {/* Right Column: Context & Calendar Style */}
+            <div className="lg:col-span-4 space-y-10">
+              {/* Calendar / School Context Card */}
+              <AnimatedContent animation="slide-left" delay={400}>
+                <section className="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">Schedule</h3>
+                    <div className="flex gap-2">
+                      <button className="w-8 h-8 rounded-xl flex items-center justify-center bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all">
+                        <ChevronRight className="w-4 h-4 rotate-180" />
+                      </button>
+                      <button className="w-8 h-8 rounded-xl flex items-center justify-center bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all">
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Academic Year Info - Clean integrated style */}
+                  <div className="mb-8 p-6 rounded-2xl bg-slate-50 dark:bg-slate-800 shadow-inner">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center shadow-sm text-blue-600">
+                        <Calendar className="w-6 h-6" />
                       </div>
-                    ))}
+                      <div>
+                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">School Session</p>
+                        <p className="text-lg font-black text-slate-800 dark:text-white">{currentYear?.name || 'Academic Session'}</p>
+                      </div>
+                    </div>
+                    {currentYear && (
+                      <div className="space-y-3">
+                        <div className="h-2 w-full rounded-full bg-white dark:bg-slate-900 overflow-hidden ring-1 ring-slate-200/50">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-1000 ease-out"
+                            style={{ width: currentYear.status === 'ACTIVE' ? '65%' : currentYear.status === 'ENDED' ? '100%' : '5%' }}
+                          />
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+                          <span>{currentYear.status}</span>
+                          <Link href={`/${locale}/settings/academic-years`} className="text-blue-600 hover:underline">
+                            Details
+                          </Link>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-700/80 flex justify-between items-center">
-                    <span className="text-sm font-medium text-slate-900 dark:text-white">Total</span>
-                    <span className="text-sm font-semibold tabular-nums text-slate-500 dark:text-slate-400">—</span>
+
+                  {/* Overview Stats Mini Cards */}
+                  <div className="space-y-4">
+                    <h4 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2">Live Attendance</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-5 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100/50">
+                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center mb-3 shadow-sm text-emerald-500">
+                          <Users className="w-4 h-4" />
+                        </div>
+                        <p className="text-2xl font-black text-emerald-600">0</p>
+                        <p className="text-[10px] font-bold text-emerald-500/80 uppercase">Present</p>
+                      </div>
+                      <div className="p-5 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-100/50">
+                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center mb-3 shadow-sm text-rose-500">
+                          <Users className="w-4 h-4" />
+                        </div>
+                        <p className="text-2xl font-black text-rose-600">0</p>
+                        <p className="text-[10px] font-bold text-rose-500/80 uppercase">Absent</p>
+                      </div>
+                    </div>
                   </div>
-                  <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-                    Mark attendance to see today&apos;s numbers
-                  </p>
+                </section>
+              </AnimatedContent>
+
+              {/* Support Panel Style - Simplified integrated card */}
+              <AnimatedContent animation="slide-left" delay={500}>
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 p-8 shadow-sm border border-slate-100 dark:border-slate-800">
+                  <div className="relative z-10">
+                    <h3 className="text-2xl font-black tracking-tight mb-3 text-slate-800 dark:text-white">Enterprise Support</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium leading-relaxed mb-6">
+                      Our specialists are here to help you optimize your school management workflow.
+                    </p>
+                    <button className="w-full py-4 rounded-xl bg-blue-600 dark:bg-blue-500 text-white font-black text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-blue-500/20">
+                      Contact Specialist
+                    </button>
+                  </div>
+                  {/* Decorative Elements - Subtle glow */}
+                  <div className="absolute -right-20 -bottom-20 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl" />
                 </div>
-              </div>
-            </AnimatedContent>
+              </AnimatedContent>
+            </div>
           </div>
         </main>
       </div>

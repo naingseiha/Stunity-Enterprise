@@ -16,18 +16,12 @@ import {
   Platform,
   ScrollView,
   Alert,
-  Dimensions,
-} from 'react-native';
+  Dimensions, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  FadeInDown,
-  FadeInUp,
-  FadeIn,
-  ZoomIn,
-} from 'react-native-reanimated';
+
 
 import { Button, Input } from '@/components/common';
 import { Colors, Typography, Spacing } from '@/config';
@@ -245,7 +239,7 @@ export default function RegisterScreen() {
 
   // ── Step 1: Personal Info ────────────────────────────────
   const renderStep1 = () => (
-    <Animated.View entering={FadeIn.duration(400)} style={s.stepContent}>
+    <Animated.View style={s.stepContent}>
       {renderProgress()}
 
       <View style={s.stepHeader}>
@@ -292,7 +286,7 @@ export default function RegisterScreen() {
 
   // ── Step 2: Organization ────────────────────────────────
   const renderStep2 = () => (
-    <Animated.View entering={FadeIn.duration(400)} style={s.stepContent}>
+    <Animated.View style={s.stepContent}>
       {renderProgress()}
 
       <View style={s.stepHeader}>
@@ -345,7 +339,7 @@ export default function RegisterScreen() {
             />
 
             {claimCodeValidated && claimCodeData && (
-              <Animated.View entering={FadeIn.duration(300)} style={s.validatedCard}>
+              <Animated.View style={s.validatedCard}>
                 <View style={s.validatedHeader}>
                   <Ionicons name="checkmark-circle" size={22} color="#10B981" />
                   <Text style={s.validatedTitle}>Validated Successfully</Text>
@@ -437,7 +431,7 @@ export default function RegisterScreen() {
 
   // ── Step 3: Role Selection ──────────────────────────────
   const renderStep3 = () => (
-    <Animated.View entering={FadeIn.duration(400)} style={s.stepContent}>
+    <Animated.View style={s.stepContent}>
       {renderProgress()}
 
       <View style={s.stepHeader}>
@@ -450,7 +444,7 @@ export default function RegisterScreen() {
 
       <View style={s.rolesContainer}>
         {ROLES.map((r, i) => (
-          <Animated.View key={r.value} entering={FadeInDown.delay(i * 100).duration(400)}>
+          <Animated.View key={r.value}>
             <TouchableOpacity
               style={[s.roleCard, role === r.value && { borderColor: r.color, backgroundColor: r.bg }]}
               onPress={() => setRole(r.value)}
@@ -468,7 +462,7 @@ export default function RegisterScreen() {
                 <Text style={s.roleDescription}>{r.description}</Text>
               </View>
               {!!(role === r.value) && (
-                <Animated.View entering={ZoomIn.duration(300)}>
+                <Animated.View>
                   <Ionicons name="checkmark-circle" size={24} color={r.color} />
                 </Animated.View>
               )}
@@ -488,7 +482,7 @@ export default function RegisterScreen() {
 
   // ── Step 4: Credentials ─────────────────────────────────
   const renderStep4 = () => (
-    <Animated.View entering={FadeIn.duration(400)} style={s.stepContent}>
+    <Animated.View style={s.stepContent}>
       {renderProgress()}
 
       <View style={s.stepHeader}>
@@ -589,7 +583,7 @@ export default function RegisterScreen() {
       </View>
 
       {error && (
-        <Animated.View entering={FadeInDown.duration(300)} style={s.errorContainer}>
+        <Animated.View style={s.errorContainer}>
           <Ionicons name="alert-circle" size={18} color="#DC2626" />
           <Text style={s.errorText}>{error}</Text>
         </Animated.View>
@@ -654,7 +648,7 @@ export default function RegisterScreen() {
             showsVerticalScrollIndicator={false}
           >
             {/* Header */}
-            <Animated.View entering={FadeInDown.delay(100).duration(500)} style={s.header}>
+            <Animated.View style={s.header}>
               <TouchableOpacity
                 onPress={() => step > 1 ? setStep(step - 1) : navigation.goBack()}
                 style={s.backButton}
@@ -669,7 +663,7 @@ export default function RegisterScreen() {
             </Animated.View>
 
             {/* Step Content */}
-            <Animated.View entering={FadeInUp.delay(200).duration(500)} style={s.content}>
+            <Animated.View style={s.content}>
               {step === 1 && renderStep1()}
               {step === 2 && renderStep2()}
               {step === 3 && renderStep3()}
