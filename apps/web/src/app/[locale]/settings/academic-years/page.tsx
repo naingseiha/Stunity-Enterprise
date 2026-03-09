@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { getCopyPreview, copySettings } from '@/lib/api/academic-years';
@@ -44,7 +44,8 @@ interface AcademicYear {
   createdAt: string;
 }
 
-export default function AcademicYearsManagementPage({ params }: { params: { locale: string } }) {
+export default function AcademicYearsManagementPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
   const router = useRouter();
   const { locale } = params;
 

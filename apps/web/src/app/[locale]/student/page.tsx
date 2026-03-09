@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import Link from 'next/link';
@@ -25,11 +25,17 @@ interface UserData {
   studentId?: string;
 }
 
-export default function StudentPortal({
-  params: { locale },
-}: {
-  params: { locale: string };
-}) {
+export default function StudentPortal(
+  props: {
+    params: Promise<{ locale: string }>;
+  }
+) {
+  const params = use(props.params);
+
+  const {
+    locale
+  } = params;
+
   const router = useRouter();
   const [user, setUser] = useState<UserData | null>(null);
   const [school, setSchool] = useState<any>(null);

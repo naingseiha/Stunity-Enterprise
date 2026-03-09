@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -9,8 +9,9 @@ import { login, TokenManager } from '@/lib/api/auth';
 
 const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
 
-export default function LoginPage(props: { params: { locale: string } }) {
-  const locale = props.params.locale;
+export default function LoginPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
+  const locale = params.locale;
   const t = useTranslations('login');
   const router = useRouter();
   const searchParams = useSearchParams();

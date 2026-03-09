@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { TokenManager } from '@/lib/api/auth';
 import Link from 'next/link';
 import {
@@ -35,11 +35,17 @@ interface Notification {
 
 const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
 
-export default function NotificationsPage({
-  params: { locale },
-}: {
-  params: { locale: string };
-}) {
+export default function NotificationsPage(
+  props: {
+    params: Promise<{ locale: string }>;
+  }
+) {
+  const params = use(props.params);
+
+  const {
+    locale
+  } = params;
+
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');

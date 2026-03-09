@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import Link from 'next/link';
@@ -28,7 +28,13 @@ interface Child {
   isPrimary: boolean;
 }
 
-export default function ParentDashboard({ params: { locale } }: { params: { locale: string } }) {
+export default function ParentDashboard(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
+
+  const {
+    locale
+  } = params;
+
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);

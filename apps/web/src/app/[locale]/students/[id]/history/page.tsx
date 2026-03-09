@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
@@ -60,7 +60,8 @@ interface StudentHistory {
   };
 }
 
-export default function StudentHistoryPage({ params }: { params: { locale: string; id: string } }) {
+export default function StudentHistoryPage(props: { params: Promise<{ locale: string; id: string }> }) {
+  const params = use(props.params);
   const router = useRouter();
   const { id } = useParams();
   const [data, setData] = useState<StudentHistory | null>(null);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { TokenManager } from '@/lib/api/auth';
@@ -141,7 +141,13 @@ const POST_TYPE_FILTERS = [
   { id: 'EVENT_CREATED', label: 'Events', icon: Calendar },
 ];
 
-export default function FeedPage({ params: { locale } }: { params: { locale: string } }) {
+export default function FeedPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
+
+  const {
+    locale
+  } = params;
+
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);

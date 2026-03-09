@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import {
   getSuperAdminDashboardStats,
@@ -87,11 +87,17 @@ function KpiCard({
   );
 }
 
-export default function SuperAdminDashboardPage({
-  params: { locale },
-}: {
-  params: { locale: string };
-}) {
+export default function SuperAdminDashboardPage(
+  props: {
+    params: Promise<{ locale: string }>;
+  }
+) {
+  const params = use(props.params);
+
+  const {
+    locale
+  } = params;
+
   const [stats, setStats] = useState<SuperAdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -163,7 +169,6 @@ export default function SuperAdminDashboardPage({
           <span className="text-gray-900 font-medium">Dashboard</span>
         </nav>
       </AnimatedContent>
-
       {/* Header */}
       <AnimatedContent animation="slide-up" delay={50}>
         <div className="flex items-center gap-3">
@@ -176,7 +181,6 @@ export default function SuperAdminDashboardPage({
           </div>
         </div>
       </AnimatedContent>
-
       {/* Pending approvals banner */}
       {stats.pendingApprovals > 0 && (
         <AnimatedContent animation="slide-up" delay={80}>
@@ -194,7 +198,6 @@ export default function SuperAdminDashboardPage({
           </div>
         </AnimatedContent>
       )}
-
       {/* KPI Grid – Row 1: Core scale */}
       <AnimatedContent animation="slide-up" delay={100}>
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -265,7 +268,6 @@ export default function SuperAdminDashboardPage({
           />
         </div>
       </AnimatedContent>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column */}
         <div className="space-y-6">

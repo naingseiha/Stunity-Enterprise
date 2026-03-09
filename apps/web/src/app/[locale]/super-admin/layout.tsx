@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { TokenManager } from '@/lib/api/auth';
@@ -21,13 +21,22 @@ import {
   MessageSquare,
 } from 'lucide-react';
 
-export default function SuperAdminLayout({
-  children,
-  params: { locale },
-}: {
-  children: React.ReactNode;
-  params: { locale: string };
-}) {
+export default function SuperAdminLayout(
+  props: {
+    children: React.ReactNode;
+    params: Promise<{ locale: string }>;
+  }
+) {
+  const params = use(props.params);
+
+  const {
+    locale
+  } = params;
+
+  const {
+    children
+  } = props;
+
   const router = useRouter();
   const pathname = usePathname();
   const [loading, setLoading] = useState(true);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import Link from 'next/link';
@@ -46,11 +46,18 @@ interface StudentDetails {
   };
 }
 
-export default function ChildDetailPage({ 
-  params: { locale, studentId } 
-}: { 
-  params: { locale: string; studentId: string } 
-}) {
+export default function ChildDetailPage(
+  props: { 
+    params: Promise<{ locale: string; studentId: string }> 
+  }
+) {
+  const params = use(props.params);
+
+  const {
+    locale,
+    studentId
+  } = params;
+
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [student, setStudent] = useState<StudentDetails | null>(null);

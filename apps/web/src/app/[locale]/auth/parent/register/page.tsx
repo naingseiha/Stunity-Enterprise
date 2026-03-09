@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -33,20 +33,26 @@ interface Student {
   grade?: string;
 }
 
-export default function ParentRegisterPage({ params: { locale } }: { params: { locale: string } }) {
+export default function ParentRegisterPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
+
+  const {
+    locale
+  } = params;
+
   const router = useRouter();
-  
+
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
+
   // Step 1: Find Student
   const [searchType, setSearchType] = useState<'phone' | 'studentId'>('phone');
   const [searchValue, setSearchValue] = useState('');
   const [searchResults, setSearchResults] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  
+
   // Step 2: Parent Information
   const [formData, setFormData] = useState({
     firstName: '',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { 
@@ -28,11 +28,18 @@ import type { Class } from '@/lib/api/classes';
 import type { StudentInClass } from '@/lib/api/class-students';
 import type { Student } from '@/lib/api/students';
 
-export default function ClassRosterEnhancedPage({
-  params: { locale, id },
-}: {
-  params: { locale: string; id: string };
-}) {
+export default function ClassRosterEnhancedPage(
+  props: {
+    params: Promise<{ locale: string; id: string }>;
+  }
+) {
+  const params = use(props.params);
+
+  const {
+    locale,
+    id
+  } = params;
+
   const t = useTranslations('classes');
   const tc = useTranslations('common');
   const router = useRouter();
@@ -44,7 +51,7 @@ export default function ClassRosterEnhancedPage({
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  
+
   // Multi-select state
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
   const [selectMode, setSelectMode] = useState(false);

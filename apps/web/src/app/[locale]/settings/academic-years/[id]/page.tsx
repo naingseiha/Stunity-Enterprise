@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
@@ -93,7 +93,8 @@ interface AcademicYearDetail {
   };
 }
 
-export default function AcademicYearDetailPage({ params }: { params: { locale: string } }) {
+export default function AcademicYearDetailPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
   const { id } = useParams();
   const router = useRouter();
   const [yearData, setYearData] = useState<AcademicYearDetail | null>(null);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { subjectAPI, Subject, SubjectStatistics } from '@/lib/api/subjects';
@@ -38,7 +38,8 @@ import {
 
 type ViewMode = 'grid' | 'list';
 
-export default function SubjectsManagementPage({ params }: { params: { locale: string } }) {
+export default function SubjectsManagementPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
   const router = useRouter();
   const { locale } = params;
 
@@ -49,13 +50,13 @@ export default function SubjectsManagementPage({ params }: { params: { locale: s
   const [filterGrade, setFilterGrade] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
-  
+
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-  
+
   // Form State
   const [formData, setFormData] = useState({
     name: '',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -52,7 +52,8 @@ interface YearStats {
   classes: number;
 }
 
-export default function DashboardPage({ params }: { params: { locale: string } }) {
+export default function DashboardPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
   const router = useRouter();
   const { locale } = params;
   const { schoolId, currentYear } = useAcademicYear();

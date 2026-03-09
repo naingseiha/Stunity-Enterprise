@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
@@ -35,7 +35,13 @@ interface MergedPreviewItem {
   willGraduate: boolean;
 }
 
-export default function StudentPromotionPage({ params: { locale } }: { params: { locale: string } }) {
+export default function StudentPromotionPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
+
+  const {
+    locale
+  } = params;
+
   const router = useRouter();
   const { mutate } = useSWRConfig();
   const { allYears: academicYears } = useAcademicYear();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
@@ -27,7 +27,8 @@ interface SchoolLocation {
     createdAt: string;
 }
 
-export default function LocationsManagementPage({ params }: { params: { locale: string } }) {
+export default function LocationsManagementPage(props: { params: Promise<{ locale: string }> }) {
+    const params = use(props.params);
     const router = useRouter();
     const { locale } = params;
 

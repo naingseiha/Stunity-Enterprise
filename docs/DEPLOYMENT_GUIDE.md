@@ -26,7 +26,7 @@ This guide ensures a smooth transition from development to production on Google 
 
 ## 2. Backend Deployment (Google Cloud Run)
 
-We have standardized Dockerfiles for all 18 microservices.
+We have standardized Dockerfiles for all backend microservices (the current deployment script includes 15 services).
 
 ### Automated Deployment
 1. Ensure `gcloud` CLI is authenticated: `gcloud auth login`
@@ -40,6 +40,15 @@ We have standardized Dockerfiles for all 18 microservices.
    ./scripts/deploy-cloud-run.sh auth-service feed-service
    ```
    *This script builds images via Cloud Build and deploys with `minScale: 0` to stay in the free tier. Selective deployment skips rebuilding unchanged services.*
+4. **When backend microservices change (recommended production flow):**
+   ```bash
+   # Example: detect changed services from your current branch
+   git --no-pager diff --name-only origin/main...HEAD services/ | cut -d/ -f2 | sort -u
+   ```
+   - Deploy only changed services first with `./scripts/deploy-cloud-run.sh <service...>`.
+   - If a shared package change affects multiple services, deploy all impacted services together.
+   - If Cloud Run URL changes for any service, update corresponding `NEXT_PUBLIC_*_SERVICE_URL` values in Vercel.
+5. **Validate each deployed service** in Cloud Run logs/health checks before deploying frontend updates.
 
 ### Environment Variables
 For each service in Cloud Run, set the following:
@@ -69,7 +78,16 @@ For maximum efficiency, set up **Google Cloud Build Triggers**:
 1. **Connect Repository**: Link your GitHub repo to Vercel.
 2. **Root Directory**: Select `apps/web`.
 3. **Environment Variables**: Copy variables from `apps/web/.env.production.example`.
-4. **Deploy**: Build will trigger automatically.
+4. **Deploy**: Build triggers automatically from GitHub push (recommended branch: `main`).
+5. **If backend endpoints changed**: update Vercel `NEXT_PUBLIC_*` service URLs, then trigger redeploy.
+
+### Vercel Build Notes (March 2026)
+- Keep these versions aligned in `apps/web/package.json`:
+  - `next` 15.x with `eslint-config-next` 15.x
+  - `@typescript-eslint/parser` and `@typescript-eslint/eslint-plugin` on matching major/minor
+  - `react`/`react-dom` 18.3.x with matching `@types/react`/`@types/react-dom`
+- For App Router dynamic segments, use Next.js async params pattern (`params: Promise<...>`).
+- Current lint policy for production builds keeps `@typescript-eslint/no-explicit-any` and `react/no-unescaped-entities` disabled in `apps/web/.eslintrc.json` to avoid blocking deploys on legacy pages while cleanup continues.
 
 ---
 
@@ -97,4 +115,4 @@ eas build --platform android --profile production
 
 ---
 
-*Last updated: March 3, 2026*
+*Last updated: March 9, 2026*

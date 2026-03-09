@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { SCHOOL_SERVICE_URL } from '@/lib/api/config';
@@ -29,7 +29,8 @@ interface AcademicYear {
   isPromotionDone: boolean;
 }
 
-export default function YearEndWorkflowPage({ params }: { params: { locale: string } }) {
+export default function YearEndWorkflowPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
   const router = useRouter();
   const searchParams = useSearchParams();
   const yearId = searchParams.get('yearId');

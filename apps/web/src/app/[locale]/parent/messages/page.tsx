@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { MESSAGING_SERVICE_URL } from '@/lib/api/config';
@@ -72,7 +72,13 @@ interface Message {
   createdAt: string;
 }
 
-export default function ParentMessagesPage({ params: { locale } }: { params: { locale: string } }) {
+export default function ParentMessagesPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
+
+  const {
+    locale
+  } = params;
+
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -352,7 +358,7 @@ export default function ParentMessagesPage({ params: { locale } }: { params: { l
           <div className={`flex-1 flex flex-col ${!selectedConversation && !showNewChat ? 'hidden md:flex' : 'flex'}`}>
             {showNewChat ? (
               /* New Chat - Teacher Selection */
-              <div className="flex-1 flex flex-col">
+              (<div className="flex-1 flex flex-col">
                 <div className="p-4 border-b border-gray-100 flex items-center gap-3">
                   <button
                     onClick={() => setShowNewChat(false)}
@@ -362,11 +368,9 @@ export default function ParentMessagesPage({ params: { locale } }: { params: { l
                   </button>
                   <h2 className="font-semibold text-gray-900">New Message</h2>
                 </div>
-
                 <div className="p-4">
                   <p className="text-sm text-gray-600 mb-4">Select a teacher to start a conversation:</p>
                 </div>
-
                 <div className="flex-1 overflow-y-auto px-4">
                   {teachers.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
@@ -404,10 +408,10 @@ export default function ParentMessagesPage({ params: { locale } }: { params: { l
                     </div>
                   )}
                 </div>
-              </div>
+              </div>)
             ) : selectedConversation ? (
               /* Chat Messages */
-              <>
+              (<>
                 {/* Chat Header */}
                 <div className="p-4 border-b border-gray-100 flex items-center gap-3">
                   <button
@@ -435,7 +439,6 @@ export default function ParentMessagesPage({ params: { locale } }: { params: { l
                     )}
                   </div>
                 </div>
-
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
                   {messages.map((msg, index) => {
@@ -482,7 +485,6 @@ export default function ParentMessagesPage({ params: { locale } }: { params: { l
                   })}
                   <div ref={messagesEndRef} />
                 </div>
-
                 {/* Message Input */}
                 <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-100 bg-white">
                   <div className="flex items-center gap-3">
@@ -502,10 +504,10 @@ export default function ParentMessagesPage({ params: { locale } }: { params: { l
                     </button>
                   </div>
                 </form>
-              </>
+              </>)
             ) : (
               /* Empty State */
-              <div className="flex-1 flex items-center justify-center text-center p-8">
+              (<div className="flex-1 flex items-center justify-center text-center p-8">
                 <div>
                   <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">Your Messages</h3>
@@ -522,7 +524,7 @@ export default function ParentMessagesPage({ params: { locale } }: { params: { l
                     New Message
                   </button>
                 </div>
-              </div>
+              </div>)
             )}
           </div>
         </div>

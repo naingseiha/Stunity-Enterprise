@@ -29,7 +29,7 @@ import {
 
 type ViewMode = 'select' | 'class' | 'student';
 
-export default function ReportCardsPage({ params }: { params: { locale: string } }) {
+export default function ReportCardsPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);

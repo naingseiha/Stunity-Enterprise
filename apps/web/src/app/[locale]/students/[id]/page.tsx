@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import BlurLoader from '@/components/BlurLoader';
@@ -66,11 +66,12 @@ interface Progression {
   notes?: string;
 }
 
-export default function StudentDetailPage({
-  params,
-}: {
-  params: { locale: string; id: string };
-}) {
+export default function StudentDetailPage(
+  props: {
+    params: Promise<{ locale: string; id: string }>;
+  }
+) {
+  const params = use(props.params);
   const router = useRouter();
   const { locale, id } = params;
 

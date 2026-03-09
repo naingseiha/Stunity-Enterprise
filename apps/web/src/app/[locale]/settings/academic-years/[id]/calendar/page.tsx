@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
@@ -56,7 +56,8 @@ const EVENT_TYPES = [
   { value: 'SPECIAL_EVENT', label: 'Special Event', icon: CalendarDays, color: 'bg-indigo-500' },
 ];
 
-export default function AcademicCalendarPage({ params }: { params: { locale: string; id: string } }) {
+export default function AcademicCalendarPage(props: { params: Promise<{ locale: string; id: string }> }) {
+  const params = use(props.params);
   const router = useRouter();
   const { id } = useParams();
   const [calendar, setCalendar] = useState<AcademicCalendar | null>(null);

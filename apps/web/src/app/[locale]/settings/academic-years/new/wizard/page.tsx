@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { SCHOOL_SERVICE_URL } from '@/lib/api/config';
@@ -96,7 +96,8 @@ const DEFAULT_GRADE_RANGES: GradeRange[] = [
   { grade: 'F', minScore: 0, maxScore: 49, gpa: 0.0, description: 'Fail', color: '#EF4444' },
 ];
 
-export default function AcademicYearWizardPage({ params }: { params: { locale: string } }) {
+export default function AcademicYearWizardPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { locale } = params;

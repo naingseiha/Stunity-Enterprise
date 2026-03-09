@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import {
     BarChart3,
     Users,
@@ -25,7 +25,8 @@ import { ATTENDANCE_SERVICE_URL } from '@/lib/api/config';
 import AnimatedContent from '@/components/AnimatedContent';
 import StatCard from '@/components/dashboard/StatCard';
 
-export default function AttendanceDashboardPage({ params }: { params: { locale: string } }) {
+export default function AttendanceDashboardPage(props: { params: Promise<{ locale: string }> }) {
+    const params = use(props.params);
     const { locale } = params;
     const { schoolId } = useAcademicYear();
     const [user, setUser] = useState<any>(null);
@@ -53,7 +54,7 @@ export default function AttendanceDashboardPage({ params }: { params: { locale: 
                 setLoading(true);
                 const now = new Date();
                 let start = new Date();
-                let end = new Date();
+                const end = new Date();
 
                 if (dateRange === 'day') {
                     start.setHours(0, 0, 0, 0);

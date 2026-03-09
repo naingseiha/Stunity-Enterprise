@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -42,7 +42,13 @@ import { useDebounce } from '@/hooks/useDebounce';
 
 const ITEMS_PER_PAGE = 20;
 
-export default function TeachersPage({ params: { locale } }: { params: { locale: string } }) {
+export default function TeachersPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
+
+  const {
+    locale
+  } = params;
+
   const t = useTranslations('teachers');
   const tc = useTranslations('common');
   const router = useRouter();

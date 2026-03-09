@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import Link from 'next/link';
@@ -38,13 +38,22 @@ interface UserData {
   children: Child[];
 }
 
-export default function ParentLayout({
-  children,
-  params: { locale },
-}: {
-  children: React.ReactNode;
-  params: { locale: string };
-}) {
+export default function ParentLayout(
+  props: {
+    children: React.ReactNode;
+    params: Promise<{ locale: string }>;
+  }
+) {
+  const params = use(props.params);
+
+  const {
+    locale
+  } = params;
+
+  const {
+    children
+  } = props;
+
   const router = useRouter();
   const [user, setUser] = useState<UserData | null>(null);
   const [school, setSchool] = useState<any>(null);

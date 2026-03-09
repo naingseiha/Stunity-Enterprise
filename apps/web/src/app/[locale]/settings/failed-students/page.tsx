@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { SCHOOL_SERVICE_URL, STUDENT_SERVICE_URL } from '@/lib/api/config';
@@ -34,7 +34,8 @@ interface Student {
   className: string;
 }
 
-export default function FailedStudentsPage({ params }: { params: { locale: string } }) {
+export default function FailedStudentsPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
   const router = useRouter();
 
   const userData = TokenManager.getUserData();

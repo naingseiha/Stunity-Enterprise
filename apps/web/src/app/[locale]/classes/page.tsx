@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -53,7 +53,13 @@ const gradeColors: Record<number, { bg: string; text: string; border: string; li
 
 const getGradeColor = (grade: number) => gradeColors[grade] || gradeColors[7];
 
-export default function ClassesPage({ params: { locale } }: { params: { locale: string } }) {
+export default function ClassesPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
+
+  const {
+    locale
+  } = params;
+
   const t = useTranslations('classes');
   const tc = useTranslations('common');
   const router = useRouter();
@@ -160,7 +166,6 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
   return (
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
-
       <div className="lg:ml-64 min-h-screen bg-slate-50 dark:bg-gray-900/50">
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
           <AnimatedContent animation="fade" delay={0}>
@@ -388,7 +393,7 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
                 </div>
               ) : viewMode === 'grid' ? (
                 /* Grid View */
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                (<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredClasses.map((classItem) => {
                     const colors = getGradeColor(classItem.grade);
                     const studentCount = classItem._count?.students || 0;
@@ -553,10 +558,10 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
                       </div>
                     );
                   })}
-                </div>
+                </div>)
               ) : (
                 /* List View */
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                (<div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
@@ -642,7 +647,7 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
                       </tbody>
                     </table>
                   </div>
-                </div>
+                </div>)
               )}
             </BlurLoader>
           </AnimatedContent>
@@ -656,7 +661,6 @@ export default function ClassesPage({ params: { locale } }: { params: { locale: 
           )}
         </main>
       </div>
-
       {/* Click outside to close dropdowns */}
       {activeDropdown && (
         <div 

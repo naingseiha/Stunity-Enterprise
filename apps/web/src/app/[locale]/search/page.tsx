@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { TokenManager } from '@/lib/api/auth';
@@ -30,7 +30,13 @@ const POST_TYPE_OPTIONS: { value: string; label: string }[] = [
     { value: 'TUTORIAL', label: 'Tutorial' },
 ];
 
-export default function SearchPage({ params: { locale } }: { params: { locale: string } }) {
+export default function SearchPage(props: { params: Promise<{ locale: string }> }) {
+    const params = use(props.params);
+
+    const {
+        locale
+    } = params;
+
     const router = useRouter();
     const searchParams = useSearchParams();
     const query = searchParams?.get('q') || '';

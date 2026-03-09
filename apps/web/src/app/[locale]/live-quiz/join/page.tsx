@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { TokenManager } from '@/lib/api/auth';
@@ -8,7 +8,8 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { joinSession } from '@/lib/api/live-quiz';
 import { LogIn, Loader2 } from 'lucide-react';
 
-export default function LiveQuizJoinPage({ params }: { params: { locale: string } }) {
+export default function LiveQuizJoinPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
   const router = useRouter();
   const [code, setCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
@@ -64,7 +64,8 @@ interface ComparisonData {
   };
 }
 
-export default function YearComparisonPage({ params }: { params: { locale: string } }) {
+export default function YearComparisonPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
   const router = useRouter();
   const { locale } = params;
 

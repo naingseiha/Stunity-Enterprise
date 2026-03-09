@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { TokenManager } from '@/lib/api/auth';
@@ -8,7 +8,8 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { getLeaderboard, getCurrentQuestion } from '@/lib/api/live-quiz';
 import { Loader2, Trophy, Medal } from 'lucide-react';
 
-export default function LiveQuizLeaderboardPage({ params }: { params: { locale: string } }) {
+export default function LiveQuizLeaderboardPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
   const router = useRouter();
   const urlParams = useParams();
   const code = urlParams?.code as string;

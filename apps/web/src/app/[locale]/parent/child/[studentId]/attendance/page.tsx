@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import Link from 'next/link';
@@ -43,17 +43,24 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-export default function ChildAttendancePage({ 
-  params: { locale, studentId } 
-}: { 
-  params: { locale: string; studentId: string } 
-}) {
+export default function ChildAttendancePage(
+  props: { 
+    params: Promise<{ locale: string; studentId: string }> 
+  }
+) {
+  const params = use(props.params);
+
+  const {
+    locale,
+    studentId
+  } = params;
+
   const router = useRouter();
   const [student, setStudent] = useState<StudentInfo | null>(null);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
