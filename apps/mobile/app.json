@@ -8,7 +8,7 @@
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
     "splash": {
-      "image": "./assets/icon.png",
+      "image": "./assets/Stunity.png",
       "resizeMode": "contain",
       "backgroundColor": "#E0F2FE"
     },
@@ -36,7 +36,7 @@
         "backgroundColor": "#0ad2fa"
       },
       "splash": {
-        "image": "./assets/icon.png",
+        "image": "./assets/Stunity.png",
         "resizeMode": "contain",
         "backgroundColor": "#E0F2FE"
       },
@@ -62,8 +62,8 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#E0F2FE",
-          "image": "./assets/icon.png",
-          "imageWidth": 200
+          "image": "./assets/Stunity.png",
+          "imageWidth": 260
         }
       ],
       [

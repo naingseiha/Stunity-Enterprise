@@ -65,12 +65,15 @@ export default function App() {
   useEffect(() => {
     if (!appIsReady) return;
 
-    // Small delay to ensure layout is ready
+    // Small delay to ensure the JS splash is rendered before hiding native splash
     const timer = setTimeout(() => {
-      ExpoSplashScreen.hideAsync().catch((error) => {
-        console.warn('Failed to hide native splash screen:', error);
-      });
-      setShowSplash(true); // Start our custom animated splash
+      setShowSplash(true);
+      // Wait a tiny bit more to ensure JS splash has painted
+      setTimeout(() => {
+        ExpoSplashScreen.hideAsync().catch((error) => {
+          console.warn('Failed to hide native splash screen:', error);
+        });
+      }, 50);
     }, 100);
 
     return () => clearTimeout(timer);
@@ -90,7 +93,7 @@ export default function App() {
             {showSplash && (
               <SplashScreen
                 onComplete={handleSplashComplete}
-                duration={2500}
+                duration={2000}
               />
             )}
           </NotificationProvider>
