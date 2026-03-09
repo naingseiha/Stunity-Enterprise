@@ -10,7 +10,8 @@ import {
     Dimensions,
     StatusBar,
     Platform
-, Animated} from 'react-native';
+    , Animated
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
@@ -23,6 +24,11 @@ import * as Haptics from 'expo-haptics';
 import { attendanceService } from '@/services/attendance';
 
 const { width } = Dimensions.get('window');
+
+const BRAND_TEAL = '#09CFF7';
+const BRAND_TEAL_DARK = '#00B8DB';
+const BRAND_YELLOW = '#FFA600';
+const BRAND_YELLOW_DARK = '#FF8C00';
 
 const WeeklyStrip = () => {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -86,11 +92,11 @@ const SessionCard = ({
                     <Ionicons
                         name={session === 'MORNING' ? "sunny" : "partly-sunny"}
                         size={22}
-                        color={isCurrent ? '#0D9488' : '#6B7280'}
+                        color={isCurrent ? BRAND_TEAL : '#6B7280'}
                     />
                 </View>
                 <View style={{ flex: 1, marginLeft: 16 }}>
-                    <Text style={[styles.sessionTitle, isCurrent && { color: '#0D9488' }]}>{session}</Text>
+                    <Text style={[styles.sessionTitle, isCurrent && { color: BRAND_TEAL }]}>{session}</Text>
                     <Text style={styles.sessionTimeWindow}>
                         {session === 'MORNING' ? '07:00 AM - 12:00 PM' : '12:00 PM - 06:00 PM'}
                     </Text>
@@ -135,7 +141,7 @@ const SessionCard = ({
                     activeOpacity={0.8}
                 >
                     <LinearGradient
-                        colors={isOnDuty ? ['#F43F5E', '#E11D48'] : ['#14B8A6', '#0D9488']}
+                        colors={isOnDuty ? ['#F43F5E', '#E11D48'] : [BRAND_TEAL, BRAND_TEAL_DARK]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={styles.sessionBtn}
@@ -297,7 +303,7 @@ export const AttendanceCheckInScreen = () => {
                             navigation.goBack();
                         }}
                     >
-                        <Ionicons name="chevron-back" size={20} color="#0D9488" />
+                        <Ionicons name="chevron-back" size={20} color={BRAND_TEAL} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>ATTENDANCE</Text>
                     <TouchableOpacity
@@ -307,7 +313,7 @@ export const AttendanceCheckInScreen = () => {
                             fetchTodayStatus();
                         }}
                     >
-                        <Ionicons name="refresh" size={20} color="#0D9488" />
+                        <Ionicons name="refresh" size={20} color={BRAND_TEAL} />
                     </TouchableOpacity>
                 </View>
 
@@ -348,7 +354,7 @@ export const AttendanceCheckInScreen = () => {
 
                     <Animated.View style={styles.reportActionCard}>
                         <View style={styles.reportIconBg}>
-                            <Ionicons name="bar-chart" size={22} color="#0D9488" />
+                            <Ionicons name="bar-chart" size={22} color={BRAND_YELLOW} />
                         </View>
                         <View style={styles.reportTextContainer}>
                             <Text style={styles.reportTitle}>Summary Reports</Text>
@@ -366,7 +372,7 @@ export const AttendanceCheckInScreen = () => {
                     </Animated.View>
 
                     <Animated.View style={styles.infoCard}>
-                        <Ionicons name="shield-checkmark-outline" size={24} color="#0D9488" />
+                        <Ionicons name="shield-checkmark-outline" size={24} color={BRAND_TEAL} />
                         <Text style={styles.infoText}>
                             Enterprise Geofencing Active. Your location is only recorded during check-in/out for verification.
                         </Text>
@@ -471,7 +477,7 @@ const styles = StyleSheet.create({
     },
     todayDot: {
         backgroundColor: '#F0FDFA',
-        borderColor: '#0D9488',
+        borderColor: BRAND_TEAL,
         borderWidth: 2,
     },
     pastDot: {
@@ -484,7 +490,7 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     todayLabel: {
-        color: '#0D9488',
+        color: BRAND_TEAL,
     },
 
     content: { flex: 1 },
@@ -492,17 +498,15 @@ const styles = StyleSheet.create({
 
     sessionCard: {
         backgroundColor: '#fff',
-        borderRadius: 24,
+        borderRadius: 20,
         padding: 24,
         marginBottom: 20,
-        shadowColor: '#0D9488',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 12,
-        elevation: 4,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        ...Shadows.sm,
     },
     currentSessionCard: {
-        borderColor: '#0D9488',
+        borderColor: BRAND_TEAL,
         borderWidth: 1.5,
     },
     completedSessionCard: {
@@ -555,7 +559,7 @@ const styles = StyleSheet.create({
     currentBadgeText: {
         fontSize: 11,
         fontWeight: '900',
-        color: '#0D9488',
+        color: BRAND_TEAL,
     },
 
     timeInfoRow: {
@@ -592,7 +596,7 @@ const styles = StyleSheet.create({
     },
 
     sessionBtnContainer: {
-        borderRadius: 18,
+        borderRadius: 30,
         overflow: 'hidden',
         ...Shadows.md,
     },
@@ -636,17 +640,19 @@ const styles = StyleSheet.create({
     reportActionCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#fff',
         borderRadius: 20,
         padding: 16,
         marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#FEF3C7',
+        backgroundColor: '#FFFBEB',
         ...Shadows.sm,
     },
     reportIconBg: {
         width: 44,
         height: 44,
         borderRadius: 14,
-        backgroundColor: '#F0FDFA',
+        backgroundColor: '#FEF3C7',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -657,18 +663,18 @@ const styles = StyleSheet.create({
     reportTitle: {
         fontSize: 15,
         fontWeight: '700',
-        color: '#1F2937',
+        color: '#78350F',
     },
     reportSubtitle: {
         fontSize: 12,
-        color: '#64748B',
+        color: '#92400E',
         marginTop: 2,
     },
     viewReportButton: {
-        backgroundColor: '#0D9488',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 10,
+        backgroundColor: BRAND_YELLOW,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 25,
     },
     viewReportText: {
         color: '#fff',

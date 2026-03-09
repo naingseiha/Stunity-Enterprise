@@ -9,10 +9,12 @@ import {
     Dimensions,
     StatusBar,
     RefreshControl
-, Animated} from 'react-native';
+    , Animated
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 
 import * as Haptics from 'expo-haptics';
 import { attendanceService } from '@/services/attendance';
@@ -21,6 +23,10 @@ import { Colors, Shadows, Spacing } from '@/config';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
+
+const BRAND_TEAL = '#09CFF7';
+const BRAND_TEAL_DARK = '#00B8DB';
+const BRAND_YELLOW = '#FFA600';
 
 const StatCard = ({ label, value, color, icon, delay = 0 }: any) => (
     <Animated.View
@@ -33,6 +39,66 @@ const StatCard = ({ label, value, color, icon, delay = 0 }: any) => (
         <Text style={styles.statLabel}>{label}</Text>
     </Animated.View>
 );
+
+const CircularProgress = ({ size, strokeWidth, progress, color }: any) => {
+    const radius = (size - strokeWidth) / 2;
+    const circumference = radius * 2 * Math.PI;
+    const offset = circumference - (progress / 100) * circumference;
+
+    return (
+        <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+            <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
+                <Defs>
+                    <SvgGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <Stop offset="0%" stopColor={BRAND_YELLOW} />
+                        <Stop offset="100%" stopColor="#FF8C00" />
+                    </SvgGradient>
+                </Defs>
+                <Circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    stroke="rgba(255,255,255,0.2)"
+                    strokeWidth={strokeWidth}
+                    fill="none"
+                />
+                <Circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    stroke="url(#grad)"
+                    strokeWidth={strokeWidth}
+                    fill="none"
+                    strokeDasharray={`${circumference} ${circumference}`}
+                    strokeDashoffset={offset}
+                    strokeLinecap="round"
+                />
+            </Svg>
+            <View style={{ position: 'absolute' }}>
+                <Text style={{ fontSize: 24, fontWeight: '900', color: '#fff' }}>{Math.round(progress)}%</Text>
+            </View>
+        </View>
+    );
+};
+
+const groupLogsByDate = (logs: any[]) => {
+    const groups: { [key: string]: any } = {};
+    logs.forEach(log => {
+        const dateKey = new Date(log.date).toDateString();
+        if (!groups[dateKey]) {
+            groups[dateKey] = {
+                date: log.date,
+                morning: null,
+                afternoon: null,
+                status: log.status
+            };
+        }
+        if (log.session === 'MORNING') groups[dateKey].morning = log;
+        else if (log.session === 'AFTERNOON') groups[dateKey].afternoon = log;
+        else groups[dateKey].morning = log; // Fallback for old data
+    });
+    return Object.values(groups);
+};
 
 export const AttendanceReportScreen = () => {
     const navigation = useNavigation();
@@ -111,9 +177,12 @@ export const AttendanceReportScreen = () => {
                 <View style={styles.header}>
                     <TouchableOpacity
                         style={styles.backButton}
-                        onPress={() => navigation.goBack()}
+                        onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            navigation.goBack();
+                        }}
                     >
-                        <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                        <Ionicons name="chevron-back" size={20} color={BRAND_TEAL} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>
                         {isTeacher ? 'Attendance Recording' : 'Attendance Report'}
@@ -124,30 +193,36 @@ export const AttendanceReportScreen = () => {
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0EA5E9']} />
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[BRAND_TEAL]} />
                     }
                 >
                     {/* Attendance Percentage Card */}
                     <Animated.View style={styles.overviewCard}>
                         <LinearGradient
-                            colors={isTeacher ? ['#F59E0B', '#D97706'] : ['#0EA5E9', '#2563EB']}
+                            colors={isTeacher ? [BRAND_YELLOW, '#FF8C00'] : [BRAND_TEAL, BRAND_TEAL_DARK]}
                             style={styles.gradient}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                         >
-                            <View style={styles.percentageContainer}>
-                                <Text style={styles.percentageText}>{Math.round(attendancePercentage)}%</Text>
-                                <Text style={styles.percentageLabel}>{labelMain}</Text>
-                            </View>
-                            <View style={styles.sessionsInfo}>
-                                <View style={styles.sessionStat}>
-                                    <Text style={styles.sessionStatValue}>{attendedCount}</Text>
-                                    <Text style={styles.sessionStatLabel}>{labelAttended}</Text>
-                                </View>
-                                <View style={styles.divider} />
-                                <View style={styles.sessionStat}>
-                                    <Text style={styles.sessionStatValue}>{totalCount}</Text>
-                                    <Text style={styles.sessionStatLabel}>{labelTotal}</Text>
+                            <View style={styles.chartRow}>
+                                <CircularProgress
+                                    size={100}
+                                    strokeWidth={12}
+                                    progress={attendancePercentage}
+                                />
+                                <View style={styles.chartTextContainer}>
+                                    <Text style={styles.percentageLabel}>{labelMain}</Text>
+                                    <View style={styles.sessionsMiniInfo}>
+                                        <View style={styles.miniStat}>
+                                            <Text style={styles.miniStatValue}>{attendedCount}</Text>
+                                            <Text style={styles.miniStatLabel}>{labelAttended}</Text>
+                                        </View>
+                                        <View style={styles.miniDivider} />
+                                        <View style={styles.miniStat}>
+                                            <Text style={styles.miniStatValue}>{totalCount}</Text>
+                                            <Text style={styles.miniStatLabel}>{labelTotal}</Text>
+                                        </View>
+                                    </View>
                                 </View>
                             </View>
                         </LinearGradient>
@@ -215,43 +290,61 @@ export const AttendanceReportScreen = () => {
                     {isTeacher && summary?.checkInHistory?.length > 0 && (
                         <Animated.View style={styles.infoSection}>
                             <Text style={styles.sectionTitle}>Recent Check-ins</Text>
-                            {summary.checkInHistory.slice(0, 7).map((log: any, index: number) => (
-                                <View key={log.id || index} style={[styles.infoCard, { marginBottom: 12 }]}>
+                            {groupLogsByDate(summary.checkInHistory).slice(0, 7).map((day: any, index: number) => (
+                                <View key={day.date || index} style={[styles.infoCard, { marginBottom: 12 }]}>
                                     <View style={styles.checkInLogHeader}>
                                         <View style={styles.checkInLogDate}>
                                             <Ionicons name="calendar-outline" size={16} color="#6B7280" />
                                             <Text style={styles.dateText}>
-                                                {new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                                {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                                             </Text>
                                         </View>
-                                        <View style={[styles.statusBadge, { backgroundColor: log.status === 'PRESENT' ? '#D1FAE5' : '#FEE2E2' }]}>
-                                            <Text style={[styles.statusText, { color: log.status === 'PRESENT' ? '#059669' : '#DC2626' }]}>
-                                                {log.status === 'PRESENT' ? 'Present' : 'Absent'}
+                                        <View style={[styles.statusBadge, { backgroundColor: (day.morning?.status === 'PRESENT' || day.afternoon?.status === 'PRESENT') ? '#D1FAE5' : '#FEE2E2' }]}>
+                                            <Text style={[styles.statusText, { color: (day.morning?.status === 'PRESENT' || day.afternoon?.status === 'PRESENT') ? '#059669' : '#DC2626' }]}>
+                                                {(day.morning?.status === 'PRESENT' || day.afternoon?.status === 'PRESENT') ? 'Present' : 'Absent'}
                                             </Text>
                                         </View>
                                     </View>
 
-                                    <View style={styles.timeLogsContainer}>
-                                        <View style={styles.timeLogItem}>
-                                            <View style={[styles.timeIconBg, { backgroundColor: '#E0F2FE' }]}>
-                                                <Ionicons name="log-in-outline" size={18} color="#0284C7" />
+                                    <View style={styles.dailySessionsRow}>
+                                        {/* Morning Session */}
+                                        <View style={styles.sessionBox}>
+                                            <View style={styles.sessionBoxHeader}>
+                                                <Ionicons name="sunny-outline" size={14} color="#6B7280" />
+                                                <Text style={styles.sessionBoxTitle}>Morning</Text>
                                             </View>
-                                            <View>
-                                                <Text style={styles.timeLogLabel}>Time In</Text>
-                                                <Text style={styles.timeLogValue}>
-                                                    {log.timeIn ? new Date(log.timeIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                            <View style={styles.timeRow}>
+                                                <Text style={styles.timeLabelSmall}>In:</Text>
+                                                <Text style={styles.timeValueSmall}>
+                                                    {day.morning?.timeIn ? new Date(day.morning.timeIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.timeRow}>
+                                                <Text style={styles.timeLabelSmall}>Out:</Text>
+                                                <Text style={styles.timeValueSmall}>
+                                                    {day.morning?.timeOut ? new Date(day.morning.timeOut).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                                                 </Text>
                                             </View>
                                         </View>
-                                        <View style={styles.timeLogSeparator} />
-                                        <View style={styles.timeLogItem}>
-                                            <View style={[styles.timeIconBg, { backgroundColor: '#FFEDD5' }]}>
-                                                <Ionicons name="log-out-outline" size={18} color="#C2410C" />
+
+                                        <View style={styles.verticalDividerSmall} />
+
+                                        {/* Afternoon Session */}
+                                        <View style={styles.sessionBox}>
+                                            <View style={styles.sessionBoxHeader}>
+                                                <Ionicons name="partly-sunny-outline" size={14} color="#6B7280" />
+                                                <Text style={styles.sessionBoxTitle}>Afternoon</Text>
                                             </View>
-                                            <View>
-                                                <Text style={styles.timeLogLabel}>Time Out</Text>
-                                                <Text style={styles.timeLogValue}>
-                                                    {log.timeOut ? new Date(log.timeOut).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                            <View style={styles.timeRow}>
+                                                <Text style={styles.timeLabelSmall}>In:</Text>
+                                                <Text style={styles.timeValueSmall}>
+                                                    {day.afternoon?.timeIn ? new Date(day.afternoon.timeIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.timeRow}>
+                                                <Text style={styles.timeLabelSmall}>Out:</Text>
+                                                <Text style={styles.timeValueSmall}>
+                                                    {day.afternoon?.timeOut ? new Date(day.afternoon.timeOut).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                                                 </Text>
                                             </View>
                                         </View>
@@ -293,10 +386,10 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
     },
     backButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 12,
-        backgroundColor: '#fff',
+        width: 40,
+        height: 40,
+        borderRadius: 14,
+        backgroundColor: '#EFF6FF',
         alignItems: 'center',
         justifyContent: 'center',
         ...Shadows.sm,
@@ -310,54 +403,54 @@ const styles = StyleSheet.create({
     overviewCard: {
         borderRadius: 24,
         overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
         ...Shadows.md,
         marginBottom: 24,
     },
     gradient: {
-        padding: 32,
-        alignItems: 'center',
+        padding: 24,
     },
-    percentageContainer: {
+    chartRow: {
+        flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 24,
+        gap: 20,
     },
-    percentageText: {
-        fontSize: 48,
-        fontWeight: '900',
-        color: '#fff',
+    chartTextContainer: {
+        flex: 1,
     },
     percentageLabel: {
         fontSize: 14,
-        color: 'rgba(255,255,255,0.8)',
-        fontWeight: '600',
-        marginTop: 4,
+        color: 'rgba(255,255,255,0.9)',
+        fontWeight: '700',
+        marginBottom: 12,
     },
-    sessionsInfo: {
+    sessionsMiniInfo: {
         flexDirection: 'row',
-        width: '100%',
-        justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        borderRadius: 16,
-        padding: 16,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        borderRadius: 12,
+        padding: 12,
+        gap: 12,
     },
-    sessionStat: {
+    miniStat: {
         flex: 1,
         alignItems: 'center',
     },
-    sessionStatValue: {
-        fontSize: 18,
-        fontWeight: '700',
+    miniStatValue: {
+        fontSize: 16,
+        fontWeight: '800',
         color: '#fff',
     },
-    sessionStatLabel: {
-        fontSize: 12,
+    miniStatLabel: {
+        fontSize: 10,
         color: 'rgba(255,255,255,0.7)',
         marginTop: 2,
+        textTransform: 'uppercase',
     },
-    divider: {
+    miniDivider: {
         width: 1,
-        height: 30,
+        height: 20,
         backgroundColor: 'rgba(255,255,255,0.2)',
     },
     statsGrid: {
@@ -371,6 +464,8 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         padding: 16,
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
         ...Shadows.sm,
     },
     statIconBg: {
@@ -405,6 +500,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderRadius: 20,
         padding: 20,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
         ...Shadows.sm,
     },
     infoRow: {
@@ -446,42 +543,49 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '700',
     },
-    timeLogsContainer: {
+    dailySessionsRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        borderRadius: 16,
+        padding: 14,
     },
-    timeLogItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
+    sessionBox: {
         flex: 1,
     },
-    timeIconBg: {
-        width: 36,
-        height: 36,
-        borderRadius: 10,
+    sessionBoxHeader: {
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
+        gap: 6,
+        marginBottom: 8,
     },
-    timeLogLabel: {
+    sessionBoxTitle: {
         fontSize: 11,
-        color: '#6B7280',
-        fontWeight: '500',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    timeLogValue: {
-        fontSize: 15,
         fontWeight: '700',
-        color: '#111827',
+        color: '#64748B',
+        textTransform: 'uppercase',
+    },
+    timeRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingRight: 10,
         marginTop: 2,
     },
-    timeLogSeparator: {
+    timeLabelSmall: {
+        fontSize: 10,
+        color: '#94A3B8',
+        fontWeight: '600',
+    },
+    timeValueSmall: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#1E293B',
+    },
+    verticalDividerSmall: {
         width: 1,
-        height: 30,
-        backgroundColor: '#E5E7EB',
-        marginHorizontal: 16,
+        height: 40,
+        backgroundColor: '#E2E8F0',
+        marginHorizontal: 12,
     },
     breakdownHeader: {
         flexDirection: 'row',
