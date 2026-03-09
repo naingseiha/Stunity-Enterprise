@@ -37,7 +37,7 @@ import { formatNumber } from '@/utils';
 import { ProfileStackScreenProps } from '@/navigation/types';
 import * as Location from 'expo-location';
 import { attendanceService } from '@/services/attendance';
-import { fetchProfile as apiFetchProfile, fetchEducation, fetchExperiences, fetchCertifications, followUser, unfollowUser, uploadProfilePhoto, uploadCoverPhoto } from '@/api/profileApi';
+import { fetchProfile as apiFetchProfile, fetchEducation, fetchExperiences, fetchCertifications, followUser, unfollowUser, uploadProfilePhoto, uploadCoverPhoto, updateProfile } from '@/api/profileApi';
 import { statsAPI, type UserStats as QuizUserStats, type Streak, type UserAchievement, type Achievement } from '@/services/stats';
 import { PerformanceTab, ActivityTab, CertificationsSection, SkillsSection, ProfileCompletenessCard, CareerGoalsCard, ProjectShowcase, LinkSchoolCard } from './components';
 import RenderPostItem from '../feed/RenderPostItem';
@@ -120,6 +120,8 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'performance' | 'posts' | 'about' | 'activity'>('performance');
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   // Fetch profile on mount and when userId changes
   useEffect(() => {
@@ -207,22 +209,37 @@ export default function ProfileScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
+      allowsEditing: true,
+      aspect: [1, 1],
       quality: 0.8,
     });
 
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
+
+      // Immediate UI update (optimistic)
+      setProfile(prev => prev ? { ...prev, profilePictureUrl: asset.uri } : prev);
+      setUploadingPhoto(true);
+
       try {
         const fileName = asset.uri.split('/').pop() || 'profile.jpg';
         const data = await uploadProfilePhoto(asset.uri, fileName, asset.mimeType || 'image/jpeg');
-        updateUser({ profilePictureUrl: data.profilePictureUrl });
-        setProfile(prev => prev ? { ...prev, profilePictureUrl: data.profilePictureUrl } : prev);
+        const photoUrl = (data as any).profilePictureUrl;
+
+        // Persist to backend and update local/global state
+        await updateProfile({ profilePictureUrl: photoUrl } as any);
+        updateUser({ profilePictureUrl: photoUrl });
+        setProfile(prev => prev ? { ...prev, profilePictureUrl: photoUrl } : prev);
       } catch (e) {
         console.error('Profile photo upload failed:', e);
+        // Rollback on error if needed, but usually the old one is still in currentUser
+        Alert.alert('Upload Error', 'Failed to update profile picture. Please try again.');
+        setProfile(isOwnProfile ? currentUser : null);
+      } finally {
+        setUploadingPhoto(false);
       }
     }
-  }, [updateUser]);
+  }, [updateUser, isOwnProfile, currentUser]);
 
   const handlePickCoverPhoto = useCallback(async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -230,22 +247,36 @@ export default function ProfileScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
+      allowsEditing: true,
+      aspect: [16, 9],
       quality: 0.8,
     });
 
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
+
+      // Immediate UI update (optimistic)
+      setProfile(prev => prev ? { ...prev, coverPhotoUrl: asset.uri } : prev);
+      setUploadingCover(true);
+
       try {
         const fileName = asset.uri.split('/').pop() || 'cover.jpg';
         const data = await uploadCoverPhoto(asset.uri, fileName, asset.mimeType || 'image/jpeg');
-        updateUser({ coverPhotoUrl: data.coverPhotoUrl } as any);
-        setProfile(prev => prev ? { ...prev, coverPhotoUrl: data.coverPhotoUrl } : prev);
+        const photoUrl = (data as any).coverPhotoUrl;
+
+        // Persist to backend and update local/global state
+        await updateProfile({ coverPhotoUrl: photoUrl } as any);
+        updateUser({ coverPhotoUrl: photoUrl } as any);
+        setProfile(prev => prev ? { ...prev, coverPhotoUrl: photoUrl } : prev);
       } catch (e) {
         console.error('Cover photo upload failed:', e);
+        Alert.alert('Upload Error', 'Failed to update cover photo. Please try again.');
+        setProfile(isOwnProfile ? currentUser : null);
+      } finally {
+        setUploadingCover(false);
       }
     }
-  }, [updateUser]);
+  }, [updateUser, isOwnProfile, currentUser]);
 
   // ── Shimmer Loading State — matches actual profile layout ──────
   if (loading || !profile) {
@@ -352,13 +383,20 @@ export default function ProfileScreen() {
               {/* Cover Photo Section */}
               <View style={styles.coverSection}>
                 {(profile as any)?.coverPhotoUrl ? (
-                  <Image source={{ uri: (profile as any).coverPhotoUrl }} style={styles.coverGradient} />
+                  <View style={StyleSheet.absoluteFill}>
+                    <Image source={{ uri: (profile as any).coverPhotoUrl }} style={styles.coverGradient} />
+                    {uploadingCover && (
+                      <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }]}>
+                        <ActivityIndicator color="#fff" size="large" />
+                      </View>
+                    )}
+                  </View>
                 ) : (
                   // Default: clean Facebook-style grey placeholder
                   <View style={styles.coverPlaceholder}>
                     {isOwnProfile && (
                       <TouchableOpacity style={styles.coverHint} onPress={handlePickCoverPhoto} activeOpacity={0.7}>
-                        <Text style={styles.coverHintText}>Add Cover Photo</Text>
+                        {uploadingCover ? <ActivityIndicator color={BRAND_TEAL} /> : <Text style={styles.coverHintText}>Add Cover Photo</Text>}
                       </TouchableOpacity>
                     )}
                   </View>
@@ -404,14 +442,21 @@ export default function ProfileScreen() {
                 {/* Avatar Section */}
                 <Animated.View style={styles.avatarSection}>
                   <View style={styles.avatarWrapper}>
-                    <Avatar
-                      uri={profile.profilePictureUrl}
-                      name={fullName}
-                      size="3xl"
-                      showBorder={false}
-                      gradientBorder="none"
-                      style={{ width: 160, height: 160, borderRadius: 80 }}
-                    />
+                    <View style={{ width: 160, height: 160, borderRadius: 80, overflow: 'hidden', backgroundColor: '#E2E8F0' }}>
+                      <Avatar
+                        uri={profile.profilePictureUrl}
+                        name={fullName}
+                        size="3xl"
+                        showBorder={false}
+                        gradientBorder="none"
+                        style={{ width: '100%', height: '100%' }}
+                      />
+                      {uploadingPhoto && (
+                        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }]}>
+                          <ActivityIndicator color="#fff" size="large" />
+                        </View>
+                      )}
+                    </View>
 
                     {/* Edit Avatar Button */}
                     {isOwnProfile && (

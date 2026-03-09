@@ -96,6 +96,8 @@ export interface UpdateProfileData {
     };
     profileVisibility?: string;
     isOpenToOpportunities?: boolean;
+    profilePictureUrl?: string;
+    coverPhotoUrl?: string;
 }
 
 /** Update own profile fields. */
@@ -154,7 +156,7 @@ export async function uploadProfilePhoto(fileUri: string, fileName: string, mime
         }
 
         // Return the final public URL mimicking the old backend response structure
-        return { url: ticket.publicUrl };
+        return { profilePictureUrl: ticket.publicUrl };
     } catch (err: any) {
         console.error('❌ [profileApi] Profile photo upload failed:', err);
         const errorMsg = err.message || JSON.stringify(err);
@@ -218,7 +220,7 @@ export async function uploadCoverPhoto(fileUri: string, fileName: string, mimeTy
         }
 
         // Return the final public URL mimicking the old backend response structure
-        return { url: ticket.publicUrl };
+        return { coverPhotoUrl: ticket.publicUrl };
     } catch (err: any) {
         console.error('❌ [profileApi] Cover photo upload failed:', err);
         const errorMsg = err.message || JSON.stringify(err);

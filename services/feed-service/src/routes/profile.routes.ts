@@ -462,6 +462,8 @@ router.put('/users/me/profile', authenticateToken, async (req: AuthRequest, res:
       socialLinks,
       profileVisibility,
       isOpenToOpportunities,
+      profilePictureUrl,
+      coverPhotoUrl,
     } = req.body;
 
     // Build update data
@@ -478,6 +480,8 @@ router.put('/users/me/profile', authenticateToken, async (req: AuthRequest, res:
     if (socialLinks !== undefined) updateData.socialLinks = socialLinks;
     if (profileVisibility !== undefined) updateData.profileVisibility = profileVisibility;
     if (isOpenToOpportunities !== undefined) updateData.isOpenToOpportunities = isOpenToOpportunities;
+    if (profilePictureUrl !== undefined) updateData.profilePictureUrl = profilePictureUrl;
+    if (coverPhotoUrl !== undefined) updateData.coverPhotoUrl = coverPhotoUrl;
 
     // Calculate profile completeness
     const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -507,6 +511,8 @@ router.put('/users/me/profile', authenticateToken, async (req: AuthRequest, res:
         profileVisibility: true,
         profileCompleteness: true,
         isOpenToOpportunities: true,
+        profilePictureUrl: true,
+        coverPhotoUrl: true,
       },
     });
 

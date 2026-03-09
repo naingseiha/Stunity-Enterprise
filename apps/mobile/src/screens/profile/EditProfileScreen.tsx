@@ -103,7 +103,8 @@ export default function EditProfileScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
+      allowsEditing: true,
+      aspect: [1, 1],
       quality: 0.8,
     });
 
@@ -116,7 +117,9 @@ export default function EditProfileScreen() {
         const fileName = asset.uri.split('/').pop() || 'profile.jpg';
         const mimeType = asset.mimeType || 'image/jpeg';
         const data = await uploadProfilePhoto(asset.uri, fileName, mimeType);
-        updateUser({ profilePictureUrl: data.profilePictureUrl });
+        const photoUrl = (data as any).profilePictureUrl;
+        await updateProfile({ profilePictureUrl: photoUrl } as any);
+        updateUser({ profilePictureUrl: photoUrl });
         Alert.alert('Success', 'Profile photo updated!');
       } catch (error) {
         console.error('Upload profile photo error:', error);
@@ -137,7 +140,8 @@ export default function EditProfileScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
+      allowsEditing: true,
+      aspect: [16, 9],
       quality: 0.8,
     });
 
@@ -150,7 +154,9 @@ export default function EditProfileScreen() {
         const fileName = asset.uri.split('/').pop() || 'cover.jpg';
         const mimeType = asset.mimeType || 'image/jpeg';
         const data = await uploadCoverPhoto(asset.uri, fileName, mimeType);
-        updateUser({ coverPhotoUrl: data.coverPhotoUrl } as any);
+        const photoUrl = (data as any).coverPhotoUrl;
+        await updateProfile({ coverPhotoUrl: photoUrl } as any);
+        updateUser({ coverPhotoUrl: photoUrl } as any);
         Alert.alert('Success', 'Cover photo updated!');
       } catch (error) {
         console.error('Upload cover photo error:', error);
