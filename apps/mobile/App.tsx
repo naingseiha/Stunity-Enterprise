@@ -5,7 +5,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as ExpoSplashScreen from 'expo-splash-screen';
@@ -65,16 +65,14 @@ export default function App() {
   useEffect(() => {
     if (!appIsReady) return;
 
-    // Small delay to ensure the JS splash is rendered before hiding native splash
+    // Show JS splash immediately to replace native splash
     const timer = setTimeout(() => {
       setShowSplash(true);
-      // Wait a tiny bit more to ensure JS splash has painted
-      setTimeout(() => {
-        ExpoSplashScreen.hideAsync().catch((error) => {
-          console.warn('Failed to hide native splash screen:', error);
-        });
-      }, 50);
-    }, 100);
+      // Hide native splash once JS splash is ready
+      ExpoSplashScreen.hideAsync().catch((error) => {
+        console.warn('Failed to hide native splash screen:', error);
+      });
+    }, 0);
 
     return () => clearTimeout(timer);
   }, [appIsReady]);
@@ -88,14 +86,16 @@ export default function App() {
       <GestureHandlerRootView style={styles.container}>
         <SafeAreaProvider>
           <NotificationProvider>
-            <StatusBar style="dark" />
-            {appIsReady && !showSplash && <RootNavigator />}
-            {showSplash && (
-              <SplashScreen
-                onComplete={handleSplashComplete}
-                duration={2000}
-              />
-            )}
+            <StatusBar style="dark" translucent backgroundColor="transparent" />
+            <View style={styles.contentContainer}>
+              {appIsReady && <RootNavigator />}
+              {showSplash && (
+                <SplashScreen
+                  onComplete={handleSplashComplete}
+                  duration={2800}
+                />
+              )}
+            </View>
           </NotificationProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>
@@ -106,5 +106,9 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  contentContainer: {
+    flex: 1,
+    backgroundColor: '#E0F2FE',
   },
 });

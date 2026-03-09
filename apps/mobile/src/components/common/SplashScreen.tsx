@@ -14,9 +14,10 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
+  Easing,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import StunityLogo from '../../../assets/Stunity.svg';
 
 const { width, height } = Dimensions.get('window');
 
@@ -25,25 +26,76 @@ interface SplashScreenProps {
   duration?: number;
 }
 
-export const SplashScreen: React.FC<SplashScreenProps> = ({
-  onComplete,
-  duration = 2000,
-}) => {
-  // Animation values
-  const containerOpacity = useRef(new Animated.Value(1)).current;
-  const logoScale = useRef(new Animated.Value(1)).current;
-  const logoOpacity = useRef(new Animated.Value(1)).current;
+const LoadingDots = () => {
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Start the sequences
-    const animationSequence = Animated.sequence([
-      // Hold for a moment to let the app fully mount behind the scenes
-      Animated.delay(1000),
-      // Perform the professional zoom-out animation
+    const animate = (val: Animated.Value, delay: number) => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.spring(val, {
+            toValue: -10,
+            friction: 4,
+            tension: 40,
+            useNativeDriver: true,
+          }),
+          Animated.spring(val, {
+            toValue: 0,
+            friction: 4,
+            tension: 40,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    };
+    animate(dot1, 0);
+    animate(dot2, 150);
+    animate(dot3, 300);
+  }, []);
+
+  return (
+    <View style={styles.dotsContainer}>
+      <Animated.View style={[styles.dot, { transform: [{ translateY: dot1 }] }]} />
+      <Animated.View style={[styles.dot, { transform: [{ translateY: dot2 }] }]} />
+      <Animated.View style={[styles.dot, { transform: [{ translateY: dot3 }] }]} />
+    </View>
+  );
+};
+
+export const SplashScreen: React.FC<SplashScreenProps> = ({
+  onComplete,
+  duration = 2800,
+}) => {
+  const containerOpacity = useRef(new Animated.Value(1)).current;
+  const logoScale = useRef(new Animated.Value(0.7)).current;
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Ultra-premium spring entrance
+    Animated.parallel([
+      Animated.spring(logoScale, {
+        toValue: 1,
+        friction: 6,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+      Animated.timing(logoOpacity, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Reveal sequence
+    const revealTimer = setTimeout(() => {
       Animated.parallel([
         Animated.timing(logoScale, {
-          toValue: 12, // Significant zoom for the Twitter-style "reveal-through-logo" effect
-          duration: 600,
+          toValue: 2.5,
+          duration: 700,
+          easing: Easing.bezier(0.4, 0, 0.2, 1),
           useNativeDriver: true,
         }),
         Animated.timing(logoOpacity, {
@@ -56,13 +108,13 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
           duration: 700,
           useNativeDriver: true,
         }),
-      ]),
-    ]);
+      ]).start(() => {
+        onComplete?.();
+      });
+    }, duration - 800);
 
-    animationSequence.start(() => {
-      onComplete?.();
-    });
-  }, [onComplete]);
+    return () => clearTimeout(revealTimer);
+  }, [onComplete, duration]);
 
   return (
     <Animated.View
@@ -83,8 +135,19 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
             },
           ]}
         >
-          <StunityLogo width={260} height={85} />
+          <Image
+            source={require('../../../assets/Stunity.png')}
+            style={{
+              width: width * 0.82,
+              height: undefined,
+              aspectRatio: 2045 / 512,
+            }}
+            resizeMode="contain"
+          />
         </Animated.View>
+        <View style={styles.footer}>
+          <LoadingDots />
+        </View>
       </View>
     </Animated.View>
   );
@@ -94,16 +157,33 @@ const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 9999,
+    backgroundColor: '#E0F2FE', // Set directly to prevent white flash
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   background: {
     flex: 1,
-    backgroundColor: '#E0F2FE', // Matches native splash perfectly
+    width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },
   logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 100,
+  },
+  dotsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#09CFF7',
   },
 });
 
