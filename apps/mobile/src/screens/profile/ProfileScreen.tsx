@@ -31,7 +31,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar, Button } from '@/components/common';
 import { Skeleton } from '@/components/common/Loading';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useFeedStore } from '@/stores';
 import { User, UserStats, Education, Experience, Certification } from '@/types';
 import { formatNumber } from '@/utils';
 import { ProfileStackScreenProps } from '@/navigation/types';
@@ -40,10 +40,14 @@ import { attendanceService } from '@/services/attendance';
 import { fetchProfile as apiFetchProfile, fetchEducation, fetchExperiences, fetchCertifications, followUser, unfollowUser, uploadProfilePhoto, uploadCoverPhoto } from '@/api/profileApi';
 import { statsAPI, type UserStats as QuizUserStats, type Streak, type UserAchievement, type Achievement } from '@/services/stats';
 import { PerformanceTab, ActivityTab, CertificationsSection, SkillsSection, ProfileCompletenessCard, CareerGoalsCard, ProjectShowcase, LinkSchoolCard } from './components';
+import RenderPostItem from '../feed/RenderPostItem';
 import * as ImagePicker from 'expo-image-picker';
 
 const { width } = Dimensions.get('window');
-const COVER_HEIGHT = 162;
+const COVER_HEIGHT = 220;
+// Brand Colors — match WelcomeScreen exactly
+const BRAND_TEAL = '#09CFF7';
+const BRAND_TEAL_DARK = '#00B8DB';
 
 type RouteProp = ProfileStackScreenProps<'Profile'>['route'];
 type NavigationProp = ProfileStackScreenProps<'Profile'>['navigation'];
@@ -101,6 +105,8 @@ export default function ProfileScreen() {
   const isOwnProfile = !userId || userId === currentUser?.id;
   const { updateUser } = useAuthStore();
 
+
+
   const [profile, setProfile] = useState<User | null>(isOwnProfile ? currentUser : null);
   const [profileStats, setProfileStats] = useState<UserStats | null>(null);
   const [education, setEducation] = useState<Education[]>([]);
@@ -113,7 +119,7 @@ export default function ProfileScreen() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'performance' | 'about' | 'activity'>('performance');
+  const [activeTab, setActiveTab] = useState<'performance' | 'posts' | 'about' | 'activity'>('performance');
 
   // Fetch profile on mount and when userId changes
   useEffect(() => {
@@ -246,64 +252,60 @@ export default function ProfileScreen() {
     return (
       <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: '#fff' }]}>
         <StatusBar style="dark" />
-        <View style={{ flex: 1, backgroundColor: '#BAE6FD' }}>
-          {/* Cover shimmer */}
-          <LinearGradient
-            colors={['#BAE6FD', '#E0F2FE', '#F0F9FF']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{ height: COVER_HEIGHT }}
-          />
+        <View style={{ flex: 1, backgroundColor: '#F1F5F9' }}>
+          {/* Cover shimmer - matches generic placeholder */}
+          <View style={{ height: COVER_HEIGHT, backgroundColor: '#E5E7EB' }} />
 
-          <View style={{ flex: 1, marginTop: -90, alignItems: 'center' }}>
-            <Animated.View style={{ width: '100%', alignItems: 'center' }}>
-              {/* Avatar */}
-              <Skeleton width={100} height={100} borderRadius={50} />
-
-              {/* Name + headline + level badge */}
-              <View style={{ alignItems: 'center', marginTop: 12, gap: 8 }}>
-                <Skeleton width={180} height={22} borderRadius={11} />
-                <Skeleton width={80} height={24} borderRadius={12} />
-                <Skeleton width={140} height={14} borderRadius={7} />
-              </View>
-
-              {/* Stats row — 3 cards */}
-              <View style={{ flexDirection: 'row', gap: 10, marginTop: 20, paddingHorizontal: 16, width: '100%' }}>
-                <View style={{ flex: 1, alignItems: 'center' }}>
-                  <Skeleton width="100%" height={90} borderRadius={18} />
-                </View>
-                <View style={{ flex: 1, alignItems: 'center' }}>
-                  <Skeleton width="100%" height={90} borderRadius={18} />
-                </View>
-                <View style={{ flex: 1, alignItems: 'center' }}>
-                  <Skeleton width="100%" height={90} borderRadius={18} />
-                </View>
-              </View>
-
-              {/* Action buttons */}
-              <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-                <Skeleton width={80} height={36} borderRadius={18} />
-                <Skeleton width={36} height={36} borderRadius={18} />
-                <Skeleton width={36} height={36} borderRadius={18} />
-              </View>
-
-              {/* Hero performance card */}
-              <View style={{ width: '100%', paddingHorizontal: 16, marginTop: 20 }}>
-                <Skeleton width="100%" height={120} borderRadius={20} />
-              </View>
-
-              {/* Stat grid 2x3 */}
-              <View style={{ width: '100%', paddingHorizontal: 16, marginTop: 12, gap: 10 }}>
-                <View style={{ flexDirection: 'row', gap: 10 }}>
-                  <Skeleton width="48%" height={80} borderRadius={16} />
-                  <Skeleton width="48%" height={80} borderRadius={16} />
-                </View>
-                <View style={{ flexDirection: 'row', gap: 10 }}>
-                  <Skeleton width="48%" height={80} borderRadius={16} />
-                  <Skeleton width="48%" height={80} borderRadius={16} />
-                </View>
+          <View style={styles.contentContainer}>
+            <Animated.View style={styles.avatarSection}>
+              {/* Avatar overlay - matches real layout (160x160) */}
+              <View style={[styles.avatarWrapper, { backgroundColor: 'transparent', elevation: 0, shadowOpacity: 0 }]}>
+                <Skeleton width={160} height={160} borderRadius={80} />
               </View>
             </Animated.View>
+
+            {/* Name + role badge + headline */}
+            <View style={[styles.nameSection, { alignItems: 'center', gap: 12, marginTop: -30 }]}>
+              <Skeleton width={200} height={28} borderRadius={14} />
+              <Skeleton width={120} height={24} borderRadius={12} />
+              <Skeleton width={160} height={16} borderRadius={8} />
+            </View>
+
+            {/* Text Stats Row: Posts | Followers | Following */}
+            <View style={[styles.textStatsRow, { justifyContent: 'center', gap: 32, marginTop: 24 }]}>
+              <View style={{ alignItems: 'center', gap: 4 }}>
+                <Skeleton width={24} height={24} borderRadius={8} />
+                <Skeleton width={40} height={12} borderRadius={6} />
+              </View>
+              <View style={{ width: 1, height: 24, backgroundColor: '#E5E7EB' }} />
+              <View style={{ alignItems: 'center', gap: 4 }}>
+                <Skeleton width={24} height={24} borderRadius={8} />
+                <Skeleton width={56} height={12} borderRadius={6} />
+              </View>
+              <View style={{ width: 1, height: 24, backgroundColor: '#E5E7EB' }} />
+              <View style={{ alignItems: 'center', gap: 4 }}>
+                <Skeleton width={24} height={24} borderRadius={8} />
+                <Skeleton width={56} height={12} borderRadius={6} />
+              </View>
+            </View>
+
+            {/* Action buttons (Follow, Message) */}
+            <View style={[styles.capsuleRow, { marginTop: 20 }]}>
+              <Skeleton width={120} height={44} borderRadius={22} />
+              <Skeleton width={120} height={44} borderRadius={22} />
+            </View>
+
+            {/* Tabs scroll header placeholder */}
+            <View style={[styles.tabsScroll, { marginTop: 24, flexDirection: 'row', gap: 20 }]}>
+              <Skeleton width={100} height={24} borderRadius={12} />
+              <Skeleton width={80} height={24} borderRadius={12} />
+              <Skeleton width={80} height={24} borderRadius={12} />
+            </View>
+
+            {/* Tab content placeholder */}
+            <View style={[styles.tabContent, { marginTop: 16 }]}>
+              <Skeleton width="100%" height={240} borderRadius={16} />
+            </View>
           </View>
         </View>
       </SafeAreaView>
@@ -319,6 +321,7 @@ export default function ProfileScreen() {
 
   const tabs = [
     { id: 'performance', label: 'Performance', icon: 'trending-up' },
+    { id: 'posts', label: 'Posts', icon: 'list' },
     { id: 'about', label: 'About', icon: 'person' },
     { id: 'activity', label: 'Activity', icon: 'flame' },
   ];
@@ -351,51 +354,44 @@ export default function ProfileScreen() {
                 {(profile as any)?.coverPhotoUrl ? (
                   <Image source={{ uri: (profile as any).coverPhotoUrl }} style={styles.coverGradient} />
                 ) : (
-                  <LinearGradient
-                    colors={[Colors.primary, '#0284C7']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.coverGradient}
-                  >
-                    {/* Decorative overlay circles for depth */}
-                    <View style={[styles.coverDecorCircle, { width: 160, height: 160, top: -40, left: -30, opacity: 0.1 }]} />
-                    <View style={[styles.coverDecorCircle, { width: 100, height: 100, bottom: -10, right: -20, opacity: 0.08 }]} />
-                    {/* Subtle grid pattern suggestion via thin lines */}
-                    <View style={styles.coverPatternOverlay} />
-                  </LinearGradient>
+                  // Default: clean Facebook-style grey placeholder
+                  <View style={styles.coverPlaceholder}>
+                    {isOwnProfile && (
+                      <TouchableOpacity style={styles.coverHint} onPress={handlePickCoverPhoto} activeOpacity={0.7}>
+                        <Text style={styles.coverHintText}>Add Cover Photo</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 )}
 
-                {/* Header Buttons — Restored to absolute overlay */}
+                {/* Header Buttons */}
                 <View style={[styles.headerButtons, { paddingTop: 12 }]}>
                   <View style={styles.headerTopRow}>
-                    {/* Back Button — only when viewing someone else's profile */}
                     {!isOwnProfile && (
-                      <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.goBack()}>
-                        <Ionicons name="chevron-back" size={22} color="#fff" />
+                      <TouchableOpacity style={styles.headerCircleBtnDark} onPress={() => navigation.goBack()}>
+                        <Ionicons name="chevron-back" size={22} color="#333" />
                       </TouchableOpacity>
                     )}
 
                     <View style={{ flex: 1 }} />
 
-                    {/* Settings, Messages & Camera — own profile only */}
                     {isOwnProfile && (
                       <View style={{ flexDirection: 'row', gap: 8 }}>
-                        <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.navigate('Messages' as any, { screen: 'Conversations' })}>
-                          <Ionicons name="chatbubbles-outline" size={20} color="#fff" />
+                        <TouchableOpacity style={styles.headerCircleBtnDark} onPress={() => navigation.navigate('Messages' as any, { screen: 'Conversations' })}>
+                          <Ionicons name="chatbubbles-outline" size={20} color="#333" />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.headerCircleBtn} onPress={() => navigation.navigate('Settings' as any)}>
-                          <Ionicons name="settings-outline" size={20} color="#fff" />
+                        <TouchableOpacity style={styles.headerCircleBtnDark} onPress={() => navigation.navigate('Settings' as any)}>
+                          <Ionicons name="settings-outline" size={20} color="#333" />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.headerCircleBtn} onPress={handlePickCoverPhoto}>
-                          <Ionicons name="camera-outline" size={20} color="#fff" />
+                        <TouchableOpacity style={styles.headerCircleBtnDark} onPress={handlePickCoverPhoto}>
+                          <Ionicons name="camera-outline" size={20} color="#333" />
                         </TouchableOpacity>
                       </View>
                     )}
 
-                    {/* More options — other user's profile */}
                     {!isOwnProfile && (
-                      <TouchableOpacity style={styles.headerCircleBtn}>
-                        <Ionicons name="ellipsis-horizontal" size={20} color="#fff" />
+                      <TouchableOpacity style={styles.headerCircleBtnDark}>
+                        <Ionicons name="ellipsis-horizontal" size={20} color="#333" />
                       </TouchableOpacity>
                     )}
                   </View>
@@ -405,30 +401,30 @@ export default function ProfileScreen() {
 
               {/* Profile Content */}
               <View style={styles.contentContainer}>
-                {/* Avatar Section — Reverted to overlapping */}
+                {/* Avatar Section */}
                 <Animated.View style={styles.avatarSection}>
                   <View style={styles.avatarWrapper}>
                     <Avatar
                       uri={profile.profilePictureUrl}
                       name={fullName}
-                      size="2xl"
-                      showBorder
+                      size="3xl"
+                      showBorder={false}
                       gradientBorder="none"
-                      borderColor="#fff"
+                      style={{ width: 160, height: 160, borderRadius: 80 }}
                     />
 
                     {/* Edit Avatar Button */}
                     {isOwnProfile && (
                       <TouchableOpacity style={styles.editAvatarButton} onPress={handlePickProfilePhoto}>
                         <View style={styles.editAvatarCircle}>
-                          <Ionicons name="camera-outline" size={16} color="#0EA5E9" />
+                          <Ionicons name="camera-outline" size={16} color="#09CFF7" />
                         </View>
                       </TouchableOpacity>
                     )}
                   </View>
                 </Animated.View>
 
-                {/* Name & Bio Section */}
+                {/* Name & Bio — Frosted glass card */}
                 <Animated.View style={styles.nameSection}>
                   <View style={styles.nameRow}>
                     <Text style={styles.name}>{fullName}</Text>
@@ -524,17 +520,23 @@ export default function ProfileScreen() {
                   </View>
                 </Animated.View>
 
-                {/* Instagram-style Header Stats */}
+                {/* Stats Row — pill card style */}
                 <Animated.View style={styles.textStatsRow}>
-                  <TouchableOpacity style={styles.textStat} activeOpacity={0.6}>
+                  <TouchableOpacity style={styles.textStat} activeOpacity={0.7}>
                     <Text style={styles.textStatValue}>{formatNumber(stats.posts)}</Text>
                     <Text style={styles.textStatLabel}>Posts</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.textStat} activeOpacity={0.6}>
+
+                  <View style={styles.statDivider} />
+
+                  <TouchableOpacity style={styles.textStat} activeOpacity={0.7}>
                     <Text style={styles.textStatValue}>{formatNumber(stats.followers)}</Text>
                     <Text style={styles.textStatLabel}>Followers</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.textStat} activeOpacity={0.6}>
+
+                  <View style={styles.statDivider} />
+
+                  <TouchableOpacity style={styles.textStat} activeOpacity={0.7}>
                     <Text style={styles.textStatValue}>{formatNumber(stats.following)}</Text>
                     <Text style={styles.textStatLabel}>Following</Text>
                   </TouchableOpacity>
@@ -551,7 +553,7 @@ export default function ProfileScreen() {
                         activeOpacity={0.8}
                       >
                         <LinearGradient
-                          colors={['#0EA5E9', '#0284C7']}
+                          colors={[BRAND_TEAL, BRAND_TEAL_DARK]}
                           start={{ x: 0, y: 0 }}
                           end={{ x: 1, y: 0 }}
                           style={StyleSheet.absoluteFill}
@@ -594,12 +596,21 @@ export default function ProfileScreen() {
                         onPress={handleFollow}
                         activeOpacity={0.8}
                       >
+                        {!isFollowing && (
+                          <LinearGradient
+                            colors={[BRAND_TEAL, BRAND_TEAL_DARK]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={StyleSheet.absoluteFill}
+                          />
+                        )}
                         <Text style={isFollowing ? styles.capsuleBtnText : styles.capsuleBtnFilledText}>
                           {isFollowing ? 'Following' : 'Follow'}
                         </Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.capsuleBtn} activeOpacity={0.8}>
-                        <Text style={styles.capsuleBtnText}>Message</Text>
+                      <TouchableOpacity style={styles.capsuleBtnYellow} activeOpacity={0.8}>
+                        <Ionicons name="chatbubble-outline" size={16} color="#78350F" style={{ marginRight: 5 }} />
+                        <Text style={styles.capsuleBtnYellowText}>Message</Text>
                       </TouchableOpacity>
                     </>
                   )}
@@ -623,7 +634,7 @@ export default function ProfileScreen() {
                         >
                           {isActive ? (
                             <View style={styles.tabActiveContent}>
-                              <Ionicons name={tab.icon as any} size={18} color="#0EA5E9" />
+                              <Ionicons name={tab.icon as any} size={18} color={BRAND_TEAL} />
                               <Text style={styles.tabTextActive}>{tab.label}</Text>
                               <View style={styles.tabActiveLine} />
                             </View>
@@ -642,7 +653,30 @@ export default function ProfileScreen() {
             </>
           }
           renderItem={({ item }: { item: any }) => (
-            <View style={styles.tabContent}>
+            <View style={[styles.tabContent, activeTab === 'posts' && { paddingHorizontal: 0 }]}>
+              {activeTab === 'posts' && (
+                <View style={{ paddingTop: 12 }}>
+                  {stats.posts === 0 ? (
+                    <View style={styles.contentPlaceholder}>
+                      <Ionicons name="document-text-outline" size={48} color="#E5E7EB" />
+                      <Text style={styles.placeholderText}>No posts yet</Text>
+                    </View>
+                  ) : (
+                    useFeedStore.getState()
+                      .feedItems
+                      .filter((i: any) => i.type === 'POST' && i.data?.author?.id === (isOwnProfile ? currentUser?.id : userId))
+                      .map((item: any) => (
+                        <RenderPostItem
+                          key={item.data.id}
+                          item={item.data}
+                          handlersRef={{ current: { navigation, handleLikePost: () => { }, handleSharePost: () => { }, bookmarkPost: () => { }, handleValuePost: () => { }, handlePostPress: () => { }, handleVoteOnPoll: () => { } } } as any}
+                          isValued={false}
+                          setAnalyticsPostId={() => { }}
+                        />
+                      ))
+                  )}
+                </View>
+              )}
               {activeTab === 'performance' && (
                 <PerformanceTab
                   quizStats={quizStats}
@@ -844,7 +878,7 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingTop: 8,
   },
   headerTopRow: {
@@ -862,6 +896,36 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.35)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Dark variant for use over plain/grey cover background
+  headerCircleBtnDark: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.82)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Shadows.sm,
+  },
+  // Cover placeholder styles
+  coverPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#E8EAED',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 60,
+  },
+  coverHint: {
+    alignItems: 'center',
+    marginBottom: 60,
+  },
+  coverHintText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(0,0,0,0.40)',
   },
   backButton: {
     width: 40,
@@ -921,7 +985,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    marginTop: -70,
+    marginTop: -90,
   },
   avatarSection: {
     alignItems: 'center',
@@ -929,9 +993,17 @@ const styles = StyleSheet.create({
   },
   avatarWrapper: {
     position: 'relative',
-    ...Shadows.xl,
+    width: 168,
+    height: 168,
     backgroundColor: '#fff',
-    borderRadius: 60,
+    borderRadius: 84,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 4,
   },
   editAvatarButton: {
     position: 'absolute',
@@ -951,8 +1023,8 @@ const styles = StyleSheet.create({
   },
   nameSection: {
     alignItems: 'center',
-    paddingHorizontal: 24,
-    marginBottom: 12,
+    paddingHorizontal: 12,
+    marginBottom: 16,
   },
   nameRow: {
     flexDirection: 'row',
@@ -1042,14 +1114,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 16,
+    marginHorizontal: 12,
     marginBottom: 20,
-    paddingVertical: 4,
+    paddingVertical: 8,
   },
   textStat: {
     flex: 1,
     alignItems: 'center',
+    paddingVertical: 6,
   },
+
   textStatValue: {
     fontSize: 20,
     fontWeight: '800',
@@ -1062,10 +1136,18 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginTop: 2,
   },
+  // ── Stat Row Divider ──
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: '#E5E7EB',
+    alignSelf: 'center',
+  },
+
   // ── Capsule Action Buttons ──
   capsuleRow: {
     flexDirection: 'row',
-    marginHorizontal: 16,
+    marginHorizontal: 12,
     gap: 10,
     marginBottom: 16,
   },
@@ -1076,13 +1158,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingVertical: 14,
     borderRadius: 50,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: BRAND_TEAL,
     ...Shadows.sm,
   },
   capsuleBtnText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1F2937',
+    color: BRAND_TEAL,
   },
   capsuleBtnFilled: {
     flex: 1,
@@ -1099,6 +1183,23 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
   },
+  // Brand-yellow Message button
+  capsuleBtnYellow: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    paddingVertical: 14,
+    borderRadius: 50,
+    backgroundColor: '#FFA600',
+    ...Shadows.md,
+  },
+  capsuleBtnYellowText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#78350F',
+  },
+
   secondaryActionRow: {
     flexDirection: 'row',
     gap: 10,
@@ -1339,7 +1440,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   tabsScroll: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     gap: 8,
   },
   tab: {
@@ -1365,7 +1466,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 3,
-    backgroundColor: '#0EA5E9',
+    backgroundColor: '#09CFF7',
     borderRadius: 2,
   },
   tabGradient: {
@@ -1383,10 +1484,10 @@ const styles = StyleSheet.create({
   tabTextActive: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#0EA5E9',
+    color: '#09CFF7',
   },
   tabContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
   },
   contentPlaceholder: {
     backgroundColor: '#fff',
@@ -1404,11 +1505,14 @@ const styles = StyleSheet.create({
   },
   // ── About Tab Styles ──
   aboutSection: {
-    gap: 16,
+    gap: 12,
+    paddingTop: 12,
   },
   aboutCard: {
     backgroundColor: '#fff',
-    borderRadius: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     overflow: 'hidden',
     padding: 20,
   },

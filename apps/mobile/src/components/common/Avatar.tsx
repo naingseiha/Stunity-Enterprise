@@ -10,7 +10,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Typography, BorderRadius } from '@/config';
 
-type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 type GradientPreset = 'purple' | 'orange' | 'blue' | 'green' | 'pink' | 'gold' | 'rainbow' | 'none';
 type AvatarVariant = 'default' | 'post' | 'profile';
 
@@ -34,6 +34,7 @@ const SIZES: Record<AvatarSize, number> = {
   lg: 48,
   xl: 64,
   '2xl': 120,
+  '3xl': 140,
 };
 
 const FONT_SIZES: Record<AvatarSize, number> = {
@@ -43,6 +44,7 @@ const FONT_SIZES: Record<AvatarSize, number> = {
   lg: 18,
   xl: 24,
   '2xl': 42,
+  '3xl': 50,
 };
 
 const BORDER_WIDTH: Record<AvatarSize, number> = {
@@ -52,6 +54,7 @@ const BORDER_WIDTH: Record<AvatarSize, number> = {
   lg: 2.5,
   xl: 3,
   '2xl': 3.5,
+  '3xl': 4,
 };
 
 // Beautiful gradient presets - Instagram story style

@@ -108,8 +108,11 @@ function ContributionGrid({ streak, recentAttempts }: { streak: Streak | null; r
 const gridStyles = StyleSheet.create({
     container: {
         backgroundColor: '#fff',
-
-        borderRadius: 14, overflow: 'hidden', padding: 20
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        overflow: 'hidden',
+        padding: 20
     },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
     title: { fontSize: 16, fontWeight: '700', color: '#1F2937' },
@@ -232,8 +235,11 @@ function ActivityTimeline({ items }: { items: TimelineItem[] }) {
 const timelineStyles = StyleSheet.create({
     container: {
         backgroundColor: '#fff',
-
-        borderRadius: 14, overflow: 'hidden', padding: 20
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        overflow: 'hidden',
+        padding: 20
     },
     header: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 },
     headerIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
@@ -294,8 +300,11 @@ function EngagementGrid({ stats, posts, followers }: { stats: UserStats | null; 
 const engStyles = StyleSheet.create({
     container: {
         backgroundColor: '#fff',
-
-        borderRadius: 14, overflow: 'hidden', padding: 20
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        overflow: 'hidden',
+        padding: 20
     },
     header: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
     headerIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
@@ -328,5 +337,5 @@ export default function ActivityTab({ stats, posts, followers, recentAttempts, a
 }
 
 const s = StyleSheet.create({
-    container: { gap: 16 },
+    container: { gap: 12, paddingTop: 12 },
 });

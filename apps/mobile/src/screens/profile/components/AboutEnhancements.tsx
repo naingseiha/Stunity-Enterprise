@@ -228,7 +228,7 @@ export function ProfileCompletenessCard({ profile, onEdit }: { profile: User; on
 }
 
 const cmpStyles = StyleSheet.create({
-    card: { backgroundColor: '#fff', borderRadius: 14, overflow: 'hidden', padding: 20 },
+    card: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden', padding: 20 },
     topRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
     ringWrap: { width: 60, height: 60, alignItems: 'center', justifyContent: 'center' },
     ringPct: { position: 'absolute', fontSize: 14, fontWeight: '800', color: '#0EA5E9' },
@@ -282,7 +282,7 @@ export function CareerGoalsCard({ careerGoals, isOwnProfile, onEdit }: { careerG
 }
 
 const goalStyles = StyleSheet.create({
-    card: { backgroundColor: '#fff', borderRadius: 14, overflow: 'hidden' },
+    card: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden' },
     headerGradient: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
     headerIcon: { width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center' },
     headerTitle: { fontSize: 15, fontWeight: '700', color: '#fff', flex: 1 },
@@ -336,7 +336,7 @@ export function ProjectShowcase({ stats, isOwnProfile }: { stats: UserStats | nu
 }
 
 const projStyles = StyleSheet.create({
-    card: { backgroundColor: '#fff', borderRadius: 14, overflow: 'hidden', padding: 20 },
+    card: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden', padding: 20 },
     scroll: { marginTop: 4, marginHorizontal: -4 },
     projCard: { width: 160, marginHorizontal: 4, borderRadius: 14, overflow: 'hidden' },
     projGradient: { padding: 14, borderRadius: 14, minHeight: 130 },
@@ -355,7 +355,7 @@ const projStyles = StyleSheet.create({
 // ── Shared Styles ────────────────────────────────────────────────
 
 const sectionStyles = StyleSheet.create({
-    card: { backgroundColor: '#fff', borderRadius: 14, overflow: 'hidden', padding: 20 },
+    card: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden', padding: 20 },
     header: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
     title: { fontSize: 16, fontWeight: '700', color: '#1F2937', flex: 1 },
     countBadge: { backgroundColor: '#EFF6FF', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },

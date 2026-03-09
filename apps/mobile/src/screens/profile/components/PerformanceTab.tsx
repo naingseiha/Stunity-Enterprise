@@ -454,10 +454,12 @@ const PARENT_PADDING = 16; // From ProfileScreen's tabContent
 const CARD_WIDTH = (SCREEN_WIDTH - (PARENT_PADDING * 2) - (GRID_PADDING * 2) - (GRID_GAP * 2)) / 3 - 0.5;
 
 const s = StyleSheet.create({
-    container: { gap: 16 },
+    container: { gap: 12, paddingTop: 12 },
     card: {
         backgroundColor: '#fff',
-        borderRadius: 14,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
         overflow: 'hidden',
     },
     cardGradient: { padding: 20 },
