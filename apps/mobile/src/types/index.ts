@@ -40,8 +40,22 @@ export interface User {
   // Relations
   schoolId?: string | null;
   school?: { id: string; name: string; logo?: string };
-  teacher?: { id: string; position?: string; degree?: string; hireDate?: string; major1?: string; major2?: string };
-  student?: { id: string; firstName: string; lastName: string; class?: { id: string; name: string; grade: string } };
+  teacher?: {
+    id: string;
+    customFields?: Record<string, any>;
+    position?: string;
+    degree?: string;
+    hireDate?: string;
+    major1?: string;
+    major2?: string;
+  };
+  student?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    customFields?: Record<string, any>;
+    class?: { id: string; name: string; grade: string };
+  };
   // Parent: linked children
   children?: Array<{
     id: string;

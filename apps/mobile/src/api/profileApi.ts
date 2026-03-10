@@ -98,6 +98,7 @@ export interface UpdateProfileData {
     isOpenToOpportunities?: boolean;
     profilePictureUrl?: string;
     coverPhotoUrl?: string;
+    customFields?: Record<string, any>;
 }
 
 /** Update own profile fields. */

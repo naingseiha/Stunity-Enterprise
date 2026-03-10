@@ -41,15 +41,26 @@ const WeeklyStrip = () => {
                 const isToday = i === currentDayIdx;
                 const isPast = i < currentDayIdx;
                 return (
-                    <View key={day} style={styles.dayCol}>
+                    <View
+                        key={day}
+                        style={[
+                            styles.dayColPill,
+                            isToday && styles.todayPill,
+                            isPast && styles.pastPill
+                        ]}
+                    >
+                        <Text style={[
+                            styles.dayLabel,
+                            isToday && styles.todayLabel,
+                            isPast && styles.pastLabel
+                        ]}>{day}</Text>
                         <View style={[
                             styles.dayDot,
-                            isToday && styles.todayDot,
-                            isPast && styles.pastDot
+                            isToday && styles.todayDotInner,
+                            isPast && styles.pastDotInner
                         ]}>
                             {isPast && <Ionicons name="checkmark" size={12} color="#fff" />}
                         </View>
-                        <Text style={[styles.dayLabel, isToday && styles.todayLabel]}>{day}</Text>
                     </View>
                 );
             })}
@@ -187,8 +198,15 @@ export const AttendanceCheckInScreen = () => {
 
     const checkPermissions = async () => {
         try {
-            const { status: locStatus } = await Location.requestForegroundPermissionsAsync();
-            if (locStatus !== 'granted') {
+            let { status } = await Location.getForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                const req = await Promise.race([
+                    Location.requestForegroundPermissionsAsync(),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('perm_timeout')), 3000))
+                ]) as any;
+                status = req.status;
+            }
+            if (status !== 'granted') {
                 return false;
             }
             setLocationPermGranted(true);
@@ -198,27 +216,102 @@ export const AttendanceCheckInScreen = () => {
         }
     };
 
-    useEffect(() => {
-        const init = async () => {
-            setLoading(true);
+    const fetchLocationAsync = async (isManualRefresh = false) => {
+        try {
+            if (isManualRefresh) {
+                setGpsText('Updating GPS...');
+            } else {
+                setGpsText('Locating...');
+            }
+
             const hasPerm = await checkPermissions();
             if (hasPerm) {
-                await fetchTodayStatus();
-                try {
-                    const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+                let loc = null;
+
+                // Fast resolve: check last known position first (with timeout)
+                if (!isManualRefresh) {
+                    try {
+                        loc = await Promise.race([
+                            Location.getLastKnownPositionAsync(),
+                            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1500))
+                        ]) as Location.LocationObject | null;
+                    } catch (e) {
+                        loc = null;
+                    }
+                }
+
+                // Fallback: try getting current position with a 4000ms timeout
+                if (!loc) {
+                    try {
+                        const locationPromise = Location.getCurrentPositionAsync({
+                            accuracy: Location.Accuracy.Balanced
+                        });
+
+                        const timeoutPromise = new Promise((_, reject) =>
+                            setTimeout(() => reject(new Error('Location timeout')), 4000)
+                        );
+
+                        loc = await Promise.race([locationPromise, timeoutPromise]) as Location.LocationObject;
+                    } catch (e) {
+                        loc = null;
+                    }
+                }
+
+                if (loc) {
                     setGpsText(`Ready (${loc.coords.latitude.toFixed(4)}, ${loc.coords.longitude.toFixed(4)})`);
-                } catch (e) {
+                } else {
                     setGpsText('GPS Limited');
                 }
             } else {
                 setGpsText('Location Access Denied');
+                if (isManualRefresh) {
+                    Alert.alert(
+                        'Permission Required',
+                        'Please enable location services in your device settings to check in.',
+                        [{ text: 'OK' }]
+                    );
+                }
             }
-            setLoading(false);
+        } catch (e: any) {
+            setGpsText('GPS Limited');
+            if (isManualRefresh) {
+                Alert.alert('GPS Error', 'Could not fetch your current location. Please check your signal and try again.');
+            }
+        }
+    };
+
+    useEffect(() => {
+        let mounted = true;
+
+        const init = async () => {
+            setLoading(true);
+            try {
+                // 1. Fetch data immediately
+                await fetchTodayStatus();
+            } finally {
+                // 2. Unblock UI immediately
+                if (mounted) setLoading(false);
+            }
+
+            // 3. Handle GPS independently in background
+            if (mounted) {
+                await fetchLocationAsync(false);
+            }
         };
+
         init();
+        return () => { mounted = false; };
     }, [fetchTodayStatus]);
 
     const handleAttendance = async (type: 'in' | 'out', session: 'MORNING' | 'AFTERNOON') => {
+        if (!locationPermGranted) {
+            Alert.alert(
+                'Permission Required',
+                'Your location is required to verify attendance. Please tap the GPS banner or go to your settings to enable it.'
+            );
+            return;
+        }
+
         try {
             setProcessingSession(session);
             setGpsText('Verifying location...');
@@ -324,12 +417,20 @@ export const AttendanceCheckInScreen = () => {
                 >
                     <Animated.View style={styles.headerContent}>
                         <Text style={styles.dateDisplay}>
-                            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                         </Text>
-                        <View style={styles.gpsRow}>
-                            <View style={[styles.gpsDot, { backgroundColor: locationPermGranted ? '#10B981' : '#F43F5E' }]} />
+                        <TouchableOpacity
+                            style={styles.gpsRow}
+                            onPress={() => fetchLocationAsync(true)}
+                            activeOpacity={0.7}
+                        >
+                            <View style={[
+                                styles.gpsDot,
+                                { backgroundColor: locationPermGranted ? '#10B981' : '#EF4444' }
+                            ]} />
                             <Text style={styles.gpsStatusText}>{gpsText}</Text>
-                        </View>
+                            <Ionicons name="refresh" size={12} color="#475569" style={{ marginLeft: 6 }} />
+                        </TouchableOpacity>
                     </Animated.View>
 
                     <Animated.View>
@@ -421,37 +522,39 @@ const styles = StyleSheet.create({
         letterSpacing: 2,
     },
     headerContent: {
-        alignItems: 'center',
-        marginTop: 24,
-        marginBottom: 32,
+        marginTop: 20,
+        marginBottom: 28,
     },
     dateDisplay: {
-        fontSize: 24,
-        fontWeight: '800',
-        color: '#1F2937',
-        letterSpacing: -0.5,
+        fontSize: 28,
+        fontWeight: '900',
+        color: '#0F172A',
+        letterSpacing: -0.8,
     },
     gpsRow: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#fff',
-        paddingHorizontal: 14,
-        paddingVertical: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         borderRadius: 20,
-        marginTop: 16,
+        marginTop: 10,
+        alignSelf: 'flex-start',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
         ...Shadows.sm,
     },
     gpsDot: {
         width: 8,
         height: 8,
         borderRadius: 4,
-        marginRight: 8,
+        marginRight: 6,
     },
     gpsStatusText: {
-        color: '#4B5563',
-        fontSize: 11,
+        color: '#475569',
+        fontSize: 12,
         fontWeight: '700',
-        letterSpacing: 0.5,
+        letterSpacing: 0.3,
     },
 
     weeklyContainer: {
@@ -460,37 +563,52 @@ const styles = StyleSheet.create({
         marginBottom: 32,
         paddingHorizontal: 4,
     },
-    dayCol: {
+    dayColPill: {
         alignItems: 'center',
-        gap: 8,
-    },
-    dayDot: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
+        paddingVertical: 10,
+        paddingHorizontal: 8,
+        borderRadius: 20,
         backgroundColor: '#fff',
-        alignItems: 'center',
-        justifyContent: 'center',
         borderWidth: 1,
         borderColor: '#E2E8F0',
+        gap: 8,
         ...Shadows.sm,
     },
-    todayDot: {
-        backgroundColor: '#F0FDFA',
+    todayPill: {
+        backgroundColor: BRAND_TEAL,
         borderColor: BRAND_TEAL,
-        borderWidth: 2,
+        ...Shadows.md,
     },
-    pastDot: {
+    pastPill: {
+        backgroundColor: '#F1F5F9',
+        borderColor: '#E2E8F0',
+        elevation: 0,
+        shadowOpacity: 0,
+    },
+    dayDot: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#F1F5F9',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    todayDotInner: {
+        backgroundColor: '#fff',
+    },
+    pastDotInner: {
         backgroundColor: '#10B981',
-        borderColor: '#10B981',
     },
     dayLabel: {
         fontSize: 10,
-        color: '#9CA3AF',
+        color: '#64748B',
         fontWeight: '700',
     },
     todayLabel: {
-        color: BRAND_TEAL,
+        color: '#fff',
+    },
+    pastLabel: {
+        color: '#94A3B8',
     },
 
     content: { flex: 1 },
@@ -498,41 +616,42 @@ const styles = StyleSheet.create({
 
     sessionCard: {
         backgroundColor: '#fff',
-        borderRadius: 20,
+        borderRadius: 28,
         padding: 24,
-        marginBottom: 20,
+        marginBottom: 24,
         borderWidth: 1,
         borderColor: '#E2E8F0',
-        ...Shadows.sm,
+        ...Shadows.lg,
     },
     currentSessionCard: {
         borderColor: BRAND_TEAL,
         borderWidth: 1.5,
+        ...Shadows.lg,
     },
     completedSessionCard: {
-        opacity: 0.8,
+        opacity: 0.85,
     },
     sessionHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: 28,
     },
     sessionIconBg: {
-        width: 50,
-        height: 50,
-        borderRadius: 16,
+        width: 54,
+        height: 54,
+        borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#F1F5F9',
     },
     sessionTitle: {
-        fontSize: 18,
+        fontSize: 19,
         fontWeight: '800',
-        color: '#1F2937',
+        color: '#1E293B',
     },
     sessionTimeWindow: {
-        fontSize: 12,
-        color: '#6B7280',
+        fontSize: 13,
+        color: '#64748B',
         marginTop: 4,
         fontWeight: '600',
     },
@@ -540,63 +659,65 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#ECFDF5',
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderRadius: 10,
-        gap: 4,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 14,
+        gap: 6,
     },
     completedBadgeText: {
         fontSize: 11,
-        fontWeight: '900',
-        color: '#10B981',
+        fontWeight: '800',
+        color: '#059669',
+        letterSpacing: 0.5,
     },
     currentBadge: {
         backgroundColor: '#F0FDFA',
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 14,
     },
     currentBadgeText: {
         fontSize: 11,
-        fontWeight: '900',
-        color: BRAND_TEAL,
+        fontWeight: '800',
+        color: BRAND_TEAL_DARK,
+        letterSpacing: 0.5,
     },
 
     timeInfoRow: {
         flexDirection: 'row',
-        backgroundColor: '#F8FAFC',
-        borderRadius: 18,
-        padding: 18,
-        marginBottom: 24,
+        gap: 12,
+        marginBottom: 28,
     },
     timeBox: {
         flex: 1,
         alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        paddingVertical: 18,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
     },
     timeLabel: {
-        fontSize: 10,
-        color: '#9CA3AF',
-        fontWeight: '800',
-        marginBottom: 6,
+        fontSize: 11,
+        color: '#64748B',
+        fontWeight: '700',
+        marginBottom: 8,
         letterSpacing: 1,
     },
     timeValue: {
-        fontSize: 20,
+        fontSize: 22,
         fontWeight: '800',
-        color: '#E2E8F0',
+        color: '#CBD5E1',
     },
     activeTimeValue: {
-        color: '#1F2937',
+        color: '#0F172A',
     },
     timeSeparator: {
-        width: 1,
-        height: '100%',
-        backgroundColor: '#E2E8F0',
-        marginHorizontal: 12,
+        display: 'none',
     },
 
     sessionBtnContainer: {
-        borderRadius: 30,
+        borderRadius: 20,
         overflow: 'hidden',
         ...Shadows.md,
     },
@@ -616,7 +737,7 @@ const styles = StyleSheet.create({
     sessionBtnText: {
         color: '#fff',
         fontSize: 16,
-        fontWeight: '900',
+        fontWeight: '800',
         letterSpacing: 0.5,
     },
 
@@ -640,46 +761,48 @@ const styles = StyleSheet.create({
     reportActionCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        borderRadius: 20,
-        padding: 16,
+        borderRadius: 24,
+        padding: 20,
         marginBottom: 16,
         borderWidth: 1,
         borderColor: '#FEF3C7',
         backgroundColor: '#FFFBEB',
-        ...Shadows.sm,
+        ...Shadows.md,
     },
     reportIconBg: {
-        width: 44,
-        height: 44,
-        borderRadius: 14,
-        backgroundColor: '#FEF3C7',
+        width: 48,
+        height: 48,
+        borderRadius: 16,
+        backgroundColor: '#FDE68A',
         alignItems: 'center',
         justifyContent: 'center',
     },
     reportTextContainer: {
         flex: 1,
-        marginLeft: 12,
+        marginLeft: 16,
     },
     reportTitle: {
-        fontSize: 15,
-        fontWeight: '700',
-        color: '#78350F',
+        fontSize: 16,
+        fontWeight: '800',
+        color: '#92400E',
     },
     reportSubtitle: {
-        fontSize: 12,
-        color: '#92400E',
-        marginTop: 2,
+        fontSize: 13,
+        color: '#B45309',
+        marginTop: 4,
+        fontWeight: '500',
     },
     viewReportButton: {
-        backgroundColor: BRAND_YELLOW,
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 25,
+        backgroundColor: BRAND_YELLOW_DARK,
+        paddingHorizontal: 22,
+        paddingVertical: 12,
+        borderRadius: 20,
+        ...Shadows.sm,
     },
     viewReportText: {
         color: '#fff',
-        fontSize: 13,
-        fontWeight: '700',
+        fontSize: 14,
+        fontWeight: '800',
     },
 });
 

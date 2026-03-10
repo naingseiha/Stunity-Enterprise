@@ -29,7 +29,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '@/stores';
 import { Avatar } from '@/components/common';
 import { ProfileStackScreenProps } from '@/navigation/types';
-import { updateProfile, uploadProfilePhoto, uploadCoverPhoto } from '@/api/profileApi';
+import { fetchProfile, updateProfile, uploadProfilePhoto, uploadCoverPhoto } from '@/api/profileApi';
 
 type NavigationProp = ProfileStackScreenProps<'EditProfile'>['navigation'];
 
@@ -46,6 +46,7 @@ interface FormData {
     facebook: string;
     portfolio: string;
   };
+  customFields: Record<string, string>;
 }
 
 export default function EditProfileScreen() {
@@ -70,10 +71,14 @@ export default function EditProfileScreen() {
       facebook: '',
       portfolio: '',
     },
+    customFields: {},
   });
 
   useEffect(() => {
-    if (user) {
+    let mounted = true;
+
+    // Initial hydration from store
+    if (user && formData.firstName === '') {
       const sl = (user as any).socialLinks || {};
       setFormData({
         firstName: user.firstName || '',
@@ -88,9 +93,56 @@ export default function EditProfileScreen() {
           facebook: sl.facebook || '',
           portfolio: sl.portfolio || '',
         },
+        customFields: {
+          khmerName: user.role === 'TEACHER' ? (user.teacher?.customFields?.khmerName || '') : (user.student?.customFields?.khmerName || ''),
+          position: user.role === 'TEACHER' ? (user.teacher?.customFields?.position || '') : '',
+          degree: user.role === 'TEACHER' ? (user.teacher?.customFields?.degree || '') : '',
+          parentName: user.role === 'STUDENT' ? (user.student?.customFields?.parentName || '') : '',
+          previousSchool: user.role === 'STUDENT' ? (user.student?.customFields?.previousSchool || '') : '',
+        },
       });
     }
-  }, [user]);
+
+    // Fetch fresh profile data
+    const loadFresh = async () => {
+      try {
+        const freshProfile = await fetchProfile('me');
+        if (mounted && freshProfile) {
+          // Sync with store to have coverPhotoUrl
+          updateUser(freshProfile as any);
+
+          const sl = (freshProfile as any).socialLinks || {};
+          setFormData({
+            firstName: freshProfile.firstName || '',
+            lastName: freshProfile.lastName || '',
+            headline: freshProfile.headline || '',
+            bio: freshProfile.bio || '',
+            location: freshProfile.location || '',
+            interests: (freshProfile.interests || []).join(', '),
+            socialLinks: {
+              github: sl.github || '',
+              linkedin: sl.linkedin || '',
+              facebook: sl.facebook || '',
+              portfolio: sl.portfolio || '',
+            },
+            customFields: {
+              khmerName: freshProfile.role === 'TEACHER' ? (freshProfile.teacher?.customFields?.khmerName || '') : (freshProfile.student?.customFields?.khmerName || ''),
+              position: freshProfile.role === 'TEACHER' ? (freshProfile.teacher?.customFields?.position || '') : '',
+              degree: freshProfile.role === 'TEACHER' ? (freshProfile.teacher?.customFields?.degree || '') : '',
+              parentName: freshProfile.role === 'STUDENT' ? (freshProfile.student?.customFields?.parentName || '') : '',
+              previousSchool: freshProfile.role === 'STUDENT' ? (freshProfile.student?.customFields?.previousSchool || '') : '',
+            },
+          });
+        }
+      } catch (err) {
+        // Silently ignore if fetch fails, store data is already hydration fallback
+      }
+    };
+
+    loadFresh();
+
+    return () => { mounted = false; };
+  }, []);
 
   // ── Photo Pickers ────────────────────────────────────────────
 
@@ -189,6 +241,7 @@ export default function EditProfileScreen() {
         location: formData.location.trim(),
         interests,
         socialLinks: formData.socialLinks,
+        customFields: formData.customFields,
       };
 
       await updateProfile(profileData);
@@ -402,6 +455,89 @@ export default function EditProfileScreen() {
             </View>
             <Text style={s.hint}>Separate with commas</Text>
           </Animated.View>
+
+          {/* ── Regional Details (Custom Fields) ───────────── */}
+          {(user?.role === 'TEACHER' || user?.role === 'STUDENT') && (
+            <Animated.View>
+              <Text style={s.label}>Regional Details</Text>
+
+              <View style={s.inputWrap}>
+                <Ionicons name="language-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+                <TextInput
+                  style={s.input}
+                  value={formData.customFields.khmerName || ''}
+                  onChangeText={(t) => setFormData({
+                    ...formData,
+                    customFields: { ...formData.customFields, khmerName: t }
+                  })}
+                  placeholder="Khmer Name (e.g., ឈ្មោះខ្មែរ)"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+
+              {user?.role === 'TEACHER' && (
+                <>
+                  <View style={s.inputWrap}>
+                    <Ionicons name="briefcase-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+                    <TextInput
+                      style={s.input}
+                      value={formData.customFields.position || ''}
+                      onChangeText={(t) => setFormData({
+                        ...formData,
+                        customFields: { ...formData.customFields, position: t }
+                      })}
+                      placeholder="School Position/Title"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                  <View style={s.inputWrap}>
+                    <Ionicons name="school-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+                    <TextInput
+                      style={s.input}
+                      value={formData.customFields.degree || ''}
+                      onChangeText={(t) => setFormData({
+                        ...formData,
+                        customFields: { ...formData.customFields, degree: t }
+                      })}
+                      placeholder="Highest Degree Earned"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                </>
+              )}
+
+              {user?.role === 'STUDENT' && (
+                <>
+                  <View style={s.inputWrap}>
+                    <Ionicons name="people-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+                    <TextInput
+                      style={s.input}
+                      value={formData.customFields.parentName || ''}
+                      onChangeText={(t) => setFormData({
+                        ...formData,
+                        customFields: { ...formData.customFields, parentName: t }
+                      })}
+                      placeholder="Parent/Guardian Name"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                  <View style={s.inputWrap}>
+                    <Ionicons name="business-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+                    <TextInput
+                      style={s.input}
+                      value={formData.customFields.previousSchool || ''}
+                      onChangeText={(t) => setFormData({
+                        ...formData,
+                        customFields: { ...formData.customFields, previousSchool: t }
+                      })}
+                      placeholder="Previous School"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                </>
+              )}
+            </Animated.View>
+          )}
 
           {/* ── Social Links ──────────────────────────────── */}
           <Animated.View>

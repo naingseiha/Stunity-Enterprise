@@ -464,6 +464,7 @@ router.put('/users/me/profile', authenticateToken, async (req: AuthRequest, res:
       isOpenToOpportunities,
       profilePictureUrl,
       coverPhotoUrl,
+      customFields,
     } = req.body;
 
     // Build update data
@@ -484,7 +485,15 @@ router.put('/users/me/profile', authenticateToken, async (req: AuthRequest, res:
     if (coverPhotoUrl !== undefined) updateData.coverPhotoUrl = coverPhotoUrl;
 
     // Calculate profile completeness
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { teacher: true, student: true }
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
     const fields = [
       user?.firstName, user?.lastName, bio || user?.bio, headline || user?.headline,
       professionalTitle || user?.professionalTitle, location || user?.location,
@@ -516,7 +525,56 @@ router.put('/users/me/profile', authenticateToken, async (req: AuthRequest, res:
       },
     });
 
-    res.json({ success: true, profile: updatedUser });
+    // Handle role-specific custom fields
+    if (customFields !== undefined && typeof customFields === 'object') {
+      try {
+        if (user.role === 'TEACHER' && user.teacher) {
+          const currentCustomFields = user.teacher.customFields ? (user.teacher.customFields as object) : {};
+          const mergedFields = { ...currentCustomFields, ...customFields };
+          await prisma.teacher.update({
+            where: { id: user.teacher.id },
+            data: { customFields: mergedFields }
+          });
+        } else if (user.role === 'STUDENT' && user.student) {
+          const currentCustomFields = user.student.customFields ? (user.student.customFields as object) : {};
+          const mergedFields = { ...currentCustomFields, ...customFields };
+          await prisma.student.update({
+            where: { id: user.student.id },
+            data: { customFields: mergedFields }
+          });
+        }
+      } catch (roleError) {
+        console.error('Failed to update role-specific custom fields:', roleError);
+        // We log, but do not fail the overall profile update if this part fails
+      }
+    }
+
+    // Since we updated related tables, fetching fresh data is safer
+    const finalUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        bio: true,
+        headline: true,
+        professionalTitle: true,
+        location: true,
+        languages: true,
+        interests: true,
+        careerGoals: true,
+        socialLinks: true,
+        profileVisibility: true,
+        profileCompleteness: true,
+        isOpenToOpportunities: true,
+        profilePictureUrl: true,
+        coverPhotoUrl: true,
+        teacher: { select: { id: true, customFields: true } },
+        student: { select: { id: true, customFields: true } }
+      }
+    });
+
+    res.json({ success: true, profile: finalUser || updatedUser });
   } catch (error: any) {
     console.error('Update profile error:', error);
     res.status(500).json({ success: false, error: 'Failed to update profile' });
