@@ -69,6 +69,21 @@ const mapApiUserToUser = (apiUser: any): User => ({
   updatedAt: apiUser.updatedAt || new Date().toISOString(),
 });
 
+const prewarmFeedAfterAuth = (role?: User['role']) => {
+  if (role === 'PARENT') return;
+
+  setTimeout(() => {
+    import('./feedStore')
+      .then(({ useFeedStore }) => {
+        const feedState = useFeedStore.getState();
+        if (!feedState.isLoadingPosts && feedState.feedItems.length === 0) {
+          feedState.fetchPosts(true).catch(() => { });
+        }
+      })
+      .catch(() => { });
+  }, 0);
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -115,6 +130,7 @@ export const useAuthStore = create<AuthState>()(
                 isLoading: false,
                 isInitialized: true,
               });
+              prewarmFeedAfterAuth(user.role);
               return;
             }
           } catch (verifyError: any) {
@@ -198,6 +214,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
           });
+          prewarmFeedAfterAuth(user.role);
 
           return true;
         } catch (error: any) {
@@ -248,6 +265,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
           });
+          prewarmFeedAfterAuth(user.role);
 
           return true;
         } catch (error: any) {
@@ -287,6 +305,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
           });
+          prewarmFeedAfterAuth(user.role);
 
           return true;
         } catch (error: any) {
@@ -328,6 +347,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
           });
+          prewarmFeedAfterAuth(user.role);
 
           return true;
         } catch (error: any) {

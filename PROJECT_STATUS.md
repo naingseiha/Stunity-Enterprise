@@ -1,8 +1,8 @@
 # 🎓 Stunity Enterprise — Project Status
 
-**Last Updated:** March 3, 2026
-**Version:** 23.1
-**Status:** 99% Complete — Realtime Lifecycle Fixed, Live Quiz Web, Enhanced Search 🚀
+**Last Updated:** March 10, 2026
+**Version:** 23.2
+**Status:** 99% Complete — Startup/Feed Reliability + Splash UX Polished 🚀
 
 ---
 
@@ -18,6 +18,21 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 ---
 
 ## ✅ Completed Features (v23.0)
+
+### ⚡ Latest Platform Updates (Mar 10, 2026)
+- **Mobile startup performance tuning**
+  - Login-to-feed path optimized with auth-time feed prewarm
+  - First-feed load hardened for Cloud Run free-tier cold starts (fallback + bounded retry + cache-first behavior)
+- **Mobile splash UX refresh**
+  - Native splash now uses the Stunity wordmark asset at larger size
+  - JS transition splash updated to modern single-wordmark animation
+  - White flash between native splash and feed removed
+- **Android dev reliability**
+  - Added project scripts to auto-restore SDK config after `expo prebuild --clean`
+  - `npm run android` now bootstraps `android/local.properties` before build
+- **Auth login hardening**
+  - Auth service now safely handles social-only/invalid password-hash accounts during password login
+  - Prevents backend 500s and returns user-safe auth errors instead
 
 ### 🔐 Authentication & Enterprise Security
 - **Email OR phone** — Register and login with either (like Facebook); at least one required

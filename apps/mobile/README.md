@@ -11,6 +11,20 @@ Enterprise-grade React Native mobile application for the Stunity e-learning soci
 - **Notifications** - Push notifications, In-app notifications
 - **Offline Mode** - Cached content, Offline-first architecture
 
+## 🆕 Recent Updates (March 10, 2026)
+
+- **Startup + Feed reliability improved**
+  - Faster login-to-feed transition with feed prewarm after auth
+  - First-page feed fetch hardened for free-tier cold starts
+  - Fallback behavior added to avoid intermittent blank feed states
+- **Splash experience polished**
+  - Native splash now uses `Stunity.png` at larger size
+  - JS splash transition uses only the Stunity wordmark with a short smooth animation
+  - White flash between native splash and first screen removed
+- **Android SDK bootstrap stabilized**
+  - Added `scripts/ensure-android-sdk.sh` and `scripts/run-android.sh`
+  - `npm run android` now auto-restores `android/local.properties` after `expo prebuild --clean`
+
 ## 🏗️ Architecture
 
 ```
@@ -111,6 +125,7 @@ npm start
 npm run ios
 
 # Run on Android Emulator
+# (auto-configures Android SDK + local.properties)
 npm run android
 ```
 

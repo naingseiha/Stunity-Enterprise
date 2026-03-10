@@ -142,6 +142,12 @@ function validatePassword(password: string): { isValid: boolean; errors: string[
   return { isValid: errors.length === 0, errors };
 }
 
+function isPasswordHashUsable(hash: string | null | undefined): boolean {
+  if (!hash) return false;
+  // bcrypt hashes are 60 chars and start with $2a$, $2b$, or $2y$
+  return /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(hash);
+}
+
 // ─── Brute Force Protection ──────────────────────────────────────────
 async function checkAccountLock(user: any): Promise<{ locked: boolean; message?: string }> {
   if (user.lockedUntil && new Date(user.lockedUntil) > new Date()) {
@@ -499,8 +505,25 @@ app.post(
         }
       }
 
+      // Reject password flow for social-only or malformed-password accounts
+      if (user.accountType === 'SOCIAL_ONLY' || !isPasswordHashUsable(user.password)) {
+        return res.status(401).json({
+          success: false,
+          error: 'This account uses social sign-in or requires password reset',
+        });
+      }
+
       // Verify password
-      const isPasswordValid = await bcrypt.compare(password, user.password);
+      let isPasswordValid = false;
+      try {
+        isPasswordValid = await bcrypt.compare(password, user.password);
+      } catch (compareError: any) {
+        console.warn('⚠️ Password compare failed for user:', user.id, compareError?.message);
+        return res.status(401).json({
+          success: false,
+          error: 'Password authentication unavailable for this account. Please reset password.',
+        });
+      }
 
       console.log('🔑 Password check:', {
         identifier: user.email || user.phone,
@@ -1219,8 +1242,24 @@ app.post(
         });
       }
 
+      if (!isPasswordHashUsable(user.password)) {
+        return res.status(401).json({
+          success: false,
+          error: 'Password authentication unavailable for this account. Please reset password.',
+        });
+      }
+
       // Verify password
-      const isPasswordValid = await bcrypt.compare(password, user.password);
+      let isPasswordValid = false;
+      try {
+        isPasswordValid = await bcrypt.compare(password, user.password);
+      } catch (compareError: any) {
+        console.warn('⚠️ Parent password compare failed for user:', user.id, compareError?.message);
+        return res.status(401).json({
+          success: false,
+          error: 'Password authentication unavailable for this account. Please reset password.',
+        });
+      }
 
       if (!isPasswordValid) {
         console.log('❌ Invalid password for parent:', phone);

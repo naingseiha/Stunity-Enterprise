@@ -32,6 +32,54 @@ const VIEW_SAMPLE_RATE = 0.2; // Track 20% of views (1 in 5)
 let viewFlushTimer: ReturnType<typeof setTimeout> | null = null;
 const viewBuffer = new Map<string, { postId: string; duration: number; source: string; timestamp: number }>();
 
+// Feed cold-start resilience (Cloud Run free-tier friendly)
+const FEED_FIRST_PAGE_TIMEOUT_MS = 20_000;
+const FEED_RETRY_TIMEOUT_MS = 25_000;
+const FEED_NEXT_PAGE_TIMEOUT_MS = 12_000;
+const INITIAL_RETRY_BASE_DELAY_MS = 1_200;
+const MAX_INITIAL_FEED_RETRIES = 2;
+let initialFeedRetryAttempts = 0;
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isWrappedFeedItem = (item: any): item is { type: string; data: any } =>
+  !!item && typeof item === 'object' && typeof item.type === 'string' && 'data' in item;
+
+const normalizeFeedItems = (rawItems: any[]): FeedItem[] => {
+  const normalized: FeedItem[] = [];
+
+  for (const rawItem of rawItems) {
+    if (!rawItem) continue;
+
+    if (isWrappedFeedItem(rawItem)) {
+      if (rawItem.type === 'POST') {
+        const transformedPost = transformPost(rawItem.data);
+        if (transformedPost) {
+          normalized.push({ type: 'POST', data: transformedPost });
+        }
+        continue;
+      }
+
+      if (
+        rawItem.type === 'SUGGESTED_USERS' ||
+        rawItem.type === 'SUGGESTED_COURSES' ||
+        rawItem.type === 'SUGGESTED_QUIZZES'
+      ) {
+        normalized.push(rawItem as FeedItem);
+      }
+      continue;
+    }
+
+    // Backward compatibility: some endpoints can still return raw post objects.
+    const transformedPost = transformPost(rawItem);
+    if (transformedPost) {
+      normalized.push({ type: 'POST', data: transformedPost });
+    }
+  }
+
+  return normalized;
+};
+
 async function flushViewBuffer() {
   viewFlushTimer = null;
   if (viewBuffer.size === 0) return;
@@ -240,7 +288,6 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
   // Fetch posts with pagination
   fetchPosts: async (refresh = false, subject?: string) => {
-
     const { isLoadingPosts, postsPage, feedItems, hasMorePosts } = get();
 
     if (isLoadingPosts || (!refresh && !hasMorePosts)) return;
@@ -293,34 +340,86 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         params.mode = feedMode;
       }
 
-      const response = await feedApi.get(endpoint, {
-        params,
-        timeout: 10000, // Reduced timeout for faster feedback
-      });
+      let response;
+      try {
+        response = await feedApi.get(endpoint, {
+          params,
+          timeout: page === 1 ? FEED_FIRST_PAGE_TIMEOUT_MS : FEED_NEXT_PAGE_TIMEOUT_MS,
+          headers: { 'X-No-Retry': 'true' },
+        });
+      } catch (requestError) {
+        if (page !== 1) throw requestError;
+
+        // Free-tier Cloud Run cold starts can be slow on the very first request.
+        await delay(INITIAL_RETRY_BASE_DELAY_MS);
+        response = await feedApi.get(endpoint, {
+          params,
+          timeout: FEED_RETRY_TIMEOUT_MS,
+          headers: { 'X-No-Retry': 'true' },
+        });
+      }
 
       if (response.data.success) {
-        // Backend returns { success, data: feedItems[], pagination }
-        const newFeedItems: FeedItem[] = response.data.data || response.data.posts || [];
-        const pagination = response.data.pagination;
-        const hasMore = pagination?.hasMore ?? newFeedItems.length === 20;
-        const newCursor = pagination?.nextCursor || null;
+        let pagination = response.data.pagination;
+        const rawFeedItems: any[] = response.data.data || response.data.posts || [];
+        let transformedFeedItems: FeedItem[] = normalizeFeedItems(rawFeedItems);
+        let postItemsCount = transformedFeedItems.filter((item) => item.type === 'POST').length;
 
         if (__DEV__) {
-          console.log('📥 [FeedStore] Received', newFeedItems.length, 'items');
+          console.log('📥 [FeedStore] Received', rawFeedItems.length, 'raw items');
         }
 
-        // Transform posts using shared utility (but ONLY for POST types)
-        const transformedFeedItems: FeedItem[] = newFeedItems.map(item => {
-          if (item.type === 'POST') {
-            const transformed = transformPost(item.data);
-            if (!transformed) return null;
-            return { type: 'POST', data: transformed as Post };
+        // Safety fallback: if personalized endpoint returns empty on first page,
+        // fall back to RECENT posts so users never land on a blank feed.
+        if (page === 1 && postItemsCount === 0 && usePersonalizedFeed) {
+          const fallbackParams: any = {
+            page: 1,
+            limit,
+            fields: 'minimal',
+          };
+
+          if (subject && subject !== 'ALL') {
+            fallbackParams.subject = subject;
           }
-          return item;
-        }).filter(Boolean) as FeedItem[];
+
+          if (__DEV__) {
+            console.log('🛟 [FeedStore] Personalized feed empty, falling back to /posts');
+          }
+
+          const fallbackResponse = await feedApi.get('/posts', {
+            params: fallbackParams,
+            timeout: FEED_RETRY_TIMEOUT_MS,
+            headers: { 'X-No-Retry': 'true' },
+          });
+
+          if (fallbackResponse.data?.success) {
+            const fallbackRawItems: any[] = fallbackResponse.data.data || fallbackResponse.data.posts || [];
+            const fallbackItems = normalizeFeedItems(fallbackRawItems);
+
+            if (fallbackItems.length > 0) {
+              transformedFeedItems = fallbackItems;
+              postItemsCount = fallbackItems.filter((item) => item.type === 'POST').length;
+              pagination = fallbackResponse.data.pagination || pagination;
+            }
+          }
+        }
+
+        const hasMore = pagination?.hasMore ?? postItemsCount >= limit;
+        const newCursor = pagination?.nextCursor || null;
+
+        const currentFeedItems = get().feedItems;
+        const shouldPreserveFeedOnEmptyRefresh =
+          refresh &&
+          !subject &&
+          transformedFeedItems.length === 0 &&
+          currentFeedItems.length > 0;
 
         // Apply recommendations if in FOR_YOU mode (only for /posts fallback)
-        let combinedFeedItems = refresh ? transformedFeedItems : [...get().feedItems, ...transformedFeedItems];
+        let combinedFeedItems = shouldPreserveFeedOnEmptyRefresh
+          ? currentFeedItems
+          : refresh
+            ? transformedFeedItems
+            : [...currentFeedItems, ...transformedFeedItems];
 
         if (get().feedMode === 'FOR_YOU' && !usePersonalizedFeed) {
           // Fallback: client-side ranking only if server endpoint was not used
@@ -375,7 +474,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         });
 
         // Write to offline cache on page 1 (most recent posts)
-        if (page === 1) {
+        if (page === 1 && optimizedPostsOnly.length > 0) {
+          initialFeedRetryAttempts = 0;
           cacheFeedPosts(optimizedPostsOnly).catch(() => { });
         }
 
@@ -498,6 +598,21 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         });
       } else {
         set({ isLoadingPosts: false });
+      }
+
+      // Automatic bounded retry for first-load failures when feed is still empty.
+      if (page === 1) {
+        const state = get();
+        if (state.feedItems.length === 0 && initialFeedRetryAttempts < MAX_INITIAL_FEED_RETRIES) {
+          initialFeedRetryAttempts += 1;
+          const retryDelay = INITIAL_RETRY_BASE_DELAY_MS * initialFeedRetryAttempts;
+          setTimeout(() => {
+            const latestState = get();
+            if (!latestState.isLoadingPosts && latestState.feedItems.length === 0) {
+              latestState.fetchPosts(true, subject).catch(() => { });
+            }
+          }, retryDelay);
+        }
       }
     }
   },

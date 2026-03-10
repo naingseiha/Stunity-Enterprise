@@ -1,11 +1,8 @@
 /**
  * Splash Screen Component
- * 
- * Beautiful animated splash screen matching web version:
- * - Animated logo entrance with smooth zoom
- * - Bouncing loading dots
- * - Floating bubble background particles
- * - Smooth fade out transition
+ *
+ * Lightweight JS transition splash shown right after native splash.
+ * Uses a single Stunity wordmark for a clean, modern startup experience.
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -17,104 +14,83 @@ import {
   Easing,
   Image,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 interface SplashScreenProps {
   onComplete?: () => void;
   duration?: number;
 }
 
-const LoadingDots = () => {
-  const dot1 = useRef(new Animated.Value(0)).current;
-  const dot2 = useRef(new Animated.Value(0)).current;
-  const dot3 = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const animate = (val: Animated.Value, delay: number) => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(delay),
-          Animated.spring(val, {
-            toValue: -10,
-            friction: 4,
-            tension: 40,
-            useNativeDriver: true,
-          }),
-          Animated.spring(val, {
-            toValue: 0,
-            friction: 4,
-            tension: 40,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    };
-    animate(dot1, 0);
-    animate(dot2, 150);
-    animate(dot3, 300);
-  }, []);
-
-  return (
-    <View style={styles.dotsContainer}>
-      <Animated.View style={[styles.dot, { transform: [{ translateY: dot1 }] }]} />
-      <Animated.View style={[styles.dot, { transform: [{ translateY: dot2 }] }]} />
-      <Animated.View style={[styles.dot, { transform: [{ translateY: dot3 }] }]} />
-    </View>
-  );
-};
-
 export const SplashScreen: React.FC<SplashScreenProps> = ({
   onComplete,
-  duration = 2800,
+  duration = 850,
 }) => {
   const containerOpacity = useRef(new Animated.Value(1)).current;
-  const logoScale = useRef(new Animated.Value(0.7)).current;
+  const logoScale = useRef(new Animated.Value(0.92)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
+  const logoTranslateY = useRef(new Animated.Value(6)).current;
 
   useEffect(() => {
-    // Ultra-premium spring entrance
-    Animated.parallel([
-      Animated.spring(logoScale, {
-        toValue: 1,
-        friction: 6,
-        tension: 40,
-        useNativeDriver: true,
-      }),
+    const entrance = Animated.parallel([
       Animated.timing(logoOpacity, {
         toValue: 1,
-        duration: 600,
+        duration: 250,
         useNativeDriver: true,
       }),
-    ]).start();
+      Animated.spring(logoScale, {
+        toValue: 1,
+        friction: 8,
+        tension: 110,
+        useNativeDriver: true,
+      }),
+      Animated.timing(logoTranslateY, {
+        toValue: 0,
+        duration: 260,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]);
 
-    // Reveal sequence
+    entrance.start();
+
+    const fadeDelay = Math.max(420, duration - 260);
     const revealTimer = setTimeout(() => {
       Animated.parallel([
         Animated.timing(logoScale, {
-          toValue: 2.5,
-          duration: 700,
-          easing: Easing.bezier(0.4, 0, 0.2, 1),
+          toValue: 1.05,
+          duration: 230,
+          easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
         Animated.timing(logoOpacity, {
           toValue: 0,
-          duration: 500,
+          duration: 220,
+          easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
         Animated.timing(containerOpacity, {
           toValue: 0,
-          duration: 700,
+          duration: 220,
+          easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
       ]).start(() => {
         onComplete?.();
       });
-    }, duration - 800);
+    }, fadeDelay);
 
-    return () => clearTimeout(revealTimer);
-  }, [onComplete, duration]);
+    return () => {
+      clearTimeout(revealTimer);
+    };
+  }, [
+    containerOpacity,
+    duration,
+    logoOpacity,
+    logoScale,
+    logoTranslateY,
+    onComplete,
+  ]);
 
   return (
     <Animated.View
@@ -125,29 +101,22 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         },
       ]}
     >
-      <View style={styles.background}>
+      <View style={styles.content}>
         <Animated.View
           style={[
-            styles.logoContainer,
+            styles.logoWrap,
             {
               opacity: logoOpacity,
-              transform: [{ scale: logoScale }],
+              transform: [{ scale: logoScale }, { translateY: logoTranslateY }],
             },
           ]}
         >
           <Image
             source={require('../../../assets/Stunity.png')}
-            style={{
-              width: width * 0.82,
-              height: undefined,
-              aspectRatio: 2045 / 512,
-            }}
+            style={styles.logo}
             resizeMode="contain"
           />
         </Animated.View>
-        <View style={styles.footer}>
-          <LoadingDots />
-        </View>
       </View>
     </Animated.View>
   );
@@ -157,33 +126,26 @@ const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 9999,
-    backgroundColor: '#E0F2FE', // Set directly to prevent white flash
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#E0F2FE',
   },
-  background: {
+  content: {
     flex: 1,
-    width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingBottom: 18,
   },
-  logoContainer: {
+  logoWrap: {
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    elevation: 5,
   },
-  footer: {
-    position: 'absolute',
-    bottom: 100,
-  },
-  dotsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#09CFF7',
+  logo: {
+    width: Math.min(width * 0.82, 420),
+    height: 92,
   },
 });
 

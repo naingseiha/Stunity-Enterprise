@@ -65,16 +65,15 @@ export default function App() {
   useEffect(() => {
     if (!appIsReady) return;
 
-    // Show JS splash immediately to replace native splash
-    const timer = setTimeout(() => {
-      setShowSplash(true);
-      // Hide native splash once JS splash is ready
+    // Mount JS splash first, then hide native splash to avoid white transition flash.
+    setShowSplash(true);
+    const frame = requestAnimationFrame(() => {
       ExpoSplashScreen.hideAsync().catch((error) => {
         console.warn('Failed to hide native splash screen:', error);
       });
-    }, 0);
+    });
 
-    return () => clearTimeout(timer);
+    return () => cancelAnimationFrame(frame);
   }, [appIsReady]);
 
   const handleSplashComplete = () => {
@@ -92,7 +91,7 @@ export default function App() {
               {showSplash && (
                 <SplashScreen
                   onComplete={handleSplashComplete}
-                  duration={2800}
+                  duration={850}
                 />
               )}
             </View>
