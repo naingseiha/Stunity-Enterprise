@@ -8,9 +8,9 @@
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
     "splash": {
-      "image": "./assets/Stunity.png",
+      "image": "./assets/Stunity-splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#E0F2FE"
+      "backgroundColor": "#FFFFFF"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -36,9 +36,9 @@
         "backgroundColor": "#0ad2fa"
       },
       "splash": {
-        "image": "./assets/Stunity.png",
+        "image": "./assets/Stunity-splash.png",
         "resizeMode": "contain",
-        "backgroundColor": "#E0F2FE"
+        "backgroundColor": "#FFFFFF"
       },
       "permissions": [
         "android.permission.CAMERA",
@@ -61,9 +61,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#E0F2FE",
-          "image": "./assets/Stunity.png",
-          "imageWidth": 340
+          "backgroundColor": "#FFFFFF",
+          "image": "./assets/Stunity-splash.png",
+          "imageWidth": 260
         }
       ],
       [

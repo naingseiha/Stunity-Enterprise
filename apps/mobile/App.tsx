@@ -4,7 +4,7 @@
  * Enterprise e-learning social platform
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -76,9 +76,9 @@ export default function App() {
     return () => cancelAnimationFrame(frame);
   }, [appIsReady]);
 
-  const handleSplashComplete = () => {
+  const handleSplashComplete = useCallback(() => {
     setShowSplash(false);
-  };
+  }, []);
 
   return (
     <ErrorBoundary>
@@ -91,7 +91,7 @@ export default function App() {
               {showSplash && (
                 <SplashScreen
                   onComplete={handleSplashComplete}
-                  duration={850}
+                  duration={1800}
                 />
               )}
             </View>
@@ -108,6 +108,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#FFFFFF',
   },
 });
