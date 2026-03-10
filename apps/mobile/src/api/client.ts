@@ -248,7 +248,7 @@ const transformError = (error: AxiosError<ApiResponse<unknown>>): ApiError => {
     case 429:
       return {
         code: 'RATE_LIMITED',
-        message: data?.error || data?.message || 'Too many requests. Please try again later.',
+        message: data?.error || data?.message || 'AI daily limit reached. The free quota resets every 24 hours — please try again tomorrow.',
       };
     case 500:
     case 502:

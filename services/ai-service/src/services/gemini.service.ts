@@ -150,9 +150,13 @@ class GeminiService {
                 return this.withRetry(fn, retries - 1, nextDelay, start);
             }
 
-            // Attach status so global error handler can return 429
+            // Attach status and user-friendly message so the route handler returns 429
             if (isQuotaError) {
-                error.status = 429;
+                const friendlyError = new Error(
+                    'AI daily free quota reached. The limit resets every 24 hours — please try again tomorrow.'
+                );
+                (friendlyError as any).status = 429;
+                throw friendlyError;
             }
             throw error;
         }
