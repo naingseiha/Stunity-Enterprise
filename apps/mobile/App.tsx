@@ -91,7 +91,7 @@ export default function App() {
               {showSplash && (
                 <SplashScreen
                   onComplete={handleSplashComplete}
-                  duration={1800}
+                  duration={2000}
                 />
               )}
             </View>

@@ -1,8 +1,8 @@
 /**
  * Splash Screen Component
  *
- * Smooth UI-thread animations powered by react-native-reanimated.
- * Logo entrance with spring + subtle breathing, staggered bouncing dots.
+ * Clean splash powered by react-native-reanimated (UI-thread animations).
+ * Smooth logo entrance with spring + breathing, staggered bouncing dots.
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -22,13 +22,14 @@ import Animated, {
 } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
+const LOGO_WIDTH = Math.min(width * 0.75, 320);
 
 interface SplashScreenProps {
   onComplete?: () => void;
   duration?: number;
 }
 
-/* ─── Bouncing dot (runs entirely on UI thread) ─── */
+/* ─── Bouncing dot ─── */
 
 const BouncingDot: React.FC<{
   index: number;
@@ -66,7 +67,7 @@ const BouncingDot: React.FC<{
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({
   onComplete,
-  duration = 1800,
+  duration = 2000,
 }) => {
   const onCompleteRef = useRef(onComplete);
   useEffect(() => {
@@ -100,19 +101,13 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
     // Dots fade in after logo settles
     dotsOpacity.value = withDelay(400, withTiming(1, { duration: 400 }));
 
-    // Subtle breathing on logo after entrance
+    // Subtle breathing on logo
     logoBreath.value = withDelay(
       700,
       withRepeat(
         withSequence(
-          withTiming(1, {
-            duration: 1500,
-            easing: Easing.inOut(Easing.ease),
-          }),
-          withTiming(0, {
-            duration: 1500,
-            easing: Easing.inOut(Easing.ease),
-          }),
+          withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
         ),
         -1,
       ),
@@ -176,7 +171,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
   return (
     <Animated.View style={[styles.container, containerStyle]}>
       <View style={styles.content}>
-        <Animated.View style={[styles.logoWrap, logoStyle]}>
+        <Animated.View style={logoStyle}>
           <Image
             source={require('../../../assets/Stunity.png')}
             style={styles.logo}
@@ -205,17 +200,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#f97316',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 6,
-  },
   logo: {
-    width: Math.min(width * 0.75, 320),
+    width: LOGO_WIDTH,
     height: 100,
   },
   dotsRow: {
@@ -229,11 +215,6 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     backgroundColor: '#f97316',
-    shadowColor: '#fb923c',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 3,
   },
 });
 
