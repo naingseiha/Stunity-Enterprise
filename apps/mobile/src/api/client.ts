@@ -103,27 +103,26 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
       }
 
       // Handle timeout errors with retry (skip if X-No-Retry header is set)
-      if (error.code === 'ECONNABORTED' && !originalRequest._retry && !originalRequest.headers?.['X-No-Retry']) {
+      if (error.code === 'ECONNABORTED' && !originalRequest.headers?.['X-No-Retry']) {
         const retryCount = (originalRequest._retryCount || 0) + 1;
 
-        if (retryCount <= 3) { // Retry up to 3 times for timeouts
+        if (retryCount <= APP_CONFIG.RETRY_ATTEMPTS) {
           originalRequest._retryCount = retryCount;
-          originalRequest._retry = true;
 
           // Exponential backoff: 2s, 4s, 6s
-          const delay = 2000 * retryCount;
+          const delay = APP_CONFIG.RETRY_DELAY * retryCount;
           if (__DEV__) {
-            console.log(`⏳ [API] Retrying ${originalRequest.url} (attempt ${retryCount}/3) after ${delay}ms...`);
+            console.log(`⏳ [API] Retrying ${originalRequest.url} (attempt ${retryCount}/${APP_CONFIG.RETRY_ATTEMPTS}) after ${delay}ms...`);
           }
 
           await new Promise(resolve => setTimeout(resolve, delay));
 
-          // Significantly increase timeout for retry (WiFi switching needs more time)
-          originalRequest.timeout = 60000; // 60s for retries
+          // Keep full timeout for retries (AI calls need the full window)
+          originalRequest.timeout = APP_CONFIG.API_TIMEOUT;
 
           return client(originalRequest);
         } else {
-          // After 3 retries, give a helpful error message
+          // After all retries, give a helpful error message
           if (__DEV__) {
             console.log('💡 [API] Timeout after retries. If you changed WiFi, please reload the app.');
           }

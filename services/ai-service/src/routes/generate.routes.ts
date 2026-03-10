@@ -43,11 +43,21 @@ router.post('/generate/quiz', async (req: Request, res: Response) => {
             return res.status(400).json({ success: false, error: 'Topic is required' });
         }
 
-        const quiz = await generateQuiz({ topic, gradeLevel, questionCount, difficulty, subject });
+        // Set a server-side timeout so we return a proper error instead of hanging
+        const timeoutMs = 100_000; // 100s — leave room before client's 120s timeout
+        const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Quiz generation timed out. The AI service is busy — please try again in a moment.')), timeoutMs)
+        );
+
+        const quiz = await Promise.race([
+            generateQuiz({ topic, gradeLevel, questionCount, difficulty, subject }),
+            timeoutPromise,
+        ]);
         res.json({ success: true, data: quiz });
     } catch (error: any) {
         console.error('❌ Quiz generation error:', error);
-        res.status(500).json({ success: false, error: error.message || 'Failed to generate quiz' });
+        const status = error.status === 429 ? 429 : 500;
+        res.status(status).json({ success: false, error: error.message || 'Failed to generate quiz' });
     }
 });
 

@@ -10,8 +10,8 @@ import { Config, APP_CONFIG } from '@/config';
 import { ApiResponse } from '@/types';
 import { createApiClient } from './client';
 
-// Create a dedicated AI client separate from feed client 
-// AI generation needs a long timeout (60s provided by createApiClient/APP_CONFIG)
+// Create a dedicated AI client separate from feed client
+// AI generation needs a long timeout (120s provided by APP_CONFIG.API_TIMEOUT)
 const aiClient: AxiosInstance = createApiClient(Config.aiUrl);
 
 export const aiApi = {

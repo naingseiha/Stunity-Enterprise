@@ -105,7 +105,10 @@ class GeminiService {
         });
     }
 
-    private async withRetry<T>(fn: () => Promise<T>, retries = 5, delay = 2000): Promise<T> {
+    private async withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 2000, startTime?: number): Promise<T> {
+        const start = startTime || Date.now();
+        const MAX_TOTAL_TIME_MS = 90_000; // 90s total budget to stay within client timeout
+
         try {
             return await fn();
         } catch (error: any) {
@@ -116,18 +119,18 @@ class GeminiService {
                 error?.message?.includes('Quota') ||
                 error?.message?.includes('Rate limit');
 
-            if (isQuotaError && retries > 0) {
-                let nextDelay = delay * 2;
+            const elapsed = Date.now() - start;
+            if (isQuotaError && retries > 0 && elapsed < MAX_TOTAL_TIME_MS) {
+                let nextDelay = Math.min(delay * 2, 10_000); // Cap delay at 10s
 
-                // Parse retryDelay from error details if available (e.g., in error.response.data.error.details)
+                // Parse retryDelay from error details if available
                 try {
                     const details = error?.response?.data?.error?.details || [];
                     const quotaInfo = details.find((d: any) => d.retryDelay);
                     if (quotaInfo?.retryDelay) {
                         const seconds = parseInt(quotaInfo.retryDelay, 10);
                         if (!isNaN(seconds)) {
-                            // Add 1s buffer for safety
-                            nextDelay = (seconds + 1) * 1000;
+                            nextDelay = Math.min((seconds + 1) * 1000, 15_000);
                             console.log(`📡 [Gemini] Using suggested retry delay: ${nextDelay}ms`);
                         }
                     }
@@ -135,9 +138,16 @@ class GeminiService {
                     // Fallback to exponential backoff
                 }
 
-                console.warn(`⚠️ [Gemini] Quota limit reached (429). Retrying in ${nextDelay}ms... (${retries} retries left)`);
+                // Don't retry if we'd exceed the time budget
+                if (elapsed + nextDelay > MAX_TOTAL_TIME_MS) {
+                    console.warn(`⚠️ [Gemini] Skipping retry — would exceed 90s time budget (${elapsed}ms elapsed)`);
+                    error.status = 429;
+                    throw error;
+                }
+
+                console.warn(`⚠️ [Gemini] Quota limit reached (429). Retrying in ${nextDelay}ms... (${retries} retries left, ${elapsed}ms elapsed)`);
                 await new Promise(resolve => setTimeout(resolve, nextDelay));
-                return this.withRetry(fn, retries - 1, nextDelay);
+                return this.withRetry(fn, retries - 1, nextDelay, start);
             }
 
             // Attach status so global error handler can return 429
