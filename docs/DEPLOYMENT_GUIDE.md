@@ -65,6 +65,9 @@ When a backend service is updated, complete this checklist before closing releas
    - Check service logs in GCP
    - Confirm endpoint health (for example `/health`)
 4. **Confirm mobile/web integration** against deployed backend endpoints.
+5. **Auth provisioning sanity check (when auth/school user creation changed):**
+   - Verify password-based `ADMIN` / `SUPER_ADMIN` users are created with `accountType=SCHOOL_ONLY`.
+   - If legacy rows still use `SOCIAL_ONLY`, backfill before release to avoid login `401`.
 
 ### Environment Variables
 For each service in Cloud Run, set the following:

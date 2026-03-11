@@ -413,6 +413,7 @@ app.post('/schools/register', schoolRegisterLimiter, async (req: Request, res: R
         phone: adminPhone,
         password: hashedPassword,
         role: 'ADMIN',
+        accountType: 'SCHOOL_ONLY',
         isActive: true,
         isDefaultPassword: false,
         isSuperAdmin: false,
@@ -1123,6 +1124,7 @@ app.post('/super-admin/schools', requireSuperAdmin, async (req: Request, res: Re
         firstName: adminFirstName.trim(),
         lastName: adminLastName.trim(),
         role: 'ADMIN',
+        accountType: 'SCHOOL_ONLY',
         schoolId: school.id,
       },
     });

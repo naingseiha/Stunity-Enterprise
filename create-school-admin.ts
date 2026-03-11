@@ -37,6 +37,7 @@ async function main() {
             firstName: 'School',
             lastName: 'Admin',
             role: 'ADMIN',
+            accountType: 'SCHOOL_ONLY',
             schoolId: school.id,
             isActive: true,
             isEmailVerified: true,

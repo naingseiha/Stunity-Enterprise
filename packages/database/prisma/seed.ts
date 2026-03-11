@@ -142,6 +142,7 @@ async function main() {
       firstName: 'John',
       lastName: 'Doe',
       role: 'ADMIN',
+      accountType: 'SCHOOL_ONLY',
       isActive: true,
       isDefaultPassword: false,
     },

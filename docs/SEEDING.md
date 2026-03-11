@@ -28,7 +28,7 @@ npm run seed:all
 ### Base Seed (`packages/database` → `npx prisma db seed`)
 
 - **Schools**: Test High School, Stunity Academy
-- **Users**: Admin (john.doe@testhighschool.edu / SecurePass123!)
+- **Users**: Admin (john.doe@testhighschool.edu / SecurePass123!, `accountType: SCHOOL_ONLY`)
 - **Academic Years**: 2024-2025 (ENDED), 2025-2026 (ACTIVE), 2026-2027 (PLANNING)
 - **Classes**: Grades 7–10 across 3 years
 - **Teachers**: 4 teachers with Khmer names
@@ -77,6 +77,11 @@ npm run seed:super-admin
 npx tsx scripts/seed-super-admin.ts john.doe@testhighschool.edu
 ```
 
+The script sets:
+- `role: SUPER_ADMIN`
+- `isSuperAdmin: true`
+- `accountType: SCHOOL_ONLY` (required for password login)
+
 After seeding, log in with the promoted user to access the Super Admin dashboard at `/super-admin`.
 
 ---
@@ -108,3 +113,15 @@ Run `npm run seed:test-data` to add academic years and set one as current.
 
 **Database connection errors**  
 Ensure `DATABASE_URL` is set in `.env` or `packages/database/.env`.
+
+**Admin/Super Admin gets `401` with `This account uses social sign-in...`**  
+This means the account is `SOCIAL_ONLY` but being used with password login.  
+Password-based school/admin accounts must use `accountType: SCHOOL_ONLY`.
+
+To fix existing rows:
+```sql
+UPDATE "users"
+SET "accountType" = 'SCHOOL_ONLY'
+WHERE role IN ('ADMIN', 'SUPER_ADMIN')
+  AND "accountType" = 'SOCIAL_ONLY';
+```

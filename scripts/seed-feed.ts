@@ -129,6 +129,7 @@ async function seedFeed() {
                     firstName: userData.firstName,
                     lastName: userData.lastName,
                     role: userData.role,
+                    accountType: 'SCHOOL_ONLY',
                     isActive: true,
                     isDefaultPassword: false,
                     bio: userData.bio,

@@ -243,7 +243,13 @@ async function main() {
         if (existing) {
             await prisma.user.update({
                 where: { id: existing.id },
-                data: { isSuperAdmin: true, password: hashedPassword, isActive: true },
+                data: {
+                    isSuperAdmin: true,
+                    role: 'SUPER_ADMIN',
+                    accountType: 'SCHOOL_ONLY',
+                    password: hashedPassword,
+                    isActive: true,
+                },
             });
             console.log(GREEN(`  ✓  Updated existing user to super admin: ${SA_EMAIL}`));
         } else {
@@ -253,7 +259,8 @@ async function main() {
                     lastName: SA_LAST,
                     email: SA_EMAIL,
                     password: hashedPassword,
-                    role: 'ADMIN',   // closest valid enum value; isSuperAdmin flag is the authority
+                    role: 'SUPER_ADMIN',
+                    accountType: 'SCHOOL_ONLY',
                     isSuperAdmin: true,
                     isActive: true,
                     isDefaultPassword: false,

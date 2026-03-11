@@ -166,6 +166,18 @@ function sanitizeWorkingLevel(wl: any): string | null {
   return null; // unknown value → null (stored in customFields instead)
 }
 
+type AccountTypeValue = 'SOCIAL_ONLY' | 'SCHOOL_ONLY' | 'HYBRID';
+const VALID_ACCOUNT_TYPES = new Set<AccountTypeValue>(['SOCIAL_ONLY', 'SCHOOL_ONLY', 'HYBRID']);
+
+function inferAccountType(user: any): AccountTypeValue {
+  const explicit = typeof user.accountType === 'string' ? user.accountType.toUpperCase().trim() : '';
+  if (VALID_ACCOUNT_TYPES.has(explicit as AccountTypeValue)) {
+    return explicit as AccountTypeValue;
+  }
+  // Migrated V1 users with password credentials should not default to SOCIAL_ONLY.
+  return user.password ? 'SCHOOL_ONLY' : 'SOCIAL_ONLY';
+}
+
 /**
  * Normalize V1 date strings to ISO YYYY-MM-DD or null.
  * V1 has inconsistent formats: "21/5/87", "2/6/72", "1988-08-14", "", "null"
@@ -764,6 +776,7 @@ async function main() {
       const studentId = u.studentId ? (idMap.student[u.studentId] ?? null) : null;
       const teacherId = u.teacherId ? (idMap.teacher[u.teacherId] ?? null) : null;
       const parentId = u.parentId ? (idMap.parent[u.parentId] ?? null) : null;
+      const accountType = inferAccountType(u);
       try {
         const result = await prisma.user.upsert({
           where: { id: u.id },
@@ -772,6 +785,7 @@ async function main() {
             email: u.email ?? null, password: u.password,
             firstName: u.firstName, lastName: u.lastName,
             role: u.role || 'TEACHER', studentId, teacherId, parentId,
+            accountType,
             phone: u.phone ?? null, permissions: u.permissions ?? undefined,
             isDefaultPassword: u.isDefaultPassword ?? true,
             isSuperAdmin: u.isSuperAdmin ?? false,
@@ -779,6 +793,7 @@ async function main() {
           update: {
             schoolId: studentId || teacherId ? schoolId : undefined,
             studentId: studentId ?? undefined, teacherId: teacherId ?? undefined, parentId: parentId ?? undefined,
+            accountType,
           },
         });
         idMap.user[u.id] = result.id;

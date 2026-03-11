@@ -505,8 +505,17 @@ app.post(
         }
       }
 
-      // Reject password flow for social-only or malformed-password accounts
-      if (user.accountType === 'SOCIAL_ONLY' || !isPasswordHashUsable(user.password)) {
+      const hasUsablePasswordHash = isPasswordHashUsable(user.password);
+      const isLegacyAdminPasswordAccount =
+        user.accountType === 'SOCIAL_ONLY' &&
+        hasUsablePasswordHash &&
+        (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN');
+
+      // Reject password flow for social-only accounts, except legacy admin records
+      if (
+        !hasUsablePasswordHash ||
+        (user.accountType === 'SOCIAL_ONLY' && !isLegacyAdminPasswordAccount)
+      ) {
         return res.status(401).json({
           success: false,
           error: 'This account uses social sign-in or requires password reset',
@@ -543,6 +552,12 @@ app.post(
 
       // Reset failed attempts + update last login
       await recordSuccessfulLogin(user.id);
+      if (isLegacyAdminPasswordAccount) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { accountType: 'SCHOOL_ONLY' },
+        });
+      }
 
       // Generate tokens (include school data to avoid DB queries on every request)
       const accessToken = jwt.sign(
