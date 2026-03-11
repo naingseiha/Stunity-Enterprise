@@ -67,14 +67,26 @@ class TokenService {
     // Check if token needs refresh
     if (this.shouldRefreshToken()) {
       const newToken = await this.refreshAccessToken();
-      return newToken;
+      if (newToken) {
+        return newToken;
+      }
+
+      // Preserve login state on transient refresh failures by reusing
+      // the last known access token when available.
+      if (this.accessToken) {
+        return this.accessToken;
+      }
     }
 
     if (this.accessToken) {
       return this.accessToken;
     }
 
-    return SecureStore.getItemAsync(KEYS.ACCESS_TOKEN);
+    const storedAccessToken = await SecureStore.getItemAsync(KEYS.ACCESS_TOKEN);
+    if (storedAccessToken) {
+      this.accessToken = storedAccessToken;
+    }
+    return storedAccessToken;
   }
 
   /**

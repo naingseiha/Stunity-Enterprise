@@ -225,9 +225,8 @@ const validateAttendanceStatus = (status: string): boolean => {
   return validStatuses.includes(status);
 };
 
-const validateAttendanceSession = (session: string): boolean => {
-  const validSessions = ['MORNING', 'AFTERNOON'];
-  return validSessions.includes(session);
+const validateAttendanceSession = (session: string): session is AttendanceSession => {
+  return session === 'MORNING' || session === 'AFTERNOON';
 };
 
 // Health Check
@@ -1481,11 +1480,19 @@ app.post('/attendance/teacher/check-in', authenticateToken, async (req: AuthRequ
   try {
     const schoolId = req.schoolId!;
     const userId = req.user?.id;
-    const { latitude, longitude } = req.body;
+    const { latitude, longitude, session } = req.body;
 
     if (!latitude || !longitude) {
       return res.status(400).json({ success: false, message: 'Location coordinates required' });
     }
+
+    if (session && !validateAttendanceSession(session)) {
+      return res.status(400).json({ success: false, message: 'Invalid session. Must be MORNING or AFTERNOON' });
+    }
+
+    const targetSession: AttendanceSession = session && validateAttendanceSession(session)
+      ? session
+      : (new Date().getHours() < 12 ? 'MORNING' : 'AFTERNOON');
 
     const teacher = await prisma.teacher.findFirst({
       where: { schoolId, user: { id: userId } },
@@ -1540,17 +1547,38 @@ app.post('/attendance/teacher/check-in', authenticateToken, async (req: AuthRequ
       return res.status(400).json({ success: false, message: `You are already checked in without checking out.` });
     }
 
+    const existingSessionAttendance = await prisma.teacherAttendance.findFirst({
+      where: {
+        teacherId: teacher.id,
+        OR: [{ date: todayDate }, { date: utcStart }],
+        session: targetSession
+      }
+    });
+
+    if (existingSessionAttendance) {
+      return res.status(400).json({
+        success: false,
+        message: `Attendance already recorded for ${targetSession} session today.`
+      });
+    }
+
     const attendance = await prisma.teacherAttendance.create({
       data: {
         teacherId: teacher.id,
         locationId: matchedLocation.id,
         date: todayDate,
         timeIn: new Date(),
+        session: targetSession,
         status: 'PRESENT',
       }
     });
 
-    res.status(201).json({ success: true, message: `Checked in successfully`, data: attendance, locationName: matchedLocation.name });
+    res.status(201).json({
+      success: true,
+      message: `Checked in successfully for ${targetSession} session`,
+      data: attendance,
+      locationName: matchedLocation.name
+    });
   } catch (error: any) {
     res.status(500).json({ success: false, message: 'Check-in failed', error: error.message });
   }
@@ -1561,10 +1589,14 @@ app.post('/attendance/teacher/check-out', authenticateToken, async (req: AuthReq
   try {
     const schoolId = req.schoolId!;
     const userId = req.user?.id;
-    const { latitude, longitude } = req.body;
+    const { latitude, longitude, session } = req.body;
 
     if (!latitude || !longitude) {
       return res.status(400).json({ success: false, message: 'Location coordinates required' });
+    }
+
+    if (session && !validateAttendanceSession(session)) {
+      return res.status(400).json({ success: false, message: 'Invalid session. Must be MORNING or AFTERNOON' });
     }
 
     const teacher = await prisma.teacher.findFirst({
@@ -1605,18 +1637,28 @@ app.post('/attendance/teacher/check-out', authenticateToken, async (req: AuthReq
     const utcStartStr = new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
     const utcStart = new Date(utcStartStr);
 
+    const targetSession: AttendanceSession | undefined = session && validateAttendanceSession(session)
+      ? session
+      : undefined;
+
     // Find active check-in session that isn't checked out
     const activeSession = await prisma.teacherAttendance.findFirst({
       where: {
         teacherId: teacher.id,
         OR: [{ date: todayDate }, { date: utcStart }],
+        ...(targetSession ? { session: targetSession } : {}),
         timeOut: null,
       },
       orderBy: { timeIn: 'desc' }
     });
 
     if (!activeSession) {
-      return res.status(400).json({ success: false, message: 'No active check-in found to check out' });
+      return res.status(400).json({
+        success: false,
+        message: targetSession
+          ? `No active ${targetSession} check-in found to check out`
+          : 'No active check-in found to check out'
+      });
     }
 
     const updatedAttendance = await prisma.teacherAttendance.update({
@@ -1626,7 +1668,11 @@ app.post('/attendance/teacher/check-out', authenticateToken, async (req: AuthReq
       }
     });
 
-    res.json({ success: true, message: `Checked out successfully`, data: updatedAttendance });
+    res.json({
+      success: true,
+      message: `Checked out successfully for ${activeSession.session} session`,
+      data: updatedAttendance
+    });
   } catch (error: any) {
     res.status(500).json({ success: false, message: 'Check-out failed', error: error.message });
   }
@@ -1661,20 +1707,19 @@ app.get('/attendance/teacher/today', authenticateToken, async (req: AuthRequest,
       orderBy: { timeIn: 'asc' }
     });
 
-    // Structure result as session map depending on the check-in time
+    // Structure result by explicit session selection from check-in.
     const sessions = {
       MORNING: null as any,
       AFTERNOON: null as any,
     };
 
     attendanceRecords.forEach(record => {
-      const hour = new Date(record.timeIn).getHours();
-      if (hour < 12 && !sessions.MORNING) {
+      if (record.session === 'MORNING' && !sessions.MORNING) {
         sessions.MORNING = record;
-      } else if (hour >= 12 && !sessions.AFTERNOON) {
+      } else if (record.session === 'AFTERNOON' && !sessions.AFTERNOON) {
         sessions.AFTERNOON = record;
       } else {
-        // Fallback: if two morning records exist, assign second to afternoon, etc.
+        // Backward-compatible fallback for unexpected duplicate/session-less data.
         if (!sessions.MORNING) sessions.MORNING = record;
         else if (!sessions.AFTERNOON) sessions.AFTERNOON = record;
       }

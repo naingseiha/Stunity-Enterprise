@@ -50,6 +50,22 @@ We have standardized Dockerfiles for all backend microservices (the current depl
    - If Cloud Run URL changes for any service, update corresponding `NEXT_PUBLIC_*_SERVICE_URL` values in Vercel.
 5. **Validate each deployed service** in Cloud Run logs/health checks before deploying frontend updates.
 
+### Backend Change Rollout Checklist (Required)
+When a backend service is updated, complete this checklist before closing release:
+
+1. **Apply DB migrations first** (if schema changed):
+   ```bash
+   npx prisma migrate deploy --schema=packages/database/prisma/schema.prisma
+   ```
+2. **Deploy only changed backend services** to Cloud Run:
+   ```bash
+   ./scripts/deploy-cloud-run.sh attendance-service
+   ```
+3. **Verify Cloud Run revision health**:
+   - Check service logs in GCP
+   - Confirm endpoint health (for example `/health`)
+4. **Confirm mobile/web integration** against deployed backend endpoints.
+
 ### Environment Variables
 For each service in Cloud Run, set the following:
 - `DATABASE_URL`: Your Supabase pooler URL.
@@ -115,4 +131,4 @@ eas build --platform android --profile production
 
 ---
 
-*Last updated: March 9, 2026*
+*Last updated: March 11, 2026*

@@ -1,6 +1,6 @@
 # ✅ Stunity Enterprise — Current Features
 
-**Version:** 23.1 | **Updated:** March 3, 2026
+**Version:** 23.3 | **Updated:** March 11, 2026
 
 > This document lists all implemented and working features. For what's coming next, see NEXT_IMPLEMENTATION.md.
 
@@ -12,10 +12,11 @@
 - **Email OR phone** — Register and login with either (at least one required); single "Email or Phone" field on mobile and web
 - **Organization optional** — Registration step 2; users can skip organization name
 - **Session persists until logout** — No Remember me checkbox; tokens persist like Facebook
+- **Login persistence hardening** — Mobile app now keeps persisted session during transient verify/refresh failures and only clears on terminal token rejection
 - Email/password registration + login
 - Role selection: Student, Teacher, Admin, Parent
 - Claim code enrollment: `STNT-XXXX-XXXX` links users to a school
-- JWT access tokens (1h) + refresh tokens (7 days), bcrypt 12 rounds
+- JWT access tokens (30d) + refresh tokens (365d), bcrypt 12 rounds
 - Parent portal with separate login (linked to student accounts)
 - **Parent Portal mobile app** — ParentLoginScreen, ParentNavigator, ParentHomeScreen, ParentChildScreen, grades/attendance/report-card screens
 - Profile setup screen (bio, avatar, interests)
@@ -247,6 +248,7 @@ npm run seed:super-admin [email]
 - Attendance statuses: Present, Absent, Late, Excused
 - Session management (create/close)
 - Attendance report by student, class, date range
+- Teacher geofenced check-in/check-out now stores explicit selected session (MORNING/AFTERNOON) to prevent afternoon actions being auto-recorded as morning
 - Absence notifications to parents AND students (via push + feed notification bridge)
 
 ### Timetable

@@ -1,8 +1,8 @@
 # 🎓 Stunity Enterprise — Project Status
 
-**Last Updated:** March 10, 2026
-**Version:** 23.2
-**Status:** 99% Complete — Startup/Feed Reliability + Splash UX Polished 🚀
+**Last Updated:** March 11, 2026
+**Version:** 23.3
+**Status:** 99% Complete — Attendance Session Accuracy + Login Persistence Hardened 🚀
 
 ---
 
@@ -19,7 +19,18 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 
 ## ✅ Completed Features (v23.0)
 
-### ⚡ Latest Platform Updates (Mar 10, 2026)
+### ⚡ Latest Platform Updates (Mar 11, 2026)
+- **Teacher attendance session accuracy (mobile + backend)**
+  - Fixed issue where tapping **Start AFTERNOON** could still be recorded as morning due to server-side hour inference.
+  - Attendance service now persists explicit session intent (`MORNING` / `AFTERNOON`) from mobile check-in/check-out requests.
+  - `/attendance/teacher/today` now maps records by stored session (not by inferred check-in hour).
+  - Supabase migration was applied safely with non-destructive backfill and historical data preserved.
+- **Facebook-style persistent login hardening (mobile)**
+  - Session restore on app boot now avoids unnecessary auto-logout on transient verify/refresh failures.
+  - Refresh recovery path added before clearing session; session is cleared only on terminal token rejection.
+  - Token retrieval now falls back to last known token when refresh is temporarily unavailable.
+
+### ⚡ Prior Platform Updates (Mar 10, 2026)
 - **Mobile startup performance tuning**
   - Login-to-feed path optimized with auth-time feed prewarm
   - First-feed load hardened for Cloud Run free-tier cold starts (fallback + bounded retry + cache-first behavior)
@@ -40,7 +51,7 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 - **Session persists until logout** — No "Remember me" checkbox; tokens persist like Facebook
 - Email/password login + registration with role selection
 - Claim code system (STNT-XXXX-XXXX) — school enrollment
-- JWT access tokens (1h) + refresh tokens (7d), bcrypt 12 rounds
+- JWT access tokens (30d) + refresh tokens (365d), bcrypt 12 rounds
 - Parent portal login (separate flow) + **Parent Portal mobile app** (grades, attendance, report cards)
 - Enterprise SSO fully integrated (Azure AD, Google Workspace) with auto-provisioning
 - **Security headers** — Helmet + HPP on auth-service + feed-service
@@ -100,6 +111,7 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 - Timetable generation (shifts, constraints, drag-drop on web)
 - Grade entry (GPA scales, exam types, subject averages)
 - Attendance marking with session management
+- Teacher geofenced attendance now respects explicitly selected session on mobile (morning/afternoon) end-to-end
 - **Parent portal mobile app** — ParentHomeScreen, ParentChildScreen, ParentChildGradesScreen, ParentChildAttendanceScreen, ParentChildReportCardScreen; login with phone; RootNavigator routes PARENT role to ParentNavigator
 - Parent portal web (grades, attendance, report cards, parent-to-teacher messages)
 - Academic year promotion workflow

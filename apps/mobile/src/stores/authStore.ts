@@ -99,11 +99,30 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true });
 
+          const restorePersistedSession = () => {
+            const state = get();
+            if (!state.user) return false;
+
+            set({
+              isAuthenticated: true,
+              isLoading: false,
+              isInitialized: true,
+              error: null,
+            });
+            prewarmFeedAfterAuth(state.user.role);
+            return true;
+          };
+
           // Check for stored tokens
           const hasTokens = await tokenService.initialize();
 
           if (!hasTokens) {
-            console.log('Auth: No active session found');
+            console.warn('Auth: No secure tokens loaded on init');
+            if (restorePersistedSession()) {
+              console.warn('Auth: Keeping persisted session until explicit logout');
+              return;
+            }
+
             set({
               user: null,
               isAuthenticated: false,
@@ -134,23 +153,51 @@ export const useAuthStore = create<AuthState>()(
               return;
             }
           } catch (verifyError: any) {
-            // ONLY clear tokens if the server explicitly rejects the session (401/403)
-            // If it's a network error (no response) or 500, we keep the session active
-            // so the user can still access the app (using cached data of course)
             const status = verifyError?.response?.status;
             if (status === 401 || status === 403) {
-              console.warn('Auth: Token rejected by server, clearing session');
-              await tokenService.clearTokens();
+              console.warn('Auth: Verify rejected current access token, attempting refresh recovery');
+              try {
+                const refreshedToken = await tokenService.refreshAccessToken();
+                if (refreshedToken) {
+                  const retryResponse = await authApi.get('/auth/verify', {
+                    timeout: 15000,
+                    headers: {
+                      'X-No-Retry': 'true',
+                      Authorization: `Bearer ${refreshedToken}`,
+                    },
+                  });
+
+                  if (retryResponse.data.success && retryResponse.data.data?.user) {
+                    const user = mapApiUserToUser(retryResponse.data.data.user);
+                    console.log('Auth: Session restored via refresh for', user.email);
+                    set({
+                      user,
+                      isAuthenticated: true,
+                      isLoading: false,
+                      isInitialized: true,
+                    });
+                    prewarmFeedAfterAuth(user.role);
+                    return;
+                  }
+                }
+
+                if (restorePersistedSession()) {
+                  console.warn('Auth: Refresh temporarily unavailable, keeping persisted session');
+                  return;
+                }
+              } catch (refreshError: any) {
+                const refreshStatus = refreshError?.response?.status;
+                if (refreshStatus === 401 || refreshStatus === 403) {
+                  console.warn('Auth: Refresh token rejected by server, clearing session');
+                  await tokenService.clearTokens();
+                } else if (restorePersistedSession()) {
+                  console.warn('Auth: Refresh failed due to network/server issue, keeping persisted session');
+                  return;
+                }
+              }
             } else {
               console.warn('Auth: Network/Server error during verification, keeping session active');
-              // We'll keep the persisted user/auth state as the best guess
-              const state = get();
-              if (state.user) {
-                set({
-                  isAuthenticated: true,
-                  isLoading: false,
-                  isInitialized: true,
-                });
+              if (restorePersistedSession()) {
                 return;
               }
             }
