@@ -48,20 +48,8 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
-// Keep database connection warm (Supabase Pooler)
-let isDbWarm = false;
-const warmUpDb = async () => {
-  if (isDbWarm) return;
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    isDbWarm = true;
-    console.log('✅ Auth Service - Database ready');
-  } catch (error) {
-    console.error('⚠️ Auth Service - Database warmup failed');
-  }
-};
-warmUpDb();
-setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000); // Every 4 minutes
+// Prisma opens DB connections lazily per request.
+// Avoid startup warmup queries to reduce noisy pooler errors during cold starts.
 
 // Fix BigInt JSON serialization
 (BigInt.prototype as any).toJSON = function () {
