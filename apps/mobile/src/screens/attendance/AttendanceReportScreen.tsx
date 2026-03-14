@@ -100,6 +100,33 @@ const groupLogsByDate = (logs: any[]) => {
     return Object.values(groups);
 };
 
+const getDayStatus = (day: any) => {
+    const statuses = [day?.morning?.status, day?.afternoon?.status].filter(Boolean);
+    if (statuses.includes('PERMISSION')) return 'PERMISSION';
+    if (statuses.includes('PRESENT')) return 'PRESENT';
+    if (statuses.includes('LATE')) return 'LATE';
+    if (statuses.includes('EXCUSED')) return 'EXCUSED';
+    if (statuses.includes('ABSENT')) return 'ABSENT';
+    return 'UNKNOWN';
+};
+
+const getStatusStyle = (status: string) => {
+    switch (status) {
+        case 'PERMISSION':
+            return { label: 'Permission', bg: '#EDE9FE', fg: '#7C3AED' };
+        case 'PRESENT':
+            return { label: 'Present', bg: '#D1FAE5', fg: '#059669' };
+        case 'LATE':
+            return { label: 'Late', bg: '#FEF3C7', fg: '#B45309' };
+        case 'EXCUSED':
+            return { label: 'Excused', bg: '#E5E7EB', fg: '#4B5563' };
+        case 'ABSENT':
+            return { label: 'Absent', bg: '#FEE2E2', fg: '#DC2626' };
+        default:
+            return { label: 'N/A', bg: '#F1F5F9', fg: '#64748B' };
+    }
+};
+
 export const AttendanceReportScreen = () => {
     const navigation = useNavigation();
     const { user } = useAuthStore();
@@ -162,6 +189,7 @@ export const AttendanceReportScreen = () => {
 
     const attendancePercentage = isTeacher ? (summary?.stats?.personalAttendanceRate || 0) : stats.attendancePercentage;
     const recordRate = isTeacher ? stats.attendanceRate : 0;
+    const teacherPermissionCount = isTeacher ? (summary?.stats?.staffTotals?.permission || 0) : totals.permission;
 
     const attendedCount = isTeacher ? (summary?.stats?.staffTotals?.present || 0) : stats.attendedSessions;
     const totalCount = isTeacher ? (summary?.stats?.totalSchoolDays || 0) : stats.totalSessions;
@@ -251,6 +279,13 @@ export const AttendanceReportScreen = () => {
                             icon="close-circle"
                             delay={300}
                         />
+                        <StatCard
+                            label="Permission"
+                            value={teacherPermissionCount}
+                            color="#7C3AED"
+                            icon="document-text"
+                            delay={400}
+                        />
                     </View>
 
                     {/* Class Breakdown for Teacher */}
@@ -290,67 +325,74 @@ export const AttendanceReportScreen = () => {
                     {isTeacher && summary?.checkInHistory?.length > 0 && (
                         <Animated.View style={styles.infoSection}>
                             <Text style={styles.sectionTitle}>Recent Check-ins</Text>
-                            {groupLogsByDate(summary.checkInHistory).slice(0, 7).map((day: any, index: number) => (
-                                <View key={day.date || index} style={[styles.infoCard, { marginBottom: 12 }]}>
-                                    <View style={styles.checkInLogHeader}>
-                                        <View style={styles.checkInLogDate}>
-                                            <Ionicons name="calendar-outline" size={16} color="#6B7280" />
-                                            <Text style={styles.dateText}>
-                                                {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                                            </Text>
+                            {groupLogsByDate(summary.checkInHistory).slice(0, 7).map((day: any, index: number) => {
+                                const dayStatus = getDayStatus(day);
+                                const statusUi = getStatusStyle(dayStatus);
+
+                                return (
+                                    <View key={day.date || index} style={[styles.infoCard, { marginBottom: 12 }]}>
+                                        <View style={styles.checkInLogHeader}>
+                                            <View style={styles.checkInLogDate}>
+                                                <Ionicons name="calendar-outline" size={16} color="#6B7280" />
+                                                <Text style={styles.dateText}>
+                                                    {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                                </Text>
+                                            </View>
+                                            <View style={[styles.statusBadge, { backgroundColor: statusUi.bg }]}>
+                                                <Text style={[styles.statusText, { color: statusUi.fg }]}>
+                                                    {statusUi.label}
+                                                </Text>
+                                            </View>
                                         </View>
-                                        <View style={[styles.statusBadge, { backgroundColor: (day.morning?.status === 'PRESENT' || day.afternoon?.status === 'PRESENT') ? '#D1FAE5' : '#FEE2E2' }]}>
-                                            <Text style={[styles.statusText, { color: (day.morning?.status === 'PRESENT' || day.afternoon?.status === 'PRESENT') ? '#059669' : '#DC2626' }]}>
-                                                {(day.morning?.status === 'PRESENT' || day.afternoon?.status === 'PRESENT') ? 'Present' : 'Absent'}
-                                            </Text>
+
+                                        <View style={styles.dailySessionsRow}>
+                                            {/* Morning Session */}
+                                            <View style={styles.sessionBox}>
+                                                <View style={styles.sessionBoxHeader}>
+                                                    <Ionicons name="sunny-outline" size={14} color="#6B7280" />
+                                                    <Text style={styles.sessionBoxTitle}>Morning</Text>
+                                                </View>
+                                                <View style={styles.timeRow}>
+                                                    <Text style={styles.timeLabelSmall}>In:</Text>
+                                                    <Text style={styles.timeValueSmall}>
+                                                        {day.morning?.timeIn ? new Date(day.morning.timeIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                                    </Text>
+                                                </View>
+                                                <View style={styles.timeRow}>
+                                                    <Text style={styles.timeLabelSmall}>Out:</Text>
+                                                    <Text style={styles.timeValueSmall}>
+                                                        {day.morning?.timeOut ? new Date(day.morning.timeOut).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                                    </Text>
+                                                </View>
+                                                <Text style={styles.sessionStatusText}>Status: {day.morning?.status || 'N/A'}</Text>
+                                            </View>
+
+                                            <View style={styles.verticalDividerSmall} />
+
+                                            {/* Afternoon Session */}
+                                            <View style={styles.sessionBox}>
+                                                <View style={styles.sessionBoxHeader}>
+                                                    <Ionicons name="partly-sunny-outline" size={14} color="#6B7280" />
+                                                    <Text style={styles.sessionBoxTitle}>Afternoon</Text>
+                                                </View>
+                                                <View style={styles.timeRow}>
+                                                    <Text style={styles.timeLabelSmall}>In:</Text>
+                                                    <Text style={styles.timeValueSmall}>
+                                                        {day.afternoon?.timeIn ? new Date(day.afternoon.timeIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                                    </Text>
+                                                </View>
+                                                <View style={styles.timeRow}>
+                                                    <Text style={styles.timeLabelSmall}>Out:</Text>
+                                                    <Text style={styles.timeValueSmall}>
+                                                        {day.afternoon?.timeOut ? new Date(day.afternoon.timeOut).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                                    </Text>
+                                                </View>
+                                                <Text style={styles.sessionStatusText}>Status: {day.afternoon?.status || 'N/A'}</Text>
+                                            </View>
                                         </View>
                                     </View>
-
-                                    <View style={styles.dailySessionsRow}>
-                                        {/* Morning Session */}
-                                        <View style={styles.sessionBox}>
-                                            <View style={styles.sessionBoxHeader}>
-                                                <Ionicons name="sunny-outline" size={14} color="#6B7280" />
-                                                <Text style={styles.sessionBoxTitle}>Morning</Text>
-                                            </View>
-                                            <View style={styles.timeRow}>
-                                                <Text style={styles.timeLabelSmall}>In:</Text>
-                                                <Text style={styles.timeValueSmall}>
-                                                    {day.morning?.timeIn ? new Date(day.morning.timeIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
-                                                </Text>
-                                            </View>
-                                            <View style={styles.timeRow}>
-                                                <Text style={styles.timeLabelSmall}>Out:</Text>
-                                                <Text style={styles.timeValueSmall}>
-                                                    {day.morning?.timeOut ? new Date(day.morning.timeOut).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
-                                                </Text>
-                                            </View>
-                                        </View>
-
-                                        <View style={styles.verticalDividerSmall} />
-
-                                        {/* Afternoon Session */}
-                                        <View style={styles.sessionBox}>
-                                            <View style={styles.sessionBoxHeader}>
-                                                <Ionicons name="partly-sunny-outline" size={14} color="#6B7280" />
-                                                <Text style={styles.sessionBoxTitle}>Afternoon</Text>
-                                            </View>
-                                            <View style={styles.timeRow}>
-                                                <Text style={styles.timeLabelSmall}>In:</Text>
-                                                <Text style={styles.timeValueSmall}>
-                                                    {day.afternoon?.timeIn ? new Date(day.afternoon.timeIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
-                                                </Text>
-                                            </View>
-                                            <View style={styles.timeRow}>
-                                                <Text style={styles.timeLabelSmall}>Out:</Text>
-                                                <Text style={styles.timeValueSmall}>
-                                                    {day.afternoon?.timeOut ? new Date(day.afternoon.timeOut).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    </View>
-                                </View>
-                            ))}
+                                );
+                            })}
                         </Animated.View>
                     )}
 
@@ -455,11 +497,13 @@ const styles = StyleSheet.create({
     },
     statsGrid: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         justifyContent: 'space-between',
         marginBottom: 24,
+        rowGap: 12,
     },
     statCard: {
-        width: (width - 60) / 3,
+        width: (width - 52) / 2,
         backgroundColor: '#fff',
         borderRadius: 20,
         padding: 16,
@@ -580,6 +624,12 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '700',
         color: '#1E293B',
+    },
+    sessionStatusText: {
+        marginTop: 8,
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#64748B',
     },
     verticalDividerSmall: {
         width: 1,

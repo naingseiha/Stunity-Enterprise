@@ -28,6 +28,7 @@ import {
   User,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
+import { FEED_SERVICE_URL } from '@/lib/api/config';
 
 // Event type icons and colors
 const EVENT_TYPE_CONFIG: Record<string, { icon: any; color: string; bgColor: string }> = {
@@ -105,7 +106,7 @@ export default function EventDetailPage() {
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/calendar/${eventId}`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/calendar/${eventId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -134,7 +135,7 @@ export default function EventDetailPage() {
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/calendar/${eventId}/rsvp`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/calendar/${eventId}/rsvp`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -158,7 +159,7 @@ export default function EventDetailPage() {
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/calendar/${eventId}`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/calendar/${eventId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

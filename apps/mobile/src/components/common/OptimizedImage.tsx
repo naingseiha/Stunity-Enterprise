@@ -10,14 +10,14 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Image, StyleSheet, ActivityIndicator, ImageProps , Animated} from 'react-native';
+import { View, StyleSheet, ActivityIndicator, ImageProps, Animated, DimensionValue } from 'react-native';
 
 import { imageCacheService } from '@/services/imageCache';
 
-interface OptimizedImageProps extends Omit<ImageProps, 'source'> {
+interface OptimizedImageProps extends Omit<ImageProps, 'source' | 'width' | 'height'> {
   uri: string;
-  width?: number | string;
-  height?: number | string;
+  width?: DimensionValue;
+  height?: DimensionValue;
   aspectRatio?: number;
   borderRadius?: number;
   showLoader?: boolean;

@@ -22,7 +22,7 @@ import {
   Dimensions,
   Animated,
 } from 'react-native';
-import { FlashList, FlashListRef } from '@shopify/flash-list';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -274,7 +274,7 @@ export default function FeedScreen() {
   });
 
   // Refs for stable polling (avoid re-creating interval on every posts change)
-  const flatListRef = React.useRef<FlashListRef<FeedItem>>(null);
+  const flatListRef = React.useRef<FlashList<FeedItem> | null>(null);
   const postsRef = useRef(feedItems);
   const pendingPostsRef = useRef(pendingPosts);
   postsRef.current = feedItems;

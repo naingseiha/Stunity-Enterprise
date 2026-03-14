@@ -71,7 +71,9 @@
     "**/*.tsx"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "**/*.old.ts",
+    "**/*.old.tsx"
   ],
   "extends": "expo/tsconfig.base"
 }

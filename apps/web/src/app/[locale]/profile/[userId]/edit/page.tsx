@@ -11,6 +11,7 @@ import {
   ChevronDown, Loader2, Upload, Image as ImageIcon
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
+import { FEED_SERVICE_URL } from '@/lib/api/config';
 import { ImageUploadModal } from '@/components/profile';
 
 // Types
@@ -202,7 +203,7 @@ export default function EditProfilePage() {
   const coverPhotoRef = useRef<HTMLInputElement>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState<'profile' | 'cover' | null>(null);
 
-  const feedUrl = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
+  const feedUrl = FEED_SERVICE_URL;
 
   useEffect(() => {
     // Redirect if not own profile

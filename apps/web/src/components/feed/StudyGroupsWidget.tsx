@@ -18,6 +18,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
+import { FEED_SERVICE_URL } from '@/lib/api/config';
 
 interface StudyClub {
   id: string;
@@ -67,7 +68,7 @@ export default function StudyGroupsWidget() {
       if (!token) return;
 
       // Fetch user's clubs
-      const response = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/clubs?limit=4`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs?limit=4`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -85,7 +86,7 @@ export default function StudyGroupsWidget() {
   const handleJoinClub = async (clubId: string) => {
     try {
       const token = TokenManager.getAccessToken();
-      const response = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/clubs/${clubId}/join`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs/${clubId}/join`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });

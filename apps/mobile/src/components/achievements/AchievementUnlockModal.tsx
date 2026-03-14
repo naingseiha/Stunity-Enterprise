@@ -71,7 +71,7 @@ export const AchievementUnlockModal: React.FC<AchievementUnlockModalProps> = ({
     outputRange: ['0deg', '360deg'],
   });
 
-  const getCategoryColor = (category: string) => {
+  const getCategoryColor = (category: string): readonly [string, string] => {
     switch (category) {
       case 'streak': return ['#ef4444', '#dc2626'];
       case 'performance': return ['#f59e0b', '#d97706'];

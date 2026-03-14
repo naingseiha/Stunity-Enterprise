@@ -24,7 +24,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 
 import { Avatar } from '@/components/common';
 import { Colors } from '@/config';
-import { clubsApi, Club, ClubMember } from '@/api';
+import { clubsApi } from '@/api';
+import type { Club, ClubMember } from '@/api/clubs';
 import { useAuthStore } from '@/stores';
 
 const { width } = Dimensions.get('window');
@@ -253,7 +254,7 @@ export default function ClubDetailsScreen() {
           {/* Tags */}
           {club.tags && club.tags.length > 0 && (
             <View style={styles.tagsRow}>
-              {club.tags.map((tag, i) => (
+              {club.tags.map((tag: string, i: number) => (
                 <View key={i} style={[styles.tag, { backgroundColor: typeConfig.color + '15' }]}>
                   <Text style={[styles.tagText, { color: typeConfig.color }]}>
                     #{tag}

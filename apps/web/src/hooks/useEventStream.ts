@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { TokenManager } from '@/lib/api/auth';
+import { FEED_SERVICE_URL } from '@/lib/api/config';
 
 // Event types matching backend
 export type EventType =
@@ -61,7 +62,7 @@ interface UseEventStreamOptions {
   enabled?: boolean;
 }
 
-const FEED_API = process.env.NEXT_PUBLIC_FEED_API_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
+const FEED_API = FEED_SERVICE_URL;
 
 export function useEventStream(userId: string | undefined, options: UseEventStreamOptions = {}) {
   const { onEvent, onConnect, onDisconnect, onError, enabled = true } = options;

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight, ZoomIn, Download, Maximize2 } from 'lucide-react';
+import { FEED_SERVICE_URL } from '@/lib/api/config';
 
 type DisplayMode = 'AUTO' | 'FIXED_HEIGHT' | 'FULL_HEIGHT';
 
@@ -19,7 +20,7 @@ interface MediaLightboxProps {
   onClose: () => void;
 }
 
-const FEED_API = process.env.NEXT_PUBLIC_FEED_API_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_API || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
+const FEED_API = FEED_SERVICE_URL;
 
 // Resolve relative or stale-IP media URLs to the current feed-service host
 function resolveUrl(url: string): string {

@@ -9,7 +9,9 @@ import {
     ScrollView,
     Dimensions,
     StatusBar,
-    Platform
+    Platform,
+    Modal,
+    TextInput
     , Animated
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -81,9 +83,10 @@ const SessionCard = ({
     processing: boolean;
     isCurrent: boolean;
 }) => {
+    const isPermission = data?.status === 'PERMISSION';
     const isCheckedIn = !!data?.timeIn;
     const isCheckedOut = !!data?.timeOut;
-    const isOnDuty = isCheckedIn && !isCheckedOut;
+    const isOnDuty = isCheckedIn && !isCheckedOut && !isPermission;
 
     const handlePress = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -112,7 +115,12 @@ const SessionCard = ({
                         {session === 'MORNING' ? '07:00 AM - 12:00 PM' : '12:00 PM - 06:00 PM'}
                     </Text>
                 </View>
-                {isCheckedOut ? (
+                {isPermission ? (
+                    <View style={styles.permissionBadge}>
+                        <Ionicons name="document-text-outline" size={14} color="#7C3AED" />
+                        <Text style={styles.permissionBadgeText}>PERMISSION</Text>
+                    </View>
+                ) : isCheckedOut ? (
                     <View style={styles.completedBadge}>
                         <Ionicons name="checkmark-circle" size={14} color="#10B981" />
                         <Text style={styles.completedBadgeText}>DONE</Text>
@@ -126,21 +134,27 @@ const SessionCard = ({
 
             <View style={styles.timeInfoRow}>
                 <View style={styles.timeBox}>
-                    <Text style={styles.timeLabel}>CHECK IN</Text>
+                    <Text style={styles.timeLabel}>{isPermission ? 'REQUESTED AT' : 'CHECK IN'}</Text>
                     <Text style={[styles.timeValue, isCheckedIn && styles.activeTimeValue]}>
                         {data?.timeIn ? new Date(data.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                     </Text>
                 </View>
                 <View style={styles.timeSeparator} />
                 <View style={styles.timeBox}>
-                    <Text style={styles.timeLabel}>CHECK OUT</Text>
-                    <Text style={[styles.timeValue, isCheckedOut && styles.activeTimeValue]}>
-                        {data?.timeOut ? new Date(data.timeOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                    <Text style={styles.timeLabel}>{isPermission ? 'MODE' : 'CHECK OUT'}</Text>
+                    <Text style={[styles.timeValue, (isCheckedOut || isPermission) && styles.activeTimeValue]}>
+                        {isPermission ? 'ONLINE' : (data?.timeOut ? new Date(data.timeOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--')}
                     </Text>
                 </View>
             </View>
 
-            {!isCheckedOut && (
+            {isPermission && (
+                <Text style={styles.permissionNote}>
+                    Permission requested online. GPS verification is not required for this session.
+                </Text>
+            )}
+
+            {!isCheckedOut && !isPermission && (
                 <TouchableOpacity
                     style={[
                         styles.sessionBtnContainer,
@@ -184,6 +198,10 @@ export const AttendanceCheckInScreen = () => {
     const [status, setStatus] = useState<any>(null);
     const [locationPermGranted, setLocationPermGranted] = useState(false);
     const [gpsText, setGpsText] = useState('Initializing GPS...');
+    const [permissionModalVisible, setPermissionModalVisible] = useState(false);
+    const [permissionSession, setPermissionSession] = useState<'MORNING' | 'AFTERNOON'>('MORNING');
+    const [permissionReason, setPermissionReason] = useState('');
+    const [permissionProcessingSession, setPermissionProcessingSession] = useState<'MORNING' | 'AFTERNOON' | null>(null);
 
     const fetchTodayStatus = useCallback(async () => {
         try {
@@ -340,6 +358,40 @@ export const AttendanceCheckInScreen = () => {
         }
     };
 
+    const openPermissionRequest = (session: 'MORNING' | 'AFTERNOON') => {
+        if (status?.[session]) {
+            Alert.alert('Already Recorded', `${session} session already has attendance recorded today.`);
+            return;
+        }
+
+        setPermissionSession(session);
+        setPermissionReason('');
+        setPermissionModalVisible(true);
+    };
+
+    const submitPermissionRequest = async () => {
+        const trimmedReason = permissionReason.trim();
+        if (!trimmedReason) {
+            Alert.alert('Reason Required', 'Please enter a short reason for your permission request.');
+            return;
+        }
+
+        try {
+            setPermissionProcessingSession(permissionSession);
+            await attendanceService.requestPermission(permissionSession, trimmedReason);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setPermissionModalVisible(false);
+            setPermissionReason('');
+            Alert.alert('Request Submitted', `${permissionSession} permission request was submitted successfully.`);
+            await fetchTodayStatus();
+        } catch (error: any) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            Alert.alert('Request Failed', error.message || 'Could not submit permission request.');
+        } finally {
+            setPermissionProcessingSession(null);
+        }
+    };
+
     if (loading) {
         return (
             <View style={styles.centerContainer}>
@@ -453,6 +505,56 @@ export const AttendanceCheckInScreen = () => {
                         isCurrent={!isMorningActual}
                     />
 
+                    <Animated.View style={styles.permissionRequestCard}>
+                        <View style={styles.permissionRequestHeader}>
+                            <View style={styles.permissionRequestIconBg}>
+                                <Ionicons name="document-text-outline" size={22} color="#7C3AED" />
+                            </View>
+                            <View style={styles.permissionRequestTextWrap}>
+                                <Text style={styles.permissionRequestTitle}>Request Permission Online</Text>
+                                <Text style={styles.permissionRequestSubtitle}>
+                                    Submit a permission request from anywhere without GPS check-in.
+                                </Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.permissionActionRow}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.permissionActionButton,
+                                    (status?.MORNING || permissionProcessingSession !== null) && styles.permissionActionButtonDisabled
+                                ]}
+                                onPress={() => openPermissionRequest('MORNING')}
+                                disabled={!!status?.MORNING || permissionProcessingSession !== null}
+                            >
+                                {permissionProcessingSession === 'MORNING' ? (
+                                    <ActivityIndicator color="#fff" size="small" />
+                                ) : (
+                                    <Text style={styles.permissionActionButtonText}>
+                                        {status?.MORNING?.status === 'PERMISSION' ? 'Morning Requested' : 'Morning Permission'}
+                                    </Text>
+                                )}
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[
+                                    styles.permissionActionButton,
+                                    (status?.AFTERNOON || permissionProcessingSession !== null) && styles.permissionActionButtonDisabled
+                                ]}
+                                onPress={() => openPermissionRequest('AFTERNOON')}
+                                disabled={!!status?.AFTERNOON || permissionProcessingSession !== null}
+                            >
+                                {permissionProcessingSession === 'AFTERNOON' ? (
+                                    <ActivityIndicator color="#fff" size="small" />
+                                ) : (
+                                    <Text style={styles.permissionActionButtonText}>
+                                        {status?.AFTERNOON?.status === 'PERMISSION' ? 'Afternoon Requested' : 'Afternoon Permission'}
+                                    </Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </Animated.View>
+
                     <Animated.View style={styles.reportActionCard}>
                         <View style={styles.reportIconBg}>
                             <Ionicons name="bar-chart" size={22} color={BRAND_YELLOW} />
@@ -480,6 +582,59 @@ export const AttendanceCheckInScreen = () => {
                     </Animated.View>
                 </ScrollView>
             </SafeAreaView>
+
+            <Modal
+                visible={permissionModalVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setPermissionModalVisible(false)}
+            >
+                <View style={styles.permissionModalBackdrop}>
+                    <View style={styles.permissionModalCard}>
+                        <Text style={styles.permissionModalTitle}>Online Permission Request</Text>
+                        <Text style={styles.permissionModalSubtitle}>
+                            Session: {permissionSession}. Enter the reason for your request.
+                        </Text>
+
+                        <TextInput
+                            value={permissionReason}
+                            onChangeText={setPermissionReason}
+                            placeholder="Example: Medical appointment, traffic delay, urgent family matter..."
+                            placeholderTextColor="#94A3B8"
+                            multiline
+                            numberOfLines={4}
+                            maxLength={500}
+                            style={styles.permissionReasonInput}
+                            textAlignVertical="top"
+                            editable={permissionProcessingSession === null}
+                        />
+
+                        <View style={styles.permissionModalActions}>
+                            <TouchableOpacity
+                                style={styles.permissionModalCancelButton}
+                                onPress={() => setPermissionModalVisible(false)}
+                                disabled={permissionProcessingSession !== null}
+                            >
+                                <Text style={styles.permissionModalCancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[
+                                    styles.permissionModalSubmitButton,
+                                    permissionProcessingSession !== null && styles.permissionModalSubmitButtonDisabled
+                                ]}
+                                onPress={submitPermissionRequest}
+                                disabled={permissionProcessingSession !== null}
+                            >
+                                {permissionProcessingSession !== null ? (
+                                    <ActivityIndicator color="#fff" size="small" />
+                                ) : (
+                                    <Text style={styles.permissionModalSubmitText}>Submit</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -670,6 +825,21 @@ const styles = StyleSheet.create({
         color: '#059669',
         letterSpacing: 0.5,
     },
+    permissionBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F3E8FF',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 14,
+        gap: 6,
+    },
+    permissionBadgeText: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: '#6D28D9',
+        letterSpacing: 0.5,
+    },
     currentBadge: {
         backgroundColor: '#F0FDFA',
         paddingHorizontal: 12,
@@ -714,6 +884,12 @@ const styles = StyleSheet.create({
     },
     timeSeparator: {
         display: 'none',
+    },
+    permissionNote: {
+        fontSize: 12,
+        color: '#7C3AED',
+        marginBottom: 16,
+        fontWeight: '600',
     },
 
     sessionBtnContainer: {
@@ -803,6 +979,138 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 14,
         fontWeight: '800',
+    },
+    permissionRequestCard: {
+        borderRadius: 24,
+        padding: 20,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#E9D5FF',
+        backgroundColor: '#FAF5FF',
+        ...Shadows.md,
+    },
+    permissionRequestHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    permissionRequestIconBg: {
+        width: 48,
+        height: 48,
+        borderRadius: 16,
+        backgroundColor: '#EDE9FE',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    permissionRequestTextWrap: {
+        flex: 1,
+        marginLeft: 16,
+    },
+    permissionRequestTitle: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: '#5B21B6',
+    },
+    permissionRequestSubtitle: {
+        fontSize: 13,
+        color: '#7C3AED',
+        marginTop: 4,
+        fontWeight: '500',
+    },
+    permissionActionRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    permissionActionButton: {
+        flex: 1,
+        backgroundColor: '#7C3AED',
+        borderRadius: 16,
+        paddingVertical: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 44,
+    },
+    permissionActionButtonDisabled: {
+        opacity: 0.45,
+    },
+    permissionActionButtonText: {
+        color: '#fff',
+        fontSize: 13,
+        fontWeight: '800',
+        textAlign: 'center',
+    },
+    permissionModalBackdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(15, 23, 42, 0.45)',
+        justifyContent: 'center',
+        paddingHorizontal: 20,
+    },
+    permissionModalCard: {
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 20,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        ...Shadows.lg,
+    },
+    permissionModalTitle: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#1E293B',
+    },
+    permissionModalSubtitle: {
+        marginTop: 8,
+        fontSize: 13,
+        color: '#64748B',
+        lineHeight: 18,
+    },
+    permissionReasonInput: {
+        marginTop: 16,
+        borderWidth: 1,
+        borderColor: '#CBD5E1',
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        minHeight: 100,
+        fontSize: 14,
+        color: '#0F172A',
+        backgroundColor: '#F8FAFC',
+    },
+    permissionModalActions: {
+        marginTop: 16,
+        flexDirection: 'row',
+        gap: 10,
+    },
+    permissionModalCancelButton: {
+        flex: 1,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#CBD5E1',
+        paddingVertical: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    permissionModalCancelText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#475569',
+    },
+    permissionModalSubmitButton: {
+        flex: 1,
+        borderRadius: 12,
+        backgroundColor: '#7C3AED',
+        paddingVertical: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 44,
+    },
+    permissionModalSubmitButtonDisabled: {
+        opacity: 0.6,
+    },
+    permissionModalSubmitText: {
+        fontSize: 14,
+        fontWeight: '800',
+        color: '#fff',
     },
 });
 

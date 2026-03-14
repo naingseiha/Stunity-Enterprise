@@ -29,7 +29,7 @@ import type { ClubAssignmentSubmission } from '@/api/assignments';
 import type { ClubsStackScreenProps } from '@/navigation/types';
 
 export default function GradeSubmissionScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<ClubsStackScreenProps<'GradeSubmission'>['navigation']>();
   const route = useRoute<ClubsStackScreenProps<'GradeSubmission'>['route']>();
   const { submissionId, assignmentId, clubId } = route.params;
 
@@ -146,10 +146,10 @@ export default function GradeSubmissionScreen() {
     </View>
   );
 
-  const getStatusColor = (status: string, isLate: boolean) => {
-    if (status === 'GRADED') return Colors.success;
+  const getStatusColor = (status: string, isLate: boolean): string => {
+    if (status === 'GRADED') return Colors.success.main;
     if (isLate) return Colors.error;
-    return Colors.warning;
+    return Colors.warning.main;
   };
 
   const getStatusText = (status: string, isLate: boolean) => {
@@ -334,7 +334,7 @@ export default function GradeSubmissionScreen() {
           {/* Previously Graded Info */}
           {submission.status === 'GRADED' && submission.gradedBy && (
             <Animated.View style={styles.previousGradeCard}>
-              <Ionicons name="information-circle-outline" size={20} color={Colors.info} />
+              <Ionicons name="information-circle-outline" size={20} color={Colors.info.main} />
               <View style={styles.previousGradeInfo}>
                 <Text style={styles.previousGradeText}>
                   Previously graded by{' '}
@@ -662,7 +662,7 @@ const styles = StyleSheet.create({
   percentageText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.success,
+    color: Colors.success.main,
     marginTop: 8,
   },
   feedbackInput: {
@@ -685,7 +685,7 @@ const styles = StyleSheet.create({
   previousGradeCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: Colors.info + '10',
+    backgroundColor: `${Colors.info.main}10`,
     marginHorizontal: 16,
     marginBottom: 8,
     padding: 16,
@@ -702,7 +702,7 @@ const styles = StyleSheet.create({
   },
   previousGraderName: {
     fontWeight: '600',
-    color: Colors.info,
+    color: Colors.info.main,
   },
   previousGradeTime: {
     fontSize: 12,

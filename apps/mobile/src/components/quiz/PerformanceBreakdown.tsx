@@ -33,7 +33,7 @@ export const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
     ? Math.round(((timeLimit - timeSpent) / timeLimit) * 100)
     : 0;
 
-  const getAccuracyColor = (acc: number) => {
+  const getAccuracyColor = (acc: number): readonly [string, string] => {
     if (acc >= 90) return ['#10b981', '#059669'];
     if (acc >= 70) return ['#f59e0b', '#d97706'];
     return ['#ef4444', '#dc2626'];

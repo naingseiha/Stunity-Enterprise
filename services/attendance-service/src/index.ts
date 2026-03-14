@@ -1344,6 +1344,7 @@ app.get('/attendance/teacher/:teacherId/summary', authenticateToken, async (req:
     const staffTotals = {
       present: uniqueStaffPresence,
       absent: teacherAttendances.filter(r => r.status === 'ABSENT').length,
+      permission: teacherAttendances.filter(r => r.status === 'PERMISSION').length,
     };
 
     const totalSchoolDays = eachDayOfInterval({ start, end }).filter(date => !isWeekend(date)).length;
@@ -1474,6 +1475,34 @@ function getDistanceFromLatLonInM(lat1: number, lon1: number, lat2: number, lon2
   const d = R * c;
   return d;
 }
+
+const getTeacherPermissionLocation = async (schoolId: string) => {
+  const activeLocation = await prisma.schoolLocation.findFirst({
+    where: { schoolId, isActive: true },
+    orderBy: { createdAt: 'asc' },
+  });
+  if (activeLocation) return activeLocation;
+
+  const existingSystemLocation = await prisma.schoolLocation.findFirst({
+    where: {
+      schoolId,
+      name: 'Online Permission (System)',
+      isActive: false,
+    },
+  });
+  if (existingSystemLocation) return existingSystemLocation;
+
+  return prisma.schoolLocation.create({
+    data: {
+      schoolId,
+      name: 'Online Permission (System)',
+      latitude: 0,
+      longitude: 0,
+      radius: 1,
+      isActive: false,
+    },
+  });
+};
 
 // POST /attendance/teacher/check-in - Record teacher time in
 app.post('/attendance/teacher/check-in', authenticateToken, async (req: AuthRequest, res: Response) => {
@@ -1675,6 +1704,87 @@ app.post('/attendance/teacher/check-out', authenticateToken, async (req: AuthReq
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: 'Check-out failed', error: error.message });
+  }
+});
+
+// POST /attendance/teacher/permission-request - Request online permission (no geofence required)
+app.post('/attendance/teacher/permission-request', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.schoolId!;
+    const userId = req.user?.id;
+    const { session, reason } = req.body as { session?: string; reason?: string };
+
+    if (session && !validateAttendanceSession(session)) {
+      return res.status(400).json({ success: false, message: 'Invalid session. Must be MORNING or AFTERNOON' });
+    }
+
+    const normalizedReason = typeof reason === 'string' ? reason.trim() : '';
+    if (normalizedReason.length > 500) {
+      return res.status(400).json({ success: false, message: 'Reason must be 500 characters or less' });
+    }
+
+    const targetSession: AttendanceSession = session && validateAttendanceSession(session)
+      ? session
+      : (new Date().getHours() < 12 ? 'MORNING' : 'AFTERNOON');
+
+    const teacher = await prisma.teacher.findFirst({
+      where: { schoolId, user: { id: userId } },
+    });
+
+    if (!teacher) {
+      return res.status(404).json({ success: false, message: 'Teacher profile not found' });
+    }
+
+    const todayDate = startOfDay(new Date());
+    const utcStartStr = new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
+    const utcStart = new Date(utcStartStr);
+
+    const existingSessionAttendance = await prisma.teacherAttendance.findFirst({
+      where: {
+        teacherId: teacher.id,
+        OR: [{ date: todayDate }, { date: utcStart }],
+        session: targetSession,
+      },
+    });
+
+    if (existingSessionAttendance) {
+      if (existingSessionAttendance.status === 'PERMISSION') {
+        return res.status(400).json({
+          success: false,
+          message: `Permission already requested for ${targetSession} session today.`,
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+        message: `Attendance already recorded for ${targetSession} session today.`,
+      });
+    }
+
+    const permissionLocation = await getTeacherPermissionLocation(schoolId);
+    const requestedAt = new Date();
+
+    const permissionRecord = await prisma.teacherAttendance.create({
+      data: {
+        teacherId: teacher.id,
+        locationId: permissionLocation.id,
+        date: todayDate,
+        timeIn: requestedAt,
+        timeOut: requestedAt,
+        session: targetSession,
+        status: 'PERMISSION',
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `Permission requested successfully for ${targetSession} session`,
+      data: permissionRecord,
+      requestedAnywhere: true,
+      reason: normalizedReason || null,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Permission request failed', error: error.message });
   }
 });
 

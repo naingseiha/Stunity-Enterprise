@@ -172,7 +172,7 @@ function ImageCarouselInner({
     itemVisiblePercentThreshold: 50,
   }), []);
 
-  const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken<string>[] }) => {
+  const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems.length > 0) {
       const index = viewableItems[0].index;
       if (index !== null && index !== activeIndex) {

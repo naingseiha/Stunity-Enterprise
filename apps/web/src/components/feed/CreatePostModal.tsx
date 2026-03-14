@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { TokenManager } from '@/lib/api/auth';
+import { FEED_SERVICE_URL } from '@/lib/api/config';
 import {
   X,
   Loader2,
@@ -206,7 +207,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
         });
 
         const token = TokenManager.getAccessToken();
-        const feedApi = process.env.NEXT_PUBLIC_FEED_API_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
+        const feedApi = FEED_SERVICE_URL;
         const uploadRes = await fetch(`${feedApi}/upload`, {
           method: 'POST',
           headers: {

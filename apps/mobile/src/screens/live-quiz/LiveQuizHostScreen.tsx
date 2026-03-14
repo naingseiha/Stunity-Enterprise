@@ -38,8 +38,11 @@ export const LiveQuizHostScreen: React.FC<Props> = ({ route, navigation }) => {
   const createSession = async () => {
     try {
       const session = await liveQuizAPI.createSession(quizId);
-      setSessionCode(session.code);
-      setQuiz(session.quiz);
+      setSessionCode(session.sessionCode);
+      setQuiz({
+        title: session.quizTitle,
+        description: undefined,
+      });
       setLoading(false);
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to create session');

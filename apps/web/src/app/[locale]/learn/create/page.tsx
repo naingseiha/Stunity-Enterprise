@@ -23,6 +23,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
+import { FEED_SERVICE_URL } from '@/lib/api/config';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 
 // ============================================
@@ -43,7 +44,7 @@ interface Lesson {
 // CONSTANTS
 // ============================================
 
-const FEED_SERVICE = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
+const FEED_SERVICE = FEED_SERVICE_URL;
 
 const CATEGORIES = [
   'Programming',

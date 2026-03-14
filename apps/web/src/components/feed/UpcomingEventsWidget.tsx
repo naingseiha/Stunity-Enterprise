@@ -22,6 +22,7 @@ import {
   Award,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
+import { FEED_SERVICE_URL } from '@/lib/api/config';
 
 interface Event {
   id: string;
@@ -63,7 +64,7 @@ export default function UpcomingEventsWidget() {
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/calendar/upcoming?limit=4`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/calendar/upcoming?limit=4`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -81,7 +82,7 @@ export default function UpcomingEventsWidget() {
   const handleRSVP = async (eventId: string, status: string) => {
     try {
       const token = TokenManager.getAccessToken();
-      await fetch(`${process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010'}/calendar/${eventId}/rsvp`, {
+      await fetch(`${FEED_SERVICE_URL}/calendar/${eventId}/rsvp`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

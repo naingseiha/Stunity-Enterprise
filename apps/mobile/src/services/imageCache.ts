@@ -17,6 +17,13 @@ interface CacheEntry {
   accessCount: number;
 }
 
+const getFileSize = (info: FileSystem.FileInfo): number => {
+  if (info.exists && 'size' in info && typeof info.size === 'number') {
+    return info.size;
+  }
+  return 0;
+};
+
 class ImageCacheService {
   private cache: Map<string, CacheEntry> = new Map();
   private cacheDir = `${FileSystem.cacheDirectory}images/`;
@@ -78,15 +85,16 @@ class ImageCacheService {
       // Check if file already exists
       const fileInfo = await FileSystem.getInfoAsync(localUri);
       if (fileInfo.exists) {
+        const cachedSize = getFileSize(fileInfo);
         // Add to cache map
         this.cache.set(uri, {
           uri,
           localUri,
-          size: fileInfo.size || 0,
+          size: cachedSize,
           timestamp: Date.now(),
           accessCount: 1,
         });
-        this.currentCacheSize += fileInfo.size || 0;
+        this.currentCacheSize += cachedSize;
         return localUri;
       }
 
@@ -94,7 +102,8 @@ class ImageCacheService {
       const downloadResult = await FileSystem.downloadAsync(uri, localUri);
 
       if (downloadResult.status === 200) {
-        const size = (await FileSystem.getInfoAsync(localUri)).size || 0;
+        const downloadedInfo = await FileSystem.getInfoAsync(localUri);
+        const size = getFileSize(downloadedInfo);
 
         // Check if we need to free space
         if (this.currentCacheSize + size > this.maxCacheSize) {

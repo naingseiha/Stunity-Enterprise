@@ -452,8 +452,14 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                     }
                   `}
                 >
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white text-xs font-semibold shadow-sm">
-                    {user?.firstName?.[0]}{user?.lastName?.[0]}
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white text-xs font-semibold shadow-sm overflow-hidden">
+                    {user?.profilePictureUrl ? (
+                      <img src={user.profilePictureUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <>
+                        {user?.firstName?.[0]}{user?.lastName?.[0]}
+                      </>
+                    )}
                   </div>
                 </button>
 
@@ -463,8 +469,14 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                     {/* User Info */}
                     <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white font-semibold shadow-md">
-                          {user?.firstName?.[0]}{user?.lastName?.[0]}
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white font-semibold shadow-md overflow-hidden">
+                          {user?.profilePictureUrl ? (
+                            <img src={user.profilePictureUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <>
+                              {user?.firstName?.[0]}{user?.lastName?.[0]}
+                            </>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">

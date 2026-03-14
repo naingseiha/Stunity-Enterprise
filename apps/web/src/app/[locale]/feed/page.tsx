@@ -58,7 +58,9 @@ import {
   WifiOff,
 } from 'lucide-react';
 
-const FEED_API = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || 'http://localhost:3010';
+import { FEED_SERVICE_URL } from '@/lib/api/config';
+
+const FEED_API = FEED_SERVICE_URL;
 
 interface Post {
   id: string;
@@ -359,6 +361,8 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
 
     // Refresh user data from server (localStorage may have stale profile picture)
     const AUTH_API = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
+    
+    // Fetch from Auth Service for basic verification and core data
     fetch(`${AUTH_API}/auth/verify`, {
       headers: { 'Authorization': `Bearer ${token}` },
     })
@@ -370,7 +374,19 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
           TokenManager.setUserData(freshUser, res.data.school || userData.school);
         }
       })
-      .catch(() => { }); // silently ignore refresh failures
+      .catch(() => { });
+
+    // Fetch from Feed Service for enriched profile data (like cover photo)
+    fetch(`${FEED_API}/users/me/profile`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    })
+      .then(res => res.json())
+      .then(res => {
+        if (res.success && res.profile) {
+          setUser((prev: any) => ({ ...prev, ...res.profile }));
+        }
+      })
+      .catch(() => { });
   }, [locale, router]);
 
   useEffect(() => {
@@ -750,13 +766,23 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
               {/* Profile Card - Education-Focused Design */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 {/* Cover - Gradient with role-based accent */}
-                <div className="h-24 bg-gradient-to-br from-[#F9A825] via-[#FFB74D] to-[#F9A825] relative">
-                  {/* Decorative education icons */}
-                  <div className="absolute inset-0 opacity-15">
-                    <GraduationCap className="absolute top-2 left-3 w-6 h-6 text-white" />
-                    <BookOpen className="absolute top-3 right-4 w-5 h-5 text-white" />
-                    <Award className="absolute bottom-2 left-1/3 w-4 h-4 text-white" />
-                  </div>
+                <div className="h-32 relative overflow-hidden">
+                  {user.coverPhotoUrl ? (
+                    <img 
+                      src={user.coverPhotoUrl} 
+                      alt="" 
+                      className="w-full h-full object-cover" 
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-[#F9A825] via-[#FFB74D] to-[#F9A825]">
+                      {/* Decorative education icons - only show on gradient fallback */}
+                      <div className="absolute inset-0 opacity-15">
+                        <GraduationCap className="absolute top-2 left-3 w-6 h-6 text-white" />
+                        <BookOpen className="absolute top-3 right-4 w-5 h-5 text-white" />
+                        <Award className="absolute bottom-2 left-1/3 w-4 h-4 text-white" />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Avatar - Centered, overlapping cover */}

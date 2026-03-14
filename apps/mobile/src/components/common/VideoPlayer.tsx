@@ -1,7 +1,7 @@
 
 import React, { useRef, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Video, ResizeMode, AVPlaybackStatus, AVPlaybackStatusSuccess } from 'expo-av';
+import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 
 interface VideoPlayerProps {
@@ -28,13 +28,15 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     const handlePlaybackStatusUpdate = (status: AVPlaybackStatus) => {
         setStatus(status);
-        if (status.isLoaded) {
+        if (!status.isLoaded) {
+            if (status.error) {
+                setError(status.error);
+            }
             setIsLoading(false);
+            return;
         }
-        if (status.isLoaded && status.error) {
-            setError(status.error);
-            setIsLoading(false);
-        }
+
+        setIsLoading(false);
     };
 
     const handlePlayPause = async () => {

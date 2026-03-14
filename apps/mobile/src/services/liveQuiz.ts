@@ -8,7 +8,7 @@ import axios from 'axios';
 import { Config } from '@/config';
 
 const analyticsApi = axios.create({
-  baseURL: Config.analyticsUrl || `http://${Config.apiHost}:3014`,
+  baseURL: Config.analyticsUrl,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',

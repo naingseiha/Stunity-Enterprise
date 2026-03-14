@@ -9,12 +9,15 @@ import {
   Award, Briefcase, GraduationCap, Star, Users, Eye, Heart,
   MessageCircle, BookmarkPlus, Share2, MoreHorizontal, Edit3,
   CheckCircle, Plus, ChevronRight, Zap, TrendingUp, Trophy,
-  Code, Palette, BookOpen, Target, Clock, Globe, Shield, Camera
+  Code, Palette, BookOpen, Target, Clock, Globe, Shield, Camera, Send
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
+import { FEED_SERVICE_URL } from '@/lib/api/config';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import ProfileZoomLoader from '@/components/profile/ProfileZoomLoader';
 import ProfileSkeleton from '@/components/profile/ProfileSkeleton';
+import PostCard, { PostData } from '@/components/feed/PostCard';
+import { FeedSkeletonList } from '@/components/feed/FeedPostSkeleton';
 
 // Types
 interface UserProfile {
@@ -205,7 +208,9 @@ export default function ProfilePage() {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'about' | 'activity' | 'skills' | 'experience' | 'education' | 'certifications' | 'projects'>('about');
+  const [activeTab, setActiveTab] = useState<'about' | 'activity' | 'posts' | 'skills' | 'experience' | 'education' | 'certifications' | 'projects'>('about');
+  const [posts, setPosts] = useState<PostData[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
   const [following, setFollowing] = useState(false);
   const [pageReady, setPageReady] = useState(false);
   
@@ -238,10 +243,10 @@ export default function ProfilePage() {
       }
 
       const headers = { Authorization: `Bearer ${token}` };
-      const feedUrl = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
+      const feedUrl = FEED_SERVICE_URL;
 
       // Fetch all profile data in parallel
-      const [profileRes, skillsRes, expRes, projectsRes, certsRes, eduRes, achievementsRes, recsRes] = await Promise.all([
+      const [profileRes, skillsRes, expRes, projectsRes, certsRes, eduRes, achievementsRes, recsRes, postsRes] = await Promise.all([
         fetch(`${feedUrl}/users/${userId}/profile`, { headers }),
         fetch(`${feedUrl}/users/${userId}/skills`, { headers }),
         fetch(`${feedUrl}/users/${userId}/experiences`, { headers }),
@@ -250,17 +255,29 @@ export default function ProfilePage() {
         fetch(`${feedUrl}/users/${userId}/education`, { headers }),
         fetch(`${feedUrl}/users/${userId}/achievements`, { headers }),
         fetch(`${feedUrl}/users/${userId}/recommendations`, { headers }),
+        fetch(`${feedUrl}/posts?authorId=${userId}&limit=50`, { headers }),
       ]);
 
-      const [profileData, skillsData, expData, projectsData, certsData, eduData, achievementsData, recsData] = await Promise.all([
-        profileRes.json(),
-        skillsRes.json(),
-        expRes.json(),
-        projectsRes.json(),
-        certsRes.json(),
-        eduRes.json(),
-        achievementsRes.json(),
-        recsRes.json(),
+      const safeJson = async (res: Response, defaultVal: any = { success: false }) => {
+        try {
+          if (!res.ok) return defaultVal;
+          return await res.json();
+        } catch (e) {
+          console.error('JSON parse error:', e);
+          return defaultVal;
+        }
+      };
+
+      const [profileData, skillsData, expData, projectsData, certsData, eduData, achievementsData, recsData, postsData] = await Promise.all([
+        safeJson(profileRes),
+        safeJson(skillsRes),
+        safeJson(expRes),
+        safeJson(projectsRes),
+        safeJson(certsRes),
+        safeJson(eduRes),
+        safeJson(achievementsRes),
+        safeJson(recsRes),
+        safeJson(postsRes),
       ]);
 
       if (profileData.success) {
@@ -274,6 +291,7 @@ export default function ProfilePage() {
       if (eduData.success) setEducation(eduData.education);
       if (achievementsData.success) setAchievements(achievementsData.achievements);
       if (recsData.success) setRecommendations(recsData.recommendations);
+      if (postsData.success) setPosts(postsData.data || []);
 
       setLoading(false);
       setTimeout(() => setPageReady(true), 100);
@@ -287,7 +305,7 @@ export default function ProfilePage() {
     if (!profile) return;
     try {
       const token = TokenManager.getAccessToken();
-      const feedUrl = process.env.NEXT_PUBLIC_FEED_SERVICE_URL || process.env.NEXT_PUBLIC_FEED_SERVICE_URL;
+      const feedUrl = FEED_SERVICE_URL;
       const res = await fetch(`${feedUrl}/users/${profile.id}/follow`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -305,6 +323,85 @@ export default function ProfilePage() {
       }
     } catch (error) {
       console.error('Follow error:', error);
+    }
+  };
+
+  const handleLike = async (postId: string) => {
+    try {
+      const token = TokenManager.getAccessToken();
+      const feedUrl = FEED_SERVICE_URL;
+      const res = await fetch(`${feedUrl}/posts/${postId}/like`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPosts(prev => prev.map(p => 
+          p.id === postId ? { ...p, isLiked: data.action === 'liked', likesCount: p.likesCount + (data.action === 'liked' ? 1 : -1) } : p
+        ));
+      }
+    } catch (error) {
+      console.error('Like error:', error);
+    }
+  };
+
+  const handleValue = async (postId: string) => {
+    try {
+      const token = TokenManager.getAccessToken();
+      const feedUrl = FEED_SERVICE_URL;
+      const res = await fetch(`${feedUrl}/posts/${postId}/value`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPosts(prev => prev.map(p => 
+          p.id === postId ? { ...p, isValued: data.action === 'valued', valuesCount: (p.valuesCount || 0) + (data.action === 'valued' ? 1 : -1) } : p
+        ));
+      }
+    } catch (error) {
+      console.error('Value error:', error);
+    }
+  };
+
+  const handleComment = async (postId: string, content: string) => {
+    try {
+      const token = TokenManager.getAccessToken();
+      const feedUrl = FEED_SERVICE_URL;
+      const res = await fetch(`${feedUrl}/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ content }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPosts(prev => prev.map(p => 
+          p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p
+        ));
+      }
+    } catch (error) {
+      console.error('Comment error:', error);
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    if (!confirm('Are you sure you want to delete this post?')) return;
+    try {
+      const token = TokenManager.getAccessToken();
+      const feedUrl = FEED_SERVICE_URL;
+      const res = await fetch(`${feedUrl}/posts/${postId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPosts(prev => prev.filter(p => p.id !== postId));
+      }
+    } catch (error) {
+      console.error('Delete post error:', error);
     }
   };
 
@@ -361,7 +458,7 @@ export default function ProfilePage() {
             }}
           >
             {/* Cover Photo - Lighter gradient for better look */}
-            <div className="relative h-56 md:h-72 bg-gradient-to-br from-amber-100 via-orange-100 to-yellow-50">
+            <div className="relative h-80 md:h-[450px] bg-gradient-to-br from-amber-100 via-orange-100 to-yellow-50">
               {profile.coverPhotoUrl ? (
                 <Image
                   src={profile.coverPhotoUrl}
@@ -607,6 +704,7 @@ export default function ProfilePage() {
             <div className="flex p-1">
               {([
                 { key: 'about', label: 'About', icon: BookOpen },
+                { key: 'posts', label: 'Posts', icon: Send },
                 { key: 'activity', label: 'Activity', icon: TrendingUp },
                 { key: 'skills', label: 'Skills', icon: Star },
                 { key: 'experience', label: 'Experience', icon: Briefcase },
@@ -903,6 +1001,42 @@ export default function ProfilePage() {
                           </div>
                         )}
                       </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Posts Section */}
+              {activeTab === 'posts' && (
+                <div 
+                  className="space-y-4"
+                  style={{
+                    animation: 'fadeInUpContent 0.5s ease-out forwards',
+                  }}
+                >
+                  {loadingPosts ? (
+                    <FeedSkeletonList count={3} />
+                  ) : posts.length > 0 ? (
+                    posts.map(post => (
+                      <PostCard
+                        key={post.id}
+                        post={post}
+                        onLike={handleLike}
+                        onValue={handleValue}
+                        onComment={handleComment}
+                        onDelete={handleDeletePost}
+                        currentUserId={currentUser?.id}
+                      />
+                    ))
+                  ) : (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm dark:border-gray-700 p-12 text-center">
+                      <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Send className="w-8 h-8 text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">No posts yet</h3>
+                      <p className="text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
+                        {profile.isOwnProfile ? "You haven't shared anything with the community yet." : `${profile.firstName} hasn't shared any posts yet.`}
+                      </p>
                     </div>
                   )}
                 </div>

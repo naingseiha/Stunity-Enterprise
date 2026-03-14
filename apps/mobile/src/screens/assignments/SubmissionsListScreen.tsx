@@ -30,7 +30,7 @@ import type { ClubsStackScreenProps } from '@/navigation/types';
 type FilterTab = 'all' | 'submitted' | 'graded' | 'pending';
 
 export default function SubmissionsListScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<ClubsStackScreenProps<'SubmissionsList'>['navigation']>();
   const route = useRoute<ClubsStackScreenProps<'SubmissionsList'>['route']>();
   const { assignmentId, clubId } = route.params;
 
@@ -191,10 +191,10 @@ export default function SubmissionsListScreen() {
     );
   };
 
-  const getStatusColor = (status: string, isLate: boolean) => {
-    if (status === 'GRADED') return Colors.success;
+  const getStatusColor = (status: string, isLate: boolean): string => {
+    if (status === 'GRADED') return Colors.success.main;
     if (isLate) return Colors.error;
-    return Colors.warning;
+    return Colors.warning.main;
   };
 
   const getStatusText = (status: string, isLate: boolean) => {

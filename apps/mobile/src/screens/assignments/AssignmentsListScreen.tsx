@@ -34,7 +34,7 @@ const TABS = [
 ] as const;
 
 export default function AssignmentsListScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<ClubsStackScreenProps<'AssignmentsList'>['navigation']>();
   const route = useRoute<ClubsStackScreenProps<'AssignmentsList'>['route']>();
   const { clubId } = route.params;
 

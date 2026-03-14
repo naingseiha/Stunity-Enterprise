@@ -27,7 +27,7 @@ import type { ClubsStackScreenProps } from '@/navigation/types';
 import { useAuthStore } from '@/stores/authStore';
 
 export default function AssignmentDetailScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<ClubsStackScreenProps<'AssignmentDetail'>['navigation']>();
   const route = useRoute<ClubsStackScreenProps<'AssignmentDetail'>['route']>();
   const { assignmentId, clubId } = route.params;
   const { user } = useAuthStore();
