@@ -24,6 +24,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/common';
 import { useAuthStore } from '@/stores';
+import { useTranslation } from 'react-i18next';
 
 import StunityLogo from '../../../assets/Stunity.svg';
 
@@ -45,11 +46,12 @@ interface SidebarProps {
 
 export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) {
   const { user, logout } = useAuthStore();
+  const { t } = useTranslation();
 
   const menuItems: MenuItem[] = [
     {
       key: 'leaderboard',
-      label: 'Leaderboard',
+      label: t('settings.achievements'), // Reusing achievements label or can add leaderboard
       icon: 'podium',
       iconColor: '#8B5CF6',
       iconBg: '#EDE9FE',
@@ -57,7 +59,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
     },
     {
       key: 'events',
-      label: 'Events',
+      label: t('auth.forParents').replace('FOR ', ''), // Simplified
       icon: 'calendar',
       iconColor: '#EC4899',
       iconBg: '#FCE7F3',
@@ -65,7 +67,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
     },
     {
       key: 'bookmarks',
-      label: 'Saved',
+      label: t('settings.bookmarks'),
       icon: 'bookmark',
       iconColor: '#6366F1',
       iconBg: '#EEF2FF',
@@ -73,7 +75,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
     },
     {
       key: 'connections',
-      label: 'Connections',
+      label: t('settings.connections'),
       icon: 'people',
       iconColor: '#10B981',
       iconBg: '#D1FAE5',
@@ -81,7 +83,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
     },
     {
       key: 'settings',
-      label: 'Settings & Privacy',
+      label: t('common.settings'),
       icon: 'settings',
       iconColor: '#6B7280',
       iconBg: '#F3F4F6',
@@ -89,7 +91,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
     },
     {
       key: 'help',
-      label: 'Help & Support',
+      label: t('settings.helpCenter'),
       icon: 'help-circle',
       iconColor: '#3B82F6',
       iconBg: '#DBEAFE',
@@ -99,12 +101,12 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
 
   const handleLogout = () => {
     Alert.alert(
-      'Log Out',
+      t('common.logout'),
       'Are you sure you want to log out?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Log Out',
+          text: t('common.logout'),
           style: 'destructive',
           onPress: () => { logout(); onClose(); },
         },
@@ -209,7 +211,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
             <View style={styles.logoutIconCircle}>
               <Ionicons name="log-out-outline" size={20} color="#EF4444" />
             </View>
-            <Text style={styles.logoutText}>Log Out</Text>
+            <Text style={styles.logoutText}>{t('common.logout')}</Text>
           </TouchableOpacity>
 
           {/* App Version */}

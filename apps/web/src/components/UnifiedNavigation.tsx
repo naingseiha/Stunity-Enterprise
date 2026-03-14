@@ -33,6 +33,7 @@ import {
   Sun,
   Gamepad2,
   LayoutDashboard,
+  Globe,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import AcademicYearSelector from './AcademicYearSelector';
@@ -250,6 +251,12 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
         { name: 'Claim Codes', icon: Ticket, path: `/${locale}/admin/claim-codes`, prefetch: null },
         { name: 'Campus Locations', icon: MapPin, path: `/${locale}/settings/locations`, prefetch: null },
         { name: 'Settings', icon: Settings, path: `/${locale}/settings/academic-years`, prefetch: null },
+      ],
+    },
+    {
+      label: 'Platform',
+      items: [
+        { name: 'Language Management', icon: Globe, path: `/${locale}/admin/language`, prefetch: null },
       ],
     },
   ], [locale]);

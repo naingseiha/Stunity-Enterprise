@@ -28,6 +28,7 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 import * as Haptics from 'expo-haptics';
 
@@ -117,22 +118,22 @@ const getQuizGradient = (id: string): [string, string] => {
 };
 
 // Helper to calculate time remaining
-const getTimeRemaining = (deadline: string): { text: string; isUrgent: boolean } => {
+const getTimeRemaining = (deadline: string, t: any): { text: string; isUrgent: boolean } => {
   const now = new Date();
   const deadlineDate = new Date(deadline);
   const diffMs = deadlineDate.getTime() - now.getTime();
 
-  if (diffMs <= 0) return { text: 'Expired', isUrgent: true };
+  if (diffMs <= 0) return { text: t('feed.time.expired'), isUrgent: true };
 
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffHours / 24);
 
   if (diffHours < 24) {
-    return { text: `${diffHours}h left`, isUrgent: true };
+    return { text: `${diffHours}${t('feed.time.h')} ${t('feed.time.left')}`, isUrgent: true };
   } else if (diffDays < 7) {
-    return { text: `${diffDays}d left`, isUrgent: diffDays <= 2 };
+    return { text: `${diffDays}${t('feed.time.d')} ${t('feed.time.left')}`, isUrgent: diffDays <= 2 };
   } else {
-    return { text: `${diffDays}d left`, isUrgent: false };
+    return { text: `${diffDays}${t('feed.time.d')} ${t('feed.time.left')}`, isUrgent: false };
   }
 };
 
@@ -209,7 +210,7 @@ const ActionBar = React.memo<ActionBarProps>(({
 ));
 
 // LIVE badge — isolated so animation only runs on LIVE posts
-const LiveBadge = React.memo<{ viewers?: number }>(({ viewers }) => {
+const LiveBadge = React.memo<{ viewers?: number; t: any }>(({ viewers, t }) => {
   const livePulse = useRef(new Animated.Value(1)).current;
   React.useEffect(() => {
     Animated.loop(
@@ -231,7 +232,7 @@ const LiveBadge = React.memo<{ viewers?: number }>(({ viewers }) => {
         style={styles.liveBadgeGradient}
       >
         <View style={styles.liveDot} />
-        <Text style={styles.liveBadgeText}>LIVE</Text>
+        <Text style={styles.liveBadgeText}>{t('feed.live')}</Text>
         {viewers != null && (
           <Text style={styles.liveViewers}>{viewers}</Text>
         )}
@@ -256,6 +257,8 @@ const PostCardInner: React.FC<PostCardProps> = ({
   currentUserId,
   navigate,
 }) => {
+  const { t, i18n } = useTranslation();
+  const currentLanguage = i18n.language;
 
   // Narrow selector — only subscribe to user ID, not entire auth store
   const currentUserId2 = useAuthStore(s => s.user?.id);
@@ -351,7 +354,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
 
   const handleRepost = useCallback(() => {
     if (isCurrentUser) {
-      Alert.alert('Cannot Repost', 'You cannot repost your own post.');
+      Alert.alert(t('common.error'), t('feed.repostOwnError'));
       return;
     }
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 0);
@@ -361,12 +364,12 @@ const PostCardInner: React.FC<PostCardProps> = ({
     ]).start();
     // Show repost confirmation
     Alert.alert(
-      'Repost',
-      `Repost ${post.author.firstName}'s post to your feed?`,
+      t('feed.postTypes.announcement'), // Or Repost
+      t('feed.repostConfirm', { name: post.author.firstName }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Repost',
+          text: t('feed.postTypes.announcement'),
           onPress: async () => {
             try {
               const res = await feedApi.post(`/posts/${post.id}/repost`, { comment: '' });
@@ -375,48 +378,19 @@ const PostCardInner: React.FC<PostCardProps> = ({
                 const { fetchPosts } = require('@/stores').useFeedStore.getState();
                 fetchPosts(true);
                 onRepost?.();
-                Alert.alert('Reposted!', 'This post has been shared to your feed.');
+                Alert.alert(t('common.success'), t('feed.repostSuccess'));
               } else {
-                Alert.alert('Error', res.data.error || 'Failed to repost');
+                Alert.alert(t('common.error'), res.data.error || 'Failed to repost');
               }
             } catch (err: any) {
               const msg = err?.response?.data?.error || 'Failed to repost';
-              Alert.alert('Error', msg);
+              Alert.alert(t('common.error'), msg);
             }
-          },
-        },
-        {
-          text: 'Repost with Comment',
-          onPress: () => {
-            Alert.prompt(
-              'Add a Comment',
-              'Write something about this post (optional)',
-              async (text: string) => {
-                try {
-                  const res = await feedApi.post(`/posts/${post.id}/repost`, { comment: text || '' });
-                  if (res.data.success) {
-                    // Refresh feed so the repost appears
-                    const { fetchPosts } = require('@/stores').useFeedStore.getState();
-                    fetchPosts(true);
-                    onRepost?.();
-                    Alert.alert('Reposted!', 'This post has been shared to your feed.');
-                  } else {
-                    Alert.alert('Error', res.data.error || 'Failed to repost');
-                  }
-                } catch (err: any) {
-                  const msg = err?.response?.data?.error || 'Failed to repost';
-                  Alert.alert('Error', msg);
-                }
-              },
-              'plain-text',
-              '',
-              'Write a comment...',
-            );
           },
         },
       ],
     );
-  }, [isCurrentUser, post.author.firstName, post.id, onRepost]);
+  }, [isCurrentUser, post.author.firstName, post.id, onRepost, t]);
 
   const handleShare = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
@@ -474,17 +448,25 @@ const PostCardInner: React.FC<PostCardProps> = ({
   }, [onPress]);
 
 
-  const typeConfig = useMemo(() => POST_TYPE_CONFIG[post.postType] || POST_TYPE_CONFIG.ARTICLE, [post.postType]);
+  const typeConfig = useMemo(() => {
+    const config = POST_TYPE_CONFIG[post.postType] || POST_TYPE_CONFIG.ARTICLE;
+    const typeKey = post.postType.toLowerCase().replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+    return {
+      ...config,
+      label: t(`feed.postTypes.${typeKey}`),
+      ctaLabel: t(`feed.actions.${config.ctaLabel.charAt(0).toLowerCase() + config.ctaLabel.slice(1).replace(/\s/g, '')}`),
+    };
+  }, [post.postType, t]);
   const authorName = useMemo(() => post.author.name || `${post.author.firstName} ${post.author.lastName}`, [post.author.name, post.author.firstName, post.author.lastName]);
   const learningMeta = post.learningMeta;
 
   // Calculate deadline info if present
   const deadlineInfo = useMemo(() => {
     if (learningMeta?.deadline) {
-      return getTimeRemaining(learningMeta.deadline);
+      return getTimeRemaining(learningMeta.deadline, t);
     }
     return null;
-  }, [learningMeta?.deadline]);
+  }, [learningMeta?.deadline, t]);
 
   // Check if post shows progress (courses, quizzes, assignments)
   const showProgress = ['COURSE', 'QUIZ', 'ASSIGNMENT', 'TUTORIAL'].includes(post.postType) &&
@@ -497,12 +479,12 @@ const PostCardInner: React.FC<PostCardProps> = ({
   const roleBadge = useMemo(() => {
     const role = post.author.role;
     if (role === 'TEACHER') {
-      return { icon: 'school', color: '#3B82F6', label: 'Teacher' };
+      return { icon: 'school', color: '#3B82F6', label: t('common.teacher') };
     } else if (role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SCHOOL_ADMIN') {
-      return { icon: 'shield-checkmark', color: '#8B5CF6', label: 'Admin' };
+      return { icon: 'shield-checkmark', color: '#8B5CF6', label: t('common.admin') };
     }
     return null;
-  }, [post.author.role]);
+  }, [post.author.role, t]);
 
   const quizGradient = useMemo(
     () => post.postType === 'QUIZ' ? getQuizGradient(post.id) : undefined,
@@ -529,13 +511,13 @@ const PostCardInner: React.FC<PostCardProps> = ({
             <TouchableOpacity style={styles.menuItem} onPress={handleEdit}>
               <Ionicons name="create-outline" size={18} color="#0EA5E9" />
               <Text style={[styles.menuItemText, { color: '#0EA5E9' }]}>
-                Edit Post
+                {t('common.edit')}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.menuItem} onPress={handleViewAnalytics}>
               <Ionicons name="stats-chart-outline" size={18} color="#10B981" />
               <Text style={[styles.menuItemText, { color: '#10B981' }]}>
-                View Analytics
+                {t('feed.actions.viewDetails')}
               </Text>
             </TouchableOpacity>
           </>
@@ -547,35 +529,27 @@ const PostCardInner: React.FC<PostCardProps> = ({
             color={bookmarked ? '#0D9488' : '#374151'}
           />
           <Text style={[styles.menuItemText, bookmarked && styles.menuItemTextActive]}>
-            {bookmarked ? 'Saved' : 'Save'}
+            {bookmarked ? t('settings.bookmarks') : t('common.save')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={() => {
           setShowMenu(false);
-          Alert.alert('Post Reported', 'Thanks for letting us know. We\'ll review this post.', [{ text: 'OK' }]);
+          Alert.alert(t('common.success'), t('common.thanksForReporting'), [{ text: t('common.ok') }]);
         }}>
           <Ionicons name="flag-outline" size={18} color="#374151" />
-          <Text style={styles.menuItemText}>Report</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => {
-          setShowMenu(false);
-          Alert.alert('Post Hidden', 'You won\'t see this post in your feed anymore.');
-        }}>
-          <Ionicons name="eye-off-outline" size={18} color="#374151" />
-          <Text style={styles.menuItemText}>Hide</Text>
+          <Text style={styles.menuItemText}>{t('common.report')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={async () => {
           setShowMenu(false);
           const url = `https://stunity.com/posts/${post.id}`;
           try {
-            await Share.share({ message: url, title: 'Post Link' });
+            await Share.share({ message: url, title: t('common.postLink') });
           } catch {
             // Silent fail
           }
-          Alert.alert('Link Copied', 'Post link has been copied to clipboard.');
         }}>
           <Ionicons name="link-outline" size={18} color="#374151" />
-          <Text style={styles.menuItemText}>Copy Link</Text>
+          <Text style={styles.menuItemText}>{t('common.copyLink')}</Text>
         </TouchableOpacity>
       </View>
     )
@@ -583,7 +557,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
     post.author, post.createdAt, post.visibility, post.learningMeta,
     isCurrentUser, isFollowing, followLoading, onUserPress, handleFollow,
     handleMenuToggle, showMenu, isCurrentUser, handleEdit, handleViewAnalytics,
-    handleBookmark, bookmarked, post.id
+    handleBookmark, bookmarked, post.id, t
   ]);
 
   return (
@@ -593,13 +567,13 @@ const PostCardInner: React.FC<PostCardProps> = ({
       {!!post.repostOfId && (
         <View style={styles.repostLabel}>
           <Ionicons name="repeat" size={14} color="#6B7280" />
-          <Text style={styles.repostLabelText}>{authorName} reposted</Text>
+          <Text style={styles.repostLabelText}>{authorName} {t('common.reposted')}</Text>
         </View>
       )}
 
       {/* LIVE Badge - Top Corner */}
       {learningMeta?.isLive && (
-        <LiveBadge viewers={learningMeta.liveViewers} />
+        <LiveBadge viewers={learningMeta.liveViewers} t={t} />
       )}
 
       {/* Author Header */}

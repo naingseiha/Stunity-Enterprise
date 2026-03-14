@@ -23,6 +23,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import * as Haptics from 'expo-haptics';
@@ -58,6 +59,7 @@ interface UserAnswer {
 }
 
 export function TakeQuizScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute();
   const quiz = (route.params as any)?.quiz as Quiz;
@@ -117,10 +119,10 @@ export function TakeQuizScreen() {
       <SafeAreaView style={[styles.safeArea, { justifyContent: 'center', alignItems: 'center' }]}>
         <Ionicons name="alert-circle-outline" size={48} color="#9CA3AF" />
         <Text style={{ marginTop: 16, fontSize: 16, color: '#6B7280' }}>
-          No questions available for this quiz.
+          {t('quiz.takeQuiz.noQuestions')}
         </Text>
         <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 24, padding: 12, backgroundColor: '#6366F1', borderRadius: 8 }}>
-          <Text style={{ color: 'white', fontWeight: '600' }}>Go Back</Text>
+          <Text style={{ color: 'white', fontWeight: '600' }}>{t('quiz.takeQuiz.goBack')}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -189,9 +191,9 @@ export function TakeQuizScreen() {
 
   const handleAutoSubmit = () => {
     Alert.alert(
-      'Time\'s Up!',
-      'The quiz time limit has been reached. Your answers will be submitted.',
-      [{ text: 'OK', onPress: handleSubmit }]
+      t('quiz.takeQuiz.timesUp'),
+      t('quiz.takeQuiz.timesUpBody'),
+      [{ text: t('common.ok'), onPress: handleSubmit }]
     );
   };
 
@@ -200,11 +202,11 @@ export function TakeQuizScreen() {
 
     if (unansweredCount > 0) {
       Alert.alert(
-        'Incomplete Quiz',
-        `You have ${unansweredCount} unanswered question${unansweredCount > 1 ? 's' : ''}. Submit anyway?`,
+        t('quiz.takeQuiz.incompleteQuiz'),
+        t('quiz.takeQuiz.submitAnyway', { count: unansweredCount }),
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Submit', style: 'destructive', onPress: submitQuiz },
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('common.submit'), style: 'destructive', onPress: submitQuiz },
         ]
       );
     } else {
@@ -252,9 +254,9 @@ export function TakeQuizScreen() {
 
       const errorMessage = error.response?.data?.error
         || error.message
-        || 'Failed to submit quiz. Please try again.';
+        || t('quiz.takeQuiz.errorSubmitting');
 
-      Alert.alert('Error', errorMessage);
+      Alert.alert(t('common.error'), errorMessage);
     } finally {
       setIsSubmitting(false);
       celebrationAnim.setValue(0);
@@ -287,28 +289,28 @@ export function TakeQuizScreen() {
             >
               <Ionicons name="chevron-back" size={28} color="#111827" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Review Your Answers</Text>
+            <Text style={styles.headerTitle}>{t('quiz.takeQuiz.reviewYourAnswers')}</Text>
           </View>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             {/* Summary Card */}
             <View style={styles.reviewSummary}>
-              <Text style={styles.reviewTitle}>Submission Summary</Text>
+              <Text style={styles.reviewTitle}>{t('quiz.takeQuiz.submissionSummary')}</Text>
               <View style={styles.summaryGrid}>
                 <View style={styles.summaryItem}>
                   <Ionicons name="checkmark-circle" size={32} color="#10B981" />
                   <Text style={styles.summaryNumber}>{answeredCount}</Text>
-                  <Text style={styles.summaryLabel}>Answered</Text>
+                  <Text style={styles.summaryLabel}>{t('quiz.takeQuiz.answered')}</Text>
                 </View>
                 <View style={styles.summaryItem}>
                   <Ionicons name="alert-circle" size={32} color="#EF4444" />
                   <Text style={styles.summaryNumber}>{questions.length - answeredCount}</Text>
-                  <Text style={styles.summaryLabel}>Unanswered</Text>
+                  <Text style={styles.summaryLabel}>{t('quiz.takeQuiz.unanswered')}</Text>
                 </View>
                 <View style={styles.summaryItem}>
                   <Ionicons name="flag" size={32} color="#0EA5E9" />
                   <Text style={styles.summaryNumber}>{markedForReview.size}</Text>
-                  <Text style={styles.summaryLabel}>Flagged</Text>
+                  <Text style={styles.summaryLabel}>{t('quiz.takeQuiz.flagged')}</Text>
                 </View>
               </View>
             </View>
@@ -347,17 +349,17 @@ export function TakeQuizScreen() {
                         </Text>
                         {answer && q.type === 'MULTIPLE_CHOICE' && (
                           <Text style={styles.reviewAnswerText}>
-                            Answer: {OPTION_LETTERS[parseInt(answer.answer)]}
+                            {t('quiz.takeQuiz.answer')}: {OPTION_LETTERS[parseInt(answer.answer)]}
                           </Text>
                         )}
                         {answer && q.type === 'TRUE_FALSE' && (
                           <Text style={styles.reviewAnswerText}>
-                            Answer: {answer.answer === 'true' ? 'True' : 'False'}
+                            {t('quiz.takeQuiz.answer')}: {answer.answer === 'true' ? t('quiz.takeQuiz.true') : t('quiz.takeQuiz.false')}
                           </Text>
                         )}
                         {answer && q.type === 'SHORT_ANSWER' && (
                           <Text style={styles.reviewAnswerText} numberOfLines={1}>
-                            Answer: {answer.answer}
+                            {t('quiz.takeQuiz.answer')}: {answer.answer}
                           </Text>
                         )}
                       </View>
@@ -380,7 +382,7 @@ export function TakeQuizScreen() {
               style={styles.navButton}
             >
               <Ionicons name="create-outline" size={20} color="#6366F1" />
-              <Text style={styles.navButtonText}>Continue Editing</Text>
+              <Text style={styles.navButtonText}>{t('quiz.takeQuiz.continueEditing')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSubmit}
@@ -388,7 +390,7 @@ export function TakeQuizScreen() {
               style={styles.submitButton}
             >
               <Text style={styles.submitButtonText}>
-                {isSubmitting ? 'Submitting...' : 'Submit Quiz'}
+                {isSubmitting ? t('quiz.takeQuiz.submitting') : t('quiz.takeQuiz.submitQuiz')}
               </Text>
               <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
             </TouchableOpacity>
@@ -445,7 +447,7 @@ export function TakeQuizScreen() {
             />
           </View>
           <Text style={styles.progressText}>
-            Question {currentQuestionIndex + 1} of {questions.length}
+            {t('quiz.takeQuiz.questionOf', { current: currentQuestionIndex + 1, total: questions.length })}
           </Text>
         </View>
 
@@ -463,7 +465,7 @@ export function TakeQuizScreen() {
                 </View>
                 <View style={styles.questionPoints}>
                   <Ionicons name="star" size={16} color="#0EA5E9" />
-                  <Text style={styles.pointsText}>{currentQuestion.points} pts</Text>
+                  <Text style={styles.pointsText}>{currentQuestion.points} {t('quiz.takeQuiz.pts')}</Text>
                 </View>
               </View>
               <TouchableOpacity onPress={toggleMarkForReview} style={styles.flagButton}>
@@ -529,7 +531,7 @@ export function TakeQuizScreen() {
                         currentAnswer === 'true' && styles.trueFalseTextSelected,
                       ]}
                     >
-                      True
+                      {t('quiz.takeQuiz.true')}
                     </Text>
                   </TouchableOpacity>
 
@@ -552,7 +554,7 @@ export function TakeQuizScreen() {
                         currentAnswer === 'false' && styles.trueFalseTextSelected,
                       ]}
                     >
-                      False
+                      {t('quiz.takeQuiz.false')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -562,7 +564,7 @@ export function TakeQuizScreen() {
                 <TextInput
                   value={currentAnswer}
                   onChangeText={handleAnswerChange}
-                  placeholder="Type your answer here..."
+                  placeholder={t('quiz.takeQuiz.typeYourAnswer')}
                   placeholderTextColor="#9CA3AF"
                   style={styles.textInput}
                   multiline
@@ -573,11 +575,11 @@ export function TakeQuizScreen() {
 
               {currentQuestion.type === 'FILL_IN_BLANK' && (
                 <View>
-                  <Text style={styles.instructionText}>Type the missing word(s):</Text>
+                  <Text style={styles.instructionText}>{t('quiz.takeQuiz.typeMissingWord')}</Text>
                   <TextInput
                     value={currentAnswer}
                     onChangeText={handleAnswerChange}
-                    placeholder="Type your answer here..."
+                    placeholder={t('quiz.takeQuiz.typeYourAnswer')}
                     placeholderTextColor="#9CA3AF"
                     style={styles.textInput}
                     autoCapitalize="none"
@@ -587,7 +589,7 @@ export function TakeQuizScreen() {
 
               {currentQuestion.type === 'ORDERING' && (
                 <View style={styles.orderingContainer}>
-                  <Text style={styles.instructionText}>Arrange in correct order:</Text>
+                  <Text style={styles.instructionText}>{t('quiz.takeQuiz.arrangeOrder')}</Text>
                   {(() => {
                     const items: string[] = currentAnswer
                       ? JSON.parse(currentAnswer)
@@ -630,7 +632,7 @@ export function TakeQuizScreen() {
 
               {currentQuestion.type === 'MATCHING' && (
                 <View style={styles.matchingContainer}>
-                  <Text style={styles.instructionText}>Pair the items:</Text>
+                  <Text style={styles.instructionText}>{t('quiz.takeQuiz.pairItems')}</Text>
                   {(() => {
                     // Options are "Left:::Right"
                     // We need to parse them.
@@ -690,7 +692,7 @@ export function TakeQuizScreen() {
 
           {/* Answer Status Grid */}
           <View style={styles.answerGrid}>
-            <Text style={styles.answerGridTitle}>Answer Status</Text>
+            <Text style={styles.answerGridTitle}>{t('quiz.takeQuiz.answerStatus')}</Text>
             <View style={styles.gridContainer}>
               {questions.map((q, index) => {
                 const isAnswered = answers.some((a) => a.questionId === q.id);
@@ -722,7 +724,7 @@ export function TakeQuizScreen() {
               })}
             </View>
             <Text style={styles.answeredCount}>
-              {answeredCount} of {questions.length} answered ({Math.round(progressPercent || 0)}%)
+              {t('quiz.takeQuiz.answeredCount', { answered: answeredCount, total: questions.length, percent: Math.round(progressPercent || 0) })}
             </Text>
           </View>
         </ScrollView>
@@ -747,7 +749,7 @@ export function TakeQuizScreen() {
               style={styles.reviewButton}
             >
               <Ionicons name="list-outline" size={20} color="#6366F1" />
-              <Text style={styles.reviewButtonText}>Review</Text>
+              <Text style={styles.reviewButtonText}>{t('quiz.takeQuiz.review')}</Text>
               {markedForReview.size > 0 && (
                 <View style={styles.reviewBadge}>
                   <Text style={styles.reviewBadgeText}>{markedForReview.size}</Text>
@@ -763,13 +765,13 @@ export function TakeQuizScreen() {
               style={styles.submitButton}
             >
               <Text style={styles.submitButtonText}>
-                {isSubmitting ? 'Submitting...' : 'Review & Submit'}
+                {isSubmitting ? t('quiz.takeQuiz.submitting') : t('quiz.takeQuiz.reviewAndSubmit')}
               </Text>
               <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
-              <Text style={styles.nextButtonText}>Next</Text>
+              <Text style={styles.nextButtonText}>{t('quiz.takeQuiz.next')}</Text>
               <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
             </TouchableOpacity>
           )}

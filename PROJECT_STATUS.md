@@ -20,6 +20,15 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 ## ✅ Completed Features (v23.0)
 
 ### ⚡ Latest Platform Updates (Mar 14, 2026)
+- **Enterprise OTA translation management (web admin + mobile runtime)**
+  - Added Super Admin language management page to edit translation keys for `web`, `mobile`, and `global`.
+  - Added auth-service translation routes for admin CRUD/sync and app-level runtime fetch (`/auth/translations/:app/:locale`).
+  - Mobile i18n now merges OTA translations correctly for nested keys across screens and parent attendance flows.
+- **Translation performance optimization (mobile + auth-service)**
+  - Mobile translation sync now prioritizes active locale first, then syncs remaining locales in parallel.
+  - Added per-locale ETag persistence in mobile and conditional requests via `If-None-Match`.
+  - Auth-service now returns `ETag` and supports `304 Not Modified` responses for unchanged translation payloads.
+  - Translation merge precedence is deterministic (`global` first, app-specific last) so app overrides always win.
 - **Teacher online permission workflow (mobile + attendance service)**
   - Added `POST /attendance/teacher/permission-request` for session-based permission requests without geofence enforcement.
   - Added mobile permission request actions in attendance check-in screen (morning/afternoon) with reason modal.

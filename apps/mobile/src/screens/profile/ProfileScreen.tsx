@@ -19,6 +19,7 @@ import {
   Alert,
   ActivityIndicator, Animated
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { StatusBar } from 'expo-status-bar';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -96,6 +97,7 @@ export function StatCard({ icon, value, label, index = 0 }: { icon: string; valu
 }
 
 export default function ProfileScreen() {
+  const { t, i18n } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp>();
   const { user: currentUser } = useAuthStore();
@@ -233,7 +235,7 @@ export default function ProfileScreen() {
       } catch (e) {
         console.error('Profile photo upload failed:', e);
         // Rollback on error if needed, but usually the old one is still in currentUser
-        Alert.alert('Upload Error', 'Failed to update profile picture. Please try again.');
+        Alert.alert(t('profile.uploadError'), t('profile.uploadErrorMsg'));
         setProfile(isOwnProfile ? currentUser : null);
       } finally {
         setUploadingPhoto(false);
@@ -270,7 +272,7 @@ export default function ProfileScreen() {
         setProfile(prev => prev ? { ...prev, coverPhotoUrl: photoUrl } : prev);
       } catch (e) {
         console.error('Cover photo upload failed:', e);
-        Alert.alert('Upload Error', 'Failed to update cover photo. Please try again.');
+        Alert.alert(t('profile.uploadError'), t('profile.coverUploadErrorMsg'));
         setProfile(isOwnProfile ? currentUser : null);
       } finally {
         setUploadingCover(false);
@@ -351,10 +353,10 @@ export default function ProfileScreen() {
   };
 
   const tabs = [
-    { id: 'performance', label: 'Performance', icon: 'trending-up' },
-    { id: 'posts', label: 'Posts', icon: 'list' },
-    { id: 'about', label: 'About', icon: 'person' },
-    { id: 'activity', label: 'Activity', icon: 'flame' },
+    { id: 'performance', label: t('profile.performance.title'), icon: 'trending-up' },
+    { id: 'posts', label: t('profile.posts'), icon: 'list' },
+    { id: 'about', label: t('profile.about.title'), icon: 'person' },
+    { id: 'activity', label: t('profile.activity.title'), icon: 'flame' },
   ];
 
   return (
@@ -396,7 +398,7 @@ export default function ProfileScreen() {
                   <View style={styles.coverPlaceholder}>
                     {isOwnProfile && (
                       <TouchableOpacity style={styles.coverHint} onPress={handlePickCoverPhoto} activeOpacity={0.7}>
-                        {uploadingCover ? <ActivityIndicator color={BRAND_TEAL} /> : <Text style={styles.coverHintText}>Add Cover Photo</Text>}
+                        {uploadingCover ? <ActivityIndicator color={BRAND_TEAL} /> : <Text style={styles.coverHintText}>{t('profile.addCover')}</Text>}
                       </TouchableOpacity>
                     )}
                   </View>
@@ -507,13 +509,13 @@ export default function ProfileScreen() {
                           color="#fff"
                         />
                         <Text style={styles.roleBadgeText}>
-                          {profile.role === 'TEACHER' ? 'Teacher' :
-                            profile.role === 'ADMIN' ? 'Admin' :
-                              profile.role === 'SUPER_ADMIN' ? 'Stunity Admin' :
-                                profile.role === 'SCHOOL_ADMIN' ? 'School Admin' :
-                                  profile.role === 'PARENT' ? 'Parent' :
-                                    profile.role === 'STAFF' ? 'Staff' :
-                                      'Student'}
+                          {profile.role === 'TEACHER' ? t('profile.roles.teacher') :
+                            profile.role === 'ADMIN' ? t('profile.roles.admin') :
+                              profile.role === 'SUPER_ADMIN' ? t('profile.roles.superAdmin') :
+                                profile.role === 'SCHOOL_ADMIN' ? t('profile.roles.schoolAdmin') :
+                                  profile.role === 'PARENT' ? t('profile.roles.parent') :
+                                    profile.role === 'STAFF' ? t('profile.roles.staff') :
+                                      t('profile.roles.student')}
                         </Text>
                       </LinearGradient>
                     </Animated.View>
@@ -533,7 +535,7 @@ export default function ProfileScreen() {
                         style={styles.openToWorkGradient}
                       >
                         <Ionicons name="briefcase" size={12} color="#fff" />
-                        <Text style={styles.openToWorkText}>Open to Opportunities</Text>
+                        <Text style={styles.openToWorkText}>{t('profile.openToOpportunities')}</Text>
                       </LinearGradient>
                     </Animated.View>
                   )}
@@ -553,13 +555,13 @@ export default function ProfileScreen() {
                     {(profile as any).linkedinUrl && (
                       <TouchableOpacity style={styles.socialBadge} onPress={() => { const { Linking } = require('react-native'); Linking.openURL((profile as any).linkedinUrl); }}>
                         <Ionicons name="logo-linkedin" size={14} color="#0077B5" />
-                        <Text style={[styles.socialBadgeText, { color: '#0077B5' }]}>LinkedIn</Text>
+                        <Text style={[styles.socialBadgeText, { color: '#0077B5' }]}>{t('common.linkedin', 'LinkedIn')}</Text>
                       </TouchableOpacity>
                     )}
                     {(profile as any).githubUrl && (
                       <TouchableOpacity style={styles.socialBadge} onPress={() => { const { Linking } = require('react-native'); Linking.openURL((profile as any).githubUrl); }}>
                         <Ionicons name="logo-github" size={14} color="#1a1a1a" />
-                        <Text style={styles.socialBadgeText}>GitHub</Text>
+                        <Text style={styles.socialBadgeText}>{t('common.github', 'GitHub')}</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -569,21 +571,21 @@ export default function ProfileScreen() {
                 <Animated.View style={styles.textStatsRow}>
                   <TouchableOpacity style={styles.textStat} activeOpacity={0.7}>
                     <Text style={styles.textStatValue}>{formatNumber(stats.posts)}</Text>
-                    <Text style={styles.textStatLabel}>Posts</Text>
+                    <Text style={styles.textStatLabel}>{t('profile.stats.posts')}</Text>
                   </TouchableOpacity>
 
                   <View style={styles.statDivider} />
 
                   <TouchableOpacity style={styles.textStat} activeOpacity={0.7}>
                     <Text style={styles.textStatValue}>{formatNumber(stats.followers)}</Text>
-                    <Text style={styles.textStatLabel}>Followers</Text>
+                    <Text style={styles.textStatLabel}>{t('profile.stats.followers')}</Text>
                   </TouchableOpacity>
 
                   <View style={styles.statDivider} />
 
                   <TouchableOpacity style={styles.textStat} activeOpacity={0.7}>
                     <Text style={styles.textStatValue}>{formatNumber(stats.following)}</Text>
-                    <Text style={styles.textStatLabel}>Following</Text>
+                    <Text style={styles.textStatLabel}>{t('profile.stats.following')}</Text>
                   </TouchableOpacity>
                 </Animated.View>
 
@@ -604,7 +606,7 @@ export default function ProfileScreen() {
                           style={StyleSheet.absoluteFill}
                         />
                         <Ionicons name="create-outline" size={16} color="#fff" style={{ marginRight: 4 }} />
-                        <Text style={styles.capsuleBtnFilledText}>Edit Profile</Text>
+                        <Text style={styles.capsuleBtnFilledText}>{t('profile.editProfile')}</Text>
                       </TouchableOpacity>
 
                       {/* Secondary Actions Row */}
@@ -617,7 +619,7 @@ export default function ProfileScreen() {
                           >
                             <View style={styles.secondaryActionContent}>
                               <Ionicons name="finger-print-outline" size={18} color="#0284C7" style={{ marginRight: 6 }} />
-                              <Text style={[styles.secondaryActionText, { color: '#0284C7' }]}>Attendance</Text>
+                              <Text style={[styles.secondaryActionText, { color: '#0284C7' }]}>{t('profile.attendance')}</Text>
                             </View>
                           </TouchableOpacity>
                         )}
@@ -628,7 +630,7 @@ export default function ProfileScreen() {
                         >
                           <View style={styles.secondaryActionContent}>
                             <Ionicons name="cube-outline" size={18} color="#D97706" style={{ marginRight: 6 }} />
-                            <Text style={[styles.secondaryActionText, { color: '#D97706' }]}>Quiz Studio</Text>
+                            <Text style={[styles.secondaryActionText, { color: '#D97706' }]}>{t('profile.quizStudio')}</Text>
                           </View>
                         </TouchableOpacity>
                       </View>
@@ -650,12 +652,12 @@ export default function ProfileScreen() {
                           />
                         )}
                         <Text style={isFollowing ? styles.capsuleBtnText : styles.capsuleBtnFilledText}>
-                          {isFollowing ? 'Following' : 'Follow'}
+                          {isFollowing ? t('profile.following') : t('profile.follow')}
                         </Text>
                       </TouchableOpacity>
                       <TouchableOpacity style={styles.capsuleBtnYellow} activeOpacity={0.8}>
                         <Ionicons name="chatbubble-outline" size={16} color="#78350F" style={{ marginRight: 5 }} />
-                        <Text style={styles.capsuleBtnYellowText}>Message</Text>
+                        <Text style={styles.capsuleBtnYellowText}>{t('profile.message')}</Text>
                       </TouchableOpacity>
                     </>
                   )}
@@ -704,7 +706,7 @@ export default function ProfileScreen() {
                   {stats.posts === 0 ? (
                     <View style={styles.contentPlaceholder}>
                       <Ionicons name="document-text-outline" size={48} color="#E5E7EB" />
-                      <Text style={styles.placeholderText}>No posts yet</Text>
+                      <Text style={styles.placeholderText}>{t('profile.noPosts')}</Text>
                     </View>
                   ) : (
                     useFeedStore.getState()
@@ -764,7 +766,7 @@ export default function ProfileScreen() {
                     <View style={styles.aboutCard}>
                       <View style={styles.aboutCardHeader}>
                         <Ionicons name="person-circle-outline" size={20} color="#0EA5E9" />
-                        <Text style={styles.aboutCardTitle}>Bio</Text>
+                        <Text style={styles.aboutCardTitle}>{t('profile.info.bio')}</Text>
                       </View>
                       <Text style={styles.aboutCardText}>{profile.bio}</Text>
                     </View>
@@ -775,7 +777,7 @@ export default function ProfileScreen() {
                     <View style={styles.aboutCard}>
                       <View style={styles.aboutCardHeader}>
                         <Ionicons name="information-circle-outline" size={20} color="#0EA5E9" />
-                        <Text style={styles.aboutCardTitle}>Info</Text>
+                        <Text style={styles.aboutCardTitle}>{t('profile.info.title')}</Text>
                       </View>
                       {profile.headline ? (
                         <View style={styles.aboutInfoRow}>

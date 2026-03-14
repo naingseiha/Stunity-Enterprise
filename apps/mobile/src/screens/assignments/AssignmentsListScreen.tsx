@@ -14,6 +14,7 @@ import {
   RefreshControl,
   ActivityIndicator, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -26,17 +27,20 @@ import type { ClubsStackScreenProps } from '@/navigation/types';
 
 type Tab = 'all' | 'active' | 'submitted' | 'graded';
 
-const TABS = [
-  { id: 'all', label: 'All' },
-  { id: 'active', label: 'Active' },
-  { id: 'submitted', label: 'Submitted' },
-  { id: 'graded', label: 'Graded' },
-] as const;
+
 
 export default function AssignmentsListScreen() {
+  const { t, i18n } = useTranslation();
   const navigation = useNavigation<ClubsStackScreenProps<'AssignmentsList'>['navigation']>();
   const route = useRoute<ClubsStackScreenProps<'AssignmentsList'>['route']>();
   const { clubId } = route.params;
+
+  const TABS = [
+    { id: 'all', label: t('assignments.list.tabs.all') },
+    { id: 'active', label: t('assignments.list.tabs.active') },
+    { id: 'submitted', label: t('assignments.list.tabs.submitted') },
+    { id: 'graded', label: t('assignments.list.tabs.graded') },
+  ] as const;
 
   const [selectedTab, setSelectedTab] = useState<Tab>('all');
   const [assignments, setAssignments] = useState<ClubAssignment[]>([]);
@@ -170,14 +174,14 @@ export default function AssignmentsListScreen() {
                   styles.metaText,
                   isOverdue && styles.overdueText
                 ]}>
-                  Due {format(dueDate, 'MMM d, h:mm a')}
+                  {t('assignments.list.meta.due', { date: format(dueDate, 'MMM d, h:mm a') })}
                 </Text>
               </View>
               
               <View style={styles.metaItem}>
                 <Ionicons name="trophy-outline" size={14} color={Colors.gray[500]} />
                 <Text style={styles.metaText}>
-                  {item.maxPoints} pts
+                  {t('assignments.list.meta.pts', { count: item.maxPoints })}
                 </Text>
               </View>
             </View>
@@ -187,19 +191,19 @@ export default function AssignmentsListScreen() {
                 {isGraded && (
                   <View style={[styles.statusBadge, styles.gradedBadge]}>
                     <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                    <Text style={styles.gradedText}>Graded</Text>
+                    <Text style={styles.gradedText}>{t('assignments.list.status.graded')}</Text>
                   </View>
                 )}
                 {isSubmitted && !isGraded && (
                   <View style={[styles.statusBadge, styles.submittedBadge]}>
                     <Ionicons name="checkmark-circle-outline" size={16} color="#3B82F6" />
-                    <Text style={styles.submittedText}>Submitted</Text>
+                    <Text style={styles.submittedText}>{t('assignments.list.status.submitted')}</Text>
                   </View>
                 )}
                 {isOverdue && !isSubmitted && (
                   <View style={[styles.statusBadge, styles.overdueBadge]}>
                     <Ionicons name="alert-circle" size={16} color="#EF4444" />
-                    <Text style={styles.overdueText}>Overdue</Text>
+                    <Text style={styles.overdueText}>{t('assignments.list.status.overdue')}</Text>
                   </View>
                 )}
               </View>
@@ -217,7 +221,7 @@ export default function AssignmentsListScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="chevron-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Assignments</Text>
+          <Text style={styles.headerTitle}>{t('assignments.list.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.centered}>
@@ -234,7 +238,7 @@ export default function AssignmentsListScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Assignments</Text>
+        <Text style={styles.headerTitle}>{t('assignments.list.title')}</Text>
         <TouchableOpacity style={styles.addButton}>
           <Ionicons name="add-circle-outline" size={24} color={Colors.primary} />
         </TouchableOpacity>
@@ -279,11 +283,11 @@ export default function AssignmentsListScreen() {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="document-outline" size={64} color={Colors.gray[300]} />
-            <Text style={styles.emptyTitle}>No assignments</Text>
+            <Text style={styles.emptyTitle}>{t('assignments.list.empty.title')}</Text>
             <Text style={styles.emptySubtitle}>
               {selectedTab === 'all'
-                ? 'No assignments have been created yet'
-                : `No ${selectedTab} assignments`}
+                ? t('assignments.list.empty.noCreated')
+                : t('assignments.list.empty.noSelected', { status: t(`assignments.list.tabs.${selectedTab}`).toLowerCase() })}
             </Text>
           </View>
         }

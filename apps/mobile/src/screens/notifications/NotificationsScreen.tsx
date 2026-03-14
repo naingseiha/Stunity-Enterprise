@@ -20,6 +20,7 @@ import {
     Platform, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 
 
@@ -43,7 +44,7 @@ const getNotificationIcon = (type: string) => {
     return NOTIFICATION_ICONS[type] || { name: 'notifications' as keyof typeof Ionicons.glyphMap, color: '#6B7280', bg: '#F3F4F6' };
 };
 
-const formatTimeAgo = (dateString: string): string => {
+const formatTimeAgo = (dateString: string, t: any): string => {
     const now = new Date();
     const date = new Date(dateString);
     const diffMs = now.getTime() - date.getTime();
@@ -51,14 +52,15 @@ const formatTimeAgo = (dateString: string): string => {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffMins < 1) return t('notifications.time.justNow');
+    if (diffMins < 60) return t('notifications.time.mAgo', { count: diffMins });
+    if (diffHours < 24) return t('notifications.time.hAgo', { count: diffHours });
+    if (diffDays < 7) return t('notifications.time.dAgo', { count: diffDays });
     return date.toLocaleDateString();
 };
 
 export default function NotificationsScreen() {
+    const { t } = useTranslation();
     const navigation = useNavigation();
     const {
         notifications,
@@ -123,7 +125,7 @@ export default function NotificationsScreen() {
                             {item.body}
                         </Text>
                         <Text style={styles.notificationTime}>
-                            {formatTimeAgo(item.createdAt)}
+                            {formatTimeAgo(item.createdAt, t)}
                         </Text>
                     </View>
 
@@ -139,8 +141,8 @@ export default function NotificationsScreen() {
         return (
             <EmptyState
                 type="notifications"
-                title="No Notifications"
-                message="You're all caught up! We'll notify you when something happens."
+                title={t('notifications.empty.title')}
+                message={t('notifications.empty.message')}
             />
         );
     };
@@ -159,14 +161,14 @@ export default function NotificationsScreen() {
                         <Ionicons name="chevron-back" size={24} color="#374151" />
                     </TouchableOpacity>
 
-                    <Text style={styles.headerTitle}>Notifications</Text>
+                    <Text style={styles.headerTitle}>{t('notifications.title')}</Text>
 
                     {unreadCount > 0 ? (
                         <TouchableOpacity
                             onPress={markAllAsRead}
                             style={styles.markAllButton}
                         >
-                            <Text style={styles.markAllText}>Mark all read</Text>
+                            <Text style={styles.markAllText}>{t('notifications.markAllRead')}</Text>
                         </TouchableOpacity>
                     ) : (
                         <View style={styles.headerPlaceholder} />

@@ -11,6 +11,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
@@ -32,19 +33,19 @@ function CertificationCard({ cert }: { cert: Certification }) {
                 {cert.isVerified && (
                     <View style={certStyles.verifiedBadge}>
                         <Ionicons name="checkmark-circle" size={14} color="#10B981" />
-                        <Text style={certStyles.verifiedText}>Verified</Text>
+                        <Text style={certStyles.verifiedText}>{useTranslation().t('profile.about.verified')}</Text>
                     </View>
                 )}
             </View>
             <View style={certStyles.meta}>
                 <Text style={certStyles.date}>
-                    Issued {new Date(cert.issueDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                    {cert.expiryDate ? ` · Expires ${new Date(cert.expiryDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : ''}
+                    {useTranslation().t('profile.about.issued', { date: new Date(cert.issueDate).toLocaleDateString(useTranslation().i18n.language, { month: 'short', year: 'numeric' }) })}
+                    {cert.expiryDate ? ` · ${useTranslation().t('profile.about.expires', { date: new Date(cert.expiryDate).toLocaleDateString(useTranslation().i18n.language, { month: 'short', year: 'numeric' }) })}` : ''}
                 </Text>
                 {cert.credentialUrl && (
                     <TouchableOpacity onPress={() => Linking.openURL(cert.credentialUrl!)} style={certStyles.linkBtn}>
                         <Ionicons name="open-outline" size={12} color="#0EA5E9" />
-                        <Text style={certStyles.linkText}>View</Text>
+                        <Text style={certStyles.linkText}>{useTranslation().t('common.view')}</Text>
                     </TouchableOpacity>
                 )}
             </View>
@@ -88,7 +89,7 @@ export function CertificationsSection({ certifications }: { certifications: Cert
         <View style={sectionStyles.card}>
             <View style={sectionStyles.header}>
                 <Ionicons name="ribbon-outline" size={20} color="#0EA5E9" />
-                <Text style={sectionStyles.title}>Certifications</Text>
+                <Text style={sectionStyles.title}>{useTranslation().t('profile.about.certifications')}</Text>
                 <View style={sectionStyles.countBadge}>
                     <Text style={sectionStyles.countText}>{certifications.length}</Text>
                 </View>
@@ -114,7 +115,7 @@ export function SkillsSection({ skills, interests }: { skills: string[]; interes
                 <>
                     <View style={sectionStyles.header}>
                         <Ionicons name="code-slash-outline" size={20} color="#3B82F6" />
-                        <Text style={sectionStyles.title}>Skills</Text>
+                        <Text style={sectionStyles.title}>{useTranslation().t('profile.about.skills')}</Text>
                     </View>
                     <View style={tagStyles.container}>
                         {skills.map((skill, i) => {
@@ -134,7 +135,7 @@ export function SkillsSection({ skills, interests }: { skills: string[]; interes
                 <>
                     <View style={[sectionStyles.header, skills.length > 0 && { marginTop: 16 }]}>
                         <Ionicons name="heart-outline" size={20} color="#F43F5E" />
-                        <Text style={sectionStyles.title}>Interests</Text>
+                        <Text style={sectionStyles.title}>{useTranslation().t('profile.about.interests')}</Text>
                     </View>
                     <View style={tagStyles.container}>
                         {interests.map((interest, i) => {
@@ -162,13 +163,14 @@ interface CompletenessItem {
 }
 
 export function ProfileCompletenessCard({ profile, onEdit }: { profile: User; onEdit?: () => void }) {
+    const { t } = useTranslation();
     const items: CompletenessItem[] = [
-        { label: 'Profile Photo', icon: 'camera', done: !!profile.profilePictureUrl, color: '#0EA5E9' },
-        { label: 'Headline', icon: 'briefcase', done: !!(profile.headline || profile.professionalTitle), color: '#A855F7' },
-        { label: 'Bio', icon: 'document-text', done: !!profile.bio, color: '#3B82F6' },
-        { label: 'Location', icon: 'location', done: !!profile.location, color: '#10B981' },
-        { label: 'Skills', icon: 'code-slash', done: (profile.skills?.length ?? 0) > 0, color: '#F59E0B' },
-        { label: 'Interests', icon: 'heart', done: (profile.interests?.length ?? 0) > 0, color: '#EC4899' },
+        { label: t('profile.about.profilePhoto'), icon: 'camera', done: !!profile.profilePictureUrl, color: '#0EA5E9' },
+        { label: t('profile.about.headline'), icon: 'briefcase', done: !!(profile.headline || profile.professionalTitle), color: '#A855F7' },
+        { label: t('profile.about.bio'), icon: 'document-text', done: !!profile.bio, color: '#3B82F6' },
+        { label: t('profile.about.location'), icon: 'location', done: !!profile.location, color: '#10B981' },
+        { label: t('profile.about.skills'), icon: 'code-slash', done: (profile.skills?.length ?? 0) > 0, color: '#F59E0B' },
+        { label: t('profile.about.interests'), icon: 'heart', done: (profile.interests?.length ?? 0) > 0, color: '#EC4899' },
     ];
 
     const completed = items.filter(i => i.done).length;
@@ -197,12 +199,12 @@ export function ProfileCompletenessCard({ profile, onEdit }: { profile: User; on
                     <Text style={cmpStyles.ringPct}>{pct}%</Text>
                 </View>
                 <View style={cmpStyles.topInfo}>
-                    <Text style={cmpStyles.topTitle}>Profile Strength</Text>
-                    <Text style={cmpStyles.topSub}>{completed}/{items.length} sections completed</Text>
+                    <Text style={cmpStyles.topTitle}>{t('profile.about.profileStrength')}</Text>
+                    <Text style={cmpStyles.topSub}>{t('profile.about.sectionsCompleted', { completed, total: items.length })}</Text>
                     {onEdit && (
                         <TouchableOpacity style={cmpStyles.editBtn} onPress={onEdit}>
                             <Ionicons name="create-outline" size={14} color="#0EA5E9" />
-                            <Text style={cmpStyles.editText}>Complete Profile</Text>
+                            <Text style={cmpStyles.editText}>{t('profile.about.completeProfile')}</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -259,7 +261,7 @@ export function CareerGoalsCard({ careerGoals, isOwnProfile, onEdit }: { careerG
                 <View style={goalStyles.headerIcon}>
                     <Ionicons name="rocket" size={18} color="#0284C7" />
                 </View>
-                <Text style={goalStyles.headerTitle}>Career Goals</Text>
+                <Text style={goalStyles.headerTitle}>{useTranslation().t('profile.about.careerGoals')}</Text>
                 {isOwnProfile && onEdit && (
                     <TouchableOpacity onPress={onEdit} style={goalStyles.headerEdit}>
                         <Ionicons name="create-outline" size={16} color="rgba(255,255,255,0.8)" />
@@ -272,8 +274,8 @@ export function CareerGoalsCard({ careerGoals, isOwnProfile, onEdit }: { careerG
                 ) : (
                     <View style={goalStyles.empty}>
                         <Ionicons name="add-circle-outline" size={24} color="#D1D5DB" />
-                        <Text style={goalStyles.emptyText}>Add your career goals</Text>
-                        <Text style={goalStyles.emptyHint}>Share what you're working toward</Text>
+                        <Text style={goalStyles.emptyText}>{useTranslation().t('profile.about.addCareerGoals')}</Text>
+                        <Text style={goalStyles.emptyHint}>{useTranslation().t('profile.about.shareGoals')}</Text>
                     </View>
                 )}
             </View>
@@ -303,7 +305,7 @@ export function ProjectShowcase({ stats, isOwnProfile }: { stats: UserStats | nu
         <View style={projStyles.card}>
             <View style={sectionStyles.header}>
                 <Ionicons name="folder-open-outline" size={20} color="#8B5CF6" />
-                <Text style={sectionStyles.title}>Projects</Text>
+                <Text style={sectionStyles.title}>{useTranslation().t('profile.performance.projects')}</Text>
                 {projectCount > 0 && (
                     <View style={sectionStyles.countBadge}>
                         <Text style={sectionStyles.countText}>{projectCount}</Text>
@@ -316,18 +318,18 @@ export function ProjectShowcase({ stats, isOwnProfile }: { stats: UserStats | nu
                     <View style={projStyles.emptyIconWrap}>
                         <Ionicons name="folder-open" size={28} color="#8B5CF6" />
                     </View>
-                    <Text style={projStyles.emptyText}>Showcase your work</Text>
+                    <Text style={projStyles.emptyText}>{useTranslation().t('profile.about.showcaseWork')}</Text>
                     <Text style={projStyles.emptyHint}>
                         {projectCount > 0
-                            ? `You have ${projectCount} project${projectCount > 1 ? 's' : ''} — full project management coming soon`
-                            : 'Add projects to your profile to impress peers and employers'}
+                            ? useTranslation().t(`profile.about.projectsComingSoon${projectCount > 1 ? '_plural' : ''}`, { count: projectCount })
+                            : useTranslation().t('profile.about.addProjectsHint')}
                     </Text>
                 </View>
             ) : (
                 <View style={projStyles.empty}>
                     <Ionicons name="folder-outline" size={32} color="#E5E7EB" />
                     <Text style={projStyles.emptyText}>
-                        {projectCount > 0 ? `${projectCount} project${projectCount > 1 ? 's' : ''}` : 'No projects yet'}
+                        {projectCount > 0 ? useTranslation().t('profile.about.project', { count: projectCount }) : useTranslation().t('profile.about.noProjects')}
                     </Text>
                 </View>
             )}

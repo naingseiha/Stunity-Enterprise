@@ -77,6 +77,8 @@ Platform-wide management area for super administrators. See [SUPER_ADMIN_AND_ENT
 - **Audit Logs** — Platform-wide trail with filters (resource type, action)
 - **Platform Settings** — Feature Flags, Announcements, Subscription Tiers (read-only), Coming Soon tab
 - **Analytics** — Schools/users per month charts, top schools, month range selector (6/12/24)
+- **Language Management (OTA translations)** — Super admin can edit `web`, `mobile`, and `global` translation keys from Admin UI and publish changes without app rebuilds
+- **Translation sync performance hardening** — Mobile sync now prioritizes active locale, uses per-locale ETag caching (`If-None-Match`), and backend serves `ETag`/`304` with deterministic global→app override precedence
 
 ### Enterprise Features
 - **Feature Flags** — Platform-wide or per-school; create, toggle, check via public API

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/common';
 import { formatRelativeTime } from '@/utils';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 
 interface PostHeaderProps {
   author: {
@@ -46,6 +47,7 @@ const PostHeader = ({
   showMenu,
   menuContent,
 }: PostHeaderProps) => {
+  const { t } = useTranslation();
 
   const authorName = author.name || `${author.firstName} ${author.lastName}`;
 
@@ -53,9 +55,9 @@ const PostHeader = ({
   const roleBadge = React.useMemo(() => {
     const role = author.role;
     if (role === 'TEACHER') {
-      return { icon: 'school', color: '#3B82F6', label: 'Teacher' };
+      return { icon: 'school', color: '#3B82F6', label: t('common.teacher') };
     } else if (role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SCHOOL_ADMIN') {
-      return { icon: 'shield-checkmark', color: '#8B5CF6', label: 'Admin' };
+      return { icon: 'shield-checkmark', color: '#8B5CF6', label: t('common.admin') };
     }
     return null;
   }, [author.role]);
@@ -142,9 +144,9 @@ const PostHeader = ({
           {followLoading ? (
             <ActivityIndicator size={11} color="#0EA5E9" />
           ) : isFollowing ? (
-            <Text style={styles.followBtnTextFollowing}>Following</Text>
+            <Text style={styles.followBtnTextFollowing}>{t('common.following')}</Text>
           ) : (
-            <Text style={styles.followBtnText}>Follow</Text>
+            <Text style={styles.followBtnText}>{t('common.follow')}</Text>
           )}
         </TouchableOpacity>
       )}

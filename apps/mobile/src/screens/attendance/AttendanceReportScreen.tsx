@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 
 import * as Haptics from 'expo-haptics';
 import { attendanceService } from '@/services/attendance';
@@ -130,24 +131,27 @@ const getDayStatus = (day: any) => {
     return 'UNKNOWN';
 };
 
-const getStatusStyle = (status: string) => {
+type TranslateFn = (key: string, options?: Record<string, unknown>) => string;
+
+const getStatusStyle = (status: string, t: TranslateFn) => {
     switch (status) {
         case 'PERMISSION':
-            return { label: 'Permission', bg: '#EDE9FE', fg: '#7C3AED' };
+            return { label: t('attendance.status.permission'), bg: '#EDE9FE', fg: '#7C3AED' };
         case 'PRESENT':
-            return { label: 'Present', bg: '#D1FAE5', fg: '#059669' };
+            return { label: t('attendance.status.present'), bg: '#D1FAE5', fg: '#059669' };
         case 'LATE':
-            return { label: 'Late', bg: '#FEF3C7', fg: '#B45309' };
+            return { label: t('attendance.status.late'), bg: '#FEF3C7', fg: '#B45309' };
         case 'EXCUSED':
-            return { label: 'Excused', bg: '#E5E7EB', fg: '#4B5563' };
+            return { label: t('attendance.status.excused'), bg: '#E5E7EB', fg: '#4B5563' };
         case 'ABSENT':
-            return { label: 'Absent', bg: '#FEE2E2', fg: '#DC2626' };
+            return { label: t('attendance.status.absent'), bg: '#FEE2E2', fg: '#DC2626' };
         default:
-            return { label: 'N/A', bg: '#F1F5F9', fg: '#64748B' };
+            return { label: t('attendance.status.na'), bg: '#F1F5F9', fg: '#64748B' };
     }
 };
 
 export const AttendanceReportScreen = () => {
+    const { t, i18n } = useTranslation();
     const navigation = useNavigation();
     const { user } = useAuthStore();
     const [loading, setLoading] = useState(true);
@@ -194,6 +198,7 @@ export const AttendanceReportScreen = () => {
     }
 
     const isTeacher = user?.role === 'TEACHER';
+    const dateLocale = i18n.language === 'km' ? 'km-KH' : 'en-US';
 
     const totals = (summary?.stats?.totals || summary?.totals) || {
         present: 0, absent: 0, late: 0, excused: 0, permission: 0
@@ -214,9 +219,9 @@ export const AttendanceReportScreen = () => {
     const attendedCount = isTeacher ? (summary?.stats?.staffTotals?.present || 0) : stats.attendedSessions;
     const totalCount = isTeacher ? (summary?.stats?.totalSchoolDays || 0) : stats.totalSessions;
 
-    const labelMain = isTeacher ? 'Your Check-in Rate' : 'Overall Attendance';
-    const labelAttended = isTeacher ? 'Present' : 'Attended';
-    const labelTotal = isTeacher ? 'Total Days' : 'Total Sessions';
+    const labelMain = isTeacher ? t('attendance.report.metrics.teacherRate') : t('attendance.report.metrics.overallAttendance');
+    const labelAttended = isTeacher ? t('attendance.report.metrics.present') : t('attendance.report.metrics.attended');
+    const labelTotal = isTeacher ? t('attendance.report.metrics.totalDays') : t('attendance.report.metrics.totalSessions');
 
     return (
         <View style={styles.container}>
@@ -233,7 +238,7 @@ export const AttendanceReportScreen = () => {
                         <Ionicons name="chevron-back" size={20} color={BRAND_TEAL} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>
-                        {isTeacher ? 'Attendance Recording' : 'Attendance Report'}
+                        {isTeacher ? t('attendance.report.teacherTitle') : t('attendance.report.title')}
                     </Text>
                     <View style={{ width: 44 }} />
                 </View>
@@ -279,28 +284,28 @@ export const AttendanceReportScreen = () => {
                     {/* Stats Grid */}
                     <View style={styles.statsGrid}>
                         <StatCard
-                            label="Present"
+                            label={t('attendance.status.present')}
                             value={totals.present}
                             color="#10B981"
                             icon="checkmark-circle"
                             delay={100}
                         />
                         <StatCard
-                            label="Late"
+                            label={t('attendance.status.late')}
                             value={totals.late}
                             color="#F59E0B"
                             icon="time"
                             delay={200}
                         />
                         <StatCard
-                            label="Absent"
+                            label={t('attendance.status.absent')}
                             value={totals.absent}
                             color="#F43F5E"
                             icon="close-circle"
                             delay={300}
                         />
                         <StatCard
-                            label="Permission"
+                            label={t('attendance.status.permission')}
                             value={teacherPermissionCount}
                             color="#7C3AED"
                             icon="document-text"
@@ -311,7 +316,7 @@ export const AttendanceReportScreen = () => {
                     {/* Class Breakdown for Teacher */}
                     {isTeacher && summary?.classBreakdown?.length > 0 && (
                         <Animated.View style={styles.infoSection}>
-                            <Text style={styles.sectionTitle}>Class Recording Breakdown</Text>
+                            <Text style={styles.sectionTitle}>{t('attendance.report.classBreakdown.title')}</Text>
                             {summary.classBreakdown.map((item: any, index: number) => (
                                 <View key={item.id} style={[styles.infoCard, { marginBottom: 12 }]}>
                                     <View style={styles.breakdownHeader}>
@@ -322,7 +327,11 @@ export const AttendanceReportScreen = () => {
                                     </View>
                                     <View style={styles.breakdownStats}>
                                         <Text style={styles.breakdownText}>
-                                            Total: {item.total} | Present: {item.present} | Late: {item.late}
+                                            {t('attendance.report.classBreakdown.totalsLine', {
+                                                total: item.total,
+                                                present: item.present,
+                                                late: item.late
+                                            })}
                                         </Text>
                                     </View>
                                     <View style={styles.progressBarBg}>
@@ -344,12 +353,12 @@ export const AttendanceReportScreen = () => {
                     {/* Teacher Check-in History */}
                     {isTeacher && summary?.checkInHistory?.length > 0 && (
                         <Animated.View style={styles.infoSection}>
-                            <Text style={styles.sectionTitle}>Recent Check-ins</Text>
+                            <Text style={styles.sectionTitle}>{t('attendance.report.recentCheckIns')}</Text>
                             {groupLogsByDate(summary.checkInHistory).slice(0, 7).map((day: any, index: number) => {
                                 const dayStatus = getDayStatus(day);
-                                const statusUi = getStatusStyle(dayStatus);
-                                const morningStatusUi = getStatusStyle(day.morning?.status || 'UNKNOWN');
-                                const afternoonStatusUi = getStatusStyle(day.afternoon?.status || 'UNKNOWN');
+                                const statusUi = getStatusStyle(dayStatus, t);
+                                const morningStatusUi = getStatusStyle(day.morning?.status || 'UNKNOWN', t);
+                                const afternoonStatusUi = getStatusStyle(day.afternoon?.status || 'UNKNOWN', t);
 
                                 return (
                                     <View key={day.date || index} style={[styles.infoCard, { marginBottom: 12 }]}>
@@ -359,7 +368,7 @@ export const AttendanceReportScreen = () => {
                                                     <Ionicons name="calendar-outline" size={14} color={statusUi.fg} />
                                                 </View>
                                                 <Text style={styles.dateText}>
-                                                    {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                                    {new Date(day.date).toLocaleDateString(dateLocale, { weekday: 'short', month: 'short', day: 'numeric' })}
                                                 </Text>
                                             </View>
                                             <View style={[styles.statusBadge, { backgroundColor: statusUi.bg, borderColor: `${statusUi.fg}33` }]}>
@@ -376,22 +385,22 @@ export const AttendanceReportScreen = () => {
                                                     <View style={[styles.sessionHeaderIconBadge, styles.sessionHeaderIconMorning]}>
                                                         <Ionicons name="sunny-outline" size={14} color="#D97706" />
                                                     </View>
-                                                    <Text style={styles.sessionBoxTitle}>Morning</Text>
+                                                    <Text style={styles.sessionBoxTitle}>{t('attendance.morning')}</Text>
                                                 </View>
                                                 <View style={styles.timeRow}>
-                                                    <Text style={styles.timeLabelSmall}>In:</Text>
+                                                    <Text style={styles.timeLabelSmall}>{t('attendance.report.session.timeIn')}:</Text>
                                                     <Text style={styles.timeValueSmall}>
-                                                        {day.morning?.timeIn ? new Date(day.morning.timeIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                                        {day.morning?.timeIn ? new Date(day.morning.timeIn).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                                                     </Text>
                                                 </View>
                                                 <View style={styles.timeRow}>
-                                                    <Text style={styles.timeLabelSmall}>Out:</Text>
+                                                    <Text style={styles.timeLabelSmall}>{t('attendance.report.session.timeOut')}:</Text>
                                                     <Text style={styles.timeValueSmall}>
-                                                        {day.morning?.timeOut ? new Date(day.morning.timeOut).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                                        {day.morning?.timeOut ? new Date(day.morning.timeOut).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                                                     </Text>
                                                 </View>
                                                 <View style={styles.sessionStatusRow}>
-                                                    <Text style={styles.sessionStatusLabel}>Status:</Text>
+                                                    <Text style={styles.sessionStatusLabel}>{t('attendance.report.session.status')}:</Text>
                                                     <Text style={[styles.sessionStatusValue, { color: morningStatusUi.fg }]}>
                                                         {morningStatusUi.label.toUpperCase()}
                                                     </Text>
@@ -404,22 +413,22 @@ export const AttendanceReportScreen = () => {
                                                     <View style={[styles.sessionHeaderIconBadge, styles.sessionHeaderIconAfternoon]}>
                                                         <Ionicons name="partly-sunny-outline" size={14} color="#4338CA" />
                                                     </View>
-                                                    <Text style={styles.sessionBoxTitle}>Afternoon</Text>
+                                                    <Text style={styles.sessionBoxTitle}>{t('attendance.afternoon')}</Text>
                                                 </View>
                                                 <View style={styles.timeRow}>
-                                                    <Text style={styles.timeLabelSmall}>In:</Text>
+                                                    <Text style={styles.timeLabelSmall}>{t('attendance.report.session.timeIn')}:</Text>
                                                     <Text style={styles.timeValueSmall}>
-                                                        {day.afternoon?.timeIn ? new Date(day.afternoon.timeIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                                        {day.afternoon?.timeIn ? new Date(day.afternoon.timeIn).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                                                     </Text>
                                                 </View>
                                                 <View style={styles.timeRow}>
-                                                    <Text style={styles.timeLabelSmall}>Out:</Text>
+                                                    <Text style={styles.timeLabelSmall}>{t('attendance.report.session.timeOut')}:</Text>
                                                     <Text style={styles.timeValueSmall}>
-                                                        {day.afternoon?.timeOut ? new Date(day.afternoon.timeOut).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                                                        {day.afternoon?.timeOut ? new Date(day.afternoon.timeOut).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                                                     </Text>
                                                 </View>
                                                 <View style={styles.sessionStatusRow}>
-                                                    <Text style={styles.sessionStatusLabel}>Status:</Text>
+                                                    <Text style={styles.sessionStatusLabel}>{t('attendance.report.session.status')}:</Text>
                                                     <Text style={[styles.sessionStatusValue, { color: afternoonStatusUi.fg }]}>
                                                         {afternoonStatusUi.label.toUpperCase()}
                                                     </Text>
@@ -435,12 +444,12 @@ export const AttendanceReportScreen = () => {
                     {/* Monthly Breakdown / Info */}
                     {!isTeacher && (
                         <Animated.View style={styles.infoSection}>
-                            <Text style={styles.sectionTitle}>Performance Summary</Text>
+                            <Text style={styles.sectionTitle}>{t('attendance.report.performanceSummaryTitle')}</Text>
                             <View style={styles.infoCard}>
                                 <View style={styles.infoRow}>
                                     <Ionicons name="information-circle-outline" size={20} color="#6B7280" />
                                     <Text style={styles.infoText}>
-                                        Your attendance is calculated based on morning and afternoon sessions since the beginning of the semester.
+                                        {t('attendance.report.performanceSummaryDescription')}
                                     </Text>
                                 </View>
                             </View>

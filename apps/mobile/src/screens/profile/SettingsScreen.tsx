@@ -27,10 +27,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-
+import { useTranslation } from 'react-i18next';
 
 import { Avatar } from '@/components/common';
 import { useAuthStore } from '@/stores';
+import { LanguageSelector } from '@/components/LanguageSelector';
 import StunityLogo from '../../../assets/Stunity.svg';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -141,6 +142,10 @@ function SettingRow({ item, index, sectionDelay }: { item: SettingItem; index: n
 export default function SettingsScreen() {
     const navigation = useNavigation<any>();
     const { user, logout } = useAuthStore();
+    const { t, i18n } = useTranslation();
+
+    // Language selector state
+    const [languageSelectorVisible, setLanguageSelectorVisible] = useState(false);
 
     // Toggle states
     const [pushNotifications, setPushNotifications] = useState(true);
@@ -154,18 +159,18 @@ export default function SettingsScreen() {
 
     const handleLogout = useCallback(() => {
         Alert.alert(
-            'Log Out',
+            t('common.logout'),
             'Are you sure you want to log out of your account?',
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: t('common.cancel'), style: 'cancel' },
                 {
-                    text: 'Log Out',
+                    text: t('common.logout'),
                     style: 'destructive',
                     onPress: async () => { await logout(); },
                 },
             ]
         );
-    }, [logout]);
+    }, [logout, t]);
 
     const handleDeleteAccount = useCallback(() => {
         Alert.alert(
@@ -197,7 +202,23 @@ export default function SettingsScreen() {
 
     const sections: SettingSection[] = useMemo(() => [
         {
-            title: 'Account',
+            title: t('common.language'),
+            icon: 'language-outline' as IoniconsName,
+            iconColor: '#00A99D',
+            items: [
+                {
+                    icon: 'globe-outline',
+                    iconColor: '#00A99D',
+                    iconBg: '#F0FFFE',
+                    label: t('common.language'),
+                    sublabel: i18n.language === 'km' ? 'ភាសាខ្មែរ (Khmer)' : 'English',
+                    type: 'action',
+                    onPress: () => setLanguageSelectorVisible(true),
+                },
+            ],
+        },
+        {
+            title: t('settings.account'),
             icon: 'person-circle-outline' as IoniconsName,
             iconColor: '#3B82F6',
             items: [
@@ -205,8 +226,8 @@ export default function SettingsScreen() {
                     icon: 'person-outline',
                     iconColor: '#3B82F6',
                     iconBg: '#EFF6FF',
-                    label: 'Edit Profile',
-                    sublabel: 'Name, bio, photo',
+                    label: t('settings.editProfile'),
+                    sublabel: t('settings.editProfileSub'),
                     type: 'navigate',
                     onPress: () => navigation.navigate('EditProfile'),
                 },
@@ -214,8 +235,8 @@ export default function SettingsScreen() {
                     icon: 'lock-closed-outline',
                     iconColor: '#8B5CF6',
                     iconBg: '#FAF5FF',
-                    label: 'Password & Security',
-                    sublabel: 'Change password, 2FA',
+                    label: t('settings.passwordSecurity'),
+                    sublabel: t('settings.passwordSecuritySub'),
                     type: 'navigate',
                     onPress: () => Alert.alert('Coming Soon', 'Password & Security settings will be available soon.'),
                 },
@@ -223,8 +244,8 @@ export default function SettingsScreen() {
                     icon: 'finger-print-outline',
                     iconColor: '#10B981',
                     iconBg: '#ECFDF5',
-                    label: 'Biometric Login',
-                    sublabel: Platform.OS === 'ios' ? 'Face ID / Touch ID' : 'Fingerprint',
+                    label: t('settings.biometricLogin'),
+                    sublabel: Platform.OS === 'ios' ? t('settings.biometricSubIos') : t('settings.biometricSubAndroid'),
                     type: 'toggle',
                     value: biometrics,
                     onToggle: setBiometrics,
@@ -233,14 +254,14 @@ export default function SettingsScreen() {
                     icon: 'mail-outline',
                     iconColor: '#F97316',
                     iconBg: '#FFF7ED',
-                    label: 'Email Address',
+                    label: t('common.email'),
                     sublabel: user?.email || 'Not set',
                     type: 'info',
                 },
             ],
         },
         {
-            title: 'Privacy',
+            title: t('settings.privacy'),
             icon: 'shield-outline' as IoniconsName,
             iconColor: '#06B6D4',
             items: [
@@ -248,8 +269,8 @@ export default function SettingsScreen() {
                     icon: 'eye-outline',
                     iconColor: '#06B6D4',
                     iconBg: '#ECFEFF',
-                    label: 'Profile Visibility',
-                    sublabel: 'Who can see your profile',
+                    label: t('settings.profileVisibility'),
+                    sublabel: t('settings.profileVisibilitySub'),
                     type: 'toggle',
                     value: profileVisibility,
                     onToggle: setProfileVisibility,
@@ -258,8 +279,8 @@ export default function SettingsScreen() {
                     icon: 'radio-outline',
                     iconColor: '#22C55E',
                     iconBg: '#F0FDF4',
-                    label: 'Online Status',
-                    sublabel: 'Show when you\'re active',
+                    label: t('settings.onlineStatus'),
+                    sublabel: t('settings.onlineStatusSub'),
                     type: 'toggle',
                     value: onlineStatus,
                     onToggle: setOnlineStatus,
@@ -268,7 +289,7 @@ export default function SettingsScreen() {
                     icon: 'shield-checkmark-outline',
                     iconColor: '#6366F1',
                     iconBg: '#EEF2FF',
-                    label: 'Blocked Users',
+                    label: t('settings.blockedUsers'),
                     type: 'navigate',
                     onPress: () => Alert.alert('Coming Soon', 'Blocked users management will be available soon.'),
                 },
@@ -276,14 +297,14 @@ export default function SettingsScreen() {
                     icon: 'document-text-outline',
                     iconColor: '#64748B',
                     iconBg: '#F8FAFC',
-                    label: 'Privacy Policy',
+                    label: t('auth.privacyPolicy'),
                     type: 'navigate',
                     onPress: () => Linking.openURL('https://stunity.com/privacy'),
                 },
             ],
         },
         {
-            title: 'Notifications',
+            title: t('common.notifications'),
             icon: 'notifications-outline' as IoniconsName,
             iconColor: '#EF4444',
             items: [
@@ -291,7 +312,7 @@ export default function SettingsScreen() {
                     icon: 'notifications-outline',
                     iconColor: '#EF4444',
                     iconBg: '#FEF2F2',
-                    label: 'Push Notifications',
+                    label: t('common.notifications') + ' (Push)',
                     sublabel: 'Alerts, messages, updates',
                     type: 'toggle',
                     value: pushNotifications,
@@ -301,7 +322,7 @@ export default function SettingsScreen() {
                     icon: 'mail-unread-outline',
                     iconColor: '#0EA5E9',
                     iconBg: '#F0F9FF',
-                    label: 'Email Notifications',
+                    label: t('common.notifications') + ' (Email)',
                     sublabel: 'Weekly digest, announcements',
                     type: 'toggle',
                     value: emailNotifications,
@@ -310,7 +331,7 @@ export default function SettingsScreen() {
             ],
         },
         {
-            title: 'Appearance',
+            title: t('settings.appearance'),
             icon: 'color-palette-outline' as IoniconsName,
             iconColor: '#6366F1',
             items: [
@@ -318,8 +339,8 @@ export default function SettingsScreen() {
                     icon: 'moon-outline',
                     iconColor: '#6366F1',
                     iconBg: '#EEF2FF',
-                    label: 'Dark Mode',
-                    sublabel: 'Reduce eye strain',
+                    label: t('settings.darkMode'),
+                    sublabel: t('settings.darkModeSub'),
                     type: 'toggle',
                     value: darkMode,
                     onToggle: setDarkMode,
@@ -328,7 +349,7 @@ export default function SettingsScreen() {
                     icon: 'play-circle-outline',
                     iconColor: '#EC4899',
                     iconBg: '#FDF2F8',
-                    label: 'Auto-play Videos',
+                    label: t('settings.autoPlay'),
                     type: 'toggle',
                     value: autoPlay,
                     onToggle: setAutoPlay,
@@ -337,8 +358,8 @@ export default function SettingsScreen() {
                     icon: 'phone-portrait-outline',
                     iconColor: '#F59E0B',
                     iconBg: '#FFFBEB',
-                    label: 'Haptic Feedback',
-                    sublabel: 'Vibration on interactions',
+                    label: t('settings.hapticFeedback'),
+                    sublabel: t('settings.hapticSub'),
                     type: 'toggle',
                     value: hapticFeedback,
                     onToggle: setHapticFeedback,
@@ -346,7 +367,7 @@ export default function SettingsScreen() {
             ],
         },
         {
-            title: 'Learning Profile',
+            title: t('settings.learningProfile'),
             icon: 'school-outline' as IoniconsName,
             iconColor: '#8B5CF6',
             items: [
@@ -354,8 +375,8 @@ export default function SettingsScreen() {
                     icon: 'analytics-outline',
                     iconColor: '#8B5CF6',
                     iconBg: '#F3E8FF',
-                    label: 'Academic Proficiency',
-                    sublabel: 'View level and topics',
+                    label: t('settings.academicProficiency'),
+                    sublabel: t('settings.academicProficiencySub'),
                     type: 'navigate',
                     onPress: () => navigation.navigate('AcademicProfile'),
                 },
@@ -363,15 +384,15 @@ export default function SettingsScreen() {
                     icon: 'calendar-outline',
                     iconColor: '#F59E0B',
                     iconBg: '#FEF3C7',
-                    label: 'Manage Deadlines',
-                    sublabel: 'Set assignment due dates',
+                    label: t('settings.manageDeadlines'),
+                    sublabel: t('settings.manageDeadlinesSub'),
                     type: 'navigate',
                     onPress: () => navigation.navigate('ManageDeadlines'),
                 },
             ],
         },
         {
-            title: 'Support',
+            title: t('settings.support'),
             icon: 'help-buoy-outline' as IoniconsName,
             iconColor: '#10B981',
             items: [
@@ -379,7 +400,7 @@ export default function SettingsScreen() {
                     icon: 'help-circle-outline',
                     iconColor: '#0EA5E9',
                     iconBg: '#F0F9FF',
-                    label: 'Help Center',
+                    label: t('settings.helpCenter'),
                     type: 'navigate',
                     onPress: () => Linking.openURL('https://stunity.com/help'),
                 },
@@ -387,8 +408,8 @@ export default function SettingsScreen() {
                     icon: 'chatbubble-ellipses-outline',
                     iconColor: '#10B981',
                     iconBg: '#ECFDF5',
-                    label: 'Contact Support',
-                    sublabel: 'Get help from our team',
+                    label: t('settings.contactSupport'),
+                    sublabel: t('settings.contactSupportSub'),
                     type: 'navigate',
                     onPress: () => Linking.openURL('mailto:support@stunity.com'),
                 },
@@ -396,7 +417,7 @@ export default function SettingsScreen() {
                     icon: 'star-outline',
                     iconColor: '#F59E0B',
                     iconBg: '#FFFBEB',
-                    label: 'Rate the App',
+                    label: t('settings.rateApp'),
                     type: 'navigate',
                     onPress: () => Alert.alert('Thank You!', 'We appreciate your feedback. ❤️'),
                 },
@@ -404,15 +425,15 @@ export default function SettingsScreen() {
                     icon: 'information-circle-outline',
                     iconColor: '#64748B',
                     iconBg: '#F8FAFC',
-                    label: 'About',
-                    sublabel: 'Version 1.0.0',
+                    label: t('settings.about'),
+                    sublabel: t('settings.aboutSub'),
                     type: 'navigate',
                     onPress: () => Alert.alert('Stunity Enterprise', 'Version 1.0.0\n\n© 2026 Stunity Inc.\nAll rights reserved.'),
                 },
             ],
         },
         {
-            title: 'Danger Zone',
+            title: t('settings.dangerZone'),
             icon: 'warning-outline' as IoniconsName,
             iconColor: '#EF4444',
             items: [
@@ -420,7 +441,7 @@ export default function SettingsScreen() {
                     icon: 'log-out-outline',
                     iconColor: '#EF4444',
                     iconBg: '#FEF2F2',
-                    label: 'Log Out',
+                    label: t('common.logout'),
                     type: 'action',
                     danger: true,
                     onPress: handleLogout,
@@ -429,15 +450,15 @@ export default function SettingsScreen() {
                     icon: 'trash-outline',
                     iconColor: '#DC2626',
                     iconBg: '#FEF2F2',
-                    label: 'Delete Account',
-                    sublabel: 'Permanent action',
+                    label: t('settings.deleteAccount'),
+                    sublabel: t('settings.deleteAccountSub'),
                     type: 'action',
                     danger: true,
                     onPress: handleDeleteAccount,
                 },
             ],
         },
-    ], [biometrics, profileVisibility, onlineStatus, pushNotifications, emailNotifications, darkMode, autoPlay, hapticFeedback, handleLogout, handleDeleteAccount, navigation, user?.email]);
+    ], [biometrics, profileVisibility, onlineStatus, pushNotifications, emailNotifications, darkMode, autoPlay, hapticFeedback, handleLogout, handleDeleteAccount, navigation, user?.email, t, i18n.language]);
 
     // ── Render ─────────────────────────────────────────────────────
 
@@ -526,7 +547,7 @@ export default function SettingsScreen() {
                                 <View style={styles.rolePill}>
                                     <Text style={styles.roleText}>{user?.role?.replace('_', ' ') || 'Student'}</Text>
                                 </View>
-                                <Text style={styles.memberSince}>Member since {memberSince}</Text>
+                                <Text style={styles.memberSince}>{t('settings.memberSince')} {memberSince}</Text>
                             </View>
                         </View>
                     </View>
@@ -551,13 +572,13 @@ export default function SettingsScreen() {
 
                     {/* Actions */}
                     <View style={styles.profileActions}>
-                        <TouchableOpacity
+                         <TouchableOpacity
                             style={styles.profileActionBtn}
                             onPress={handleViewProfile}
                             activeOpacity={0.7}
                         >
                             <Ionicons name="person-outline" size={16} color="#0EA5E9" />
-                            <Text style={styles.profileActionText}>View Profile</Text>
+                            <Text style={styles.profileActionText}>{t('settings.viewProfile')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.profileActionBtn, styles.profileActionBtnPrimary]}
@@ -572,13 +593,13 @@ export default function SettingsScreen() {
             </Animated.View>
 
             {/* ─── Quick Stats Row ──────────────────────────────── */}
-            <Animated.View
+             <Animated.View
                 style={styles.quickStatsRow}
             >
-                <QuickStat icon="bookmark-outline" label="Bookmarks" color="#6366F1" onPress={() => navigation.navigate('Bookmarks')} />
-                <QuickStat icon="document-text-outline" label="My Posts" color="#EC4899" onPress={() => navigation.navigate('MyPosts')} />
-                <QuickStat icon="people-outline" label="Connections" color="#10B981" onPress={() => navigation.navigate('Connections', { type: 'followers' })} />
-                <QuickStat icon="trophy-outline" label="Achievements" color="#F59E0B" onPress={() => Alert.alert('Coming Soon', 'Achievements section will be available soon.')} />
+                <QuickStat icon="bookmark-outline" label={t('settings.bookmarks')} color="#6366F1" onPress={() => navigation.navigate('Bookmarks')} />
+                <QuickStat icon="document-text-outline" label={t('settings.myPosts')} color="#EC4899" onPress={() => navigation.navigate('MyPosts')} />
+                <QuickStat icon="people-outline" label={t('settings.connections')} color="#10B981" onPress={() => navigation.navigate('Connections', { type: 'followers' })} />
+                <QuickStat icon="trophy-outline" label={t('settings.achievements')} color="#F59E0B" onPress={() => Alert.alert('Coming Soon', 'Achievements section will be available soon.')} />
             </Animated.View>
         </>
     ), [user, fullName, memberSince, navigation, handleViewProfile]);
@@ -608,10 +629,15 @@ export default function SettingsScreen() {
                     <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                         <Ionicons name="chevron-back" size={22} color="#1F2937" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Settings</Text>
+                    <Text style={styles.headerTitle}>{t('common.settings')}</Text>
                     <View style={{ width: 40 }} />
                 </SafeAreaView>
             </Animated.View>
+
+            <LanguageSelector 
+                visible={languageSelectorVisible} 
+                onClose={() => setLanguageSelectorVisible(false)} 
+            />
 
             <FlashList
                 data={listData}

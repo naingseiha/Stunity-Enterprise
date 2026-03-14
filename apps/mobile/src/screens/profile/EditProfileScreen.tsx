@@ -23,6 +23,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 import * as ImagePicker from 'expo-image-picker';
 
@@ -50,6 +51,7 @@ interface FormData {
 }
 
 export default function EditProfileScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const { user, updateUser } = useAuthStore();
   const [saving, setSaving] = useState(false);
@@ -149,7 +151,7 @@ export default function EditProfileScreen() {
   const pickProfilePhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Needed', 'Please allow access to your photo library.');
+      Alert.alert(t('profile.permissionNeeded'), t('profile.permissionMessage'));
       return;
     }
 
@@ -172,11 +174,11 @@ export default function EditProfileScreen() {
         const photoUrl = (data as any).profilePictureUrl;
         await updateProfile({ profilePictureUrl: photoUrl } as any);
         updateUser({ profilePictureUrl: photoUrl });
-        Alert.alert('Success', 'Profile photo updated!');
+        Alert.alert(t('common.success'), t('profile.uploadSuccess'));
       } catch (error) {
         console.error('Upload profile photo error:', error);
         setLocalProfilePic(null);
-        Alert.alert('Error', 'Failed to upload profile photo. Please try again.');
+        Alert.alert(t('common.error'), t('profile.uploadErrorMsg'));
       } finally {
         setUploadingPhoto(false);
       }
@@ -186,7 +188,7 @@ export default function EditProfileScreen() {
   const pickCoverPhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Needed', 'Please allow access to your photo library.');
+      Alert.alert(t('profile.permissionNeeded'), t('profile.permissionMessage'));
       return;
     }
 
@@ -209,11 +211,11 @@ export default function EditProfileScreen() {
         const photoUrl = (data as any).coverPhotoUrl;
         await updateProfile({ coverPhotoUrl: photoUrl } as any);
         updateUser({ coverPhotoUrl: photoUrl } as any);
-        Alert.alert('Success', 'Cover photo updated!');
+        Alert.alert(t('common.success'), t('profile.uploadSuccess'));
       } catch (error) {
         console.error('Upload cover photo error:', error);
         setLocalCoverPic(null);
-        Alert.alert('Error', 'Failed to upload cover photo. Please try again.');
+        Alert.alert(t('common.error'), t('profile.coverUploadErrorMsg'));
       } finally {
         setUploadingCover(false);
       }
@@ -256,18 +258,18 @@ export default function EditProfileScreen() {
         interests,
       } as any);
 
-      Alert.alert('Success', 'Profile updated successfully!', [
-        { text: 'OK', onPress: () => navigation.goBack() },
+      Alert.alert(t('common.success'), t('profile.profileUpdated'), [
+        { text: t('common.ok'), onPress: () => navigation.goBack() },
       ]);
     } catch (error: any) {
       console.error('Failed to save profile:', error);
-      Alert.alert('Error', error?.response?.data?.error || 'Failed to save profile. Please try again.');
+      Alert.alert(t('common.error'), error?.response?.data?.error || t('common.error'));
     } finally {
       setSaving(false);
     }
   };
 
-  const fullName = user ? `${user.firstName} ${user.lastName}` : 'User';
+  const fullName = user ? `${user.firstName} ${user.lastName}` : t('common.user');
   const coverUri = localCoverPic || user?.coverPhotoUrl;
   const profileUri = localProfilePic || user?.profilePictureUrl;
 
@@ -283,7 +285,7 @@ export default function EditProfileScreen() {
           <Ionicons name="chevron-back" size={24} color="#1F2937" />
         </TouchableOpacity>
 
-        <Text style={s.headerTitle}>Edit Profile</Text>
+        <Text style={s.headerTitle}>{t('profile.editProfileTitle')}</Text>
 
         <TouchableOpacity onPress={handleSave} disabled={saving}>
           <LinearGradient
@@ -295,7 +297,7 @@ export default function EditProfileScreen() {
             {saving ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={s.saveBtnText}>Save</Text>
+              <Text style={s.saveBtnText}>{t('profile.save')}</Text>
             )}
           </LinearGradient>
         </TouchableOpacity>
@@ -364,14 +366,14 @@ export default function EditProfileScreen() {
 
           {/* ── Name ──────────────────────────────────────── */}
           <Animated.View>
-            <Text style={s.label}>Name</Text>
+            <Text style={s.label}>{t('profile.name')}</Text>
             <View style={s.nameRow}>
               <View style={[s.inputWrap, { flex: 1 }]}>
                 <TextInput
                   style={s.input}
                   value={formData.firstName}
                   onChangeText={(t) => setFormData({ ...formData, firstName: t })}
-                  placeholder="First"
+                  placeholder={t('profile.firstName')}
                   placeholderTextColor="#9CA3AF"
                 />
               </View>
@@ -380,7 +382,7 @@ export default function EditProfileScreen() {
                   style={s.input}
                   value={formData.lastName}
                   onChangeText={(t) => setFormData({ ...formData, lastName: t })}
-                  placeholder="Last"
+                  placeholder={t('profile.lastName')}
                   placeholderTextColor="#9CA3AF"
                 />
               </View>
@@ -390,7 +392,7 @@ export default function EditProfileScreen() {
           {/* ── Headline ──────────────────────────────────── */}
           <Animated.View>
             <View style={s.labelRow}>
-              <Text style={s.label}>Headline</Text>
+              <Text style={s.label}>{t('profile.about.headline')}</Text>
               <Text style={s.charCount}>{formData.headline.length}/100</Text>
             </View>
             <View style={s.inputWrap}>
@@ -398,7 +400,7 @@ export default function EditProfileScreen() {
                 style={s.input}
                 value={formData.headline}
                 onChangeText={(t) => setFormData({ ...formData, headline: t })}
-                placeholder="e.g., Computer Science Student"
+                placeholder={t('profile.headlinePlaceholder')}
                 placeholderTextColor="#9CA3AF"
                 maxLength={100}
               />
@@ -408,7 +410,7 @@ export default function EditProfileScreen() {
           {/* ── Bio ───────────────────────────────────────── */}
           <Animated.View>
             <View style={s.labelRow}>
-              <Text style={s.label}>About</Text>
+              <Text style={s.label}>{t('profile.about.title')}</Text>
               <Text style={s.charCount}>{formData.bio.length}/500</Text>
             </View>
             <View style={[s.inputWrap, { height: 'auto' }]}>
@@ -416,7 +418,7 @@ export default function EditProfileScreen() {
                 style={[s.input, { height: 100, paddingTop: 14 }]}
                 value={formData.bio}
                 onChangeText={(t) => setFormData({ ...formData, bio: t })}
-                placeholder="Write a brief bio about yourself..."
+                placeholder={t('profile.aboutPlaceholder')}
                 placeholderTextColor="#9CA3AF"
                 multiline
                 textAlignVertical="top"
@@ -427,14 +429,14 @@ export default function EditProfileScreen() {
 
           {/* ── Location ──────────────────────────────────── */}
           <Animated.View>
-            <Text style={s.label}>Location</Text>
+            <Text style={s.label}>{t('profile.about.location')}</Text>
             <View style={s.inputWrap}>
               <Ionicons name="location-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
               <TextInput
                 style={s.input}
                 value={formData.location}
                 onChangeText={(t) => setFormData({ ...formData, location: t })}
-                placeholder="e.g., Phnom Penh, Cambodia"
+                placeholder={t('profile.locationPlaceholder')}
                 placeholderTextColor="#9CA3AF"
               />
             </View>
@@ -442,24 +444,24 @@ export default function EditProfileScreen() {
 
           {/* ── Interests ─────────────────────────────────── */}
           <Animated.View>
-            <Text style={s.label}>Interests</Text>
+            <Text style={s.label}>{t('profile.about.interests')}</Text>
             <View style={s.inputWrap}>
               <Ionicons name="pricetag-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
               <TextInput
                 style={s.input}
                 value={formData.interests}
                 onChangeText={(t) => setFormData({ ...formData, interests: t })}
-                placeholder="e.g., Programming, Design, Music"
+                placeholder={t('profile.interestsPlaceholder')}
                 placeholderTextColor="#9CA3AF"
               />
             </View>
-            <Text style={s.hint}>Separate with commas</Text>
+            <Text style={s.hint}>{t('profile.interestsHint')}</Text>
           </Animated.View>
 
           {/* ── Regional Details (Custom Fields) ───────────── */}
           {(user?.role === 'TEACHER' || user?.role === 'STUDENT') && (
             <Animated.View>
-              <Text style={s.label}>Regional Details</Text>
+              <Text style={s.label}>{t('profile.regionalDetails')}</Text>
 
               <View style={s.inputWrap}>
                 <Ionicons name="language-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
@@ -470,7 +472,7 @@ export default function EditProfileScreen() {
                     ...formData,
                     customFields: { ...formData.customFields, khmerName: t }
                   })}
-                  placeholder="Khmer Name (e.g., ឈ្មោះខ្មែរ)"
+                  placeholder={t('profile.khmerNamePlaceholder')}
                   placeholderTextColor="#9CA3AF"
                 />
               </View>
@@ -486,7 +488,7 @@ export default function EditProfileScreen() {
                         ...formData,
                         customFields: { ...formData.customFields, position: t }
                       })}
-                      placeholder="School Position/Title"
+                      placeholder={t('profile.positionPlaceholder')}
                       placeholderTextColor="#9CA3AF"
                     />
                   </View>
@@ -499,7 +501,7 @@ export default function EditProfileScreen() {
                         ...formData,
                         customFields: { ...formData.customFields, degree: t }
                       })}
-                      placeholder="Highest Degree Earned"
+                      placeholder={t('profile.degreePlaceholder')}
                       placeholderTextColor="#9CA3AF"
                     />
                   </View>
@@ -517,7 +519,7 @@ export default function EditProfileScreen() {
                         ...formData,
                         customFields: { ...formData.customFields, parentName: t }
                       })}
-                      placeholder="Parent/Guardian Name"
+                      placeholder={t('profile.parentNamePlaceholder')}
                       placeholderTextColor="#9CA3AF"
                     />
                   </View>
@@ -530,7 +532,7 @@ export default function EditProfileScreen() {
                         ...formData,
                         customFields: { ...formData.customFields, previousSchool: t }
                       })}
-                      placeholder="Previous School"
+                      placeholder={t('profile.previousSchoolPlaceholder')}
                       placeholderTextColor="#9CA3AF"
                     />
                   </View>
@@ -541,12 +543,12 @@ export default function EditProfileScreen() {
 
           {/* ── Social Links ──────────────────────────────── */}
           <Animated.View>
-            <Text style={s.label}>Social Links</Text>
+            <Text style={s.label}>{t('profile.socialLinks')}</Text>
             {([
-              { key: 'github' as const, icon: 'logo-github' as const, color: '#1F2937', placeholder: 'GitHub username' },
-              { key: 'linkedin' as const, icon: 'logo-linkedin' as const, color: '#0A66C2', placeholder: 'LinkedIn username' },
-              { key: 'facebook' as const, icon: 'logo-facebook' as const, color: '#1877F2', placeholder: 'Facebook profile' },
-              { key: 'portfolio' as const, icon: 'globe-outline' as const, color: '#6B7280', placeholder: 'Portfolio URL' },
+              { key: 'github' as const, icon: 'logo-github' as const, color: '#1F2937', placeholder: t('profile.githubPlaceholder') },
+              { key: 'linkedin' as const, icon: 'logo-linkedin' as const, color: '#0A66C2', placeholder: t('profile.linkedinPlaceholder') },
+              { key: 'facebook' as const, icon: 'logo-facebook' as const, color: '#1877F2', placeholder: t('profile.facebookPlaceholder') },
+              { key: 'portfolio' as const, icon: 'globe-outline' as const, color: '#6B7280', placeholder: t('profile.portfolioPlaceholder') },
             ]).map((link) => (
               <View key={link.key} style={s.socialRow}>
                 <View style={s.socialIcon}>

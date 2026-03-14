@@ -80,10 +80,11 @@ const getApiHost = (): string => {
 };
 
 const API_HOST = getApiHost();
+const DEV_AUTH_URL = process.env.EXPO_PUBLIC_AUTH_URL || `http://${API_HOST}:3001`;
 
 const development: EnvironmentConfig = {
   apiBaseUrl: `http://${API_HOST}:3001`,
-  authUrl: 'https://stunity-auth-service-936508661701.us-central1.run.app', // Failover to production for stable testing
+  authUrl: DEV_AUTH_URL,
   feedUrl: `http://${API_HOST}:3010`,
   mediaUrl: `http://${API_HOST}:3010`,
   clubUrl: `http://${API_HOST}:3012`,

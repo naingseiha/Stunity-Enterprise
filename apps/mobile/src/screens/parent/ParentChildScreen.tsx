@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 import { Colors, Typography, Spacing } from '@/config';
 import { useAuthStore } from '@/stores';
@@ -32,6 +33,7 @@ interface Child {
 }
 
 export default function ParentChildScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<{ params: { studentId: string } }, 'params'>>();
   const { user } = useAuthStore();
@@ -68,7 +70,7 @@ export default function ParentChildScreen() {
     return (
       <SafeAreaView style={styles.center}>
         <ActivityIndicator size="large" color="#059669" />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </SafeAreaView>
     );
   }
@@ -90,7 +92,7 @@ export default function ParentChildScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={Colors.gray[700]} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Child Overview</Text>
+        <Text style={styles.headerTitle}>{t('parent.childOverview')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -124,8 +126,8 @@ export default function ParentChildScreen() {
             <View style={[styles.actionIcon, { backgroundColor: '#DBEAFE' }]}>
               <Ionicons name="bar-chart" size={28} color="#2563EB" />
             </View>
-            <Text style={styles.actionTitle}>Grades</Text>
-            <Text style={styles.actionDesc}>View subject grades and averages</Text>
+            <Text style={styles.actionTitle}>{t('parent.actions.gradesTitle')}</Text>
+            <Text style={styles.actionDesc}>{t('parent.actions.gradesDesc')}</Text>
             <Ionicons name="chevron-forward" size={20} color={Colors.gray[400]} style={styles.chevron} />
           </TouchableOpacity>
 
@@ -136,8 +138,8 @@ export default function ParentChildScreen() {
             <View style={[styles.actionIcon, { backgroundColor: '#FEF3C7' }]}>
               <Ionicons name="calendar" size={28} color="#D97706" />
             </View>
-            <Text style={styles.actionTitle}>Attendance</Text>
-            <Text style={styles.actionDesc}>View attendance records</Text>
+            <Text style={styles.actionTitle}>{t('parent.actions.attendanceTitle')}</Text>
+            <Text style={styles.actionDesc}>{t('parent.actions.attendanceDesc')}</Text>
             <Ionicons name="chevron-forward" size={20} color={Colors.gray[400]} style={styles.chevron} />
           </TouchableOpacity>
 
@@ -148,8 +150,8 @@ export default function ParentChildScreen() {
             <View style={[styles.actionIcon, { backgroundColor: '#E9D5FF' }]}>
               <Ionicons name="document-text" size={28} color="#7C3AED" />
             </View>
-            <Text style={styles.actionTitle}>Report Card</Text>
-            <Text style={styles.actionDesc}>View and download report card</Text>
+            <Text style={styles.actionTitle}>{t('parent.actions.reportCardTitle')}</Text>
+            <Text style={styles.actionDesc}>{t('parent.actions.reportCardDesc')}</Text>
             <Ionicons name="chevron-forward" size={20} color={Colors.gray[400]} style={styles.chevron} />
           </TouchableOpacity>
         </View>

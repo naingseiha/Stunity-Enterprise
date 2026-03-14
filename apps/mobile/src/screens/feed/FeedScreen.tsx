@@ -28,6 +28,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle as SvgCircle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 
 
 import StunityLogo from '../../../assets/Stunity.svg';
@@ -55,11 +56,11 @@ import { statsAPI } from '@/services/stats';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Time-based greeting
-const getGreeting = (): string => {
+const getGreeting = (t: any): string => {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (hour < 12) return t('feed.greetingMorning');
+  if (hour < 17) return t('feed.greetingAfternoon');
+  return t('feed.greetingEvening');
 };
 
 type NavigationProp = FeedStackScreenProps<'Feed'>['navigation'];
@@ -72,6 +73,7 @@ interface PerformanceCardProps {
 
 // ─── PerformanceCard ──────────────────────────────────────────────────────────
 const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPress }: PerformanceCardProps) {
+  const { t } = useTranslation();
   const xpToNext = stats.xpToNextLevel || 250;
   const xpProgress = stats.xpProgress || 0;
   const pct = xpToNext > 0 ? Math.min((xpProgress / xpToNext) * 100, 100) : 0;
@@ -141,7 +143,7 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
             </Svg>
             <View style={perfCardStyles.ringInner}>
               <Text style={perfCardStyles.ringValue}>{stats.level}</Text>
-              <Text style={perfCardStyles.ringLabel}>LEVEL</Text>
+              <Text style={perfCardStyles.ringLabel}>{t('feed.level')}</Text>
             </View>
           </View>
 
@@ -151,19 +153,19 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
               <View style={[perfCardStyles.statIcon, { backgroundColor: '#DBEAFE' }]}>
                 <Ionicons name="diamond" size={14} color="#2563EB" />
               </View>
-              <Text style={perfCardStyles.statVal}>{stats.totalPoints.toLocaleString()} <Text style={perfCardStyles.statLbl}>XP</Text></Text>
+              <Text style={perfCardStyles.statVal}>{stats.totalPoints.toLocaleString()} <Text style={perfCardStyles.statLbl}>{t('feed.xp')}</Text></Text>
             </View>
             <View style={perfCardStyles.statRow}>
               <View style={[perfCardStyles.statIcon, { backgroundColor: '#D1FAE5' }]}>
                 <Ionicons name="checkmark-circle" size={14} color="#059669" />
               </View>
-              <Text style={perfCardStyles.statVal}>{stats.completedLessons} <Text style={perfCardStyles.statLbl}>Lessons</Text></Text>
+              <Text style={perfCardStyles.statVal}>{stats.completedLessons} <Text style={perfCardStyles.statLbl}>{t('feed.lessons')}</Text></Text>
             </View>
             <View style={perfCardStyles.statRow}>
               <View style={[perfCardStyles.statIcon, { backgroundColor: '#FFEDD5' }]}>
                 <Ionicons name="flame" size={14} color="#EA580C" />
               </View>
-              <Text style={perfCardStyles.statVal}>{stats.currentStreak} <Text style={perfCardStyles.statLbl}>Day Streak</Text></Text>
+              <Text style={perfCardStyles.statVal}>{stats.currentStreak} <Text style={perfCardStyles.statLbl}>{t('feed.dayStreak')}</Text></Text>
             </View>
           </View>
 
@@ -171,7 +173,7 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
           <View style={perfCardStyles.avatarWrap}>
             <Avatar
               uri={user?.profilePictureUrl}
-              name={user ? `${user.firstName} ${user.lastName}` : 'User'}
+              name={user ? `${user.firstName} ${user.lastName}` : (t('messages.you') || 'User')}
               size="xl"
               gradientBorder="blue"
               showBorder
@@ -184,7 +186,7 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
         <View style={perfCardStyles.barSection}>
           <View style={perfCardStyles.barLabels}>
             <Text style={perfCardStyles.barLeft}>{xpProgress} / {xpToNext} XP</Text>
-            <Text style={perfCardStyles.barRight}>Level {nextLevel}</Text>
+            <Text style={perfCardStyles.barRight}>{t('feed.level')} {nextLevel}</Text>
           </View>
           <View style={perfCardStyles.barBg}>
             <Animated.View style={[perfCardStyles.barFill, { width: barWidthInterpolated }]}>
@@ -231,6 +233,7 @@ const perfCardStyles = StyleSheet.create({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function FeedScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
   const { openSidebar } = useNavigationContext();
@@ -515,11 +518,12 @@ export default function FeedScreen() {
       setValuedPostIds(prev => new Set(prev).add(valuePostId));
 
       // Close modal
+      setValuedPostIds(prev => new Set(prev).add(valuePostId));
       setValuePostId(null);
       setValuePostData(null);
     } catch (error: any) {
       console.error('❌ Failed to submit value:', error);
-      Alert.alert('Error', 'Failed to submit rating. Please try again.');
+      Alert.alert(t('common.error'), t('quiz.takeQuiz.errorSubmitting'));
     } finally {
       setIsValueSubmitting(false);
     }
@@ -586,9 +590,9 @@ export default function FeedScreen() {
       {/* Create Post Card — E-Learning Focused */}
       <View style={styles.createPostCard}>
         <TouchableOpacity onPress={handleCreatePost} activeOpacity={0.8} style={styles.createPostRow}>
-          <Avatar uri={user?.profilePictureUrl} name={user ? `${user.firstName} ${user.lastName}` : 'User'} size="md" variant="post" />
+          <Avatar uri={user?.profilePictureUrl} name={user ? `${user.firstName} ${user.lastName}` : (t('common.profile') || 'User')} size="md" variant="post" />
           <View style={styles.createPostInputFake}>
-            <Text style={styles.createPostPlaceholder}>Share your learning...</Text>
+            <Text style={styles.createPostPlaceholder}>{t('feed.shareLearning')}</Text>
           </View>
           <TouchableOpacity onPress={handleCreatePost} style={styles.createPostMediaButton}>
             <Ionicons name="images-outline" size={20} color="#0284C7" />
@@ -600,19 +604,19 @@ export default function FeedScreen() {
         <View style={styles.quickActionsInCard}>
           <TouchableOpacity onPress={handleAskQuestion} activeOpacity={0.7} style={styles.inCardAction}>
             <LinearGradient colors={['#7DD3FC', '#0EA5E9']} style={[styles.quickActionIcon, { shadowColor: '#0EA5E9' }]}><Ionicons name="help-circle" size={20} color="#fff" /></LinearGradient>
-            <Text style={[styles.inCardActionText, { color: '#0EA5E9' }]}>Ask</Text>
+            <Text style={[styles.inCardActionText, { color: '#0EA5E9' }]}>{t('feed.ask')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreateQuiz} activeOpacity={0.7} style={styles.inCardAction}>
             <LinearGradient colors={['#34D399', '#10B981']} style={[styles.quickActionIcon, { shadowColor: '#10B981' }]}><Ionicons name="bulb" size={20} color="#fff" /></LinearGradient>
-            <Text style={[styles.inCardActionText, { color: '#10B981' }]}>Quiz</Text>
+            <Text style={[styles.inCardActionText, { color: '#10B981' }]}>{t('feed.quiz')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreatePoll} activeOpacity={0.7} style={styles.inCardAction}>
             <LinearGradient colors={['#A78BFA', '#8B5CF6']} style={[styles.quickActionIcon, { shadowColor: '#8B5CF6' }]}><Ionicons name="bar-chart" size={20} color="#fff" /></LinearGradient>
-            <Text style={[styles.inCardActionText, { color: '#8B5CF6' }]}>Poll</Text>
+            <Text style={[styles.inCardActionText, { color: '#8B5CF6' }]}>{t('feed.poll')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreateResource} activeOpacity={0.7} style={styles.inCardAction}>
             <LinearGradient colors={['#F472B6', '#EC4899']} style={[styles.quickActionIcon, { shadowColor: '#EC4899' }]}><Ionicons name="book" size={20} color="#fff" /></LinearGradient>
-            <Text style={[styles.inCardActionText, { color: '#EC4899' }]}>Resource</Text>
+            <Text style={[styles.inCardActionText, { color: '#EC4899' }]}>{t('feed.resource')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -681,9 +685,9 @@ export default function FeedScreen() {
     return (
       <EmptyState
         type="posts"
-        title="No Posts Yet"
-        message="Be the first to share something with the community!"
-        actionLabel="Create Post"
+        title={t('feed.noPosts')}
+        message={t('feed.noPostsMessage')}
+        actionLabel={t('auth.createAccount')} // re-using create post/account label
         onAction={handleCreatePost}
       />
     );
@@ -765,8 +769,8 @@ export default function FeedScreen() {
             <Ionicons name="arrow-up" size={16} color="#fff" />
             <Text style={styles.newPostsText}>
               {pendingPosts.length === 1
-                ? '1 New Post'
-                : `${pendingPosts.length} New Posts`}
+                ? t('feed.newPost')
+                : t('feed.newPosts', { count: pendingPosts.length })}
             </Text>
           </TouchableOpacity>
         </Animated.View>
@@ -832,7 +836,7 @@ export default function FeedScreen() {
         onSubmit={handleSubmitValue}
         isSubmitting={isValueSubmitting}
         postType={valuePostData?.postType || 'POST'}
-        authorName={valuePostData?.authorName || 'Unknown'}
+        authorName={valuePostData?.authorName || t('common.unknown') || 'Unknown'}
       />
 
     </View>

@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { ImageCarousel } from '@/components/common';
 import { PollVoting } from './PollVoting';
 import { ClubAnnouncement, DeadlineBanner, QuizSection } from './PostCardSections';
@@ -33,6 +34,7 @@ const PostContent = ({
   deadlineInfo,
   DIFFICULTY_CONFIG,
 }: PostContentProps) => {
+  const { t } = useTranslation();
 
   const isQuestion = post.postType === 'QUESTION';
   const showProgress = (post.postType === 'COURSE' || post.postType === 'QUIZ') && learningMeta?.progress !== undefined;
@@ -114,7 +116,7 @@ const PostContent = ({
             )}
             <View style={{ flex: 1 }}>
               <Text style={styles.repostEmbedAuthor} numberOfLines={1}>
-                {post.repostOf.author ? `${post.repostOf.author.firstName} ${post.repostOf.author.lastName}` : 'Unknown'}
+                {post.repostOf.author ? `${post.repostOf.author.firstName} ${post.repostOf.author.lastName}` : t('common.unknown')}
               </Text>
               <Text style={styles.repostEmbedTime}>{formatRelativeTime(post.repostOf.createdAt)}</Text>
             </View>
@@ -188,16 +190,18 @@ const PostContent = ({
                 size={16}
                 color={learningMeta?.isAnswered ? '#10B981' : '#0EA5E9'}
               />
-              <Text style={[styles.qaBadgeText, learningMeta?.isAnswered && styles.qaBadgeTextAnswered]}>
-                {learningMeta?.isAnswered ? 'Answered' : 'Awaiting Answer'}
-              </Text>
+                <Text style={[styles.qaBadgeText, learningMeta?.isAnswered && styles.qaBadgeTextAnswered]}>
+                  {learningMeta?.isAnswered ? t('feed.answered') : t('feed.awaitingAnswer')}
+                </Text>
             </View>
 
             {/* Bounty Badge */}
             {post.questionBounty ? (
               <View style={styles.bountyBadge}>
                 <Ionicons name="diamond" size={14} color="#8B5CF6" />
-                <Text style={styles.bountyBadgeText}>{post.questionBounty} Bounty</Text>
+                <Text style={styles.bountyBadgeText}>
+                  {post.questionBounty} {t('feed.bounty')}
+                </Text>
               </View>
             ) : null}
           </View>
@@ -205,7 +209,7 @@ const PostContent = ({
           <View style={styles.answerCount}>
             <Ionicons name="chatbubbles-outline" size={14} color="#6B7280" />
             <Text style={styles.answerCountText}>
-              {learningMeta?.answerCount || 0} {(learningMeta?.answerCount || 0) === 1 ? 'answer' : 'answers'}
+              {t('feed.answerCount', { count: learningMeta?.answerCount || 0 })}
             </Text>
           </View>
         </View>
@@ -215,7 +219,7 @@ const PostContent = ({
       {showProgress && (
         <View style={styles.progressSection}>
           <View style={styles.progressHeader}>
-            <Text style={styles.progressLabel}>Progress</Text>
+            <Text style={styles.progressLabel}>{t('feed.progress')}</Text>
             <Text style={styles.progressPercent}>{learningMeta?.progress || 0}%</Text>
           </View>
           <View style={styles.progressBarBg}>
@@ -225,7 +229,7 @@ const PostContent = ({
           </View>
           {learningMeta?.completedSteps !== undefined && learningMeta?.totalSteps && (
             <Text style={styles.progressSteps}>
-              {learningMeta.completedSteps}/{learningMeta.totalSteps} steps completed
+              {t('feed.stepsCompleted', { completed: learningMeta.completedSteps, total: learningMeta.totalSteps })}
             </Text>
           )}
         </View>
@@ -269,7 +273,7 @@ const PostContent = ({
         {post._scoreBreakdown?.academicRelevance > 0.5 && (
           <View style={[styles.difficultyBadge, { backgroundColor: '#F0FDF4' }]}>
             <Ionicons name="school" size={12} color="#16A34A" />
-            <Text style={[styles.difficultyText, { color: '#16A34A' }]}>Academic Match</Text>
+            <Text style={[styles.difficultyText, { color: '#16A34A' }]}>{t('feed.academicMatch')}</Text>
           </View>
         )}
 

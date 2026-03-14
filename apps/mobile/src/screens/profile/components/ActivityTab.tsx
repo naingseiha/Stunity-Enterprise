@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import type { UserStats } from '@/types';
 import type { QuizAttempt, UserAchievement, Streak } from '@/services/stats';
@@ -75,8 +76,10 @@ function ContributionGrid({ streak, recentAttempts }: { streak: Streak | null; r
     return (
         <View style={gridStyles.container}>
             <View style={gridStyles.header}>
-                <Text style={gridStyles.title}>Contributions</Text>
-                <Text style={gridStyles.subtitle}>{totalActive} active day{totalActive !== 1 ? 's' : ''}</Text>
+                <Text style={gridStyles.title}>{useTranslation().t('profile.activity.contributions')}</Text>
+                <Text style={gridStyles.subtitle}>
+                    {totalActive === 1 ? useTranslation().t('profile.activity.activeDay', { count: totalActive }) : useTranslation().t('profile.activity.activeDays', { count: totalActive })}
+                </Text>
             </View>
             <View style={gridStyles.grid}>
                 {cells.map((cell, i) => (
@@ -95,11 +98,11 @@ function ContributionGrid({ streak, recentAttempts }: { streak: Streak | null; r
                 ))}
             </View>
             <View style={gridStyles.legend}>
-                <Text style={gridStyles.legendText}>Less</Text>
+                <Text style={gridStyles.legendText}>{useTranslation().t('profile.activity.less')}</Text>
                 {[0, 1, 2, 3].map(i => (
                     <View key={i} style={[gridStyles.legendCell, { backgroundColor: getColor(i) }]} />
                 ))}
-                <Text style={gridStyles.legendText}>More</Text>
+                <Text style={gridStyles.legendText}>{useTranslation().t('profile.activity.more')}</Text>
             </View>
         </View>
     );
@@ -134,7 +137,7 @@ interface TimelineItem {
     time: string;
 }
 
-function formatRelativeTime(dateStr: string): string {
+function formatRelativeTime(dateStr: string, t: any): string {
     const now = new Date();
     const date = new Date(dateStr);
     const diffMs = now.getTime() - date.getTime();
@@ -142,16 +145,16 @@ function formatRelativeTime(dateStr: string): string {
     const diffH = Math.floor(diffMs / 3600000);
     const diffD = Math.floor(diffMs / 86400000);
 
-    if (diffM < 1) return 'Just now';
-    if (diffM < 60) return `${diffM}m ago`;
-    if (diffH < 24) return `${diffH}h ago`;
-    if (diffD === 1) return 'Yesterday';
-    if (diffD < 7) return `${diffD} days ago`;
-    if (diffD < 30) return `${Math.floor(diffD / 7)}w ago`;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (diffM < 1) return t('profile.activity.justNow');
+    if (diffM < 60) return t('profile.activity.minutesAgo', { count: diffM });
+    if (diffH < 24) return t('profile.activity.hoursAgo', { count: diffH });
+    if (diffD === 1) return t('profile.activity.yesterday');
+    if (diffD < 7) return t('profile.activity.daysAgo', { count: diffD });
+    if (diffD < 30) return t('profile.activity.weeksAgo', { count: Math.floor(diffD / 7) });
+    return date.toLocaleDateString();
 }
 
-function buildTimeline(attempts: QuizAttempt[], achievements: UserAchievement[]): TimelineItem[] {
+function buildTimeline(attempts: QuizAttempt[], achievements: UserAchievement[], t: any): TimelineItem[] {
     const items: (TimelineItem & { sortDate: string })[] = [];
 
     // Add quiz attempts
@@ -160,9 +163,9 @@ function buildTimeline(attempts: QuizAttempt[], achievements: UserAchievement[])
         items.push({
             icon: 'checkmark-circle',
             color: scorePercent >= 80 ? '#10B981' : scorePercent >= 50 ? '#F59E0B' : '#EF4444',
-            title: 'Completed quiz',
-            subtitle: `Score: ${scorePercent}% · ${attempt.xpEarned || 0} XP earned`,
-            time: formatRelativeTime(attempt.createdAt),
+            title: t('profile.activity.completedQuiz'),
+            subtitle: t('profile.activity.quizActivitySub', { score: scorePercent, xp: attempt.xpEarned || 0 }),
+            time: formatRelativeTime(attempt.createdAt, t),
             sortDate: attempt.createdAt,
         });
     }
@@ -172,9 +175,9 @@ function buildTimeline(attempts: QuizAttempt[], achievements: UserAchievement[])
         items.push({
             icon: 'trophy',
             color: '#F59E0B',
-            title: 'Achievement unlocked',
-            subtitle: ua.achievement?.name || 'New badge earned',
-            time: formatRelativeTime(ua.unlockedAt),
+            title: t('profile.activity.achievementUnlocked'),
+            subtitle: ua.achievement?.name || t('profile.activity.newBadgeEarned'),
+            time: formatRelativeTime(ua.unlockedAt, t),
             sortDate: ua.unlockedAt,
         });
     }
@@ -186,6 +189,7 @@ function buildTimeline(attempts: QuizAttempt[], achievements: UserAchievement[])
 }
 
 function ActivityTimeline({ items }: { items: TimelineItem[] }) {
+    const { t } = useTranslation();
     if (items.length === 0) {
         return (
             <View style={timelineStyles.container}>
@@ -193,12 +197,12 @@ function ActivityTimeline({ items }: { items: TimelineItem[] }) {
                     <View style={[timelineStyles.headerIcon, { backgroundColor: '#FFF7ED' }]}>
                         <Ionicons name="time" size={18} color="#F97316" />
                     </View>
-                    <Text style={timelineStyles.title}>Recent Activity</Text>
+                    <Text style={timelineStyles.title}>{t('profile.activity.recentActivity')}</Text>
                 </View>
                 <View style={timelineStyles.empty}>
                     <Ionicons name="hourglass-outline" size={36} color="#E5E7EB" />
-                    <Text style={timelineStyles.emptyText}>No recent activity yet</Text>
-                    <Text style={timelineStyles.emptyHint}>Take a quiz or complete a course to see activity here</Text>
+                    <Text style={timelineStyles.emptyText}>{t('profile.activity.noActivity')}</Text>
+                    <Text style={timelineStyles.emptyHint}>{t('profile.activity.activityHint')}</Text>
                 </View>
             </View>
         );
@@ -210,7 +214,7 @@ function ActivityTimeline({ items }: { items: TimelineItem[] }) {
                 <View style={[timelineStyles.headerIcon, { backgroundColor: '#FFF7ED' }]}>
                     <Ionicons name="time" size={18} color="#F97316" />
                 </View>
-                <Text style={timelineStyles.title}>Recent Activity</Text>
+                <Text style={timelineStyles.title}>{t('profile.activity.recentActivity')}</Text>
             </View>
 
             {items.map((item, i) => (
@@ -259,14 +263,15 @@ const timelineStyles = StyleSheet.create({
 
 // ── Engagement Stats ─────────────────────────────────────────────
 
-const ENGAGEMENT_ITEMS = [
-    { icon: 'heart', color: '#F43F5E', bg: '#FFF1F2', label: 'Total Likes' },
-    { icon: 'eye', color: '#06B6D4', bg: '#ECFEFF', label: 'Total Views' },
-    { icon: 'document-text', color: '#8B5CF6', bg: '#FAF5FF', label: 'Posts' },
-    { icon: 'people', color: '#10B981', bg: '#ECFDF5', label: 'Followers' },
+const ENGAGEMENT_ITEMS = (t: any) => [
+    { icon: 'heart', color: '#F43F5E', bg: '#FFF1F2', label: t('profile.activity.totalLikes') },
+    { icon: 'eye', color: '#06B6D4', bg: '#ECFEFF', label: t('profile.activity.totalViews') },
+    { icon: 'document-text', color: '#8B5CF6', bg: '#FAF5FF', label: t('profile.posts') },
+    { icon: 'people', color: '#10B981', bg: '#ECFDF5', label: t('profile.stats.followers') },
 ];
 
 function EngagementGrid({ stats, posts, followers }: { stats: UserStats | null; posts: number; followers: number }) {
+    const { t } = useTranslation();
     const values = [
         stats?.totalLikes ?? 0,
         stats?.totalViews ?? 0,
@@ -280,10 +285,10 @@ function EngagementGrid({ stats, posts, followers }: { stats: UserStats | null; 
                 <View style={[engStyles.headerIcon, { backgroundColor: '#ECFDF5' }]}>
                     <Ionicons name="pulse" size={18} color="#10B981" />
                 </View>
-                <Text style={engStyles.title}>Engagement</Text>
+                <Text style={engStyles.title}>{t('profile.activity.engagement')}</Text>
             </View>
             <View style={engStyles.grid}>
-                {ENGAGEMENT_ITEMS.map((item, i) => (
+                {ENGAGEMENT_ITEMS(t).map((item: any, i: number) => (
                     <View key={i} style={engStyles.item}>
                         <View style={[engStyles.itemIcon, { backgroundColor: item.bg }]}>
                             <Ionicons name={item.icon as any} size={18} color={item.color} />
@@ -325,7 +330,8 @@ const engStyles = StyleSheet.create({
 // ── Main Activity Tab ────────────────────────────────────────────
 
 export default function ActivityTab({ stats, posts, followers, recentAttempts, achievements, streak }: ActivityTabProps) {
-    const timelineItems = buildTimeline(recentAttempts, achievements);
+    const { t } = useTranslation();
+    const timelineItems = buildTimeline(recentAttempts, achievements, t);
 
     return (
         <View style={s.container}>

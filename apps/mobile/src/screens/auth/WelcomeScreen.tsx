@@ -14,7 +14,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 
+import { LanguageSelector } from '../../components/LanguageSelector';
 import StunityLogo from '../../../assets/Stunity.svg';
 import { AuthStackScreenProps } from '@/navigation/types';
 
@@ -57,6 +59,8 @@ const WavyDivider = () => (
 
 export default function WelcomeScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t, i18n } = useTranslation();
+  const [showLanguageSelector, setShowLanguageSelector] = React.useState(false);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -115,6 +119,24 @@ export default function WelcomeScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
+      {/* Language Switch */}
+      <SafeAreaView style={styles.languageSwitchContainer}>
+        <TouchableOpacity 
+          style={styles.languageSwitch} 
+          onPress={() => setShowLanguageSelector(true)}
+        >
+          <Text style={styles.languageSwitchText}>
+            {i18n.language === 'km' ? '🇰🇭 ភាសាខ្មែរ' : '🇺🇸 English'}
+          </Text>
+          <Ionicons name="chevron-down" size={14} color="#64748B" />
+        </TouchableOpacity>
+      </SafeAreaView>
+
+      <LanguageSelector 
+        visible={showLanguageSelector} 
+        onClose={() => setShowLanguageSelector(false)} 
+      />
+
       {/* Top Section - Premium Teal Header */}
       <View style={styles.headerSection}>
         <LinearGradient
@@ -155,15 +177,15 @@ export default function WelcomeScreen() {
           ]}
         >
           <View style={styles.introContainer}>
-            <Text style={styles.introTitle}>Excellence in Education</Text>
+            <Text style={styles.introTitle}>{t('common.welcome')}</Text>
             <Text style={styles.introSubtitle}>
-              Connecting students, teachers, and parents in one seamless enterprise platform.
+              Excellence in Education. Connecting students, teachers, and parents in one seamless enterprise platform.
             </Text>
           </View>
 
           <PremiumButton
             primary
-            label="Create Account"
+            label={t('common.signup')}
             icon="person-add-outline"
             onPress={() => navigation.navigate('Register')}
           />
@@ -171,14 +193,14 @@ export default function WelcomeScreen() {
           <View style={styles.spacing} />
 
           <PremiumButton
-            label="Sign In"
+            label={t('common.login')}
             icon="shield-checkmark-outline"
             onPress={() => navigation.navigate('Login')}
           />
 
           <View style={styles.dividerContainer}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>FOR PARENTS</Text>
+            <Text style={styles.dividerText}>{t('auth.forParents')}</Text>
             <View style={styles.dividerLine} />
           </View>
 
@@ -195,7 +217,7 @@ export default function WelcomeScreen() {
                 <Ionicons name="school" size={20} color={BRAND_YELLOW} />
               </View>
               <View style={styles.portalTextContainer}>
-                <Text style={styles.portalText}>Parent Portal Access</Text>
+                <Text style={styles.portalText}>{t('auth.parentPortal')}</Text>
               </View>
               <View style={styles.portalArrowContainer}>
                 <Ionicons name="chevron-forward" size={18} color={BRAND_YELLOW} />
@@ -207,9 +229,9 @@ export default function WelcomeScreen() {
         {/* Minimalist Footer */}
         <Animated.View style={[styles.footer, { opacity: fadeAnim }]}>
           <View style={styles.legalLinks}>
-            <TouchableOpacity><Text style={styles.legalText}>Terms of Service</Text></TouchableOpacity>
+            <TouchableOpacity><Text style={styles.legalText}>{t('auth.termsOfService')}</Text></TouchableOpacity>
             <View style={styles.legalDot} />
-            <TouchableOpacity><Text style={styles.legalText}>Privacy Policy</Text></TouchableOpacity>
+            <TouchableOpacity><Text style={styles.legalText}>{t('auth.privacyPolicy')}</Text></TouchableOpacity>
           </View>
         </Animated.View>
       </View>
@@ -221,6 +243,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  languageSwitchContainer: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 0 : 40,
+    right: 20,
+    zIndex: 10,
+  },
+  languageSwitch: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 4,
+  },
+  languageSwitchText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#64748B',
   },
 
   // Header Section

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
@@ -14,6 +14,7 @@ import {
     TextInput
     , Animated
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
@@ -33,7 +34,8 @@ const BRAND_YELLOW = '#FFA600';
 const BRAND_YELLOW_DARK = '#FF8C00';
 
 const WeeklyStrip = () => {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const { t } = useTranslation();
+    const days = [t('attendance.days.mon'), t('attendance.days.tue'), t('attendance.days.wed'), t('attendance.days.thu'), t('attendance.days.fri'), t('attendance.days.sat'), t('attendance.days.sun')];
     const today = new Date().getDay();
     const currentDayIdx = today === 0 ? 6 : today - 1;
 
@@ -83,6 +85,7 @@ const SessionCard = ({
     processing: boolean;
     isCurrent: boolean;
 }) => {
+    const { t } = useTranslation();
     const isPermission = data?.status === 'PERMISSION';
     const isCheckedIn = !!data?.timeIn;
     const isCheckedOut = !!data?.timeOut;
@@ -110,7 +113,9 @@ const SessionCard = ({
                     />
                 </View>
                 <View style={{ flex: 1, marginLeft: 16 }}>
-                    <Text style={[styles.sessionTitle, isCurrent && { color: BRAND_TEAL }]}>{session}</Text>
+                    <Text style={[styles.sessionTitle, isCurrent && { color: BRAND_TEAL }]}>
+                        {session === 'MORNING' ? t('attendance.morning') : t('attendance.afternoon')}
+                    </Text>
                     <Text style={styles.sessionTimeWindow}>
                         {session === 'MORNING' ? '07:00 AM - 12:00 PM' : '12:00 PM - 06:00 PM'}
                     </Text>
@@ -118,39 +123,39 @@ const SessionCard = ({
                 {isPermission ? (
                     <View style={styles.permissionBadge}>
                         <Ionicons name="document-text-outline" size={14} color="#7C3AED" />
-                        <Text style={styles.permissionBadgeText}>PERMISSION</Text>
+                        <Text style={styles.permissionBadgeText}>{t('attendance.permission')}</Text>
                     </View>
                 ) : isCheckedOut ? (
                     <View style={styles.completedBadge}>
                         <Ionicons name="checkmark-circle" size={14} color="#10B981" />
-                        <Text style={styles.completedBadgeText}>DONE</Text>
+                        <Text style={styles.completedBadgeText}>{t('attendance.done')}</Text>
                     </View>
                 ) : isCurrent && (
                     <View style={styles.currentBadge}>
-                        <Text style={styles.currentBadgeText}>ACTIVE</Text>
+                        <Text style={styles.currentBadgeText}>{t('attendance.active')}</Text>
                     </View>
                 )}
             </View>
 
             <View style={styles.timeInfoRow}>
                 <View style={styles.timeBox}>
-                    <Text style={styles.timeLabel}>{isPermission ? 'REQUESTED AT' : 'CHECK IN'}</Text>
+                    <Text style={styles.timeLabel}>{isPermission ? t('attendance.requestedAt') : t('attendance.checkIn')}</Text>
                     <Text style={[styles.timeValue, isCheckedIn && styles.activeTimeValue]}>
                         {data?.timeIn ? new Date(data.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                     </Text>
                 </View>
                 <View style={styles.timeSeparator} />
                 <View style={styles.timeBox}>
-                    <Text style={styles.timeLabel}>{isPermission ? 'MODE' : 'CHECK OUT'}</Text>
+                    <Text style={styles.timeLabel}>{isPermission ? t('attendance.mode') : t('attendance.checkOut')}</Text>
                     <Text style={[styles.timeValue, (isCheckedOut || isPermission) && styles.activeTimeValue]}>
-                        {isPermission ? 'ONLINE' : (data?.timeOut ? new Date(data.timeOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--')}
+                        {isPermission ? t('attendance.online') : (data?.timeOut ? new Date(data.timeOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--')}
                     </Text>
                 </View>
             </View>
 
             {isPermission && (
                 <Text style={styles.permissionNote}>
-                    Permission requested online. GPS verification is not required for this session.
+                    {t('attendance.permissionNote')}
                 </Text>
             )}
 
@@ -177,7 +182,7 @@ const SessionCard = ({
                             <>
                                 <Ionicons name={isOnDuty ? "log-out-outline" : "finger-print"} size={22} color="#fff" />
                                 <Text style={styles.sessionBtnText}>
-                                    {isOnDuty ? 'Finish Session' : `Start ${session}`}
+                                    {isOnDuty ? t('attendance.finishSession') : (session === 'MORNING' ? t('attendance.startMorning') : t('attendance.startAfternoon'))}
                                 </Text>
                             </>
                         )}
@@ -189,6 +194,7 @@ const SessionCard = ({
 };
 
 export const AttendanceCheckInScreen = () => {
+    const { t, i18n } = useTranslation();
     const navigation = useNavigation();
     const { user } = useAuthStore();
     const isLinkedToSchool = !!user?.schoolId;
@@ -197,11 +203,23 @@ export const AttendanceCheckInScreen = () => {
     const [processingSession, setProcessingSession] = useState<'MORNING' | 'AFTERNOON' | null>(null);
     const [status, setStatus] = useState<any>(null);
     const [locationPermGranted, setLocationPermGranted] = useState(false);
-    const [gpsText, setGpsText] = useState('Initializing GPS...');
+    const [gpsStatus, setGpsStatus] = useState<'initializing' | 'locating' | 'ready' | 'limited' | 'denied' | 'updating' | 'verifying' | 'verified' | 'failed'>('initializing');
+    const [gpsCoords, setGpsCoords] = useState<{ latitude: number; longitude: number } | null>(null);
     const [permissionModalVisible, setPermissionModalVisible] = useState(false);
     const [permissionSession, setPermissionSession] = useState<'MORNING' | 'AFTERNOON'>('MORNING');
     const [permissionReason, setPermissionReason] = useState('');
     const [permissionProcessingSession, setPermissionProcessingSession] = useState<'MORNING' | 'AFTERNOON' | null>(null);
+
+    const gpsText = useMemo(() => {
+        if (gpsStatus === 'ready' && gpsCoords) {
+            return `${t('attendance.gps.ready')} (${gpsCoords.latitude.toFixed(4)}, ${gpsCoords.longitude.toFixed(4)})`;
+        }
+        return t(`attendance.gps.${gpsStatus}`);
+    }, [gpsStatus, gpsCoords, t]);
+
+    const getSessionLabel = useCallback((session: 'MORNING' | 'AFTERNOON') => {
+        return session === 'MORNING' ? t('attendance.morning') : t('attendance.afternoon');
+    }, [t]);
 
     const fetchTodayStatus = useCallback(async () => {
         try {
@@ -237,10 +255,11 @@ export const AttendanceCheckInScreen = () => {
     const fetchLocationAsync = async (isManualRefresh = false) => {
         try {
             if (isManualRefresh) {
-                setGpsText('Updating GPS...');
+                setGpsStatus('updating');
             } else {
-                setGpsText('Locating...');
+                setGpsStatus('locating');
             }
+            setGpsCoords(null);
 
             const hasPerm = await checkPermissions();
             if (hasPerm) {
@@ -276,24 +295,31 @@ export const AttendanceCheckInScreen = () => {
                 }
 
                 if (loc) {
-                    setGpsText(`Ready (${loc.coords.latitude.toFixed(4)}, ${loc.coords.longitude.toFixed(4)})`);
+                    setGpsCoords({
+                        latitude: loc.coords.latitude,
+                        longitude: loc.coords.longitude
+                    });
+                    setGpsStatus('ready');
                 } else {
-                    setGpsText('GPS Limited');
+                    setGpsCoords(null);
+                    setGpsStatus('limited');
                 }
             } else {
-                setGpsText('Location Access Denied');
+                setGpsCoords(null);
+                setGpsStatus('denied');
                 if (isManualRefresh) {
                     Alert.alert(
-                        'Permission Required',
-                        'Please enable location services in your device settings to check in.',
-                        [{ text: 'OK' }]
+                        t('common.error'),
+                        t('attendance.alerts.enableLocationMessage'),
+                        [{ text: t('common.ok') }]
                     );
                 }
             }
         } catch (e: any) {
-            setGpsText('GPS Limited');
+            setGpsCoords(null);
+            setGpsStatus('limited');
             if (isManualRefresh) {
-                Alert.alert('GPS Error', 'Could not fetch your current location. Please check your signal and try again.');
+                Alert.alert(t('common.error'), t('attendance.alerts.locationFetchFailedMessage'));
             }
         }
     };
@@ -324,15 +350,16 @@ export const AttendanceCheckInScreen = () => {
     const handleAttendance = async (type: 'in' | 'out', session: 'MORNING' | 'AFTERNOON') => {
         if (!locationPermGranted) {
             Alert.alert(
-                'Permission Required',
-                'Your location is required to verify attendance. Please tap the GPS banner or go to your settings to enable it.'
+                t('attendance.alerts.permissionRequiredTitle'),
+                t('attendance.alerts.permissionRequiredMessage')
             );
             return;
         }
 
         try {
             setProcessingSession(session);
-            setGpsText('Verifying location...');
+            setGpsCoords(null);
+            setGpsStatus('verifying');
 
             const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
             const payload = { latitude: location.coords.latitude, longitude: location.coords.longitude };
@@ -340,19 +367,28 @@ export const AttendanceCheckInScreen = () => {
             if (type === 'in') {
                 await attendanceService.checkIn(payload, session);
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                Alert.alert('Success', `Successfully checked in for ${session} session.`);
+                Alert.alert(
+                    t('common.success'),
+                    t('attendance.alerts.checkInSuccessMessage', { session: getSessionLabel(session) })
+                );
             } else {
                 await attendanceService.checkOut(payload, session);
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                Alert.alert('Success', `Successfully checked out of ${session} session.`);
+                Alert.alert(
+                    t('common.success'),
+                    t('attendance.alerts.checkOutSuccessMessage', { session: getSessionLabel(session) })
+                );
             }
 
             await fetchTodayStatus();
-            setGpsText('Location verified');
+            setGpsStatus('verified');
         } catch (error: any) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            Alert.alert('Attendance Failed', error.message || 'An error occurred during verification.');
-            setGpsText('Verification failed');
+            Alert.alert(
+                t('attendance.alerts.attendanceFailedTitle'),
+                error.message || t('attendance.alerts.attendanceFailedFallback')
+            );
+            setGpsStatus('failed');
         } finally {
             setProcessingSession(null);
         }
@@ -360,7 +396,10 @@ export const AttendanceCheckInScreen = () => {
 
     const openPermissionRequest = (session: 'MORNING' | 'AFTERNOON') => {
         if (status?.[session]) {
-            Alert.alert('Already Recorded', `${session} session already has attendance recorded today.`);
+            Alert.alert(
+                t('attendance.alerts.alreadyRecordedTitle'),
+                t('attendance.alerts.alreadyRecordedMessage', { session: getSessionLabel(session) })
+            );
             return;
         }
 
@@ -372,7 +411,10 @@ export const AttendanceCheckInScreen = () => {
     const submitPermissionRequest = async () => {
         const trimmedReason = permissionReason.trim();
         if (!trimmedReason) {
-            Alert.alert('Reason Required', 'Please enter a short reason for your permission request.');
+            Alert.alert(
+                t('attendance.alerts.reasonRequiredTitle'),
+                t('attendance.alerts.reasonRequiredMessage')
+            );
             return;
         }
 
@@ -382,11 +424,17 @@ export const AttendanceCheckInScreen = () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             setPermissionModalVisible(false);
             setPermissionReason('');
-            Alert.alert('Request Submitted', `${permissionSession} permission request was submitted successfully.`);
+            Alert.alert(
+                t('attendance.alerts.requestSubmittedTitle'),
+                t('attendance.alerts.requestSubmittedMessage', { session: getSessionLabel(permissionSession) })
+            );
             await fetchTodayStatus();
         } catch (error: any) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            Alert.alert('Request Failed', error.message || 'Could not submit permission request.');
+            Alert.alert(
+                t('attendance.alerts.requestFailedTitle'),
+                error.message || t('attendance.alerts.requestFailedFallback')
+            );
         } finally {
             setPermissionProcessingSession(null);
         }
@@ -397,7 +445,7 @@ export const AttendanceCheckInScreen = () => {
             <View style={styles.centerContainer}>
                 <View style={[StyleSheet.absoluteFill, { backgroundColor: '#F8FAFC' }]} />
                 <ActivityIndicator size="large" color="#0EA5E9" />
-                <Text style={[styles.loadingText, { color: '#0EA5E9' }]}>Syncing with enterprise server...</Text>
+                <Text style={[styles.loadingText, { color: '#0EA5E9' }]}>{t('attendance.syncing')}</Text>
             </View>
         );
     }
@@ -411,16 +459,16 @@ export const AttendanceCheckInScreen = () => {
                         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                             <Ionicons name="chevron-back" size={20} color="#1F2937" />
                         </TouchableOpacity>
-                        <Text style={styles.headerTitle}>ATTENDANCE</Text>
+                        <Text style={styles.headerTitle}>{t('attendance.title')}</Text>
                         <View style={{ width: 44 }} />
                     </View>
                     <View style={[styles.centerContainer, { paddingHorizontal: 30 }]}>
                         <View style={styles.sessionIconBg}>
                             <Ionicons name="business-outline" size={64} color="#9CA3AF" />
                         </View>
-                        <Text style={[styles.dateDisplay, { marginTop: 20, textAlign: 'center', color: '#1F2937' }]}>Not Linked to a School</Text>
+                        <Text style={[styles.dateDisplay, { marginTop: 20, textAlign: 'center', color: '#1F2937' }]}>{t('attendance.notLinked')}</Text>
                         <Text style={[styles.infoText, { textAlign: 'center', marginTop: 12, fontSize: 14, color: '#6B7280' }]}>
-                            You must be linked to a school to use the attendance feature. Please ask your administrator to invite you or provide a claim code.
+                            {t('attendance.notLinkedMsg')}
                         </Text>
                     </View>
                 </SafeAreaView>
@@ -450,7 +498,7 @@ export const AttendanceCheckInScreen = () => {
                     >
                         <Ionicons name="chevron-back" size={20} color={BRAND_TEAL} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>ATTENDANCE</Text>
+                    <Text style={styles.headerTitle}>{t('attendance.title')}</Text>
                     <TouchableOpacity
                         style={styles.refreshButton}
                         onPress={() => {
@@ -469,7 +517,7 @@ export const AttendanceCheckInScreen = () => {
                 >
                     <Animated.View style={styles.headerContent}>
                         <Text style={styles.dateDisplay}>
-                            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                            {new Date().toLocaleDateString(i18n.language === 'km' ? 'km-KH' : 'en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                         </Text>
                         <TouchableOpacity
                             style={styles.gpsRow}
@@ -517,25 +565,25 @@ export const AttendanceCheckInScreen = () => {
                                     <Ionicons name="document-text-outline" size={22} color="#6D28D9" />
                                 </View>
                                 <View style={styles.permissionRequestTextWrap}>
-                                    <Text style={styles.permissionRequestTitle}>Request Permission Online</Text>
+                                    <Text style={styles.permissionRequestTitle}>{t('attendance.requestPermission.title')}</Text>
                                     <Text style={styles.permissionRequestSubtitle}>
-                                        Ask permission anywhere, even outside campus geofence.
+                                        {t('attendance.requestPermission.subtitle')}
                                     </Text>
                                 </View>
                                 <View style={styles.permissionAnywhereBadge}>
                                     <Ionicons name="globe-outline" size={12} color="#C4B5FD" />
-                                    <Text style={styles.permissionAnywhereBadgeText}>Anywhere</Text>
+                                    <Text style={styles.permissionAnywhereBadgeText}>{t('attendance.requestPermission.anywhere')}</Text>
                                 </View>
                             </View>
 
                             <View style={styles.permissionFeatureRow}>
                                 <View style={styles.permissionFeaturePill}>
                                     <Ionicons name="locate-outline" size={13} color="#DDD6FE" />
-                                    <Text style={styles.permissionFeatureText}>No GPS required</Text>
+                                    <Text style={styles.permissionFeatureText}>{t('attendance.requestPermission.noGps')}</Text>
                                 </View>
                                 <View style={styles.permissionFeaturePill}>
                                     <Ionicons name="flash-outline" size={13} color="#DDD6FE" />
-                                    <Text style={styles.permissionFeatureText}>Instant request</Text>
+                                    <Text style={styles.permissionFeatureText}>{t('attendance.requestPermission.instant')}</Text>
                                 </View>
                             </View>
                         </LinearGradient>
@@ -596,8 +644,8 @@ export const AttendanceCheckInScreen = () => {
                             <Ionicons name="bar-chart" size={22} color={BRAND_YELLOW} />
                         </View>
                         <View style={styles.reportTextContainer}>
-                            <Text style={styles.reportTitle}>Summary Reports</Text>
-                            <Text style={styles.reportSubtitle}>View your attendance performance</Text>
+                            <Text style={styles.reportTitle}>{t('attendance.reports.summary')}</Text>
+                            <Text style={styles.reportSubtitle}>{t('attendance.reports.subtitle')}</Text>
                         </View>
                         <TouchableOpacity
                             style={styles.viewReportButton}
@@ -606,14 +654,14 @@ export const AttendanceCheckInScreen = () => {
                                 navigation.navigate('AttendanceReport' as never);
                             }}
                         >
-                            <Text style={styles.viewReportText}>View</Text>
+                            <Text style={styles.viewReportText}>{t('common.view')}</Text>
                         </TouchableOpacity>
                     </Animated.View>
 
                     <Animated.View style={styles.infoCard}>
                         <Ionicons name="shield-checkmark-outline" size={24} color={BRAND_TEAL} />
                         <Text style={styles.infoText}>
-                            Enterprise Geofencing Active. Your location is only recorded during check-in/out for verification.
+                            {t('attendance.geofencingActive')}
                         </Text>
                     </Animated.View>
                 </ScrollView>
@@ -637,14 +685,14 @@ export const AttendanceCheckInScreen = () => {
                                 <Ionicons name="document-text-outline" size={20} color="#6D28D9" />
                             </View>
                             <View style={styles.permissionModalHeaderTextWrap}>
-                                <Text style={styles.permissionModalTitle}>Online Permission Request</Text>
+                                <Text style={styles.permissionModalTitle}>{t('attendance.requestPermission.title')}</Text>
                                 <Text style={styles.permissionModalSubtitle}>
-                                    Submit from anywhere. We'll mark selected session as permission.
+                                    {t('attendance.requestPermission.subtitle')}
                                 </Text>
                             </View>
                         </LinearGradient>
 
-                        <Text style={styles.permissionSessionLabel}>Select session</Text>
+                        <Text style={styles.permissionSessionLabel}>{t('attendance.requestPermission.selectSession')}</Text>
                         <View style={styles.permissionSessionSelector}>
                             {(['MORNING', 'AFTERNOON'] as const).map((sessionOption) => (
                                 <TouchableOpacity
@@ -667,7 +715,7 @@ export const AttendanceCheckInScreen = () => {
                                             permissionSession === sessionOption && styles.permissionSessionChipTextActive
                                         ]}
                                     >
-                                        {sessionOption === 'MORNING' ? 'Morning' : 'Afternoon'}
+                                        {sessionOption === 'MORNING' ? t('attendance.morning') : t('attendance.afternoon')}
                                     </Text>
                                 </TouchableOpacity>
                             ))}
@@ -675,13 +723,13 @@ export const AttendanceCheckInScreen = () => {
 
                         <View style={styles.permissionModalHintRow}>
                             <Ionicons name="shield-checkmark-outline" size={14} color="#7C3AED" />
-                            <Text style={styles.permissionModalHintText}>No GPS check is required for permission requests.</Text>
+                            <Text style={styles.permissionModalHintText}>{t('attendance.requestPermission.noGps')}</Text>
                         </View>
 
                         <TextInput
                             value={permissionReason}
                             onChangeText={setPermissionReason}
-                            placeholder="Write a short reason (medical appointment, urgent family matter, transport issue...)"
+                            placeholder={t('attendance.requestPermission.reasonPlaceholder')}
                             placeholderTextColor="#94A3B8"
                             multiline
                             numberOfLines={4}
@@ -691,7 +739,7 @@ export const AttendanceCheckInScreen = () => {
                             editable={permissionProcessingSession === null}
                         />
                         <View style={styles.permissionInputFooter}>
-                            <Text style={styles.permissionInputHelper}>Please keep your reason clear and professional.</Text>
+                            <Text style={styles.permissionInputHelper}>{t('attendance.requestPermission.clearProfessional')}</Text>
                             <Text style={styles.permissionReasonCount}>{permissionReason.trim().length}/500</Text>
                         </View>
 
@@ -701,7 +749,7 @@ export const AttendanceCheckInScreen = () => {
                                 onPress={() => setPermissionModalVisible(false)}
                                 disabled={permissionProcessingSession !== null}
                             >
-                                <Text style={styles.permissionModalCancelText}>Cancel</Text>
+                                <Text style={styles.permissionModalCancelText}>{t('common.cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[
@@ -722,7 +770,7 @@ export const AttendanceCheckInScreen = () => {
                                     ) : (
                                         <>
                                             <Ionicons name="paper-plane-outline" size={16} color="#fff" />
-                                            <Text style={styles.permissionModalSubmitText}>Submit Request</Text>
+                                            <Text style={styles.permissionModalSubmitText}>{t('attendance.requestPermission.submit')}</Text>
                                         </>
                                     )}
                                 </LinearGradient>

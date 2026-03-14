@@ -18,6 +18,7 @@ import {
   Image, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -33,6 +34,7 @@ import { DMConversation } from '@/stores/messagingStore';
 type NavigationProp = MessagesStackScreenProps<'Conversations'>['navigation'];
 
 export default function ConversationsScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const { openSidebar } = useNavigationContext();
   const { user } = useAuthStore();
@@ -135,9 +137,9 @@ export default function ConversationsScreen() {
                 numberOfLines={1}
               >
                 {item.lastMessage?.senderId === user?.id && (
-                  <Text style={styles.youPrefix}>You: </Text>
+                  <Text style={styles.youPrefix}>{t('messages.you')}</Text>
                 )}
-                {item.lastMessage?.content || 'No messages yet'}
+                {item.lastMessage?.content || t('messages.noMessages')}
               </Text>
               {isUnread && (
                 <View style={styles.unreadBadge}>
@@ -157,9 +159,9 @@ export default function ConversationsScreen() {
       <View style={styles.emptyIcon}>
         <Ionicons name="chatbubbles-outline" size={40} color="#CBD5E1" />
       </View>
-      <Text style={styles.emptyTitle}>No conversations yet</Text>
+      <Text style={styles.emptyTitle}>{t('messages.noConversations')}</Text>
       <Text style={styles.emptyText}>
-        Start a conversation with your classmates or teachers
+        {t('messages.startConversation')}
       </Text>
       <TouchableOpacity onPress={handleNewMessage} activeOpacity={0.85}>
         <LinearGradient
@@ -169,7 +171,7 @@ export default function ConversationsScreen() {
           style={styles.emptyBtn}
         >
           <Ionicons name="add" size={18} color="#fff" />
-          <Text style={styles.emptyBtnText}>New Message</Text>
+          <Text style={styles.emptyBtnText}>{t('messages.newMessage')}</Text>
         </LinearGradient>
       </TouchableOpacity>
     </View>
@@ -186,7 +188,7 @@ export default function ConversationsScreen() {
             <Ionicons name="menu" size={26} color="#1F2937" />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>Messages</Text>
+          <Text style={styles.headerTitle}>{t('messages.title')}</Text>
 
           <View style={styles.headerActions}>
             <TouchableOpacity
@@ -211,7 +213,7 @@ export default function ConversationsScreen() {
               <Ionicons name="search" size={16} color="#9CA3AF" />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search conversations..."
+                placeholder={t('messages.search')}
                 placeholderTextColor="#9CA3AF"
                 value={searchQuery}
                 onChangeText={setSearchQuery}

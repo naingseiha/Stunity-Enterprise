@@ -23,6 +23,7 @@ import {
   ActionSheetIOS, Animated} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 
 import * as ImagePicker from 'expo-image-picker';
@@ -39,6 +40,7 @@ type RouteProp = MessagesStackScreenProps<'Chat'>['route'];
 type NavigationProp = MessagesStackScreenProps<'Chat'>['navigation'];
 
 export default function ChatScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp>();
   const { user } = useAuthStore();
@@ -107,9 +109,9 @@ export default function ChatScreen() {
       t => t.userId !== user?.id
     );
     if (typers.length === 0) return null;
-    if (typers.length === 1) return `${typers[0].firstName} is typing...`;
-    return `${typers.length} people are typing...`;
-  }, [typingUsers, user?.id]);
+    if (typers.length === 1) return t('messages.isTyping', { name: typers[0].firstName });
+    return t('messages.peopleTyping', { count: typers.length });
+  }, [typingUsers, user?.id, t]);
 
   const handleSend = useCallback(() => {
     if (!inputText.trim() || !conversationId) return;
@@ -149,32 +151,32 @@ export default function ChatScreen() {
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    const options = ['Reply'];
+    const options = [t('messages.reply')];
     if (isMe) {
-      options.push('Edit', 'Delete');
+      options.push(t('common.edit'), t('common.delete'));
     }
-    options.push('Cancel');
+    options.push(t('common.cancel'));
 
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
           options,
-          destructiveButtonIndex: isMe ? options.indexOf('Delete') : undefined,
+          destructiveButtonIndex: isMe ? options.indexOf(t('common.delete')) : undefined,
           cancelButtonIndex: options.length - 1,
         },
         (buttonIndex) => {
-          if (options[buttonIndex] === 'Reply') {
+          if (options[buttonIndex] === t('messages.reply')) {
             setReplyTo(message);
             inputRef.current?.focus();
-          } else if (options[buttonIndex] === 'Edit') {
+          } else if (options[buttonIndex] === t('common.edit')) {
             setEditingMessage(message);
             setInputText(message.content);
             inputRef.current?.focus();
-          } else if (options[buttonIndex] === 'Delete') {
-            Alert.alert('Delete Message', 'Are you sure?', [
-              { text: 'Cancel', style: 'cancel' },
+          } else if (options[buttonIndex] === t('common.delete')) {
+            Alert.alert(t('messages.deleteMessage'), t('messages.deleteConfirm'), [
+              { text: t('common.cancel'), style: 'cancel' },
               {
-                text: 'Delete', style: 'destructive',
+                text: t('common.delete'), style: 'destructive',
                 onPress: () => deleteMessage(message.id),
               },
             ]);
@@ -184,16 +186,16 @@ export default function ChatScreen() {
     } else {
       // Android fallback
       Alert.alert(
-        'Message Options',
+        t('messages.messageOptions'),
         undefined,
         [
           {
-            text: 'Reply',
+            text: t('messages.reply'),
             onPress: () => { setReplyTo(message); inputRef.current?.focus(); },
           },
           ...(isMe ? [
             {
-              text: 'Edit',
+              text: t('common.edit'),
               onPress: () => {
                 setEditingMessage(message);
                 setInputText(message.content);
@@ -201,12 +203,12 @@ export default function ChatScreen() {
               },
             },
             {
-              text: 'Delete',
+              text: t('common.delete'),
               style: 'destructive' as const,
               onPress: () => deleteMessage(message.id),
             },
           ] : []),
-          { text: 'Cancel', style: 'cancel' as const },
+          { text: t('common.cancel'), style: 'cancel' as const },
         ]
       );
     }
@@ -222,7 +224,7 @@ export default function ChatScreen() {
     if (!result.canceled && result.assets[0] && conversationId) {
       // For now, send as text with image URI placeholder
       // Full upload integration requires Supabase Storage setup
-      sendMessage(conversationId, `📷 Image shared`, 'IMAGE');
+      sendMessage(conversationId, t('messages.imageShared'), 'IMAGE');
     }
   }, [conversationId, sendMessage]);
 
@@ -276,10 +278,10 @@ export default function ChatScreen() {
               <View style={[styles.replyBar, isMe && styles.myReplyBar]} />
               <View style={styles.replyContent}>
                 <Text style={[styles.replyAuthor, isMe && styles.myReplyAuthor]} numberOfLines={1}>
-                  {replyMessage.senderId === user?.id ? 'You' : otherParticipant?.firstName || 'User'}
+                  {replyMessage.senderId === user?.id ? t('messages.you') : otherParticipant?.firstName || 'User'}
                 </Text>
                 <Text style={[styles.replyText, isMe && styles.myReplyText]} numberOfLines={1}>
-                  {replyMessage.isDeleted ? 'Deleted message' : replyMessage.content}
+                  {replyMessage.isDeleted ? t('messages.deletedMessage') : replyMessage.content}
                 </Text>
               </View>
             </View>
@@ -287,7 +289,7 @@ export default function ChatScreen() {
 
           {item.isDeleted ? (
             <Text style={[styles.messageText, styles.deletedText]}>
-              This message was deleted
+              {t('messages.messageDeleted')}
             </Text>
           ) : (
             <Text style={[
@@ -306,7 +308,7 @@ export default function ChatScreen() {
             </Text>
             {item.isEdited && (
               <Text style={[styles.editedLabel, isMe && styles.myMessageTime]}>
-                edited
+                {t('messages.edited')}
               </Text>
             )}
             {item._isPending && (
@@ -356,10 +358,10 @@ export default function ChatScreen() {
           />
           <View style={styles.userDetails}>
             <Text style={styles.userName}>
-              {conversation?.displayName || 'Chat'}
+              {conversation?.displayName || t('messages.chat')}
             </Text>
             <Text style={styles.userStatus}>
-              {otherParticipant?.isOnline ? 'Online' : 'Offline'}
+              {otherParticipant?.isOnline ? t('messages.online') : t('messages.offline')}
             </Text>
           </View>
         </TouchableOpacity>
@@ -383,7 +385,7 @@ export default function ChatScreen() {
         {isLoadingMessages && messages.length === 0 ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={Colors.primary[500]} />
-            <Text style={styles.loadingText}>Loading messages...</Text>
+            <Text style={styles.loadingText}>{t('messages.loadingMessages')}</Text>
           </View>
         ) : (
           <FlatList
@@ -410,7 +412,7 @@ export default function ChatScreen() {
             <View style={styles.replyBannerBar} />
             <View style={styles.replyBannerContent}>
               <Text style={styles.replyBannerTitle}>
-                {editingMessage ? '✏️ Editing message' : `↩️ Replying to ${replyTo?.senderId === user?.id ? 'yourself' : otherParticipant?.firstName || 'User'}`}
+                {editingMessage ? t('messages.editingMessage') : (replyTo?.senderId === user?.id ? t('messages.replyingToYourself') : t('messages.replyingToUser', { name: otherParticipant?.firstName || 'User' }))}
               </Text>
               <Text style={styles.replyBannerText} numberOfLines={1}>
                 {editingMessage?.content || replyTo?.content}
@@ -434,7 +436,7 @@ export default function ChatScreen() {
               style={styles.input}
               value={inputText}
               onChangeText={handleTextChange}
-              placeholder={editingMessage ? 'Edit message...' : replyTo ? 'Reply...' : 'Type a message...'}
+              placeholder={editingMessage ? t('messages.editMessage') : replyTo ? t('messages.reply') : t('messages.typeMessage')}
               placeholderTextColor={Colors.gray[400]}
               multiline
               maxLength={1000}

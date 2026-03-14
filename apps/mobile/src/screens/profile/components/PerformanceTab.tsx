@@ -11,6 +11,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Animated } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path, Text as SvgText } from 'react-native-svg';
@@ -118,7 +119,7 @@ function XPProgressRing({ xp, xpToNext, level, quizzes, avgScore }: { xp: number
             </Svg>
             <View style={ringStyles.inner}>
                 <Text style={ringStyles.levelValue}>{level}</Text>
-                <Text style={ringStyles.levelLabel}>LEVEL</Text>
+                <Text style={ringStyles.levelLabel}>{useTranslation().t('profile.performance.level')}</Text>
             </View>
         </View>
     );
@@ -175,7 +176,16 @@ function MiniLineChart({ data, width, height }: { data: number[]; width: number;
 // ── Streak Weekly Dots ───────────────────────────────────────────
 
 function WeeklyDots({ streak }: { streak: Streak | null }) {
-    const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    const { t } = useTranslation();
+    const days = [
+        t('attendance.days.mon').charAt(0),
+        t('attendance.days.tue').charAt(0),
+        t('attendance.days.wed').charAt(0),
+        t('attendance.days.thu').charAt(0),
+        t('attendance.days.fri').charAt(0),
+        t('attendance.days.sat').charAt(0),
+        t('attendance.days.sun').charAt(0),
+    ];
     const today = new Date().getDay(); // 0=Sun
     const mappedToday = today === 0 ? 6 : today - 1; // 0=Mon
 
@@ -219,6 +229,7 @@ export default function PerformanceTab({
     onViewLeaderboard,
     onViewStats,
 }: PerformanceTabProps) {
+    const { t, i18n } = useTranslation();
     const cardScale = useRef(new Animated.Value(0.95)).current;
 
     useEffect(() => {
@@ -246,7 +257,7 @@ export default function PerformanceTab({
                                 </View>
                                 <View>
                                     <Text style={s.xpStatValue}>{totalPoints.toLocaleString()}</Text>
-                                    <Text style={s.xpStatLabel}>Total Points</Text>
+                                    <Text style={s.xpStatLabel}>{t('profile.performance.totalPoints')}</Text>
                                 </View>
                             </View>
                             <View style={s.xpStatRow}>
@@ -255,7 +266,7 @@ export default function PerformanceTab({
                                 </View>
                                 <View>
                                     <Text style={s.xpStatValue}>{quizStats?.totalQuizzes ?? 0}</Text>
-                                    <Text style={s.xpStatLabel}>Quizzes Done</Text>
+                                    <Text style={s.xpStatLabel}>{t('profile.performance.quizzesDone')}</Text>
                                 </View>
                             </View>
                             <View style={s.xpStatRow}>
@@ -264,7 +275,7 @@ export default function PerformanceTab({
                                 </View>
                                 <View>
                                     <Text style={s.xpStatValue}>{(quizStats?.avgScore ?? 0).toFixed(0)}%</Text>
-                                    <Text style={s.xpStatLabel}>Avg Score</Text>
+                                    <Text style={s.xpStatLabel}>{t('profile.performance.avgScore')}</Text>
                                 </View>
                             </View>
                         </View>
@@ -284,7 +295,7 @@ export default function PerformanceTab({
                                 style={[s.xpBarFill, { width: `${Math.min((xp / xpToNext) * 100, 100)}%` }]}
                             />
                         </View>
-                        <Text style={s.xpBarHint}>{Math.max(xpToNext - xp, 0).toLocaleString()} XP to Level {(quizStats?.level ?? level) + 1}</Text>
+                        <Text style={s.xpBarHint}>{t('profile.performance.xpToLevel', { xp: Math.max(xpToNext - xp, 0).toLocaleString(), level: (quizStats?.level ?? level) + 1 })}</Text>
                     </View>
                 </LinearGradient>
             </Animated.View>
@@ -295,9 +306,9 @@ export default function PerformanceTab({
                     <View style={[s.cardHeaderIcon, { backgroundColor: '#F0F4F8' }]}>
                         <Ionicons name="analytics" size={18} color="#3B82F6" />
                     </View>
-                    <Text style={s.cardTitle}>Quiz Performance</Text>
+                    <Text style={s.cardTitle}>{t('profile.performance.quizPerformance')}</Text>
                     <TouchableOpacity onPress={onViewStats} style={s.viewAllBtn}>
-                        <Text style={s.viewAllText}>Details</Text>
+                        <Text style={s.viewAllText}>{t('profile.performance.details')}</Text>
                         <Ionicons name="chevron-forward" size={14} color="#0EA5E9" />
                     </TouchableOpacity>
                 </View>
@@ -306,31 +317,31 @@ export default function PerformanceTab({
                 <View style={s.quizStatsRow}>
                     <View style={s.quizStat}>
                         <Text style={[s.quizStatValue, { color: '#10B981' }]}>{(quizStats?.winRate ?? 0).toFixed(0)}%</Text>
-                        <Text style={s.quizStatLabel}>Pass Rate</Text>
+                        <Text style={s.quizStatLabel}>{t('profile.performance.passRate')}</Text>
                     </View>
                     <View style={s.quizStatDivider} />
                     <View style={s.quizStat}>
                         <Text style={[s.quizStatValue, { color: '#F59E0B' }]}>{quizStats?.winStreak ?? 0}</Text>
-                        <Text style={s.quizStatLabel}>Win Streak</Text>
+                        <Text style={s.quizStatLabel}>{t('profile.performance.winStreak')}</Text>
                     </View>
                     <View style={s.quizStatDivider} />
                     <View style={s.quizStat}>
                         <Text style={[s.quizStatValue, { color: '#8B5CF6' }]}>{quizStats?.correctAnswers ?? 0}/{quizStats?.totalAnswers ?? 0}</Text>
-                        <Text style={s.quizStatLabel}>Correct</Text>
+                        <Text style={s.quizStatLabel}>{t('profile.performance.correct')}</Text>
                     </View>
                 </View>
 
                 {/* Mini Chart */}
                 {scoreHistory.length >= 2 && (
                     <View style={s.chartContainer}>
-                        <Text style={s.chartTitle}>Recent Scores</Text>
+                        <Text style={s.chartTitle}>{t('profile.performance.recentScores')}</Text>
                         <MiniLineChart data={scoreHistory.slice(-7)} width={SCREEN_WIDTH - 80} height={100} />
                     </View>
                 )}
                 {scoreHistory.length < 2 && (
                     <View style={s.emptyChart}>
                         <Ionicons name="bar-chart-outline" size={32} color="#E5E7EB" />
-                        <Text style={s.emptyChartText}>Complete quizzes to see trends</Text>
+                        <Text style={s.emptyChartText}>{t('profile.performance.completeQuizzesHint')}</Text>
                     </View>
                 )}
             </View>
@@ -341,22 +352,22 @@ export default function PerformanceTab({
                     <View style={[s.cardHeaderIcon, { backgroundColor: '#FFF7ED' }]}>
                         <Ionicons name="flame" size={18} color="#F97316" />
                     </View>
-                    <Text style={s.cardTitle}>Learning Streak</Text>
+                    <Text style={s.cardTitle}>{t('profile.performance.learningStreak')}</Text>
                 </View>
 
                 <View style={s.streakRow}>
                     <View style={s.streakMain}>
                         <Text style={s.streakNumber}>{streak?.currentStreak ?? 0}</Text>
-                        <Text style={s.streakUnit}>day{(streak?.currentStreak ?? 0) !== 1 ? 's' : ''}</Text>
+                        <Text style={s.streakUnit}>{(streak?.currentStreak ?? 0) !== 1 ? t('profile.performance.days') : t('profile.performance.day')}</Text>
                     </View>
                     <View style={s.streakSide}>
                         <View style={s.streakSideRow}>
                             <Ionicons name="trophy" size={14} color="#F59E0B" />
-                            <Text style={s.streakSideText}>Best: {streak?.longestStreak ?? 0} days</Text>
+                            <Text style={s.streakSideText}>{t('profile.performance.bestStreak', { count: streak?.longestStreak ?? 0 })}</Text>
                         </View>
                         <View style={s.streakSideRow}>
                             <Ionicons name="snow" size={14} color="#60A5FA" />
-                            <Text style={s.streakSideText}>Freezes: {streak?.freezesAvailable ?? 0}</Text>
+                            <Text style={s.streakSideText}>{t('profile.performance.freezes', { count: streak?.freezesAvailable ?? 0 })}</Text>
                         </View>
                     </View>
                 </View>
@@ -370,17 +381,17 @@ export default function PerformanceTab({
                     <View style={[s.cardHeaderIcon, { backgroundColor: '#F3F4F6' }]}>
                         <Ionicons name="apps" size={18} color="#4B5563" />
                     </View>
-                    <Text style={s.cardTitle}>Performance Overview</Text>
+                    <Text style={s.cardTitle}>{t('profile.performance.overview')}</Text>
                 </View>
 
                 <View style={s.statGridWrapper}>
                     <View style={s.statGrid}>
-                        <StatCard icon="book-outline" value={quizStats?.totalQuizzes ?? 0} label="Courses" index={0} />
-                        <StatCard icon="star-outline" value={quizStats?.totalPoints ?? profile?.totalPoints ?? 0} label="Points" index={1} />
-                        <StatCard icon="time-outline" value={profile?.totalLearningHours ?? 0} label="Study Hours" index={2} />
-                        <StatCard icon="flame-outline" value={streak?.currentStreak ?? profile?.currentStreak ?? 0} label="Day Streak" index={3} />
-                        <StatCard icon="trophy-outline" value={achievements?.length || 0} label="Achievements" index={4} />
-                        <StatCard icon="code-slash-outline" value={(profile as any)?.projects?.length ?? 0} label="Projects" index={5} />
+                        <StatCard icon="book-outline" value={quizStats?.totalQuizzes ?? 0} label={t('profile.performance.studyHours')} index={0} />
+                        <StatCard icon="star-outline" value={quizStats?.totalPoints ?? profile?.totalPoints ?? 0} label={t('profile.performance.totalPoints')} index={1} />
+                        <StatCard icon="time-outline" value={profile?.totalLearningHours ?? 0} label={t('profile.performance.studyHours')} index={2} />
+                        <StatCard icon="flame-outline" value={streak?.currentStreak ?? profile?.currentStreak ?? 0} label={t('profile.performance.learningStreak')} index={3} />
+                        <StatCard icon="trophy-outline" value={achievements?.length || 0} label={t('profile.performance.achievements')} index={4} />
+                        <StatCard icon="code-slash-outline" value={(profile as any)?.projects?.length ?? 0} label={t('profile.performance.projects')} index={5} />
                     </View>
                 </View>
             </View>
@@ -391,7 +402,7 @@ export default function PerformanceTab({
                     <View style={[s.cardHeaderIcon, { backgroundColor: '#FAF5FF' }]}>
                         <Ionicons name="medal" size={18} color="#8B5CF6" />
                     </View>
-                    <Text style={s.cardTitle}>Achievements</Text>
+                    <Text style={s.cardTitle}>{t('profile.performance.achievements')}</Text>
                     <TouchableOpacity onPress={onViewAchievements} style={s.viewAllBtn}>
                         <Text style={s.viewAllText}>{achievements.length}/{totalAchievements}</Text>
                         <Ionicons name="chevron-forward" size={14} color="#0EA5E9" />
@@ -411,7 +422,7 @@ export default function PerformanceTab({
                                     <View style={[s.badgeCircle, { backgroundColor: color + '20', borderColor: color }]}>
                                         <Text style={s.badgeEmoji}>{ua.achievement?.icon || '🏆'}</Text>
                                     </View>
-                                    <Text style={s.badgeName} numberOfLines={1}>{ua.achievement?.name || 'Badge'}</Text>
+                                    <Text style={s.badgeName} numberOfLines={1}>{ua.achievement?.name || t('profile.performance.achievements')}</Text>
                                 </View>
                             );
                         })}
@@ -419,7 +430,7 @@ export default function PerformanceTab({
                 ) : (
                     <View style={s.emptyChart}>
                         <Ionicons name="ribbon-outline" size={32} color="#E5E7EB" />
-                        <Text style={s.emptyChartText}>Complete challenges to earn badges</Text>
+                        <Text style={s.emptyChartText}>{t('profile.performance.badgesChallenge')}</Text>
                     </View>
                 )}
             </View>
@@ -437,8 +448,8 @@ export default function PerformanceTab({
                             <Ionicons name="podium" size={22} color="#7C3AED" />
                         </View>
                         <View>
-                            <Text style={s.leaderboardTitle}>Leaderboard</Text>
-                            <Text style={s.leaderboardSub}>See where you rank globally</Text>
+                            <Text style={s.leaderboardTitle}>{t('profile.performance.leaderboard')}</Text>
+                            <Text style={s.leaderboardSub}>{t('profile.performance.leaderboardSub')}</Text>
                         </View>
                     </View>
                     <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.7)" />

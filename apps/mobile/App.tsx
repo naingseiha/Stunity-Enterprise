@@ -14,6 +14,7 @@ import { LogBox } from 'react-native';
 
 import { RootNavigator } from '@/navigation';
 import { useAuthStore } from '@/stores';
+import '@/lib/i18n'; // Initialize i18n
 import { SplashScreen } from '@/components/common';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { NotificationProvider } from '@/contexts';

@@ -1,9 +1,7 @@
 generator client {
   provider      = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
-  // Output to repo root node_modules so all workspace packages use the same client (local dev).
-  // Dockerfiles copy the generated client into /app/node_modules after generate.
   output        = "../../../node_modules/.prisma/client"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -273,8 +271,8 @@ model Student {
   entryYear            Int?
   permanentId          String?                 @unique
   studentIdFormat      IdFormat?
-  customFields         Json?                   // flexible country/school-specific data
   studentIdMeta        Json?
+  customFields         Json?
   attendance           Attendance[]
   claimCode            ClaimCode?
   conversations        Conversation[]
@@ -317,7 +315,7 @@ model Parent {
   isAccountActive Boolean            @default(true)
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
-  customFields    Json?              // flexible country/school-specific data
+  customFields    Json?
   conversations   Conversation[]
   studentParents  StudentParent[]
   user            User?
@@ -393,7 +391,7 @@ model Subject {
   isActive                  Boolean                    @default(true)
   createdAt                 DateTime                   @default(now())
   updatedAt                 DateTime                   @updatedAt
-  customFields              Json?                      // e.g. { localName, examWeight, curriculumRef }
+  customFields              Json?
   grades                    Grade[]
   subjectTeachers           SubjectTeacher[]
   teacherSubjectAssignments TeacherSubjectAssignment[] @relation("TeacherSubjectAssignments")
@@ -439,7 +437,7 @@ model Teacher {
   permanentId               String?                    @unique
   teacherIdFormat           IdFormat?
   teacherIdMeta             Json?
-  customFields              Json?                      // flexible country/school-specific data
+  customFields              Json?
   claimCode                 ClaimCode?
   conversations             Conversation[]
   subjectTeachers           SubjectTeacher[]
@@ -2743,18 +2741,19 @@ model SchoolLocation {
 }
 
 model TeacherAttendance {
-  id         String         @id @default(cuid())
+  id         String            @id @default(cuid())
   teacherId  String
   locationId String
-  date       DateTime       @db.Date
+  date       DateTime          @db.Date
   timeIn     DateTime
   timeOut    DateTime?
+  status     String            @default("PRESENT")
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
   session    AttendanceSession @default(MORNING)
-  status     String         @default("PRESENT")
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
-  location   SchoolLocation @relation(fields: [locationId], references: [id])
-  teacher    Teacher        @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  location   SchoolLocation    @relation(fields: [locationId], references: [id])
+  teacher    Teacher           @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
   @@index([teacherId, date])
   @@index([locationId, date])
   @@index([teacherId, date, session])
@@ -2807,6 +2806,20 @@ model PlatformAnnouncement {
 
   @@index([isActive, startAt, endAt])
   @@map("platform_announcements")
+}
+
+model Translation {
+  id        String   @id @default(cuid())
+  app       String
+  locale    String
+  key       String
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([app, locale, key])
+  @@index([app, locale])
+  @@map("translations")
 }
 
 enum RegistrationStatus {

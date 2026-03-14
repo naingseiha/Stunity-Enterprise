@@ -14,6 +14,7 @@ import passwordResetRoutes from './routes/passwordReset.routes';
 import socialAuthRoutes from './routes/socialAuth.routes';
 import twoFactorRoutes from './routes/twoFactor.routes';
 import ssoRoutes from './routes/sso.routes';
+import translationRoutes from './routes/translation.routes';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
@@ -202,7 +203,7 @@ interface AuthRequest extends Request {
 }
 
 // Auth Middleware
-const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -266,6 +267,18 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
       error: 'Invalid token',
     });
   }
+};
+
+export const authorize = (roles: string[]) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: Insufficient permissions',
+      });
+    }
+    next();
+  };
 };
 
 /**
@@ -353,6 +366,7 @@ app.use('/auth', passwordResetRoutes(prisma));
 app.use('/auth/social', socialAuthRoutes(prisma));
 app.use('/auth/sso', ssoRoutes(prisma));
 app.use('/auth/2fa', twoFactorRoutes(prisma));
+app.use('/auth/translations', translationRoutes(prisma, authenticateToken, authorize));
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {

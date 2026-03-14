@@ -16,13 +16,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { Colors, Spacing } from '@/config';
 import { Config } from '@/config';
 import { useAuthStore } from '@/stores';
 import { tokenService } from '@/services/token';
 
-type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED' | 'SICK';
+type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED' | 'SICK' | 'PERMISSION';
 
 interface AttendanceRecord {
   id: string;
@@ -32,12 +33,8 @@ interface AttendanceRecord {
   remarks?: string;
 }
 
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
 export default function ParentChildAttendanceScreen() {
+  const { t, i18n } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<{ params: { studentId: string } }, 'params'>>();
   const { user } = useAuthStore();
@@ -50,6 +47,7 @@ export default function ParentChildAttendanceScreen() {
 
   const children = (user as any)?.children || [];
   const child = children.find((c: any) => c.id === studentId);
+  const dateLocale = i18n.language === 'km' ? 'km-KH' : 'en-US';
 
   useEffect(() => {
     if (!studentId) return;
@@ -118,20 +116,43 @@ export default function ParentChildAttendanceScreen() {
     }
   };
 
+  const getStatusLabel = (status: AttendanceStatus) => {
+    switch (status) {
+      case 'PRESENT':
+        return t('attendance.status.present');
+      case 'ABSENT':
+        return t('attendance.status.absent');
+      case 'LATE':
+        return t('attendance.status.late');
+      case 'EXCUSED':
+      case 'SICK':
+        return t('attendance.status.excused');
+      case 'PERMISSION':
+        return t('attendance.status.permission');
+      default:
+        return t('attendance.status.na');
+    }
+  };
+
   const formatDate = (d: string) => {
     const date = new Date(d);
-    return date.toLocaleDateString(undefined, {
+    return date.toLocaleDateString(dateLocale, {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
     });
   };
 
+  const monthYearLabel = new Date(currentYear, currentMonth, 1).toLocaleDateString(dateLocale, {
+    month: 'long',
+    year: 'numeric'
+  });
+
   if (loading || !child) {
     return (
       <SafeAreaView style={styles.center}>
         <ActivityIndicator size="large" color="#059669" />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </SafeAreaView>
     );
   }
@@ -145,7 +166,7 @@ export default function ParentChildAttendanceScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={Colors.gray[700]} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Attendance</Text>
+        <Text style={styles.headerTitle}>{t('parent.attendance.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -157,9 +178,7 @@ export default function ParentChildAttendanceScreen() {
           <TouchableOpacity onPress={goPrevMonth} style={styles.monthBtn}>
             <Ionicons name="chevron-back" size={24} color={Colors.gray[700]} />
           </TouchableOpacity>
-          <Text style={styles.monthLabel}>
-            {MONTHS[currentMonth]} {currentYear}
-          </Text>
+          <Text style={styles.monthLabel}>{monthYearLabel}</Text>
           <TouchableOpacity onPress={goNextMonth} style={styles.monthBtn}>
             <Ionicons name="chevron-forward" size={24} color={Colors.gray[700]} />
           </TouchableOpacity>
@@ -170,19 +189,19 @@ export default function ParentChildAttendanceScreen() {
           <View style={styles.statsRow}>
             <View style={[styles.statCard, { backgroundColor: '#D1FAE5' }]}>
               <Text style={[styles.statValue, { color: '#059669' }]}>{stats.present}</Text>
-              <Text style={styles.statLabel}>Present</Text>
+              <Text style={styles.statLabel}>{t('attendance.status.present')}</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: '#FEE2E2' }]}>
               <Text style={[styles.statValue, { color: '#DC2626' }]}>{stats.absent}</Text>
-              <Text style={styles.statLabel}>Absent</Text>
+              <Text style={styles.statLabel}>{t('attendance.status.absent')}</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: '#FEF3C7' }]}>
               <Text style={[styles.statValue, { color: '#D97706' }]}>{stats.late}</Text>
-              <Text style={styles.statLabel}>Late</Text>
+              <Text style={styles.statLabel}>{t('attendance.status.late')}</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: '#F3F4F6' }]}>
               <Text style={[styles.statValue, { color: '#6B7280' }]}>{stats.excused}</Text>
-              <Text style={styles.statLabel}>Excused</Text>
+              <Text style={styles.statLabel}>{t('attendance.status.excused')}</Text>
             </View>
           </View>
         )}
@@ -191,9 +210,9 @@ export default function ParentChildAttendanceScreen() {
         {records.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="calendar-outline" size={48} color={Colors.gray[300]} />
-            <Text style={styles.emptyTitle}>No Attendance Records</Text>
+            <Text style={styles.emptyTitle}>{t('parent.attendance.emptyTitle')}</Text>
             <Text style={styles.emptyDesc}>
-              No attendance records for {MONTHS[currentMonth]} {currentYear}.
+              {t('parent.attendance.emptyDescription', { monthYear: monthYearLabel })}
             </Text>
           </View>
         ) : (
@@ -210,7 +229,7 @@ export default function ParentChildAttendanceScreen() {
                   </View>
                   <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(r.status)}20` }]}>
                     <Text style={[styles.statusText, { color: getStatusColor(r.status) }]}>
-                      {r.status}
+                      {getStatusLabel(r.status)}
                     </Text>
                   </View>
                 </View>

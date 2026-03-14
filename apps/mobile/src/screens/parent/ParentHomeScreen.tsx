@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 import { Colors, Spacing } from '@/config';
 import { useAuthStore } from '@/stores';
@@ -30,6 +31,7 @@ interface Child {
 }
 
 export default function ParentHomeScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const { user, logout } = useAuthStore();
 
@@ -37,9 +39,9 @@ export default function ParentHomeScreen() {
   const school = (user as any)?.school;
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign Out', style: 'destructive', onPress: () => logout() },
+    Alert.alert(t('parent.logoutConfirmTitle'), t('parent.logoutConfirmMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('parent.signOut'), style: 'destructive', onPress: () => logout() },
     ]);
   };
 
@@ -59,7 +61,7 @@ export default function ParentHomeScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft} />
-        <Text style={styles.headerTitle}>Parent Portal</Text>
+        <Text style={styles.headerTitle}>{t('parent.portalTitle')}</Text>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
           <Ionicons name="log-out-outline" size={24} color={Colors.gray[700]} />
         </TouchableOpacity>
@@ -77,12 +79,12 @@ export default function ParentHomeScreen() {
         )}
 
         {/* Children list */}
-        <Text style={styles.sectionTitle}>My Children</Text>
+        <Text style={styles.sectionTitle}>{t('parent.myChildren')}</Text>
         {children.length === 0 ? (
           <View style={styles.emptyCard}>
             <Ionicons name="people-outline" size={48} color={Colors.gray[300]} />
-            <Text style={styles.emptyTitle}>No children linked</Text>
-            <Text style={styles.emptyDesc}>Contact your school to link your child's account.</Text>
+            <Text style={styles.emptyTitle}>{t('parent.noChildrenLinked')}</Text>
+            <Text style={styles.emptyDesc}>{t('parent.linkChildHelp')}</Text>
           </View>
         ) : (
           <View style={styles.childrenList}>
@@ -115,7 +117,7 @@ export default function ParentHomeScreen() {
         )}
 
         {/* Quick actions */}
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <Text style={styles.sectionTitle}>{t('parent.quickActions')}</Text>
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.quickAction}
@@ -127,7 +129,7 @@ export default function ParentHomeScreen() {
             <View style={[styles.quickIcon, { backgroundColor: '#DBEAFE' }]}>
               <Ionicons name="bar-chart" size={28} color="#2563EB" />
             </View>
-            <Text style={styles.quickTitle}>Grades</Text>
+            <Text style={styles.quickTitle}>{t('parent.actions.gradesTitle')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -140,7 +142,7 @@ export default function ParentHomeScreen() {
             <View style={[styles.quickIcon, { backgroundColor: '#FEF3C7' }]}>
               <Ionicons name="calendar" size={28} color="#D97706" />
             </View>
-            <Text style={styles.quickTitle}>Attendance</Text>
+            <Text style={styles.quickTitle}>{t('parent.actions.attendanceTitle')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -153,7 +155,7 @@ export default function ParentHomeScreen() {
             <View style={[styles.quickIcon, { backgroundColor: '#E9D5FF' }]}>
               <Ionicons name="document-text" size={28} color="#7C3AED" />
             </View>
-            <Text style={styles.quickTitle}>Report Card</Text>
+            <Text style={styles.quickTitle}>{t('parent.actions.reportCardTitle')}</Text>
           </TouchableOpacity>
         </View>
 

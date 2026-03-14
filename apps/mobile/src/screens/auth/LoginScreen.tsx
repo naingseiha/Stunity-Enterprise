@@ -21,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -38,6 +39,7 @@ type NavigationProp = AuthStackScreenProps<'Login'>['navigation'];
 export default function LoginScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { login, logout, isLoading, error, clearError } = useAuthStore();
+  const { t } = useTranslation();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -152,7 +154,7 @@ export default function LoginScreen() {
               style={styles.header}
             >
               <StunityLogo width={140} height={140} style={{ marginBottom: 12 }} />
-              <Text style={styles.title}>Sign in to Stunity</Text>
+              <Text style={styles.title}>{t('auth.signInToStunity')}</Text>
             </Animated.View>
 
             {/* Error */}
@@ -169,7 +171,7 @@ export default function LoginScreen() {
               <View style={styles.inputWrapper}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Email or Phone"
+                  placeholder={t('common.email') + ' or Phone'}
                   value={identifier}
                   onChangeText={setIdentifier}
                   keyboardType="email-address"
@@ -186,7 +188,7 @@ export default function LoginScreen() {
                 <TextInput
                   ref={passwordRef}
                   style={styles.input}
-                  placeholder="Password"
+                  placeholder={t('common.password')}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
@@ -211,7 +213,7 @@ export default function LoginScreen() {
               <View style={styles.optionsRow}>
                 <View style={{ flex: 1 }} />
                 <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-                  <Text style={styles.forgotText}>Forgot password?</Text>
+                  <Text style={styles.forgotText}>{t('auth.forgotPassword')}</Text>
                 </TouchableOpacity>
               </View>
 
@@ -229,7 +231,7 @@ export default function LoginScreen() {
                   style={styles.signInButton}
                 >
                   <Text style={styles.signInText}>
-                    {isLoading ? 'Signing in...' : 'Sign In'}
+                    {isLoading ? 'Signing in...' : t('common.login')}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -316,7 +318,7 @@ export default function LoginScreen() {
                 style={styles.footer}
               >
                 <Text style={styles.footerText}>
-                  Don't have an account? <Text style={styles.footerLink}>Sign Up</Text>
+                  {t('auth.noAccount')} <Text style={styles.footerLink}>{t('common.signup')}</Text>
                 </Text>
               </TouchableOpacity>
             </Animated.View>

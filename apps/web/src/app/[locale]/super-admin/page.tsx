@@ -31,6 +31,7 @@ import {
   FileText,
   MessageSquare,
   UsersRound,
+  Globe,
 } from 'lucide-react';
 
 const TIER_COLORS: Record<string, { bg: string; text: string; bar: string }> = {
@@ -316,6 +317,7 @@ export default function SuperAdminDashboardPage(
                   { href: `/${locale}/super-admin/analytics`, label: 'Analytics & Reports', icon: TrendingUp, color: 'text-cyan-600' },
                   { href: `/${locale}/super-admin/health`, label: 'Platform Health', icon: CheckCircle2, color: 'text-emerald-600' },
                   { href: `/${locale}/super-admin/settings`, label: 'Platform Settings', icon: BookOpen, color: 'text-gray-600' },
+                  { href: `/${locale}/admin/language`, label: 'Language Management', icon: Globe, color: 'text-blue-600' },
                 ].map(({ href, label, icon: Icon, color }) => (
                   <Link
                     key={href}
