@@ -175,6 +175,8 @@
   },
   "attendance": {
     "title": "ATTENDANCE",
+    "hello": "Hello",
+    "gpsLocation": "Current Location",
     "syncing": "Syncing with enterprise server...",
     "notLinked": "Not Linked to a School",
     "notLinkedMsg": "You must be linked to a school to use the attendance feature. Please ask your administrator to invite you or provide a claim code.",

@@ -456,17 +456,17 @@ export const AttendanceCheckInScreen = () => {
                 <View style={[StyleSheet.absoluteFill, { backgroundColor: '#F8FAFC' }]} />
                 <SafeAreaView style={styles.safeArea} edges={['top']}>
                     <View style={styles.navHeader}>
-                        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                            <Ionicons name="chevron-back" size={20} color="#1F2937" />
+                        <TouchableOpacity style={styles.navIconButton} onPress={() => navigation.goBack()}>
+                            <Ionicons name="chevron-back" size={22} color={BRAND_TEAL} />
                         </TouchableOpacity>
-                        <Text style={styles.headerTitle}>{t('attendance.title')}</Text>
-                        <View style={{ width: 44 }} />
+                        <Text style={styles.headerTitle}>{i18n.language === 'km' ? 'វត្តមាន' : t('attendance.title')}</Text>
+                        <View style={{ width: 48 }} />
                     </View>
                     <View style={[styles.centerContainer, { paddingHorizontal: 30 }]}>
                         <View style={styles.sessionIconBg}>
                             <Ionicons name="business-outline" size={64} color="#9CA3AF" />
                         </View>
-                        <Text style={[styles.dateDisplay, { marginTop: 20, textAlign: 'center', color: '#1F2937' }]}>{t('attendance.notLinked')}</Text>
+                        <Text style={[{ fontSize: 24, fontWeight: '900' }, { marginTop: 20, textAlign: 'center', color: '#1F2937' }]}>{t('attendance.notLinked')}</Text>
                         <Text style={[styles.infoText, { textAlign: 'center', marginTop: 12, fontSize: 14, color: '#6B7280' }]}>
                             {t('attendance.notLinkedMsg')}
                         </Text>
@@ -483,30 +483,30 @@ export const AttendanceCheckInScreen = () => {
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" />
             <LinearGradient
-                colors={['#CCFBF1', '#F8FAFC', '#F8FAFC']}
+                colors={['#F0FDFA', '#F8FAFC']}
                 style={StyleSheet.absoluteFill}
             />
 
             <SafeAreaView style={styles.safeArea} edges={['top']}>
                 <View style={styles.navHeader}>
                     <TouchableOpacity
-                        style={styles.backButton}
+                        style={styles.navIconButton}
                         onPress={() => {
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                             navigation.goBack();
                         }}
                     >
-                        <Ionicons name="chevron-back" size={20} color={BRAND_TEAL} />
+                        <Ionicons name="chevron-back" size={24} color={BRAND_TEAL} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>{t('attendance.title')}</Text>
+                    <Text style={styles.headerTitle}>{i18n.language === 'km' ? 'វត្តមាន' : t('attendance.title')}</Text>
                     <TouchableOpacity
-                        style={styles.refreshButton}
+                        style={styles.navIconButton}
                         onPress={() => {
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                             fetchTodayStatus();
                         }}
                     >
-                        <Ionicons name="refresh" size={20} color={BRAND_TEAL} />
+                        <Ionicons name="refresh" size={24} color={BRAND_TEAL} />
                     </TouchableOpacity>
                 </View>
 
@@ -515,23 +515,54 @@ export const AttendanceCheckInScreen = () => {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    <Animated.View style={styles.headerContent}>
-                        <Text style={styles.dateDisplay}>
-                            {new Date().toLocaleDateString(i18n.language === 'km' ? 'km-KH' : 'en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                        </Text>
-                        <TouchableOpacity
-                            style={styles.gpsRow}
-                            onPress={() => fetchLocationAsync(true)}
-                            activeOpacity={0.7}
-                        >
-                            <View style={[
-                                styles.gpsDot,
-                                { backgroundColor: locationPermGranted ? '#10B981' : '#EF4444' }
-                            ]} />
-                            <Text style={styles.gpsStatusText}>{gpsText}</Text>
-                            <Ionicons name="refresh" size={12} color="#475569" style={{ marginLeft: 6 }} />
-                        </TouchableOpacity>
-                    </Animated.View>
+                    <View style={styles.premiumHeaderCard}>
+                        <LinearGradient
+                            colors={['#F0FDFA', '#FFFBEB']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={StyleSheet.absoluteFill}
+                        />
+                        <View style={styles.headerCardContent}>
+                            <View style={styles.dateInfoContainer}>
+                                <Text style={styles.welcomeText}>{t('attendance.hello')}, {user?.firstName || 'User'}</Text>
+                                <View style={styles.modernDateWrapper}>
+                                    <View style={styles.datePill}>
+                                        <Text style={styles.datePillDay}>
+                                            {new Date().toLocaleDateString(i18n.language === 'km' ? 'km-KH' : 'en-US', { day: '2-digit' })}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.dateTextGroup}>
+                                        <Text style={styles.dateTextMonth}>
+                                            {new Date().toLocaleDateString(i18n.language === 'km' ? 'km-KH' : 'en-US', { month: 'long', year: 'numeric' })}
+                                        </Text>
+                                        <Text style={styles.dateTextWeekday}>
+                                            {new Date().toLocaleDateString(i18n.language === 'km' ? 'km-KH' : 'en-US', { weekday: 'long' })}
+                                        </Text>
+                                    </View>
+                                </View>
+                            </View>
+
+                            <View style={styles.headerSeparator} />
+
+                            <TouchableOpacity
+                                style={styles.modernGpsContainer}
+                                onPress={() => fetchLocationAsync(true)}
+                                activeOpacity={0.7}
+                            >
+                                <View style={styles.gpsIconCircle}>
+                                    <Ionicons name="navigate" size={16} color={BRAND_TEAL} />
+                                </View>
+                                <View style={{ flex: 1, marginLeft: 12 }}>
+                                    <Text style={styles.gpsLabel}>{t('attendance.gpsLocation')}</Text>
+                                    <Text style={styles.gpsValue} numberOfLines={1}>{gpsText}</Text>
+                                </View>
+                                <View style={[
+                                    styles.gpsStatusDot,
+                                    { backgroundColor: locationPermGranted ? '#10B981' : '#EF4444' }
+                                ]} />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
 
                     <Animated.View>
                         <WeeklyStrip />
@@ -793,67 +824,120 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingHorizontal: 20,
+        paddingVertical: 16,
     },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 14,
-        backgroundColor: '#EFF6FF',
+    navIconButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 16,
+        backgroundColor: '#fff',
         alignItems: 'center',
         justifyContent: 'center',
         ...Shadows.sm,
-    },
-    refreshButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 14,
-        backgroundColor: '#EFF6FF',
-        alignItems: 'center',
-        justifyContent: 'center',
-        ...Shadows.sm,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
     },
     headerTitle: {
-        fontSize: 16,
+        fontSize: 20,
         fontWeight: '900',
-        color: '#1F2937',
-        letterSpacing: 2,
+        color: '#1E293B',
+        letterSpacing: 0.5,
     },
-    headerContent: {
-        marginTop: 20,
+    premiumHeaderCard: {
+        marginTop: 8,
         marginBottom: 28,
-    },
-    dateDisplay: {
-        fontSize: 28,
-        fontWeight: '900',
-        color: '#0F172A',
-        letterSpacing: -0.8,
-    },
-    gpsRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#fff',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-        marginTop: 10,
-        alignSelf: 'flex-start',
+        borderRadius: 28,
+        overflow: 'hidden',
         borderWidth: 1,
         borderColor: '#E2E8F0',
+        ...Shadows.lg,
+    },
+    headerCardContent: {
+        padding: 24,
+    },
+    dateInfoContainer: {
+        marginBottom: 20,
+    },
+    welcomeText: {
+        fontSize: 14,
+        color: '#64748B',
+        fontWeight: '600',
+        marginBottom: 12,
+        letterSpacing: 0.3,
+    },
+    modernDateWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    datePill: {
+        backgroundColor: BRAND_TEAL,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 18,
+        marginRight: 16,
+        ...Shadows.md,
+    },
+    datePillDay: {
+        fontSize: 24,
+        fontWeight: '900',
+        color: '#fff',
+    },
+    dateTextGroup: {
+        justifyContent: 'center',
+    },
+    dateTextMonth: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#1E293B',
+    },
+    dateTextWeekday: {
+        fontSize: 13,
+        color: '#94A3B8',
+        fontWeight: '600',
+        marginTop: 2,
+    },
+    headerSeparator: {
+        height: 1,
+        backgroundColor: '#F1F5F9',
+        marginBottom: 20,
+    },
+    modernGpsContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+        padding: 14,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+    },
+    gpsIconCircle: {
+        width: 36,
+        height: 36,
+        borderRadius: 12,
+        backgroundColor: '#fff',
+        alignItems: 'center',
+        justifyContent: 'center',
         ...Shadows.sm,
     },
-    gpsDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        marginRight: 6,
-    },
-    gpsStatusText: {
-        color: '#475569',
-        fontSize: 12,
+    gpsLabel: {
+        fontSize: 11,
         fontWeight: '700',
-        letterSpacing: 0.3,
+        color: '#94A3B8',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    gpsValue: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#475569',
+        marginTop: 2,
+    },
+    gpsStatusDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        marginLeft: 12,
     },
 
     weeklyContainer: {
