@@ -188,6 +188,10 @@ export const Typography = {
     medium: 'System',
     semibold: 'System',
     bold: 'System',
+    khmerBody: 'Battambang-Regular',
+    khmerBodyBold: 'Battambang-Bold',
+    khmerHeading: 'Koulen-Regular',
+    khmerQuote: 'Metal-Regular',
   },
 
   // Font Sizes (following 8-point grid)

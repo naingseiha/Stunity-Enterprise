@@ -16,7 +16,9 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { Colors, ColorScale } from '@/config';
+import { getKhmerRoleStyle } from '@/lib/khmerTypography';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -52,6 +54,9 @@ export const Button: React.FC<ButtonProps> = ({
   onPress,
   ...rest
 }) => {
+  const { i18n } = useTranslation();
+  const khmerHeadingStyle = getKhmerRoleStyle('heading', i18n.resolvedLanguage || i18n.language);
+
   const handlePress = (event: any) => {
     if (haptic && !disabled && !loading) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -72,6 +77,7 @@ export const Button: React.FC<ButtonProps> = ({
     styles.text,
     styles[`text_${size}`],
     styles[`text_${variant}`],
+    khmerHeadingStyle,
     disabled && styles.textDisabled,
     textStyle,
   ];

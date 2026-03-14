@@ -10,14 +10,20 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
 import { LogBox } from 'react-native';
 
 import { RootNavigator } from '@/navigation';
 import { useAuthStore } from '@/stores';
-import '@/lib/i18n'; // Initialize i18n
+import i18n from '@/lib/i18n'; // Initialize i18n
 import { SplashScreen } from '@/components/common';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { NotificationProvider } from '@/contexts';
+import {
+  KHMER_FONT_ASSETS,
+  initializeKhmerTypography,
+  setKhmerTypographyLanguage,
+} from '@/lib/khmerTypography';
 
 // Ignore specific warnings in development
 if (__DEV__) {
@@ -38,6 +44,8 @@ export default function App() {
   const [appIsReady, setAppIsReady] = useState(false);
   const [showSplash, setShowSplash] = useState(false);
   const { initialize } = useAuthStore();
+  const [fontsLoaded, fontLoadError] = useFonts(KHMER_FONT_ASSETS);
+  const areFontsReady = fontsLoaded || Boolean(fontLoadError);
 
   useEffect(() => {
     async function prepare() {
@@ -64,7 +72,26 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!appIsReady) return;
+    initializeKhmerTypography(i18n.resolvedLanguage || i18n.language);
+
+    const handleLanguageChanged = (language: string) => {
+      setKhmerTypographyLanguage(language);
+    };
+
+    i18n.on('languageChanged', handleLanguageChanged);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChanged);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (fontLoadError) {
+      console.warn('Failed to load Khmer fonts:', fontLoadError);
+    }
+  }, [fontLoadError]);
+
+  useEffect(() => {
+    if (!appIsReady || !areFontsReady) return;
 
     // Mount JS splash first, then hide native splash to avoid white transition flash.
     setShowSplash(true);
@@ -75,7 +102,7 @@ export default function App() {
     });
 
     return () => cancelAnimationFrame(frame);
-  }, [appIsReady]);
+  }, [appIsReady, areFontsReady]);
 
   const handleSplashComplete = useCallback(() => {
     setShowSplash(false);
@@ -88,7 +115,7 @@ export default function App() {
           <NotificationProvider>
             <StatusBar style="dark" translucent backgroundColor="transparent" />
             <View style={styles.contentContainer}>
-              {appIsReady && <RootNavigator />}
+              {appIsReady && areFontsReady && <RootNavigator />}
               {showSplash && (
                 <SplashScreen
                   onComplete={handleSplashComplete}

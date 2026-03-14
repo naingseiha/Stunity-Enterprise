@@ -2,12 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Battambang';
+  src: url('/fonts/khmer/Battambang/Battambang-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Battambang';
+  src: url('/fonts/khmer/Battambang/Battambang-Bold.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Koulen';
+  src: url('/fonts/khmer/Koulen/Koulen-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Metal';
+  src: url('/fonts/khmer/Metal/Metal-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
   --font-poppins: 'Poppins', sans-serif;
   --font-inter: 'Inter', sans-serif;
   --font-battambang: 'Battambang', sans-serif;
   --font-koulen: 'Koulen', sans-serif;
-  --font-moul: 'Moul', serif;
+  --font-metal: 'Metal', serif;
 }
 
 body {
@@ -39,17 +71,62 @@ textarea {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-[lang="km"] {
+[lang="km"],
+[lang="km"] body,
+[lang="km"] input,
+[lang="km"] textarea,
+[lang="km"] select {
   font-family: var(--font-battambang);
+  line-height: 1.8;
 }
 
 [lang="km"] h1,
-[lang="km"] h2 {
+[lang="km"] h2,
+[lang="km"] h3,
+[lang="km"] h4,
+[lang="km"] h5,
+[lang="km"] h6,
+[lang="km"] .heading-text,
+[lang="km"] .title-text,
+[lang="km"] [data-text-role='heading'] {
   font-family: var(--font-koulen);
 }
 
-[lang="km"] .display-text {
-  font-family: var(--font-moul);
+[lang="km"] button,
+[lang="km"] [role='button'],
+[lang="km"] .button-text,
+[lang="km"] [data-text-role='button'] {
+  font-family: var(--font-koulen);
+}
+
+[lang="km"] .profile-name,
+[lang="km"] .user-name,
+[lang="km"] .author-name,
+[lang="km"] [data-text-role='profile-name'],
+[lang="km"] [data-text-role='author-name'] {
+  font-family: var(--font-koulen);
+}
+
+[lang="km"] blockquote,
+[lang="km"] .display-text,
+[lang="km"] .short-quote,
+[lang="km"] .short-note,
+[lang="km"] [data-text-role='quote'],
+[lang="km"] [data-text-role='note'] {
+  font-family: var(--font-metal);
+}
+
+[lang="km"] .kh-heading {
+  font-family: var(--font-koulen);
+}
+
+[lang="km"] .kh-body {
+  font-family: var(--font-battambang);
+}
+
+[lang="km"] .kh-quote,
+[lang="km"] .kh-note {
+  font-family: var(--font-metal);
 }
 
 /* Hide scrollbar globally for clean UI (like LinkedIn) */
@@ -161,4 +238,3 @@ textarea {
 .animate-loading-bar {
   animation: loading-bar 1.5s ease-in-out infinite;
 }
-

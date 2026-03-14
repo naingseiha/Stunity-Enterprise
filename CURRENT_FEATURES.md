@@ -80,6 +80,14 @@ Platform-wide management area for super administrators. See [SUPER_ADMIN_AND_ENT
 - **Language Management (OTA translations)** — Super admin can edit `web`, `mobile`, and `global` translation keys from Admin UI and publish changes without app rebuilds
 - **Translation sync performance hardening** — Mobile sync now prioritizes active locale, uses per-locale ETag caching (`If-None-Match`), and backend serves `ETag`/`304` with deterministic global→app override precedence
 
+### Khmer Typography (Web + Mobile)
+- Locale-aware Khmer typography is now centralized for both apps when language is `km`.
+- **Koulen** is used for headings/titles, profile-name style text, and button labels.
+- **Battambang** remains the default for Khmer body text and form text.
+- **Metal** is reserved for short quotes/notes.
+- Mobile globally injects Khmer font roles through text rendering hooks (`Text`/`TextInput`) while preserving explicit custom component fonts.
+- Numeric-only text (for example ring counters like `1`, `95%`) stays in Latin/system digits and is not forced into Khmer display fonts.
+
 ### Enterprise Features
 - **Feature Flags** — Platform-wide or per-school; create, toggle, check via public API
 - **Platform Announcements** — Create, edit, delete; shown in `AnnouncementBanner`; priority levels (INFO/WARNING/URGENT)

@@ -9,7 +9,9 @@ module.exports = {
       fontFamily: {
         'battambang': ['"Battambang"', 'sans-serif'],
         'koulen': ['"Koulen"', 'sans-serif'],
-        'moul': ['"Moul"', 'serif'],
+        'metal': ['"Metal"', 'serif'],
+        // Backward-compatible alias for older class usage.
+        'moul': ['"Metal"', 'serif'],
         'poppins': ['"Poppins"', 'sans-serif'],
         'inter': ['"Inter"', 'sans-serif'],
       },
