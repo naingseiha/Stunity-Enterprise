@@ -81,23 +81,43 @@ const CircularProgress = ({ size, strokeWidth, progress, color }: any) => {
     );
 };
 
+const getLogEventDate = (log: any) => {
+    const candidates = [log?.timeIn, log?.timeOut, log?.updatedAt, log?.createdAt, log?.date];
+    for (const candidate of candidates) {
+        if (!candidate) continue;
+        const parsed = new Date(candidate);
+        if (!Number.isNaN(parsed.getTime())) {
+            return parsed;
+        }
+    }
+    return new Date();
+};
+
 const groupLogsByDate = (logs: any[]) => {
     const groups: { [key: string]: any } = {};
     logs.forEach(log => {
-        const dateKey = new Date(log.date).toDateString();
+        const eventDate = getLogEventDate(log);
+        const dateKey = eventDate.toDateString();
+
         if (!groups[dateKey]) {
             groups[dateKey] = {
-                date: log.date,
+                date: eventDate.toISOString(),
                 morning: null,
                 afternoon: null,
                 status: log.status
             };
         }
+
         if (log.session === 'MORNING') groups[dateKey].morning = log;
         else if (log.session === 'AFTERNOON') groups[dateKey].afternoon = log;
         else groups[dateKey].morning = log; // Fallback for old data
+
+        if (new Date(groups[dateKey].date).getTime() < eventDate.getTime()) {
+            groups[dateKey].date = eventDate.toISOString();
+        }
     });
-    return Object.values(groups);
+
+    return Object.values(groups).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
 
 const getDayStatus = (day: any) => {
@@ -328,17 +348,21 @@ export const AttendanceReportScreen = () => {
                             {groupLogsByDate(summary.checkInHistory).slice(0, 7).map((day: any, index: number) => {
                                 const dayStatus = getDayStatus(day);
                                 const statusUi = getStatusStyle(dayStatus);
+                                const morningStatusUi = getStatusStyle(day.morning?.status || 'UNKNOWN');
+                                const afternoonStatusUi = getStatusStyle(day.afternoon?.status || 'UNKNOWN');
 
                                 return (
                                     <View key={day.date || index} style={[styles.infoCard, { marginBottom: 12 }]}>
                                         <View style={styles.checkInLogHeader}>
                                             <View style={styles.checkInLogDate}>
-                                                <Ionicons name="calendar-outline" size={16} color="#6B7280" />
+                                                <View style={[styles.checkInDateIconBadge, { backgroundColor: statusUi.bg }]}>
+                                                    <Ionicons name="calendar-outline" size={14} color={statusUi.fg} />
+                                                </View>
                                                 <Text style={styles.dateText}>
                                                     {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                                                 </Text>
                                             </View>
-                                            <View style={[styles.statusBadge, { backgroundColor: statusUi.bg }]}>
+                                            <View style={[styles.statusBadge, { backgroundColor: statusUi.bg, borderColor: `${statusUi.fg}33` }]}>
                                                 <Text style={[styles.statusText, { color: statusUi.fg }]}>
                                                     {statusUi.label}
                                                 </Text>
@@ -347,9 +371,11 @@ export const AttendanceReportScreen = () => {
 
                                         <View style={styles.dailySessionsRow}>
                                             {/* Morning Session */}
-                                            <View style={styles.sessionBox}>
+                                            <View style={[styles.sessionBox, styles.sessionBoxMorning]}>
                                                 <View style={styles.sessionBoxHeader}>
-                                                    <Ionicons name="sunny-outline" size={14} color="#6B7280" />
+                                                    <View style={[styles.sessionHeaderIconBadge, styles.sessionHeaderIconMorning]}>
+                                                        <Ionicons name="sunny-outline" size={14} color="#D97706" />
+                                                    </View>
                                                     <Text style={styles.sessionBoxTitle}>Morning</Text>
                                                 </View>
                                                 <View style={styles.timeRow}>
@@ -364,15 +390,20 @@ export const AttendanceReportScreen = () => {
                                                         {day.morning?.timeOut ? new Date(day.morning.timeOut).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                                                     </Text>
                                                 </View>
-                                                <Text style={styles.sessionStatusText}>Status: {day.morning?.status || 'N/A'}</Text>
+                                                <View style={styles.sessionStatusRow}>
+                                                    <Text style={styles.sessionStatusLabel}>Status:</Text>
+                                                    <Text style={[styles.sessionStatusValue, { color: morningStatusUi.fg }]}>
+                                                        {morningStatusUi.label.toUpperCase()}
+                                                    </Text>
+                                                </View>
                                             </View>
 
-                                            <View style={styles.verticalDividerSmall} />
-
                                             {/* Afternoon Session */}
-                                            <View style={styles.sessionBox}>
+                                            <View style={[styles.sessionBox, styles.sessionBoxAfternoon]}>
                                                 <View style={styles.sessionBoxHeader}>
-                                                    <Ionicons name="partly-sunny-outline" size={14} color="#6B7280" />
+                                                    <View style={[styles.sessionHeaderIconBadge, styles.sessionHeaderIconAfternoon]}>
+                                                        <Ionicons name="partly-sunny-outline" size={14} color="#4338CA" />
+                                                    </View>
                                                     <Text style={styles.sessionBoxTitle}>Afternoon</Text>
                                                 </View>
                                                 <View style={styles.timeRow}>
@@ -387,7 +418,12 @@ export const AttendanceReportScreen = () => {
                                                         {day.afternoon?.timeOut ? new Date(day.afternoon.timeOut).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                                                     </Text>
                                                 </View>
-                                                <Text style={styles.sessionStatusText}>Status: {day.afternoon?.status || 'N/A'}</Text>
+                                                <View style={styles.sessionStatusRow}>
+                                                    <Text style={styles.sessionStatusLabel}>Status:</Text>
+                                                    <Text style={[styles.sessionStatusValue, { color: afternoonStatusUi.fg }]}>
+                                                        {afternoonStatusUi.label.toUpperCase()}
+                                                    </Text>
+                                                </View>
                                             </View>
                                         </View>
                                     </View>
@@ -573,6 +609,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 6,
     },
+    checkInDateIconBadge: {
+        width: 28,
+        height: 28,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     dateText: {
         fontSize: 14,
         fontWeight: '600',
@@ -582,6 +625,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 12,
+        borderWidth: 1,
     },
     statusText: {
         fontSize: 12,
@@ -593,15 +637,39 @@ const styles = StyleSheet.create({
         backgroundColor: '#F8FAFC',
         borderRadius: 16,
         padding: 14,
+        gap: 10,
     },
     sessionBox: {
         flex: 1,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 14,
+        padding: 10,
+        borderWidth: 1,
+    },
+    sessionBoxMorning: {
+        borderColor: '#FDE68A',
+    },
+    sessionBoxAfternoon: {
+        borderColor: '#C7D2FE',
     },
     sessionBoxHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
         marginBottom: 8,
+    },
+    sessionHeaderIconBadge: {
+        width: 24,
+        height: 24,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    sessionHeaderIconMorning: {
+        backgroundColor: '#FFFBEB',
+    },
+    sessionHeaderIconAfternoon: {
+        backgroundColor: '#EEF2FF',
     },
     sessionBoxTitle: {
         fontSize: 11,
@@ -625,17 +693,20 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#1E293B',
     },
-    sessionStatusText: {
+    sessionStatusRow: {
         marginTop: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    sessionStatusLabel: {
         fontSize: 11,
         fontWeight: '700',
         color: '#64748B',
     },
-    verticalDividerSmall: {
-        width: 1,
-        height: 40,
-        backgroundColor: '#E2E8F0',
-        marginHorizontal: 12,
+    sessionStatusValue: {
+        fontSize: 11,
+        fontWeight: '800',
     },
     breakdownHeader: {
         flexDirection: 'row',

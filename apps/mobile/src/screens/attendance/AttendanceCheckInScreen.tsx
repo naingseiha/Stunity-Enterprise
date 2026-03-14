@@ -506,17 +506,39 @@ export const AttendanceCheckInScreen = () => {
                     />
 
                     <Animated.View style={styles.permissionRequestCard}>
-                        <View style={styles.permissionRequestHeader}>
-                            <View style={styles.permissionRequestIconBg}>
-                                <Ionicons name="document-text-outline" size={22} color="#7C3AED" />
+                        <LinearGradient
+                            colors={['#8B5CF6', '#7C3AED', '#6D28D9']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.permissionHero}
+                        >
+                            <View style={styles.permissionRequestHeader}>
+                                <View style={styles.permissionRequestIconBg}>
+                                    <Ionicons name="document-text-outline" size={22} color="#6D28D9" />
+                                </View>
+                                <View style={styles.permissionRequestTextWrap}>
+                                    <Text style={styles.permissionRequestTitle}>Request Permission Online</Text>
+                                    <Text style={styles.permissionRequestSubtitle}>
+                                        Ask permission anywhere, even outside campus geofence.
+                                    </Text>
+                                </View>
+                                <View style={styles.permissionAnywhereBadge}>
+                                    <Ionicons name="globe-outline" size={12} color="#C4B5FD" />
+                                    <Text style={styles.permissionAnywhereBadgeText}>Anywhere</Text>
+                                </View>
                             </View>
-                            <View style={styles.permissionRequestTextWrap}>
-                                <Text style={styles.permissionRequestTitle}>Request Permission Online</Text>
-                                <Text style={styles.permissionRequestSubtitle}>
-                                    Submit a permission request from anywhere without GPS check-in.
-                                </Text>
+
+                            <View style={styles.permissionFeatureRow}>
+                                <View style={styles.permissionFeaturePill}>
+                                    <Ionicons name="locate-outline" size={13} color="#DDD6FE" />
+                                    <Text style={styles.permissionFeatureText}>No GPS required</Text>
+                                </View>
+                                <View style={styles.permissionFeaturePill}>
+                                    <Ionicons name="flash-outline" size={13} color="#DDD6FE" />
+                                    <Text style={styles.permissionFeatureText}>Instant request</Text>
+                                </View>
                             </View>
-                        </View>
+                        </LinearGradient>
 
                         <View style={styles.permissionActionRow}>
                             <TouchableOpacity
@@ -528,11 +550,18 @@ export const AttendanceCheckInScreen = () => {
                                 disabled={!!status?.MORNING || permissionProcessingSession !== null}
                             >
                                 {permissionProcessingSession === 'MORNING' ? (
-                                    <ActivityIndicator color="#fff" size="small" />
+                                    <ActivityIndicator color="#6D28D9" size="small" />
                                 ) : (
-                                    <Text style={styles.permissionActionButtonText}>
-                                        {status?.MORNING?.status === 'PERMISSION' ? 'Morning Requested' : 'Morning Permission'}
-                                    </Text>
+                                    <>
+                                        <Ionicons name="sunny-outline" size={18} color="#6D28D9" />
+                                        <View style={styles.permissionActionCopy}>
+                                            <Text style={styles.permissionActionButtonText}>
+                                                {status?.MORNING?.status === 'PERMISSION' ? 'Morning Requested' : 'Morning Permission'}
+                                            </Text>
+                                            <Text style={styles.permissionActionButtonHint}>07:00 AM - 12:00 PM</Text>
+                                        </View>
+                                        <Ionicons name="chevron-forward" size={16} color="#8B5CF6" />
+                                    </>
                                 )}
                             </TouchableOpacity>
 
@@ -545,11 +574,18 @@ export const AttendanceCheckInScreen = () => {
                                 disabled={!!status?.AFTERNOON || permissionProcessingSession !== null}
                             >
                                 {permissionProcessingSession === 'AFTERNOON' ? (
-                                    <ActivityIndicator color="#fff" size="small" />
+                                    <ActivityIndicator color="#6D28D9" size="small" />
                                 ) : (
-                                    <Text style={styles.permissionActionButtonText}>
-                                        {status?.AFTERNOON?.status === 'PERMISSION' ? 'Afternoon Requested' : 'Afternoon Permission'}
-                                    </Text>
+                                    <>
+                                        <Ionicons name="partly-sunny-outline" size={18} color="#6D28D9" />
+                                        <View style={styles.permissionActionCopy}>
+                                            <Text style={styles.permissionActionButtonText}>
+                                                {status?.AFTERNOON?.status === 'PERMISSION' ? 'Afternoon Requested' : 'Afternoon Permission'}
+                                            </Text>
+                                            <Text style={styles.permissionActionButtonHint}>12:00 PM - 06:00 PM</Text>
+                                        </View>
+                                        <Ionicons name="chevron-forward" size={16} color="#8B5CF6" />
+                                    </>
                                 )}
                             </TouchableOpacity>
                         </View>
@@ -591,15 +627,61 @@ export const AttendanceCheckInScreen = () => {
             >
                 <View style={styles.permissionModalBackdrop}>
                     <View style={styles.permissionModalCard}>
-                        <Text style={styles.permissionModalTitle}>Online Permission Request</Text>
-                        <Text style={styles.permissionModalSubtitle}>
-                            Session: {permissionSession}. Enter the reason for your request.
-                        </Text>
+                        <LinearGradient
+                            colors={['#EDE9FE', '#F5F3FF']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.permissionModalHeader}
+                        >
+                            <View style={styles.permissionModalHeaderIcon}>
+                                <Ionicons name="document-text-outline" size={20} color="#6D28D9" />
+                            </View>
+                            <View style={styles.permissionModalHeaderTextWrap}>
+                                <Text style={styles.permissionModalTitle}>Online Permission Request</Text>
+                                <Text style={styles.permissionModalSubtitle}>
+                                    Submit from anywhere. We'll mark selected session as permission.
+                                </Text>
+                            </View>
+                        </LinearGradient>
+
+                        <Text style={styles.permissionSessionLabel}>Select session</Text>
+                        <View style={styles.permissionSessionSelector}>
+                            {(['MORNING', 'AFTERNOON'] as const).map((sessionOption) => (
+                                <TouchableOpacity
+                                    key={sessionOption}
+                                    style={[
+                                        styles.permissionSessionChip,
+                                        permissionSession === sessionOption && styles.permissionSessionChipActive
+                                    ]}
+                                    onPress={() => setPermissionSession(sessionOption)}
+                                    disabled={permissionProcessingSession !== null}
+                                >
+                                    <Ionicons
+                                        name={sessionOption === 'MORNING' ? 'sunny-outline' : 'partly-sunny-outline'}
+                                        size={14}
+                                        color={permissionSession === sessionOption ? '#6D28D9' : '#64748B'}
+                                    />
+                                    <Text
+                                        style={[
+                                            styles.permissionSessionChipText,
+                                            permissionSession === sessionOption && styles.permissionSessionChipTextActive
+                                        ]}
+                                    >
+                                        {sessionOption === 'MORNING' ? 'Morning' : 'Afternoon'}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <View style={styles.permissionModalHintRow}>
+                            <Ionicons name="shield-checkmark-outline" size={14} color="#7C3AED" />
+                            <Text style={styles.permissionModalHintText}>No GPS check is required for permission requests.</Text>
+                        </View>
 
                         <TextInput
                             value={permissionReason}
                             onChangeText={setPermissionReason}
-                            placeholder="Example: Medical appointment, traffic delay, urgent family matter..."
+                            placeholder="Write a short reason (medical appointment, urgent family matter, transport issue...)"
                             placeholderTextColor="#94A3B8"
                             multiline
                             numberOfLines={4}
@@ -608,6 +690,10 @@ export const AttendanceCheckInScreen = () => {
                             textAlignVertical="top"
                             editable={permissionProcessingSession === null}
                         />
+                        <View style={styles.permissionInputFooter}>
+                            <Text style={styles.permissionInputHelper}>Please keep your reason clear and professional.</Text>
+                            <Text style={styles.permissionReasonCount}>{permissionReason.trim().length}/500</Text>
+                        </View>
 
                         <View style={styles.permissionModalActions}>
                             <TouchableOpacity
@@ -625,11 +711,21 @@ export const AttendanceCheckInScreen = () => {
                                 onPress={submitPermissionRequest}
                                 disabled={permissionProcessingSession !== null}
                             >
-                                {permissionProcessingSession !== null ? (
-                                    <ActivityIndicator color="#fff" size="small" />
-                                ) : (
-                                    <Text style={styles.permissionModalSubmitText}>Submit</Text>
-                                )}
+                                <LinearGradient
+                                    colors={permissionProcessingSession !== null ? ['#C4B5FD', '#A78BFA'] : ['#8B5CF6', '#6D28D9']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={styles.permissionModalSubmitGradient}
+                                >
+                                    {permissionProcessingSession !== null ? (
+                                        <ActivityIndicator color="#fff" size="small" />
+                                    ) : (
+                                        <>
+                                            <Ionicons name="paper-plane-outline" size={16} color="#fff" />
+                                            <Text style={styles.permissionModalSubmitText}>Submit Request</Text>
+                                        </>
+                                    )}
+                                </LinearGradient>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -982,62 +1078,118 @@ const styles = StyleSheet.create({
     },
     permissionRequestCard: {
         borderRadius: 24,
-        padding: 20,
         marginBottom: 16,
         borderWidth: 1,
-        borderColor: '#E9D5FF',
-        backgroundColor: '#FAF5FF',
+        borderColor: '#DDD6FE',
+        backgroundColor: '#F5F3FF',
+        overflow: 'hidden',
         ...Shadows.md,
+    },
+    permissionHero: {
+        paddingHorizontal: 20,
+        paddingTop: 18,
+        paddingBottom: 14,
     },
     permissionRequestHeader: {
         flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
+        alignItems: 'flex-start',
     },
     permissionRequestIconBg: {
         width: 48,
         height: 48,
         borderRadius: 16,
-        backgroundColor: '#EDE9FE',
+        backgroundColor: '#F5F3FF',
         alignItems: 'center',
         justifyContent: 'center',
     },
     permissionRequestTextWrap: {
         flex: 1,
-        marginLeft: 16,
+        marginLeft: 12,
     },
     permissionRequestTitle: {
         fontSize: 16,
         fontWeight: '800',
-        color: '#5B21B6',
+        color: '#FFFFFF',
     },
     permissionRequestSubtitle: {
         fontSize: 13,
-        color: '#7C3AED',
+        color: '#EDE9FE',
         marginTop: 4,
-        fontWeight: '500',
+        fontWeight: '600',
+        lineHeight: 18,
+    },
+    permissionAnywhereBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: 'rgba(255, 255, 255, 0.14)',
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        marginLeft: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.2)',
+    },
+    permissionAnywhereBadgeText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#EDE9FE',
+    },
+    permissionFeatureRow: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 12,
+    },
+    permissionFeaturePill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: 'rgba(255, 255, 255, 0.12)',
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+    },
+    permissionFeatureText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#EDE9FE',
     },
     permissionActionRow: {
         flexDirection: 'row',
+        paddingHorizontal: 16,
+        paddingBottom: 16,
+        paddingTop: 12,
         gap: 10,
     },
     permissionActionButton: {
         flex: 1,
-        backgroundColor: '#7C3AED',
+        backgroundColor: '#fff',
         borderRadius: 16,
+        paddingHorizontal: 12,
         paddingVertical: 12,
+        borderWidth: 1,
+        borderColor: '#DDD6FE',
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: 44,
+        minHeight: 62,
+        gap: 10,
     },
     permissionActionButtonDisabled: {
-        opacity: 0.45,
+        opacity: 0.55,
+    },
+    permissionActionCopy: {
+        flex: 1,
     },
     permissionActionButtonText: {
-        color: '#fff',
-        fontSize: 13,
+        color: '#5B21B6',
+        fontSize: 13.5,
         fontWeight: '800',
-        textAlign: 'center',
+    },
+    permissionActionButtonHint: {
+        marginTop: 2,
+        color: '#8B5CF6',
+        fontSize: 11,
+        fontWeight: '600',
     },
     permissionModalBackdrop: {
         flex: 1,
@@ -1048,36 +1200,130 @@ const styles = StyleSheet.create({
     permissionModalCard: {
         backgroundColor: '#fff',
         borderRadius: 20,
-        padding: 20,
+        padding: 16,
         borderWidth: 1,
         borderColor: '#E2E8F0',
         ...Shadows.lg,
     },
+    permissionModalHeader: {
+        borderRadius: 16,
+        padding: 14,
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#DDD6FE',
+    },
+    permissionModalHeaderIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 14,
+        backgroundColor: '#F5F3FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    permissionModalHeaderTextWrap: {
+        flex: 1,
+        marginLeft: 12,
+    },
     permissionModalTitle: {
-        fontSize: 18,
+        fontSize: 17,
         fontWeight: '800',
-        color: '#1E293B',
+        color: '#4C1D95',
     },
     permissionModalSubtitle: {
-        marginTop: 8,
-        fontSize: 13,
+        marginTop: 4,
+        fontSize: 12.5,
         color: '#64748B',
-        lineHeight: 18,
+        lineHeight: 17,
+    },
+    permissionSessionLabel: {
+        marginTop: 14,
+        marginBottom: 8,
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#475569',
+        textTransform: 'uppercase',
+        letterSpacing: 0.8,
+    },
+    permissionSessionSelector: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    permissionSessionChip: {
+        flex: 1,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#CBD5E1',
+        backgroundColor: '#F8FAFC',
+        paddingVertical: 10,
+        paddingHorizontal: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+    },
+    permissionSessionChipActive: {
+        borderColor: '#C4B5FD',
+        backgroundColor: '#F3E8FF',
+    },
+    permissionSessionChipText: {
+        fontSize: 13,
+        color: '#475569',
+        fontWeight: '700',
+    },
+    permissionSessionChipTextActive: {
+        color: '#6D28D9',
+    },
+    permissionModalHintRow: {
+        marginTop: 10,
+        borderRadius: 10,
+        backgroundColor: '#F5F3FF',
+        borderWidth: 1,
+        borderColor: '#DDD6FE',
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    permissionModalHintText: {
+        flex: 1,
+        fontSize: 11.5,
+        color: '#6D28D9',
+        fontWeight: '600',
     },
     permissionReasonInput: {
-        marginTop: 16,
+        marginTop: 12,
         borderWidth: 1,
         borderColor: '#CBD5E1',
         borderRadius: 12,
         paddingHorizontal: 12,
-        paddingVertical: 10,
-        minHeight: 100,
+        paddingVertical: 12,
+        minHeight: 108,
         fontSize: 14,
         color: '#0F172A',
         backgroundColor: '#F8FAFC',
     },
+    permissionInputFooter: {
+        marginTop: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
+    },
+    permissionInputHelper: {
+        flex: 1,
+        fontSize: 11.5,
+        color: '#64748B',
+        fontWeight: '500',
+    },
+    permissionReasonCount: {
+        fontSize: 11.5,
+        color: '#7C3AED',
+        fontWeight: '700',
+    },
     permissionModalActions: {
-        marginTop: 16,
+        marginTop: 14,
         flexDirection: 'row',
         gap: 10,
     },
@@ -1098,14 +1344,18 @@ const styles = StyleSheet.create({
     permissionModalSubmitButton: {
         flex: 1,
         borderRadius: 12,
-        backgroundColor: '#7C3AED',
-        paddingVertical: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: 44,
+        overflow: 'hidden',
+        minHeight: 46,
     },
     permissionModalSubmitButtonDisabled: {
         opacity: 0.6,
+    },
+    permissionModalSubmitGradient: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
     },
     permissionModalSubmitText: {
         fontSize: 14,

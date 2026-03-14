@@ -1,6 +1,6 @@
 # ✅ Stunity Enterprise — Current Features
 
-**Version:** 23.3 | **Updated:** March 11, 2026
+**Version:** 23.4 | **Updated:** March 14, 2026
 
 > This document lists all implemented and working features. For what's coming next, see NEXT_IMPLEMENTATION.md.
 
@@ -245,10 +245,13 @@ npm run seed:super-admin [email]
 
 ### Attendance
 - Mark attendance by session (morning/afternoon/full-day)
-- Attendance statuses: Present, Absent, Late, Excused
+- Attendance statuses: Present, Absent, Late, Excused, Permission
 - Session management (create/close)
 - Attendance report by student, class, date range
 - Teacher geofenced check-in/check-out now stores explicit selected session (MORNING/AFTERNOON) to prevent afternoon actions being auto-recorded as morning
+- Teacher can submit **online permission requests from anywhere** (outside geofence) for MORNING/AFTERNOON sessions directly in mobile attendance
+- Teacher **Attendance Recording** screen now surfaces permission clearly with improved status badges/icons and polished session cards
+- Attendance Recording date labels now use event timestamps (time-in/time-out) to avoid timezone day-shift mismatches on mobile
 - Absence notifications to parents AND students (via push + feed notification bridge)
 
 ### Timetable

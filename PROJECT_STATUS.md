@@ -1,8 +1,8 @@
 # 🎓 Stunity Enterprise — Project Status
 
-**Last Updated:** March 11, 2026
-**Version:** 23.3
-**Status:** 99% Complete — Attendance Session Accuracy + Login Persistence Hardened 🚀
+**Last Updated:** March 14, 2026
+**Version:** 23.4
+**Status:** 99% Complete — Teacher Permission Flow + Attendance Recording Polish 🚀
 
 ---
 
@@ -19,7 +19,18 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 
 ## ✅ Completed Features (v23.0)
 
-### ⚡ Latest Platform Updates (Mar 11, 2026)
+### ⚡ Latest Platform Updates (Mar 14, 2026)
+- **Teacher online permission workflow (mobile + attendance service)**
+  - Added `POST /attendance/teacher/permission-request` for session-based permission requests without geofence enforcement.
+  - Added mobile permission request actions in attendance check-in screen (morning/afternoon) with reason modal.
+  - Teacher report now includes permission totals and permission-aware status rendering in check-in history.
+- **Attendance Recording UI polish (mobile)**
+  - Upgraded permission card + modal visuals with stronger hierarchy, badges, and polished CTAs.
+  - Refreshed check-in history cards with status-tinted date badges and improved morning/afternoon icon color treatment.
+- **Attendance date rendering accuracy fix (mobile)**
+  - Fixed timezone day mismatch in Attendance Recording cards by grouping/rendering from actual event timestamps (`timeIn`/`timeOut`) instead of normalized server date only.
+
+### ⚡ Prior Platform Updates (Mar 11, 2026)
 - **Teacher attendance session accuracy (mobile + backend)**
   - Fixed issue where tapping **Start AFTERNOON** could still be recorded as morning due to server-side hour inference.
   - Attendance service now persists explicit session intent (`MORNING` / `AFTERNOON`) from mobile check-in/check-out requests.
@@ -30,7 +41,7 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
   - Refresh recovery path added before clearing session; session is cleared only on terminal token rejection.
   - Token retrieval now falls back to last known token when refresh is temporarily unavailable.
 
-### ⚡ Prior Platform Updates (Mar 10, 2026)
+### ⚡ Earlier Platform Updates (Mar 10, 2026)
 - **Mobile startup performance tuning**
   - Login-to-feed path optimized with auth-time feed prewarm
   - First-feed load hardened for Cloud Run free-tier cold starts (fallback + bounded retry + cache-first behavior)
