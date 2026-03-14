@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   Eye,
   Heart,
@@ -44,9 +45,9 @@ interface Insights {
 }
 
 const PERIOD_OPTIONS = [
-  { id: '7d', label: 'Last 7 days' },
-  { id: '30d', label: 'Last 30 days' },
-  { id: '90d', label: 'Last 90 days' },
+  { id: '7d', labelKey: 'insights.period.last7Days' },
+  { id: '30d', labelKey: 'insights.period.last30Days' },
+  { id: '90d', labelKey: 'insights.period.last90Days' },
 ];
 
 const POST_TYPE_ICONS: Record<string, any> = {
@@ -66,6 +67,7 @@ const POST_TYPE_COLORS: Record<string, string> = {
 };
 
 export default function InsightsDashboard({ apiUrl }: InsightsDashboardProps) {
+  const tFeed = useTranslations('feed');
   const [insights, setInsights] = useState<Insights | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('30d');
@@ -97,7 +99,7 @@ export default function InsightsDashboard({ apiUrl }: InsightsDashboardProps) {
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
         <Loader2 className="w-8 h-8 mx-auto text-purple-500 animate-spin mb-3" />
-        <p className="text-gray-600">Loading insights...</p>
+        <p className="text-gray-600">{tFeed('insights.loading')}</p>
       </div>
     );
   }
@@ -105,7 +107,7 @@ export default function InsightsDashboard({ apiUrl }: InsightsDashboardProps) {
   if (!insights) {
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
-        <p className="text-gray-600">Failed to load insights</p>
+        <p className="text-gray-600">{tFeed('insights.loadFailed')}</p>
       </div>
     );
   }
@@ -117,14 +119,14 @@ export default function InsightsDashboard({ apiUrl }: InsightsDashboardProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-purple-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Your Insights</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{tFeed('insights.title')}</h2>
           </div>
           <div className="relative">
             <button
               onClick={() => setShowPeriodDropdown(!showPeriodDropdown)}
               className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700"
             >
-              {PERIOD_OPTIONS.find(p => p.id === period)?.label}
+              {tFeed(PERIOD_OPTIONS.find(p => p.id === period)?.labelKey || 'insights.period.last30Days')}
               <ChevronDown className="w-4 h-4" />
             </button>
             {showPeriodDropdown && (
@@ -135,7 +137,7 @@ export default function InsightsDashboard({ apiUrl }: InsightsDashboardProps) {
                     onClick={() => { setPeriod(opt.id); setShowPeriodDropdown(false); }}
                     className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${period === opt.id ? 'bg-purple-50 text-purple-700' : 'text-gray-700'}`}
                   >
-                    {opt.label}
+                    {tFeed(opt.labelKey)}
                   </button>
                 ))}
               </div>
@@ -146,29 +148,51 @@ export default function InsightsDashboard({ apiUrl }: InsightsDashboardProps) {
 
       {/* Overview Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <StatCard icon={FileText} label="Posts" value={insights.totalPosts} color="blue" />
-        <StatCard icon={Eye} label="Views" value={insights.totalViews} color="purple" />
-        <StatCard icon={Heart} label="Likes" value={insights.totalLikes} color="red" />
-        <StatCard icon={MessageCircle} label="Comments" value={insights.totalComments} color="green" />
-        <StatCard icon={Share2} label="Shares" value={insights.totalShares} color="cyan" />
-        <StatCard icon={TrendingUp} label="Avg. Engagement" value={`${insights.avgEngagement}%`} color="orange" />
+        <StatCard icon={FileText} label={tFeed('insights.stats.posts')} value={insights.totalPosts} color="blue" />
+        <StatCard icon={Eye} label={tFeed('insights.stats.views')} value={insights.totalViews} color="purple" />
+        <StatCard icon={Heart} label={tFeed('insights.stats.likes')} value={insights.totalLikes} color="red" />
+        <StatCard icon={MessageCircle} label={tFeed('insights.stats.comments')} value={insights.totalComments} color="green" />
+        <StatCard icon={Share2} label={tFeed('insights.stats.shares')} value={insights.totalShares} color="cyan" />
+        <StatCard icon={TrendingUp} label={tFeed('insights.stats.avgEngagement')} value={`${insights.avgEngagement}%`} color="orange" />
       </div>
 
       {/* Posts by Type */}
       {Object.keys(insights.postsByType).length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Posts by Type</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">{tFeed('insights.postsByType')}</h3>
           <div className="flex flex-wrap gap-3">
             {Object.entries(insights.postsByType).map(([type, count]) => {
               const Icon = POST_TYPE_ICONS[type] || FileText;
+              const typeKeyMap: Record<string, string> = {
+                ARTICLE: 'postTypes.article',
+                POLL: 'postTypes.poll',
+                ANNOUNCEMENT: 'postTypes.announcement',
+                QUESTION: 'postTypes.question',
+                ACHIEVEMENT: 'postTypes.achievement',
+                TUTORIAL: 'postTypes.tutorial',
+                RESOURCE: 'postTypes.resource',
+                PROJECT: 'postTypes.project',
+                RESEARCH: 'postTypes.research',
+                COLLABORATION: 'postTypes.collaboration',
+                COURSE: 'postTypes.course',
+                QUIZ: 'postTypes.quiz',
+                EXAM: 'postTypes.exam',
+                ASSIGNMENT: 'postTypes.assignment',
+                REFLECTION: 'postTypes.reflection',
+                CLUB_CREATED: 'postTypes.studyClub',
+                EVENT_CREATED: 'postTypes.event',
+              };
+              const typeLabel = typeKeyMap[type]
+                ? tFeed(typeKeyMap[type])
+                : type.replace(/_/g, ' ').toLowerCase();
               return (
                 <div key={type} className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${POST_TYPE_COLORS[type] || 'bg-gray-100 text-gray-600'}`}>
                     <Icon className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{type.charAt(0) + type.slice(1).toLowerCase()}</p>
-                    <p className="text-xs text-gray-500">{count} post{count !== 1 ? 's' : ''}</p>
+                    <p className="text-sm font-medium text-gray-900">{typeLabel}</p>
+                    <p className="text-xs text-gray-500">{tFeed('insights.postCount', { count })}</p>
                   </div>
                 </div>
               );
@@ -180,7 +204,7 @@ export default function InsightsDashboard({ apiUrl }: InsightsDashboardProps) {
       {/* Top Performing Posts */}
       {insights.topPosts.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Top Performing Posts</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">{tFeed('insights.topPosts')}</h3>
           <div className="space-y-3">
             {insights.topPosts.map((post, idx) => {
               const Icon = POST_TYPE_ICONS[post.postType] || FileText;
@@ -205,7 +229,7 @@ export default function InsightsDashboard({ apiUrl }: InsightsDashboardProps) {
                         {post.comments}
                       </span>
                       <span className="text-green-600 font-medium">
-                        {post.engagement}% engagement
+                        {tFeed('insights.engagementRate', { rate: post.engagement })}
                       </span>
                     </div>
                   </div>

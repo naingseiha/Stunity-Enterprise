@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { 
   Trophy, 
   Star, 
@@ -80,15 +81,23 @@ const BADGE_STYLES = {
 };
 
 export default function TopContributorsWidget() {
+  const tFeed = useTranslations('feed');
+  const tCommon = useTranslations('common');
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [period, setPeriod] = useState<'week' | 'month'>('week');
+
+  const getRoleLabel = (role: string) => {
+    if (role.toLowerCase() === 'teacher') return tCommon('teacher');
+    if (role.toLowerCase() === 'student') return tFeed('widgets.topContributors.student');
+    return role;
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       {/* Header - Simple */}
       <div className="px-3 py-2.5 border-b border-gray-100">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-gray-900 text-sm">Top Contributors</h3>
+            <h3 className="font-semibold text-gray-900 text-sm">{tFeed('widgets.topContributors.title')}</h3>
           <div className="flex text-xs">
             <button
               onClick={() => setPeriod('week')}
@@ -96,7 +105,7 @@ export default function TopContributorsWidget() {
                 period === 'week' ? 'bg-amber-50 border-[#F9A825] text-[#F9A825]' : 'border-gray-200 text-gray-500'
               }`}
             >
-              Week
+              {tFeed('widgets.topContributors.week')}
             </button>
             <button
               onClick={() => setPeriod('month')}
@@ -104,7 +113,7 @@ export default function TopContributorsWidget() {
                 period === 'month' ? 'bg-amber-50 border-[#F9A825] text-[#F9A825]' : 'border-gray-200 text-gray-500'
               }`}
             >
-              Month
+              {tFeed('widgets.topContributors.month')}
             </button>
           </div>
         </div>
@@ -135,7 +144,7 @@ export default function TopContributorsWidget() {
                 <h4 className="font-medium text-gray-900 text-xs truncate">
                   {contributor.name}
                 </h4>
-                <p className="text-[11px] text-gray-400 capitalize">{contributor.role}</p>
+                <p className="text-[11px] text-gray-400 capitalize">{getRoleLabel(contributor.role)}</p>
               </div>
 
               {/* Points */}
@@ -148,7 +157,7 @@ export default function TopContributorsWidget() {
       {/* Footer */}
       <div className="px-3 py-2 border-t border-gray-100">
         <button className="text-xs text-gray-500 hover:text-[#F9A825] transition-colors">
-          View leaderboard →
+          {tFeed('widgets.topContributors.viewLeaderboard')} →
         </button>
       </div>
     </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   Activity,
   FileText,
@@ -9,7 +10,6 @@ import {
   Eye,
   Loader2,
   ArrowUp,
-  ArrowDown,
 } from 'lucide-react';
 
 interface ActivityDashboardProps {
@@ -33,6 +33,8 @@ interface ActivityData {
 }
 
 export default function ActivityDashboard({ apiUrl }: ActivityDashboardProps) {
+  const locale = useLocale();
+  const tFeed = useTranslations('feed');
   const [activity, setActivity] = useState<ActivityData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -62,7 +64,7 @@ export default function ActivityDashboard({ apiUrl }: ActivityDashboardProps) {
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
         <Loader2 className="w-8 h-8 mx-auto text-purple-500 animate-spin mb-3" />
-        <p className="text-gray-600">Loading activity...</p>
+        <p className="text-gray-600">{tFeed('activity.loading')}</p>
       </div>
     );
   }
@@ -70,7 +72,7 @@ export default function ActivityDashboard({ apiUrl }: ActivityDashboardProps) {
   if (!activity) {
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
-        <p className="text-gray-600">Failed to load activity</p>
+        <p className="text-gray-600">{tFeed('activity.loadFailed')}</p>
       </div>
     );
   }
@@ -86,7 +88,7 @@ export default function ActivityDashboard({ apiUrl }: ActivityDashboardProps) {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
         <div className="flex items-center gap-2">
           <Activity className="w-5 h-5 text-purple-600" />
-          <h2 className="text-lg font-semibold text-gray-900">Your Activity</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{tFeed('activity.title')}</h2>
         </div>
       </div>
 
@@ -101,12 +103,12 @@ export default function ActivityDashboard({ apiUrl }: ActivityDashboardProps) {
             {activity.postsThisWeek > 0 && (
               <span className="flex items-center gap-0.5 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
                 <ArrowUp className="w-3 h-3" />
-                {activity.postsThisWeek} this week
+                {tFeed('activity.thisWeek', { count: activity.postsThisWeek })}
               </span>
             )}
           </div>
           <p className="text-2xl font-bold text-gray-900">{activity.postsThisMonth}</p>
-          <p className="text-sm text-gray-500">Posts this month</p>
+          <p className="text-sm text-gray-500">{tFeed('activity.postsThisMonth')}</p>
         </div>
 
         {/* Views Received */}
@@ -115,7 +117,7 @@ export default function ActivityDashboard({ apiUrl }: ActivityDashboardProps) {
             <Eye className="w-5 h-5 text-purple-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900">{activity.viewsReceived}</p>
-          <p className="text-sm text-gray-500">Views received</p>
+          <p className="text-sm text-gray-500">{tFeed('activity.viewsReceived')}</p>
         </div>
 
         {/* Likes Received */}
@@ -124,7 +126,7 @@ export default function ActivityDashboard({ apiUrl }: ActivityDashboardProps) {
             <Heart className="w-5 h-5 text-red-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900">{activity.likesReceived}</p>
-          <p className="text-sm text-gray-500">Likes received</p>
+          <p className="text-sm text-gray-500">{tFeed('activity.likesReceived')}</p>
         </div>
 
         {/* Comments Received */}
@@ -133,13 +135,13 @@ export default function ActivityDashboard({ apiUrl }: ActivityDashboardProps) {
             <MessageCircle className="w-5 h-5 text-green-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900">{activity.commentsReceived}</p>
-          <p className="text-sm text-gray-500">Comments received</p>
+          <p className="text-sm text-gray-500">{tFeed('activity.commentsReceived')}</p>
         </div>
       </div>
 
       {/* Your Engagement */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
-        <h3 className="font-semibold text-gray-900 mb-4">Your Engagement</h3>
+        <h3 className="font-semibold text-gray-900 mb-4">{tFeed('activity.yourEngagement')}</h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
             <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
@@ -147,7 +149,7 @@ export default function ActivityDashboard({ apiUrl }: ActivityDashboardProps) {
             </div>
             <div>
               <p className="text-lg font-bold text-gray-900">{activity.likesGiven}</p>
-              <p className="text-xs text-gray-500">Likes given</p>
+              <p className="text-xs text-gray-500">{tFeed('activity.likesGiven')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
@@ -156,7 +158,7 @@ export default function ActivityDashboard({ apiUrl }: ActivityDashboardProps) {
             </div>
             <div>
               <p className="text-lg font-bold text-gray-900">{activity.commentsGiven}</p>
-              <p className="text-xs text-gray-500">Comments made</p>
+              <p className="text-xs text-gray-500">{tFeed('activity.commentsMade')}</p>
             </div>
           </div>
         </div>
@@ -164,7 +166,7 @@ export default function ActivityDashboard({ apiUrl }: ActivityDashboardProps) {
 
       {/* Activity Chart */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
-        <h3 className="font-semibold text-gray-900 mb-4">Daily Activity (Last 7 Days)</h3>
+        <h3 className="font-semibold text-gray-900 mb-4">{tFeed('activity.dailyLast7Days')}</h3>
         <div className="flex items-end gap-2 h-40">
           {activity.dailyActivity.map((day, idx) => {
             const total = day.posts + day.likes + day.comments;
@@ -180,27 +182,27 @@ export default function ActivityDashboard({ apiUrl }: ActivityDashboardProps) {
                       <div 
                         className="w-full bg-green-400 rounded-t"
                         style={{ height: `${commentsHeight}%`, minHeight: '4px' }}
-                        title={`${day.comments} comments`}
+                        title={tFeed('activity.commentsTooltip', { count: day.comments })}
                       />
                     )}
                     {day.likes > 0 && (
                       <div 
                         className="w-full bg-red-400"
                         style={{ height: `${likesHeight}%`, minHeight: '4px' }}
-                        title={`${day.likes} likes`}
+                        title={tFeed('activity.likesTooltip', { count: day.likes })}
                       />
                     )}
                     {day.posts > 0 && (
                       <div 
                         className="w-full bg-blue-400 rounded-t"
                         style={{ height: `${postsHeight}%`, minHeight: '4px' }}
-                        title={`${day.posts} posts`}
+                        title={tFeed('activity.postsTooltip', { count: day.posts })}
                       />
                     )}
                   </div>
                 </div>
                 <span className="text-[10px] text-gray-500">
-                  {new Date(day.date).toLocaleDateString('en', { weekday: 'short' })}
+                  {new Date(day.date).toLocaleDateString(locale === 'km' ? 'km-KH' : 'en-US', { weekday: 'short' })}
                 </span>
               </div>
             );
@@ -209,15 +211,15 @@ export default function ActivityDashboard({ apiUrl }: ActivityDashboardProps) {
         <div className="flex items-center justify-center gap-4 mt-4">
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded bg-blue-400" />
-            <span className="text-xs text-gray-600">Posts</span>
+            <span className="text-xs text-gray-600">{tFeed('activity.legend.posts')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded bg-red-400" />
-            <span className="text-xs text-gray-600">Likes</span>
+            <span className="text-xs text-gray-600">{tFeed('activity.legend.likes')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded bg-green-400" />
-            <span className="text-xs text-gray-600">Comments</span>
+            <span className="text-xs text-gray-600">{tFeed('activity.legend.comments')}</span>
           </div>
         </div>
       </div>

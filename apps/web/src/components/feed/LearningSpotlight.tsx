@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { 
   BookOpen, 
   Play, 
@@ -76,11 +77,12 @@ const TYPE_COLORS = {
 };
 
 export default function LearningSpotlight() {
+  const tFeed = useTranslations('feed');
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       {/* Header */}
       <div className="px-3 py-2.5 border-b border-gray-100">
-        <h3 className="font-semibold text-gray-900 text-sm">Learning Spotlight</h3>
+        <h3 className="font-semibold text-gray-900 text-sm">{tFeed('widgets.learningSpotlight.title')}</h3>
       </div>
 
       {/* Spotlight Items */}
@@ -111,7 +113,7 @@ export default function LearningSpotlight() {
       {/* Footer */}
       <div className="px-3 py-2 border-t border-gray-100">
         <button className="text-xs text-gray-500 hover:text-[#F9A825] transition-colors">
-          See all →
+          {tFeed('widgets.learningSpotlight.seeAll')} →
         </button>
       </div>
     </div>

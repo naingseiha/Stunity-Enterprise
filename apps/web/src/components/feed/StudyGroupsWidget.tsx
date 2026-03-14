@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
   Users,
   Lock,
@@ -55,6 +57,9 @@ const CLUB_TYPE_ICONS: Record<string, React.ReactNode> = {
 };
 
 export default function StudyGroupsWidget() {
+  const params = useParams();
+  const locale = (params?.locale as string) || 'en';
+  const tFeed = useTranslations('feed');
   const [clubs, setClubs] = useState<StudyClub[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -106,14 +111,14 @@ export default function StudyGroupsWidget() {
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
             <Users className="w-4 h-4 text-white" />
           </div>
-          <h3 className="font-semibold text-gray-900">Study Clubs</h3>
+          <h3 className="font-semibold text-gray-900">{tFeed('widgets.studyClubs.title')}</h3>
         </div>
         <Link
-          href="/en/clubs"
+          href={`/${locale}/clubs`}
           className="text-xs text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1"
         >
           <Plus className="w-3.5 h-3.5" />
-          Join
+          {tFeed('widgets.studyClubs.join')}
         </Link>
       </div>
 
@@ -128,20 +133,20 @@ export default function StudyGroupsWidget() {
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center mx-auto mb-3">
               <Users className="w-6 h-6 text-amber-500" />
             </div>
-            <p className="text-sm text-gray-500 mb-3">No clubs yet</p>
+            <p className="text-sm text-gray-500 mb-3">{tFeed('widgets.studyClubs.noClubs')}</p>
             <Link
-              href="/en/clubs"
+              href={`/${locale}/clubs`}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg text-xs font-medium hover:from-amber-600 hover:to-orange-600 transition-all"
             >
               <Plus className="w-3.5 h-3.5" />
-              Discover Clubs
+              {tFeed('widgets.studyClubs.discover')}
             </Link>
           </div>
         ) : (
           clubs.map((club) => (
             <Link
               key={club.id}
-              href={`/en/clubs/${club.id}`}
+              href={`/${locale}/clubs/${club.id}`}
               className="px-4 py-3 flex items-center gap-3 hover:bg-amber-50/50 transition-colors"
             >
               {/* Club Icon */}
@@ -160,7 +165,7 @@ export default function StudyGroupsWidget() {
                     {club._count.members}
                   </span>
                   <span>•</span>
-                  <span>{club._count.posts} posts</span>
+                  <span>{tFeed('widgets.studyClubs.posts', { count: club._count.posts })}</span>
                 </div>
               </div>
 
@@ -179,10 +184,10 @@ export default function StudyGroupsWidget() {
       {clubs.length > 0 && (
         <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50/50">
           <Link
-            href="/en/clubs"
+            href={`/${locale}/clubs`}
             className="text-xs text-gray-600 hover:text-amber-600 transition-colors font-medium flex items-center justify-center gap-1"
           >
-            View all clubs
+            {tFeed('widgets.studyClubs.viewAll')}
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>

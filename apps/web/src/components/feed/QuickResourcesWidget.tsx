@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { 
   BookOpen, 
   FileText, 
@@ -64,6 +65,7 @@ const TYPE_CONFIG = {
 };
 
 export default function QuickResourcesWidget() {
+  const tFeed = useTranslations('feed');
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   return (
@@ -75,8 +77,8 @@ export default function QuickResourcesWidget() {
             <Folder className="w-4 h-4 text-[#F9A825]" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 text-sm">Quick Resources</h3>
-            <p className="text-xs text-gray-400">Recent files</p>
+            <h3 className="font-semibold text-gray-900 text-sm">{tFeed('widgets.quickResources.title')}</h3>
+            <p className="text-xs text-gray-400">{tFeed('widgets.quickResources.recentFiles')}</p>
           </div>
         </div>
       </div>
@@ -112,7 +114,7 @@ export default function QuickResourcesWidget() {
                   </h4>
                   {resource.isNew && (
                     <span className="px-1.5 py-0.5 text-[10px] font-bold bg-amber-100 text-[#F9A825] rounded-full">
-                      NEW
+                      {tFeed('widgets.quickResources.new')}
                     </span>
                   )}
                   {resource.isFavorite && (
@@ -149,7 +151,7 @@ export default function QuickResourcesWidget() {
       {/* View All */}
       <div className="p-3 border-t border-gray-50">
         <button className="w-full text-center text-sm font-medium text-[#F9A825] hover:text-[#E89A1E] transition-colors">
-          Browse all resources →
+          {tFeed('widgets.quickResources.browseAll')} →
         </button>
       </div>
     </div>

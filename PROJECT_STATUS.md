@@ -20,6 +20,13 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 ## ✅ Completed Features (v23.0)
 
 ### ⚡ Latest Platform Updates (Mar 14, 2026)
+- **Web language parity + feed localization (web)**
+  - Completed Khmer/English language switching behavior on web with locale cookie persistence and safe locale-path replacement.
+  - Localized major feed surfaces (feed page, create-post modal, post card, analytics/activity/insights, and right sidebar widgets) with `next-intl` message keys in both `en` and `km`.
+  - Added fallback handling for `profile.viewProfile` key-shaped values in feed profile card to prevent raw key rendering in UI.
+- **Web runtime recovery for missing vendor chunk**
+  - Diagnosed `Cannot find module './vendor-chunks/@formatjs.js'` as stale/corrupted Next build output.
+  - Resolved by clearing `apps/web/.next` and rebuilding web output; compiled locale page load now succeeds.
 - **Enterprise OTA translation management (web admin + mobile runtime)**
   - Added Super Admin language management page to edit translation keys for `web`, `mobile`, and `global`.
   - Added auth-service translation routes for admin CRUD/sync and app-level runtime fetch (`/auth/translations/:app/:locale`).

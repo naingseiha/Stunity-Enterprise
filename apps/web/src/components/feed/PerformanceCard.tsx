@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Flame, Diamond, BookOpen, Trophy, ChevronRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
 import Link from 'next/link';
@@ -62,6 +63,7 @@ function ProgressRing({
 }
 
 export default function PerformanceCard({ user, locale }: PerformanceCardProps) {
+  const tFeed = useTranslations('feed');
   const [stats, setStats] = useState<LearningStats>({
     currentStreak: 0,
     totalPoints: 0,
@@ -153,7 +155,7 @@ export default function PerformanceCard({ user, locale }: PerformanceCardProps) 
             {/* Center level */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-2xl font-black text-gray-900 leading-none">{stats.level}</span>
-              <span className="text-[8px] font-bold text-gray-400 tracking-widest">LEVEL</span>
+              <span className="text-[8px] font-bold text-gray-400 tracking-widest">{tFeed('level')}</span>
             </div>
           </div>
 
@@ -164,21 +166,21 @@ export default function PerformanceCard({ user, locale }: PerformanceCardProps) 
                 <Diamond className="w-3.5 h-3.5 text-blue-600" />
               </div>
               <span className="text-sm font-bold text-gray-800">{stats.totalPoints.toLocaleString()}</span>
-              <span className="text-xs text-gray-500">XP</span>
+              <span className="text-xs text-gray-500">{tFeed('xp')}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center">
                 <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
               </div>
               <span className="text-sm font-bold text-gray-800">{stats.completedLessons}</span>
-              <span className="text-xs text-gray-500">Lessons</span>
+              <span className="text-xs text-gray-500">{tFeed('lessons')}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center">
                 <Flame className="w-3.5 h-3.5 text-orange-500" />
               </div>
               <span className="text-sm font-bold text-gray-800">{stats.currentStreak}</span>
-              <span className="text-xs text-gray-500">Day Streak</span>
+              <span className="text-xs text-gray-500">{tFeed('dayStreak')}</span>
             </div>
           </div>
 
@@ -202,8 +204,8 @@ export default function PerformanceCard({ user, locale }: PerformanceCardProps) 
         {/* XP Progress Bar */}
         <div className="mt-3 space-y-1">
           <div className="flex justify-between items-center text-[11px]">
-            <span className="font-semibold text-sky-600">{xpProgress} / {xpToNext} XP</span>
-            <span className="text-gray-400">Level {nextLevel}</span>
+            <span className="font-semibold text-sky-600">{xpProgress} / {xpToNext} {tFeed('xp')}</span>
+            <span className="text-gray-400">{tFeed('postCard.level', { level: nextLevel })}</span>
           </div>
           <div className="h-2 bg-sky-50 rounded-full overflow-hidden">
             <div 

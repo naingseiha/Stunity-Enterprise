@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import FeedZoomLoader from '@/components/feed/FeedZoomLoader';
@@ -127,20 +128,20 @@ interface Comment {
 }
 
 const POST_TYPE_FILTERS = [
-  { id: 'all', label: 'All Posts', icon: TrendingUp },
-  { id: 'ARTICLE', label: 'Articles', icon: FileText },
-  { id: 'POLL', label: 'Polls', icon: BarChart3 },
-  { id: 'ANNOUNCEMENT', label: 'Announcements', icon: Megaphone },
-  { id: 'QUESTION', label: 'Questions', icon: HelpCircle },
-  { id: 'ACHIEVEMENT', label: 'Achievements', icon: Award },
-  { id: 'TUTORIAL', label: 'Tutorials', icon: BookOpen },
-  { id: 'RESOURCE', label: 'Resources', icon: FolderOpen },
-  { id: 'QUIZ', label: 'Quizzes', icon: Trophy },
-  { id: 'PROJECT', label: 'Projects', icon: Rocket },
-  { id: 'RESEARCH', label: 'Research', icon: Microscope },
-  { id: 'COLLABORATION', label: 'Collaboration', icon: UsersRound },
-  { id: 'CLUB_CREATED', label: 'Study Clubs', icon: Users },
-  { id: 'EVENT_CREATED', label: 'Events', icon: Calendar },
+  { id: 'all', labelKey: 'filters.allPosts', icon: TrendingUp },
+  { id: 'ARTICLE', labelKey: 'filters.articles', icon: FileText },
+  { id: 'POLL', labelKey: 'filters.polls', icon: BarChart3 },
+  { id: 'ANNOUNCEMENT', labelKey: 'filters.announcements', icon: Megaphone },
+  { id: 'QUESTION', labelKey: 'filters.questions', icon: HelpCircle },
+  { id: 'ACHIEVEMENT', labelKey: 'filters.achievements', icon: Award },
+  { id: 'TUTORIAL', labelKey: 'filters.tutorials', icon: BookOpen },
+  { id: 'RESOURCE', labelKey: 'filters.resources', icon: FolderOpen },
+  { id: 'QUIZ', labelKey: 'filters.quizzes', icon: Trophy },
+  { id: 'PROJECT', labelKey: 'filters.projects', icon: Rocket },
+  { id: 'RESEARCH', labelKey: 'filters.research', icon: Microscope },
+  { id: 'COLLABORATION', labelKey: 'filters.collaboration', icon: UsersRound },
+  { id: 'CLUB_CREATED', labelKey: 'filters.studyClubs', icon: Users },
+  { id: 'EVENT_CREATED', labelKey: 'filters.events', icon: Calendar },
 ];
 
 export default function FeedPage(props: { params: Promise<{ locale: string }> }) {
@@ -151,6 +152,11 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
   } = params;
 
   const router = useRouter();
+  const tFeed = useTranslations('feed');
+  const tCommon = useTranslations('common');
+  const tProfile = useTranslations('profile');
+  const tSettings = useTranslations('settings');
+  const tAuth = useTranslations('auth');
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('feed');
@@ -695,21 +701,6 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
     }
   };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString();
-  };
-
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
   };
@@ -744,12 +735,45 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
     setShowAnalyticsModal(true);
   };
 
+  const getRoleLabel = (role?: string) => {
+    switch (role) {
+      case 'ADMIN':
+        return tProfile('roles.admin');
+      case 'SUPER_ADMIN':
+        return tProfile('roles.superAdmin');
+      case 'TEACHER':
+        return tProfile('roles.teacher');
+      case 'STUDENT':
+        return tProfile('roles.student');
+      case 'STAFF':
+        return tProfile('roles.staff');
+      default:
+        return role?.toLowerCase().replace('_', ' ') || tCommon('unknown');
+    }
+  };
+
+  const selectedFilter = POST_TYPE_FILTERS.find((f) => f.id === postTypeFilter) || POST_TYPE_FILTERS[0];
+  const selectedFilterLabel = tFeed(selectedFilter.labelKey);
+  const viewProfileLabel = (() => {
+    const translated = tProfile('viewProfile');
+    return translated === 'profile.viewProfile'
+      ? `${tCommon('view')} ${tCommon('profile')}`
+      : translated;
+  })();
+
   const tabs = [
-    { id: 'feed', label: 'Feed', icon: TrendingUp },
-    { id: 'posts', label: 'My Posts', icon: BookOpen },
-    { id: 'insights', label: 'Insights', icon: BarChart3 },
-    { id: 'activity', label: 'Activity', icon: Activity },
-    { id: 'bookmarks', label: 'Saved', icon: Bookmark },
+    { id: 'feed', label: tFeed('tabs.feed'), icon: TrendingUp },
+    { id: 'posts', label: tFeed('tabs.myPosts'), icon: BookOpen },
+    { id: 'insights', label: tFeed('tabs.insights'), icon: BarChart3 },
+    { id: 'activity', label: tFeed('tabs.activity'), icon: Activity },
+    { id: 'bookmarks', label: tFeed('tabs.saved'), icon: Bookmark },
+  ];
+
+  const sidebarTabs = [
+    { id: 'bookmarks', label: tFeed('tabs.saved'), icon: Bookmark },
+    { id: 'posts', label: tFeed('tabs.myPosts'), icon: BookOpen },
+    { id: 'insights', label: tFeed('tabs.analytics'), icon: BarChart3 },
+    { id: 'activity', label: tFeed('tabs.activity'), icon: Activity },
   ];
 
   return (
@@ -807,12 +831,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                     {user.role === 'STUDENT' && <BookOpen className="w-3 h-3 text-[#F9A825]" />}
                     {user.role === 'STAFF' && <Users className="w-3 h-3 text-[#F9A825]" />}
                     <span className="text-xs text-[#F9A825] font-medium">
-                      {user.role === 'ADMIN' ? 'Administrator' :
-                        user.role === 'SUPER_ADMIN' ? 'Platform Admin' :
-                          user.role === 'TEACHER' ? 'Teacher' :
-                            user.role === 'STUDENT' ? 'Learner' :
-                              user.role === 'STAFF' ? 'Staff Member' :
-                                user.role?.toLowerCase().replace('_', ' ')}
+                      {getRoleLabel(user.role)}
                     </span>
                   </div>
                   <Link
@@ -820,7 +839,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                     className="inline-flex items-center gap-1 mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
                   >
                     <User className="w-3 h-3" />
-                    View Profile
+                    {viewProfileLabel}
                   </Link>
                 </div>
 
@@ -836,7 +855,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                         <Zap className="w-3.5 h-3.5 text-amber-500" />
                         <span className="text-sm font-bold text-gray-900">{posts.reduce((sum, p) => sum + (p.likesCount || 0), 0)}</span>
                       </div>
-                      <p className="text-[10px] text-gray-500 mt-0.5">Engagement</p>
+                      <p className="text-[10px] text-gray-500 mt-0.5">{tFeed('profileMetrics.engagement')}</p>
                     </button>
 
                     {/* Impact Score - Role-based */}
@@ -853,7 +872,11 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                         </span>
                       </div>
                       <p className="text-[10px] text-gray-500 mt-0.5">
-                        {user.role === 'TEACHER' ? 'Impact' : (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') ? 'Reach' : 'Learning'}
+                        {user.role === 'TEACHER'
+                          ? tFeed('profileMetrics.impact')
+                          : (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN')
+                            ? tFeed('profileMetrics.reach')
+                            : tFeed('profileMetrics.learning')}
                       </p>
                     </button>
 
@@ -867,7 +890,11 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                         <span className="text-sm font-bold text-gray-900">{myPosts.length || 0}</span>
                       </div>
                       <p className="text-[10px] text-gray-500 mt-0.5">
-                        {user.role === 'TEACHER' ? 'Lessons' : (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') ? 'Updates' : 'Shares'}
+                        {user.role === 'TEACHER'
+                          ? tFeed('profileMetrics.lessons')
+                          : (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN')
+                            ? tFeed('profileMetrics.updates')
+                            : tFeed('profileMetrics.shares')}
                       </p>
                     </button>
 
@@ -879,15 +906,23 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                       <div className="flex items-center justify-center gap-1">
                         <Trophy className="w-3.5 h-3.5 text-purple-500" />
                         <span className="text-sm font-bold text-gray-900">
-                          {user.role === 'TEACHER' ? 'Expert' :
-                            (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') ? 'Leader' :
-                              user.role === 'STUDENT' ? 'Rising' : 'Active'}
+                          {user.role === 'TEACHER'
+                            ? tFeed('profileMetrics.expert')
+                            : (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN')
+                              ? tFeed('profileMetrics.leader')
+                              : user.role === 'STUDENT'
+                                ? tFeed('profileMetrics.rising')
+                                : tFeed('profileMetrics.active')}
                         </span>
                       </div>
                       <p className="text-[10px] text-gray-500 mt-0.5">
-                        {user.role === 'TEACHER' ? 'Educator' :
-                          (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') ? 'Role' :
-                            user.role === 'STUDENT' ? 'Star' : 'Status'}
+                        {user.role === 'TEACHER'
+                          ? tFeed('profileMetrics.educator')
+                          : (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN')
+                            ? tFeed('profileMetrics.role')
+                            : user.role === 'STUDENT'
+                              ? tFeed('profileMetrics.star')
+                              : tFeed('profileMetrics.status')}
                       </p>
                     </button>
                   </div>
@@ -897,7 +932,9 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                 <div className="border-t border-gray-100 px-3 py-2 flex items-center justify-between text-[10px] text-gray-400">
                   <div className="flex items-center gap-1">
                     <Eye className="w-3 h-3" />
-                    <span>{posts.length * 12 + myPosts.length * 5} views this week</span>
+                    <span>
+                      {tFeed('profileMetrics.viewsThisWeek', { count: posts.length * 12 + myPosts.length * 5 })}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1">
                     <TrendingUp className="w-3 h-3 text-emerald-500" />
@@ -909,12 +946,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
               {/* Quick Links - Minimal */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <nav className="py-1">
-                  {[
-                    { id: 'bookmarks', label: 'Saved', icon: Bookmark },
-                    { id: 'posts', label: 'My Posts', icon: BookOpen },
-                    { id: 'insights', label: 'Analytics', icon: BarChart3 },
-                    { id: 'activity', label: 'Activity', icon: Activity },
-                  ].map((item) => {
+                  {sidebarTabs.map((item) => {
                     const Icon = item.icon;
                     return (
                       <button
@@ -974,7 +1006,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                   onClick={() => setShowCreateModal(true)}
                   className="flex-1 text-left px-4 py-2.5 bg-white rounded-full text-gray-500 hover:bg-gray-100 transition-colors text-sm border border-gray-300"
                 >
-                  What's on your mind?
+                  {tFeed('createPost.askMind')}
                 </button>
               </div>
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
@@ -983,28 +1015,28 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                   className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
                 >
                   <ImageIcon className="w-5 h-5 text-blue-500" />
-                  <span className="text-xs font-medium hidden sm:inline">Photo</span>
+                  <span className="text-xs font-medium hidden sm:inline">{tFeed('createPost.photo')}</span>
                 </button>
                 <button
                   onClick={() => setShowCreateModal(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
                 >
                   <BarChart3 className="w-5 h-5 text-amber-500" />
-                  <span className="text-xs font-medium hidden sm:inline">Poll</span>
+                  <span className="text-xs font-medium hidden sm:inline">{tFeed('poll')}</span>
                 </button>
                 <button
                   onClick={() => setShowCreateModal(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
                 >
                   <Megaphone className="w-5 h-5 text-rose-500" />
-                  <span className="text-xs font-medium hidden sm:inline">Announce</span>
+                  <span className="text-xs font-medium hidden sm:inline">{tFeed('createPost.announce')}</span>
                 </button>
                 <button
                   onClick={() => setShowCreateModal(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
                 >
                   <HelpCircle className="w-5 h-5 text-teal-500" />
-                  <span className="text-xs font-medium hidden sm:inline">Ask</span>
+                  <span className="text-xs font-medium hidden sm:inline">{tFeed('ask')}</span>
                 </button>
               </div>
             </div>
@@ -1024,7 +1056,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                     >
                       <Filter className="w-3.5 h-3.5" />
                       <span className="font-medium">
-                        {POST_TYPE_FILTERS.find(f => f.id === postTypeFilter)?.label}
+                        {selectedFilterLabel}
                       </span>
                     </button>
 
@@ -1043,7 +1075,9 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                                 }`}
                             >
                               <Icon className={`w-4 h-4 ${postTypeFilter === filter.id ? 'text-[#F9A825]' : 'text-gray-500'}`} />
-                              <span className={`text-sm ${postTypeFilter === filter.id ? 'text-[#F9A825] font-medium' : 'text-gray-700'}`}>{filter.label}</span>
+                              <span className={`text-sm ${postTypeFilter === filter.id ? 'text-[#F9A825] font-medium' : 'text-gray-700'}`}>
+                                {tFeed(filter.labelKey)}
+                              </span>
                             </button>
                           );
                         })}
@@ -1057,7 +1091,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                     className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-[#F9A825] hover:bg-amber-50 rounded-full transition-all duration-200"
                   >
                     <RefreshCw className={`w-4 h-4 ${loadingPosts ? 'animate-spin' : ''}`} />
-                    Refresh
+                    {tFeed('actions.refresh')}
                   </button>
 
                   {/* Real-time connection indicator */}
@@ -1068,12 +1102,12 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                     {isConnected ? (
                       <>
                         <Wifi className="w-3 h-3" />
-                        <span className="hidden sm:inline">Live</span>
+                        <span className="hidden sm:inline">{tFeed('connection.live')}</span>
                       </>
                     ) : (
                       <>
                         <WifiOff className="w-3 h-3" />
-                        <span className="hidden sm:inline">Offline</span>
+                        <span className="hidden sm:inline">{tFeed('connection.offline')}</span>
                       </>
                     )}
                   </div>
@@ -1087,7 +1121,9 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                   >
                     <Sparkles className="w-4 h-4" />
                     <span className="font-medium">
-                      {newPostsAvailable} new {newPostsAvailable === 1 ? 'post' : 'posts'} available
+                      {newPostsAvailable === 1
+                        ? tFeed('connection.oneNewPost')
+                        : tFeed('connection.manyNewPosts', { count: newPostsAvailable })}
                     </span>
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -1104,14 +1140,14 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                     <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-[#F9A825]/20 to-[#FFB74D]/20 flex items-center justify-center animate-pulse">
                       <Sparkles className="w-10 h-10 text-[#F9A825]" />
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Stunity!</h3>
-                    <p className="text-gray-600 mb-6 max-w-sm mx-auto">Be the first to share knowledge, ask questions, or celebrate achievements with your school community.</p>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{tFeed('empty.welcomeTitle')}</h3>
+                    <p className="text-gray-600 mb-6 max-w-sm mx-auto">{tFeed('empty.welcomeMessage')}</p>
                     <button
                       onClick={() => setShowCreateModal(true)}
                       className="inline-flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-[#F9A825] to-[#FFB74D] text-white rounded-full font-semibold hover:from-[#E89A1E] hover:to-[#FF9800] transition-all shadow-lg shadow-emerald-200 transform hover:scale-105"
                     >
                       <Send className="w-5 h-5" />
-                      Create Your First Post
+                      {tFeed('empty.createFirstPost')}
                     </button>
                   </div>
                 )}
@@ -1225,13 +1261,15 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#F9A825]/20 to-[#FFB74D]/20 flex items-center justify-center">
                       <Filter className="w-8 h-8 text-[#F9A825]" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">No {POST_TYPE_FILTERS.find(f => f.id === postTypeFilter)?.label.toLowerCase()}</h3>
-                    <p className="text-gray-600 mb-4">Try selecting a different filter or create a new post!</p>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                      {tFeed('empty.noPostsForFilter', { filter: selectedFilterLabel })}
+                    </h3>
+                    <p className="text-gray-600 mb-4">{tFeed('empty.tryDifferentFilter')}</p>
                     <button
                       onClick={() => setPostTypeFilter('all')}
                       className="text-[#F9A825] hover:text-[#E89A1E] font-medium"
                     >
-                      Show all posts
+                      {tFeed('empty.showAllPosts')}
                     </button>
                   </div>
                 )}
@@ -1246,14 +1284,14 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                     <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-[#F9A825]/20 to-[#FFB74D]/20 flex items-center justify-center">
                       <BookOpen className="w-10 h-10 text-[#F9A825]" />
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">No posts yet</h3>
-                    <p className="text-gray-600 mb-6">Share your first post with your school community!</p>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{tFeed('empty.noMyPosts')}</h3>
+                    <p className="text-gray-600 mb-6">{tFeed('empty.shareFirstPost')}</p>
                     <button
                       onClick={() => setShowCreateModal(true)}
                       className="inline-flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-[#F9A825] to-[#FFB74D] text-white rounded-full font-semibold hover:from-[#E89A1E] hover:to-[#FF9800] transition-all shadow-lg shadow-emerald-200 transform hover:scale-105"
                     >
                       <Send className="w-5 h-5" />
-                      Create Post
+                      {tFeed('createPost.title')}
                     </button>
                   </div>
                 ) : (
@@ -1376,8 +1414,8 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                     <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-100 to-yellow-100 flex items-center justify-center">
                       <Bookmark className="w-10 h-10 text-amber-500" />
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">No saved posts</h3>
-                    <p className="text-gray-600">Posts you bookmark will appear here for easy access.</p>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{tFeed('empty.noSavedPosts')}</h3>
+                    <p className="text-gray-600">{tFeed('empty.savedPostsHint')}</p>
                   </div>
                 ) : (
                   bookmarkedPosts.map((post, index) => (
@@ -1503,10 +1541,10 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
               {/* Footer Links */}
               <div className="text-xs text-gray-400 px-2 pt-2">
                 <div className="flex flex-wrap gap-x-3 gap-y-1">
-                  <a href="#" className="hover:text-[#F9A825] transition-colors">About</a>
-                  <a href="#" className="hover:text-[#F9A825] transition-colors">Help</a>
-                  <a href="#" className="hover:text-[#F9A825] transition-colors">Privacy</a>
-                  <a href="#" className="hover:text-[#F9A825] transition-colors">Terms</a>
+                  <a href="#" className="hover:text-[#F9A825] transition-colors">{tSettings('about')}</a>
+                  <a href="#" className="hover:text-[#F9A825] transition-colors">{tSettings('helpCenter')}</a>
+                  <a href="#" className="hover:text-[#F9A825] transition-colors">{tAuth('privacyPolicy')}</a>
+                  <a href="#" className="hover:text-[#F9A825] transition-colors">{tAuth('termsOfService')}</a>
                 </div>
                 <p className="mt-3 flex items-center gap-1">
                   <span className="font-semibold text-[#F9A825]">Stunity</span> © 2026

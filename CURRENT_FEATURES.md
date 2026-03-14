@@ -329,6 +329,9 @@ npm run seed:super-admin [email]
 - Social feed with SSE real-time (new post notification pill + real-time comments)
 - 7 post type cards (Quiz shows badge; full quiz card UI coming)
 - Create posts: Text, Poll, Announcement, Question, Project, **Course, Exam** (all with full builder UIs)
+- **Web Khmer/English language switch parity** — Robust locale switching with persisted `NEXT_LOCALE` cookie and query-preserving route updates
+- **Feed localization parity (web)** — Feed page, create-post modal, post card, analytics/activity/insights, and core feed widgets now use `next-intl` keys for `en`/`km`
+- **Translation fallback hardening** — Feed profile card safely falls back when OTA payload returns key-shaped values (e.g., `profile.viewProfile`)
 - **Repost button** — full repost-as-post (parity with mobile)
 - **Real-time comments** via SSE with exponential backoff reconnection
 - Analytics modal (redesigned to match mobile)

@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
 import {
@@ -70,35 +71,37 @@ export interface CreatePostData {
 }
 
 const POST_TYPES = [
-  { id: 'ARTICLE', label: 'Article', icon: FileText, description: 'Share thoughts or updates', color: 'green' },
-  { id: 'POLL', label: 'Poll', icon: BarChart3, description: 'Ask for opinions', color: 'violet' },
-  { id: 'ANNOUNCEMENT', label: 'Announcement', icon: Megaphone, description: 'Official announcements', color: 'rose' },
-  { id: 'QUESTION', label: 'Question', icon: HelpCircle, description: 'Ask the community', color: 'teal' },
-  { id: 'ACHIEVEMENT', label: 'Achievement', icon: Award, description: 'Celebrate success', color: 'amber' },
-  { id: 'TUTORIAL', label: 'Tutorial', icon: BookOpen, description: 'Share how-to guides', color: 'blue' },
-  { id: 'RESOURCE', label: 'Resource', icon: FolderOpen, description: 'Share learning materials', color: 'indigo' },
-  { id: 'PROJECT', label: 'Project', icon: Rocket, description: 'Showcase your work', color: 'orange' },
-  { id: 'RESEARCH', label: 'Research', icon: Microscope, description: 'Share findings', color: 'cyan' },
-  { id: 'COLLABORATION', label: 'Collaboration', icon: UsersRound, description: 'Find study partners', color: 'pink' },
-  { id: 'QUIZ', label: 'Quiz', icon: HelpCircle, description: 'Test knowledge', color: 'purple' },
-  { id: 'COURSE', label: 'Course', icon: GraduationCap, description: 'Create a learning course', color: 'emerald' },
-  { id: 'EXAM', label: 'Exam', icon: ClipboardList, description: 'Formal assessment', color: 'red' },
+  { id: 'ARTICLE', labelKey: 'postTypes.article', descriptionKey: 'createPost.postTypeDescriptions.article', icon: FileText, color: 'green' },
+  { id: 'POLL', labelKey: 'postTypes.poll', descriptionKey: 'createPost.postTypeDescriptions.poll', icon: BarChart3, color: 'violet' },
+  { id: 'ANNOUNCEMENT', labelKey: 'postTypes.announcement', descriptionKey: 'createPost.postTypeDescriptions.announcement', icon: Megaphone, color: 'rose' },
+  { id: 'QUESTION', labelKey: 'postTypes.question', descriptionKey: 'createPost.postTypeDescriptions.question', icon: HelpCircle, color: 'teal' },
+  { id: 'ACHIEVEMENT', labelKey: 'postTypes.achievement', descriptionKey: 'createPost.postTypeDescriptions.achievement', icon: Award, color: 'amber' },
+  { id: 'TUTORIAL', labelKey: 'postTypes.tutorial', descriptionKey: 'createPost.postTypeDescriptions.tutorial', icon: BookOpen, color: 'blue' },
+  { id: 'RESOURCE', labelKey: 'postTypes.resource', descriptionKey: 'createPost.postTypeDescriptions.resource', icon: FolderOpen, color: 'indigo' },
+  { id: 'PROJECT', labelKey: 'postTypes.project', descriptionKey: 'createPost.postTypeDescriptions.project', icon: Rocket, color: 'orange' },
+  { id: 'RESEARCH', labelKey: 'postTypes.research', descriptionKey: 'createPost.postTypeDescriptions.research', icon: Microscope, color: 'cyan' },
+  { id: 'COLLABORATION', labelKey: 'postTypes.collaboration', descriptionKey: 'createPost.postTypeDescriptions.collaboration', icon: UsersRound, color: 'pink' },
+  { id: 'QUIZ', labelKey: 'postTypes.quiz', descriptionKey: 'createPost.postTypeDescriptions.quiz', icon: HelpCircle, color: 'purple' },
+  { id: 'COURSE', labelKey: 'postTypes.course', descriptionKey: 'createPost.postTypeDescriptions.course', icon: GraduationCap, color: 'emerald' },
+  { id: 'EXAM', labelKey: 'postTypes.exam', descriptionKey: 'createPost.postTypeDescriptions.exam', icon: ClipboardList, color: 'red' },
 ];
 
 const VISIBILITY_OPTIONS = [
-  { id: 'PUBLIC', label: 'Public', icon: Globe, description: 'Anyone can see' },
-  { id: 'SCHOOL', label: 'School', icon: School, description: 'School members only' },
-  { id: 'CLASS', label: 'Class', icon: Users, description: 'Class members only' },
-  { id: 'PRIVATE', label: 'Private', icon: Lock, description: 'Only you' },
+  { id: 'PUBLIC', labelKey: 'createPost.visibility.public', icon: Globe, descriptionKey: 'createPost.visibilityDescriptions.public' },
+  { id: 'SCHOOL', labelKey: 'createPost.visibility.school', icon: School, descriptionKey: 'createPost.visibilityDescriptions.school' },
+  { id: 'CLASS', labelKey: 'createPost.visibility.class', icon: Users, descriptionKey: 'createPost.visibilityDescriptions.class' },
+  { id: 'PRIVATE', labelKey: 'createPost.visibility.private', icon: Lock, descriptionKey: 'createPost.visibilityDescriptions.private' },
 ];
 
 const MEDIA_DISPLAY_MODES = [
-  { id: 'AUTO', label: 'Auto', icon: Sparkles, description: 'Automatically detect best layout' },
-  { id: 'FIXED_HEIGHT', label: 'Fixed Height', icon: RectangleHorizontal, description: 'Landscape mode, cropped' },
-  { id: 'FULL_HEIGHT', label: 'Full Height', icon: RectangleVertical, description: 'Show full image, ideal for posters' },
+  { id: 'AUTO', labelKey: 'createPost.mediaModes.auto', icon: Sparkles, descriptionKey: 'createPost.mediaModeDescriptions.auto' },
+  { id: 'FIXED_HEIGHT', labelKey: 'createPost.mediaModes.fixedHeight', icon: RectangleHorizontal, descriptionKey: 'createPost.mediaModeDescriptions.fixedHeight' },
+  { id: 'FULL_HEIGHT', labelKey: 'createPost.mediaModes.fullHeight', icon: RectangleVertical, descriptionKey: 'createPost.mediaModeDescriptions.fullHeight' },
 ];
 
 export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: CreatePostModalProps) {
+  const tFeed = useTranslations('feed');
+  const tCommon = useTranslations('common');
   const [content, setContent] = useState('');
   const [postType, setPostType] = useState('ARTICLE');
   const [visibility, setVisibility] = useState('SCHOOL');
@@ -132,6 +135,37 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
 
   const selectedType = POST_TYPES.find(t => t.id === postType)!;
   const selectedVisibility = VISIBILITY_OPTIONS.find(v => v.id === visibility)!;
+  const selectedDisplayMode = MEDIA_DISPLAY_MODES.find(m => m.id === mediaDisplayMode)!;
+
+  const getTypeLabel = (typeId: string) => {
+    const type = POST_TYPES.find((item) => item.id === typeId);
+    return type ? tFeed(type.labelKey) : typeId;
+  };
+
+  const getTypeDescription = (typeId: string) => {
+    const type = POST_TYPES.find((item) => item.id === typeId);
+    return type ? tFeed(type.descriptionKey) : '';
+  };
+
+  const getVisibilityLabel = (visibilityId: string) => {
+    const option = VISIBILITY_OPTIONS.find((item) => item.id === visibilityId);
+    return option ? tFeed(option.labelKey) : visibilityId;
+  };
+
+  const getVisibilityDescription = (visibilityId: string) => {
+    const option = VISIBILITY_OPTIONS.find((item) => item.id === visibilityId);
+    return option ? tFeed(option.descriptionKey) : '';
+  };
+
+  const getDisplayModeLabel = (modeId: string) => {
+    const mode = MEDIA_DISPLAY_MODES.find((item) => item.id === modeId);
+    return mode ? tFeed(mode.labelKey) : modeId;
+  };
+
+  const getDisplayModeDescription = (modeId: string) => {
+    const mode = MEDIA_DISPLAY_MODES.find((item) => item.id === modeId);
+    return mode ? tFeed(mode.descriptionKey) : '';
+  };
 
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
@@ -161,7 +195,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
     if (postType === 'POLL') {
       const validOptions = pollOptions.filter(o => o.trim());
       if (validOptions.length < 2) {
-        alert('Please add at least 2 poll options');
+        alert(tFeed('createPost.validation.pollMinOptions'));
         return;
       }
     }
@@ -169,19 +203,19 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
     if (postType === 'QUIZ') {
       const validQuestions = quizQuestions.filter(q => q.text.trim() && q.options.filter(o => o.trim()).length >= 2);
       if (validQuestions.length === 0) {
-        alert('Please add at least 1 question with 2+ options');
+        alert(tFeed('createPost.validation.quizMinQuestions'));
         return;
       }
     }
 
     if (postType === 'COURSE') {
       if (!courseTitle.trim()) {
-        alert('Please enter a course title');
+        alert(tFeed('createPost.validation.courseTitleRequired'));
         return;
       }
       const validModules = courseModules.filter(m => m.title.trim());
       if (validModules.length === 0) {
-        alert('Please add at least 1 module with a title');
+        alert(tFeed('createPost.validation.courseMinModules'));
         return;
       }
     }
@@ -189,7 +223,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
     if (postType === 'EXAM') {
       const validQuestions = examQuestions.filter(q => q.text.trim() && q.options.filter(o => o.trim()).length >= 2);
       if (validQuestions.length === 0) {
-        alert('Please add at least 1 question with 2+ options');
+        alert(tFeed('createPost.validation.examMinQuestions'));
         return;
       }
     }
@@ -330,32 +364,30 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
     setMediaPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  const selectedDisplayMode = MEDIA_DISPLAY_MODES.find(m => m.id === mediaDisplayMode)!;
-
   const getPlaceholder = () => {
     switch (postType) {
       case 'POLL':
-        return 'Ask your question...';
+        return tFeed('createPost.placeholders.poll');
       case 'ANNOUNCEMENT':
-        return 'Write your announcement...';
+        return tFeed('createPost.placeholders.announcement');
       case 'QUESTION':
-        return 'What would you like to ask?';
+        return tFeed('createPost.placeholders.question');
       case 'ACHIEVEMENT':
-        return 'Share your achievement...';
+        return tFeed('createPost.placeholders.achievement');
       case 'TUTORIAL':
-        return 'Share your tutorial or guide...';
+        return tFeed('createPost.placeholders.tutorial');
       case 'RESOURCE':
-        return 'Describe the resource you\'re sharing...';
+        return tFeed('createPost.placeholders.resource');
       case 'PROJECT':
-        return 'Tell us about your project...';
+        return tFeed('createPost.placeholders.project');
       case 'RESEARCH':
-        return 'Share your research findings...';
+        return tFeed('createPost.placeholders.research');
       case 'COLLABORATION':
-        return 'What do you want to collaborate on?';
+        return tFeed('createPost.placeholders.collaboration');
       case 'QUIZ':
-        return 'Describe your quiz (topic, difficulty, etc.)...';
+        return tFeed('createPost.placeholders.quiz');
       default:
-        return `What's on your mind, ${user.firstName}?`;
+        return tFeed('createPost.placeholders.default', { name: user.firstName });
     }
   };
 
@@ -383,7 +415,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
       <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">Create Post</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{tFeed('createPost.title')}</h2>
           <button
             onClick={onClose}
             className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors"
@@ -416,7 +448,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                     }`}
                   >
                     <selectedType.icon className="w-3.5 h-3.5" />
-                    {selectedType.label}
+                    {getTypeLabel(selectedType.id)}
                     <ChevronDown className="w-3 h-3" />
                   </button>
                   
@@ -439,8 +471,8 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                               <Icon className="w-4 h-4" />
                             </div>
                             <div className="text-left">
-                              <p className="text-sm font-medium text-gray-900">{type.label}</p>
-                              <p className="text-xs text-gray-500">{type.description}</p>
+                              <p className="text-sm font-medium text-gray-900">{getTypeLabel(type.id)}</p>
+                              <p className="text-xs text-gray-500">{getTypeDescription(type.id)}</p>
                             </div>
                           </button>
                         );
@@ -461,7 +493,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                     }`}
                   >
                     <selectedVisibility.icon className="w-3.5 h-3.5" />
-                    {selectedVisibility.label}
+                    {getVisibilityLabel(selectedVisibility.id)}
                     <ChevronDown className="w-3 h-3" />
                   </button>
                   
@@ -482,8 +514,8 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                           >
                             <Icon className="w-4 h-4 text-gray-600" />
                             <div className="text-left">
-                              <p className="text-sm font-medium text-gray-900">{option.label}</p>
-                              <p className="text-xs text-gray-500">{option.description}</p>
+                              <p className="text-sm font-medium text-gray-900">{getVisibilityLabel(option.id)}</p>
+                              <p className="text-xs text-gray-500">{getVisibilityDescription(option.id)}</p>
                             </div>
                           </button>
                         );
@@ -508,7 +540,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
           {/* Poll Options (only for POLL type) */}
           {postType === 'POLL' && (
             <div className="mt-4 space-y-3">
-              <p className="text-sm font-medium text-gray-700">Poll Options</p>
+              <p className="text-sm font-medium text-gray-700">{tFeed('createPost.pollOptions')}</p>
               {pollOptions.map((option, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 text-xs font-medium">
@@ -518,7 +550,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                     type="text"
                     value={option}
                     onChange={(e) => handlePollOptionChange(index, e.target.value)}
-                    placeholder={`Option ${index + 1}`}
+                    placeholder={`${tFeed('createPost.option')} ${index + 1}`}
                     className="flex-1 px-3 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                   />
                   {pollOptions.length > 2 && (
@@ -537,7 +569,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                   className="flex items-center gap-2 px-3 py-2 text-violet-600 hover:bg-violet-50 rounded-full transition-colors text-sm font-medium"
                 >
                   <Plus className="w-4 h-4" />
-                  Add Option
+                  {tFeed('createPost.addOption')}
                 </button>
               )}
             </div>
@@ -548,7 +580,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl">
               <div className="flex items-center gap-2 text-rose-700">
                 <Megaphone className="w-4 h-4" />
-                <span className="text-sm font-medium">This will be marked as an official announcement</span>
+                <span className="text-sm font-medium">{tFeed('createPost.badges.announcement')}</span>
               </div>
             </div>
           )}
@@ -558,7 +590,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
               <div className="flex items-center gap-2 text-amber-700">
                 <Award className="w-4 h-4" />
-                <span className="text-sm font-medium">Celebrate and share your achievement!</span>
+                <span className="text-sm font-medium">{tFeed('createPost.badges.achievement')}</span>
               </div>
             </div>
           )}
@@ -568,7 +600,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
               <div className="flex items-center gap-2 text-blue-700">
                 <BookOpen className="w-4 h-4" />
-                <span className="text-sm font-medium">Share step-by-step instructions to help others learn</span>
+                <span className="text-sm font-medium">{tFeed('createPost.badges.tutorial')}</span>
               </div>
             </div>
           )}
@@ -578,7 +610,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             <div className="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
               <div className="flex items-center gap-2 text-indigo-700">
                 <FolderOpen className="w-4 h-4" />
-                <span className="text-sm font-medium">Share documents, links, or learning materials</span>
+                <span className="text-sm font-medium">{tFeed('createPost.badges.resource')}</span>
               </div>
             </div>
           )}
@@ -588,7 +620,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-xl">
               <div className="flex items-center gap-2 text-orange-700">
                 <Rocket className="w-4 h-4" />
-                <span className="text-sm font-medium">Showcase your project with images and details</span>
+                <span className="text-sm font-medium">{tFeed('createPost.badges.project')}</span>
               </div>
             </div>
           )}
@@ -598,7 +630,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             <div className="mt-4 p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
               <div className="flex items-center gap-2 text-cyan-700">
                 <Microscope className="w-4 h-4" />
-                <span className="text-sm font-medium">Share research findings, data, or academic work</span>
+                <span className="text-sm font-medium">{tFeed('createPost.badges.research')}</span>
               </div>
             </div>
           )}
@@ -608,7 +640,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             <div className="mt-4 p-3 bg-pink-50 border border-pink-200 rounded-xl">
               <div className="flex items-center gap-2 text-pink-700">
                 <UsersRound className="w-4 h-4" />
-                <span className="text-sm font-medium">Find study partners or collaborators</span>
+                <span className="text-sm font-medium">{tFeed('createPost.badges.collaboration')}</span>
               </div>
             </div>
           )}
@@ -617,40 +649,40 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
           {postType === 'COURSE' && (
             <div className="mt-4 space-y-4">
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Course Title</label>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">{tFeed('createPost.courseTitle')}</label>
                 <input
                   type="text"
                   value={courseTitle}
                   onChange={(e) => setCourseTitle(e.target.value)}
-                  placeholder="e.g. Introduction to React"
+                  placeholder={tFeed('createPost.courseTitlePlaceholder')}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Course Description</label>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">{tFeed('createPost.courseDescription')}</label>
                 <textarea
                   value={courseDescription}
                   onChange={(e) => setCourseDescription(e.target.value)}
-                  placeholder="What will students learn?"
+                  placeholder={tFeed('createPost.courseDescriptionPlaceholder')}
                   rows={2}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
                 />
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex-1">
-                  <label className="text-xs font-medium text-gray-600 mb-1 block">Difficulty</label>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">{tFeed('createPost.difficulty')}</label>
                   <select
                     value={courseDifficulty}
                     onChange={(e) => setCourseDifficulty(e.target.value as 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED')}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value="BEGINNER">Beginner</option>
-                    <option value="INTERMEDIATE">Intermediate</option>
-                    <option value="ADVANCED">Advanced</option>
+                    <option value="BEGINNER">{tFeed('difficulty.beginner')}</option>
+                    <option value="INTERMEDIATE">{tFeed('difficulty.intermediate')}</option>
+                    <option value="ADVANCED">{tFeed('difficulty.advanced')}</option>
                   </select>
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs font-medium text-gray-600 mb-1 block">Est. Hours</label>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">{tFeed('createPost.estimatedHours')}</label>
                   <input
                     type="number"
                     value={courseEstimatedHours}
@@ -661,7 +693,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                 </div>
               </div>
 
-              <p className="text-sm font-medium text-gray-700">Modules</p>
+              <p className="text-sm font-medium text-gray-700">{tFeed('createPost.modules')}</p>
               {courseModules.map((mod, idx) => (
                 <div key={idx} className="p-3 border border-emerald-200 bg-emerald-50/50 rounded-xl space-y-2">
                   <div className="flex items-center gap-2">
@@ -669,14 +701,14 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                     <input
                       type="text"
                       value={mod.title}
-                      onChange={(e) => {
-                        const updated = [...courseModules];
-                        updated[idx].title = e.target.value;
-                        setCourseModules(updated);
-                      }}
-                      placeholder={`Module ${idx + 1} title`}
-                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
+                       onChange={(e) => {
+                         const updated = [...courseModules];
+                         updated[idx].title = e.target.value;
+                         setCourseModules(updated);
+                       }}
+                       placeholder={`${tFeed('createPost.module')} ${idx + 1} ${tFeed('createPost.titleSuffix')}`}
+                       className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                     />
                     {courseModules.length > 1 && (
                       <button
                         onClick={() => setCourseModules(courseModules.filter((_, i) => i !== idx))}
@@ -693,7 +725,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                       updated[idx].description = e.target.value;
                       setCourseModules(updated);
                     }}
-                    placeholder="Module description (optional)"
+                    placeholder={tFeed('createPost.moduleDescriptionPlaceholder')}
                     rows={1}
                     className="w-full ml-8 px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
                     style={{ width: 'calc(100% - 2rem)' }}
@@ -706,7 +738,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                   className="flex items-center gap-2 px-3 py-2 text-emerald-600 hover:bg-emerald-50 rounded-full transition-colors text-sm font-medium"
                 >
                   <Plus className="w-4 h-4" />
-                  Add Module
+                  {tFeed('createPost.addModule')}
                 </button>
               )}
             </div>
@@ -717,7 +749,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             <div className="mt-4 space-y-4">
               <div className="flex items-center gap-4">
                 <div className="flex-1">
-                  <label className="text-xs font-medium text-gray-600 mb-1 block">Time Limit (min)</label>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">{tFeed('createPost.timeLimit')}</label>
                   <input
                     type="number"
                     value={examTimeLimit}
@@ -727,7 +759,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs font-medium text-gray-600 mb-1 block">Passing Score (%)</label>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">{tFeed('createPost.passingScore')}</label>
                   <input
                     type="number"
                     value={examPassingScore}
@@ -738,7 +770,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs font-medium text-gray-600 mb-1 block">Max Attempts</label>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">{tFeed('createPost.maxAttempts')}</label>
                   <input
                     type="number"
                     value={examMaxAttempts}
@@ -751,11 +783,11 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
               <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
                 <div className="flex items-center gap-2 text-red-700">
                   <ClipboardList className="w-4 h-4" />
-                  <span className="text-sm font-medium">Formal assessment — results are recorded and graded</span>
+                  <span className="text-sm font-medium">{tFeed('createPost.badges.exam')}</span>
                 </div>
               </div>
 
-              <p className="text-sm font-medium text-gray-700">Questions</p>
+              <p className="text-sm font-medium text-gray-700">{tFeed('createPost.questions')}</p>
               {examQuestions.map((question, qIdx) => (
                 <div key={qIdx} className="p-3 border border-red-200 bg-red-50/50 rounded-xl space-y-2">
                   <div className="flex items-center gap-2">
@@ -763,14 +795,14 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                     <input
                       type="text"
                       value={question.text}
-                      onChange={(e) => {
-                        const updated = [...examQuestions];
-                        updated[qIdx].text = e.target.value;
-                        setExamQuestions(updated);
-                      }}
-                      placeholder={`Question ${qIdx + 1}`}
-                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-                    />
+                       onChange={(e) => {
+                         const updated = [...examQuestions];
+                         updated[qIdx].text = e.target.value;
+                         setExamQuestions(updated);
+                       }}
+                       placeholder={`${tFeed('createPost.question')} ${qIdx + 1}`}
+                       className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                     />
                     {examQuestions.length > 1 && (
                       <button
                         onClick={() => setExamQuestions(examQuestions.filter((_, i) => i !== qIdx))}
@@ -808,7 +840,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                           updated[qIdx].options[oIdx] = e.target.value;
                           setExamQuestions(updated);
                         }}
-                        placeholder={`Option ${oIdx + 1}`}
+                        placeholder={`${tFeed('createPost.option')} ${oIdx + 1}`}
                         className="flex-1 px-3 py-1.5 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                       />
                       {question.options.length > 2 && (
@@ -837,7 +869,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                       }}
                       className="ml-8 flex items-center gap-1 text-xs text-red-600 hover:text-red-800 font-medium transition-colors"
                     >
-                      <Plus className="w-3 h-3" /> Add Option
+                      <Plus className="w-3 h-3" /> {tFeed('createPost.addOption')}
                     </button>
                   )}
                 </div>
@@ -848,7 +880,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                   className="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-full transition-colors text-sm font-medium"
                 >
                   <Plus className="w-4 h-4" />
-                  Add Question
+                  {tFeed('createPost.addQuestion')}
                 </button>
               )}
             </div>
@@ -859,7 +891,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             <div className="mt-4 space-y-4">
               <div className="flex items-center gap-4">
                 <div className="flex-1">
-                  <label className="text-xs font-medium text-gray-600 mb-1 block">Time Limit (min)</label>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">{tFeed('createPost.timeLimit')}</label>
                   <input
                     type="number"
                     value={quizTimeLimit}
@@ -869,7 +901,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs font-medium text-gray-600 mb-1 block">Passing Score (%)</label>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">{tFeed('createPost.passingScore')}</label>
                   <input
                     type="number"
                     value={quizPassingScore}
@@ -881,7 +913,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                 </div>
               </div>
 
-              <p className="text-sm font-medium text-gray-700">Questions</p>
+              <p className="text-sm font-medium text-gray-700">{tFeed('createPost.questions')}</p>
               {quizQuestions.map((question, qIdx) => (
                 <div key={qIdx} className="p-3 border border-purple-200 bg-purple-50/50 rounded-xl space-y-2">
                   <div className="flex items-center gap-2">
@@ -889,14 +921,14 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                     <input
                       type="text"
                       value={question.text}
-                      onChange={(e) => {
-                        const updated = [...quizQuestions];
-                        updated[qIdx].text = e.target.value;
-                        setQuizQuestions(updated);
-                      }}
-                      placeholder={`Question ${qIdx + 1}`}
-                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
+                       onChange={(e) => {
+                         const updated = [...quizQuestions];
+                         updated[qIdx].text = e.target.value;
+                         setQuizQuestions(updated);
+                       }}
+                       placeholder={`${tFeed('createPost.question')} ${qIdx + 1}`}
+                       className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                     />
                     {quizQuestions.length > 1 && (
                       <button
                         onClick={() => setQuizQuestions(quizQuestions.filter((_, i) => i !== qIdx))}
@@ -934,7 +966,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                           updated[qIdx].options[oIdx] = e.target.value;
                           setQuizQuestions(updated);
                         }}
-                        placeholder={`Option ${oIdx + 1}`}
+                        placeholder={`${tFeed('createPost.option')} ${oIdx + 1}`}
                         className="flex-1 px-3 py-1.5 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                       />
                       {question.options.length > 2 && (
@@ -963,7 +995,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                       }}
                       className="ml-8 flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 font-medium transition-colors"
                     >
-                      <Plus className="w-3 h-3" /> Add Option
+                      <Plus className="w-3 h-3" /> {tFeed('createPost.addOption')}
                     </button>
                   )}
                 </div>
@@ -974,7 +1006,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                   className="flex items-center gap-2 px-3 py-2 text-purple-600 hover:bg-purple-50 rounded-full transition-colors text-sm font-medium"
                 >
                   <Plus className="w-4 h-4" />
-                  Add Question
+                  {tFeed('createPost.addQuestion')}
                 </button>
               )}
             </div>
@@ -987,7 +1019,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium text-gray-700">
-                    {mediaPreviews.length} {mediaPreviews.length === 1 ? 'media' : 'media'} added
+                    {mediaPreviews.length} {tFeed('createPost.mediaAdded')}
                   </p>
                   
                   {/* Display Mode Selector */}
@@ -1003,7 +1035,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                       }`}
                     >
                       <selectedDisplayMode.icon className="w-3.5 h-3.5" />
-                      {selectedDisplayMode.label}
+                      {getDisplayModeLabel(selectedDisplayMode.id)}
                       <ChevronDown className="w-3 h-3" />
                     </button>
                     
@@ -1022,12 +1054,12 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                                 mediaDisplayMode === mode.id ? 'bg-amber-50' : ''
                               }`}
                             >
-                              <Icon className="w-4 h-4 text-[#F9A825]" />
-                              <div className="text-left">
-                                <p className="text-sm font-medium text-gray-900">{mode.label}</p>
-                                <p className="text-xs text-gray-500">{mode.description}</p>
-                              </div>
-                            </button>
+                               <Icon className="w-4 h-4 text-[#F9A825]" />
+                               <div className="text-left">
+                                 <p className="text-sm font-medium text-gray-900">{getDisplayModeLabel(mode.id)}</p>
+                                 <p className="text-xs text-gray-500">{getDisplayModeDescription(mode.id)}</p>
+                               </div>
+                             </button>
                           );
                         })}
                       </div>
@@ -1085,7 +1117,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                 }`}>
                   <div className="flex items-center gap-2">
                     <selectedDisplayMode.icon className="w-3.5 h-3.5" />
-                    <span>{selectedDisplayMode.description}</span>
+                    <span>{getDisplayModeDescription(selectedDisplayMode.id)}</span>
                   </div>
                 </div>
               </div>
@@ -1105,7 +1137,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
               className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-amber-50 rounded-full transition-colors text-sm"
             >
               <ImageIcon className="w-4 h-4" />
-              {mediaPreviews.length > 0 ? 'Add More' : 'Add Photo or Video'}
+              {mediaPreviews.length > 0 ? tFeed('createPost.addMore') : tFeed('createPost.addPhotoOrVideo')}
             </button>
           </div>
         </div>
@@ -1116,7 +1148,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             onClick={onClose}
             className="px-5 py-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
           >
-            Cancel
+            {tCommon('cancel')}
           </button>
           <button
             onClick={handleSubmit}
@@ -1124,7 +1156,15 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             className={`px-5 py-2 bg-gradient-to-r ${getTypeColor(selectedType.color)} text-white rounded-full font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
           >
             {(creating || uploading) && <Loader2 className="w-4 h-4 animate-spin" />}
-            {uploading ? 'Uploading...' : postType === 'POLL' ? 'Create Poll' : postType === 'QUIZ' ? 'Create Quiz' : postType === 'ANNOUNCEMENT' ? 'Announce' : 'Post'}
+            {uploading
+              ? tFeed('createPost.uploading')
+              : postType === 'POLL'
+                ? tFeed('createPost.createPoll')
+                : postType === 'QUIZ'
+                  ? tFeed('createPost.createQuiz')
+                  : postType === 'ANNOUNCEMENT'
+                    ? tFeed('createPost.announce')
+                    : tFeed('createPost.post')}
           </button>
         </div>
       </div>

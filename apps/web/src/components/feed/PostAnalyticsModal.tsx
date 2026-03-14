@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   X,
   Eye,
@@ -42,6 +43,8 @@ interface Analytics {
 }
 
 export default function PostAnalyticsModal({ isOpen, onClose, postId, apiUrl }: PostAnalyticsModalProps) {
+  const locale = useLocale();
+  const tFeed = useTranslations('feed');
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,10 +67,10 @@ export default function PostAnalyticsModal({ isOpen, onClose, postId, apiUrl }: 
       if (data.success) {
         setAnalytics(data.analytics);
       } else {
-        setError(data.error || 'Failed to load analytics');
+        setError(data.error || tFeed('analytics.loadFailed'));
       }
     } catch (err) {
-      setError('Failed to load analytics');
+      setError(tFeed('analytics.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -84,7 +87,7 @@ export default function PostAnalyticsModal({ isOpen, onClose, postId, apiUrl }: 
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-purple-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Post Analytics</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{tFeed('analytics.title')}</h2>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
             <X className="w-5 h-5 text-gray-500" />
@@ -109,15 +112,15 @@ export default function PostAnalyticsModal({ isOpen, onClose, postId, apiUrl }: 
             <div className="space-y-6">
               {/* Overview Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <StatCard icon={Eye} label="Total Views" value={analytics.totalViews} color="blue" />
-                <StatCard icon={Users} label="Unique Viewers" value={analytics.uniqueViewers} color="purple" />
-                <StatCard icon={TrendingUp} label="Engagement Rate" value={`${analytics.engagementRate}%`} color="green" />
-                <StatCard icon={Clock} label="Avg. Duration" value={`${analytics.avgDuration}s`} color="orange" />
+                <StatCard icon={Eye} label={tFeed('analytics.totalViews')} value={analytics.totalViews} color="blue" />
+                <StatCard icon={Users} label={tFeed('analytics.uniqueViewers')} value={analytics.uniqueViewers} color="purple" />
+                <StatCard icon={TrendingUp} label={tFeed('analytics.engagementRate')} value={`${analytics.engagementRate}%`} color="green" />
+                <StatCard icon={Clock} label={tFeed('analytics.avgDuration')} value={`${analytics.avgDuration}s`} color="orange" />
               </div>
 
               {/* Engagement Stats */}
               <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="font-semibold text-gray-900 mb-4">Engagement</h3>
+                <h3 className="font-semibold text-gray-900 mb-4">{tFeed('analytics.engagement')}</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
@@ -125,7 +128,7 @@ export default function PostAnalyticsModal({ isOpen, onClose, postId, apiUrl }: 
                     </div>
                     <div>
                       <p className="text-lg font-bold text-gray-900">{analytics.likes}</p>
-                      <p className="text-xs text-gray-500">Likes</p>
+                      <p className="text-xs text-gray-500">{tFeed('analytics.likes')}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -134,7 +137,7 @@ export default function PostAnalyticsModal({ isOpen, onClose, postId, apiUrl }: 
                     </div>
                     <div>
                       <p className="text-lg font-bold text-gray-900">{analytics.comments}</p>
-                      <p className="text-xs text-gray-500">Comments</p>
+                      <p className="text-xs text-gray-500">{tFeed('analytics.comments')}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -143,7 +146,7 @@ export default function PostAnalyticsModal({ isOpen, onClose, postId, apiUrl }: 
                     </div>
                     <div>
                       <p className="text-lg font-bold text-gray-900">{analytics.shares}</p>
-                      <p className="text-xs text-gray-500">Shares</p>
+                      <p className="text-xs text-gray-500">{tFeed('analytics.shares')}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -152,7 +155,7 @@ export default function PostAnalyticsModal({ isOpen, onClose, postId, apiUrl }: 
                     </div>
                     <div>
                       <p className="text-lg font-bold text-gray-900">{analytics.bookmarks}</p>
-                      <p className="text-xs text-gray-500">Saves</p>
+                      <p className="text-xs text-gray-500">{tFeed('analytics.saves')}</p>
                     </div>
                   </div>
                 </div>
@@ -160,7 +163,7 @@ export default function PostAnalyticsModal({ isOpen, onClose, postId, apiUrl }: 
 
               {/* Views Over Time */}
               <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="font-semibold text-gray-900 mb-4">Views (Last 7 Days)</h3>
+                <h3 className="font-semibold text-gray-900 mb-4">{tFeed('analytics.viewsLast7Days')}</h3>
                 <div className="flex items-end gap-2 h-32">
                   {analytics.dailyViews.map((day, idx) => (
                     <div key={idx} className="flex-1 flex flex-col items-center gap-1">
@@ -169,7 +172,7 @@ export default function PostAnalyticsModal({ isOpen, onClose, postId, apiUrl }: 
                         style={{ height: `${(day.views / maxViews) * 100}%`, minHeight: day.views > 0 ? '4px' : '0' }}
                       />
                       <span className="text-[10px] text-gray-500">
-                        {new Date(day.date).toLocaleDateString('en', { weekday: 'short' })}
+                        {new Date(day.date).toLocaleDateString(locale === 'km' ? 'km-KH' : 'en-US', { weekday: 'short' })}
                       </span>
                     </div>
                   ))}
@@ -178,19 +181,19 @@ export default function PostAnalyticsModal({ isOpen, onClose, postId, apiUrl }: 
 
               {/* Views by Period */}
               <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="font-semibold text-gray-900 mb-4">Views by Period</h3>
+                <h3 className="font-semibold text-gray-900 mb-4">{tFeed('analytics.viewsByPeriod')}</h3>
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div className="bg-white rounded-lg p-3 border">
                     <p className="text-2xl font-bold text-gray-900">{analytics.views24h}</p>
-                    <p className="text-sm text-gray-500">Last 24h</p>
+                    <p className="text-sm text-gray-500">{tFeed('analytics.last24h')}</p>
                   </div>
                   <div className="bg-white rounded-lg p-3 border">
                     <p className="text-2xl font-bold text-gray-900">{analytics.views7d}</p>
-                    <p className="text-sm text-gray-500">Last 7 days</p>
+                    <p className="text-sm text-gray-500">{tFeed('analytics.last7Days')}</p>
                   </div>
                   <div className="bg-white rounded-lg p-3 border">
                     <p className="text-2xl font-bold text-gray-900">{analytics.views30d}</p>
-                    <p className="text-sm text-gray-500">Last 30 days</p>
+                    <p className="text-sm text-gray-500">{tFeed('analytics.last30Days')}</p>
                   </div>
                 </div>
               </div>
@@ -198,7 +201,7 @@ export default function PostAnalyticsModal({ isOpen, onClose, postId, apiUrl }: 
               {/* Views by Source */}
               {Object.keys(analytics.viewsBySource).length > 0 && (
                 <div className="bg-gray-50 rounded-xl p-4">
-                  <h3 className="font-semibold text-gray-900 mb-4">Traffic Sources</h3>
+                  <h3 className="font-semibold text-gray-900 mb-4">{tFeed('analytics.trafficSources')}</h3>
                   <div className="space-y-2">
                     {Object.entries(analytics.viewsBySource).map(([source, count]) => {
                       const percentage = (count / analytics.totalViews) * 100;
