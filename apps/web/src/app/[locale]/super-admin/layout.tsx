@@ -19,6 +19,7 @@ import {
   TrendingUp,
   Activity,
   MessageSquare,
+  Globe,
 } from 'lucide-react';
 
 export default function SuperAdminLayout(
@@ -77,7 +78,12 @@ export default function SuperAdminLayout(
         { href: `/${locale}/super-admin/health`, label: 'Platform Health', icon: Activity },
       ]
     },
-    { section: 'Settings', items: [{ href: `/${locale}/super-admin/settings`, label: 'Platform Settings', icon: Settings }] },
+    {
+      section: 'Settings', items: [
+        { href: `/${locale}/super-admin/settings`, label: 'Platform Settings', icon: Settings },
+        { href: `/${locale}/admin/language`, label: 'Language Management', icon: Globe },
+      ]
+    },
   ];
 
   if (loading) {

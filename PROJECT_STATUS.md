@@ -27,6 +27,11 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 - **Web runtime recovery for missing vendor chunk**
   - Diagnosed `Cannot find module './vendor-chunks/@formatjs.js'` as stale/corrupted Next build output.
   - Resolved by clearing `apps/web/.next` and rebuilding web output; compiled locale page load now succeeds.
+- **Translation management UX + access parity (web + auth-service)**
+  - Redesigned `/[locale]/admin/language` into a management console with app/locale/namespace/screen filters and grouped screen/page editing.
+  - Added unsaved-change tracking with row-level save and bulk-save workflows for faster translation maintenance.
+  - Extended translation admin APIs to allow both `ADMIN` and `SUPER_ADMIN`, and exposed Language Management directly in super-admin sidebar navigation.
+  - Reduced web OTA translation revalidation window from 300s to 60s for faster visibility of admin-edited translation updates.
 - **Enterprise OTA translation management (web admin + mobile runtime)**
   - Added Super Admin language management page to edit translation keys for `web`, `mobile`, and `global`.
   - Added auth-service translation routes for admin CRUD/sync and app-level runtime fetch (`/auth/translations/:app/:locale`).

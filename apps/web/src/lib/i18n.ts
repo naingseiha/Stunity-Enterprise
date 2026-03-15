@@ -20,7 +20,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
   try {
     const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'http://localhost:3001';
     const response = await fetch(`${AUTH_SERVICE_URL}/auth/translations/web/${locale}`, {
-      next: { revalidate: 300 } // Cache for 5 minutes
+      next: { revalidate: 60 } // Revalidate frequently so admin OTA edits appear quickly
     });
     if (response.ok) {
       const { data } = await response.json();

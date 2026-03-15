@@ -41,7 +41,7 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
   /**
    * Fetches all translations for the management dashboard.
    */
-  router.get('/admin/all', authenticate, authorize(['SUPER_ADMIN']), async (req: Request, res: Response) => {
+  router.get('/admin/all', authenticate, authorize(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
     console.log('HIT: GET /admin/all');
     try {
       const translations = await prisma.translation.findMany({
@@ -58,7 +58,7 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
    * POST /auth/translations/update
    * Create or update a translation entry.
    */
-  router.post('/update', authenticate, authorize(['SUPER_ADMIN']), async (req: Request, res: Response) => {
+  router.post('/update', authenticate, authorize(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
     console.log('HIT: POST /update');
     const { app: appName, locale, key, value } = req.body;
     
@@ -82,7 +82,7 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
     }
   });
 
-  router.post('/bulk', authenticate, authorize(['SUPER_ADMIN']), async (req: Request, res: Response) => {
+  router.post('/bulk', authenticate, authorize(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
     console.log('HIT: POST /bulk');
     const { translations } = req.body;
     
@@ -107,7 +107,7 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
     }
   });
 
-  router.post('/sync', authenticate, authorize(['SUPER_ADMIN']), async (req: Request, res: Response) => {
+  router.post('/sync', authenticate, authorize(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
     console.log('HIT: POST /sync');
     try {
       const files = [

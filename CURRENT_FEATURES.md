@@ -77,7 +77,8 @@ Platform-wide management area for super administrators. See [SUPER_ADMIN_AND_ENT
 - **Audit Logs** — Platform-wide trail with filters (resource type, action)
 - **Platform Settings** — Feature Flags, Announcements, Subscription Tiers (read-only), Coming Soon tab
 - **Analytics** — Schools/users per month charts, top schools, month range selector (6/12/24)
-- **Language Management (OTA translations)** — Super admin can edit `web`, `mobile`, and `global` translation keys from Admin UI and publish changes without app rebuilds
+- **Language Management (OTA translations)** — `ADMIN` and `SUPER_ADMIN` can edit `web`, `mobile`, and `global` translation keys from Admin UI and publish changes without app rebuilds
+- **Translation management console redesign (web)** — Added app/locale/namespace/screen filters, grouped screen/page sections, unsaved-change tracking, row-level save, and bulk-save workflow
 - **Translation sync performance hardening** — Mobile sync now prioritizes active locale, uses per-locale ETag caching (`If-None-Match`), and backend serves `ETag`/`304` with deterministic global→app override precedence
 
 ### Khmer Typography (Web + Mobile)
@@ -332,6 +333,7 @@ npm run seed:super-admin [email]
 - **Web Khmer/English language switch parity** — Robust locale switching with persisted `NEXT_LOCALE` cookie and query-preserving route updates
 - **Feed localization parity (web)** — Feed page, create-post modal, post card, analytics/activity/insights, and core feed widgets now use `next-intl` keys for `en`/`km`
 - **Translation fallback hardening** — Feed profile card safely falls back when OTA payload returns key-shaped values (e.g., `profile.viewProfile`)
+- **Translation settings UX redesign** — Admin language page now supports filtering by app target, locale, namespace, and screen/page with grouped editing and bulk save
 - **Repost button** — full repost-as-post (parity with mobile)
 - **Real-time comments** via SSE with exponential backoff reconnection
 - Analytics modal (redesigned to match mobile)

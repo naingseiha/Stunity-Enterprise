@@ -201,6 +201,12 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
     return true;
   }), [locale, isFeedContext, isClubsContext, isEventsContext, isLiveQuizContext, isSchoolContext, isLearnContext, school]);
 
+  const canManageTranslations = Boolean(
+    user?.isSuperAdmin ||
+    user?.role === 'SUPER_ADMIN' ||
+    user?.role === 'ADMIN'
+  );
+
   // Memoized school menu sections with grouped items
   const schoolMenuSections = useMemo(() => [
     {
@@ -253,13 +259,15 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
         { name: 'Settings', icon: Settings, path: `/${locale}/settings/academic-years`, prefetch: null },
       ],
     },
-    {
-      label: 'Platform',
-      items: [
-        { name: 'Language Management', icon: Globe, path: `/${locale}/admin/language`, prefetch: null },
-      ],
-    },
-  ], [locale]);
+    ...(canManageTranslations
+      ? [{
+        label: 'Platform',
+        items: [
+          { name: 'Language Management', icon: Globe, path: `/${locale}/admin/language`, prefetch: null },
+        ],
+      }]
+      : []),
+  ], [canManageTranslations, locale]);
 
   // Flatten for mobile menu compatibility
   const schoolMenuItems = useMemo(
