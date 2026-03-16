@@ -41,7 +41,15 @@ const StatCard = ({ label, value, color, icon, delay = 0 }: any) => (
     </Animated.View>
 );
 
-const CircularProgress = ({ size, strokeWidth, progress, color }: any) => {
+const CircularProgress = ({
+    size,
+    strokeWidth,
+    progress,
+    startColor = BRAND_YELLOW,
+    endColor = '#FF8C00',
+    trackColor = 'rgba(255,255,255,0.2)',
+    textColor = '#fff'
+}: any) => {
     const radius = (size - strokeWidth) / 2;
     const circumference = radius * 2 * Math.PI;
     const offset = circumference - (progress / 100) * circumference;
@@ -51,15 +59,15 @@ const CircularProgress = ({ size, strokeWidth, progress, color }: any) => {
             <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
                 <Defs>
                     <SvgGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <Stop offset="0%" stopColor={BRAND_YELLOW} />
-                        <Stop offset="100%" stopColor="#FF8C00" />
+                        <Stop offset="0%" stopColor={startColor} />
+                        <Stop offset="100%" stopColor={endColor} />
                     </SvgGradient>
                 </Defs>
                 <Circle
                     cx={size / 2}
                     cy={size / 2}
                     r={radius}
-                    stroke="rgba(255,255,255,0.2)"
+                    stroke={trackColor}
                     strokeWidth={strokeWidth}
                     fill="none"
                 />
@@ -76,7 +84,7 @@ const CircularProgress = ({ size, strokeWidth, progress, color }: any) => {
                 />
             </Svg>
             <View style={{ position: 'absolute' }}>
-                <Text style={{ fontSize: 24, fontWeight: '900', color: '#fff' }}>{Math.round(progress)}%</Text>
+                <Text style={{ fontSize: 24, fontWeight: '900', color: textColor }}>{Math.round(progress)}%</Text>
             </View>
         </View>
     );
@@ -222,6 +230,33 @@ export const AttendanceReportScreen = () => {
     const labelMain = isTeacher ? t('attendance.report.metrics.teacherRate') : t('attendance.report.metrics.overallAttendance');
     const labelAttended = isTeacher ? t('attendance.report.metrics.present') : t('attendance.report.metrics.attended');
     const labelTotal = isTeacher ? t('attendance.report.metrics.totalDays') : t('attendance.report.metrics.totalSessions');
+    const overviewTheme = isTeacher
+        ? {
+            gradientColors: ['#FFF4D6', '#ECFDF5', '#E0F2FE'] as [string, string, string],
+            cardBorder: '#FDE68A',
+            textPrimary: '#1F2937',
+            textSecondary: '#64748B',
+            miniBg: 'rgba(255,255,255,0.78)',
+            miniBorder: '#FDE68A',
+            miniDivider: '#D1D5DB',
+            ringStart: '#F59E0B',
+            ringEnd: '#14B8A6',
+            ringTrack: 'rgba(245, 158, 11, 0.22)',
+            ringText: '#B45309',
+        }
+        : {
+            gradientColors: [BRAND_TEAL, BRAND_TEAL_DARK] as [string, string],
+            cardBorder: 'rgba(255,255,255,0.24)',
+            textPrimary: 'rgba(255,255,255,0.92)',
+            textSecondary: 'rgba(255,255,255,0.72)',
+            miniBg: 'rgba(255,255,255,0.15)',
+            miniBorder: 'rgba(255,255,255,0.22)',
+            miniDivider: 'rgba(255,255,255,0.2)',
+            ringStart: '#FDE68A',
+            ringEnd: '#F59E0B',
+            ringTrack: 'rgba(255,255,255,0.2)',
+            ringText: '#FFFFFF',
+        };
 
     return (
         <View style={styles.container}>
@@ -250,9 +285,9 @@ export const AttendanceReportScreen = () => {
                     }
                 >
                     {/* Attendance Percentage Card */}
-                    <Animated.View style={styles.overviewCard}>
+                    <Animated.View style={[styles.overviewCard, { borderColor: overviewTheme.cardBorder }]}>
                         <LinearGradient
-                            colors={isTeacher ? [BRAND_YELLOW, '#FF8C00'] : [BRAND_TEAL, BRAND_TEAL_DARK]}
+                            colors={overviewTheme.gradientColors}
                             style={styles.gradient}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
@@ -262,18 +297,30 @@ export const AttendanceReportScreen = () => {
                                     size={100}
                                     strokeWidth={12}
                                     progress={attendancePercentage}
+                                    startColor={overviewTheme.ringStart}
+                                    endColor={overviewTheme.ringEnd}
+                                    trackColor={overviewTheme.ringTrack}
+                                    textColor={overviewTheme.ringText}
                                 />
                                 <View style={styles.chartTextContainer}>
-                                    <Text style={styles.percentageLabel}>{labelMain}</Text>
-                                    <View style={styles.sessionsMiniInfo}>
+                                    <Text style={[styles.percentageLabel, { color: overviewTheme.textPrimary }]}>{labelMain}</Text>
+                                    <View
+                                        style={[
+                                            styles.sessionsMiniInfo,
+                                            {
+                                                backgroundColor: overviewTheme.miniBg,
+                                                borderColor: overviewTheme.miniBorder,
+                                            },
+                                        ]}
+                                    >
                                         <View style={styles.miniStat}>
-                                            <Text style={styles.miniStatValue}>{attendedCount}</Text>
-                                            <Text style={styles.miniStatLabel}>{labelAttended}</Text>
+                                            <Text style={[styles.miniStatValue, { color: overviewTheme.textPrimary }]}>{attendedCount}</Text>
+                                            <Text style={[styles.miniStatLabel, { color: overviewTheme.textSecondary }]}>{labelAttended}</Text>
                                         </View>
-                                        <View style={styles.miniDivider} />
+                                        <View style={[styles.miniDivider, { backgroundColor: overviewTheme.miniDivider }]} />
                                         <View style={styles.miniStat}>
-                                            <Text style={styles.miniStatValue}>{totalCount}</Text>
-                                            <Text style={styles.miniStatLabel}>{labelTotal}</Text>
+                                            <Text style={[styles.miniStatValue, { color: overviewTheme.textPrimary }]}>{totalCount}</Text>
+                                            <Text style={[styles.miniStatLabel, { color: overviewTheme.textSecondary }]}>{labelTotal}</Text>
                                         </View>
                                     </View>
                                 </View>
@@ -517,6 +564,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: 'rgba(255,255,255,0.15)',
         borderRadius: 12,
+        borderWidth: 1,
         padding: 12,
         gap: 12,
     },

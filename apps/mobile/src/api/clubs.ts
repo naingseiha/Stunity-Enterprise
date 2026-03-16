@@ -83,10 +83,19 @@ export interface UpdateClubData {
  */
 export const getClubs = async (params?: {
   joined?: boolean;
+  myClubs?: boolean;
   type?: string;
   schoolId?: string;
+  search?: string;
 }): Promise<Club[]> => {
-  const response = await api.get('/clubs', { params });
+  const normalizedParams: Record<string, unknown> = { ...(params || {}) };
+
+  if (typeof normalizedParams.joined === 'boolean' && normalizedParams.myClubs === undefined) {
+    normalizedParams.myClubs = normalizedParams.joined;
+  }
+  delete normalizedParams.joined;
+
+  const response = await api.get('/clubs', { params: normalizedParams });
   return response.data.clubs || response.data;  // Handle both { clubs: [...] } and direct array
 };
 

@@ -139,14 +139,28 @@ const SessionCard = ({
 
             <View style={styles.timeInfoRow}>
                 <View style={styles.timeBox}>
-                    <Text style={styles.timeLabel}>{isPermission ? t('attendance.requestedAt') : t('attendance.checkIn')}</Text>
+                    <View style={styles.timeLabelRow}>
+                        <Ionicons
+                            name={isPermission ? 'time-outline' : 'log-in-outline'}
+                            size={13}
+                            color="#64748B"
+                        />
+                        <Text style={styles.timeLabel}>{isPermission ? t('attendance.requestedAt') : t('attendance.checkIn')}</Text>
+                    </View>
                     <Text style={[styles.timeValue, isCheckedIn && styles.activeTimeValue]}>
                         {data?.timeIn ? new Date(data.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                     </Text>
                 </View>
                 <View style={styles.timeSeparator} />
                 <View style={styles.timeBox}>
-                    <Text style={styles.timeLabel}>{isPermission ? t('attendance.mode') : t('attendance.checkOut')}</Text>
+                    <View style={styles.timeLabelRow}>
+                        <Ionicons
+                            name={isPermission ? 'globe-outline' : 'log-out-outline'}
+                            size={13}
+                            color="#64748B"
+                        />
+                        <Text style={styles.timeLabel}>{isPermission ? t('attendance.mode') : t('attendance.checkOut')}</Text>
+                    </View>
                     <Text style={[styles.timeValue, (isCheckedOut || isPermission) && styles.activeTimeValue]}>
                         {isPermission ? t('attendance.online') : (data?.timeOut ? new Date(data.timeOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--')}
                     </Text>
@@ -211,11 +225,21 @@ export const AttendanceCheckInScreen = () => {
     const [permissionProcessingSession, setPermissionProcessingSession] = useState<'MORNING' | 'AFTERNOON' | null>(null);
 
     const gpsText = useMemo(() => {
-        if (gpsStatus === 'ready' && gpsCoords) {
-            return `${t('attendance.gps.ready')} (${gpsCoords.latitude.toFixed(4)}, ${gpsCoords.longitude.toFixed(4)})`;
+        if (gpsStatus === 'ready') {
+            return t('attendance.gps.ready');
         }
         return t(`attendance.gps.${gpsStatus}`);
-    }, [gpsStatus, gpsCoords, t]);
+    }, [gpsStatus, t]);
+
+    const headerDateText = useMemo(
+        () =>
+            new Date().toLocaleDateString(i18n.language === 'km' ? 'km-KH' : 'en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
+            }),
+        [i18n.language]
+    );
 
     const getSessionLabel = useCallback((session: 'MORNING' | 'AFTERNOON') => {
         return session === 'MORNING' ? t('attendance.morning') : t('attendance.afternoon');
@@ -459,7 +483,10 @@ export const AttendanceCheckInScreen = () => {
                         <TouchableOpacity style={styles.navIconButton} onPress={() => navigation.goBack()}>
                             <Ionicons name="chevron-back" size={22} color={BRAND_TEAL} />
                         </TouchableOpacity>
-                        <Text style={styles.headerTitle}>{i18n.language === 'km' ? 'វត្តមាន' : t('attendance.title')}</Text>
+                        <View style={styles.navTitleWrap}>
+                            <Text style={styles.headerTitle}>{i18n.language === 'km' ? 'វត្តមាន' : t('attendance.title')}</Text>
+                            <Text style={styles.headerSubtitle}>{headerDateText}</Text>
+                        </View>
                         <View style={{ width: 48 }} />
                     </View>
                     <View style={[styles.centerContainer, { paddingHorizontal: 30 }]}>
@@ -498,7 +525,10 @@ export const AttendanceCheckInScreen = () => {
                     >
                         <Ionicons name="chevron-back" size={24} color={BRAND_TEAL} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>{i18n.language === 'km' ? 'វត្តមាន' : t('attendance.title')}</Text>
+                    <View style={styles.navTitleWrap}>
+                        <Text style={styles.headerTitle}>{i18n.language === 'km' ? 'វត្តមាន' : t('attendance.title')}</Text>
+                        <Text style={styles.headerSubtitle}>{headerDateText}</Text>
+                    </View>
                     <TouchableOpacity
                         style={styles.navIconButton}
                         onPress={() => {
@@ -517,7 +547,7 @@ export const AttendanceCheckInScreen = () => {
                 >
                     <View style={styles.premiumHeaderCard}>
                         <LinearGradient
-                            colors={['#F0FDFA', '#FFFBEB']}
+                            colors={['#D7F4EE', '#EAF7F1', '#FCEED1']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={StyleSheet.absoluteFill}
@@ -552,9 +582,14 @@ export const AttendanceCheckInScreen = () => {
                                 <View style={styles.gpsIconCircle}>
                                     <Ionicons name="navigate" size={16} color={BRAND_TEAL} />
                                 </View>
-                                <View style={{ flex: 1, marginLeft: 12 }}>
+                                <View style={styles.gpsContentWrap}>
                                     <Text style={styles.gpsLabel}>{t('attendance.gpsLocation')}</Text>
                                     <Text style={styles.gpsValue} numberOfLines={1}>{gpsText}</Text>
+                                    {gpsStatus === 'ready' && gpsCoords && (
+                                        <Text style={styles.gpsCoordsText} numberOfLines={1}>
+                                            {`${gpsCoords.latitude.toFixed(4)}, ${gpsCoords.longitude.toFixed(4)}`}
+                                        </Text>
+                                    )}
                                 </View>
                                 <View style={[
                                     styles.gpsStatusDot,
@@ -824,8 +859,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingVertical: 16,
+        paddingHorizontal: 18,
+        paddingVertical: 14,
     },
     navIconButton: {
         width: 48,
@@ -839,29 +874,47 @@ const styles = StyleSheet.create({
         borderColor: '#F1F5F9',
     },
     headerTitle: {
-        fontSize: 20,
-        fontWeight: '900',
+        fontSize: 18,
+        fontWeight: '800',
         color: '#1E293B',
-        letterSpacing: 0.5,
+        letterSpacing: 0.2,
+        textAlign: 'center',
+    },
+    navTitleWrap: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 8,
+    },
+    headerSubtitle: {
+        marginTop: 2,
+        fontSize: 11,
+        color: '#64748B',
+        fontWeight: '600',
+        letterSpacing: 0.2,
     },
     premiumHeaderCard: {
-        marginTop: 8,
-        marginBottom: 28,
-        borderRadius: 28,
+        marginTop: 10,
+        marginBottom: 24,
+        borderRadius: 24,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: '#E2E8F0',
-        ...Shadows.lg,
+        borderColor: '#C9DBF1',
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.12,
+        shadowRadius: 22,
+        elevation: 10,
     },
     headerCardContent: {
-        padding: 24,
+        padding: 22,
     },
     dateInfoContainer: {
         marginBottom: 20,
     },
     welcomeText: {
-        fontSize: 14,
-        color: '#64748B',
+        fontSize: 15,
+        color: '#475569',
         fontWeight: '600',
         marginBottom: 12,
         letterSpacing: 0.3,
@@ -874,7 +927,7 @@ const styles = StyleSheet.create({
         backgroundColor: BRAND_TEAL,
         paddingHorizontal: 16,
         paddingVertical: 10,
-        borderRadius: 18,
+        borderRadius: 16,
         marginRight: 16,
         ...Shadows.md,
     },
@@ -887,13 +940,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     dateTextMonth: {
-        fontSize: 18,
+        fontSize: 17,
         fontWeight: '800',
         color: '#1E293B',
     },
     dateTextWeekday: {
         fontSize: 13,
-        color: '#94A3B8',
+        color: '#64748B',
         fontWeight: '600',
         marginTop: 2,
     },
@@ -905,11 +958,11 @@ const styles = StyleSheet.create({
     modernGpsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+        backgroundColor: '#FFFFFF',
         padding: 14,
-        borderRadius: 20,
+        borderRadius: 18,
         borderWidth: 1,
-        borderColor: '#F1F5F9',
+        borderColor: '#E2E8F0',
     },
     gpsIconCircle: {
         width: 36,
@@ -921,17 +974,26 @@ const styles = StyleSheet.create({
         ...Shadows.sm,
     },
     gpsLabel: {
-        fontSize: 11,
+        fontSize: 11.5,
         fontWeight: '700',
-        color: '#94A3B8',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
+        color: '#64748B',
+        letterSpacing: 0.2,
     },
     gpsValue: {
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: '700',
-        color: '#475569',
+        color: '#334155',
+        marginTop: 1,
+    },
+    gpsContentWrap: {
+        flex: 1,
+        marginLeft: 12,
+    },
+    gpsCoordsText: {
         marginTop: 2,
+        fontSize: 12,
+        color: '#64748B',
+        fontWeight: '500',
     },
     gpsStatusDot: {
         width: 10,
@@ -943,13 +1005,14 @@ const styles = StyleSheet.create({
     weeklyContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 32,
+        marginBottom: 24,
         paddingHorizontal: 4,
     },
     dayColPill: {
         alignItems: 'center',
         paddingVertical: 10,
         paddingHorizontal: 8,
+        minWidth: 44,
         borderRadius: 20,
         backgroundColor: '#fff',
         borderWidth: 1,
@@ -983,7 +1046,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#10B981',
     },
     dayLabel: {
-        fontSize: 10,
+        fontSize: 11,
         color: '#64748B',
         fontWeight: '700',
     },
@@ -999,9 +1062,9 @@ const styles = StyleSheet.create({
 
     sessionCard: {
         backgroundColor: '#fff',
-        borderRadius: 28,
-        padding: 24,
-        marginBottom: 24,
+        borderRadius: 24,
+        padding: 20,
+        marginBottom: 18,
         borderWidth: 1,
         borderColor: '#E2E8F0',
         ...Shadows.lg,
@@ -1017,7 +1080,7 @@ const styles = StyleSheet.create({
     sessionHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 28,
+        marginBottom: 20,
     },
     sessionIconBg: {
         width: 54,
@@ -1028,9 +1091,10 @@ const styles = StyleSheet.create({
         backgroundColor: '#F1F5F9',
     },
     sessionTitle: {
-        fontSize: 19,
+        fontSize: 18,
         fontWeight: '800',
         color: '#1E293B',
+        textTransform: 'capitalize',
     },
     sessionTimeWindow: {
         fontSize: 13,
@@ -1083,32 +1147,39 @@ const styles = StyleSheet.create({
 
     timeInfoRow: {
         flexDirection: 'row',
-        gap: 12,
-        marginBottom: 28,
+        gap: 10,
+        marginBottom: 20,
     },
     timeBox: {
         flex: 1,
-        alignItems: 'center',
+        alignItems: 'flex-start',
         backgroundColor: '#F8FAFC',
-        paddingVertical: 18,
-        borderRadius: 20,
+        paddingVertical: 14,
+        paddingHorizontal: 14,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: '#F1F5F9',
+    },
+    timeLabelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: 8,
     },
     timeLabel: {
         fontSize: 11,
         color: '#64748B',
         fontWeight: '700',
-        marginBottom: 8,
-        letterSpacing: 1,
+        letterSpacing: 0.2,
     },
     timeValue: {
-        fontSize: 22,
+        fontSize: 24,
         fontWeight: '800',
         color: '#CBD5E1',
+        fontVariant: ['tabular-nums'],
     },
     activeTimeValue: {
-        color: '#0F172A',
+        color: '#1E293B',
     },
     timeSeparator: {
         display: 'none',
@@ -1121,7 +1192,7 @@ const styles = StyleSheet.create({
     },
 
     sessionBtnContainer: {
-        borderRadius: 20,
+        borderRadius: 16,
         overflow: 'hidden',
         ...Shadows.md,
     },
@@ -1129,7 +1200,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 16,
+        paddingVertical: 15,
         gap: 12,
     },
     btnInactive: {
@@ -1140,9 +1211,9 @@ const styles = StyleSheet.create({
     },
     sessionBtnText: {
         color: '#fff',
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '800',
-        letterSpacing: 0.5,
+        letterSpacing: 0.3,
     },
 
     infoCard: {
