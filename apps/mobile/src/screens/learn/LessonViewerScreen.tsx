@@ -87,6 +87,16 @@ export default function LessonViewerScreen() {
     return candidate.isLocked ? null : candidate;
   }, [course?.lessons, currentLessonIndex]);
 
+  const completedLessonsCount = useMemo(
+    () => course?.lessons.filter(item => item.isCompleted).length || 0,
+    [course?.lessons]
+  );
+
+  const courseProgressPercentage = useMemo(() => {
+    if (!course?.lessons?.length) return 0;
+    return Math.round((completedLessonsCount / course.lessons.length) * 100);
+  }, [completedLessonsCount, course?.lessons]);
+
   const openLesson = useCallback((targetLessonId: string) => {
     navigation.replace('LessonViewer', { courseId, lessonId: targetLessonId });
   }, [courseId, navigation]);
@@ -129,20 +139,22 @@ export default function LessonViewerScreen() {
   const contentText = lesson.content ? stripHtml(lesson.content) : (lesson.description || 'No lesson content available.');
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="light-content" />
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
 
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={22} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {course?.title || 'Lesson'}
-        </Text>
-        <TouchableOpacity style={styles.headerButton} onPress={onRefresh}>
-          <Ionicons name="refresh-outline" size={20} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      <SafeAreaView edges={['top']} style={styles.headerSafe}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={22} color="#334155" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {course?.title || 'Lesson'}
+          </Text>
+          <TouchableOpacity style={styles.headerButton} onPress={onRefresh}>
+            <Ionicons name="refresh-outline" size={20} color="#334155" />
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
 
       <ScrollView
         style={styles.content}
@@ -191,6 +203,29 @@ export default function LessonViewerScreen() {
             </View>
           )}
         </View>
+
+        {course?.lessons?.length ? (
+          <View style={styles.progressCard}>
+            <View style={styles.progressHeader}>
+              <View style={styles.progressIconWrap}>
+                <Ionicons name="analytics-outline" size={16} color="#1D4ED8" />
+              </View>
+              <View style={styles.progressTextWrap}>
+                <Text style={styles.progressTitle}>Course progress</Text>
+                <Text style={styles.progressSubtitle}>
+                  {completedLessonsCount}/{course.lessons.length} lessons completed
+                </Text>
+              </View>
+              <Text style={styles.progressValue}>{courseProgressPercentage}%</Text>
+            </View>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${courseProgressPercentage}%` }]} />
+            </View>
+            <Text style={styles.progressHint}>
+              Lesson {Math.max(1, currentLessonIndex + 1)} of {course.lessons.length}
+            </Text>
+          </View>
+        ) : null}
 
         {course?.lessons?.length ? (
           <View style={styles.playlistCard}>
@@ -264,7 +299,7 @@ export default function LessonViewerScreen() {
           <Ionicons name="chevron-forward" size={16} color="#fff" />
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -272,6 +307,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
+  },
+  headerSafe: {
+    backgroundColor: '#FFFFFF',
   },
   loadingContainer: {
     flex: 1,
@@ -286,25 +324,29 @@ const styles = StyleSheet.create({
   },
   header: {
     height: 52,
-    backgroundColor: '#111827',
-    paddingHorizontal: 10,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#DBEAFE',
   },
   headerButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
   },
   headerTitle: {
     flex: 1,
-    color: '#fff',
+    color: '#1F2937',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   content: {
     flex: 1,
@@ -313,10 +355,73 @@ const styles = StyleSheet.create({
   },
   lessonCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     padding: 12,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  progressCard: {
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    backgroundColor: '#F8FBFF',
+    padding: 10,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#DBEAFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  progressTextWrap: {
+    flex: 1,
+  },
+  progressTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  progressSubtitle: {
+    marginTop: 1,
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  progressValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1D4ED8',
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: '#E0E7FF',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: '#2563EB',
+  },
+  progressHint: {
+    marginTop: 6,
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '500',
   },
   lessonTitle: {
     fontSize: 18,
@@ -388,13 +493,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginBottom: 8,
   },
   playlistItemActive: {
     backgroundColor: '#EFF6FF',
-    borderRadius: 8,
-    paddingHorizontal: 8,
+    borderColor: '#BFDBFE',
   },
   playlistItemLocked: {
     opacity: 0.6,
@@ -427,7 +534,7 @@ const styles = StyleSheet.create({
   },
   bottomBar: {
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: '#DBEAFE',
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -437,20 +544,25 @@ const styles = StyleSheet.create({
   primaryButton: {
     flex: 1.2,
     height: 42,
-    borderRadius: 10,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#1A73E8',
     flexDirection: 'row',
     gap: 6,
+    shadowColor: '#1A73E8',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
   },
   secondaryButton: {
     flex: 1,
     height: 42,
-    borderRadius: 10,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#374151',
+    backgroundColor: '#64748B',
     flexDirection: 'row',
     gap: 4,
   },

@@ -486,7 +486,9 @@
         "week": "សប្ដាហ៍",
         "month": "ខែ",
         "student": "សិស្ស",
-        "viewLeaderboard": "មើលតារាងពិន្ទុ"
+        "viewLeaderboard": "មើលតារាងពិន្ទុ",
+        "loadFailed": "មិនអាចផ្ទុកអ្នករួមចំណែកបានទេ",
+        "noContributors": "មិនទាន់មានអ្នករួមចំណែកទេ"
       },
       "quickResources": {
         "title": "ធនធានរហ័ស",

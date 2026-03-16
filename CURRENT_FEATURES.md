@@ -1,8 +1,24 @@
 # ✅ Stunity Enterprise — Current Features
 
-**Version:** 23.4 | **Updated:** March 14, 2026
+**Version:** 23.5 | **Updated:** March 16, 2026
 
 > This document lists all implemented and working features. For what's coming next, see NEXT_IMPLEMENTATION.md.
+
+---
+
+## ⚡ Latest Rollout (Mar 16, 2026)
+
+- **Web feed widgets are now fully live**
+  - Learning Spotlight now loads featured courses from API with working links/fallback states.
+  - Top Contributors widget now uses `/users/leaderboard` with loading/error/empty UX.
+  - Added dedicated web leaderboard page at `/${locale}/leaderboard`.
+- **Create Event reliability improvements (web + feed-service)**
+  - Event creation now uses authenticated submission with stronger validation/error handling.
+  - Upcoming calendar logic now includes same-day all-day and in-progress events.
+- **Mobile Learn redesign + UX polish**
+  - PlayStore-style two-column colorful categories, API-backed counts, top-6 default, and View all toggle.
+  - Rounded search/enroll controls and polished category/stat cards.
+  - Course Detail + Lesson Viewer redesigned with richer progress cards/bars and lighter feed-standard app bars/safe-area treatment.
 
 ---
 
@@ -289,6 +305,10 @@ npm run seed:super-admin [email]
 - Course detail view with lesson list
 - Lesson completion tracking
 - Course progress display
+- Learn Explore categories are dynamic from API with preset colorful tiles, top-6 default, and View all/View less toggle
+- Learn Explore has improved visual hierarchy (header, stat cards, and polished rounded controls)
+- Course Detail screen now includes upgraded progress card + colorful overview stat cards
+- Lesson Viewer now includes per-course progress summary card and improved playlist visuals
 
 ---
 
@@ -334,6 +354,8 @@ npm run seed:super-admin [email]
 - **Feed localization parity (web)** — Feed page, create-post modal, post card, analytics/activity/insights, and core feed widgets now use `next-intl` keys for `en`/`km`
 - **Translation fallback hardening** — Feed profile card safely falls back when OTA payload returns key-shaped values (e.g., `profile.viewProfile`)
 - **Translation settings UX redesign** — Admin language page now supports filtering by app target, locale, namespace, and screen/page with grouped editing and bulk save
+- **Feed widgets + leaderboard rollout** — Learning Spotlight and Top Contributors widgets are API-backed with proper loading/error states; dedicated leaderboard page added
+- **Event create/upcoming robustness** — Web create-event flow hardened and upcoming event visibility expanded for same-day all-day/in-progress events
 - **Repost button** — full repost-as-post (parity with mobile)
 - **Real-time comments** via SSE with exponential backoff reconnection
 - Analytics modal (redesigned to match mobile)

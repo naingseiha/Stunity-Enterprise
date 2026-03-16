@@ -1,8 +1,8 @@
 # 🎓 Stunity Enterprise — Project Status
 
-**Last Updated:** March 14, 2026
-**Version:** 23.4
-**Status:** 99% Complete — Teacher Permission Flow + Attendance Recording Polish 🚀
+**Last Updated:** March 16, 2026
+**Version:** 23.5
+**Status:** 99% Complete — Feed Widgets + Learn Experience Polish 🚀
 
 ---
 
@@ -17,9 +17,26 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 
 ---
 
-## ✅ Completed Features (v23.0)
+## ✅ Completed Features (v23.5)
 
-### ⚡ Latest Platform Updates (Mar 14, 2026)
+### ⚡ Latest Platform Updates (Mar 16, 2026)
+- **Feed widget activation + reliability improvements (web + feed-service)**
+  - Learning Spotlight now loads real featured courses from API, with working navigation and fallback behavior.
+  - Create Event flow now uses authenticated submission, stricter validation/error handling, and includes school context in payload.
+  - Upcoming event filtering now includes same-day all-day and in-progress events (not only future `startDate` values).
+- **Study Clubs + Top Contributors polish (web)**
+  - Study club avatars now guarantee visible color variety with per-card palette rotation.
+  - Top Contributors widget now uses `/users/leaderboard` API with loading/error/empty states.
+  - Added dedicated leaderboard page at `/${locale}/leaderboard` and wired widget CTA navigation.
+- **Learn Explore redesign (mobile)**
+  - Restored PlayStore-style two-column colorful category cards with predefined categories and live API counts.
+  - Categories now default to top 6 with `View all` / `View less` toggle and `All courses` reset.
+  - Refined spacing, fully rounded search/enroll controls, and visual polish for category cards/header.
+- **Learn Course detail/progress redesign (mobile)**
+  - Course Detail and Lesson Viewer received upgraded progress presentation (progress cards/bars), richer stat cards, and better lesson state styling.
+  - Updated app bars/safe areas to match Feed/Learn light header standard (removed heavy dark header look).
+
+### ⚡ Previous Platform Updates (Mar 14, 2026)
 - **Web language parity + feed localization (web)**
   - Completed Khmer/English language switching behavior on web with locale cookie persistence and safe locale-path replacement.
   - Localized major feed surfaces (feed page, create-post modal, post card, analytics/activity/insights, and right sidebar widgets) with `next-intl` message keys in both `en` and `km`.
@@ -159,6 +176,9 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 ### 📚 Learning
 - Course creation and enrollment (mobile + web)
 - Course detail with lessons
+- Mobile Learn Explore now supports API-backed preset categories with top-6 default + view-all toggle
+- Mobile Learn UI refreshed with colorful category/stat cards and rounded controls
+- Course Detail + Lesson Viewer progress UX upgraded (progress cards/bars, richer lesson status visuals)
 - Live quiz (Kahoot-style): host, lobby, play, leaderboard, podium
 - Assignments: create, submit, grade, submission list
 - Clubs: create, join, post, members, events

@@ -40,19 +40,36 @@ router.get('/upcoming', async (req, res) => {
   try {
     const userId = (req as any).user?.id;
     const now = new Date();
+    const startOfToday = new Date(now);
+    startOfToday.setUTCHours(0, 0, 0, 0);
     const limit = parseInt(req.query.limit as string) || 10;
 
     const events = await prisma.event.findMany({
       where: {
         isActive: true,
-        startDate: { gte: now },
-        OR: [
-          { privacy: 'PUBLIC' },
-          { creatorId: userId },
+        AND: [
           {
-            attendees: {
-              some: { userId },
-            },
+            OR: [
+              { startDate: { gte: now } },
+              { allDay: true, startDate: { gte: startOfToday } },
+              {
+                AND: [
+                  { startDate: { lte: now } },
+                  { endDate: { gte: now } },
+                ],
+              },
+            ],
+          },
+          {
+            OR: [
+              { privacy: 'PUBLIC' },
+              { creatorId: userId },
+              {
+                attendees: {
+                  some: { userId },
+                },
+              },
+            ],
           },
         ],
       },

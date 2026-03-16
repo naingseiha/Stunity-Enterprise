@@ -31,6 +31,43 @@ const TABS: { id: TabType; label: string; icon: keyof typeof Ionicons.glyphMap }
   { id: 'paths', label: 'Paths', icon: 'git-branch-outline' },
 ];
 
+interface LearnCategoryItem {
+  name: string;
+  count: number;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor: string;
+  iconBackground: string;
+}
+
+const PRESET_CATEGORIES: Omit<LearnCategoryItem, 'count'>[] = [
+  { name: 'Programming', icon: 'code-slash-outline', iconColor: '#EF4444', iconBackground: '#FEE2E2' },
+  { name: 'Data Science', icon: 'analytics-outline', iconColor: '#0284C7', iconBackground: '#E0F2FE' },
+  { name: 'Machine Learning', icon: 'hardware-chip-outline', iconColor: '#7C3AED', iconBackground: '#EDE9FE' },
+  { name: 'Mobile Development', icon: 'phone-portrait-outline', iconColor: '#059669', iconBackground: '#D1FAE5' },
+  { name: 'Web Development', icon: 'globe-outline', iconColor: '#2563EB', iconBackground: '#DBEAFE' },
+  { name: 'Design', icon: 'color-palette-outline', iconColor: '#DB2777', iconBackground: '#FCE7F3' },
+  { name: 'Business', icon: 'briefcase-outline', iconColor: '#D97706', iconBackground: '#FEF3C7' },
+  { name: 'Marketing', icon: 'megaphone-outline', iconColor: '#EA580C', iconBackground: '#FFEDD5' },
+  { name: 'Photography', icon: 'camera-outline', iconColor: '#2563EB', iconBackground: '#DBEAFE' },
+  { name: 'Music', icon: 'musical-notes-outline', iconColor: '#7C3AED', iconBackground: '#F3E8FF' },
+  { name: 'Languages', icon: 'language-outline', iconColor: '#0F766E', iconBackground: '#CCFBF1' },
+  { name: 'Personal Development', icon: 'sparkles-outline', iconColor: '#7C3AED', iconBackground: '#F3E8FF' },
+  { name: 'Health & Fitness', icon: 'fitness-outline', iconColor: '#16A34A', iconBackground: '#DCFCE7' },
+  { name: 'Database', icon: 'layers-outline', iconColor: '#0284C7', iconBackground: '#E0F2FE' },
+  { name: 'Cloud Computing', icon: 'cloud-outline', iconColor: '#2563EB', iconBackground: '#DBEAFE' },
+  { name: 'Mathematics', icon: 'calculator-outline', iconColor: '#4F46E5', iconBackground: '#E0E7FF' },
+  { name: 'Science', icon: 'flask-outline', iconColor: '#0EA5E9', iconBackground: '#E0F2FE' },
+  { name: 'Technology', icon: 'construct-outline', iconColor: '#4F46E5', iconBackground: '#E0E7FF' },
+  { name: 'Other', icon: 'grid-outline', iconColor: '#475569', iconBackground: '#E2E8F0' },
+];
+
+const DEFAULT_CATEGORY_STYLE: Omit<LearnCategoryItem, 'name' | 'count'> = {
+  icon: 'grid-outline',
+  iconColor: '#475569',
+  iconBackground: '#E2E8F0',
+};
+const TOP_CATEGORY_LIMIT = 6;
+
 const formatDuration = (minutes: number) => {
   if (!minutes || minutes <= 0) return '0m';
   if (minutes < 60) return `${minutes}m`;
@@ -53,6 +90,8 @@ export default function LearnScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [showAllCategories, setShowAllCategories] = useState(false);
   const [courses, setCourses] = useState<LearnCourse[]>([]);
   const [enrolledCourses, setEnrolledCourses] = useState<LearnEnrolledCourse[]>([]);
   const [createdCourses, setCreatedCourses] = useState<LearnCourse[]>([]);
@@ -144,14 +183,75 @@ export default function LearnScreen() {
   const normalizedQuery = searchQuery.trim().toLowerCase();
 
   const filteredCourses = useMemo(
-    () => courses.filter(course =>
-      !normalizedQuery ||
-      course.title.toLowerCase().includes(normalizedQuery) ||
-      course.description.toLowerCase().includes(normalizedQuery) ||
-      course.category.toLowerCase().includes(normalizedQuery)
-    ),
-    [courses, normalizedQuery]
+    () => courses.filter(course => {
+      const courseCategory = (course.category || 'General').trim() || 'General';
+      return (
+        (selectedCategory === 'All' || courseCategory === selectedCategory) &&
+        (
+          !normalizedQuery ||
+          course.title.toLowerCase().includes(normalizedQuery) ||
+          course.description.toLowerCase().includes(normalizedQuery) ||
+          courseCategory.toLowerCase().includes(normalizedQuery)
+        )
+      );
+    }),
+    [courses, normalizedQuery, selectedCategory]
   );
+
+  const categoryItems = useMemo<LearnCategoryItem[]>(() => {
+    const counts = new Map<string, number>();
+    courses.forEach((course) => {
+      const category = (course.category || 'General').trim() || 'General';
+      counts.set(category, (counts.get(category) || 0) + 1);
+    });
+
+    const presetNameSet = new Set(PRESET_CATEGORIES.map(category => category.name));
+
+    const presetItems = PRESET_CATEGORIES.map((category) => ({
+      ...category,
+      count: counts.get(category.name) || 0,
+    }));
+
+    const extraItems: LearnCategoryItem[] = [...counts.entries()]
+      .filter(([name]) => !presetNameSet.has(name))
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({
+        name,
+        count,
+        ...DEFAULT_CATEGORY_STYLE,
+      }));
+
+    return [...presetItems, ...extraItems];
+  }, [courses]);
+
+  const rankedCategoryItems = useMemo<LearnCategoryItem[]>(
+    () =>
+      categoryItems
+        .map((item, index) => ({ item, index }))
+        .sort((a, b) => {
+          if (b.item.count !== a.item.count) return b.item.count - a.item.count;
+          return a.index - b.index;
+        })
+        .map(({ item }) => item),
+    [categoryItems]
+  );
+
+  const visibleCategoryItems = useMemo<LearnCategoryItem[]>(() => {
+    if (showAllCategories) return rankedCategoryItems;
+
+    const limited = rankedCategoryItems.slice(0, TOP_CATEGORY_LIMIT);
+
+    if (selectedCategory !== 'All' && !limited.some(category => category.name === selectedCategory)) {
+      const selectedItem = rankedCategoryItems.find(category => category.name === selectedCategory);
+      if (selectedItem) {
+        return [...limited.slice(0, Math.max(0, TOP_CATEGORY_LIMIT - 1)), selectedItem];
+      }
+    }
+
+    return limited;
+  }, [rankedCategoryItems, selectedCategory, showAllCategories]);
+
+  const canToggleCategoryList = rankedCategoryItems.length > TOP_CATEGORY_LIMIT;
 
   const filteredEnrolled = useMemo(
     () => enrolledCourses.filter(course =>
@@ -183,27 +283,145 @@ export default function LearnScreen() {
   const renderStatCards = () => {
     if (!stats) return null;
 
+    const statCards: Array<{
+      key: string;
+      value: string;
+      label: string;
+      icon: keyof typeof Ionicons.glyphMap;
+      iconColor: string;
+      iconBackground: string;
+      cardBackground: string;
+      borderColor: string;
+    }> = [
+      {
+        key: 'enrolled',
+        value: `${stats.enrolledCourses}`,
+        label: 'Enrolled',
+        icon: 'book-outline',
+        iconColor: '#2563EB',
+        iconBackground: '#DBEAFE',
+        cardBackground: '#EFF6FF',
+        borderColor: '#BFDBFE',
+      },
+      {
+        key: 'completed',
+        value: `${stats.completedCourses}`,
+        label: 'Completed',
+        icon: 'checkmark-circle-outline',
+        iconColor: '#059669',
+        iconBackground: '#D1FAE5',
+        cardBackground: '#ECFDF5',
+        borderColor: '#A7F3D0',
+      },
+      {
+        key: 'hours',
+        value: `${stats.hoursLearned}h`,
+        label: 'Hours',
+        icon: 'time-outline',
+        iconColor: '#D97706',
+        iconBackground: '#FEF3C7',
+        cardBackground: '#FFFBEB',
+        borderColor: '#FDE68A',
+      },
+      {
+        key: 'streak',
+        value: `${stats.currentStreak}`,
+        label: 'Streak',
+        icon: 'flame-outline',
+        iconColor: '#EA580C',
+        iconBackground: '#FFEDD5',
+        cardBackground: '#FFF7ED',
+        borderColor: '#FDBA74',
+      },
+    ];
+
     return (
       <View style={styles.statsRow}>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{stats.enrolledCourses}</Text>
-          <Text style={styles.statLabel}>Enrolled</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{stats.completedCourses}</Text>
-          <Text style={styles.statLabel}>Completed</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{stats.hoursLearned}h</Text>
-          <Text style={styles.statLabel}>Hours</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{stats.currentStreak}</Text>
-          <Text style={styles.statLabel}>Streak</Text>
-        </View>
+        {statCards.map((item) => (
+          <View
+            key={item.key}
+            style={[styles.statCard, { backgroundColor: item.cardBackground, borderColor: item.borderColor }]}
+          >
+            <View style={styles.statCardTopRow}>
+              <View style={[styles.statIconWrap, { backgroundColor: item.iconBackground }]}>
+                <Ionicons name={item.icon} size={14} color={item.iconColor} />
+              </View>
+              <Text style={[styles.statValue, { color: item.iconColor }]}>{item.value}</Text>
+            </View>
+            <Text style={styles.statLabel}>{item.label}</Text>
+          </View>
+        ))}
       </View>
     );
   };
+
+  const renderCategoryGrid = () => (
+    <View style={styles.categorySection}>
+      <View style={styles.categoryHeaderRow}>
+        <View style={styles.categoryHeaderInfo}>
+          <Text style={styles.categoryHeaderTitle}>Explore categories</Text>
+          <Text style={styles.categoryHeaderSubtitle}>
+            {showAllCategories ? 'Browse all categories' : `Top ${TOP_CATEGORY_LIMIT} categories for you`}
+          </Text>
+        </View>
+        <View style={styles.categoryHeaderActions}>
+          {selectedCategory !== 'All' && (
+            <TouchableOpacity style={styles.categoryHeaderButton} onPress={() => setSelectedCategory('All')}>
+              <Text style={styles.categoryHeaderButtonText}>All courses</Text>
+            </TouchableOpacity>
+          )}
+          {canToggleCategoryList && (
+            <TouchableOpacity
+              style={styles.categoryHeaderButton}
+              onPress={() => setShowAllCategories(value => !value)}
+            >
+              <Text style={styles.categoryHeaderButtonText}>
+                {showAllCategories ? 'View less' : 'View all'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      <View style={styles.categoryGrid}>
+        {visibleCategoryItems.map((category, index) => {
+          const isActive = selectedCategory === category.name;
+          const isTopCategory = category.count > 0 && index < 3;
+          return (
+            <TouchableOpacity
+              key={category.name}
+              style={[styles.categoryCard, isActive && styles.categoryCardActive]}
+              onPress={() => setSelectedCategory(category.name)}
+              activeOpacity={0.85}
+            >
+              <View style={styles.categoryContent}>
+                <View style={styles.categoryTitleRow}>
+                  <Text numberOfLines={1} style={[styles.categoryLabel, isActive && styles.categoryLabelActive]}>
+                    {category.name}
+                  </Text>
+                  {isTopCategory && (
+                    <View style={[styles.categoryTrendBadge, isActive && styles.categoryTrendBadgeActive]}>
+                      <Text style={[styles.categoryTrendText, isActive && styles.categoryTrendTextActive]}>Top</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={[styles.categoryCount, isActive && styles.categoryCountActive]}>
+                  {category.count} courses
+                </Text>
+              </View>
+              <View style={[styles.categoryIconWrap, { backgroundColor: category.iconBackground }, isActive && styles.categoryIconWrapActive]}>
+                <Ionicons
+                  name={category.icon}
+                  size={18}
+                  color={category.iconColor}
+                />
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
 
   const renderCourseCard = (course: LearnCourse, options?: { enrolled?: LearnEnrolledCourse; showEnroll?: boolean }) => {
     const enrolledData = options?.enrolled;
@@ -328,6 +546,7 @@ export default function LearnScreen() {
     if (activeTab === 'explore') {
       return (
         <>
+          {renderCategoryGrid()}
           {renderStatCards()}
           {filteredCourses.length === 0
             ? renderEmptyState('No courses found', 'Try another keyword or refresh.', 'search-outline')
@@ -363,23 +582,25 @@ export default function LearnScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={openSidebar} style={styles.iconButton}>
-          <Ionicons name="menu-outline" size={24} color="#374151" />
-        </TouchableOpacity>
-        <StunityLogo width={108} height={30} />
-        <View style={styles.topBarActions}>
-          <TouchableOpacity onPress={handleCreateCourse} style={styles.iconButton}>
-            <Ionicons name="add-circle-outline" size={22} color="#374151" />
+      <SafeAreaView edges={['top']} style={styles.headerSafe}>
+        <View style={styles.topBar}>
+          <TouchableOpacity onPress={openSidebar} style={styles.iconButton}>
+            <Ionicons name="menu-outline" size={24} color="#374151" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={onRefresh} style={styles.iconButton}>
-            <Ionicons name="refresh-outline" size={22} color="#374151" />
-          </TouchableOpacity>
+          <StunityLogo width={108} height={30} />
+          <View style={styles.topBarActions}>
+            <TouchableOpacity onPress={handleCreateCourse} style={styles.iconButton}>
+              <Ionicons name="add-circle-outline" size={22} color="#374151" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onRefresh} style={styles.iconButton}>
+              <Ionicons name="refresh-outline" size={22} color="#374151" />
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </SafeAreaView>
 
       <View style={styles.searchContainer}>
         <Ionicons name="search-outline" size={18} color="#6B7280" />
@@ -399,6 +620,7 @@ export default function LearnScreen() {
 
       <ScrollView
         horizontal
+        style={styles.tabsScroll}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.tabsContainer}
       >
@@ -412,7 +634,9 @@ export default function LearnScreen() {
               activeOpacity={0.8}
             >
               <Ionicons name={tab.icon} size={14} color={isActive ? '#1A73E8' : '#6B7280'} />
-              <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{tab.label}</Text>
+              <Text allowFontScaling={false} style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+                {tab.label}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -426,7 +650,7 @@ export default function LearnScreen() {
         {renderActiveTab()}
         <View style={{ height: 32 }} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -434,6 +658,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
+  },
+  headerSafe: {
+    backgroundColor: '#FFFFFF',
   },
   loadingContainer: {
     flex: 1,
@@ -454,7 +681,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#DBEAFE',
   },
   topBarActions: {
     flexDirection: 'row',
@@ -474,7 +701,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 10,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     paddingHorizontal: 12,
@@ -482,6 +709,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
   },
   searchInput: {
     flex: 1,
@@ -492,10 +724,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 8,
     paddingBottom: 8,
+    alignItems: 'center',
+  },
+  tabsScroll: {
+    maxHeight: 54,
   },
   tabButton: {
     paddingHorizontal: 12,
     paddingVertical: 8,
+    minHeight: 36,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#D1D5DB',
@@ -516,6 +753,138 @@ const styles = StyleSheet.create({
   tabLabelActive: {
     color: '#1A73E8',
   },
+  categorySection: {
+    marginBottom: 12,
+  },
+  categoryHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  categoryHeaderInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  categoryHeaderTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  categoryHeaderSubtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  categoryHeaderActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    gap: 6,
+    maxWidth: '52%',
+  },
+  categoryHeaderButton: {
+    borderRadius: 999,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#D1E4FF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  categoryHeaderButtonText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#2563EB',
+  },
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  categoryCard: {
+    width: '49%',
+    minHeight: 72,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  categoryCardActive: {
+    borderColor: '#93C5FD',
+    backgroundColor: '#F8FBFF',
+  },
+  categoryContent: {
+    flex: 1,
+    marginRight: 8,
+  },
+  categoryTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  categoryIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryIconWrapActive: {
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  categoryLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#374151',
+    textAlign: 'left',
+    flexShrink: 1,
+  },
+  categoryLabelActive: {
+    color: '#1A73E8',
+  },
+  categoryTrendBadge: {
+    borderRadius: 999,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  categoryTrendBadgeActive: {
+    backgroundColor: '#DBEAFE',
+    borderColor: '#93C5FD',
+  },
+  categoryTrendText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#2563EB',
+  },
+  categoryTrendTextActive: {
+    color: '#1D4ED8',
+  },
+  categoryCount: {
+    marginTop: 4,
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  categoryCountActive: {
+    color: '#2563EB',
+  },
   content: {
     flex: 1,
     paddingHorizontal: 16,
@@ -528,22 +897,37 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingVertical: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 8,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  statCardTopRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  statIconWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   statValue: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
-    color: '#111827',
   },
   statLabel: {
-    marginTop: 2,
+    marginTop: 7,
     fontSize: 11,
-    color: '#6B7280',
+    color: '#475569',
+    fontWeight: '600',
   },
   card: {
     backgroundColor: '#FFFFFF',
@@ -677,13 +1061,18 @@ const styles = StyleSheet.create({
   actionButton: {
     marginHorizontal: 12,
     marginBottom: 12,
-    borderRadius: 10,
+    borderRadius: 999,
     backgroundColor: '#1A73E8',
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 6,
+    shadowColor: '#1A73E8',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    elevation: 3,
   },
   actionButtonDisabled: {
     opacity: 0.7,

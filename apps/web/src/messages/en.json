@@ -487,7 +487,9 @@
         "week": "Week",
         "month": "Month",
         "student": "Student",
-        "viewLeaderboard": "View leaderboard"
+        "viewLeaderboard": "View leaderboard",
+        "loadFailed": "Unable to load contributors",
+        "noContributors": "No contributors yet"
       },
       "quickResources": {
         "title": "Quick Resources",

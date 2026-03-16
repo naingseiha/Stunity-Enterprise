@@ -133,7 +133,9 @@ export default function EventsPage() {
       if (activeTab === 'my-events') params.append('myEvents', 'true');
       if (searchQuery) params.append('search', searchQuery);
       if (selectedType) params.append('eventType', selectedType);
-      params.append('startAfter', new Date().toISOString());
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      params.append('startAfter', startOfToday.toISOString());
 
       const response = await fetch(`${FEED_SERVICE_URL}/calendar?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -653,6 +655,7 @@ export default function EventsPage() {
             fetchEvents();
             fetchUpcomingEvents();
           }}
+          schoolId={school?.id ? String(school.id) : undefined}
         />
       )}
     </>
@@ -663,9 +666,11 @@ export default function EventsPage() {
 function CreateEventModal({
   onClose,
   onCreated,
+  schoolId,
 }: {
   onClose: () => void;
   onCreated: () => void;
+  schoolId?: string;
 }) {
   const [formData, setFormData] = useState({
     title: '',
@@ -682,30 +687,48 @@ function CreateEventModal({
     maxAttendees: '',
   });
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setSubmitError(null);
 
     try {
-      const token = TokenManager.getAccessToken();
-      if (!token) return;
+      if (!formData.startDate || (!formData.allDay && !formData.startTime)) {
+        setSubmitError('Please provide a valid start date and time.');
+        return;
+      }
 
       const startDateTime = formData.allDay
         ? new Date(formData.startDate).toISOString()
         : new Date(`${formData.startDate}T${formData.startTime}`).toISOString();
-      
+
+      if (Number.isNaN(new Date(startDateTime).getTime())) {
+        setSubmitError('Please provide a valid start date and time.');
+        return;
+      }
+
       let endDateTime = null;
       if (formData.endDate) {
         endDateTime = formData.allDay
           ? new Date(formData.endDate).toISOString()
           : new Date(`${formData.endDate}T${formData.endTime || '23:59'}`).toISOString();
+
+        if (Number.isNaN(new Date(endDateTime).getTime())) {
+          setSubmitError('Please provide a valid end date and time.');
+          return;
+        }
+
+        if (new Date(endDateTime) < new Date(startDateTime)) {
+          setSubmitError('End date/time must be after the start date/time.');
+          return;
+        }
       }
 
-      const response = await fetch(`${FEED_SERVICE_URL}/calendar`, {
+      const response = await TokenManager.fetchWithAuth(`${FEED_SERVICE_URL}/calendar`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -719,14 +742,33 @@ function CreateEventModal({
           eventType: formData.eventType,
           privacy: formData.privacy,
           maxAttendees: formData.maxAttendees ? parseInt(formData.maxAttendees) : null,
+          schoolId: schoolId || null,
         }),
       });
 
-      if (response.ok) {
-        onCreated();
+      const responseText = await response.text();
+      let responseData: any = null;
+      if (responseText) {
+        try {
+          responseData = JSON.parse(responseText);
+        } catch {
+          responseData = null;
+        }
       }
+
+      if (!response.ok) {
+        const errorMessage =
+          responseData?.error ||
+          responseData?.message ||
+          'Failed to create event. Please try again.';
+        setSubmitError(errorMessage);
+        return;
+      }
+
+      onCreated();
     } catch (error) {
       console.error('Error creating event:', error);
+      setSubmitError('Failed to create event. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -757,6 +799,12 @@ function CreateEventModal({
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="p-5 space-y-4 overflow-y-auto flex-1">
+            {submitError && (
+              <div className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-xs text-red-700">
+                {submitError}
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Event Title *</label>
               <input
@@ -882,7 +930,7 @@ function CreateEventModal({
             </button>
             <button
               type="submit"
-              disabled={loading || !formData.title || !formData.startDate}
+              disabled={loading || !formData.title || !formData.startDate || (!formData.allDay && !formData.startTime)}
               className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white text-sm font-medium rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}

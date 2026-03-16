@@ -1,95 +1,122 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { 
-  Trophy, 
-  Star, 
-  TrendingUp,
-  Crown,
-  Medal,
-  Award,
-  ChevronRight,
-  Sparkles,
+  Loader2,
 } from 'lucide-react';
+import { TokenManager } from '@/lib/api/auth';
+import { FEED_SERVICE_URL } from '@/lib/api/config';
 
 interface Contributor {
   id: string;
   name: string;
   role: string;
-  avatar?: string;
   points: number;
   rank: number;
-  badge: 'gold' | 'silver' | 'bronze' | 'rising';
-  weeklyChange: number;
-  contributions: {
-    posts: number;
-    answers: number;
-    likes: number;
-  };
 }
 
-// Mock data
-const TOP_CONTRIBUTORS: Contributor[] = [
-  {
-    id: '1',
-    name: 'Sreymom Chen',
-    role: 'Teacher',
-    points: 2450,
-    rank: 1,
-    badge: 'gold',
-    weeklyChange: 12,
-    contributions: { posts: 28, answers: 45, likes: 312 },
-  },
-  {
-    id: '2',
-    name: 'Dara Sok',
-    role: 'Student',
-    points: 1890,
-    rank: 2,
-    badge: 'silver',
-    weeklyChange: 8,
-    contributions: { posts: 15, answers: 67, likes: 189 },
-  },
-  {
-    id: '3',
-    name: 'Vanna Kim',
-    role: 'Student',
-    points: 1650,
-    rank: 3,
-    badge: 'bronze',
-    weeklyChange: -2,
-    contributions: { posts: 22, answers: 34, likes: 156 },
-  },
-  {
-    id: '4',
-    name: 'Pisey Mao',
-    role: 'Student',
-    points: 1420,
-    rank: 4,
-    badge: 'rising',
-    weeklyChange: 24,
-    contributions: { posts: 18, answers: 29, likes: 98 },
-  },
-];
+interface LeaderboardUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  totalPoints: number;
+}
 
-const BADGE_STYLES = {
-  gold: { bg: 'from-yellow-400 to-amber-500', icon: Crown, text: 'text-yellow-600' },
-  silver: { bg: 'from-gray-300 to-gray-400', icon: Medal, text: 'text-gray-500' },
-  bronze: { bg: 'from-orange-300 to-orange-400', icon: Medal, text: 'text-orange-600' },
-  rising: { bg: 'from-[#F9A825] to-[#FFB74D]', icon: TrendingUp, text: 'text-[#F9A825]' },
+const rankStyles = {
+  first: 'bg-yellow-100 text-yellow-700',
+  second: 'bg-gray-100 text-gray-600',
+  third: 'bg-orange-100 text-orange-600',
+  default: 'bg-gray-50 text-gray-500',
 };
 
 export default function TopContributorsWidget() {
+  const params = useParams();
+  const locale = (params?.locale as string) || 'en';
   const tFeed = useTranslations('feed');
   const tCommon = useTranslations('common');
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [period, setPeriod] = useState<'week' | 'month'>('week');
+  const [contributors, setContributors] = useState<Contributor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchLeaderboard = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const token = TokenManager.getAccessToken();
+        if (!token) {
+          if (mounted) {
+            setContributors([]);
+            setLoading(false);
+          }
+          return;
+        }
+
+        const response = await TokenManager.fetchWithAuth(
+          `${FEED_SERVICE_URL}/users/leaderboard?limit=4&period=${period}`
+        );
+
+        const responseText = await response.text();
+        const data = responseText ? JSON.parse(responseText) : {};
+
+        if (!response.ok || !data?.success) {
+          const message = data?.error || 'Failed to load contributors';
+          throw new Error(message);
+        }
+
+        const mappedContributors = ((data?.leaderboard || []) as LeaderboardUser[])
+          .slice(0, 4)
+          .map((user, index) => ({
+            id: user.id,
+            name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown User',
+            role: user.role || 'STUDENT',
+            points: Number(user.totalPoints || 0),
+            rank: index + 1,
+          }));
+
+        if (mounted) {
+          setContributors(mappedContributors);
+        }
+      } catch (fetchError) {
+        console.error('Error fetching contributors:', fetchError);
+        if (mounted) {
+          setError('load_failed');
+          setContributors([]);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchLeaderboard();
+
+    return () => {
+      mounted = false;
+    };
+  }, [period]);
 
   const getRoleLabel = (role: string) => {
-    if (role.toLowerCase() === 'teacher') return tCommon('teacher');
-    if (role.toLowerCase() === 'student') return tFeed('widgets.topContributors.student');
+    const normalizedRole = role.toLowerCase();
+    if (normalizedRole === 'teacher') return tCommon('teacher');
+    if (normalizedRole === 'student') return tFeed('widgets.topContributors.student');
     return role;
+  };
+
+  const getRankStyle = (rank: number) => {
+    if (rank === 1) return rankStyles.first;
+    if (rank === 2) return rankStyles.second;
+    if (rank === 3) return rankStyles.third;
+    return rankStyles.default;
   };
 
   return (
@@ -97,7 +124,7 @@ export default function TopContributorsWidget() {
       {/* Header - Simple */}
       <div className="px-3 py-2.5 border-b border-gray-100">
         <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900 text-sm">{tFeed('widgets.topContributors.title')}</h3>
+          <h3 className="font-semibold text-gray-900 text-sm">{tFeed('widgets.topContributors.title')}</h3>
           <div className="flex text-xs">
             <button
               onClick={() => setPeriod('week')}
@@ -121,21 +148,27 @@ export default function TopContributorsWidget() {
 
       {/* Contributors List */}
       <div className="divide-y divide-gray-50">
-        {TOP_CONTRIBUTORS.map((contributor) => {
-          const badgeStyle = BADGE_STYLES[contributor.badge];
-          
+        {loading ? (
+          <div className="px-3 py-5 flex items-center justify-center">
+            <Loader2 className="w-4 h-4 animate-spin text-[#F9A825]" />
+          </div>
+        ) : error ? (
+          <div className="px-3 py-4 text-center text-xs text-gray-500">
+            {error === 'load_failed' ? tFeed('widgets.topContributors.loadFailed') : error}
+          </div>
+        ) : contributors.length === 0 ? (
+          <div className="px-3 py-4 text-center text-xs text-gray-500">
+            {tFeed('widgets.topContributors.noContributors')}
+          </div>
+        ) : (
+          contributors.map((contributor) => {
           return (
             <div
               key={contributor.id}
               className="px-3 py-2 flex items-center gap-2.5 hover:bg-gray-50 transition-colors"
             >
               {/* Rank */}
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
-                contributor.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
-                contributor.rank === 2 ? 'bg-gray-100 text-gray-600' :
-                contributor.rank === 3 ? 'bg-orange-100 text-orange-600' :
-                'bg-gray-50 text-gray-500'
-              }`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${getRankStyle(contributor.rank)}`}>
                 {contributor.rank}
               </div>
 
@@ -151,14 +184,18 @@ export default function TopContributorsWidget() {
               <span className="text-xs font-medium text-gray-500">{contributor.points.toLocaleString()}</span>
             </div>
           );
-        })}
+          })
+        )}
       </div>
 
       {/* Footer */}
       <div className="px-3 py-2 border-t border-gray-100">
-        <button className="text-xs text-gray-500 hover:text-[#F9A825] transition-colors">
+        <Link
+          href={`/${locale}/leaderboard`}
+          className="text-xs text-gray-500 hover:text-[#F9A825] transition-colors"
+        >
           {tFeed('widgets.topContributors.viewLeaderboard')} →
-        </button>
+        </Link>
       </div>
     </div>
   );

@@ -34,27 +34,32 @@ interface StudyClub {
   isMember?: boolean;
 }
 
-const CLUB_TYPE_COLORS: Record<string, string> = {
-  SUBJECT: 'from-blue-400 to-indigo-500',
-  SKILL: 'from-purple-400 to-pink-500',
-  RESEARCH: 'from-teal-400 to-cyan-500',
-  PROJECT: 'from-orange-400 to-red-500',
-  EXAM_PREP: 'from-rose-400 to-pink-500',
-  LANGUAGE: 'from-green-400 to-emerald-500',
-  COMPETITION: 'from-amber-400 to-orange-500',
-  TUTORING: 'from-indigo-400 to-purple-500',
-};
-
 const CLUB_TYPE_ICONS: Record<string, React.ReactNode> = {
+  CASUAL_STUDY_GROUP: <Users className="w-4 h-4" />,
+  STRUCTURED_CLASS: <GraduationCap className="w-4 h-4" />,
+  PROJECT_GROUP: <Rocket className="w-4 h-4" />,
+  EXAM_PREP: <Trophy className="w-4 h-4" />,
   SUBJECT: <BookOpen className="w-4 h-4" />,
   SKILL: <Code className="w-4 h-4" />,
   RESEARCH: <FlaskConical className="w-4 h-4" />,
   PROJECT: <Rocket className="w-4 h-4" />,
-  EXAM_PREP: <GraduationCap className="w-4 h-4" />,
   LANGUAGE: <Languages className="w-4 h-4" />,
   COMPETITION: <Trophy className="w-4 h-4" />,
   TUTORING: <UserPlus className="w-4 h-4" />,
 };
+
+const CLUB_AVATAR_GRADIENTS = [
+  'from-[#F9A825] to-[#FFB74D]',
+  'from-teal-400 to-cyan-400',
+  'from-rose-400 to-pink-500',
+  'from-violet-400 to-purple-500',
+  'from-blue-400 to-indigo-500',
+  'from-emerald-400 to-green-500',
+];
+
+function getClubAvatarGradient(index: number): string {
+  return CLUB_AVATAR_GRADIENTS[index % CLUB_AVATAR_GRADIENTS.length];
+}
 
 export default function StudyGroupsWidget() {
   const params = useParams();
@@ -143,40 +148,43 @@ export default function StudyGroupsWidget() {
             </Link>
           </div>
         ) : (
-          clubs.map((club) => (
-            <Link
-              key={club.id}
-              href={`/${locale}/clubs/${club.id}`}
-              className="px-4 py-3 flex items-center gap-3 hover:bg-amber-50/50 transition-colors"
-            >
-              {/* Club Icon */}
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${CLUB_TYPE_COLORS[club.clubType] || 'from-amber-400 to-orange-500'}`}>
-                <span className="text-white">
-                  {CLUB_TYPE_ICONS[club.clubType] || <Users className="w-4 h-4" />}
-                </span>
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-gray-900 text-sm truncate">{club.name}</h4>
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <Users className="w-3 h-3" />
-                    {club._count.members}
+          clubs.map((club, index) => {
+            const clubGradient = getClubAvatarGradient(index);
+            return (
+              <Link
+                key={club.id}
+                href={`/${locale}/clubs/${club.id}`}
+                className="px-4 py-3 flex items-center gap-3 hover:bg-amber-50/50 transition-colors"
+              >
+                {/* Club Icon */}
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${clubGradient}`}>
+                  <span className="text-white">
+                    {CLUB_TYPE_ICONS[club.clubType] || <Users className="w-4 h-4" />}
                   </span>
-                  <span>•</span>
-                  <span>{tFeed('widgets.studyClubs.posts', { count: club._count.posts })}</span>
                 </div>
-              </div>
 
-              {/* Privacy Icon */}
-              {club.privacy === 'PRIVATE' || club.privacy === 'SECRET' ? (
-                <Lock className="w-3.5 h-3.5 text-gray-400" />
-              ) : (
-                <Globe className="w-3.5 h-3.5 text-gray-400" />
-              )}
-            </Link>
-          ))
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-gray-900 text-sm truncate">{club.name}</h4>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span className="flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      {club._count.members}
+                    </span>
+                    <span>•</span>
+                    <span>{tFeed('widgets.studyClubs.posts', { count: club._count.posts })}</span>
+                  </div>
+                </div>
+
+                {/* Privacy Icon */}
+                {club.privacy === 'PRIVATE' || club.privacy === 'SECRET' ? (
+                  <Lock className="w-3.5 h-3.5 text-gray-400" />
+                ) : (
+                  <Globe className="w-3.5 h-3.5 text-gray-400" />
+                )}
+              </Link>
+            );
+          })
         )}
       </div>
 
