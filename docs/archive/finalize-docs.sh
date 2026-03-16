@@ -1,7 +1,7 @@
 #!/bin/bash
 # Final cleanup and commit all documentation
 
-cd /Users/naingseiha/Documents/Stunity-Enterprise
+cd /Users/naingseiha/Documents/projects/Stunity-Enterprise
 
 echo "=== Cleaning up old documentation ==="
 rm -f ACADEMIC_YEAR_STATUS.md

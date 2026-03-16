@@ -37,7 +37,7 @@ sleep 2
 echo ""
 echo "🚀 Starting services..."
 
-cd /Users/naingseiha/Documents/Stunity-Enterprise
+cd /Users/naingseiha/Documents/projects/Stunity-Enterprise
 
 # Start auth service
 echo "  ⚙️  Starting Auth Service (3001)..."
@@ -50,52 +50,52 @@ sleep 3
 
 # Start school service  
 echo "  ⚙️  Starting School Service (3002)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/services/school-service && npm run dev > /tmp/school.log 2>&1 &
+cd /Users/naingseiha/Documents/projects/Stunity-Enterprise/services/school-service && npm run dev > /tmp/school.log 2>&1 &
 sleep 3
 
 # Start student service
 echo "  ⚙️  Starting Student Service (3003)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/services/student-service && npm run dev > /tmp/student.log 2>&1 &
+cd /Users/naingseiha/Documents/projects/Stunity-Enterprise/services/student-service && npm run dev > /tmp/student.log 2>&1 &
 sleep 2
 
 # Start teacher service
 echo "  ⚙️  Starting Teacher Service (3004)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/services/teacher-service && npm run dev > /tmp/teacher.log 2>&1 &
+cd /Users/naingseiha/Documents/projects/Stunity-Enterprise/services/teacher-service && npm run dev > /tmp/teacher.log 2>&1 &
 sleep 2
 
 # Start class service
 echo "  ⚙️  Starting Class Service (3005)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/services/class-service && npm run dev > /tmp/class.log 2>&1 &
+cd /Users/naingseiha/Documents/projects/Stunity-Enterprise/services/class-service && npm run dev > /tmp/class.log 2>&1 &
 sleep 2
 
 # Start subject service
 echo "  ⚙️  Starting Subject Service (3006)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/services/subject-service && npm run dev > /tmp/subject.log 2>&1 &
+cd /Users/naingseiha/Documents/projects/Stunity-Enterprise/services/subject-service && npm run dev > /tmp/subject.log 2>&1 &
 sleep 2
 
 # Start grade service
 echo "  ⚙️  Starting Grade Service (3007)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/services/grade-service && npm run dev > /tmp/grade.log 2>&1 &
+cd /Users/naingseiha/Documents/projects/Stunity-Enterprise/services/grade-service && npm run dev > /tmp/grade.log 2>&1 &
 sleep 2
 
 # Start attendance service
 echo "  ⚙️  Starting Attendance Service (3008)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/services/attendance-service && npm run dev > /tmp/attendance.log 2>&1 &
+cd /Users/naingseiha/Documents/projects/Stunity-Enterprise/services/attendance-service && npm run dev > /tmp/attendance.log 2>&1 &
 sleep 2
 
 # Start timetable service
 echo "  ⚙️  Starting Timetable Service (3009)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/services/timetable-service && npm run dev > /tmp/timetable.log 2>&1 &
+cd /Users/naingseiha/Documents/projects/Stunity-Enterprise/services/timetable-service && npm run dev > /tmp/timetable.log 2>&1 &
 sleep 2
 
 # Start feed service
 echo "  ⚙️  Starting Feed Service (3010)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/services/feed-service && npm run dev > /tmp/feed.log 2>&1 &
+cd /Users/naingseiha/Documents/projects/Stunity-Enterprise/services/feed-service && npm run dev > /tmp/feed.log 2>&1 &
 sleep 2
 
 # Start web app
 echo "  ⚙️  Starting Web App (3000)..."
-cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/web && npm run dev > /tmp/web.log 2>&1 &
+cd /Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web && npm run dev > /tmp/web.log 2>&1 &
 sleep 5
 
 echo ""

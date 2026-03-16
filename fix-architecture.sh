@@ -52,7 +52,7 @@ fi
 echo ""
 echo "🔧 Generating Prisma client..."
 cd packages/database && npx prisma generate
-cd /Users/naingseiha/Documents/Stunity-Enterprise
+cd /Users/naingseiha/Documents/projects/Stunity-Enterprise
 
 echo ""
 echo "✅ Dependencies reinstalled!"

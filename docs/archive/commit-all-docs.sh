@@ -1,5 +1,5 @@
 #!/bin/bash
-cd /Users/naingseiha/Documents/Stunity-Enterprise
+cd /Users/naingseiha/Documents/projects/Stunity-Enterprise
 
 # Remove old docs
 rm -f ACADEMIC_YEAR_STATUS.md CURRENT_STATUS.md NEXT_IMPLEMENTATION.md START_HERE.md TESTING_GUIDE.md TESTING_GUIDE_V2.md V1_FEATURES_ANALYSIS.md V1_TO_V2_MIGRATION_GUIDE.md

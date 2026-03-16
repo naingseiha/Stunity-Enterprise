@@ -3,7 +3,7 @@
 echo "🚀 Quick Start - Stunity Services"
 echo "=================================="
 
-PROJECT_DIR="/Users/naingseiha/Documents/Stunity-Enterprise"
+PROJECT_DIR="/Users/naingseiha/Documents/projects/Stunity-Enterprise"
 
 # Helper function to start service with tsx (skips type checking)
 # Uses a subshell to avoid cd side-effects

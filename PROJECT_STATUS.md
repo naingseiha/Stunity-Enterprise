@@ -20,6 +20,9 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 ## ✅ Completed Features (v23.5)
 
 ### ⚡ Latest Platform Updates (Mar 16, 2026)
+- **Local Development Environment Fixes**
+  - Resolved hardcoded absolute paths in startup shell scripts (`quick-start.sh`, `start-all-services.sh`, etc.) to use the correct project directory structure.
+  - Configured `apps/web/.env.local` to correctly map `NEXT_PUBLIC_*` service URLs to localhost ports, fixing web app 404 auth errors during local development.
 - **Feed widget activation + reliability improvements (web + feed-service)**
   - Learning Spotlight now loads real featured courses from API, with working navigation and fallback behavior.
   - Create Event flow now uses authenticated submission, stricter validation/error handling, and includes school context in payload.

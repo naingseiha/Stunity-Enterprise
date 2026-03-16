@@ -4,7 +4,7 @@
 
 echo "🧹 Clearing all caches..."
 
-cd /Users/naingseiha/Documents/Stunity-Enterprise/apps/mobile
+cd /Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile
 
 # 1. Clear Metro bundler cache
 echo "📦 Clearing Metro bundler cache..."

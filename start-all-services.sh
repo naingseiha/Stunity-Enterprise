@@ -41,7 +41,7 @@ echo -e "${GREEN}✅ All ports are free!${NC}"
 echo ""
 
 # Start services
-BASE="/Users/naingseiha/Documents/Stunity-Enterprise"
+BASE="/Users/naingseiha/Documents/projects/Stunity-Enterprise"
 
 start_service() {
     local name=$1
