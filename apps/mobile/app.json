@@ -78,7 +78,8 @@
           "photosPermission": "Allow Stunity to access your photos."
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-localization"
     ],
     "extra": {
       "eas": {
