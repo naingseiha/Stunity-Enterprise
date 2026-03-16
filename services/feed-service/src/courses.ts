@@ -371,8 +371,9 @@ router.get('/categories', async (req: AuthRequest, res: Response) => {
 router.get('/paths', async (req: AuthRequest, res: Response) => {
   try {
     const { featured, limit = '10' } = req.query;
+    const userId = req.user?.id;
 
-    const where: any = {};
+    const where: any = { isPublished: true };
     if (featured === 'true') where.isFeatured = true;
 
     const paths = await prisma.learningPath.findMany({
@@ -407,6 +408,21 @@ router.get('/paths', async (req: AuthRequest, res: Response) => {
       take: parseInt(limit as string),
     });
 
+    const enrolledPathSet = new Set<string>();
+    if (userId && paths.length > 0) {
+      const enrolledPaths = await prisma.pathEnrollment.findMany({
+        where: {
+          userId,
+          pathId: { in: paths.map(path => path.id) },
+        },
+        select: { pathId: true },
+      });
+
+      for (const enrollment of enrolledPaths) {
+        enrolledPathSet.add(enrollment.pathId);
+      }
+    }
+
     res.json({
       paths: paths.map(path => ({
         id: path.id,
@@ -418,6 +434,7 @@ router.get('/paths', async (req: AuthRequest, res: Response) => {
         totalDuration: path.totalDuration,
         coursesCount: path.coursesCount,
         enrolledCount: path.enrolledCount,
+        isEnrolled: enrolledPathSet.has(path.id),
         creator: {
           id: path.creator.id,
           name: `${path.creator.firstName} ${path.creator.lastName}`,
@@ -459,39 +476,74 @@ router.post('/paths/:pathId/enroll', async (req: AuthRequest, res: Response) => 
       },
     });
 
-    if (!path) {
+    if (!path || !path.isPublished) {
       return res.status(404).json({ message: 'Learning path not found' });
     }
 
-    // Enroll in path
-    await prisma.pathEnrollment.upsert({
-      where: { userId_pathId: { userId, pathId } },
-      update: {},
-      create: { userId, pathId },
-    });
+    const publishCourseIds = path.courses
+      .filter(pathCourse => pathCourse.course.isPublished)
+      .map(pathCourse => pathCourse.courseId);
 
-    // Enroll in all courses in the path
-    for (const pathCourse of path.courses) {
-      await prisma.enrollment.upsert({
-        where: { userId_courseId: { userId, courseId: pathCourse.courseId } },
-        update: {},
-        create: { userId, courseId: pathCourse.courseId },
+    const enrollmentResult = await prisma.$transaction(async (tx) => {
+      const existingPathEnrollment = await tx.pathEnrollment.findUnique({
+        where: { userId_pathId: { userId, pathId } },
       });
 
-      // Update enrolled count
-      await prisma.course.update({
-        where: { id: pathCourse.courseId },
-        data: { enrolledCount: { increment: 1 } },
-      });
-    }
+      let createdPathEnrollment = false;
+      if (!existingPathEnrollment) {
+        createdPathEnrollment = true;
+        await tx.pathEnrollment.create({
+          data: { userId, pathId },
+        });
 
-    // Update path enrolled count
-    await prisma.learningPath.update({
-      where: { id: pathId },
-      data: { enrolledCount: { increment: 1 } },
+        await tx.learningPath.update({
+          where: { id: pathId },
+          data: { enrolledCount: { increment: 1 } },
+        });
+      }
+
+      const existingCourseEnrollments = publishCourseIds.length > 0
+        ? await tx.enrollment.findMany({
+          where: {
+            userId,
+            courseId: { in: publishCourseIds },
+          },
+          select: { courseId: true },
+        })
+        : [];
+
+      const existingCourseIdSet = new Set(existingCourseEnrollments.map(enrollment => enrollment.courseId));
+      const newCourseIds = publishCourseIds.filter(courseId => !existingCourseIdSet.has(courseId));
+
+      if (newCourseIds.length > 0) {
+        await tx.enrollment.createMany({
+          data: newCourseIds.map(courseId => ({ userId, courseId })),
+          skipDuplicates: true,
+        });
+
+        await Promise.all(
+          newCourseIds.map(courseId => tx.course.update({
+            where: { id: courseId },
+            data: { enrolledCount: { increment: 1 } },
+          }))
+        );
+      }
+
+      return {
+        createdPathEnrollment,
+        newCourseCount: newCourseIds.length,
+        totalCourseCount: publishCourseIds.length,
+      };
     });
 
-    res.status(201).json({ message: 'Successfully enrolled in learning path' });
+    res.status(enrollmentResult.createdPathEnrollment ? 201 : 200).json({
+      message: enrollmentResult.createdPathEnrollment
+        ? 'Successfully enrolled in learning path'
+        : 'Already enrolled in learning path',
+      newlyEnrolledCourses: enrollmentResult.newCourseCount,
+      alreadyEnrolledCourses: Math.max(0, enrollmentResult.totalCourseCount - enrollmentResult.newCourseCount),
+      isEnrolled: true,
+    });
   } catch (error: any) {
     console.error('Error enrolling in path:', error);
     res.status(500).json({ message: 'Error enrolling in path', error: error.message });

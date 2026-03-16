@@ -28,7 +28,7 @@ import { NavigationProvider, useNavigationContext } from '@/contexts';
 
 // Implemented Screens
 import { FeedScreen, CreatePostScreen, EditPostScreen, PostDetailScreen, CommentsScreen, BookmarksScreen, MyPostsScreen, SearchScreen, SuggestedUsersScreen } from '@/screens/feed';
-import { LearnScreen, CourseDetailScreen } from '@/screens/learn';
+import { LearnScreen, CourseDetailScreen, LessonViewerScreen, CreateCourseScreen } from '@/screens/learn';
 import { ProfileScreen, EditProfileScreen, SettingsScreen, AcademicProfileScreen, ManageDeadlinesScreen } from '@/screens/profile';
 import { ConversationsScreen, ChatScreen, NewMessageScreen } from '@/screens/messages';
 import { ClubsScreen, ClubDetailsScreen, CreateClubScreen } from '@/screens/clubs';
@@ -75,8 +75,6 @@ const EventsScreen = () => <PlaceholderScreen title="Events" />;
 const EventDetailScreen = () => <PlaceholderScreen title="Event Detail" />;
 
 // Learn Stack Screens (placeholders for remaining)
-const LessonViewerScreen = () => <PlaceholderScreen title="Lesson Viewer" />;
-const CreateCourseScreen = () => <PlaceholderScreen title="Create Course" />;
 const EditCourseScreen = () => <PlaceholderScreen title="Edit Course" />;
 const LearningPathScreen = () => <PlaceholderScreen title="Learning Path" />;
 const MyCoursesScreen = () => <PlaceholderScreen title="My Courses" />;

@@ -122,6 +122,7 @@ interface LearningPath {
   level: string;
   courses: { id: string; title: string; order: number }[];
   isFeatured: boolean;
+  isEnrolled?: boolean;
 }
 
 interface Grade {
@@ -378,6 +379,9 @@ export default function LearnHubPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedLevel, setSelectedLevel] = useState('');
+  const [enrollingCourseId, setEnrollingCourseId] = useState<string | null>(null);
+  const [enrollingPathId, setEnrollingPathId] = useState<string | null>(null);
+  const [resumingCourseId, setResumingCourseId] = useState<string | null>(null);
   
   // User State
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -485,6 +489,30 @@ export default function LearnHubPage() {
     }
   }, [getAuthToken]);
 
+  const fetchLearningStats = useCallback(async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+
+      const response = await fetch(`${FEED_SERVICE}/courses/stats/my-learning`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setStats(prev => ({
+          ...prev,
+          enrolledCourses: Number(data?.enrolledCourses ?? prev.enrolledCourses),
+          completedCourses: Number(data?.completedCourses ?? prev.completedCourses),
+          hoursLearned: Number(data?.hoursLearned ?? prev.hoursLearned),
+          currentStreak: Number(data?.currentStreak ?? prev.currentStreak),
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching learning stats:', err);
+    }
+  }, [getAuthToken]);
+
   // Fetch subjects (for curriculum tab)
   const fetchSubjects = useCallback(async () => {
     try {
@@ -544,19 +572,55 @@ export default function LearnHubPage() {
       fetchEnrolledCourses();
       fetchCreatedCourses();
       fetchLearningPaths();
+      fetchLearningStats();
       fetchSubjects();
       fetchGrades();
     }
-  }, [currentUser, fetchCourses, fetchEnrolledCourses, fetchCreatedCourses, fetchLearningPaths, fetchSubjects, fetchGrades]);
+  }, [currentUser, fetchCourses, fetchEnrolledCourses, fetchCreatedCourses, fetchLearningPaths, fetchLearningStats, fetchSubjects, fetchGrades]);
 
   const handleLogout = async () => {
     await TokenManager.logout();
     router.push(`/${locale}/login`);
   };
 
+  const getNextLessonId = useCallback(async (courseId: string): Promise<string | null> => {
+    try {
+      const token = getAuthToken();
+      if (!token) return null;
+
+      const response = await fetch(`${FEED_SERVICE}/courses/${courseId}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (!response.ok) return null;
+      const data = await response.json();
+      const lessons = Array.isArray(data?.course?.lessons) ? data.course.lessons : [];
+      const nextLesson = lessons.find((lesson: any) => !lesson.isCompleted && !lesson.isLocked) || lessons[0];
+      return nextLesson?.id || null;
+    } catch (err) {
+      console.error('Error resolving next lesson:', err);
+      return null;
+    }
+  }, [getAuthToken]);
+
+  const handleResumeCourse = useCallback(async (courseId: string) => {
+    try {
+      setResumingCourseId(courseId);
+      const nextLessonId = await getNextLessonId(courseId);
+      if (nextLessonId) {
+        router.push(`/${locale}/learn/course/${courseId}/lesson/${nextLessonId}`);
+      } else {
+        router.push(`/${locale}/learn/course/${courseId}`);
+      }
+    } finally {
+      setResumingCourseId(null);
+    }
+  }, [getNextLessonId, locale, router]);
+
   // Enroll in course
   const handleEnroll = async (courseId: string) => {
     try {
+      setEnrollingCourseId(courseId);
       const token = getAuthToken();
       if (!token) return;
       
@@ -572,12 +636,15 @@ export default function LearnHubPage() {
       }
     } catch (err) {
       console.error('Error enrolling in course:', err);
+    } finally {
+      setEnrollingCourseId(null);
     }
   };
 
   // Enroll in learning path
   const handleEnrollPath = async (pathId: string) => {
     try {
+      setEnrollingPathId(pathId);
       const token = getAuthToken();
       if (!token) return;
       
@@ -588,9 +655,13 @@ export default function LearnHubPage() {
       
       if (response.ok) {
         fetchLearningPaths();
+        fetchEnrolledCourses();
+        fetchCourses();
       }
     } catch (err) {
       console.error('Error enrolling in path:', err);
+    } finally {
+      setEnrollingPathId(null);
     }
   };
 
@@ -707,9 +778,16 @@ export default function LearnHubPage() {
                 <span className="text-gray-600">{enrolledCourse.progress}% complete</span>
                 <span className="text-gray-500">{enrolledCourse.completedLessons}/{course.lessonsCount}</span>
               </div>
-              <button className="w-full mt-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-colors flex items-center justify-center gap-2">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleResumeCourse(course.id);
+                }}
+                disabled={resumingCourseId === course.id}
+                className="w-full mt-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+              >
                 <Play className="w-4 h-4" />
-                Continue Learning
+                {resumingCourseId === course.id ? 'Opening...' : 'Continue Learning'}
               </button>
             </div>
           )}
@@ -721,9 +799,10 @@ export default function LearnHubPage() {
                 e.preventDefault();
                 handleEnroll(course.id);
               }}
-              className="w-full mt-3 px-4 py-2 border-2 border-amber-500 text-amber-600 text-sm font-medium rounded-lg hover:bg-amber-50 transition-colors"
+              disabled={enrollingCourseId === course.id}
+              className="w-full mt-3 px-4 py-2 border-2 border-amber-500 text-amber-600 text-sm font-medium rounded-lg hover:bg-amber-50 transition-colors disabled:opacity-60"
             >
-              Enroll Now - Free
+              {enrollingCourseId === course.id ? 'Enrolling...' : 'Enroll Now - Free'}
             </button>
           )}
         </div>
@@ -766,8 +845,12 @@ export default function LearnHubPage() {
             </span>
           </div>
           
-          <button className="mt-4 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium rounded-lg hover:from-purple-600 hover:to-pink-600 transition-colors">
-            Start Learning Path
+          <button
+            onClick={() => handleEnrollPath(path.id)}
+            disabled={path.isEnrolled || enrollingPathId === path.id}
+            className="mt-4 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium rounded-lg hover:from-purple-600 hover:to-pink-600 transition-colors disabled:opacity-60"
+          >
+            {path.isEnrolled ? 'Enrolled' : enrollingPathId === path.id ? 'Enrolling...' : 'Start Learning Path'}
           </button>
         </div>
       </div>
@@ -991,9 +1074,13 @@ export default function LearnHubPage() {
                       <span>{continueLearning.completedLessons} of {continueLearning.lessonsCount} lessons</span>
                     </div>
                   </div>
-                  <button className="px-5 py-2.5 bg-white text-amber-600 font-medium rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2">
+                  <button
+                    onClick={() => handleResumeCourse(continueLearning.id)}
+                    disabled={resumingCourseId === continueLearning.id}
+                    className="px-5 py-2.5 bg-white text-amber-600 font-medium rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2 disabled:opacity-70"
+                  >
                     <Play className="w-4 h-4" />
-                    Resume
+                    {resumingCourseId === continueLearning.id ? 'Opening...' : 'Resume'}
                   </button>
                 </div>
                 <div className="mt-3 h-2 bg-white/30 rounded-full">

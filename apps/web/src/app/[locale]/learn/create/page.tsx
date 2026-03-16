@@ -8,18 +8,14 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  Image,
-  FileText,
+  Image as ImageIcon,
   Video,
   Plus,
   Trash2,
   GripVertical,
   Save,
-  Eye,
-  Upload,
   X,
   Clock,
-  ChevronDown,
   Sparkles,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
@@ -38,6 +34,16 @@ interface Lesson {
   isFree: boolean;
   content: string;
   videoUrl: string;
+}
+
+interface CourseMutationResponse {
+  message?: string;
+  course?: {
+    id?: string | number;
+  };
+  lesson?: {
+    id?: string | number;
+  };
 }
 
 // ============================================
@@ -101,9 +107,11 @@ export default function CreateCoursePage() {
   const getAuthToken = useCallback(() => TokenManager.getAccessToken(), []);
 
   // Validation
-  const isStep1Valid = courseData.title.length >= 5 && courseData.description.length >= 20 && courseData.category;
-  const isStep2Valid = true; // Thumbnail and tags are optional
-  const isStep3Valid = lessons.length >= 1;
+  const isStep1Valid = courseData.title.trim().length >= 5
+    && courseData.description.trim().length >= 20
+    && Boolean(courseData.category.trim());
+  const validLessons = lessons.filter((lesson) => lesson.title.trim().length > 0 && lesson.duration > 0);
+  const isStep3Valid = validLessons.length >= 1;
 
   // Add lesson
   const addLesson = () => {
@@ -152,64 +160,108 @@ export default function CreateCoursePage() {
     });
   };
 
+  const readResponseBody = useCallback(async (response: Response) => {
+    const text = await response.text();
+    if (!text) return {};
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { message: text };
+    }
+  }, []);
+
+  const createCourseWithLessons = useCallback(async (publishNow: boolean): Promise<string | null> => {
+    const token = getAuthToken();
+    if (!token) {
+      router.push(`/${locale}/login`);
+      return null;
+    }
+
+    const normalizedCourseData = {
+      ...courseData,
+      title: courseData.title.trim(),
+      description: courseData.description.trim(),
+      category: courseData.category.trim(),
+      thumbnail: courseData.thumbnail.trim(),
+      tags: courseData.tags.map(tag => tag.trim()).filter(Boolean),
+    };
+
+    const createCourseResponse = await fetch(`${FEED_SERVICE}/courses`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(normalizedCourseData),
+    });
+
+    const createCourseData = (await readResponseBody(createCourseResponse)) as CourseMutationResponse;
+    const courseId = String(createCourseData.course?.id ?? '');
+    if (!createCourseResponse.ok || !courseId) {
+      const message = createCourseData.message || 'Failed to create course';
+      throw new Error(message);
+    }
+
+    for (let i = 0; i < validLessons.length; i += 1) {
+      const lesson = validLessons[i];
+      const createLessonResponse = await fetch(`${FEED_SERVICE}/courses/${courseId}/lessons`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: lesson.title.trim(),
+          description: lesson.description.trim(),
+          duration: lesson.duration,
+          isFree: lesson.isFree,
+          content: lesson.content.trim(),
+          videoUrl: lesson.videoUrl.trim(),
+          order: i + 1,
+        }),
+      });
+
+      const createLessonData = (await readResponseBody(createLessonResponse)) as CourseMutationResponse;
+      const lessonId = String(createLessonData.lesson?.id ?? '');
+      if (!createLessonResponse.ok || !lessonId) {
+        const message = createLessonData.message || `Failed to create lesson ${i + 1}`;
+        throw new Error(message);
+      }
+    }
+
+    if (publishNow) {
+      if (validLessons.length === 0) {
+        throw new Error('Add at least one lesson before publishing');
+      }
+
+      const publishResponse = await fetch(`${FEED_SERVICE}/courses/${courseId}/publish`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const publishData = (await readResponseBody(publishResponse)) as CourseMutationResponse;
+      if (!publishResponse.ok) {
+        const message = publishData.message || 'Failed to publish course';
+        throw new Error(message);
+      }
+    }
+
+    return courseId;
+  }, [courseData, getAuthToken, locale, readResponseBody, router, validLessons]);
+
   // Save as draft
   const saveDraft = async () => {
     try {
       setSaving(true);
-      const token = getAuthToken();
-      if (!token) {
-        router.push(`/${locale}/login`);
-        return;
-      }
-
-      // Create course
-      const response = await fetch(`${FEED_SERVICE}/courses`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...courseData,
-          isPublished: false,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Add lessons
-        for (let i = 0; i < lessons.length; i++) {
-          const lesson = lessons[i];
-          if (lesson.title) {
-            await fetch(`${FEED_SERVICE}/courses/${data.course.id}/lessons`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                title: lesson.title,
-                description: lesson.description,
-                duration: lesson.duration,
-                isFree: lesson.isFree,
-                content: lesson.content,
-                videoUrl: lesson.videoUrl,
-                order: i + 1,
-              }),
-            });
-          }
-        }
-
-        alert('Course saved as draft!');
-        router.push(`/${locale}/learn/course/${data.course.id}`);
-      } else {
-        const error = await response.json();
-        alert(`Error: ${error.message}`);
-      }
-    } catch (err) {
+      const courseId = await createCourseWithLessons(false);
+      if (!courseId) return;
+      alert('Course saved as draft!');
+      router.push(`/${locale}/learn/course/${courseId}`);
+    } catch (err: any) {
       console.error('Error saving course:', err);
-      alert('Failed to save course');
+      alert(err?.message || 'Failed to save course');
     } finally {
       setSaving(false);
     }
@@ -219,63 +271,13 @@ export default function CreateCoursePage() {
   const publishCourse = async () => {
     try {
       setPublishing(true);
-      const token = getAuthToken();
-      if (!token) {
-        router.push(`/${locale}/login`);
-        return;
-      }
-
-      // Create course
-      const response = await fetch(`${FEED_SERVICE}/courses`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(courseData),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Add lessons
-        for (let i = 0; i < lessons.length; i++) {
-          const lesson = lessons[i];
-          if (lesson.title) {
-            await fetch(`${FEED_SERVICE}/courses/${data.course.id}/lessons`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                title: lesson.title,
-                description: lesson.description,
-                duration: lesson.duration,
-                isFree: lesson.isFree,
-                content: lesson.content,
-                videoUrl: lesson.videoUrl,
-                order: i + 1,
-              }),
-            });
-          }
-        }
-
-        // Publish
-        await fetch(`${FEED_SERVICE}/courses/${data.course.id}/publish`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-
-        alert('Course published successfully!');
-        router.push(`/${locale}/learn/course/${data.course.id}`);
-      } else {
-        const error = await response.json();
-        alert(`Error: ${error.message}`);
-      }
-    } catch (err) {
+      const courseId = await createCourseWithLessons(true);
+      if (!courseId) return;
+      alert('Course published successfully!');
+      router.push(`/${locale}/learn/course/${courseId}`);
+    } catch (err: any) {
       console.error('Error publishing course:', err);
-      alert('Failed to publish course');
+      alert(err?.message || 'Failed to publish course');
     } finally {
       setPublishing(false);
     }
@@ -439,7 +441,7 @@ export default function CreateCoursePage() {
                     </div>
                   ) : (
                     <>
-                      <Image className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                      <ImageIcon className="w-12 h-12 mx-auto text-gray-300 mb-3" aria-hidden="true" />
                       <p className="text-gray-500 mb-2">Enter thumbnail URL or upload</p>
                       <input
                         type="url"

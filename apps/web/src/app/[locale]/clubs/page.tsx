@@ -9,16 +9,10 @@ import {
   Search,
   BookOpen,
   Code,
-  FlaskConical,
   Rocket,
   GraduationCap,
-  Languages,
-  Trophy,
-  UserPlus,
   Globe,
-  School,
   Lock,
-  EyeOff,
   ChevronRight,
   Loader2,
   Compass,
@@ -40,8 +34,10 @@ interface StudyClub {
   name: string;
   description?: string;
   clubType: string;
+  type?: string;
   category?: string;
   privacy: string;
+  mode?: string;
   coverImage?: string;
   creatorId: string;
   isActive: boolean;
@@ -67,32 +63,34 @@ interface ClubType {
 }
 
 const CLUB_TYPE_ICONS: Record<string, React.ReactNode> = {
-  SUBJECT: <BookOpen className="w-4 h-4" />,
-  SKILL: <Code className="w-4 h-4" />,
-  RESEARCH: <FlaskConical className="w-4 h-4" />,
-  PROJECT: <Rocket className="w-4 h-4" />,
+  CASUAL_STUDY_GROUP: <BookOpen className="w-4 h-4" />,
+  STRUCTURED_CLASS: <Code className="w-4 h-4" />,
+  PROJECT_GROUP: <Rocket className="w-4 h-4" />,
   EXAM_PREP: <GraduationCap className="w-4 h-4" />,
-  LANGUAGE: <Languages className="w-4 h-4" />,
-  COMPETITION: <Trophy className="w-4 h-4" />,
-  TUTORING: <UserPlus className="w-4 h-4" />,
 };
 
 const CLUB_TYPE_COLORS: Record<string, string> = {
-  SUBJECT: 'text-blue-600 bg-blue-50',
-  SKILL: 'text-emerald-600 bg-emerald-50',
-  RESEARCH: 'text-purple-600 bg-purple-50',
-  PROJECT: 'text-orange-600 bg-orange-50',
+  CASUAL_STUDY_GROUP: 'text-blue-600 bg-blue-50',
+  STRUCTURED_CLASS: 'text-emerald-600 bg-emerald-50',
+  PROJECT_GROUP: 'text-orange-600 bg-orange-50',
   EXAM_PREP: 'text-amber-600 bg-amber-50',
-  LANGUAGE: 'text-pink-600 bg-pink-50',
-  COMPETITION: 'text-cyan-600 bg-cyan-50',
-  TUTORING: 'text-green-600 bg-green-50',
 };
 
 const PRIVACY_ICONS: Record<string, React.ReactNode> = {
   PUBLIC: <Globe className="w-3.5 h-3.5" />,
-  SCHOOL: <School className="w-3.5 h-3.5" />,
-  PRIVATE: <Lock className="w-3.5 h-3.5" />,
-  SECRET: <EyeOff className="w-3.5 h-3.5" />,
+  INVITE_ONLY: <Lock className="w-3.5 h-3.5" />,
+  APPROVAL_REQUIRED: <Shield className="w-3.5 h-3.5" />,
+};
+
+const normalizeClub = (club: StudyClub): StudyClub => {
+  const resolvedType = club.clubType || club.type || 'CASUAL_STUDY_GROUP';
+  const resolvedPrivacy = club.privacy || club.mode || 'PUBLIC';
+
+  return {
+    ...club,
+    clubType: resolvedType,
+    privacy: resolvedPrivacy,
+  };
 };
 
 export default function StudyClubsPage() {
@@ -135,7 +133,8 @@ export default function StudyClubsPage() {
       });
       if (response.ok) {
         const data = await response.json();
-        setClubs(data.clubs);
+        const clubsList = Array.isArray(data.clubs) ? data.clubs.map(normalizeClub) : [];
+        setClubs(clubsList);
       }
     } catch (error) {
       console.error('Error fetching clubs:', error);
@@ -154,7 +153,8 @@ export default function StudyClubsPage() {
       });
       if (response.ok) {
         const data = await response.json();
-        setDiscoverClubs(data.clubs);
+        const clubsList = Array.isArray(data.clubs) ? data.clubs.map(normalizeClub) : [];
+        setDiscoverClubs(clubsList);
       }
     } catch (error) {
       console.error('Error discovering clubs:', error);
@@ -280,8 +280,8 @@ export default function StudyClubsPage() {
               {club._count.posts} posts
             </span>
             <span className="flex items-center gap-1">
-              {PRIVACY_ICONS[club.privacy]}
-              <span className="capitalize">{club.privacy.toLowerCase()}</span>
+              {PRIVACY_ICONS[club.privacy] || PRIVACY_ICONS.PUBLIC}
+              <span className="capitalize">{club.privacy.replace(/_/g, ' ').toLowerCase()}</span>
             </span>
             <span className="flex items-center gap-1">
               <Clock className="w-3.5 h-3.5" />
@@ -571,7 +571,7 @@ function CreateClubModal({
 }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [clubType, setClubType] = useState('SUBJECT');
+  const [clubType, setClubType] = useState('CASUAL_STUDY_GROUP');
   const [category, setCategory] = useState('');
   const [privacy, setPrivacy] = useState('PUBLIC');
   const [creating, setCreating] = useState(false);
@@ -596,6 +596,8 @@ function CreateClubModal({
         body: JSON.stringify({
           name: name.trim(),
           description: description.trim(),
+          type: clubType,
+          mode: privacy,
           clubType,
           category: category.trim(),
           privacy,
@@ -606,9 +608,9 @@ function CreateClubModal({
         onCreated();
       } else {
         const data = await response.json();
-        setError(data.error || 'Failed to create club');
+        setError(data.error || data.message || 'Failed to create club');
       }
-    } catch (error) {
+    } catch {
       setError('Failed to create club');
     } finally {
       setCreating(false);
@@ -688,8 +690,8 @@ function CreateClubModal({
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
               >
                 <option value="PUBLIC">Public</option>
-                <option value="SCHOOL">School Only</option>
-                <option value="PRIVATE">Private</option>
+                <option value="INVITE_ONLY">Invite Only</option>
+                <option value="APPROVAL_REQUIRED">Approval Required</option>
               </select>
             </div>
           </div>

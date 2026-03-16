@@ -20,15 +20,65 @@ interface AuthRequest extends Request {
 
 // Club type labels for feed posts
 const CLUB_TYPE_LABELS: Record<string, string> = {
-  SUBJECT: 'Subject Study Club',
-  SKILL: 'Skill Development Club',
-  RESEARCH: 'Research Group',
-  PROJECT: 'Project Team',
+  CASUAL_STUDY_GROUP: 'Study Group',
+  STRUCTURED_CLASS: 'Classroom Club',
+  PROJECT_GROUP: 'Project Team',
   EXAM_PREP: 'Exam Preparation Group',
-  LANGUAGE: 'Language Learning Club',
-  COMPETITION: 'Competition Team',
-  TUTORING: 'Tutoring & Mentoring Group',
 };
+
+const LEGACY_CLUB_TYPE_MAP: Record<string, StudyClubType> = {
+  SUBJECT: StudyClubType.CASUAL_STUDY_GROUP,
+  SKILL: StudyClubType.STRUCTURED_CLASS,
+  RESEARCH: StudyClubType.PROJECT_GROUP,
+  PROJECT: StudyClubType.PROJECT_GROUP,
+  EXAM_PREP: StudyClubType.EXAM_PREP,
+  LANGUAGE: StudyClubType.CASUAL_STUDY_GROUP,
+  COMPETITION: StudyClubType.EXAM_PREP,
+  TUTORING: StudyClubType.STRUCTURED_CLASS,
+};
+
+const LEGACY_MODE_MAP: Record<string, ClubMode> = {
+  PUBLIC: ClubMode.PUBLIC,
+  SCHOOL: ClubMode.PUBLIC,
+  PRIVATE: ClubMode.INVITE_ONLY,
+  SECRET: ClubMode.APPROVAL_REQUIRED,
+  INVITE_ONLY: ClubMode.INVITE_ONLY,
+  APPROVAL_REQUIRED: ClubMode.APPROVAL_REQUIRED,
+};
+
+const normalizeEnumInput = (value: unknown): string | null => {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toUpperCase();
+  return normalized.length > 0 ? normalized : null;
+};
+
+const resolveClubType = (value: unknown): StudyClubType | null => {
+  const normalized = normalizeEnumInput(value);
+  if (!normalized) return null;
+
+  if (Object.values(StudyClubType).includes(normalized as StudyClubType)) {
+    return normalized as StudyClubType;
+  }
+
+  return LEGACY_CLUB_TYPE_MAP[normalized] || null;
+};
+
+const resolveClubMode = (value: unknown): ClubMode | null => {
+  const normalized = normalizeEnumInput(value);
+  if (!normalized) return null;
+
+  if (Object.values(ClubMode).includes(normalized as ClubMode)) {
+    return normalized as ClubMode;
+  }
+
+  return LEGACY_MODE_MAP[normalized] || null;
+};
+
+const withLegacyAliases = <T extends Record<string, any>>(club: T) => ({
+  ...club,
+  type: club.clubType ?? club.type,
+  privacy: club.mode ?? club.privacy,
+});
 
 // ============================================
 // Study Club CRUD
@@ -37,7 +87,17 @@ const CLUB_TYPE_LABELS: Record<string, string> = {
 // Create a new study club
 router.post('/', async (req: AuthRequest, res: Response) => {
   try {
-    const { name, description, clubType, category, privacy, coverImage, maxMembers } = req.body;
+    const {
+      name,
+      description,
+      clubType,
+      type,
+      category,
+      privacy,
+      mode,
+      coverImage,
+      maxMembers,
+    } = req.body;
     const userId = req.user?.id;
     const schoolId = req.user?.schoolId;
 
@@ -49,13 +109,32 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Club name must be at least 3 characters' });
     }
 
+    const requestedClubType = type ?? clubType;
+    const normalizedClubType = requestedClubType
+      ? resolveClubType(requestedClubType)
+      : StudyClubType.CASUAL_STUDY_GROUP;
+
+    if (requestedClubType && !normalizedClubType) {
+      return res.status(400).json({
+        error: `Invalid club type. Allowed values: ${Object.values(StudyClubType).join(', ')}`,
+      });
+    }
+    const requestedMode = mode ?? privacy;
+    const normalizedMode = requestedMode ? resolveClubMode(requestedMode) : ClubMode.PUBLIC;
+
+    if (!normalizedMode) {
+      return res.status(400).json({
+        error: `Invalid club mode. Allowed values: ${Object.values(ClubMode).join(', ')}`,
+      });
+    }
+
     const club = await prisma.studyClub.create({
       data: {
         name: name.trim(),
         description: description?.trim(),
-        clubType: clubType || 'SUBJECT',
+        clubType: normalizedClubType!,
         category: category?.trim(),
-        mode: privacy || 'PUBLIC',
+        mode: normalizedMode,
         coverImage,
         maxMembers,
         creatorId: userId,
@@ -83,14 +162,14 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     });
 
     // Create a feed post announcing the new club (only for PUBLIC clubs)
-    if (privacy !== 'INVITE_ONLY') {
+    if (normalizedMode !== ClubMode.INVITE_ONLY) {
       try {
-        const clubTypeLabel = CLUB_TYPE_LABELS[clubType] || 'Study Club';
+        const clubTypeLabel = CLUB_TYPE_LABELS[normalizedClubType!] || 'Study Club';
         const feedPost = await prisma.post.create({
           data: {
             content: `🎉 Just created a new ${clubTypeLabel}: **${name.trim()}**!\n\n${description?.trim() || 'Join us to learn and grow together!'}\n\n${category ? `📚 Category: ${category}` : ''}`,
             postType: 'CLUB_CREATED',
-            visibility: privacy === 'PUBLIC' ? 'SCHOOL' : 'PUBLIC',
+            visibility: normalizedMode === ClubMode.PUBLIC ? 'SCHOOL' : 'PUBLIC',
             authorId: userId,
             studyClubId: club.id,
             mediaUrls: coverImage ? [coverImage] : [],
@@ -118,7 +197,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       }
     }
 
-    res.status(201).json(club);
+    res.status(201).json(withLegacyAliases(club));
   } catch (error) {
     console.error('Error creating study club:', error);
     res.status(500).json({ error: 'Failed to create study club' });
@@ -177,9 +256,10 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 
     // Transform to include user's role
     const clubsWithRole = clubs.map((club) => ({
-      ...club,
+      ...withLegacyAliases(club),
       myRole: club.members[0]?.role,
       myJoinedAt: club.members[0]?.joinedAt,
+      memberCount: club._count.members,
       members: undefined, // Remove the raw members array
     }));
 
@@ -217,10 +297,7 @@ router.get('/discover', async (req: AuthRequest, res: Response) => {
     // Build where clause
     const where: any = {
       isActive: true,
-      OR: [
-        { mode: 'PUBLIC' },
-        { mode: 'PUBLIC' },
-      ],
+      mode: ClubMode.PUBLIC,
     };
 
     if (search) {
@@ -236,7 +313,13 @@ router.get('/discover', async (req: AuthRequest, res: Response) => {
     }
 
     if (clubType) {
-      where.clubType = clubType;
+      const normalizedClubType = resolveClubType(clubType);
+      if (!normalizedClubType) {
+        return res.status(400).json({
+          error: `Invalid club type. Allowed values: ${Object.values(StudyClubType).join(', ')}`,
+        });
+      }
+      where.clubType = normalizedClubType;
     }
 
     if (category) {
@@ -275,9 +358,10 @@ router.get('/discover', async (req: AuthRequest, res: Response) => {
 
     // Transform to include membership status
     const clubsWithStatus = clubs.map((club: any) => ({
-      ...club,
+      ...withLegacyAliases(club),
       isMember: club.members?.length > 0,
       myRole: club.members?.[0]?.role,
+      memberCount: club._count?.members ?? 0,
       members: undefined,
     }));
 
@@ -299,14 +383,10 @@ router.get('/discover', async (req: AuthRequest, res: Response) => {
 // Get club types for filtering
 router.get('/types', async (_req: Request, res: Response) => {
   const types = [
-    { value: 'SUBJECT', label: 'Subject Club', description: 'Math, Science, Literature, etc.' },
-    { value: 'SKILL', label: 'Skill Development', description: 'Coding, Debate, Public Speaking' },
-    { value: 'RESEARCH', label: 'Research Group', description: 'Research and exploration' },
-    { value: 'PROJECT', label: 'Project Team', description: 'Collaborative projects' },
-    { value: 'EXAM_PREP', label: 'Exam Preparation', description: 'Study groups for exams' },
-    { value: 'LANGUAGE', label: 'Language Club', description: 'Language learning' },
-    { value: 'COMPETITION', label: 'Competition Prep', description: 'Olympiads and competitions' },
-    { value: 'TUTORING', label: 'Tutoring Circle', description: 'Peer tutoring and mentoring' },
+    { value: 'CASUAL_STUDY_GROUP', label: 'Study Group', description: 'Collaborative peer learning sessions' },
+    { value: 'STRUCTURED_CLASS', label: 'Structured Class', description: 'Guided class with structured lessons' },
+    { value: 'PROJECT_GROUP', label: 'Project Group', description: 'Hands-on team project collaboration' },
+    { value: 'EXAM_PREP', label: 'Exam Preparation', description: 'Focused preparation for tests and exams' },
   ];
   res.json(types);
 });
@@ -375,12 +455,13 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
       });
     }
 
-    res.json({
+    res.json(withLegacyAliases({
       ...club,
       isMember: !!myMembership,
       myRole: myMembership?.role,
       myJoinedAt: myMembership?.joinedAt,
-    });
+      memberCount: club._count.members,
+    }));
   } catch (error) {
     console.error('Error fetching club:', error);
     res.status(500).json({ error: 'Failed to fetch club' });
@@ -392,7 +473,18 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const userId = req.user?.id;
-    const { name, description, clubType, category, privacy, coverImage, maxMembers, isActive } = req.body;
+    const {
+      name,
+      description,
+      clubType,
+      type,
+      category,
+      privacy,
+      mode,
+      coverImage,
+      maxMembers,
+      isActive,
+    } = req.body;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -407,14 +499,30 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'Only admins can update the club' });
     }
 
+    const requestedClubType = type ?? clubType;
+    const normalizedClubType = requestedClubType ? resolveClubType(requestedClubType) : null;
+    if (requestedClubType && !normalizedClubType) {
+      return res.status(400).json({
+        error: `Invalid club type. Allowed values: ${Object.values(StudyClubType).join(', ')}`,
+      });
+    }
+
+    const requestedMode = mode ?? privacy;
+    const normalizedMode = requestedMode ? resolveClubMode(requestedMode) : null;
+    if (requestedMode && !normalizedMode) {
+      return res.status(400).json({
+        error: `Invalid club mode. Allowed values: ${Object.values(ClubMode).join(', ')}`,
+      });
+    }
+
     const club = await prisma.studyClub.update({
       where: { id },
       data: {
         ...(name && { name: name.trim() }),
         ...(description !== undefined && { description: description?.trim() }),
-        ...(clubType && { clubType }),
+        ...(normalizedClubType && { clubType: normalizedClubType }),
         ...(category !== undefined && { category: category?.trim() }),
-        ...(privacy && { mode: privacy }),
+        ...(normalizedMode && { mode: normalizedMode }),
         ...(coverImage !== undefined && { coverImage }),
         ...(maxMembers !== undefined && { maxMembers }),
         ...(isActive !== undefined && { isActive }),
@@ -434,7 +542,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
       },
     });
 
-    res.json(club);
+    res.json(withLegacyAliases(club));
   } catch (error) {
     console.error('Error updating club:', error);
     res.status(500).json({ error: 'Failed to update club' });
