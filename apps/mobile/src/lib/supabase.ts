@@ -21,8 +21,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  */
 
 // process.env.EXPO_PUBLIC_* is inlined by Metro at build time — always available in EAS builds.
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() || '';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim() || '';
+
+if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+        '[Supabase] Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY. Add them to apps/mobile/.env.local (or .env), then restart Expo with --clear.'
+    );
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {

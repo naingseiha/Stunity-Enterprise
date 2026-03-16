@@ -136,7 +136,13 @@ Create `.env.local` file (see `.env.local.example`):
 ```env
 # API Host - Update with your Mac's IP address
 EXPO_PUBLIC_API_HOST=192.168.1.100  # Change to your IP
+
+# Supabase Realtime (required)
+EXPO_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
+
+`EXPO_PUBLIC_*` variables must be defined in `apps/mobile/.env.local` (or `apps/mobile/.env`). Values in the repository root `.env` are not automatically injected into the mobile app bundle.
 
 **Important for iOS Simulator:**
 - iOS Simulator can't use `localhost` - you must use your Mac's IP address
@@ -146,6 +152,24 @@ EXPO_PUBLIC_API_HOST=192.168.1.100  # Change to your IP
 
 **Troubleshooting Connection Issues:**  
 See [NETWORK_TROUBLESHOOTING.md](./NETWORK_TROUBLESHOOTING.md) if you get timeout errors.
+
+**Troubleshooting Setup Errors:**
+
+- Error: `supabaseUrl is required`  
+  Add `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` to `apps/mobile/.env.local`, then restart with `npx expo start --clear`.
+
+- Error: `pod install ... SDK "iphoneos" cannot be located`  
+  Complete Xcode install, then run:
+  ```bash
+  sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+  sudo xcodebuild -runFirstLaunch
+  sudo xcodebuild -license accept
+  ```
+  Then rerun:
+  ```bash
+  cd ios && pod install --repo-update && cd ..
+  npx expo run:ios
+  ```
 
 ## 🎨 Design System
 
