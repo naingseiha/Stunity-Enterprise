@@ -412,13 +412,13 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">{tFeed('createPost.title')}</h2>
+        <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{tFeed('createPost.title')}</h2>
           <button
             onClick={onClose}
-            className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -432,7 +432,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
               {getInitials(user.firstName, user.lastName)}
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-gray-900">{user.firstName} {user.lastName}</p>
+              <p className="font-semibold text-gray-900 dark:text-gray-100">{user.firstName} {user.lastName}</p>
               
               {/* Post Type & Visibility Selectors */}
               <div className="flex gap-2 mt-1">
@@ -453,7 +453,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                   </button>
                   
                   {showTypeSelector && (
-                    <div className="absolute left-0 top-full mt-1 w-56 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-10">
+                    <div className="absolute left-0 top-full mt-1 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-10">
                       {POST_TYPES.map((type) => {
                         const Icon = type.icon;
                         return (
@@ -463,16 +463,16 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                               setPostType(type.id);
                               setShowTypeSelector(false);
                             }}
-                            className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors ${
-                              postType === type.id ? 'bg-blue-50' : ''
+                            className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                              postType === type.id ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'
                             }`}
                           >
                             <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${getTypeColor(type.color)} flex items-center justify-center text-white`}>
                               <Icon className="w-4 h-4" />
                             </div>
                             <div className="text-left">
-                              <p className="text-sm font-medium text-gray-900">{getTypeLabel(type.id)}</p>
-                              <p className="text-xs text-gray-500">{getTypeDescription(type.id)}</p>
+                              <p className="text-sm font-medium">{getTypeLabel(type.id)}</p>
+                              <p className="text-xs opacity-70">{getTypeDescription(type.id)}</p>
                             </div>
                           </button>
                         );
@@ -483,22 +483,24 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
 
                 {/* Visibility Dropdown */}
                 <div className="relative">
-                  <button
-                    onClick={() => {
-                      setShowVisibilitySelector(!showVisibilitySelector);
-                      setShowTypeSelector(false);
-                    }}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                      showVisibilitySelector ? 'bg-gray-200' : 'bg-gray-100 hover:bg-gray-200'
-                    }`}
-                  >
-                    <selectedVisibility.icon className="w-3.5 h-3.5" />
-                    {getVisibilityLabel(selectedVisibility.id)}
-                    <ChevronDown className="w-3 h-3" />
-                  </button>
+                    <button
+                      onClick={() => {
+                        setShowVisibilitySelector(!showVisibilitySelector);
+                        setShowTypeSelector(false);
+                      }}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                        showVisibilitySelector 
+                          ? 'bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-white' 
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      <selectedVisibility.icon className="w-3.5 h-3.5" />
+                      {getVisibilityLabel(selectedVisibility.id)}
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
                   
                   {showVisibilitySelector && (
-                    <div className="absolute left-0 top-full mt-1 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-10">
+                    <div className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-10">
                       {VISIBILITY_OPTIONS.map((option) => {
                         const Icon = option.icon;
                         return (
@@ -508,14 +510,14 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                               setVisibility(option.id);
                               setShowVisibilitySelector(false);
                             }}
-                            className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-amber-50 transition-colors ${
-                              visibility === option.id ? 'bg-amber-50' : ''
+                            className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors ${
+                              visibility === option.id ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-gray-300'
                             }`}
                           >
-                            <Icon className="w-4 h-4 text-gray-600" />
+                            <Icon className={`w-4 h-4 ${visibility === option.id ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-400'}`} />
                             <div className="text-left">
-                              <p className="text-sm font-medium text-gray-900">{getVisibilityLabel(option.id)}</p>
-                              <p className="text-xs text-gray-500">{getVisibilityDescription(option.id)}</p>
+                              <p className="text-sm font-medium">{getVisibilityLabel(option.id)}</p>
+                              <p className="text-xs opacity-70">{getVisibilityDescription(option.id)}</p>
                             </div>
                           </button>
                         );
@@ -533,14 +535,14 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             onChange={(e) => setContent(e.target.value)}
             placeholder={getPlaceholder()}
             rows={4}
-            className="w-full p-3 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#F9A825] text-gray-900"
+            className="w-full p-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#F9A825] text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
             autoFocus
           />
 
           {/* Poll Options (only for POLL type) */}
           {postType === 'POLL' && (
             <div className="mt-4 space-y-3">
-              <p className="text-sm font-medium text-gray-700">{tFeed('createPost.pollOptions')}</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{tFeed('createPost.pollOptions')}</p>
               {pollOptions.map((option, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 text-xs font-medium">
@@ -551,7 +553,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
                     value={option}
                     onChange={(e) => handlePollOptionChange(index, e.target.value)}
                     placeholder={`${tFeed('createPost.option')} ${index + 1}`}
-                    className="flex-1 px-3 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                   />
                   {pollOptions.length > 2 && (
                     <button
@@ -577,8 +579,8 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
 
           {/* Announcement Badge (only for ANNOUNCEMENT type) */}
           {postType === 'ANNOUNCEMENT' && (
-            <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl">
-              <div className="flex items-center gap-2 text-rose-700">
+            <div className="mt-4 p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl">
+              <div className="flex items-center gap-2 text-rose-700 dark:text-rose-300">
                 <Megaphone className="w-4 h-4" />
                 <span className="text-sm font-medium">{tFeed('createPost.badges.announcement')}</span>
               </div>
@@ -587,8 +589,8 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
 
           {/* Achievement Badge (only for ACHIEVEMENT type) */}
           {postType === 'ACHIEVEMENT' && (
-            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-              <div className="flex items-center gap-2 text-amber-700">
+            <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+              <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
                 <Award className="w-4 h-4" />
                 <span className="text-sm font-medium">{tFeed('createPost.badges.achievement')}</span>
               </div>
@@ -597,8 +599,8 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
 
           {/* Tutorial Badge */}
           {postType === 'TUTORIAL' && (
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
-              <div className="flex items-center gap-2 text-blue-700">
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+              <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
                 <BookOpen className="w-4 h-4" />
                 <span className="text-sm font-medium">{tFeed('createPost.badges.tutorial')}</span>
               </div>
@@ -1134,7 +1136,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
             />
             <button 
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-amber-50 rounded-full transition-colors text-sm"
+              className="flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-full transition-colors text-sm"
             >
               <ImageIcon className="w-4 h-4" />
               {mediaPreviews.length > 0 ? tFeed('createPost.addMore') : tFeed('createPost.addPhotoOrVideo')}
@@ -1143,10 +1145,10 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t flex justify-end gap-3">
+        <div className="p-4 border-t dark:border-gray-700 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-5 py-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+            className="px-5 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
           >
             {tCommon('cancel')}
           </button>

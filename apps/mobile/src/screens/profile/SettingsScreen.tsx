@@ -8,7 +8,7 @@
  * - Staggered entrance with springify
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
     View,
     Text,
@@ -32,6 +32,8 @@ import { useTranslation } from 'react-i18next';
 import { Avatar } from '@/components/common';
 import { useAuthStore } from '@/stores';
 import { LanguageSelector } from '@/components/LanguageSelector';
+import { updateProfile as updateProfileApi } from '@/api/profileApi';
+import tokenService from '@/services/token';
 import StunityLogo from '../../../assets/Stunity.svg';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -141,7 +143,7 @@ function SettingRow({ item, index, sectionDelay }: { item: SettingItem; index: n
 
 export default function SettingsScreen() {
     const navigation = useNavigation<any>();
-    const { user, logout } = useAuthStore();
+    const { user, logout, updateUser } = useAuthStore();
     const { t, i18n } = useTranslation();
 
     // Language selector state
@@ -156,6 +158,34 @@ export default function SettingsScreen() {
     const [onlineStatus, setOnlineStatus] = useState(true);
     const [autoPlay, setAutoPlay] = useState(true);
     const [hapticFeedback, setHapticFeedback] = useState(true);
+
+    useEffect(() => {
+        setProfileVisibility(user?.profileVisibility !== 'PRIVATE');
+        setOnlineStatus(user?.isOnline ?? true);
+    }, [user?.profileVisibility, user?.isOnline]);
+
+    useEffect(() => {
+        let mounted = true;
+
+        const loadBiometricPreference = async () => {
+            try {
+                const enabled = await tokenService.isBiometricEnabled();
+                if (mounted) {
+                    setBiometrics(enabled);
+                }
+            } catch (error) {
+                if (mounted) {
+                    setBiometrics(false);
+                }
+            }
+        };
+
+        void loadBiometricPreference();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     const handleLogout = useCallback(() => {
         Alert.alert(
@@ -193,6 +223,55 @@ export default function SettingsScreen() {
         // Navigate to ProfileTab → Profile screen to ensure correct tab is active
         navigation.navigate('ProfileTab', { screen: 'Profile' });
     }, [navigation]);
+
+    const openExternalLink = useCallback(async (url: string) => {
+        try {
+            await Linking.openURL(url);
+        } catch (error) {
+            Alert.alert(t('common.error'), 'Unable to open this link right now.');
+        }
+    }, [t]);
+
+    const openSupportEmail = useCallback((subject: string, body?: string) => {
+        const encodedSubject = encodeURIComponent(subject);
+        const encodedBody = body ? `&body=${encodeURIComponent(body)}` : '';
+        void openExternalLink(`mailto:support@stunity.com?subject=${encodedSubject}${encodedBody}`);
+    }, [openExternalLink]);
+
+    const openAchievements = useCallback(() => {
+        navigation.navigate('Achievements');
+    }, [navigation]);
+
+    const handleBiometricsToggle = useCallback(async (enabled: boolean) => {
+        setBiometrics(enabled);
+        try {
+            await tokenService.setBiometricEnabled(enabled);
+        } catch (error) {
+            setBiometrics(!enabled);
+            Alert.alert(t('common.error'), 'Failed to update biometric preference.');
+        }
+    }, [t]);
+
+    const handleProfileVisibilityToggle = useCallback(async (enabled: boolean) => {
+        const previous = profileVisibility;
+        const nextVisibility = enabled ? 'PUBLIC' : 'PRIVATE';
+
+        setProfileVisibility(enabled);
+        updateUser({ profileVisibility: nextVisibility });
+
+        try {
+            await updateProfileApi({ profileVisibility: nextVisibility });
+        } catch (error) {
+            setProfileVisibility(previous);
+            updateUser({ profileVisibility: previous ? 'PUBLIC' : 'PRIVATE' });
+            Alert.alert(t('common.error'), 'Failed to update profile visibility.');
+        }
+    }, [profileVisibility, t, updateUser]);
+
+    const handleOnlineStatusToggle = useCallback((enabled: boolean) => {
+        setOnlineStatus(enabled);
+        updateUser({ isOnline: enabled });
+    }, [updateUser]);
 
     const fullName = user ? `${user.firstName} ${user.lastName}` : 'User';
     const initials = user ? `${(user.firstName?.[0] || '').toUpperCase()}${(user.lastName?.[0] || '').toUpperCase()}` : 'U';
@@ -238,7 +317,7 @@ export default function SettingsScreen() {
                     label: t('settings.passwordSecurity'),
                     sublabel: t('settings.passwordSecuritySub'),
                     type: 'navigate',
-                    onPress: () => Alert.alert('Coming Soon', 'Password & Security settings will be available soon.'),
+                    onPress: () => navigation.navigate('PasswordSecurity'),
                 },
                 {
                     icon: 'finger-print-outline',
@@ -248,7 +327,9 @@ export default function SettingsScreen() {
                     sublabel: Platform.OS === 'ios' ? t('settings.biometricSubIos') : t('settings.biometricSubAndroid'),
                     type: 'toggle',
                     value: biometrics,
-                    onToggle: setBiometrics,
+                    onToggle: (enabled) => {
+                        void handleBiometricsToggle(enabled);
+                    },
                 },
                 {
                     icon: 'mail-outline',
@@ -273,7 +354,9 @@ export default function SettingsScreen() {
                     sublabel: t('settings.profileVisibilitySub'),
                     type: 'toggle',
                     value: profileVisibility,
-                    onToggle: setProfileVisibility,
+                    onToggle: (enabled) => {
+                        void handleProfileVisibilityToggle(enabled);
+                    },
                 },
                 {
                     icon: 'radio-outline',
@@ -283,7 +366,7 @@ export default function SettingsScreen() {
                     sublabel: t('settings.onlineStatusSub'),
                     type: 'toggle',
                     value: onlineStatus,
-                    onToggle: setOnlineStatus,
+                    onToggle: handleOnlineStatusToggle,
                 },
                 {
                     icon: 'shield-checkmark-outline',
@@ -291,7 +374,10 @@ export default function SettingsScreen() {
                     iconBg: '#EEF2FF',
                     label: t('settings.blockedUsers'),
                     type: 'navigate',
-                    onPress: () => Alert.alert('Coming Soon', 'Blocked users management will be available soon.'),
+                    onPress: () => openSupportEmail(
+                        'Blocked users management request',
+                        `Hello Support,\n\nPlease help me review or update blocked users on my account (${user?.email || 'unknown-email'}).\n\nThank you.`
+                    ),
                 },
                 {
                     icon: 'document-text-outline',
@@ -299,7 +385,9 @@ export default function SettingsScreen() {
                     iconBg: '#F8FAFC',
                     label: t('auth.privacyPolicy'),
                     type: 'navigate',
-                    onPress: () => Linking.openURL('https://stunity.com/privacy'),
+                    onPress: () => {
+                        void openExternalLink('https://stunity.com/privacy');
+                    },
                 },
             ],
         },
@@ -402,7 +490,9 @@ export default function SettingsScreen() {
                     iconBg: '#F0F9FF',
                     label: t('settings.helpCenter'),
                     type: 'navigate',
-                    onPress: () => Linking.openURL('https://stunity.com/help'),
+                    onPress: () => {
+                        void openExternalLink('https://stunity.com/help');
+                    },
                 },
                 {
                     icon: 'chatbubble-ellipses-outline',
@@ -411,7 +501,7 @@ export default function SettingsScreen() {
                     label: t('settings.contactSupport'),
                     sublabel: t('settings.contactSupportSub'),
                     type: 'navigate',
-                    onPress: () => Linking.openURL('mailto:support@stunity.com'),
+                    onPress: () => openSupportEmail('Stunity support request'),
                 },
                 {
                     icon: 'star-outline',
@@ -458,7 +548,7 @@ export default function SettingsScreen() {
                 },
             ],
         },
-    ], [biometrics, profileVisibility, onlineStatus, pushNotifications, emailNotifications, darkMode, autoPlay, hapticFeedback, handleLogout, handleDeleteAccount, navigation, user?.email, t, i18n.language]);
+    ], [biometrics, profileVisibility, onlineStatus, pushNotifications, emailNotifications, darkMode, autoPlay, hapticFeedback, handleLogout, handleDeleteAccount, navigation, user?.email, t, i18n.language, openExternalLink, openSupportEmail, handleBiometricsToggle, handleProfileVisibilityToggle, handleOnlineStatusToggle]);
 
     // ── Render ─────────────────────────────────────────────────────
 
@@ -599,10 +689,10 @@ export default function SettingsScreen() {
                 <QuickStat icon="bookmark-outline" label={t('settings.bookmarks')} color="#6366F1" onPress={() => navigation.navigate('Bookmarks')} />
                 <QuickStat icon="document-text-outline" label={t('settings.myPosts')} color="#EC4899" onPress={() => navigation.navigate('MyPosts')} />
                 <QuickStat icon="people-outline" label={t('settings.connections')} color="#10B981" onPress={() => navigation.navigate('Connections', { type: 'followers' })} />
-                <QuickStat icon="trophy-outline" label={t('settings.achievements')} color="#F59E0B" onPress={() => Alert.alert('Coming Soon', 'Achievements section will be available soon.')} />
+                <QuickStat icon="trophy-outline" label={t('settings.achievements')} color="#F59E0B" onPress={openAchievements} />
             </Animated.View>
         </>
-    ), [user, fullName, memberSince, navigation, handleViewProfile]);
+    ), [user, fullName, memberSince, navigation, handleViewProfile, openAchievements]);
 
     const ListFooter = useCallback(() => (
         <Animated.View

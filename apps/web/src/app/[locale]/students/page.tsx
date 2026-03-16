@@ -360,18 +360,18 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="lg:ml-64 min-h-screen bg-slate-50 dark:bg-gray-900/50">
+      <div className="lg:ml-64 min-h-screen bg-slate-50 dark:bg-gray-950 transition-colors duration-500">
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
           <AnimatedContent animation="fade" delay={0}>
             <div className="mb-8">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
                   <nav className="flex items-center gap-2 text-sm text-slate-500 dark:text-gray-400 mb-2">
-                    <Link href={`/${locale}/dashboard`} className="hover:text-slate-700 dark:hover:text-gray-200">Dashboard</Link>
-                    <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                    <Link href={`/${locale}/dashboard`} className="hover:text-slate-700 dark:hover:text-gray-200 transition-colors">Dashboard</Link>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-300 dark:text-gray-600" />
                     <span className="font-medium text-slate-900 dark:text-white">Students</span>
                   </nav>
-                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Students</h1>
+                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Students</h1>
                   <p className="text-slate-500 dark:text-gray-400 mt-1">
                     Manage and organize your student records
                   </p>
@@ -381,14 +381,14 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   <button
                     onClick={() => mutate()}
                     disabled={isValidating}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all disabled:opacity-50"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-sm disabled:opacity-50"
                   >
                     <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
                     Refresh
                   </button>
                   <button
                     onClick={handleAdd}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white dark:text-gray-900 bg-gray-900 dark:bg-white rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-all shadow-sm"
                   >
                     <Plus className="h-4 w-4" />
                     Add Student
@@ -401,51 +401,51 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
           {/* Stats Cards */}
           <AnimatedContent animation="slide-up" delay={50}>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Total Students</p>
-                    <p className="text-2xl font-semibold text-gray-900 mt-1">{pagination.total || 0}</p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Students</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">{pagination.total || 0}</p>
                   </div>
-                  <div className="h-10 w-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                    <Users className="h-5 w-5 text-blue-600" />
+                  <div className="h-10 w-10 bg-blue-50 dark:bg-blue-500/10 rounded-lg flex items-center justify-center">
+                    <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Assigned</p>
-                    <p className="text-2xl font-semibold text-gray-900 mt-1">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Assigned</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">
                       {students.filter(s => s.class).length}
                     </p>
                   </div>
-                  <div className="h-10 w-10 bg-green-50 rounded-lg flex items-center justify-center">
-                    <GraduationCap className="h-5 w-5 text-green-600" />
+                  <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg flex items-center justify-center">
+                    <GraduationCap className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Unassigned</p>
-                    <p className="text-2xl font-semibold text-gray-900 mt-1">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Unassigned</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">
                       {students.filter(s => !s.class).length}
                     </p>
                   </div>
-                  <div className="h-10 w-10 bg-amber-50 rounded-lg flex items-center justify-center">
-                    <AlertCircle className="h-5 w-5 text-amber-600" />
+                  <div className="h-10 w-10 bg-amber-50 dark:bg-amber-500/10 rounded-lg flex items-center justify-center">
+                    <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Classes</p>
-                    <p className="text-2xl font-semibold text-gray-900 mt-1">{availableClasses.length}</p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Classes</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">{availableClasses.length}</p>
                   </div>
-                  <div className="h-10 w-10 bg-purple-50 rounded-lg flex items-center justify-center">
-                    <BookOpen className="h-5 w-5 text-purple-600" />
+                  <div className="h-10 w-10 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg flex items-center justify-center">
+                    <BookOpen className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                   </div>
                 </div>
               </div>
@@ -454,20 +454,20 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
           {/* Main Content Card */}
           <AnimatedContent animation="slide-up" delay={100}>
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm shadow-gray-200/50 dark:shadow-none">
 
               {/* Toolbar */}
-              <div className="px-5 py-4 border-b border-gray-100">
+              <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                   {/* Search */}
                   <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
                     <input
                       type="text"
                       placeholder="Search students..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full h-10 pl-10 pr-4 text-sm bg-gray-50 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-gray-900 transition-all"
+                      className="w-full h-10 pl-10 pr-4 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border-0 rounded-lg focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all placeholder-gray-400 dark:placeholder-gray-500"
                     />
                   </div>
 
@@ -476,7 +476,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     <select
                       value={classFilter}
                       onChange={(e) => setClassFilter(e.target.value)}
-                      className="h-10 px-3 text-sm bg-gray-50 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-gray-900 transition-all cursor-pointer"
+                      className="h-10 px-3 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border-0 rounded-lg focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all cursor-pointer appearance-none"
                     >
                       <option value="all">All Classes</option>
                       <option value="unassigned">Unassigned</option>
@@ -486,7 +486,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     </select>
 
                     {selectedYear && (
-                      <div className="hidden lg:flex items-center gap-2 px-3 h-10 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium">
+                      <div className="hidden lg:flex items-center gap-2 px-3 h-10 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 rounded-lg text-sm font-medium border border-indigo-100 dark:border-indigo-500/20">
                         <span>{selectedYear.name}</span>
                       </div>
                     )}
@@ -495,20 +495,22 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   {/* Bulk Actions */}
                   {selectedStudents.size > 0 && (
                     <div className="flex items-center gap-2 lg:ml-auto">
-                      <span className="text-sm text-gray-500">{selectedStudents.size} selected</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700">
+                        {selectedStudents.size} selected
+                      </span>
                       <button
                         onClick={() => {
                           setTargetClassId('');
                           setReassignMessage(null);
                           setShowBulkReassignModal(true);
                         }}
-                        className="h-10 px-4 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all"
+                        className="h-10 px-4 text-sm font-medium text-white dark:text-gray-900 bg-gray-900 dark:bg-white rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-all shadow-sm"
                       >
                         Assign to Class
                       </button>
                       <button
                         onClick={() => setSelectedStudents(new Set())}
-                        className="h-10 px-3 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all"
+                        className="h-10 px-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
                       >
                         Clear
                       </button>
@@ -570,14 +572,14 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
                 {isEmpty ? (
                   <div className="px-6 py-16 text-center">
-                    <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-100 rounded-full mb-4">
-                      <Users className="w-7 h-7 text-gray-400" />
+                    <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
+                      <Users className="w-7 h-7 text-gray-400 dark:text-gray-500" />
                     </div>
-                    <h3 className="text-sm font-medium text-gray-900 mb-1">No students found</h3>
-                    <p className="text-sm text-gray-500 mb-4">Get started by adding your first student</p>
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-1">No students found</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Get started by adding your first student</p>
                     <button
                       onClick={handleAdd}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all"
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white dark:text-gray-900 bg-gray-900 dark:bg-white rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-all shadow-sm"
                     >
                       <Plus className="w-4 h-4" />
                       Add Student
@@ -589,36 +591,36 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead>
-                          <tr className="border-b border-gray-100">
+                          <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30">
                             <th className="w-12 px-4 py-3">
                               <button
                                 onClick={toggleSelectAll}
                                 className="flex items-center justify-center w-5 h-5"
                               >
                                 {selectedStudents.size === filteredStudents.length && filteredStudents.length > 0 ? (
-                                  <CheckSquare className="w-[18px] h-[18px] text-gray-900" />
+                                  <CheckSquare className="w-[18px] h-[18px] text-gray-900 dark:text-white" />
                                 ) : selectedStudents.size > 0 ? (
-                                  <div className="w-[18px] h-[18px] border-2 border-gray-300 bg-gray-100 rounded" />
+                                  <div className="w-[18px] h-[18px] border-2 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 rounded" />
                                 ) : (
-                                  <Square className="w-[18px] h-[18px] text-gray-300" />
+                                  <Square className="w-[18px] h-[18px] text-gray-300 dark:text-gray-600" />
                                 )}
                               </button>
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Student</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">ID</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Gender</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Birth Date</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Class</th>
-                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Actions</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Student</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">ID</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Gender</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Birth Date</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Class</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Actions</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50">
+                        <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
                           {filteredStudents.map((student) => (
                             <tr
                               key={student.id}
                               className={`group transition-colors ${selectedStudents.has(student.id)
-                                ? 'bg-gray-50'
-                                : 'hover:bg-gray-50/50'
+                                ? 'bg-gray-50 dark:bg-gray-800/50'
+                                : 'hover:bg-gray-50/50 dark:hover:bg-gray-800/30'
                                 }`}
                             >
                               {/* Checkbox */}
@@ -628,9 +630,9 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                   className="flex items-center justify-center w-5 h-5"
                                 >
                                   {selectedStudents.has(student.id) ? (
-                                    <CheckSquare className="w-[18px] h-[18px] text-gray-900" />
+                                    <CheckSquare className="w-[18px] h-[18px] text-gray-900 dark:text-white" />
                                   ) : (
-                                    <Square className="w-[18px] h-[18px] text-gray-300 group-hover:text-gray-400" />
+                                    <Square className="w-[18px] h-[18px] text-gray-300 dark:text-gray-600 group-hover:text-gray-400 dark:group-hover:text-gray-500" />
                                   )}
                                 </button>
                               </td>
@@ -642,20 +644,20 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                     <img
                                       src={`${process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003'}${student.photoUrl}`}
                                       alt=""
-                                      className="w-9 h-9 rounded-full object-cover"
+                                      className="w-9 h-9 rounded-full object-cover ring-2 ring-white dark:ring-gray-800 shadow-sm"
                                     />
                                   ) : (
-                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium text-white ${student.gender === 'MALE' ? 'bg-blue-500' : 'bg-pink-500'
+                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium text-white shadow-sm ${student.gender === 'MALE' ? 'bg-blue-500 dark:bg-blue-600' : 'bg-pink-500 dark:bg-pink-600'
                                       }`}>
                                       {student.firstNameLatin.charAt(0)}{student.lastNameLatin.charAt(0)}
                                     </div>
                                   )}
                                   <div className="min-w-0">
-                                    <p className="text-sm font-medium text-gray-900 truncate">
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                                       {student.firstNameLatin} {student.lastNameLatin}
                                     </p>
                                     {student.firstNameKhmer && (
-                                      <p className="text-xs text-gray-500 truncate">
+                                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                                         {student.firstNameKhmer} {student.lastNameKhmer}
                                       </p>
                                     )}
@@ -665,14 +667,14 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
                               {/* Student ID */}
                               <td className="px-4 py-3">
-                                <span className="text-sm text-gray-600 font-mono">{student.studentId}</span>
+                                <span className="text-sm text-gray-600 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">{student.studentId}</span>
                               </td>
 
                               {/* Gender */}
                               <td className="px-4 py-3">
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${student.gender === 'MALE'
-                                  ? 'bg-blue-50 text-blue-700'
-                                  : 'bg-pink-50 text-pink-700'
+                                  ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-500/20'
+                                  : 'bg-pink-50 dark:bg-pink-500/10 text-pink-700 dark:text-pink-400 border border-pink-100 dark:border-pink-500/20'
                                   }`}>
                                   {student.gender === 'MALE' ? 'Male' : 'Female'}
                                 </span>
@@ -680,7 +682,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
                               {/* Date of Birth */}
                               <td className="px-4 py-3">
-                                <span className="text-sm text-gray-600">
+                                <span className="text-sm text-gray-600 dark:text-gray-400">
                                   {new Date(student.dateOfBirth).toLocaleDateString('en-US', {
                                     month: 'short',
                                     day: 'numeric',
@@ -692,11 +694,11 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                               {/* Class */}
                               <td className="px-4 py-3">
                                 {student.class?.name ? (
-                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20">
                                     {student.class.name}
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
                                     Unassigned
                                   </span>
                                 )}
@@ -707,7 +709,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                 <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <button
                                     onClick={() => handleOpenReassign(student)}
-                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
                                     title="Assign to Class"
                                   >
                                     <ArrowRightLeft className="w-4 h-4" />
@@ -717,28 +719,28 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                       setSelectedStudent(student);
                                       setShowResetModal(true);
                                     }}
-                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors"
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-md transition-colors"
                                     title="Reset Password"
                                   >
                                     <Lock className="w-4 h-4" />
                                   </button>
                                   <button
                                     onClick={() => router.push(`/${locale}/students/${student.id}`)}
-                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
                                     title="View"
                                   >
                                     <Eye className="w-4 h-4" />
                                   </button>
                                   <button
                                     onClick={() => handleEdit(student)}
-                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
                                     title="Edit"
                                   >
                                     <Edit className="w-4 h-4" />
                                   </button>
                                   <button
                                     onClick={() => handleDelete(student.id)}
-                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-md transition-colors"
                                     title="Delete"
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -820,17 +822,17 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
               {/* Pagination Footer */}
               {totalPages > 1 && (
-                <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
-                  <p className="text-sm text-gray-500">
-                    Showing <span className="font-medium text-gray-900">{(page - 1) * ITEMS_PER_PAGE + 1}</span>–
-                    <span className="font-medium text-gray-900">{Math.min(page * ITEMS_PER_PAGE, totalCount)}</span> of{' '}
-                    <span className="font-medium text-gray-900">{totalCount}</span>
+                <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/30 dark:bg-gray-900/10">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Showing <span className="font-medium text-gray-900 dark:text-white">{(page - 1) * ITEMS_PER_PAGE + 1}</span>–
+                    <span className="font-medium text-gray-900 dark:text-white">{Math.min(page * ITEMS_PER_PAGE, totalCount)}</span> of{' '}
+                    <span className="font-medium text-gray-900 dark:text-white">{totalCount}</span>
                   </p>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => setPage(Math.max(1, page - 1))}
                       disabled={page === 1}
-                      className="inline-flex items-center justify-center h-8 w-8 text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="inline-flex items-center justify-center h-8 w-8 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
@@ -850,8 +852,8 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                           key={pageNum}
                           onClick={() => setPage(pageNum)}
                           className={`inline-flex items-center justify-center h-8 min-w-[32px] px-2 text-sm font-medium rounded-md transition-colors ${page === pageNum
-                            ? 'bg-gray-900 text-white'
-                            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+                            ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-sm'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
                             }`}
                         >
                           {pageNum}
@@ -861,7 +863,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     <button
                       onClick={() => setPage(Math.min(totalPages, page + 1))}
                       disabled={page === totalPages}
-                      className="inline-flex items-center justify-center h-8 w-8 text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="inline-flex items-center justify-center h-8 w-8 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -898,12 +900,12 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
       {/* Single Student Reassign Modal */}
       {showReassignModal && studentToReassign && (
-        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="fixed inset-0 bg-gray-900/60 dark:bg-gray-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl dark:shadow-2xl max-w-md w-full border border-transparent dark:border-gray-800 overflow-hidden transform transition-all">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50">
               <div>
-                <h3 className="text-base font-semibold text-gray-900">Assign to Class</h3>
-                <p className="text-sm text-gray-500 mt-0.5">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Assign to Class</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                   {studentToReassign.firstNameLatin} {studentToReassign.lastNameLatin}
                 </p>
               </div>
@@ -912,7 +914,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   setShowReassignModal(false);
                   setStudentToReassign(null);
                 }}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -920,16 +922,16 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
             <div className="p-6">
               <div className="mb-5">
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
                   Current Class
                 </label>
                 <div className="flex items-center gap-2">
                   {studentToReassign.class?.name ? (
-                    <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-green-50 text-green-700">
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20">
                       {studentToReassign.class.name}
                     </span>
                   ) : (
-                    <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-500">
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
                       Unassigned
                     </span>
                   )}
@@ -937,13 +939,13 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
               </div>
 
               <div className="mb-5">
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
                   New Class
                 </label>
                 <select
                   value={targetClassId}
                   onChange={(e) => setTargetClassId(e.target.value)}
-                  className="w-full h-11 px-4 text-sm bg-gray-50 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-gray-900 transition-all cursor-pointer"
+                  className="w-full h-11 px-4 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border-0 rounded-lg focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all cursor-pointer appearance-none"
                 >
                   <option value="">Select a class...</option>
                   {availableClasses
@@ -957,9 +959,9 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
               </div>
 
               {reassignMessage && (
-                <div className={`mb-5 p-3 rounded-lg text-sm ${reassignMessage.type === 'success'
-                  ? 'bg-green-50 text-green-700'
-                  : 'bg-red-50 text-red-700'
+                <div className={`mb-5 p-3 rounded-lg text-sm border ${reassignMessage.type === 'success'
+                  ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20'
+                  : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-100 dark:border-rose-500/20'
                   }`}>
                   {reassignMessage.text}
                 </div>
@@ -971,14 +973,14 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     setShowReassignModal(false);
                     setStudentToReassign(null);
                   }}
-                  className="flex-1 h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 h-11 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleReassignStudent}
                   disabled={!targetClassId || isReassigning}
-                  className="flex-1 h-11 px-4 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center justify-center gap-2"
+                  className="flex-1 h-11 px-4 text-sm font-medium text-white dark:text-gray-900 bg-gray-900 dark:bg-white rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center justify-center gap-2 shadow-sm"
                 >
                   {isReassigning ? (
                     <>
@@ -997,12 +999,12 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
       {/* Bulk Reassign Modal */}
       {showBulkReassignModal && (
-        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="fixed inset-0 bg-gray-900/60 dark:bg-gray-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl dark:shadow-2xl max-w-md w-full border border-transparent dark:border-gray-800 overflow-hidden transform transition-all">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/50">
               <div>
-                <h3 className="text-base font-semibold text-gray-900">Bulk Assign to Class</h3>
-                <p className="text-sm text-gray-500 mt-0.5">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Bulk Assign to Class</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                   {selectedStudents.size} student{selectedStudents.size > 1 ? 's' : ''} selected
                 </p>
               </div>
@@ -1011,7 +1013,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   setShowBulkReassignModal(false);
                   setTargetClassId('');
                 }}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1019,20 +1021,20 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
             <div className="p-6">
               <div className="mb-5">
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
                   Selected Students
                 </label>
-                <div className="flex flex-wrap gap-1.5 p-3 bg-gray-50 rounded-lg max-h-24 overflow-y-auto">
+                <div className="flex flex-wrap gap-1.5 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 rounded-lg max-h-24 overflow-y-auto">
                   {students
                     .filter(s => selectedStudents.has(s.id))
                     .slice(0, 8)
                     .map(s => (
-                      <span key={s.id} className="inline-flex items-center px-2 py-1 bg-white border border-gray-200 rounded-md text-xs text-gray-700">
+                      <span key={s.id} className="inline-flex items-center px-2.5 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-xs font-medium text-gray-700 dark:text-gray-300 shadow-sm">
                         {s.firstNameLatin} {s.lastNameLatin}
                       </span>
                     ))}
                   {selectedStudents.size > 8 && (
-                    <span className="inline-flex items-center px-2 py-1 bg-gray-200 rounded-md text-xs text-gray-600">
+                    <span className="inline-flex items-center px-2.5 py-1 bg-gray-200 dark:bg-gray-700 rounded-md text-xs font-medium text-gray-600 dark:text-gray-400">
                       +{selectedStudents.size - 8} more
                     </span>
                   )}
@@ -1040,13 +1042,13 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
               </div>
 
               <div className="mb-5">
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
                   Target Class
                 </label>
                 <select
                   value={targetClassId}
                   onChange={(e) => setTargetClassId(e.target.value)}
-                  className="w-full h-11 px-4 text-sm bg-gray-50 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-gray-900 transition-all cursor-pointer"
+                  className="w-full h-11 px-4 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border-0 rounded-lg focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all cursor-pointer appearance-none"
                 >
                   <option value="">Select a class...</option>
                   {(() => {
@@ -1069,9 +1071,9 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
               </div>
 
               {reassignMessage && (
-                <div className={`mb-5 p-3 rounded-lg text-sm ${reassignMessage.type === 'success'
-                  ? 'bg-green-50 text-green-700'
-                  : 'bg-red-50 text-red-700'
+                <div className={`mb-5 p-3 rounded-lg text-sm border ${reassignMessage.type === 'success'
+                  ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20'
+                  : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-100 dark:border-rose-500/20'
                   }`}>
                   {reassignMessage.text}
                 </div>
@@ -1083,14 +1085,14 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     setShowBulkReassignModal(false);
                     setTargetClassId('');
                   }}
-                  className="flex-1 h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 h-11 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleBulkReassign}
                   disabled={!targetClassId || isReassigning}
-                  className="flex-1 h-11 px-4 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center justify-center gap-2"
+                  className="flex-1 h-11 px-4 text-sm font-medium text-white dark:text-gray-900 bg-gray-900 dark:bg-white rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center justify-center gap-2 shadow-sm"
                 >
                   {isReassigning ? (
                     <>

@@ -342,7 +342,7 @@ export default function MasterTimetablePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
       <UnifiedNavigation user={user} school={school} />
 
       <div className="lg:ml-64">
@@ -351,12 +351,12 @@ export default function MasterTimetablePage() {
           <AnimatedContent animation="fade" delay={0}>
             <div className="mb-6">
               {/* Breadcrumb */}
-              <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+              <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
                 <Home className="h-4 w-4" />
                 <ChevronRight className="h-4 w-4" />
                 <span>Timetable</span>
                 <ChevronRight className="h-4 w-4" />
-                <span className="text-gray-900 font-medium">Master View</span>
+                <span className="text-gray-900 dark:text-white font-medium">Master View</span>
               </nav>
 
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -365,10 +365,10 @@ export default function MasterTimetablePage() {
                     <Grid3X3 className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+                    <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
                       Master Timetable
                     </h1>
-                    <p className="text-gray-600 mt-1">
+                    <p className="text-gray-600 dark:text-gray-400 mt-1">
                       Manage timetables for all {stats.totalClasses} classes
                     </p>
                   </div>
@@ -378,14 +378,14 @@ export default function MasterTimetablePage() {
                   <button
                     onClick={() => loadClassStats(selectedYearId)}
                     disabled={loadingData}
-                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
                   >
                     <RefreshCw className={`h-4 w-4 ${loadingData ? 'animate-spin' : ''}`} />
                     Refresh
                   </button>
                   <button
                     onClick={() => window.print()}
-                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
                   >
                     <Printer className="h-4 w-4" />
                     Print
@@ -398,55 +398,55 @@ export default function MasterTimetablePage() {
           {/* Stats Cards */}
           <AnimatedContent animation="slide-up" delay={50}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-800 transition-colors">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Total Classes</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.totalClasses}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Classes</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalClasses}</p>
                   </div>
-                  <div className="p-3 bg-indigo-100 rounded-lg">
-                    <GraduationCap className="h-6 w-6 text-indigo-600" />
+                  <div className="p-3 bg-indigo-100 dark:bg-indigo-500/10 rounded-lg">
+                    <GraduationCap className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-800 transition-colors">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Total Teachers</p>
-                    <p className="text-2xl font-bold text-gray-900">{teachers.length}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Teachers</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{teachers.length}</p>
                   </div>
-                  <div className="p-3 bg-green-100 rounded-lg">
-                    <Users className="h-6 w-6 text-green-600" />
+                  <div className="p-3 bg-green-100 dark:bg-green-500/10 rounded-lg">
+                    <Users className="h-6 w-6 text-green-600 dark:text-green-400" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-800 transition-colors">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Slots Filled</p>
-                    <p className="text-2xl font-bold text-gray-900">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Slots Filled</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
                       {stats.filledSlots}/{stats.totalSlots}
                     </p>
                   </div>
-                  <div className="p-3 bg-amber-100 rounded-lg">
-                    <Clock className="h-6 w-6 text-amber-600" />
+                  <div className="p-3 bg-amber-100 dark:bg-amber-500/10 rounded-lg">
+                    <Clock className="h-6 w-6 text-amber-600 dark:text-amber-400" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-800 transition-colors">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Coverage</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.coverage}%</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Coverage</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.coverage}%</p>
                   </div>
-                  <div className="p-3 bg-purple-100 rounded-lg">
-                    <BarChart3 className="h-6 w-6 text-purple-600" />
+                  <div className="p-3 bg-purple-100 dark:bg-purple-500/10 rounded-lg">
+                    <BarChart3 className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                   </div>
                 </div>
-                <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div
                     className={`h-2 rounded-full transition-all ${
                       stats.coverage >= 80 ? 'bg-green-500' : stats.coverage >= 50 ? 'bg-yellow-500' : 'bg-red-500'
@@ -460,10 +460,10 @@ export default function MasterTimetablePage() {
 
           {/* Filters */}
           <AnimatedContent animation="slide-up" delay={100}>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 mb-6 transition-colors">
               <div className="flex flex-wrap items-center gap-4">
                 {/* Grade Level Toggle */}
-                <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                   <button
                     onClick={() => {
                       setSelectedGradeLevel('HIGH_SCHOOL');
@@ -471,8 +471,8 @@ export default function MasterTimetablePage() {
                     }}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                       selectedGradeLevel === 'HIGH_SCHOOL'
-                        ? 'bg-white shadow-sm text-blue-600'
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                     }`}
                   >
                     <Building2 className="h-4 w-4" />
@@ -485,8 +485,8 @@ export default function MasterTimetablePage() {
                     }}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                       selectedGradeLevel === 'SECONDARY'
-                        ? 'bg-white shadow-sm text-amber-600'
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white dark:bg-gray-700 shadow-sm text-amber-600 dark:text-amber-400'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                     }`}
                   >
                     <School className="h-4 w-4" />
@@ -501,7 +501,7 @@ export default function MasterTimetablePage() {
                     setSelectedYearId(e.target.value);
                     loadClassStats(e.target.value);
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800 dark:text-gray-200"
                 >
                   <option value="">Select Year</option>
                   {academicYears.map((year) => (
@@ -512,11 +512,11 @@ export default function MasterTimetablePage() {
                 </select>
 
                 {/* View Mode */}
-                <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 ml-auto">
+                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 ml-auto">
                   <button
                     onClick={() => setViewMode('overview')}
                     className={`p-2 rounded-lg transition-colors ${
-                      viewMode === 'overview' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'
+                      viewMode === 'overview' ? 'bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'
                     }`}
                     title="Overview"
                   >
@@ -525,7 +525,7 @@ export default function MasterTimetablePage() {
                   <button
                     onClick={() => setViewMode('list')}
                     className={`p-2 rounded-lg transition-colors ${
-                      viewMode === 'list' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'
+                      viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'
                     }`}
                     title="List View"
                   >
@@ -535,18 +535,18 @@ export default function MasterTimetablePage() {
               </div>
 
               {/* Shift Schedule Info */}
-              <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
                 <div className="flex items-center gap-6 text-sm">
-                  <span className="text-gray-500">Default Shifts:</span>
+                  <span className="text-gray-500 dark:text-gray-400">Default Shifts:</span>
                   <span className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-gradient-to-br from-amber-400 to-orange-500" />
-                    <span className="font-medium">Morning (7:00 AM - 12:00 PM)</span>
-                    <span className="text-gray-400">- {selectedGradeLevel === 'HIGH_SCHOOL' ? 'High School' : 'Some days'}</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-200">Morning (7:00 AM - 12:00 PM)</span>
+                    <span className="text-gray-400 dark:text-gray-500">- {selectedGradeLevel === 'HIGH_SCHOOL' ? 'High School' : 'Some days'}</span>
                   </span>
                   <span className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500" />
-                    <span className="font-medium">Afternoon (12:00 PM - 5:00 PM)</span>
-                    <span className="text-gray-400">- {selectedGradeLevel === 'SECONDARY' ? 'Secondary' : 'Some days'}</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-200">Afternoon (12:00 PM - 5:00 PM)</span>
+                    <span className="text-gray-400 dark:text-gray-500">- {selectedGradeLevel === 'SECONDARY' ? 'Secondary' : 'Some days'}</span>
                   </span>
                 </div>
               </div>
@@ -563,19 +563,19 @@ export default function MasterTimetablePage() {
                     {/* Grade Header */}
                     <button
                       onClick={() => toggleGrade(parseInt(grade))}
-                      className="w-full flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-gray-200 hover:border-indigo-300 transition-colors mb-4"
+                      className="w-full flex items-center justify-between p-4 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 hover:border-indigo-300 dark:hover:border-indigo-500 transition-colors mb-4"
                     >
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-lg ${
                           selectedGradeLevel === 'HIGH_SCHOOL' 
-                            ? 'bg-blue-100 text-blue-600' 
-                            : 'bg-amber-100 text-amber-600'
+                            ? 'bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400' 
+                            : 'bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400'
                         }`}>
                           <GraduationCap className="h-5 w-5" />
                         </div>
                         <div className="text-left">
-                          <h3 className="font-bold text-gray-900">Grade {grade}</h3>
-                          <p className="text-sm text-gray-500">
+                          <h3 className="font-bold text-gray-900 dark:text-white">Grade {grade}</h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
                             {classList.length} classes • {classList.reduce((sum, c) => sum + c.entryCount, 0)} slots filled
                           </p>
                         </div>
@@ -583,13 +583,13 @@ export default function MasterTimetablePage() {
                       <div className="flex items-center gap-4">
                         {/* Grade Coverage */}
                         <div className="text-right">
-                          <span className="text-sm font-semibold text-gray-700">
+                          <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                             {Math.round(
                               (classList.reduce((sum, c) => sum + c.entryCount, 0) /
                                 classList.reduce((sum, c) => sum + c.totalSlots, 0)) * 100
                             ) || 0}%
                           </span>
-                          <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="w-24 h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
                             <div
                               className="h-full bg-indigo-500"
                               style={{
@@ -618,7 +618,7 @@ export default function MasterTimetablePage() {
                           <div
                             key={cls.id}
                             onClick={() => navigateToClassEditor(cls.id)}
-                            className="bg-white rounded-xl border-2 border-gray-200 hover:border-indigo-400 hover:shadow-lg transition-all cursor-pointer overflow-hidden"
+                            className="bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-lg transition-all cursor-pointer overflow-hidden"
                           >
                             {/* Class Header */}
                             <div className={`px-4 py-3 bg-gradient-to-r ${
@@ -637,15 +637,15 @@ export default function MasterTimetablePage() {
                               {/* Coverage Bar */}
                               <div className="mb-3">
                                 <div className="flex items-center justify-between text-sm mb-1">
-                                  <span className="text-gray-600">Coverage</span>
+                                  <span className="text-gray-600 dark:text-gray-400">Coverage</span>
                                   <span className={`font-semibold ${
-                                    cls.coverage >= 80 ? 'text-green-600' : 
-                                    cls.coverage >= 50 ? 'text-yellow-600' : 'text-red-600'
+                                    cls.coverage >= 80 ? 'text-green-600 dark:text-green-400' : 
+                                    cls.coverage >= 50 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'
                                   }`}>
                                     {cls.coverage}%
                                   </span>
                                 </div>
-                                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                                   <div
                                     className={`h-full transition-all ${
                                       cls.coverage >= 80 ? 'bg-green-500' : 
@@ -658,11 +658,11 @@ export default function MasterTimetablePage() {
 
                               {/* Slots Info */}
                               <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-500">
+                                <span className="text-gray-500 dark:text-gray-400">
                                   {cls.entryCount} / {cls.totalSlots} slots
                                 </span>
                                 {cls.conflicts > 0 && (
-                                  <span className="flex items-center gap-1 text-red-600">
+                                  <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
                                     <AlertTriangle className="h-3 w-3" />
                                     {cls.conflicts}
                                   </span>
@@ -670,7 +670,7 @@ export default function MasterTimetablePage() {
                               </div>
 
                               {/* Shift Schedule Mini Preview */}
-                              <div className="mt-3 pt-3 border-t border-gray-100">
+                              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                                 <div className="flex gap-1">
                                   {DAYS.map((day) => {
                                     const shift = cls.shiftSchedule.find(s => s.dayOfWeek === day);
@@ -689,8 +689,8 @@ export default function MasterTimetablePage() {
                                   })}
                                 </div>
                                 <div className="flex justify-between mt-1">
-                                  <span className="text-xs text-gray-400">Mon</span>
-                                  <span className="text-xs text-gray-400">Sat</span>
+                                  <span className="text-xs text-gray-400 dark:text-gray-500">Mon</span>
+                                  <span className="text-xs text-gray-400 dark:text-gray-500">Sat</span>
                                 </div>
                               </div>
                             </div>
@@ -702,10 +702,10 @@ export default function MasterTimetablePage() {
                 ))}
 
               {filteredClasses.length === 0 && (
-                <div className="bg-white rounded-xl p-12 text-center">
-                  <GraduationCap className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Classes Found</h3>
-                  <p className="text-gray-500">
+                <div className="bg-white dark:bg-gray-900 rounded-xl p-12 text-center transition-colors">
+                  <GraduationCap className="h-16 w-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Classes Found</h3>
+                  <p className="text-gray-500 dark:text-gray-400">
                     No classes found for {selectedGradeLevel === 'HIGH_SCHOOL' ? 'High School' : 'Secondary'} 
                     {selectedYearId ? ' in this academic year' : '. Please select an academic year.'}
                   </p>
@@ -716,28 +716,28 @@ export default function MasterTimetablePage() {
 
           {/* Legend */}
           <AnimatedContent animation="slide-up" delay={200}>
-            <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Legend</h3>
+            <div className="mt-6 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 transition-colors">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Legend</h3>
               <div className="flex flex-wrap gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-2 bg-green-500 rounded-full" />
-                  <span className="text-gray-600">80%+ Coverage</span>
+                  <span className="text-gray-600 dark:text-gray-400">80%+ Coverage</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-2 bg-yellow-500 rounded-full" />
-                  <span className="text-gray-600">50-79% Coverage</span>
+                  <span className="text-gray-600 dark:text-gray-400">50-79% Coverage</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-2 bg-red-500 rounded-full" />
-                  <span className="text-gray-600">&lt;50% Coverage</span>
+                  <span className="text-gray-600 dark:text-gray-400">&lt;50% Coverage</span>
                 </div>
                 <div className="flex items-center gap-2 ml-4">
                   <div className="w-4 h-2 bg-amber-400 rounded-full" />
-                  <span className="text-gray-600">Morning Shift</span>
+                  <span className="text-gray-600 dark:text-gray-400">Morning Shift</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-2 bg-blue-400 rounded-full" />
-                  <span className="text-gray-600">Afternoon Shift</span>
+                  <span className="text-gray-600 dark:text-gray-400">Afternoon Shift</span>
                 </div>
               </div>
             </div>

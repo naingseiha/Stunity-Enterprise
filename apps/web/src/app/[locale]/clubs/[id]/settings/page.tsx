@@ -185,7 +185,7 @@ export default function ClubSettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50/40 via-white to-orange-50/30 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300 flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
       </div>
     );
@@ -194,22 +194,22 @@ export default function ClubSettingsPage() {
   if (!club) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/40 via-white to-orange-50/30">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
       <div className="max-w-2xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <Link
             href={`/${locale}/clubs/${clubId}`}
-            className="p-2 hover:bg-white rounded-full transition-colors"
+            className="p-2 hover:bg-white dark:hover:bg-gray-800 rounded-full transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
+            <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <Settings className="w-6 h-6 text-amber-500" />
               Club Settings
             </h1>
-            <p className="text-gray-500">{club.name}</p>
+            <p className="text-gray-500 dark:text-gray-400">{club.name}</p>
           </div>
         </div>
 
@@ -227,39 +227,39 @@ export default function ClubSettingsPage() {
         )}
 
         {/* Form */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-100">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm divide-y divide-gray-100 dark:divide-gray-700">
           {/* Basic Info */}
           <div className="p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">Basic Information</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Basic Information</h2>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Club Name *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Club Name *</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 resize-none"
+                className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 resize-none dark:text-white"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
               <input
                 type="text"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 placeholder="e.g., Mathematics, Programming, Physics"
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
               />
             </div>
           </div>
@@ -276,16 +276,16 @@ export default function ClubSettingsPage() {
                     onClick={() => setClubType(type.value)}
                     className={`flex items-start gap-3 p-3 rounded-xl border-2 text-left transition-all ${
                       clubType === type.value
-                        ? 'border-amber-500 bg-amber-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                     }`}
                   >
                     <Icon className={`w-5 h-5 mt-0.5 ${clubType === type.value ? 'text-amber-500' : 'text-gray-400'}`} />
                     <div>
-                      <p className={`font-medium ${clubType === type.value ? 'text-amber-700' : 'text-gray-900'}`}>
+                      <p className={`font-medium ${clubType === type.value ? 'text-amber-700 dark:text-amber-400' : 'text-gray-900 dark:text-white'}`}>
                         {type.label}
                       </p>
-                      <p className="text-xs text-gray-500">{type.description}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{type.description}</p>
                     </div>
                   </button>
                 );
@@ -295,7 +295,7 @@ export default function ClubSettingsPage() {
 
           {/* Privacy */}
           <div className="p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">Privacy</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Privacy</h2>
             <div className="space-y-2">
               {PRIVACY_OPTIONS.map((option) => {
                 const Icon = option.icon;
@@ -305,16 +305,16 @@ export default function ClubSettingsPage() {
                     onClick={() => setPrivacy(option.value)}
                     className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
                       privacy === option.value
-                        ? 'border-amber-500 bg-amber-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                     }`}
                   >
                     <Icon className={`w-5 h-5 ${privacy === option.value ? 'text-amber-500' : 'text-gray-400'}`} />
                     <div>
-                      <p className={`font-medium ${privacy === option.value ? 'text-amber-700' : 'text-gray-900'}`}>
+                      <p className={`font-medium ${privacy === option.value ? 'text-amber-700 dark:text-amber-400' : 'text-gray-900 dark:text-white'}`}>
                         {option.label}
                       </p>
-                      <p className="text-sm text-gray-500">{option.description}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{option.description}</p>
                     </div>
                   </button>
                 );
@@ -324,29 +324,29 @@ export default function ClubSettingsPage() {
 
           {/* Advanced */}
           <div className="p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">Advanced</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Advanced</h2>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Maximum Members (optional)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Maximum Members (optional)</label>
               <input
                 type="number"
                 value={maxMembers}
                 onChange={(e) => setMaxMembers(e.target.value)}
                 placeholder="Leave empty for unlimited"
                 min="1"
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
               />
-              <p className="text-xs text-gray-500 mt-1">Set a limit on how many members can join</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Set a limit on how many members can join</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image URL (optional)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cover Image URL (optional)</label>
               <input
                 type="url"
                 value={coverImage}
                 onChange={(e) => setCoverImage(e.target.value)}
                 placeholder="https://..."
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
               />
             </div>
           </div>
@@ -369,7 +369,7 @@ export default function ClubSettingsPage() {
             {club.myRole === 'OWNER' && (
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
                 Delete Club
@@ -381,24 +381,24 @@ export default function ClubSettingsPage() {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl border border-white/10 p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                <AlertTriangle className="w-6 h-6 text-red-600" />
+              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">Delete Club?</h3>
-                <p className="text-sm text-gray-500">This action cannot be undone</p>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Delete Club?</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">This action cannot be undone</p>
               </div>
             </div>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               All posts, members, and data associated with <strong>{club.name}</strong> will be permanently deleted.
             </p>
             <div className="flex items-center justify-end gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
               >
                 Cancel
               </button>

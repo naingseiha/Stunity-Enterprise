@@ -197,7 +197,7 @@ export default function TeacherDetailPage(
 
   if (!user || !school) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center transition-colors">
         <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
       </div>
     );
@@ -205,7 +205,7 @@ export default function TeacherDetailPage(
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
         <div className="lg:ml-64 p-8">
           <div className="flex items-center justify-center h-64">
@@ -218,15 +218,15 @@ export default function TeacherDetailPage(
 
   if (error || !teacher) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
         <div className="lg:ml-64 p-8">
           <div className="text-center py-12">
             <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <p className="text-red-600">{error || 'Teacher not found'}</p>
+            <p className="text-red-600 dark:text-red-400">{error || 'Teacher not found'}</p>
             <button
               onClick={() => router.push(`/${locale}/teachers`)}
-              className="mt-4 text-orange-600 hover:underline"
+              className="mt-4 text-orange-600 dark:text-orange-400 hover:underline"
             >
               Back to Teachers
             </button>
@@ -241,12 +241,12 @@ export default function TeacherDetailPage(
     .filter((s, i, arr) => arr.findIndex((x) => x.id === s.id) === i);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-500">
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
       <div className="lg:ml-64 min-h-screen">
         {/* Header */}
-        <div className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white p-8">
+        <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-orange-600 dark:from-amber-600 dark:via-orange-600 dark:to-red-700 text-white p-8 shadow-lg">
           <button
             onClick={() => router.push(`/${locale}/teachers`)}
             className="flex items-center gap-2 text-white/80 hover:text-white mb-6 transition-colors"
@@ -258,18 +258,18 @@ export default function TeacherDetailPage(
           <div className="flex items-start gap-6">
             {teacher.photoUrl ? (
               <img
-                src={teacher.photoUrl}
+                src={`${process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004'}${teacher.photoUrl}`}
                 alt={`${teacher.firstName} ${teacher.lastName}`}
-                className="w-24 h-24 rounded-2xl object-cover border-4 border-white/30"
+                className="w-24 h-24 rounded-2xl object-cover border-4 border-white/30 shadow-xl"
               />
             ) : (
-              <div className="w-24 h-24 bg-white/20 rounded-2xl flex items-center justify-center text-4xl font-bold backdrop-blur-sm">
+              <div className="w-24 h-24 bg-white/20 rounded-2xl flex items-center justify-center text-4xl font-bold backdrop-blur-sm border border-white/20 shadow-xl">
                 {teacher.firstName[0]}
                 {teacher.lastName[0]}
               </div>
             )}
             <div className="flex-1">
-              <h1 className="text-3xl font-bold">
+              <h1 className="text-3xl font-bold tracking-tight">
                 {teacher.firstName} {teacher.lastName}
               </h1>
               {teacher.khmerName && (
@@ -277,25 +277,25 @@ export default function TeacherDetailPage(
                   {teacher.khmerName}
                 </p>
               )}
-              <div className="flex flex-wrap gap-4 mt-4">
+              <div className="flex flex-wrap gap-3 mt-4">
                 {teacher.position && (
-                  <span className="px-3 py-1 bg-white/20 rounded-full text-sm">
+                  <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm border border-white/10">
                     {teacher.position}
                   </span>
                 )}
                 {teacher.department && (
-                  <span className="px-3 py-1 bg-white/20 rounded-full text-sm">
+                  <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm border border-white/10">
                     {teacher.department}
                   </span>
                 )}
                 {teacher.employeeId && (
-                  <span className="px-3 py-1 bg-white/20 rounded-full text-sm">
+                  <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm border border-white/10">
                     ID: {teacher.employeeId}
                   </span>
                 )}
                 <button
                   onClick={() => router.push(`/${params?.locale || 'en'}/teachers/${teacher.id}/subjects`)}
-                  className="px-4 py-1 bg-white/30 hover:bg-white/40 rounded-full text-sm font-medium flex items-center gap-2 transition-colors"
+                  className="px-4 py-1 bg-white/30 hover:bg-white/40 rounded-full text-sm font-medium flex items-center gap-2 transition-colors border border-white/20"
                 >
                   <BookOpen className="w-4 h-4" />
                   Manage Subjects
@@ -306,7 +306,7 @@ export default function TeacherDetailPage(
         </div>
 
         {/* Tabs */}
-        <div className="bg-white border-b px-8">
+        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-8 transition-colors">
           <div className="flex gap-1">
             {[
               { id: 'overview', label: 'Overview', icon: User },
@@ -317,8 +317,8 @@ export default function TeacherDetailPage(
                 onClick={() => handleTabChange(tab.id as any)}
                 className={`flex items-center gap-2 px-6 py-4 border-b-2 font-medium transition-colors ${
                   activeTab === tab.id
-                    ? 'border-orange-500 text-orange-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                    ? 'border-orange-500 text-orange-600 dark:text-orange-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
                 <tab.icon className="w-4 h-4" />
@@ -336,39 +336,39 @@ export default function TeacherDetailPage(
               {/* Left Column - Contact & Info */}
               <div className="space-y-6">
                 {/* Contact Info */}
-                <div className="bg-white rounded-2xl shadow-sm border p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Contact Information</h3>
                   <div className="space-y-4">
                     {teacher.email && (
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
-                          <Mail className="w-5 h-5 text-orange-600" />
+                        <div className="w-10 h-10 bg-orange-100 dark:bg-orange-500/10 rounded-xl flex items-center justify-center">
+                          <Mail className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500">Email</p>
-                          <p className="text-sm font-medium">{teacher.email}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Email</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">{teacher.email}</p>
                         </div>
                       </div>
                     )}
                     {teacher.phone && (
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                          <Phone className="w-5 h-5 text-blue-600" />
+                        <div className="w-10 h-10 bg-blue-100 dark:bg-blue-500/10 rounded-xl flex items-center justify-center">
+                          <Phone className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500">Phone</p>
-                          <p className="text-sm font-medium">{teacher.phone}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Phone</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">{teacher.phone}</p>
                         </div>
                       </div>
                     )}
                     {teacher.gender && (
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-                          <User className="w-5 h-5 text-purple-600" />
+                        <div className="w-10 h-10 bg-purple-100 dark:bg-purple-500/10 rounded-xl flex items-center justify-center">
+                          <User className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500">Gender</p>
-                          <p className="text-sm font-medium">{teacher.gender}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Gender</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white capitalize">{teacher.gender.toLowerCase()}</p>
                         </div>
                       </div>
                     )}
@@ -376,23 +376,23 @@ export default function TeacherDetailPage(
                 </div>
 
                 {/* Qualifications */}
-                <div className="bg-white rounded-2xl shadow-sm border p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Qualifications</h3>
+                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Qualifications</h3>
                   <div className="space-y-3">
                     {teacher.qualification && (
-                      <div className="p-3 bg-green-50 rounded-xl">
-                        <p className="text-xs text-green-600 font-medium">Qualification</p>
-                        <p className="text-sm text-gray-900">{teacher.qualification}</p>
+                      <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl border border-emerald-100 dark:border-emerald-500/20">
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Qualification</p>
+                        <p className="text-sm text-gray-900 dark:text-white mt-0.5">{teacher.qualification}</p>
                       </div>
                     )}
                     {teacher.specialization && (
-                      <div className="p-3 bg-blue-50 rounded-xl">
-                        <p className="text-xs text-blue-600 font-medium">Specialization</p>
-                        <p className="text-sm text-gray-900">{teacher.specialization}</p>
+                      <div className="p-3 bg-blue-50 dark:bg-blue-500/10 rounded-xl border border-blue-100 dark:border-blue-500/20">
+                        <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Specialization</p>
+                        <p className="text-sm text-gray-900 dark:text-white mt-0.5">{teacher.specialization}</p>
                       </div>
                     )}
                     {!teacher.qualification && !teacher.specialization && (
-                      <p className="text-gray-500 text-sm">No qualifications recorded</p>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">No qualifications recorded</p>
                     )}
                   </div>
                 </div>
@@ -402,25 +402,25 @@ export default function TeacherDetailPage(
               <div className="space-y-6">
                 {/* Homeroom */}
                 {teacher.homeroomClass && (
-                  <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-2xl border border-orange-200 p-6">
+                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10 rounded-2xl border border-amber-200 dark:border-amber-500/30 p-6">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
+                      <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center shadow-md">
                         <School className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <p className="text-xs text-orange-600 font-medium">Homeroom Teacher</p>
-                        <h3 className="text-lg font-bold text-gray-900">
+                        <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">Homeroom Teacher</p>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                           {teacher.homeroomClass.name}
                         </h3>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
                       <span className="flex items-center gap-1">
-                        <Users className="w-4 h-4" />
+                        <Users className="w-4 h-4 text-amber-500" />
                         {teacher.homeroomClass._count.students} students
                       </span>
                       <span className="flex items-center gap-1">
-                        <GraduationCap className="w-4 h-4" />
+                        <GraduationCap className="w-4 h-4 text-amber-500" />
                         Grade {teacher.homeroomClass.gradeLevel}
                         {teacher.homeroomClass.section}
                       </span>
@@ -429,27 +429,27 @@ export default function TeacherDetailPage(
                 )}
 
                 {/* Classes Teaching */}
-                <div className="bg-white rounded-2xl shadow-sm border p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                     Classes Teaching ({teacher.teacherClasses.length})
                   </h3>
                   {teacher.teacherClasses.length === 0 ? (
-                    <p className="text-gray-500 text-sm">No classes assigned</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">No classes assigned</p>
                   ) : (
                     <div className="space-y-3">
                       {teacher.teacherClasses.map((tc) => (
                         <div
                           key={tc.class.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer"
+                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer border border-transparent dark:border-gray-700/50"
                           onClick={() => router.push(`/${locale}/classes/${tc.class.id}`)}
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                              <GraduationCap className="w-4 h-4 text-blue-600" />
+                            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-500/20 rounded-lg flex items-center justify-center">
+                              <GraduationCap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                             </div>
-                            <span className="font-medium text-gray-900">{tc.class.name}</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{tc.class.name}</span>
                           </div>
-                          <div className="flex items-center gap-3 text-sm text-gray-500">
+                          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
                             <span>{tc.class._count.students} students</span>
                             <ChevronRight className="w-4 h-4" />
                           </div>
@@ -462,41 +462,41 @@ export default function TeacherDetailPage(
 
               {/* Right Column - Subjects */}
               <div>
-                <div className="bg-white rounded-2xl shadow-sm border p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                     Subjects Teaching ({uniqueSubjects.length})
                   </h3>
                   {uniqueSubjects.length === 0 ? (
-                    <p className="text-gray-500 text-sm">No subjects assigned</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">No subjects assigned</p>
                   ) : (
                     <div className="space-y-3">
                       {uniqueSubjects.map((subject) => (
                         <div
                           key={subject.id}
-                          className="p-3 bg-gray-50 rounded-xl"
+                          className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700/50"
                         >
                           <div className="flex items-start justify-between">
                             <div>
-                              <p className="font-medium text-gray-900">{subject.name}</p>
+                              <p className="font-medium text-gray-900 dark:text-white">{subject.name}</p>
                               {subject.nameKh && (
                                 <p
-                                  className="text-sm text-gray-500"
+                                  className="text-sm text-gray-500 dark:text-gray-400"
                                   style={{ fontFamily: 'Battambang, sans-serif' }}
                                 >
                                   {subject.nameKh}
                                 </p>
                               )}
                             </div>
-                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 rounded text-xs font-medium">
                               {subject.code}
                             </span>
                           </div>
                           <div className="flex gap-2 mt-2">
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
                               Grade {subject.grade}
                             </span>
-                            <span className="text-xs text-gray-400">•</span>
-                            <span className="text-xs text-gray-500 capitalize">
+                            <span className="text-xs text-gray-400 dark:text-gray-600">•</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
                               {subject.category?.toLowerCase()}
                             </span>
                           </div>
@@ -520,40 +520,40 @@ export default function TeacherDetailPage(
                 <div>
                   {/* Summary Stats */}
                   <div className="grid md:grid-cols-3 gap-6 mb-8">
-                    <div className="bg-white rounded-2xl shadow-sm border p-6">
+                    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
-                          <Calendar className="w-6 h-6 text-orange-600" />
+                        <div className="w-12 h-12 bg-orange-100 dark:bg-orange-500/10 rounded-xl flex items-center justify-center">
+                          <Calendar className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Years Teaching</p>
-                          <p className="text-2xl font-bold text-gray-900">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">Years Teaching</p>
+                          <p className="text-2xl font-bold text-gray-900 dark:text-white">
                             {historyData.summary.totalYears}
                           </p>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-white rounded-2xl shadow-sm border p-6">
+                    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                          <GraduationCap className="w-6 h-6 text-blue-600" />
+                        <div className="w-12 h-12 bg-blue-100 dark:bg-blue-500/10 rounded-xl flex items-center justify-center">
+                          <GraduationCap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Total Classes</p>
-                          <p className="text-2xl font-bold text-gray-900">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">Total Classes</p>
+                          <p className="text-2xl font-bold text-gray-900 dark:text-white">
                             {historyData.summary.totalClasses}
                           </p>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-white rounded-2xl shadow-sm border p-6">
+                    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                          <BookOpen className="w-6 h-6 text-purple-600" />
+                        <div className="w-12 h-12 bg-purple-100 dark:bg-purple-500/10 rounded-xl flex items-center justify-center">
+                          <BookOpen className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Subjects Taught</p>
-                          <p className="text-2xl font-bold text-gray-900">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">Subjects Taught</p>
+                          <p className="text-2xl font-bold text-gray-900 dark:text-white">
                             {historyData.summary.totalSubjects}
                           </p>
                         </div>
@@ -563,23 +563,23 @@ export default function TeacherDetailPage(
 
                   {/* History Timeline */}
                   {historyData.history.length === 0 ? (
-                    <div className="text-center py-12 bg-white rounded-2xl border">
-                      <History className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500">No assignment history found</p>
+                    <div className="text-center py-12 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 transition-colors">
+                      <History className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                      <p className="text-gray-500 dark:text-gray-400">No assignment history found</p>
                     </div>
                   ) : (
                     <div className="space-y-6">
                       {historyData.history.map((yearHistory, index) => (
                         <div
                           key={yearHistory.academicYear.id}
-                          className="bg-white rounded-2xl shadow-sm border overflow-hidden"
+                          className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden transition-colors"
                         >
                           {/* Year Header */}
                           <div
                             className={`p-6 ${
                               yearHistory.academicYear.isCurrent
-                                ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white'
-                                : 'bg-gray-50 border-b'
+                                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+                                : 'bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800'
                             }`}
                           >
                             <div className="flex items-center justify-between">
@@ -588,7 +588,7 @@ export default function TeacherDetailPage(
                                   className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                                     yearHistory.academicYear.isCurrent
                                       ? 'bg-white/20'
-                                      : 'bg-white shadow-sm'
+                                      : 'bg-white dark:bg-gray-900 shadow-sm'
                                   }`}
                                 >
                                   <Calendar
@@ -604,7 +604,7 @@ export default function TeacherDetailPage(
                                     className={`text-xl font-bold ${
                                       yearHistory.academicYear.isCurrent
                                         ? 'text-white'
-                                        : 'text-gray-900'
+                                        : 'text-gray-900 dark:text-white'
                                     }`}
                                   >
                                     {yearHistory.academicYear.name}
@@ -613,7 +613,7 @@ export default function TeacherDetailPage(
                                     className={`text-sm ${
                                       yearHistory.academicYear.isCurrent
                                         ? 'text-white/80'
-                                        : 'text-gray-500'
+                                        : 'text-gray-500 dark:text-gray-400'
                                     }`}
                                   >
                                     {new Date(
@@ -627,10 +627,10 @@ export default function TeacherDetailPage(
                                 </div>
                               </div>
                               <div
-                                className={`flex gap-4 text-sm ${
+                                className={`flex gap-4 text-sm font-medium ${
                                   yearHistory.academicYear.isCurrent
                                     ? 'text-white/90'
-                                    : 'text-gray-600'
+                                    : 'text-gray-600 dark:text-gray-400'
                                 }`}
                               >
                                 <span>{yearHistory.stats.totalClasses} classes</span>
@@ -644,30 +644,30 @@ export default function TeacherDetailPage(
                           <div className="p-6 grid md:grid-cols-2 gap-6">
                             {/* Classes */}
                             <div>
-                              <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                                 <GraduationCap className="w-4 h-4" />
                                 Classes ({yearHistory.classes.length})
                               </h4>
                               {yearHistory.classes.length === 0 ? (
-                                <p className="text-sm text-gray-400">No classes assigned</p>
+                                <p className="text-sm text-gray-400 dark:text-gray-500">No classes assigned</p>
                               ) : (
                                 <div className="space-y-2">
                                   {yearHistory.classes.map((cls) => (
                                     <div
                                       key={cls.id}
-                                      className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                                      className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700/50"
                                     >
                                       <div className="flex items-center gap-2">
-                                        <span className="font-medium text-gray-900">
+                                        <span className="font-medium text-gray-900 dark:text-white">
                                           {cls.name}
                                         </span>
                                         {cls.isHomeroom && (
-                                          <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs">
+                                          <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded text-xs">
                                             Homeroom
                                           </span>
                                         )}
                                       </div>
-                                      <span className="text-xs text-gray-500">
+                                      <span className="text-xs text-gray-500 dark:text-gray-400">
                                         {cls.studentCount} students
                                       </span>
                                     </div>
@@ -678,18 +678,18 @@ export default function TeacherDetailPage(
 
                             {/* Subjects */}
                             <div>
-                              <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                                 <BookOpen className="w-4 h-4" />
                                 Subjects ({yearHistory.subjects.length})
                               </h4>
                               {yearHistory.subjects.length === 0 ? (
-                                <p className="text-sm text-gray-400">No subjects assigned</p>
+                                <p className="text-sm text-gray-400 dark:text-gray-500">No subjects assigned</p>
                               ) : (
                                 <div className="flex flex-wrap gap-2">
                                   {yearHistory.subjects.map((subject) => (
                                     <span
                                       key={subject.id}
-                                      className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm"
+                                      className="px-3 py-1 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded-full text-sm border border-blue-100 dark:border-blue-500/20"
                                     >
                                       {subject.name} ({subject.code})
                                     </span>
@@ -705,8 +705,8 @@ export default function TeacherDetailPage(
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">Failed to load history</p>
+                  <AlertCircle className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-500 dark:text-gray-400">Failed to load history</p>
                 </div>
               )}
             </div>

@@ -159,18 +159,18 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="lg:ml-64 min-h-screen bg-slate-50 dark:bg-gray-900/50">
+      <div className="lg:ml-64 min-h-screen bg-slate-50 dark:bg-gray-950 transition-colors duration-500">
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
           <AnimatedContent animation="fade" delay={0}>
             <div className="mb-8">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
                   <nav className="flex items-center gap-2 text-sm text-slate-500 dark:text-gray-400 mb-2">
-                    <Link href={`/${locale}/dashboard`} className="hover:text-slate-700 dark:hover:text-gray-200">Dashboard</Link>
-                    <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                    <Link href={`/${locale}/dashboard`} className="hover:text-slate-700 dark:hover:text-gray-200 transition-colors">Dashboard</Link>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-300 dark:text-gray-600" />
                     <span className="font-medium text-slate-900 dark:text-white">Teachers</span>
                   </nav>
-                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Teachers</h1>
+                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Teachers</h1>
                   <p className="text-slate-500 dark:text-gray-400 mt-1">
                     Manage your teaching staff and their assignments
                   </p>
@@ -180,14 +180,14 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                   <button
                     onClick={() => mutate()}
                     disabled={isValidating}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all disabled:opacity-50"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-sm disabled:opacity-50"
                   >
                     <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
                     Refresh
                   </button>
                   <button
                     onClick={handleAdd}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white dark:text-gray-900 bg-gray-900 dark:bg-white rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-all shadow-sm"
                   >
                     <Plus className="h-4 w-4" />
                     Add Teacher
@@ -200,47 +200,47 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
           {/* Stats Cards */}
           <AnimatedContent animation="slide-up" delay={50}>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Total Teachers</p>
-                    <p className="text-2xl font-semibold text-gray-900 mt-1">{totalCount}</p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Teachers</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">{totalCount}</p>
                   </div>
-                  <div className="h-10 w-10 bg-purple-50 rounded-lg flex items-center justify-center">
-                    <UserCog className="h-5 w-5 text-purple-600" />
+                  <div className="h-10 w-10 bg-purple-50 dark:bg-purple-500/10 rounded-lg flex items-center justify-center">
+                    <UserCog className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Male</p>
-                    <p className="text-2xl font-semibold text-gray-900 mt-1">{maleCount}</p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Male</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">{maleCount}</p>
                   </div>
-                  <div className="h-10 w-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                    <Users className="h-5 w-5 text-blue-600" />
+                  <div className="h-10 w-10 bg-blue-50 dark:bg-blue-500/10 rounded-lg flex items-center justify-center">
+                    <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Female</p>
-                    <p className="text-2xl font-semibold text-gray-900 mt-1">{femaleCount}</p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Female</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">{femaleCount}</p>
                   </div>
-                  <div className="h-10 w-10 bg-pink-50 rounded-lg flex items-center justify-center">
-                    <Users className="h-5 w-5 text-pink-600" />
+                  <div className="h-10 w-10 bg-pink-50 dark:bg-pink-500/10 rounded-lg flex items-center justify-center">
+                    <Users className="h-5 w-5 text-pink-600 dark:text-pink-400" />
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Academic Year</p>
-                    <p className="text-2xl font-semibold text-gray-900 mt-1">{selectedYear?.name || '-'}</p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Academic Year</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">{selectedYear?.name || '-'}</p>
                   </div>
-                  <div className="h-10 w-10 bg-green-50 rounded-lg flex items-center justify-center">
-                    <BookOpen className="h-5 w-5 text-green-600" />
+                  <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg flex items-center justify-center">
+                    <BookOpen className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                   </div>
                 </div>
               </div>
@@ -249,20 +249,20 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
 
           {/* Main Content Card */}
           <AnimatedContent animation="slide-up" delay={100}>
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm shadow-gray-200/50 dark:shadow-none">
 
               {/* Toolbar */}
-              <div className="px-5 py-4 border-b border-gray-100">
+              <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                   {/* Search */}
                   <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
                     <input
                       type="text"
                       placeholder="Search teachers..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full h-10 pl-10 pr-4 text-sm bg-gray-50 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-gray-900 transition-all"
+                      className="w-full h-10 pl-10 pr-4 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border-0 rounded-lg focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all placeholder-gray-400 dark:placeholder-gray-500"
                     />
                   </div>
 
@@ -276,32 +276,32 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b border-gray-100">
-                          <th className="px-4 py-3 text-left"><div className="w-16 h-3 bg-gray-100 rounded" /></th>
-                          <th className="px-4 py-3 text-left"><div className="w-14 h-3 bg-gray-100 rounded" /></th>
-                          <th className="px-4 py-3 text-left"><div className="w-14 h-3 bg-gray-100 rounded" /></th>
-                          <th className="px-4 py-3 text-left"><div className="w-16 h-3 bg-gray-100 rounded" /></th>
-                          <th className="px-4 py-3 text-left"><div className="w-20 h-3 bg-gray-100 rounded" /></th>
-                          <th className="px-4 py-3 text-right"><div className="w-16 h-3 bg-gray-100 rounded ml-auto" /></th>
+                        <tr className="border-b border-gray-100 dark:border-gray-800">
+                          <th className="px-4 py-3 text-left"><div className="w-16 h-3 bg-gray-100 dark:bg-gray-800 rounded" /></th>
+                          <th className="px-4 py-3 text-left"><div className="w-14 h-3 bg-gray-100 dark:bg-gray-800 rounded" /></th>
+                          <th className="px-4 py-3 text-left"><div className="w-14 h-3 bg-gray-100 dark:bg-gray-800 rounded" /></th>
+                          <th className="px-4 py-3 text-left"><div className="w-16 h-3 bg-gray-100 dark:bg-gray-800 rounded" /></th>
+                          <th className="px-4 py-3 text-left"><div className="w-20 h-3 bg-gray-100 dark:bg-gray-800 rounded" /></th>
+                          <th className="px-4 py-3 text-right"><div className="w-16 h-3 bg-gray-100 dark:bg-gray-800 rounded ml-auto" /></th>
                         </tr>
                       </thead>
                       <tbody>
                         {Array.from({ length: 10 }).map((_, i) => (
-                          <tr key={i} className="border-b border-gray-50">
+                          <tr key={i} className="border-b border-gray-50 dark:border-gray-800/50">
                             <td className="px-4 py-4">
                               <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 bg-gray-100 rounded-full animate-pulse" />
+                                <div className="w-9 h-9 bg-gray-100 dark:bg-gray-800 rounded-full animate-pulse" />
                                 <div className="space-y-1.5">
-                                  <div className="w-28 h-4 bg-gray-100 rounded animate-pulse" />
-                                  <div className="w-20 h-3 bg-gray-50 rounded animate-pulse" />
+                                  <div className="w-28 h-4 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+                                  <div className="w-20 h-3 bg-gray-50 dark:bg-gray-800/50 rounded animate-pulse" />
                                 </div>
                               </div>
                             </td>
-                            <td className="px-4 py-4"><div className="w-16 h-4 bg-gray-100 rounded animate-pulse" /></td>
-                            <td className="px-4 py-4"><div className="w-12 h-5 bg-gray-100 rounded animate-pulse" /></td>
-                            <td className="px-4 py-4"><div className="w-20 h-4 bg-gray-100 rounded animate-pulse" /></td>
-                            <td className="px-4 py-4"><div className="w-28 h-4 bg-gray-100 rounded animate-pulse" /></td>
-                            <td className="px-4 py-4"><div className="w-20 h-8 bg-gray-100 rounded ml-auto animate-pulse" /></td>
+                            <td className="px-4 py-4"><div className="w-16 h-4 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" /></td>
+                            <td className="px-4 py-4"><div className="w-12 h-5 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" /></td>
+                            <td className="px-4 py-4"><div className="w-20 h-4 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" /></td>
+                            <td className="px-4 py-4"><div className="w-28 h-4 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" /></td>
+                            <td className="px-4 py-4"><div className="w-20 h-8 bg-gray-100 dark:bg-gray-800 rounded ml-auto animate-pulse" /></td>
                           </tr>
                         ))}
                       </tbody>
@@ -321,14 +321,14 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
 
                 {isEmpty ? (
                   <div className="px-6 py-16 text-center">
-                    <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-100 rounded-full mb-4">
-                      <UserCog className="w-7 h-7 text-gray-400" />
+                    <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
+                      <UserCog className="w-7 h-7 text-gray-400 dark:text-gray-500" />
                     </div>
-                    <h3 className="text-sm font-medium text-gray-900 mb-1">No teachers found</h3>
-                    <p className="text-sm text-gray-500 mb-4">Get started by adding your first teacher</p>
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-1">No teachers found</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Get started by adding your first teacher</p>
                     <button
                       onClick={handleAdd}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all"
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white dark:text-gray-900 bg-gray-900 dark:bg-white rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-all"
                     >
                       <Plus className="w-4 h-4" />
                       Add Teacher
@@ -340,20 +340,20 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead>
-                          <tr className="border-b border-gray-100">
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Teacher</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">ID</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Gender</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Position</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Contact</th>
-                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Actions</th>
+                          <tr className="border-b border-gray-100 dark:border-gray-800">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Teacher</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">ID</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Gender</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Position</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Contact</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Actions</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50">
+                        <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
                           {teachers.map((teacher) => (
                             <tr
                               key={teacher.id}
-                              className="group transition-colors hover:bg-gray-50/50"
+                              className="group transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-800/30"
                             >
                               {/* Teacher Info */}
                               <td className="px-4 py-3">
@@ -362,7 +362,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                                     <img
                                       src={`${process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004'}${teacher.photoUrl}`}
                                       alt=""
-                                      className="w-9 h-9 rounded-full object-cover"
+                                      className="w-9 h-9 rounded-full object-cover ring-1 ring-gray-200 dark:ring-gray-700"
                                     />
                                   ) : (
                                     <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium text-white ${teacher.gender === 'MALE' ? 'bg-blue-500' : 'bg-pink-500'
@@ -371,11 +371,11 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                                     </div>
                                   )}
                                   <div className="min-w-0">
-                                    <p className="text-sm font-medium text-gray-900 truncate">
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                                       {teacher.firstNameLatin} {teacher.lastNameLatin}
                                     </p>
                                     {teacher.firstNameKhmer && (
-                                      <p className="text-xs text-gray-500 truncate">
+                                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                                         {teacher.firstNameKhmer} {teacher.lastNameKhmer}
                                       </p>
                                     )}
@@ -385,22 +385,23 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
 
                               {/* Teacher ID */}
                               <td className="px-4 py-3">
-                                <span className="text-sm text-gray-600 font-mono">{teacher.teacherId}</span>
+                                <span className="text-sm text-gray-600 dark:text-gray-400 font-mono">{teacher.teacherId}</span>
                               </td>
 
                               {/* Gender */}
                               <td className="px-4 py-3">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${teacher.gender === 'MALE'
-                                  ? 'bg-blue-50 text-blue-700'
-                                  : 'bg-pink-50 text-pink-700'
-                                  }`}>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
+                                  teacher.gender === 'MALE'
+                                    ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-100 dark:border-blue-500/20'
+                                    : 'bg-pink-50 dark:bg-pink-500/10 text-pink-700 dark:text-pink-400 border-pink-100 dark:border-pink-500/20'
+                                }`}>
                                   {teacher.gender === 'MALE' ? 'Male' : 'Female'}
                                 </span>
                               </td>
 
                               {/* Position */}
                               <td className="px-4 py-3">
-                                <span className="text-sm text-gray-600">
+                                <span className="text-sm text-gray-600 dark:text-gray-400">
                                   {teacher.position || '-'}
                                 </span>
                               </td>
@@ -409,19 +410,19 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                               <td className="px-4 py-3">
                                 <div className="space-y-0.5">
                                   {teacher.phoneNumber && (
-                                    <p className="text-sm text-gray-600 flex items-center gap-1.5">
-                                      <Phone className="w-3 h-3 text-gray-400" />
+                                    <p className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-1.5">
+                                      <Phone className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                                       {teacher.phoneNumber}
                                     </p>
                                   )}
                                   {teacher.email && (
-                                    <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                                      <Mail className="w-3 h-3 text-gray-400" />
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                                      <Mail className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                                       {teacher.email}
                                     </p>
                                   )}
                                   {!teacher.phoneNumber && !teacher.email && (
-                                    <span className="text-sm text-gray-400">-</span>
+                                    <span className="text-sm text-gray-400 dark:text-gray-600">-</span>
                                   )}
                                 </div>
                               </td>
@@ -432,14 +433,14 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                                   <button
                                     onClick={() => handleGenerateCode(teacher)}
                                     disabled={isGenerating === teacher.id}
-                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors disabled:opacity-50"
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-md transition-colors disabled:opacity-50"
                                     title="Generate Claim Code"
                                   >
                                     <Ticket className="w-4 h-4" />
                                   </button>
                                   <button
                                     onClick={() => router.push(`/${locale}/teachers/${teacher.id}`)}
-                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
                                     title="View"
                                   >
                                     <Eye className="w-4 h-4" />
@@ -449,21 +450,21 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                                       setSelectedTeacher(teacher);
                                       setShowResetModal(true);
                                     }}
-                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors"
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-md transition-colors"
                                     title="Reset Password"
                                   >
                                     <Lock className="w-4 h-4" />
                                   </button>
                                   <button
                                     onClick={() => handleEdit(teacher)}
-                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
                                     title="Edit"
                                   >
                                     <Edit className="w-4 h-4" />
                                   </button>
                                   <button
                                     onClick={() => handleDelete(teacher.id)}
-                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-md transition-colors"
                                     title="Delete"
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -478,17 +479,17 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
 
                     {/* Pagination Footer */}
                     {totalPages > 1 && (
-                      <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
-                        <p className="text-sm text-gray-500">
-                          Showing <span className="font-medium text-gray-900">{(page - 1) * ITEMS_PER_PAGE + 1}</span>–
-                          <span className="font-medium text-gray-900">{Math.min(page * ITEMS_PER_PAGE, totalCount)}</span> of{' '}
-                          <span className="font-medium text-gray-900">{totalCount}</span>
+                      <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Showing <span className="font-medium text-gray-900 dark:text-white">{(page - 1) * ITEMS_PER_PAGE + 1}</span>–
+                          <span className="font-medium text-gray-900 dark:text-white">{Math.min(page * ITEMS_PER_PAGE, totalCount)}</span> of{' '}
+                          <span className="font-medium text-gray-900 dark:text-white">{totalCount}</span>
                         </p>
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => setPage(Math.max(1, page - 1))}
                             disabled={page === 1}
-                            className="inline-flex items-center justify-center h-8 w-8 text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            className="inline-flex items-center justify-center h-8 w-8 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                           >
                             <ChevronLeft className="w-4 h-4" />
                           </button>
@@ -507,10 +508,11 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                               <button
                                 key={pageNum}
                                 onClick={() => setPage(pageNum)}
-                                className={`inline-flex items-center justify-center h-8 min-w-[32px] px-2 text-sm font-medium rounded-md transition-colors ${page === pageNum
-                                  ? 'bg-gray-900 text-white'
-                                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
-                                  }`}
+                                className={`inline-flex items-center justify-center h-8 min-w-[32px] px-2 text-sm font-medium rounded-md transition-colors ${
+                                  page === pageNum
+                                    ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
+                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+                                }`}
                               >
                                 {pageNum}
                               </button>
@@ -519,7 +521,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                           <button
                             onClick={() => setPage(Math.min(totalPages, page + 1))}
                             disabled={page === totalPages}
-                            className="inline-flex items-center justify-center h-8 w-8 text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            className="inline-flex items-center justify-center h-8 w-8 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                           >
                             <ChevronRight className="w-4 h-4" />
                           </button>

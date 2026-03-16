@@ -11,8 +11,9 @@ import {
     StatusBar,
     Platform,
     Modal,
-    TextInput
-    , Animated
+    TextInput,
+    Linking,
+    Animated
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -256,23 +257,53 @@ export const AttendanceCheckInScreen = () => {
         }
     }, []);
 
-    const checkPermissions = async () => {
+    const openLocationSettings = useCallback(async () => {
         try {
-            let { status } = await Location.getForegroundPermissionsAsync();
-            if (status !== 'granted') {
-                const req = await Promise.race([
-                    Location.requestForegroundPermissionsAsync(),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('perm_timeout')), 3000))
-                ]) as any;
-                status = req.status;
+            await Linking.openSettings();
+        } catch (error) {
+            Alert.alert(t('common.error'), t('attendance.alerts.enableLocationMessage'));
+        }
+    }, [t]);
+
+    const promptEnableLocation = useCallback((message?: string) => {
+        Alert.alert(
+            t('common.error'),
+            message || t('attendance.alerts.enableLocationMessage'),
+            [
+                { text: t('common.cancel'), style: 'cancel' },
+                {
+                    text: t('common.settings'),
+                    onPress: () => {
+                        void openLocationSettings();
+                    }
+                }
+            ]
+        );
+    }, [openLocationSettings, t]);
+
+    type PermissionCheckResult = {
+        granted: boolean;
+        canAskAgain: boolean;
+    };
+
+    const checkPermissions = async (): Promise<PermissionCheckResult> => {
+        try {
+            let permission = await Location.getForegroundPermissionsAsync();
+            if (permission.status !== 'granted' && permission.canAskAgain) {
+                permission = await Location.requestForegroundPermissionsAsync();
             }
-            if (status !== 'granted') {
-                return false;
-            }
-            setLocationPermGranted(true);
-            return true;
+            const granted = permission.status === 'granted';
+            setLocationPermGranted(granted);
+            return {
+                granted,
+                canAskAgain: permission.canAskAgain ?? false
+            };
         } catch (e) {
-            return false;
+            setLocationPermGranted(false);
+            return {
+                granted: false,
+                canAskAgain: false
+            };
         }
     };
 
@@ -285,8 +316,18 @@ export const AttendanceCheckInScreen = () => {
             }
             setGpsCoords(null);
 
-            const hasPerm = await checkPermissions();
-            if (hasPerm) {
+            const { granted, canAskAgain } = await checkPermissions();
+            if (granted) {
+                const servicesEnabled = await Location.hasServicesEnabledAsync();
+                if (!servicesEnabled) {
+                    setGpsCoords(null);
+                    setGpsStatus('limited');
+                    if (isManualRefresh) {
+                        promptEnableLocation();
+                    }
+                    return;
+                }
+
                 let loc = null;
 
                 // Fast resolve: check last known position first (with timeout)
@@ -301,15 +342,20 @@ export const AttendanceCheckInScreen = () => {
                     }
                 }
 
-                // Fallback: try getting current position with a 4000ms timeout
+                const locationTimeoutMs = isManualRefresh ? 10000 : 4000;
+                const locationAccuracy = isManualRefresh
+                    ? Location.Accuracy.High
+                    : Location.Accuracy.Balanced;
+
+                // Fallback: get current position with stricter settings on manual refresh
                 if (!loc) {
                     try {
                         const locationPromise = Location.getCurrentPositionAsync({
-                            accuracy: Location.Accuracy.Balanced
+                            accuracy: locationAccuracy
                         });
 
-                        const timeoutPromise = new Promise((_, reject) =>
-                            setTimeout(() => reject(new Error('Location timeout')), 4000)
+                        const timeoutPromise = new Promise<never>((_, reject) =>
+                            setTimeout(() => reject(new Error('location_timeout')), locationTimeoutMs)
                         );
 
                         loc = await Promise.race([locationPromise, timeoutPromise]) as Location.LocationObject;
@@ -332,10 +378,10 @@ export const AttendanceCheckInScreen = () => {
                 setGpsCoords(null);
                 setGpsStatus('denied');
                 if (isManualRefresh) {
-                    Alert.alert(
-                        t('common.error'),
-                        t('attendance.alerts.enableLocationMessage'),
-                        [{ text: t('common.ok') }]
+                    promptEnableLocation(
+                        canAskAgain
+                            ? t('attendance.alerts.permissionRequiredMessage')
+                            : t('attendance.alerts.enableLocationMessage')
                     );
                 }
             }
@@ -343,7 +389,19 @@ export const AttendanceCheckInScreen = () => {
             setGpsCoords(null);
             setGpsStatus('limited');
             if (isManualRefresh) {
-                Alert.alert(t('common.error'), t('attendance.alerts.locationFetchFailedMessage'));
+                Alert.alert(
+                    t('common.error'),
+                    t('attendance.alerts.locationFetchFailedMessage'),
+                    [
+                        { text: t('common.cancel'), style: 'cancel' },
+                        {
+                            text: t('common.settings'),
+                            onPress: () => {
+                                void openLocationSettings();
+                            }
+                        }
+                    ]
+                );
             }
         }
     };
@@ -372,11 +430,16 @@ export const AttendanceCheckInScreen = () => {
     }, [fetchTodayStatus]);
 
     const handleAttendance = async (type: 'in' | 'out', session: 'MORNING' | 'AFTERNOON') => {
-        if (!locationPermGranted) {
-            Alert.alert(
-                t('attendance.alerts.permissionRequiredTitle'),
-                t('attendance.alerts.permissionRequiredMessage')
-            );
+        const { granted } = await checkPermissions();
+        if (!granted) {
+            promptEnableLocation(t('attendance.alerts.permissionRequiredMessage'));
+            return;
+        }
+
+        const servicesEnabled = await Location.hasServicesEnabledAsync();
+        if (!servicesEnabled) {
+            setGpsStatus('limited');
+            promptEnableLocation(t('attendance.alerts.enableLocationMessage'));
             return;
         }
 
@@ -576,7 +639,9 @@ export const AttendanceCheckInScreen = () => {
 
                             <TouchableOpacity
                                 style={styles.modernGpsContainer}
-                                onPress={() => fetchLocationAsync(true)}
+                                onPress={() => {
+                                    void fetchLocationAsync(true);
+                                }}
                                 activeOpacity={0.7}
                             >
                                 <View style={styles.gpsIconCircle}>

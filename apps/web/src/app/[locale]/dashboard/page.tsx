@@ -204,7 +204,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
   ];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-500">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-500">
       <UnifiedNavigation
         user={user}
         school={school}
@@ -221,7 +221,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
               <section>
                 <div className="flex items-center justify-between mb-8">
                   <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Activity Status</h2>
-                  <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 rounded-full shadow-sm border border-slate-100 dark:border-slate-800 text-sm font-bold text-slate-500">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-900/50 backdrop-blur-md rounded-full shadow-sm border border-slate-100 dark:border-gray-800 text-sm font-bold text-slate-500 dark:text-gray-400">
                     <span>Weekly</span>
                     <ChevronRight className="w-4 h-4 rotate-90" />
                   </div>
@@ -257,7 +257,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
             <div className="lg:col-span-4 space-y-10">
               {/* Calendar / School Context Card */}
               <AnimatedContent animation="slide-left" delay={400}>
-                <section className="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-sm border border-slate-100 dark:border-slate-800">
+                <section className="bg-white dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-gray-800 transition-all duration-500">
                   <div className="flex items-center justify-between mb-8">
                     <h3 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">Schedule</h3>
                     <div className="flex gap-2">
@@ -271,9 +271,9 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                   </div>
 
                   {/* Academic Year Info - Clean integrated style */}
-                  <div className="mb-8 p-6 rounded-2xl bg-slate-50 dark:bg-slate-800 shadow-inner">
+                  <div className="mb-8 p-6 rounded-3xl bg-slate-50 dark:bg-gray-800/50 backdrop-blur-sm shadow-inner border border-slate-100 dark:border-gray-700/50">
                     <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center shadow-sm text-blue-600">
+                      <div className="w-12 h-12 rounded-2xl bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm text-blue-600 dark:text-blue-400 border border-transparent dark:border-gray-700">
                         <Calendar className="w-6 h-6" />
                       </div>
                       <div>
@@ -283,9 +283,9 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                     </div>
                     {currentYear && (
                       <div className="space-y-3">
-                        <div className="h-2 w-full rounded-full bg-white dark:bg-slate-900 overflow-hidden ring-1 ring-slate-200/50">
+                        <div className="h-2 w-full rounded-full bg-white dark:bg-gray-900 overflow-hidden ring-1 ring-slate-200/50 dark:ring-gray-700">
                           <div
-                            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-1000 ease-out"
+                            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 dark:from-blue-600 dark:to-blue-400 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(59,130,246,0.3)]"
                             style={{ width: currentYear.status === 'ACTIVE' ? '65%' : currentYear.status === 'ENDED' ? '100%' : '5%' }}
                           />
                         </div>
@@ -303,18 +303,18 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                   <div className="space-y-4">
                     <h4 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2">Live Attendance</h4>
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="p-5 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100/50">
-                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center mb-3 shadow-sm text-emerald-500">
+                      <div className="p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100/50 dark:border-emerald-800/30">
+                        <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center mb-3 shadow-sm text-emerald-500">
                           <Users className="w-4 h-4" />
                         </div>
-                        <p className="text-2xl font-black text-emerald-600">0</p>
+                        <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">0</p>
                         <p className="text-[10px] font-bold text-emerald-500/80 uppercase">Present</p>
                       </div>
-                      <div className="p-5 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-100/50">
-                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center mb-3 shadow-sm text-rose-500">
+                      <div className="p-5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-100/50 dark:border-rose-800/30">
+                        <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center mb-3 shadow-sm text-rose-500">
                           <Users className="w-4 h-4" />
                         </div>
-                        <p className="text-2xl font-black text-rose-600">0</p>
+                        <p className="text-2xl font-black text-rose-600 dark:text-rose-400">0</p>
                         <p className="text-[10px] font-bold text-rose-500/80 uppercase">Absent</p>
                       </div>
                     </div>
@@ -324,18 +324,18 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
 
               {/* Support Panel Style - Simplified integrated card */}
               <AnimatedContent animation="slide-left" delay={500}>
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 p-8 shadow-sm border border-slate-100 dark:border-slate-800">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-gray-900 p-8 shadow-sm border border-slate-100 dark:border-gray-800 hover:shadow-2xl transition-all duration-500">
                   <div className="relative z-10">
                     <h3 className="text-2xl font-black tracking-tight mb-3 text-slate-800 dark:text-white">Enterprise Support</h3>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium leading-relaxed mb-6">
+                    <p className="text-slate-500 dark:text-gray-400 text-sm font-medium leading-relaxed mb-6">
                       Our specialists are here to help you optimize your school management workflow.
                     </p>
-                    <button className="w-full py-4 rounded-xl bg-blue-600 dark:bg-blue-500 text-white font-black text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-blue-500/20">
+                    <button className="w-full py-4 rounded-2xl bg-blue-600 text-white font-black text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-blue-500/25">
                       Contact Specialist
                     </button>
                   </div>
                   {/* Decorative Elements - Subtle glow */}
-                  <div className="absolute -right-20 -bottom-20 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl" />
+                  <div className="absolute -right-20 -bottom-20 w-48 h-48 bg-blue-500/10 dark:bg-blue-600/10 rounded-full blur-3xl opacity-50" />
                 </div>
               </AnimatedContent>
             </div>

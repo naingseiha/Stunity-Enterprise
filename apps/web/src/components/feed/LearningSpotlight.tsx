@@ -129,12 +129,12 @@ export default function LearningSpotlight() {
   }, [locale]);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div className="px-3 py-2.5 border-b border-gray-100">
-        <h3 className="font-semibold text-gray-900 text-sm">{tFeed('widgets.learningSpotlight.title')}</h3>
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+      <div className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-800">
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{tFeed('widgets.learningSpotlight.title')}</h3>
       </div>
 
-      <div className="divide-y divide-gray-50">
+      <div className="divide-y divide-gray-50 dark:divide-gray-800">
         {loading ? (
           <div className="px-3 py-5 flex items-center justify-center">
             <Loader2 className="w-4 h-4 animate-spin text-[#F9A825]" />
@@ -147,15 +147,15 @@ export default function LearningSpotlight() {
               <Link
                 key={item.id}
                 href={item.href}
-                className="px-3 py-2 flex items-start gap-2 hover:bg-gray-50 transition-colors"
+                className="px-3 py-2 flex items-start gap-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
               >
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${TYPE_COLORS[item.type]}`}>
                   <Icon className="w-4 h-4 text-white" />
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-gray-900 text-xs truncate">{item.title}</h4>
-                  <p className="text-[11px] text-gray-400 truncate">{item.author}</p>
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100 text-xs truncate">{item.title}</h4>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">{item.author}</p>
                 </div>
               </Link>
             );
@@ -163,8 +163,8 @@ export default function LearningSpotlight() {
         )}
       </div>
 
-      <div className="px-3 py-2 border-t border-gray-100">
-        <Link href={`/${locale}/learn`} className="text-xs text-gray-500 hover:text-[#F9A825] transition-colors">
+      <div className="px-3 py-2 border-t border-gray-100 dark:border-gray-800">
+        <Link href={`/${locale}/learn`} className="text-xs text-gray-500 dark:text-gray-400 hover:text-[#F9A825] transition-colors">
           {tFeed('widgets.learningSpotlight.seeAll')} →
         </Link>
       </div>

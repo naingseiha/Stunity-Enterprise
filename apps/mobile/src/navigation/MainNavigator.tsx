@@ -29,7 +29,7 @@ import { NavigationProvider, useNavigationContext } from '@/contexts';
 // Implemented Screens
 import { FeedScreen, CreatePostScreen, EditPostScreen, PostDetailScreen, CommentsScreen, BookmarksScreen, MyPostsScreen, SearchScreen, SuggestedUsersScreen } from '@/screens/feed';
 import { LearnScreen, CourseDetailScreen, LessonViewerScreen, CreateCourseScreen } from '@/screens/learn';
-import { ProfileScreen, EditProfileScreen, SettingsScreen, AcademicProfileScreen, ManageDeadlinesScreen } from '@/screens/profile';
+import { ProfileScreen, EditProfileScreen, SettingsScreen, PasswordSecurityScreen, AcademicProfileScreen, ManageDeadlinesScreen } from '@/screens/profile';
 import { ConversationsScreen, ChatScreen, NewMessageScreen } from '@/screens/messages';
 import { ClubsScreen, ClubDetailsScreen, CreateClubScreen } from '@/screens/clubs';
 import {
@@ -84,7 +84,7 @@ const MyCreatedCoursesScreen = () => <PlaceholderScreen title="My Created Course
 const GroupInfoScreen = () => <PlaceholderScreen title="Group Info" />;
 
 // Profile Stack Screens
-const ConnectionsScreen = () => <PlaceholderScreen title="Connections" />;
+const ConnectionsScreen = SuggestedUsersScreen;
 
 
 // Create Stack Navigators
@@ -172,6 +172,7 @@ const ProfileStackNavigator = () => (
     <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} />
     <ProfileStack.Screen name="Connections" component={ConnectionsScreen} />
     <ProfileStack.Screen name="Settings" component={SettingsScreen} />
+    <ProfileStack.Screen name="PasswordSecurity" component={PasswordSecurityScreen} />
     <ProfileStack.Screen name="Bookmarks" component={BookmarksScreen} />
     <ProfileStack.Screen name="MyPosts" component={MyPostsScreen} />
     <ProfileStack.Screen name="AcademicProfile" component={AcademicProfileScreen} />
@@ -196,11 +197,11 @@ const MainNavigatorContent = () => {
 
   const handleNavigate = useCallback((screen: string) => {
     // Map sidebar menu items to proper tab + screen navigation
-    const screenToTabMap: Record<string, { tab: string; screen?: string }> = {
+    const screenToTabMap: Record<string, { tab: string; screen?: string; params?: Record<string, unknown> }> = {
       'Settings': { tab: 'ProfileTab', screen: 'Settings' },
       'Bookmarks': { tab: 'ProfileTab', screen: 'Bookmarks' },
       'MyPosts': { tab: 'ProfileTab', screen: 'MyPosts' },
-      'Connections': { tab: 'ProfileTab', screen: 'Connections' },
+      'Connections': { tab: 'ProfileTab', screen: 'Connections', params: { type: 'followers' } },
       'EditProfile': { tab: 'ProfileTab', screen: 'EditProfile' },
       'ProfileTab': { tab: 'ProfileTab' },
       'Profile': { tab: 'ProfileTab', screen: 'Profile' },
@@ -213,7 +214,7 @@ const MainNavigatorContent = () => {
         // Navigate to a specific screen within a tab
         navigation.navigate('MainTabs', {
           screen: mapping.tab,
-          params: { screen: mapping.screen },
+          params: { screen: mapping.screen, params: mapping.params },
         });
       } else {
         // Just switch to the tab

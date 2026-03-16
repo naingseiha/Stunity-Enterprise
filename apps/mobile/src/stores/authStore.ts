@@ -37,37 +37,47 @@ interface AuthState {
 }
 
 // Helper to map backend API user response to app User type
-const mapApiUserToUser = (apiUser: any): User => ({
-  id: apiUser.id,
-  email: apiUser.email || '',
-  firstName: apiUser.firstName || '',
-  lastName: apiUser.lastName || '',
-  name: `${apiUser.firstName || ''} ${apiUser.lastName || ''}`.trim() || 'User',
-  username: apiUser.username || apiUser.email?.split('@')[0] || 'user',
-  profilePictureUrl: apiUser.profilePictureUrl || apiUser.avatar || null,
-  coverPhotoUrl: apiUser.coverPhotoUrl || null,
-  role: apiUser.role || 'STUDENT',
-  bio: apiUser.bio,
-  headline: apiUser.headline,
-  professionalTitle: apiUser.professionalTitle,
-  location: apiUser.location,
-  interests: apiUser.interests || [],
-  languages: apiUser.languages || [],
-  skills: apiUser.skills || [],
-  socialLinks: apiUser.socialLinks || {},
-  isVerified: apiUser.isVerified || false,
-  isOnline: true,
-  schoolId: apiUser.schoolId || null,
-  school: apiUser.school || null,
-  level: apiUser.level ?? 1,
-  totalPoints: apiUser.totalPoints ?? 0,
-  totalLearningHours: apiUser.totalLearningHours ?? 0,
-  currentStreak: apiUser.currentStreak ?? 0,
-  children: apiUser.children || [],
-  isDefaultPassword: apiUser.isDefaultPassword || false,
-  createdAt: apiUser.createdAt || new Date().toISOString(),
-  updatedAt: apiUser.updatedAt || new Date().toISOString(),
-});
+const mapApiUserToUser = (apiUser: any): User => {
+  const visibility = apiUser.profileVisibility;
+  const profileVisibility =
+    visibility === 'PUBLIC' || visibility === 'SCHOOL' || visibility === 'PRIVATE'
+      ? visibility
+      : 'PUBLIC';
+
+  return {
+    id: apiUser.id,
+    email: apiUser.email || '',
+    firstName: apiUser.firstName || '',
+    lastName: apiUser.lastName || '',
+    name: `${apiUser.firstName || ''} ${apiUser.lastName || ''}`.trim() || 'User',
+    username: apiUser.username || apiUser.email?.split('@')[0] || 'user',
+    profilePictureUrl: apiUser.profilePictureUrl || apiUser.avatar || null,
+    coverPhotoUrl: apiUser.coverPhotoUrl || null,
+    role: apiUser.role || 'STUDENT',
+    bio: apiUser.bio,
+    headline: apiUser.headline,
+    professionalTitle: apiUser.professionalTitle,
+    location: apiUser.location,
+    interests: apiUser.interests || [],
+    languages: apiUser.languages || [],
+    skills: apiUser.skills || [],
+    socialLinks: apiUser.socialLinks || {},
+    profileVisibility,
+    isOpenToOpportunities: apiUser.isOpenToOpportunities ?? false,
+    isVerified: apiUser.isVerified || false,
+    isOnline: apiUser.isOnline ?? true,
+    schoolId: apiUser.schoolId || null,
+    school: apiUser.school || null,
+    level: apiUser.level ?? 1,
+    totalPoints: apiUser.totalPoints ?? 0,
+    totalLearningHours: apiUser.totalLearningHours ?? 0,
+    currentStreak: apiUser.currentStreak ?? 0,
+    children: apiUser.children || [],
+    isDefaultPassword: apiUser.isDefaultPassword || false,
+    createdAt: apiUser.createdAt || new Date().toISOString(),
+    updatedAt: apiUser.updatedAt || new Date().toISOString(),
+  };
+};
 
 const prewarmFeedAfterAuth = (role?: User['role']) => {
   if (role === 'PARENT') return;

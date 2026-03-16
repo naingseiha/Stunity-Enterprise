@@ -20,10 +20,10 @@ export default function StatCard({
   subtitle,
 }: StatCardProps) {
   const themes = {
-    blue: 'from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 shadow-blue-200/50 dark:shadow-blue-900/20',
-    purple: 'from-fuchsia-500 to-purple-600 dark:from-fuchsia-600 dark:to-purple-700 shadow-purple-200/50 dark:shadow-purple-900/20',
-    green: 'from-emerald-400 to-teal-500 dark:from-emerald-500 dark:to-teal-600 shadow-emerald-200/50 dark:shadow-emerald-900/20',
-    amber: 'from-orange-400 to-amber-500 dark:from-orange-500 dark:to-amber-600 shadow-amber-200/50 dark:shadow-amber-900/20',
+    blue: 'from-blue-500 to-blue-600 dark:from-blue-600/90 dark:to-blue-800/90 shadow-blue-200/50 dark:shadow-blue-900/40',
+    purple: 'from-fuchsia-500 to-purple-600 dark:from-fuchsia-700/90 dark:to-purple-900/90 shadow-purple-200/50 dark:shadow-purple-900/40',
+    green: 'from-emerald-400 to-teal-500 dark:from-emerald-600/90 dark:to-teal-800/90 shadow-emerald-200/50 dark:shadow-emerald-900/40',
+    amber: 'from-orange-400 to-amber-500 dark:from-orange-600/90 dark:to-amber-800/90 shadow-amber-200/50 dark:shadow-amber-900/40',
   };
 
   const changeStyles = {
@@ -33,7 +33,7 @@ export default function StatCard({
   };
 
   return (
-    <div className={`group relative overflow-hidden rounded-2xl p-6 text-white bg-gradient-to-br ${themes[iconColor as keyof typeof themes]} shadow-xl transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1`}>
+    <div className={`group relative overflow-hidden rounded-3xl p-7 text-white bg-gradient-to-br ${themes[iconColor as keyof typeof themes]} shadow-xl transition-all duration-500 hover:scale-[1.03] hover:-translate-y-2 border border-white/10 dark:border-white/5`}>
       {/* Decorative Sparkline SVG */}
       <div className="absolute bottom-0 right-0 left-0 h-24 opacity-20 transition-opacity group-hover:opacity-30">
         <svg viewBox="0 0 100 40" className="h-full w-full preserve-3d" preserveAspectRatio="none">

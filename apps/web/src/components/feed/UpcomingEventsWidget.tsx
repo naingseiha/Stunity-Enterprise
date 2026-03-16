@@ -120,18 +120,18 @@ export default function UpcomingEventsWidget() {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 flex items-center justify-between border-b border-gray-100 bg-gradient-to-r from-rose-50/50 to-orange-50/50">
+      <div className="px-4 py-3 flex items-center justify-between border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-rose-50/50 to-orange-50/50 dark:from-rose-900/10 dark:to-orange-900/10">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-400 to-orange-500 flex items-center justify-center">
             <Calendar className="w-4 h-4 text-white" />
           </div>
-          <h3 className="font-semibold text-gray-900">{tFeed('widgets.upcomingEvents.title')}</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100">{tFeed('widgets.upcomingEvents.title')}</h3>
         </div>
         <Link 
           href={`/${locale}/events`}
-          className="text-xs text-rose-600 hover:text-rose-700 font-medium flex items-center gap-1"
+          className="text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 font-medium flex items-center gap-1"
         >
           <Plus className="w-3.5 h-3.5" />
           {tFeed('widgets.upcomingEvents.add')}
@@ -139,17 +139,17 @@ export default function UpcomingEventsWidget() {
       </div>
 
       {/* Events List */}
-      <div className="divide-y divide-gray-50">
+      <div className="divide-y divide-gray-50 dark:divide-gray-800">
         {loading ? (
           <div className="px-4 py-6 flex items-center justify-center">
             <Loader2 className="w-5 h-5 text-rose-500 animate-spin" />
           </div>
         ) : events.length === 0 ? (
           <div className="px-4 py-6 text-center">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-rose-100 to-orange-100 flex items-center justify-center mx-auto mb-3">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-rose-100 dark:from-rose-900/30 to-orange-100 dark:to-orange-900/30 flex items-center justify-center mx-auto mb-3">
               <Calendar className="w-6 h-6 text-rose-500" />
             </div>
-            <p className="text-sm text-gray-500 mb-3">{tFeed('widgets.upcomingEvents.noEvents')}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{tFeed('widgets.upcomingEvents.noEvents')}</p>
             <Link
               href={`/${locale}/events`}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-rose-500 to-orange-500 text-white rounded-lg text-xs font-medium hover:from-rose-600 hover:to-orange-600 transition-all"
@@ -168,7 +168,7 @@ export default function UpcomingEventsWidget() {
               <Link
                 key={event.id}
                 href={`/${locale}/events/${event.id}`}
-                className="px-4 py-3 flex items-start gap-3 hover:bg-rose-50/50 transition-colors"
+                className="px-4 py-3 flex items-start gap-3 hover:bg-rose-50/50 dark:hover:bg-rose-900/10 transition-colors"
               >
                 {/* Date Badge */}
                 <div className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center flex-shrink-0 bg-gradient-to-br ${config.color} text-white`}>
@@ -177,15 +177,15 @@ export default function UpcomingEventsWidget() {
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-gray-900 text-sm truncate">{event.title}</h4>
-                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">{event.title}</h4>
+                  <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {dateInfo.day} • {dateInfo.time}
                     </span>
                   </div>
                   {event.location && (
-                    <div className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
+                    <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                       {event.isVirtual ? <Video className="w-3 h-3" /> : <MapPin className="w-3 h-3" />}
                       <span className="truncate">{event.isVirtual ? tFeed('widgets.upcomingEvents.virtual') : event.location}</span>
                     </div>
@@ -195,9 +195,9 @@ export default function UpcomingEventsWidget() {
                 {/* RSVP Status */}
                 {event.userRSVPStatus && (
                   <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                    event.userRSVPStatus === 'GOING' ? 'bg-green-100 text-green-700' :
-                    event.userRSVPStatus === 'MAYBE' ? 'bg-amber-100 text-amber-700' :
-                    'bg-gray-100 text-gray-600'
+                    event.userRSVPStatus === 'GOING' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                    event.userRSVPStatus === 'MAYBE' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
+                    'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                   }`}>
                     {event.userRSVPStatus === 'GOING' ? '✓' : event.userRSVPStatus === 'MAYBE' ? '?' : '✗'}
                   </div>
@@ -210,10 +210,10 @@ export default function UpcomingEventsWidget() {
 
       {/* Footer */}
       {events.length > 0 && (
-        <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50/50">
+        <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20">
           <Link 
             href={`/${locale}/events`}
-            className="text-xs text-gray-600 hover:text-rose-600 transition-colors font-medium flex items-center justify-center gap-1"
+            className="text-xs text-gray-600 dark:text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors font-medium flex items-center justify-center gap-1"
           >
             {tFeed('widgets.upcomingEvents.viewCalendar')}
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

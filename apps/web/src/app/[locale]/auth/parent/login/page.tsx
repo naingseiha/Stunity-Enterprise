@@ -81,7 +81,7 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-950 dark:via-gray-950 dark:to-emerald-950/20 flex items-center justify-center px-4 transition-colors duration-500">
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -93,26 +93,26 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
             />
           </div>
           <div className="flex items-center justify-center gap-2 mb-2">
-            <Users className="w-6 h-6 text-green-600" />
-            <h1 className="text-2xl font-bold text-gray-900">Parent Portal</h1>
+            <Users className="w-6 h-6 text-green-600 dark:text-green-400" />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Parent Portal</h1>
           </div>
-          <p className="text-gray-600 mt-2">Track your child's academic progress</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">Track your child's academic progress</p>
         </div>
 
         {/* Login Form */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Parent Login</h2>
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl dark:shadow-none border border-transparent dark:border-gray-800 p-8 transition-all duration-500">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Parent Login</h2>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-red-800 text-sm">{error}</p>
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+              <p className="text-red-800 dark:text-red-300 text-sm">{error}</p>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Phone Number
               </label>
               <div className="relative">
@@ -123,7 +123,7 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                   placeholder="012345678"
                   disabled={loading}
                 />
@@ -131,7 +131,7 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Password
               </label>
               <div className="relative">
@@ -142,7 +142,7 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-12 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                   placeholder="••••••••"
                   disabled={loading}
                 />
@@ -178,13 +178,13 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
           <div className="mt-6 text-center space-y-3">
             <Link
               href={`/${locale}/auth/parent/register`}
-              className="block text-green-600 hover:text-green-700 text-sm font-medium"
+              className="block text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm font-medium"
             >
               Don't have an account? Register
             </Link>
             <Link
               href={`/${locale}/auth/login`}
-              className="block text-gray-500 hover:text-gray-600 text-sm"
+              className="block text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-sm"
             >
               ← Back to main login
             </Link>
@@ -192,27 +192,27 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
         </div>
 
         {/* Info Box */}
-        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-xs text-green-700 text-center">
+        <div className="mt-6 p-4 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-lg">
+          <p className="text-xs text-green-700 dark:text-green-300 text-center">
             <strong>For Parents:</strong> Login with the phone number you registered during your child's enrollment.
             <br />
-            <span className="text-gray-600">Need help? Contact your school administrator.</span>
+            <span className="text-gray-600 dark:text-gray-400">Need help? Contact your school administrator.</span>
           </p>
         </div>
 
         {/* Feature Preview */}
         <div className="mt-4 grid grid-cols-3 gap-3">
-          <div className="bg-white/50 p-3 rounded-lg text-center">
+          <div className="bg-white/50 dark:bg-gray-900/50 p-3 rounded-lg text-center border border-transparent dark:border-gray-800">
             <div className="text-2xl mb-1">📊</div>
-            <p className="text-xs text-gray-600">View Grades</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">View Grades</p>
           </div>
-          <div className="bg-white/50 p-3 rounded-lg text-center">
+          <div className="bg-white/50 dark:bg-gray-900/50 p-3 rounded-lg text-center border border-transparent dark:border-gray-800">
             <div className="text-2xl mb-1">📅</div>
-            <p className="text-xs text-gray-600">Attendance</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Attendance</p>
           </div>
-          <div className="bg-white/50 p-3 rounded-lg text-center">
+          <div className="bg-white/50 dark:bg-gray-900/50 p-3 rounded-lg text-center border border-transparent dark:border-gray-800">
             <div className="text-2xl mb-1">📝</div>
-            <p className="text-xs text-gray-600">Report Cards</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Report Cards</p>
           </div>
         </div>
       </div>

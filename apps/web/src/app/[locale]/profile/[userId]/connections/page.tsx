@@ -189,7 +189,7 @@ export default function ConnectionsPage() {
   const isOwnProfile = currentUserId === userId;
 
   return (
-    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 transition-opacity duration-500 ${pageReady ? 'opacity-100' : 'opacity-0'}`}>
+    <div className={`min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-500 ${pageReady ? 'opacity-100' : 'opacity-0'}`}>
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="max-w-3xl mx-auto px-4 py-4">

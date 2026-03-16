@@ -88,23 +88,23 @@ interface Education {
 // Skeleton Component
 function EditProfileSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/40 via-white to-orange-50/30 p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 transition-colors duration-300">
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Header skeleton */}
-        <div className="h-16 bg-white rounded-xl shadow-sm animate-pulse" />
+        <div className="h-16 bg-white dark:bg-gray-800 rounded-xl shadow-sm animate-pulse" />
         
         {/* Cover & Profile section skeleton */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden">
           <div 
             className="h-56 animate-pulse"
             style={{ background: 'linear-gradient(135deg, #fed7aa 0%, #fdba74 50%, #fb923c 100%)' }}
           />
           <div className="px-6 pb-6 -mt-16">
             <div className="flex gap-6 items-end">
-              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-orange-300 to-amber-400 border-4 border-white shadow-lg animate-pulse" />
+            <div className="w-32 h-32 rounded-full bg-gradient-to-br from-orange-300 to-amber-400 border-4 border-white dark:border-gray-800 shadow-lg animate-pulse" />
               <div className="flex-1 pt-20 space-y-3">
-                <div className="h-10 bg-gray-200 rounded-lg w-48 animate-pulse" />
-                <div className="h-10 bg-gray-200 rounded-lg w-48 animate-pulse" />
+                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-48 animate-pulse" />
+                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-48 animate-pulse" />
               </div>
             </div>
           </div>
@@ -112,11 +112,11 @@ function EditProfileSkeleton() {
         
         {/* Form sections skeleton */}
         {[1, 2, 3].map(i => (
-          <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
-            <div className="h-6 bg-gray-200 rounded w-32 mb-4" />
+          <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm animate-pulse">
+            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-4" />
             <div className="space-y-4">
               {[1, 2].map(j => (
-                <div key={j} className="h-12 bg-gray-100 rounded-lg" />
+                <div key={j} className="h-12 bg-gray-100 dark:bg-gray-700/50 rounded-lg" />
               ))}
             </div>
           </div>
@@ -573,7 +573,7 @@ export default function EditProfilePage() {
         title="Change Cover Photo"
       />
 
-      <div className={`min-h-screen bg-gradient-to-br from-amber-50/40 via-white to-orange-50/30 transition-all duration-500 ${pageReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      <div className={`min-h-screen bg-gray-50 dark:bg-gray-950 transition-all duration-500 ${pageReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         {/* Toast Message */}
         {message && (
           <div className={`fixed top-4 right-4 z-50 px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-in slide-in-from-right ${
@@ -831,9 +831,9 @@ export default function EditProfilePage() {
                 </label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {formData.languages.map((lang, i) => (
-                    <span key={i} className="px-3 py-1.5 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 text-green-700 dark:text-green-400 rounded-full text-sm font-medium flex items-center gap-1.5 border border-green-200 dark:border-green-800">
+                    <span key={i} className="px-3 py-1.5 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/40 dark:to-emerald-900/40 text-green-700 dark:text-green-300 rounded-full text-sm font-medium flex items-center gap-1.5 border border-green-200 dark:border-green-700/50">
                       {lang}
-                      <button onClick={() => removeLanguage(lang)} className="hover:text-green-900 p-0.5 hover:bg-green-200 dark:hover:bg-green-800 rounded-full transition-colors">
+                      <button onClick={() => removeLanguage(lang)} className="hover:text-green-900 dark:hover:text-green-100 p-0.5 hover:bg-green-200 dark:hover:bg-green-700 rounded-full transition-colors">
                         <X className="w-3 h-3" />
                       </button>
                     </span>
@@ -862,9 +862,9 @@ export default function EditProfilePage() {
                 </label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {formData.interests.map((interest, i) => (
-                    <span key={i} className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-sm flex items-center gap-1">
+                    <span key={i} className="px-3 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full text-sm flex items-center gap-1 border border-blue-200 dark:border-blue-800/50">
                       {interest}
-                      <button onClick={() => removeInterest(interest)} className="hover:text-blue-900">
+                      <button onClick={() => removeInterest(interest)} className="hover:text-blue-900 dark:hover:text-blue-100 p-0.5 hover:bg-blue-200 dark:hover:bg-blue-700 rounded-full">
                         <X className="w-3 h-3" />
                       </button>
                     </span>
@@ -907,17 +907,17 @@ export default function EditProfilePage() {
             ) : (
               <div className="space-y-2">
                 {skills.map(skill => (
-                  <div key={skill.id} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <div key={skill.id} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                     <div>
                       <h4 className="font-medium text-gray-900 dark:text-white">{skill.skillName}</h4>
                       <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                         <span className="capitalize">{skill.category.toLowerCase()}</span>
                         <span>•</span>
                         <span className={`px-2 py-0.5 rounded text-xs ${
-                          skill.level === 'EXPERT' ? 'bg-amber-100 text-amber-700' :
-                          skill.level === 'ADVANCED' ? 'bg-purple-100 text-purple-700' :
-                          skill.level === 'INTERMEDIATE' ? 'bg-blue-100 text-blue-700' :
-                          'bg-green-100 text-green-700'
+                          skill.level === 'EXPERT' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
+                          skill.level === 'ADVANCED' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' :
+                          skill.level === 'INTERMEDIATE' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
+                          'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                         }`}>
                           {skill.level}
                         </span>
@@ -926,13 +926,13 @@ export default function EditProfilePage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => { setEditingSkill(skill); setShowSkillModal(true); }}
-                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteSkill(skill.id)}
-                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                        className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -963,7 +963,7 @@ export default function EditProfilePage() {
             ) : (
               <div className="space-y-3">
                 {experiences.map(exp => (
-                  <div key={exp.id} className="flex items-start justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <div key={exp.id} className="flex items-start justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                     <div>
                       <h4 className="font-medium text-gray-900 dark:text-white">{exp.title}</h4>
                       <p className="text-sm text-gray-600 dark:text-gray-300">{exp.organization}</p>
@@ -1017,7 +1017,7 @@ export default function EditProfilePage() {
             ) : (
               <div className="space-y-3">
                 {certifications.map(cert => (
-                  <div key={cert.id} className="flex items-start justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <div key={cert.id} className="flex items-start justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                     <div>
                       <h4 className="font-medium text-gray-900 dark:text-white">{cert.name}</h4>
                       <p className="text-sm text-gray-600 dark:text-gray-300">{cert.issuingOrg}</p>
@@ -1026,7 +1026,7 @@ export default function EditProfilePage() {
                         {cert.credentialUrl && (
                           <>
                             <span>•</span>
-                            <a href={cert.credentialUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
+                            <a href={cert.credentialUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
                               View <ExternalLink className="w-3 h-3" />
                             </a>
                           </>
@@ -1073,7 +1073,7 @@ export default function EditProfilePage() {
             ) : (
               <div className="space-y-3">
                 {educationList.map(edu => (
-                  <div key={edu.id} className="flex items-start justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <div key={edu.id} className="flex items-start justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                     <div className="flex gap-3">
                       <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
                         <GraduationCap className="w-5 h-5 text-green-600 dark:text-green-400" />
@@ -1151,7 +1151,7 @@ export default function EditProfilePage() {
                         <p className="text-sm text-gray-500 dark:text-gray-400">{option.description}</p>
                       </div>
                       {formData.profileVisibility === option.value && (
-                        <Check className="w-5 h-5 text-blue-500" />
+                        <Check className="w-5 h-5 text-blue-500 dark:text-blue-400" />
                       )}
                     </label>
                   ))}
@@ -1171,7 +1171,7 @@ export default function EditProfilePage() {
                   }`}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-gray-100 transition-transform ${
                       formData.isOpenToOpportunities ? 'translate-x-6' : 'translate-x-1'
                     }`}
                   />
@@ -1378,7 +1378,7 @@ function ExperienceModal({ experience, onSave, onClose }: { experience: Experien
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
-        <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
+        <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {experience ? 'Edit Experience' : 'Add Experience'}
           </h3>
@@ -1458,7 +1458,7 @@ function ExperienceModal({ experience, onSave, onClose }: { experience: Experien
               type="checkbox"
               checked={formData.isCurrent}
               onChange={(e) => setFormData(prev => ({ ...prev, isCurrent: e.target.checked }))}
-              className="rounded border-gray-300"
+              className="rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-orange-500 focus:ring-orange-500"
             />
             <span className="text-sm text-gray-700 dark:text-gray-300">I currently work here</span>
           </label>
@@ -1508,7 +1508,7 @@ function CertificationModal({ certification, onSave, onClose }: { certification:
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
-        <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
+        <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {certification ? 'Edit Certification' : 'Add Certification'}
           </h3>
@@ -1629,7 +1629,7 @@ function EducationModal({ education, onSave, onClose }: { education: Education |
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
-        <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
+        <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {education ? 'Edit Education' : 'Add Education'}
           </h3>
@@ -1714,7 +1714,7 @@ function EducationModal({ education, onSave, onClose }: { education: Education |
               id="isCurrent"
               checked={formData.isCurrent}
               onChange={(e) => setFormData(prev => ({ ...prev, isCurrent: e.target.checked, endDate: e.target.checked ? '' : prev.endDate }))}
-              className="w-4 h-4 text-orange-500 rounded focus:ring-orange-500"
+              className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-orange-500 focus:ring-orange-500"
             />
             <label htmlFor="isCurrent" className="text-sm text-gray-700 dark:text-gray-300">I currently study here</label>
           </div>

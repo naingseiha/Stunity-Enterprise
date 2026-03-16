@@ -38,22 +38,22 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 
 // Event type icons and colors
 const EVENT_TYPE_CONFIG: Record<string, { icon: any; color: string; bgColor: string }> = {
-  GENERAL: { icon: Calendar, color: 'text-gray-600', bgColor: 'bg-gray-100' },
-  ACADEMIC: { icon: BookOpen, color: 'text-blue-600', bgColor: 'bg-blue-100' },
-  SPORTS: { icon: Trophy, color: 'text-green-600', bgColor: 'bg-green-100' },
-  CULTURAL: { icon: Sparkles, color: 'text-pink-600', bgColor: 'bg-pink-100' },
-  CLUB: { icon: Users, color: 'text-purple-600', bgColor: 'bg-purple-100' },
-  WORKSHOP: { icon: Wrench, color: 'text-amber-600', bgColor: 'bg-amber-100' },
-  MEETING: { icon: MessageCircle, color: 'text-teal-600', bgColor: 'bg-teal-100' },
-  HOLIDAY: { icon: Sun, color: 'text-red-600', bgColor: 'bg-red-100' },
-  DEADLINE: { icon: Clock, color: 'text-red-700', bgColor: 'bg-red-100' },
-  COMPETITION: { icon: Award, color: 'text-violet-600', bgColor: 'bg-violet-100' },
+  GENERAL: { icon: Calendar, color: 'text-gray-600 dark:text-gray-400', bgColor: 'bg-gray-100 dark:bg-gray-800' },
+  ACADEMIC: { icon: BookOpen, color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-100 dark:bg-blue-900/30' },
+  SPORTS: { icon: Trophy, color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-100 dark:bg-green-900/30' },
+  CULTURAL: { icon: Sparkles, color: 'text-pink-600 dark:text-pink-400', bgColor: 'bg-pink-100 dark:bg-pink-900/30' },
+  CLUB: { icon: Users, color: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-100 dark:bg-purple-900/30' },
+  WORKSHOP: { icon: Wrench, color: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-100 dark:bg-amber-900/30' },
+  MEETING: { icon: MessageCircle, color: 'text-teal-600 dark:text-teal-400', bgColor: 'bg-teal-100 dark:bg-teal-900/30' },
+  HOLIDAY: { icon: Sun, color: 'text-red-600 dark:text-red-400', bgColor: 'bg-red-100 dark:bg-red-900/30' },
+  DEADLINE: { icon: Clock, color: 'text-red-700 dark:text-red-400', bgColor: 'bg-red-100 dark:bg-red-900/30' },
+  COMPETITION: { icon: Award, color: 'text-violet-600 dark:text-violet-400', bgColor: 'bg-violet-100 dark:bg-violet-900/30' },
 };
 
 const RSVP_CONFIG = {
-  GOING: { icon: CheckCircle2, label: 'Going', color: 'text-green-600', bgColor: 'bg-green-50' },
-  MAYBE: { icon: HelpCircle, label: 'Maybe', color: 'text-amber-600', bgColor: 'bg-amber-50' },
-  NOT_GOING: { icon: XCircle, label: "Can't Go", color: 'text-gray-500', bgColor: 'bg-gray-50' },
+  GOING: { icon: CheckCircle2, label: 'Going', color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-50 dark:bg-green-900/20' },
+  MAYBE: { icon: HelpCircle, label: 'Maybe', color: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-900/20' },
+  NOT_GOING: { icon: XCircle, label: "Can't Go", color: 'text-gray-500 dark:text-gray-400', bgColor: 'bg-gray-50 dark:bg-gray-800' },
 };
 
 interface Event {
@@ -263,7 +263,7 @@ export default function EventsPage() {
       'July', 'August', 'September', 'October', 'November', 'December'];
 
     for (let i = 0; i < startPadding; i++) {
-      days.push(<div key={`pad-${i}`} className="h-20 bg-gray-50" />);
+      days.push(<div key={`pad-${i}`} className="h-20 bg-gray-50 dark:bg-gray-900/50" />);
     }
 
     for (let day = 1; day <= lastDay.getDate(); day++) {
@@ -274,11 +274,11 @@ export default function EventsPage() {
       days.push(
         <div
           key={day}
-          className={`h-20 border border-gray-100 p-1 overflow-hidden ${
-            isToday ? 'bg-amber-50 ring-1 ring-amber-400' : 'bg-white hover:bg-gray-50'
+          className={`h-20 border border-gray-100 dark:border-gray-700 p-1 overflow-hidden ${
+            isToday ? 'bg-amber-50 dark:bg-amber-900/20 ring-1 ring-amber-400' : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50'
           }`}
         >
-          <div className={`text-xs font-medium ${isToday ? 'text-amber-600' : 'text-gray-700'}`}>
+          <div className={`text-xs font-medium ${isToday ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-gray-300'}`}>
             {day}
           </div>
           <div className="space-y-0.5 mt-0.5">
@@ -295,7 +295,7 @@ export default function EventsPage() {
               );
             })}
             {dayEvents.length > 2 && (
-              <div className="text-[10px] text-gray-500 px-1">+{dayEvents.length - 2} more</div>
+              <div className="text-[10px] text-gray-500 dark:text-gray-400 px-1">+{dayEvents.length - 2} more</div>
             )}
           </div>
         </div>
@@ -303,28 +303,28 @@ export default function EventsPage() {
     }
 
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="flex items-center justify-between p-3 border-b border-gray-100">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="flex items-center justify-between p-3 border-b border-gray-100 dark:border-gray-700">
           <button
             onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
-            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <h3 className="text-sm font-semibold text-gray-900">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
             {monthNames[month]} {year}
           </h3>
           <button
             onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
-            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-400" />
           </button>
         </div>
 
-        <div className="grid grid-cols-7 bg-gray-50">
+        <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-900/50">
           {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-            <div key={i} className="py-1.5 text-center text-xs font-medium text-gray-500">
+            <div key={i} className="py-1.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400">
               {day}
             </div>
           ))}
@@ -344,7 +344,7 @@ export default function EventsPage() {
     return (
       <Link 
         href={`/${locale}/events/${event.id}`}
-        className="block bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md hover:border-amber-200 transition-all group"
+        className="block bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md hover:border-amber-200 dark:hover:border-amber-500/50 transition-all group"
       >
         <div className="flex items-start gap-4">
           {/* Event Icon */}
@@ -355,7 +355,7 @@ export default function EventsPage() {
           {/* Event Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold text-gray-900 truncate group-hover:text-amber-600 transition-colors">
+              <h3 className="font-semibold text-gray-900 dark:text-white truncate group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
                 {event.title}
               </h3>
               {event.virtualLink && (
@@ -367,7 +367,7 @@ export default function EventsPage() {
             </div>
             
             {/* Date & Location */}
-            <div className="flex items-center gap-3 text-sm text-gray-500 mb-2">
+            <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mb-2">
               <span className="flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-amber-500" />
                 {formatEventDate(event.startDate, event.allDay)}
@@ -381,7 +381,7 @@ export default function EventsPage() {
             </div>
             
             {/* Meta info */}
-            <div className="flex items-center gap-3 text-xs text-gray-400">
+            <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${config.bgColor} ${config.color}`}>
                 {event.eventType.replace('_', ' ')}
               </span>
@@ -399,7 +399,7 @@ export default function EventsPage() {
           </div>
           
           {/* Arrow */}
-          <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+          <ChevronRight className="w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
         </div>
       </Link>
     );
@@ -414,7 +414,7 @@ export default function EventsPage() {
       />
       
       {showContent && (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
           <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
           
           {/* LinkedIn-style 3-column layout */}
@@ -425,29 +425,29 @@ export default function EventsPage() {
               <aside className="hidden lg:block lg:col-span-3">
                 <div className="sticky top-20 space-y-3">
                   {/* Overview Card */}
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div className="h-16 bg-gradient-to-r from-amber-500 to-rose-500 relative">
                       <Calendar className="absolute bottom-2 right-3 w-6 h-6 text-white/30" />
                     </div>
                     <div className="p-4">
-                      <h2 className="font-bold text-gray-900">Events</h2>
-                      <p className="text-xs text-gray-500 mt-0.5">Discover and join events</p>
+                      <h2 className="font-bold text-gray-900 dark:text-white">Events</h2>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Discover and join events</p>
                       
                       <div className="grid grid-cols-2 gap-2 mt-4">
-                        <div className="bg-amber-50 rounded-lg p-2.5 text-center">
-                          <p className="text-lg font-bold text-gray-900">{upcomingEvents.length}</p>
-                          <p className="text-[10px] text-gray-500">Upcoming</p>
+                        <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2.5 text-center">
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">{upcomingEvents.length}</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400">Upcoming</p>
                         </div>
-                        <div className="bg-blue-50 rounded-lg p-2.5 text-center">
-                          <p className="text-lg font-bold text-gray-900">{events.length}</p>
-                          <p className="text-[10px] text-gray-500">All Events</p>
+                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2.5 text-center">
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">{events.length}</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400">All Events</p>
                         </div>
                       </div>
                     </div>
                   </div>
                   
                   {/* Quick Actions */}
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-3">
                     <button
                       onClick={() => setShowCreateModal(true)}
                       className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg font-medium hover:from-amber-600 hover:to-orange-600 transition-all"
@@ -458,18 +458,18 @@ export default function EventsPage() {
                   </div>
                   
                   {/* Event Types Filter */}
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <h3 className="font-semibold text-sm text-gray-900">Event Types</h3>
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                      <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Event Types</h3>
                     </div>
                     <nav className="py-1">
                       <button
                         onClick={() => setSelectedType('')}
                         className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors ${
-                          !selectedType ? 'bg-amber-50 text-amber-600 font-medium' : 'text-gray-600 hover:bg-gray-50'
+                          !selectedType ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                         }`}
                       >
-                        <Sparkles className="w-4 h-4" />
+                        <Sparkles className="w-4 h-4 text-amber-500" />
                         All Types
                       </button>
                       {Object.entries(EVENT_TYPE_CONFIG).slice(0, 6).map(([type, config]) => {
@@ -479,7 +479,7 @@ export default function EventsPage() {
                             key={type}
                             onClick={() => setSelectedType(type)}
                             className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors ${
-                              selectedType === type ? 'bg-amber-50 text-amber-600 font-medium' : 'text-gray-600 hover:bg-gray-50'
+                              selectedType === type ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                             }`}
                           >
                             <Icon className="w-4 h-4" />
@@ -495,8 +495,8 @@ export default function EventsPage() {
               {/* Main Content */}
               <main className="lg:col-span-6">
                 {/* View Toggle & Tabs */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-4">
-                  <div className="flex items-center justify-between border-b border-gray-100 px-3">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-4 overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-3">
                     {/* Tabs */}
                     <div className="flex">
                       {[
@@ -509,8 +509,8 @@ export default function EventsPage() {
                           onClick={() => setActiveTab(tab.id as any)}
                           className={`flex items-center gap-1.5 px-3 py-3 text-sm font-medium transition-colors ${
                             activeTab === tab.id
-                              ? 'text-amber-600 border-b-2 border-amber-500'
-                              : 'text-gray-600 hover:text-gray-900'
+                              ? 'text-amber-600 border-b-2 border-amber-500 bg-amber-50/50 dark:bg-amber-900/10'
+                              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                           }`}
                         >
                           <tab.icon className="w-4 h-4" />
@@ -520,13 +520,13 @@ export default function EventsPage() {
                     </div>
                     
                     {/* View Toggle */}
-                    <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                    <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
                       <button
                         onClick={() => setViewMode('list')}
                         className={`p-1.5 rounded-md transition-colors ${
                           viewMode === 'list'
-                            ? 'bg-white text-amber-600 shadow-sm'
-                            : 'text-gray-500 hover:text-gray-700'
+                            ? 'bg-white dark:bg-gray-800 text-amber-600 shadow-sm dark:shadow-black/20'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                         }`}
                       >
                         <List className="w-4 h-4" />
@@ -535,8 +535,8 @@ export default function EventsPage() {
                         onClick={() => setViewMode('calendar')}
                         className={`p-1.5 rounded-md transition-colors ${
                           viewMode === 'calendar'
-                            ? 'bg-white text-amber-600 shadow-sm'
-                            : 'text-gray-500 hover:text-gray-700'
+                            ? 'bg-white dark:bg-gray-800 text-amber-600 shadow-sm dark:shadow-black/20'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                         }`}
                       >
                         <CalendarDays className="w-4 h-4" />
@@ -565,12 +565,12 @@ export default function EventsPage() {
                 ) : (
                   <div className="space-y-3">
                     {events.length === 0 ? (
-                      <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-                        <div className="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                          <Calendar className="w-7 h-7 text-amber-600" />
+                      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
+                        <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center mx-auto mb-4">
+                          <Calendar className="w-7 h-7 text-amber-600 dark:text-amber-400" />
                         </div>
-                        <h3 className="font-semibold text-gray-900 mb-1">No events found</h3>
-                        <p className="text-sm text-gray-500 mb-4">
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-1">No events found</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                           {activeTab === 'my-events'
                             ? "You haven't joined any events yet"
                             : 'Create an event or check back later'}
@@ -593,10 +593,10 @@ export default function EventsPage() {
               <aside className="hidden lg:block lg:col-span-3">
                 <div className="sticky top-20 space-y-3">
                   {/* Upcoming Events Widget */}
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 text-amber-500" />
-                      <h3 className="font-semibold text-sm text-gray-900">Coming Soon</h3>
+                      <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Coming Soon</h3>
                     </div>
                     <div className="p-3 space-y-2">
                       {upcomingEvents.slice(0, 4).map((event) => {
@@ -606,14 +606,14 @@ export default function EventsPage() {
                           <Link
                             key={event.id}
                             href={`/${locale}/events/${event.id}`}
-                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                           >
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${config.bgColor}`}>
                               <Icon className={`w-4 h-4 ${config.color}`} />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">{event.title}</p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{event.title}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
                                 {new Date(event.startDate).toLocaleDateString('en-US', {
                                   month: 'short',
                                   day: 'numeric',
@@ -775,24 +775,24 @@ function CreateEventModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div 
-        className="bg-white rounded-xl w-full max-w-md shadow-xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md shadow-xl border border-white/10 max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-amber-600" />
+            <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">Create Event</h2>
-              <p className="text-xs text-gray-500">Schedule a new event</p>
+              <h2 className="font-semibold text-gray-900 dark:text-white">Create Event</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Schedule a new event</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <X className="w-5 h-5 text-gray-500" />
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
@@ -800,41 +800,41 @@ function CreateEventModal({
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="p-5 space-y-4 overflow-y-auto flex-1">
             {submitError && (
-              <div className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-xs text-red-700">
+              <div className="px-3 py-2 rounded-lg border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20 text-xs text-red-700 dark:text-red-400">
                 {submitError}
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Event Title *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Event Title *</label>
               <input
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 required
                 placeholder="Give your event a name"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={2}
                 placeholder="What's this event about?"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 resize-none"
+                className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 resize-none dark:text-white"
               />
-            </div>
+            </div>碎,StartLine:821,TargetContent:
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Type</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Type</label>
                 <select
                   value={formData.eventType}
                   onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
                 >
                   {Object.keys(EVENT_TYPE_CONFIG).map((type) => (
                     <option key={type} value={type}>{type.replace('_', ' ')}</option>
@@ -842,11 +842,11 @@ function CreateEventModal({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Privacy</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Privacy</label>
                 <select
                   value={formData.privacy}
                   onChange={(e) => setFormData({ ...formData, privacy: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
                 >
                   <option value="PUBLIC">Public</option>
                   <option value="SCHOOL">School Only</option>
@@ -860,38 +860,38 @@ function CreateEventModal({
                 type="checkbox"
                 checked={formData.allDay}
                 onChange={(e) => setFormData({ ...formData, allDay: e.target.checked })}
-                className="w-4 h-4 text-amber-500 border-gray-300 rounded focus:ring-amber-500"
+                className="w-4 h-4 text-amber-500 border-gray-300 dark:border-gray-600 rounded focus:ring-amber-500 dark:bg-gray-900"
               />
-              <span className="text-sm text-gray-700">All day event</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300">All day event</span>
             </label>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Start Date *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Start Date *</label>
                 <input
                   type="date"
                   value={formData.startDate}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                   required
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
                 />
               </div>
               {!formData.allDay && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Start Time *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Start Time *</label>
                   <input
                     type="time"
                     value={formData.startTime}
                     onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
                     required={!formData.allDay}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
                   />
                 </div>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Location</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Location</label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
@@ -899,13 +899,13 @@ function CreateEventModal({
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   placeholder="Add a location"
-                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                  className="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Virtual Link</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Virtual Link</label>
               <div className="relative">
                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
@@ -913,18 +913,18 @@ function CreateEventModal({
                   value={formData.virtualLink}
                   onChange={(e) => setFormData({ ...formData, virtualLink: e.target.value })}
                   placeholder="https://zoom.us/..."
-                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                  className="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
                 />
               </div>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="flex justify-end gap-3 px-5 py-4 border-t border-gray-100 bg-gray-50 flex-shrink-0">
+          <div className="flex justify-end gap-3 px-5 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex-shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 text-sm font-medium hover:bg-gray-200 rounded-lg transition-colors"
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               Cancel
             </button>

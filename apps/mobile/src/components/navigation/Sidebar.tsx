@@ -150,7 +150,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
           {/* Profile Card */}
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => { onNavigate('ProfileTab'); onClose(); }}
+            onPress={() => { onNavigate('Profile'); onClose(); }}
             style={styles.profileCard}
           >
             <Avatar

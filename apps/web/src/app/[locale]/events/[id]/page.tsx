@@ -208,14 +208,14 @@ export default function EventDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-amber-50/40 via-white to-orange-50/30">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="animate-pulse">
-            <div className="h-64 bg-gray-200 rounded-2xl mb-6" />
+            <div className="h-64 bg-gray-200 dark:bg-gray-800 rounded-2xl mb-6" />
             <div className="space-y-4">
-              <div className="h-8 bg-gray-200 rounded w-3/4" />
-              <div className="h-4 bg-gray-200 rounded w-1/2" />
-              <div className="h-20 bg-gray-200 rounded" />
+              <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded w-3/4" />
+              <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/2" />
+              <div className="h-20 bg-gray-200 dark:bg-gray-800 rounded" />
             </div>
           </div>
         </div>
@@ -231,12 +231,12 @@ export default function EventDetailPage() {
   const Icon = config.icon;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50/40 via-white to-orange-50/30">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Back Button */}
         <Link
           href="/en/events"
-          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
+          className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-6 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Events
@@ -250,14 +250,14 @@ export default function EventDetailPage() {
               style={{ backgroundImage: `url(${event.coverImage})` }}
             />
           ) : (
-            <div className={`h-48 md:h-64 bg-gradient-to-br ${config.bgColor} flex items-center justify-center`}>
-              <Icon className={`w-24 h-24 ${config.color} opacity-30`} />
+            <div className={`h-48 md:h-64 bg-gradient-to-br ${config.bgColor} dark:bg-opacity-20 flex items-center justify-center`}>
+              <Icon className={`w-24 h-24 ${config.color} opacity-30 dark:opacity-40`} />
             </div>
           )}
 
           {/* Event Type Badge */}
           <div className="absolute top-4 left-4">
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-white/90 backdrop-blur-sm shadow-sm ${config.color}`}>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm ${config.color}`}>
               <Icon className="w-4 h-4" />
               {event.eventType.replace('_', ' ')}
             </span>
@@ -265,7 +265,7 @@ export default function EventDetailPage() {
 
           {/* Privacy Badge */}
           <div className="absolute top-4 right-4">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-white/90 backdrop-blur-sm shadow-sm text-gray-700">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm text-gray-700 dark:text-gray-200">
               <Globe className="w-4 h-4" />
               {event.privacy.replace('_', ' ')}
             </span>
@@ -276,8 +276,8 @@ export default function EventDetailPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Title & Host */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">{event.title}</h1>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">{event.title}</h1>
 
               {/* Host */}
               <div className="flex items-center gap-3">
@@ -296,10 +296,10 @@ export default function EventDetailPage() {
                     )}
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 group-hover:text-amber-600 transition-colors">
+                    <p className="font-medium text-gray-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
                       {event.creator.firstName} {event.creator.lastName}
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       {event.creator.headline || 'Event Organizer'}
                     </p>
                   </div>
@@ -308,26 +308,26 @@ export default function EventDetailPage() {
 
               {/* Description */}
               {event.description && (
-                <div className="mt-6 pt-6 border-t border-gray-100">
-                  <h2 className="font-semibold text-gray-900 mb-3">About this event</h2>
-                  <p className="text-gray-600 whitespace-pre-wrap">{event.description}</p>
+                <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+                  <h2 className="font-semibold text-gray-900 dark:text-white mb-3">About this event</h2>
+                  <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{event.description}</p>
                 </div>
               )}
             </div>
 
             {/* Attendees */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Users className="w-5 h-5 text-amber-500" />
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+              <h2 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <Users className="w-5 h-5 text-amber-500 dark:text-amber-400" />
                 Attendees ({event._count.attendees})
               </h2>
 
               {/* Status Tabs */}
               <div className="flex gap-2 mb-4">
                 {[
-                  { id: 'going', label: 'Going', count: event.attendeesByStatus.going.length, color: 'text-green-600 bg-green-50 border-green-200' },
-                  { id: 'maybe', label: 'Maybe', count: event.attendeesByStatus.maybe.length, color: 'text-amber-600 bg-amber-50 border-amber-200' },
-                  { id: 'notGoing', label: "Can't Go", count: event.attendeesByStatus.notGoing.length, color: 'text-gray-500 bg-gray-50 border-gray-200' },
+                  { id: 'going', label: 'Going', count: event.attendeesByStatus.going.length, color: 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' },
+                  { id: 'maybe', label: 'Maybe', count: event.attendeesByStatus.maybe.length, color: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' },
+                  { id: 'notGoing', label: "Can't Go", count: event.attendeesByStatus.notGoing.length, color: 'text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700' },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -335,7 +335,7 @@ export default function EventDetailPage() {
                     className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
                       activeTab === tab.id
                         ? tab.color
-                        : 'text-gray-500 bg-gray-50 border-gray-200 hover:bg-gray-100'
+                        : 'text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
                   >
                     {tab.label} ({tab.count})
@@ -346,13 +346,13 @@ export default function EventDetailPage() {
               {/* Attendee List */}
               <div className="space-y-2">
                 {event.attendeesByStatus[activeTab].length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">No attendees with this status</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No attendees with this status</p>
                 ) : (
                   event.attendeesByStatus[activeTab].map((attendee) => (
                     <Link
                       key={attendee.id}
                       href={`/en/profile/${attendee.user.id}`}
-                      className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors"
+                      className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-400 flex items-center justify-center">
                         {attendee.user.profilePictureUrl ? (
@@ -368,7 +368,7 @@ export default function EventDetailPage() {
                         )}
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-gray-900">
+                        <p className="font-medium text-gray-900 dark:text-white">
                           {attendee.user.firstName} {attendee.user.lastName}
                         </p>
                       </div>
@@ -382,14 +382,14 @@ export default function EventDetailPage() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* RSVP Card */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-20">
-              <h3 className="font-semibold text-gray-900 mb-4">Your Response</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 sticky top-20">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Your Response</h3>
 
               <div className="grid grid-cols-3 gap-2 mb-4">
                 {[
-                  { status: 'GOING', icon: CheckCircle2, label: 'Going', color: 'text-green-600', bgActive: 'bg-green-50 border-green-400 ring-2 ring-green-200' },
-                  { status: 'MAYBE', icon: HelpCircle, label: 'Maybe', color: 'text-amber-600', bgActive: 'bg-amber-50 border-amber-400 ring-2 ring-amber-200' },
-                  { status: 'NOT_GOING', icon: XCircle, label: "Can't Go", color: 'text-gray-500', bgActive: 'bg-gray-100 border-gray-400 ring-2 ring-gray-200' },
+                  { status: 'GOING', icon: CheckCircle2, label: 'Going', color: 'text-green-600 dark:text-green-400', bgActive: 'bg-green-50 dark:bg-green-900/20 border-green-400 dark:border-green-500 ring-2 ring-green-200 dark:ring-green-900/30' },
+                  { status: 'MAYBE', icon: HelpCircle, label: 'Maybe', color: 'text-amber-600 dark:text-amber-400', bgActive: 'bg-amber-50 dark:bg-amber-900/20 border-amber-400 dark:border-amber-500 ring-2 ring-amber-200 dark:ring-amber-900/30' },
+                  { status: 'NOT_GOING', icon: XCircle, label: "Can't Go", color: 'text-gray-500 dark:text-gray-400', bgActive: 'bg-gray-100 dark:bg-gray-700 border-gray-400 dark:border-gray-500 ring-2 ring-gray-200 dark:ring-gray-900/30' },
                 ].map((option) => (
                   <button
                     key={option.status}
@@ -398,7 +398,7 @@ export default function EventDetailPage() {
                     className={`p-3 rounded-xl border-2 transition-all text-center ${
                       event.userRSVPStatus === option.status
                         ? option.bgActive
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                     }`}
                   >
                     <option.icon className={`w-6 h-6 mx-auto mb-1 ${option.color}`} />
@@ -410,18 +410,18 @@ export default function EventDetailPage() {
               </div>
 
               {/* Event Details */}
-              <div className="space-y-4 pt-4 border-t border-gray-100">
+              <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                 {/* Date & Time */}
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-amber-50 rounded-lg">
-                    <Calendar className="w-5 h-5 text-amber-600" />
+                  <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                    <Calendar className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 text-sm">
+                    <p className="font-medium text-gray-900 dark:text-white text-sm">
                       {formatEventDate(event.startDate, event.endDate, event.allDay)}
                     </p>
                     {event.allDay && (
-                      <p className="text-xs text-gray-500">All day</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">All day</p>
                     )}
                   </div>
                 </div>
@@ -429,11 +429,11 @@ export default function EventDetailPage() {
                 {/* Location */}
                 {event.location && (
                   <div className="flex items-start gap-3">
-                    <div className="p-2 bg-amber-50 rounded-lg">
-                      <MapPin className="w-5 h-5 text-amber-600" />
+                    <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                      <MapPin className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900 text-sm">{event.location}</p>
+                      <p className="font-medium text-gray-900 dark:text-white text-sm">{event.location}</p>
                     </div>
                   </div>
                 )}
@@ -441,16 +441,16 @@ export default function EventDetailPage() {
                 {/* Virtual Link */}
                 {event.virtualLink && (
                   <div className="flex items-start gap-3">
-                    <div className="p-2 bg-blue-50 rounded-lg">
-                      <Video className="w-5 h-5 text-blue-600" />
+                    <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <Video className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900 text-sm mb-1">Online Event</p>
+                      <p className="font-medium text-gray-900 dark:text-white text-sm mb-1">Online Event</p>
                       <a
                         href={event.virtualLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                       >
                         Join Meeting
                         <ExternalLink className="w-3 h-3" />
@@ -461,15 +461,15 @@ export default function EventDetailPage() {
 
                 {/* Attendees Count */}
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-amber-50 rounded-lg">
-                    <Users className="w-5 h-5 text-amber-600" />
+                  <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                    <Users className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 text-sm">
+                    <p className="font-medium text-gray-900 dark:text-white text-sm">
                       {event.attendeesByStatus.going.length} going
                     </p>
                     {event.maxAttendees && (
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         {event.maxAttendees - event.attendeesByStatus.going.length} spots left
                       </p>
                     )}
@@ -479,17 +479,17 @@ export default function EventDetailPage() {
 
               {/* Creator Actions */}
               {event.isCreator && (
-                <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
+                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
                   <Link
                     href={`/en/events/${event.id}/edit`}
-                    className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+                    className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                   >
                     <Edit2 className="w-4 h-4" />
                     Edit Event
                   </Link>
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="flex items-center justify-center gap-2 w-full px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                    className="flex items-center justify-center gap-2 w-full px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                     Delete Event
@@ -498,7 +498,7 @@ export default function EventDetailPage() {
               )}
 
               {/* Share Button */}
-              <button className="flex items-center justify-center gap-2 w-full mt-4 px-4 py-2 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+              <button className="flex items-center justify-center gap-2 w-full mt-4 px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <Share2 className="w-4 h-4" />
                 Share Event
               </button>
@@ -509,16 +509,16 @@ export default function EventDetailPage() {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Event</h3>
-            <p className="text-gray-600 mb-6">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-white/10 w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Delete Event</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               Are you sure you want to delete "{event.title}"? This action cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
               >
                 Cancel
               </button>

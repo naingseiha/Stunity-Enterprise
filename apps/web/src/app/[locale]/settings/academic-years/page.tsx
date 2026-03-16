@@ -464,35 +464,35 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
       
       {/* Main Content - Add left margin for sidebar */}
-      <div className="lg:ml-64 min-h-screen bg-gray-50 py-8 px-4">
+      <div className="lg:ml-64 min-h-screen bg-gray-50 dark:bg-gray-950 py-8 px-4 transition-colors duration-500">
         <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Academic Year Management</h1>
-              <p className="text-gray-600">
+              <h1 className="text-3xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">Academic Year Management</h1>
+              <p className="text-gray-600 dark:text-gray-400 font-medium">
                 Manage your school's academic years, student promotions, and settings
               </p>
             </div>
             <div className="flex gap-3">
               <button
                 onClick={() => router.push(`/${locale}/reports/year-comparison`)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all shadow-md"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-2xl font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-blue-500/25 text-sm"
               >
                 <BarChart3 className="w-5 h-5" />
                 Compare Years
               </button>
               <button
                 onClick={() => router.push(`/${locale}/settings/academic-years/new/wizard`)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-xl font-semibold hover:from-purple-600 hover:to-indigo-600 transition-all shadow-md"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-purple-500/25 text-sm"
               >
                 <Sparkles className="w-5 h-5" />
                 Setup Wizard
               </button>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all shadow-md"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-2xl font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-orange-500/25 text-sm"
               >
                 <Plus className="w-5 h-5" />
                 Quick Create
@@ -502,24 +502,22 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
           {/* Current Year Highlight */}
           {currentYear && (
-            <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-xl p-6">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-yellow-400 rounded-full flex items-center justify-center">
-                  <Star className="w-5 h-5 text-white" />
+            <div className="bg-gradient-to-r from-orange-500 to-yellow-500 dark:from-orange-500/20 dark:to-yellow-500/20 border border-orange-200 dark:border-orange-500/30 rounded-3xl p-8 shadow-xl shadow-orange-500/10 dark:shadow-black/20">
+              <div className="flex items-center gap-6 mb-2">
+                <div className="w-14 h-14 bg-white dark:bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg transform -rotate-3">
+                  <Star className="w-7 h-7 text-orange-500 dark:text-white" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-orange-700">Current Academic Year</p>
-                  <h2 className="text-2xl font-bold text-gray-900">{currentYear.name}</h2>
+                  <p className="text-[10px] font-black text-white/80 dark:text-orange-400 uppercase tracking-widest mb-1.5">Current Academic Year</p>
+                  <h2 className="text-3xl font-black text-white dark:text-white tracking-tight">{currentYear.name}</h2>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm font-bold text-white/90 dark:text-gray-300 mb-2">
                     {new Date(currentYear.startDate).toLocaleDateString()} -{' '}
                     {new Date(currentYear.endDate).toLocaleDateString()}
                   </p>
                   <span
-                    className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${
-                      getStatusInfo(currentYear.status).color
-                    }`}
+                    className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border bg-white/20 dark:bg-black/20 text-white border-white/30`}
                   >
                     {getStatusInfo(currentYear.status).label}
                   </span>
@@ -531,47 +529,51 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="font-semibold text-red-900">Error</p>
-              <p className="text-sm text-red-700">{error}</p>
+          <div className="mb-6 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 rounded-2xl p-4 flex items-start gap-4 animate-in slide-in-from-top-2">
+            <div className="p-2 bg-rose-100 dark:bg-rose-900/40 rounded-xl">
+              <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
             </div>
-            <button onClick={() => setError('')} className="text-red-600 hover:text-red-800">
-              ×
+            <div className="flex-1">
+              <p className="font-bold text-rose-900 dark:text-rose-200">Error Occurred</p>
+              <p className="text-sm text-rose-700 dark:text-rose-400">{error}</p>
+            </div>
+            <button onClick={() => setError('')} className="text-rose-400 hover:text-rose-600 transition-colors">
+              <X className="w-5 h-5" />
             </button>
           </div>
         )}
 
         {/* Success Message */}
         {successMessage && (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
-            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="font-semibold text-green-900">Success</p>
-              <p className="text-sm text-green-700">{successMessage}</p>
+          <div className="mb-6 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl p-4 flex items-start gap-4 animate-in slide-in-from-top-2">
+            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <button onClick={() => setSuccessMessage('')} className="text-green-600 hover:text-green-800">
-              ×
+            <div className="flex-1">
+              <p className="font-bold text-emerald-900 dark:text-emerald-200">Done Successfully</p>
+              <p className="text-sm text-emerald-700 dark:text-emerald-400">{successMessage}</p>
+            </div>
+            <button onClick={() => setSuccessMessage('')} className="text-emerald-400 hover:text-emerald-600 transition-colors">
+              <X className="w-5 h-5" />
             </button>
           </div>
         )}
 
         {/* Academic Years Timeline */}
         <AnimatedContent animation="slide-up" delay={100}>
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">All Academic Years</h2>
+          <div className="space-y-6">
+            <h2 className="text-xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">All Academic Years</h2>
 
             {years.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Calendar className="w-8 h-8 text-gray-400" />
+            <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-800 p-16 text-center shadow-slate-200/50 dark:shadow-black/50">
+              <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Calendar className="w-10 h-10 text-gray-300 dark:text-gray-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Academic Years Yet</h3>
-              <p className="text-gray-600 mb-4">Create your first academic year to get started</p>
+              <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">No Academic Years Yet</h3>
+              <p className="text-gray-500 dark:text-gray-400 font-medium max-w-sm mx-auto mb-8">Create your first academic year to get started</p>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all shadow-md"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-2xl font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-orange-500/25"
               >
                 <Plus className="w-5 h-5" />
                 Create Academic Year
@@ -585,29 +587,29 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
               return (
                 <div
                   key={year.id}
-                  className={`bg-white rounded-2xl shadow-sm border transition-all hover:shadow-md ${
-                    year.isCurrent ? 'border-orange-300 ring-2 ring-orange-100' : 'border-gray-200'
+                  className={`bg-white dark:bg-gray-900 rounded-3xl shadow-sm border transition-all hover:shadow-xl hover:-translate-y-1 shadow-slate-200/50 dark:shadow-black/50 ${
+                    year.isCurrent ? 'border-orange-500 ring-4 ring-orange-500/10' : 'border-gray-200 dark:border-gray-800'
                   }`}
                 >
                   <div className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-bold text-gray-900">{year.name}</h3>
+                          <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{year.name}</h3>
                           {year.isCurrent && (
-                            <span className="px-3 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full flex items-center gap-1">
-                              <Star className="w-3 h-3" />
+                            <span className="px-3 py-1 bg-orange-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1.5 shadow-lg shadow-orange-500/20">
+                              <Star className="w-3 h-3 fill-current" />
                               Current
                             </span>
                           )}
                           <span
-                            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${statusInfo.color}`}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${statusInfo.color.replace('100', '500/10').replace('700', '500')}`}
                           >
                             <StatusIcon className="w-3 h-3" />
                             {statusInfo.label}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">
+                        <p className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-2">
                           {new Date(year.startDate).toLocaleDateString('en-US', {
                             month: 'short',
                             year: 'numeric',
@@ -618,30 +620,36 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                             year: 'numeric',
                           })}
                         </p>
-                        <p className="text-xs text-gray-500">{statusInfo.description}</p>
+                        <p className="text-xs font-medium text-gray-400 dark:text-gray-500">{statusInfo.description}</p>
                       </div>
                     </div>
 
                     {/* Quick Stats */}
-                    <div className="grid grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 rounded-xl">
-                      <div className="text-center">
-                        <Users className="w-5 h-5 text-blue-500 mx-auto mb-1" />
-                        <p className="text-xs text-gray-500">Students</p>
-                        <p className="text-lg font-bold text-gray-900">
+                    <div className="grid grid-cols-3 gap-6 mb-6 p-6 bg-gray-50/50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800/50">
+                      <div className="text-center group">
+                        <div className="w-10 h-10 bg-blue-500/10 dark:bg-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-2 transition-transform group-hover:scale-110">
+                          <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Students</p>
+                        <p className="text-xl font-black text-gray-900 dark:text-white">
                           {year.id === currentYear?.id ? '~' : '-'}
                         </p>
                       </div>
-                      <div className="text-center">
-                        <BookOpen className="w-5 h-5 text-purple-500 mx-auto mb-1" />
-                        <p className="text-xs text-gray-500">Classes</p>
-                        <p className="text-lg font-bold text-gray-900">
+                      <div className="text-center group">
+                        <div className="w-10 h-10 bg-purple-500/10 dark:bg-purple-500/20 rounded-xl flex items-center justify-center mx-auto mb-2 transition-transform group-hover:scale-110">
+                          <BookOpen className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Classes</p>
+                        <p className="text-xl font-black text-gray-900 dark:text-white">
                           {year.id === currentYear?.id ? '~' : '-'}
                         </p>
                       </div>
-                      <div className="text-center">
-                        <GraduationCap className="w-5 h-5 text-green-500 mx-auto mb-1" />
-                        <p className="text-xs text-gray-500">Promoted</p>
-                        <p className="text-lg font-bold text-gray-900">
+                      <div className="text-center group">
+                        <div className="w-10 h-10 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-xl flex items-center justify-center mx-auto mb-2 transition-transform group-hover:scale-110">
+                          <GraduationCap className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Promoted</p>
+                        <p className="text-xl font-black text-gray-900 dark:text-white">
                           {year.isPromotionDone ? '✓' : '-'}
                         </p>
                       </div>
@@ -652,9 +660,9 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                       {!year.isCurrent && year.status !== 'ARCHIVED' && (
                         <button
                           onClick={() => handleSetCurrent(year.id)}
-                          className="flex items-center gap-2 px-4 py-2 bg-orange-100 text-orange-700 rounded-lg font-medium hover:bg-orange-200 transition-colors text-sm"
+                          className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-xl font-bold hover:bg-orange-600 hover:text-white transition-all text-[11px] uppercase tracking-wider"
                         >
-                          <Play className="w-4 h-4" />
+                          <Play className="w-4 h-4 fill-current" />
                           Set as Current
                         </button>
                       )}
@@ -672,7 +680,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                       {(year.isCurrent || year.status === 'ENDED') && !year.isPromotionDone && (
                         <button
                           onClick={() => router.push(`/${locale}/settings/academic-years/${year.id}/promote`)}
-                          className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg font-medium hover:bg-green-200 transition-colors text-sm"
+                          className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl font-bold hover:bg-emerald-600 hover:text-white transition-all text-[11px] uppercase tracking-wider"
                         >
                           <TrendingUp className="w-4 h-4" />
                           Promote Students
@@ -680,7 +688,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                       )}
                       
                       {year.isPromotionDone && (
-                        <span className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-lg text-sm font-medium">
+                        <span className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-[11px] font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-900/50">
                           <CheckCircle2 className="w-4 h-4" />
                           Promotion Complete
                         </span>
@@ -688,7 +696,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
                       <button
                         onClick={() => handleOpenCopyModal(year)}
-                        className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg font-medium hover:bg-purple-200 transition-colors text-sm"
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-xl font-bold hover:bg-purple-600 hover:text-white transition-all text-[11px] uppercase tracking-wider"
                       >
                         <Copy className="w-4 h-4" />
                         Copy Settings
@@ -697,10 +705,10 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                       <button
                         onClick={() => handleEditYear(year)}
                         disabled={year.status === 'ARCHIVED'}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all text-[11px] uppercase tracking-wider ${
                           year.status === 'ARCHIVED'
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-900 dark:hover:bg-white hover:text-white dark:hover:text-black'
                         }`}
                       >
                         <Edit className="w-4 h-4" />
@@ -710,7 +718,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                       {year.status === 'ENDED' && !year.isPromotionDone && (
                         <button
                           onClick={() => handleArchiveYear(year)}
-                          className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm"
+                          className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl font-bold hover:bg-gray-900 dark:hover:bg-white hover:text-white dark:hover:text-black transition-all text-[11px] uppercase tracking-wider"
                         >
                           <Archive className="w-4 h-4" />
                           Archive
@@ -720,7 +728,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                       {!year.isCurrent && year.status === 'PLANNING' && (
                         <button
                           onClick={() => handleDeleteYear(year)}
-                          className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium hover:bg-red-200 transition-colors text-sm"
+                          className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl font-bold hover:bg-rose-600 hover:text-white transition-all text-[11px] uppercase tracking-wider"
                         >
                           <Trash2 className="w-4 h-4" />
                           Delete
@@ -738,118 +746,141 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
       {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-800 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="p-8 border-b border-gray-100 dark:border-gray-800">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Create New Academic Year</h2>
+                <div>
+                  <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Create New Academic Year</h2>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mt-1">Define dates and settings for your next school cycle</p>
+                </div>
                 <button
                   onClick={() => setShowCreateModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="p-3 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-2xl transition-colors"
                 >
-                  <span className="text-2xl">×</span>
+                  <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-8 space-y-8">
               {/* Year Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Academic Year Name <span className="text-red-500">*</span>
+                <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
+                  Academic Year Name <span className="text-rose-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={newYearName}
-                  onChange={(e) => setNewYearName(e.target.value)}
-                  placeholder="e.g., 2026-2027"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                    <Calendar className="h-5 w-5 text-gray-400 dark:text-gray-500 group-focus-within:text-orange-500 transition-colors" />
+                  </div>
+                  <input
+                    type="text"
+                    value={newYearName}
+                    onChange={(e) => setNewYearName(e.target.value)}
+                    placeholder="e.g., 2026-2027"
+                    className="w-full pl-12 pr-5 py-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[1.25rem] focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all"
+                  />
+                </div>
+                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-2 ml-1">
                   Usually in format: YYYY-YYYY (e.g., 2026-2027)
                 </p>
               </div>
 
               {/* Date Range */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Start Date <span className="text-red-500">*</span>
+                  <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
+                    Start Date <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="date"
                     value={newStartDate}
                     onChange={(e) => setNewStartDate(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[1.25rem] focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Usually starts in October or November</p>
+                  <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-2 ml-1">October / November</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    End Date <span className="text-red-500">*</span>
+                  <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
+                    End Date <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="date"
                     value={newEndDate}
                     onChange={(e) => setNewEndDate(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[1.25rem] focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Usually ends in August or September</p>
+                  <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-2 ml-1">August / September</p>
                 </div>
               </div>
 
               {/* Copy Settings */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
                   Copy Settings From (Optional)
                 </label>
-                <select
-                  value={copyFromYearId}
-                  onChange={(e) => setCopyFromYearId(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
-                >
-                  <option value="">Start from scratch</option>
-                  {years.map((year) => (
-                    <option key={year.id} value={year.id}>
-                      {year.name} (Classes, Subjects, Teachers)
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
+                <div className="relative">
+                  <select
+                    value={copyFromYearId}
+                    onChange={(e) => setCopyFromYearId(e.target.value)}
+                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[1.25rem] focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="">Start from scratch</option>
+                    {years.map((year) => (
+                      <option key={year.id} value={year.id}>
+                        {year.name} (Classes, Subjects, Teachers)
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 pr-5 flex items-center pointer-events-none">
+                    <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500 rotate-90" />
+                  </div>
+                </div>
+                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-2 ml-1">
                   Copy classes, subjects, and teachers from a previous year
                 </p>
               </div>
 
               {/* Info Box */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <div className="flex gap-3">
-                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-blue-900">
-                    <p className="font-semibold mb-1">What happens after creating:</p>
-                    <ul className="list-disc list-inside space-y-1 text-blue-800">
-                      <li>New academic year will be created in PLANNING status</li>
-                      <li>If copying, classes and settings will be duplicated</li>
-                      <li>You can then promote students from the previous year</li>
-                      <li>Set it as current when ready to use</li>
+              <div className="bg-orange-50/50 dark:bg-orange-500/5 border border-orange-100 dark:border-orange-500/20 rounded-[1.25rem] p-6 shadow-sm">
+                <div className="flex gap-4">
+                  <div className="p-2 bg-orange-100 dark:bg-orange-500/20 rounded-xl h-fit">
+                    <Sparkles className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <div className="text-sm dark:text-gray-300">
+                    <p className="font-black text-gray-900 dark:text-white mb-2 uppercase tracking-widest text-[10px]">What happens next:</p>
+                    <ul className="space-y-2 text-gray-600 dark:text-gray-400 font-medium">
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                        Year starts in <span className="text-orange-600 dark:text-orange-400 font-bold">PLANNING</span> status
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                        Settings will be duplicated if copied
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                        Student promotion can be done later
+                      </li>
                     </ul>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-200 flex gap-3">
+            <div className="p-8 border-t border-gray-100 dark:border-gray-800 flex gap-4 bg-gray-50/50 dark:bg-gray-800/30">
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+                className="flex-1 px-6 py-4 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-400 rounded-2xl font-bold hover:bg-white dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-all active:scale-[0.98]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateYear}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all shadow-md"
+                className="flex-1 px-6 py-4 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-orange-500/20"
               >
-                Create Academic Year
+                Create Year
               </button>
             </div>
           </div>
@@ -858,86 +889,89 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
       {/* Edit Modal */}
       {showEditModal && selectedYear && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full">
-            <div className="p-6 border-b border-gray-200">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-2xl max-w-2xl w-full border border-gray-200 dark:border-gray-800 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="p-8 border-b border-gray-100 dark:border-gray-800">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Edit Academic Year</h2>
+                <div>
+                  <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Edit Academic Year</h2>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mt-1">Update details for {selectedYear.name}</p>
+                </div>
                 <button
                   onClick={() => {
                     setShowEditModal(false);
                     setSelectedYear(null);
                   }}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="p-3 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-2xl transition-colors"
                 >
-                  <span className="text-2xl">×</span>
+                  <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-8 space-y-8">
               {/* Year Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Academic Year Name <span className="text-red-500">*</span>
+                <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
+                  Academic Year Name <span className="text-rose-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={editYearName}
-                  onChange={(e) => setEditYearName(e.target.value)}
-                  placeholder="e.g., 2026-2027"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                    <Calendar className="h-5 w-5 text-gray-400 dark:text-gray-500 group-focus-within:text-blue-500 transition-colors" />
+                  </div>
+                  <input
+                    type="text"
+                    value={editYearName}
+                    onChange={(e) => setEditYearName(e.target.value)}
+                    placeholder="e.g., 2026-2027"
+                    className="w-full pl-12 pr-5 py-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[1.25rem] focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 dark:text-white font-bold transition-all"
+                  />
+                </div>
               </div>
 
-              {/* Start Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Start Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={editStartDate}
-                  onChange={(e) => setEditStartDate(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Usually starts in October or November
-                </p>
-              </div>
+              {/* Date Range */}
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
+                    Start Date <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={editStartDate}
+                    onChange={(e) => setEditStartDate(e.target.value)}
+                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[1.25rem] focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 dark:text-white font-bold transition-all"
+                  />
+                </div>
 
-              {/* End Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  End Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={editEndDate}
-                  onChange={(e) => setEditEndDate(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Usually ends in August or September
-                </p>
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
+                    End Date <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={editEndDate}
+                    onChange={(e) => setEditEndDate(e.target.value)}
+                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[1.25rem] focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 dark:text-white font-bold transition-all"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-200 flex gap-3">
+            <div className="p-8 border-t border-gray-100 dark:border-gray-800 flex gap-4 bg-gray-50/50 dark:bg-gray-800/30">
               <button
                 onClick={() => {
                   setShowEditModal(false);
                   setSelectedYear(null);
                 }}
-                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+                className="flex-1 px-6 py-4 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-400 rounded-2xl font-bold hover:bg-white dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-all active:scale-[0.98]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleUpdateYear}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all shadow-md"
+                className="flex-1 px-6 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-blue-500/20"
               >
-                Update Academic Year
+                Update Year
               </button>
             </div>
           </div>
@@ -946,43 +980,45 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedYear && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
-            <div className="p-6">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Trash2 className="w-6 h-6 text-red-600" />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800 overflow-hidden animate-in zoom-in duration-300">
+            <div className="p-10">
+              <div className="w-20 h-20 bg-rose-100 dark:bg-rose-500/10 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <Trash2 className="w-10 h-10 text-rose-600 dark:text-rose-500" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
+              <h2 className="text-2xl font-black text-gray-900 dark:text-white text-center mb-4 tracking-tight">
                 Delete Academic Year?
               </h2>
-              <p className="text-gray-600 text-center mb-6">
-                Are you sure you want to delete <strong>{selectedYear.name}</strong>? This action
-                cannot be undone.
+              <p className="text-gray-500 dark:text-gray-400 text-center font-medium mb-8 leading-relaxed">
+                Are you sure you want to delete <span className="text-gray-900 dark:text-white font-black">{selectedYear.name}</span>? This action is <span className="text-rose-600 dark:text-rose-500 font-bold underline underline-offset-4">permanent</span> and cannot be undone.
               </p>
 
               {/* Warning */}
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                <p className="text-sm text-red-800 font-medium">
-                  ⚠️ This will only work if no classes are associated with this year.
-                </p>
+              <div className="bg-rose-50 dark:bg-rose-500/5 border border-rose-100 dark:border-rose-500/20 rounded-2xl p-4 mb-4">
+                <div className="flex gap-3">
+                  <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />
+                  <p className="text-xs text-rose-700 dark:text-rose-400 font-bold leading-relaxed">
+                    Deletion will only succeed if no records or classes are currently linked to this cycle.
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-200 flex gap-3">
+            <div className="p-8 border-t border-gray-100 dark:border-gray-800 flex gap-4 bg-gray-50/50 dark:bg-gray-800/30">
               <button
                 onClick={() => {
                   setShowDeleteModal(false);
                   setSelectedYear(null);
                 }}
-                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+                className="flex-1 px-6 py-4 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-400 rounded-2xl font-bold hover:bg-white dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-all active:scale-[0.98]"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDeleteYear}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-semibold hover:from-red-600 hover:to-red-700 transition-all shadow-md"
+                className="flex-1 px-6 py-4 bg-rose-600 text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-rose-700 active:scale-[0.98] transition-all shadow-xl shadow-rose-500/20"
               >
-                Delete Year
+                Delete
               </button>
             </div>
           </div>
@@ -991,80 +1027,85 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
       {/* Copy Settings Modal */}
       {showCopyModal && copySourceYear && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-800 animate-in slide-in-from-bottom-4 duration-500">
             {/* Header */}
-            <div className="p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
+            <div className="p-8 border-b border-gray-100 dark:border-gray-800 sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md z-10">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Copy Settings</h2>
-                  <p className="text-sm text-gray-600 mt-1">
-                    From: <span className="font-semibold text-gray-900">{copySourceYear.name}</span>
+                  <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Copy Institutional Settings</h2>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mt-1">
+                    Migrating from cycle: <span className="text-orange-600 dark:text-orange-400 font-black">{copySourceYear.name}</span>
                   </p>
                 </div>
                 <button
                   onClick={() => setShowCopyModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="p-3 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-2xl transition-colors"
                 >
                   <X className="w-6 h-6" />
                 </button>
               </div>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-8 space-y-8">
               {/* Copy Preview Section */}
               {copyLoading && !copyPreviewData ? (
-                <div className="flex items-center justify-center py-12">
+                <div className="flex items-center justify-center py-20 bg-gray-50/50 dark:bg-gray-800/20 rounded-[2rem] border-2 border-dashed border-gray-200 dark:border-gray-800">
                   <div className="text-center">
-                    <Loader2 className="w-12 h-12 text-orange-500 animate-spin mx-auto mb-4" />
-                    <p className="text-gray-600">Loading preview...</p>
+                    <div className="relative mx-auto w-20 h-20 mb-6">
+                      <div className="absolute inset-0 bg-orange-500/20 rounded-full animate-ping" />
+                      <div className="relative w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center shadow-xl shadow-orange-500/30">
+                        <Loader2 className="w-10 h-10 text-white animate-spin" />
+                      </div>
+                    </div>
+                    <p className="text-gray-900 dark:text-white font-black tracking-widest text-xs uppercase">Preparing Preview Data...</p>
                   </div>
                 </div>
               ) : copyPreviewData ? (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">What will be copied:</h3>
-                  <div className="grid grid-cols-3 gap-4">
+                <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+                  <h3 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-6 px-1">Institutional Blueprint:</h3>
+                  <div className="grid grid-cols-3 gap-6">
                     {/* Subjects Card */}
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                          <BookOpen className="w-5 h-5 text-white" />
+                    <div className="bg-blue-500/5 dark:bg-blue-500/10 rounded-2xl p-6 border border-blue-500/10 hover:border-blue-500/30 transition-all group">
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:-rotate-6 transition-transform">
+                          <BookOpen className="w-6 h-6 text-white" />
                         </div>
-                        <div>
-                          <p className="text-2xl font-bold text-blue-900">
+                        <div className="text-center">
+                          <p className="text-3xl font-black text-blue-900 dark:text-blue-100">
                             {copyPreviewData.subjectsCount || 0}
                           </p>
-                          <p className="text-sm text-blue-700">Subjects</p>
+                          <p className="text-[10px] font-black text-blue-600/60 dark:text-blue-400/60 uppercase tracking-widest mt-1">Subjects</p>
                         </div>
                       </div>
                     </div>
 
                     {/* Teachers Card */}
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-                          <Users className="w-5 h-5 text-white" />
+                    <div className="bg-emerald-500/5 dark:bg-emerald-500/10 rounded-2xl p-6 border border-emerald-500/10 hover:border-emerald-500/30 transition-all group">
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:rotate-6 transition-transform">
+                          <Users className="w-6 h-6 text-white" />
                         </div>
-                        <div>
-                          <p className="text-2xl font-bold text-green-900">
+                        <div className="text-center">
+                          <p className="text-3xl font-black text-emerald-900 dark:text-emerald-100">
                             {copyPreviewData.teachersCount || 0}
                           </p>
-                          <p className="text-sm text-green-700">Active Teachers</p>
+                          <p className="text-[10px] font-black text-emerald-600/60 dark:text-emerald-400/60 uppercase tracking-widest mt-1">Teachers</p>
                         </div>
                       </div>
                     </div>
 
                     {/* Classes Card */}
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
-                          <GraduationCap className="w-5 h-5 text-white" />
+                    <div className="bg-purple-500/5 dark:bg-purple-500/10 rounded-2xl p-6 border border-purple-500/10 hover:border-purple-500/30 transition-all group">
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="w-12 h-12 bg-purple-500 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:-rotate-3 transition-transform">
+                          <GraduationCap className="w-6 h-6 text-white" />
                         </div>
-                        <div>
-                          <p className="text-2xl font-bold text-purple-900">
+                        <div className="text-center">
+                          <p className="text-3xl font-black text-purple-900 dark:text-purple-100">
                             {copyPreviewData.classesCount || 0}
                           </p>
-                          <p className="text-sm text-purple-700">Classes</p>
+                          <p className="text-[10px] font-black text-purple-600/60 dark:text-purple-400/60 uppercase tracking-widest mt-1">Classes</p>
                         </div>
                       </div>
                     </div>
@@ -1074,148 +1115,152 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
               {/* Target Year Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Copy to Academic Year <span className="text-red-500">*</span>
+                <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
+                  Target Academic Cycle <span className="text-rose-500">*</span>
                 </label>
-                <select
-                  value={copyTargetYearId}
-                  onChange={(e) => setCopyTargetYearId(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  disabled={copyLoading}
-                >
-                  <option value="">Select target year...</option>
-                  {years
-                    .filter((year) => year.id !== copySourceYear.id)
-                    .map((year) => (
-                      <option key={year.id} value={year.id}>
-                        {year.name}
-                      </option>
-                    ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  Choose which academic year to copy the settings to
+                <div className="relative">
+                  <select
+                    value={copyTargetYearId}
+                    onChange={(e) => setCopyTargetYearId(e.target.value)}
+                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-[1.25rem] focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all appearance-none cursor-pointer disabled:opacity-50"
+                    disabled={copyLoading}
+                  >
+                    <option value="">Select destination cycle...</option>
+                    {years
+                      .filter((year) => year.id !== copySourceYear.id)
+                      .map((year) => (
+                        <option key={year.id} value={year.id}>
+                          Cycle: {year.name}
+                        </option>
+                      ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 pr-5 flex items-center pointer-events-none">
+                    <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500 rotate-90" />
+                  </div>
+                </div>
+                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-2 ml-1">
+                  Choose the academic year that will receive these inherited settings
                 </p>
               </div>
 
               {/* Checkbox Options */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Select what to copy:
+                <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-6">
+                  Select Modules to Migrate:
                 </label>
-                <div className="space-y-3">
-                  <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <label className={`group relative flex flex-col items-center justify-center p-6 border-2 rounded-[2rem] cursor-pointer transition-all ${
+                    copySubjects ? 'bg-blue-500/5 border-blue-500 ring-4 ring-blue-500/10' : 'bg-transparent border-gray-100 dark:border-gray-800'
+                  }`}>
                     <input
                       type="checkbox"
                       checked={copySubjects}
                       onChange={(e) => setCopySubjects(e.target.checked)}
-                      className="w-5 h-5 text-orange-500 rounded focus:ring-orange-500"
+                      className="absolute inset-0 opacity-0 cursor-pointer"
                       disabled={copyLoading}
                     />
-                    <div className="flex items-center gap-2 flex-1">
-                      <BookOpen className="w-5 h-5 text-blue-600" />
-                      <div>
-                        <p className="font-medium text-gray-900">Copy Subjects</p>
-                        <p className="text-xs text-gray-500">
-                          Duplicate all subjects to the target year
-                        </p>
-                      </div>
+                    <div className={`p-4 rounded-2xl mb-4 transition-all ${
+                      copySubjects ? 'bg-blue-500 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
+                    }`}>
+                      <BookOpen className="w-8 h-8" />
                     </div>
+                    <p className={`font-black uppercase tracking-widest text-[10px] transition-colors ${
+                      copySubjects ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400'
+                    }`}>Subjects</p>
                   </label>
 
-                  <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <label className={`group relative flex flex-col items-center justify-center p-6 border-2 rounded-[2rem] cursor-pointer transition-all ${
+                    copyTeachers ? 'bg-emerald-500/5 border-emerald-500 ring-4 ring-emerald-500/10' : 'bg-transparent border-gray-100 dark:border-gray-800'
+                  }`}>
                     <input
                       type="checkbox"
                       checked={copyTeachers}
                       onChange={(e) => setCopyTeachers(e.target.checked)}
-                      className="w-5 h-5 text-orange-500 rounded focus:ring-orange-500"
+                      className="absolute inset-0 opacity-0 cursor-pointer"
                       disabled={copyLoading}
                     />
-                    <div className="flex items-center gap-2 flex-1">
-                      <Users className="w-5 h-5 text-green-600" />
-                      <div>
-                        <p className="font-medium text-gray-900">Copy Teachers</p>
-                        <p className="text-xs text-gray-500">
-                          Assign active teachers to the target year
-                        </p>
-                      </div>
+                    <div className={`p-4 rounded-2xl mb-4 transition-all ${
+                      copyTeachers ? 'bg-emerald-500 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
+                    }`}>
+                      <Users className="w-8 h-8" />
                     </div>
+                    <p className={`font-black uppercase tracking-widest text-[10px] transition-colors ${
+                      copyTeachers ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'
+                    }`}>Teachers</p>
                   </label>
 
-                  <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <label className={`group relative flex flex-col items-center justify-center p-6 border-2 rounded-[2rem] cursor-pointer transition-all ${
+                    copyClasses ? 'bg-purple-500/5 border-purple-500 ring-4 ring-purple-500/10' : 'bg-transparent border-gray-100 dark:border-gray-800'
+                  }`}>
                     <input
                       type="checkbox"
                       checked={copyClasses}
                       onChange={(e) => setCopyClasses(e.target.checked)}
-                      className="w-5 h-5 text-orange-500 rounded focus:ring-orange-500"
+                      className="absolute inset-0 opacity-0 cursor-pointer"
                       disabled={copyLoading}
                     />
-                    <div className="flex items-center gap-2 flex-1">
-                      <GraduationCap className="w-5 h-5 text-purple-600" />
-                      <div>
-                        <p className="font-medium text-gray-900">Copy Classes</p>
-                        <p className="text-xs text-gray-500">
-                          Duplicate class structures to the target year
-                        </p>
-                      </div>
+                    <div className={`p-4 rounded-2xl mb-4 transition-all ${
+                      copyClasses ? 'bg-purple-500 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
+                    }`}>
+                      <GraduationCap className="w-8 h-8" />
                     </div>
+                    <p className={`font-black uppercase tracking-widest text-[10px] transition-colors ${
+                      copyClasses ? 'text-purple-600 dark:text-purple-400' : 'text-gray-400'
+                    }`}>Classes</p>
                   </label>
                 </div>
               </div>
 
               {/* Warning/Info Messages */}
-              <div className="space-y-3">
-                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                  <div className="flex gap-3">
-                    <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-yellow-900">
-                      <p className="font-semibold mb-1">Important Information:</p>
-                      <ul className="list-disc list-inside space-y-1 text-yellow-800">
-                        <li>This will create duplicates in the target year</li>
-                        <li>Existing data in target year won't be affected</li>
-                        <li>Students are not copied - use "Promote Students" for that</li>
-                        <li>You can run this multiple times if needed</li>
+              <div className="space-y-4">
+                <div className="bg-orange-50/50 dark:bg-orange-500/5 border border-orange-100 dark:border-orange-500/20 rounded-2xl p-6">
+                  <div className="flex gap-4">
+                    <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-black text-gray-900 dark:text-white uppercase tracking-widest text-[10px] mb-2">Technical Disclaimer:</p>
+                      <ul className="space-y-1.5 text-gray-600 dark:text-gray-400 font-medium">
+                        <li>• This process creates independent duplicates</li>
+                        <li>• It will not overwrite existing data in destination</li>
+                        <li>• Enrollments & Attendance are not migrated</li>
                       </ul>
                     </div>
                   </div>
                 </div>
 
                 {copyError && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                    <div className="flex gap-3">
-                      <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="font-semibold text-red-900">Error</p>
-                        <p className="text-sm text-red-700">{copyError}</p>
-                      </div>
+                  <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 rounded-2xl p-4 flex items-center gap-4">
+                    <div className="p-2 bg-rose-100 dark:bg-rose-900/40 rounded-xl">
+                      <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
                     </div>
+                    <p className="text-sm font-bold text-rose-900 dark:text-rose-200">{copyError}</p>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Footer */}
-            <div className="p-6 border-t border-gray-200 flex gap-3 bg-gray-50">
+            <div className="p-8 border-t border-gray-100 dark:border-gray-800 flex gap-4 bg-gray-50/50 dark:bg-gray-800/30">
               <button
                 onClick={() => setShowCopyModal(false)}
-                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-white transition-colors"
+                className="flex-1 px-6 py-4 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-400 rounded-2xl font-bold hover:bg-white dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-all active:scale-[0.98]"
                 disabled={copyLoading}
               >
-                Cancel
+                Discard
               </button>
               <button
                 onClick={handleExecuteCopy}
                 disabled={copyLoading || !copyTargetYearId}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-[2] px-6 py-4 bg-orange-600 text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-orange-700 active:scale-[0.98] transition-all shadow-xl shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
               >
                 {copyLoading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Copying...
+                    Migrating...
                   </>
                 ) : (
                   <>
                     <Copy className="w-5 h-5" />
-                    Copy Settings
+                    Apply Migration
                   </>
                 )}
               </button>

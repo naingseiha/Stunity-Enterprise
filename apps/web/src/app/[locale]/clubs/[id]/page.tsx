@@ -503,14 +503,14 @@ export default function ClubDetailPage() {
   const isAdmin = club.myRole === 'OWNER' || club.myRole === 'ADMIN';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/40 via-white to-orange-50/30">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
       {/* Navigation Bar */}
       <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
       
       <div className="max-w-5xl mx-auto px-4 py-6">
         {/* Page Header Card - Matching Clubs List Page Style */}
         <div 
-          className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6 animate-fadeInUp"
+          className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-6 animate-fadeInUp"
         >
           {/* Gradient Header Banner - Taller like profile/clubs page */}
           <div className={`h-48 md:h-56 bg-gradient-to-br ${CLUB_TYPE_COLORS[club.clubType] || 'from-amber-400 to-orange-500'} relative overflow-hidden`}>
@@ -529,7 +529,7 @@ export default function ClubDetailPage() {
             {/* Back Button */}
             <Link
               href={`/${locale}/clubs`}
-              className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700 hover:bg-white transition-all shadow-sm"
+              className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-800 transition-all shadow-sm"
             >
               <ArrowLeft className="w-4 h-4" />
               All Clubs
@@ -539,9 +539,9 @@ export default function ClubDetailPage() {
             {isAdmin && (
               <Link
                 href={`/${locale}/clubs/${club.id}/settings`}
-                className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-all shadow-sm"
+                className="absolute top-4 right-4 p-2.5 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full hover:bg-white dark:hover:bg-gray-800 transition-all shadow-sm"
               >
-                <Settings className="w-5 h-5 text-gray-700" />
+                <Settings className="w-5 h-5 text-gray-700 dark:text-gray-200" />
               </Link>
             )}
           </div>
@@ -550,21 +550,21 @@ export default function ClubDetailPage() {
           <div className="px-6 pb-6">
             {/* Avatar - Circular like profile/clubs page */}
             <div className="relative -mt-16 md:-mt-20 mb-4">
-              <div className={`w-32 h-32 md:w-36 md:h-36 rounded-full bg-gradient-to-br ${CLUB_TYPE_COLORS[club.clubType] || 'from-amber-400 to-orange-500'} flex items-center justify-center border-4 border-white shadow-xl ring-4 ring-amber-100/50`}>
+              <div className={`w-32 h-32 md:w-36 md:h-36 rounded-full bg-gradient-to-br ${CLUB_TYPE_COLORS[club.clubType] || 'from-amber-400 to-orange-500'} flex items-center justify-center border-4 border-white dark:border-gray-800 shadow-xl ring-4 ring-amber-100/50 dark:ring-amber-900/20`}>
                 <span className="text-white scale-150">
                   {CLUB_TYPE_ICONS[club.clubType]}
                 </span>
               </div>
               
               {/* Privacy Badge */}
-              <div className="absolute bottom-2 right-0 flex items-center gap-1.5 bg-white rounded-full px-2.5 py-1 shadow-md border border-gray-100">
-                <span className="text-gray-600">
+              <div className="absolute bottom-2 right-0 flex items-center gap-1.5 bg-white dark:bg-gray-800 rounded-full px-2.5 py-1 shadow-md border border-gray-100 dark:border-gray-700">
+                <span className="text-gray-600 dark:text-gray-400">
                   {club.privacy === 'PUBLIC' && <Globe className="w-4 h-4 text-green-500" />}
                   {club.privacy === 'SCHOOL' && <School className="w-4 h-4 text-blue-500" />}
                   {club.privacy === 'PRIVATE' && <Lock className="w-4 h-4 text-amber-500" />}
                   {club.privacy === 'SECRET' && <EyeOff className="w-4 h-4 text-red-500" />}
                 </span>
-                <span className="text-xs font-medium text-gray-700">{club.privacy}</span>
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{club.privacy}</span>
               </div>
             </div>
             
@@ -578,15 +578,15 @@ export default function ClubDetailPage() {
                     {CLUB_TYPE_LABELS[club.clubType]}
                   </span>
                   {club.category && (
-                    <span className="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full border border-amber-100">
+                    <span className="text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-2.5 py-1 rounded-full border border-amber-100 dark:border-amber-900/30">
                       {club.category}
                     </span>
                   )}
                 </div>
                 
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{club.name}</h1>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">{club.name}</h1>
                 {club.description && (
-                  <p className="text-gray-500 mt-1 max-w-xl">{club.description}</p>
+                  <p className="text-gray-500 dark:text-gray-400 mt-1 max-w-xl">{club.description}</p>
                 )}
                 
                 {/* Creator Info */}
@@ -598,8 +598,8 @@ export default function ClubDetailPage() {
                       {club.creator.firstName?.[0]}{club.creator.lastName?.[0]}
                     </div>
                   )}
-                  <span className="text-sm text-gray-500">
-                    Created by <span className="font-medium text-gray-700">{club.creator.firstName} {club.creator.lastName}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    Created by <span className="font-medium text-gray-700 dark:text-gray-200">{club.creator.firstName} {club.creator.lastName}</span>
                   </span>
                 </div>
               </div>
@@ -611,7 +611,7 @@ export default function ClubDetailPage() {
                     {(club.myRole === 'OWNER' || club.myRole === 'ADMIN') && (
                       <button
                         onClick={() => setShowInviteModal(true)}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
                       >
                         <UserPlus className="w-4 h-4" />
                         Invite
@@ -621,10 +621,10 @@ export default function ClubDetailPage() {
                     {club.myRole && (
                       <span className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium ${
                         club.myRole === 'OWNER' 
-                          ? 'bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 border border-amber-200' 
+                          ? 'bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800' 
                           : club.myRole === 'ADMIN'
-                          ? 'bg-blue-50 text-blue-700 border border-blue-100'
-                          : 'bg-gray-100 text-gray-600 border border-gray-200'
+                          ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600'
                       }`}>
                         {ROLE_ICONS[club.myRole]}
                         {club.myRole}
@@ -634,7 +634,7 @@ export default function ClubDetailPage() {
                       <button
                         onClick={handleLeave}
                         disabled={leaving}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all disabled:opacity-50"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-all disabled:opacity-50"
                       >
                         {leaving ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -659,7 +659,7 @@ export default function ClubDetailPage() {
                     Join Club
                   </button>
                 ) : (
-                  <span className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl">
+                  <span className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl">
                     <Lock className="w-4 h-4" />
                     Invite Only
                   </span>
@@ -668,32 +668,32 @@ export default function ClubDetailPage() {
             </div>
             
             {/* Quick Stats */}
-            <div className="flex items-center gap-6 mt-6 pt-4 border-t border-gray-100">
+            <div className="flex items-center gap-6 mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
               <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-amber-600" />
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-gray-900">{club._count.members}</p>
-                  <p className="text-xs text-gray-500">Members</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">{club._count.members}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Members</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-blue-600" />
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-gray-900">{club._count.posts}</p>
-                  <p className="text-xs text-gray-500">Posts</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">{club._count.posts}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Posts</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-green-600" />
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-gray-900">{new Date(club.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
-                  <p className="text-xs text-gray-500">Created</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">{new Date(club.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Created</p>
                 </div>
               </div>
             </div>
@@ -702,20 +702,20 @@ export default function ClubDetailPage() {
 
         {/* Main Content Card */}
         <div 
-          className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-fadeInUp"
+          className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden animate-fadeInUp"
           style={{ animationDelay: '0.1s' }}
         >
           {/* Tabs */}
           {club.isMember && (
             <>
-              <div className="p-4 border-b border-gray-100">
-                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 w-fit">
+              <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-900 rounded-xl p-1 w-fit">
                   <button
                     onClick={() => setActiveTab('posts')}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
                       activeTab === 'posts'
-                        ? 'bg-white text-amber-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white dark:bg-gray-800 text-amber-600 dark:text-amber-400 shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                     }`}
                   >
                     <FileText className="w-4 h-4" />
@@ -725,8 +725,8 @@ export default function ClubDetailPage() {
                     onClick={() => setActiveTab('members')}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
                       activeTab === 'members'
-                        ? 'bg-white text-amber-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white dark:bg-gray-800 text-amber-600 dark:text-amber-400 shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                     }`}
                   >
                     <Users className="w-4 h-4" />
@@ -736,8 +736,8 @@ export default function ClubDetailPage() {
                     onClick={() => setActiveTab('about')}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
                       activeTab === 'about'
-                        ? 'bg-white text-amber-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white dark:bg-gray-800 text-amber-600 dark:text-amber-400 shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                     }`}
                   >
                     <Info className="w-4 h-4" />
@@ -751,7 +751,7 @@ export default function ClubDetailPage() {
                 {activeTab === 'posts' && (
                   <div className="space-y-4">
                     {/* Create Post Box */}
-                    <div className="bg-gradient-to-r from-amber-50/50 to-orange-50/50 rounded-xl border border-amber-100/50 p-4">
+                    <div className="bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-900/10 dark:to-orange-900/10 rounded-xl border border-amber-100/50 dark:border-amber-900/30 p-4">
                       {showCreatePost ? (
                         <div className="space-y-3">
                           <textarea
@@ -759,7 +759,7 @@ export default function ClubDetailPage() {
                             onChange={(e) => setNewPostContent(e.target.value)}
                             placeholder={`Share something with ${club.name}...`}
                             rows={3}
-                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 resize-none"
+                            className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 resize-none dark:text-white"
                             autoFocus
                           />
                           <div className="flex items-center justify-end gap-2">
@@ -768,7 +768,7 @@ export default function ClubDetailPage() {
                                 setShowCreatePost(false);
                                 setNewPostContent('');
                           }}
-                          className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                          className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
                         >
                           Cancel
                         </button>
@@ -789,7 +789,7 @@ export default function ClubDetailPage() {
                   ) : (
                     <button
                       onClick={() => setShowCreatePost(true)}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-500 hover:bg-gray-50 rounded-xl transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors"
                     >
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white">
                         <Edit3 className="w-5 h-5" />
@@ -804,9 +804,9 @@ export default function ClubDetailPage() {
                     <Loader2 className="w-6 h-6 text-amber-500 animate-spin" />
                   </div>
                 ) : posts.length === 0 ? (
-                  <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
-                    <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500">No posts yet. Be the first to share!</p>
+                  <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+                    <FileText className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-500 dark:text-gray-400">No posts yet. Be the first to share!</p>
                   </div>
                 ) : (
                   posts.map((post) => (
@@ -831,13 +831,13 @@ export default function ClubDetailPage() {
 
                 {/* Members Tab */}
                 {activeTab === 'members' && (
-                  <div className="divide-y divide-gray-100">
+                  <div className="divide-y divide-gray-100 dark:divide-gray-700">
                     {allMembers.length === 0 ? (
-                      <div className="text-center py-16 bg-gradient-to-r from-amber-50/50 to-orange-50/50 rounded-xl border border-amber-100/50">
-                        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center">
-                          <Users className="w-8 h-8 text-amber-500" />
+                      <div className="text-center py-16 bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-900/10 dark:to-orange-900/10 rounded-xl border border-amber-100/50 dark:border-amber-900/30">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 rounded-full flex items-center justify-center">
+                          <Users className="w-8 h-8 text-amber-500 dark:text-amber-400" />
                         </div>
-                        <p className="text-gray-500">No members yet</p>
+                        <p className="text-gray-500 dark:text-gray-400">No members yet</p>
                       </div>
                     ) : (
                       allMembers.map((member) => (
@@ -861,31 +861,31 @@ export default function ClubDetailPage() {
                 {activeTab === 'about' && (
                   <div className="space-y-4">
                     {/* Club Info Card */}
-                    <div className="bg-gradient-to-r from-amber-50/50 to-orange-50/50 rounded-xl border border-amber-100/50 p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <Info className="w-5 h-5 text-amber-500" />
+                    <div className="bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-900/10 dark:to-orange-900/10 rounded-xl border border-amber-100/50 dark:border-amber-900/30 p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <Info className="w-5 h-5 text-amber-500 dark:text-amber-400" />
                         About This Club
                       </h3>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-white rounded-lg p-4 border border-gray-100">
-                          <label className="text-sm text-gray-500">Club Type</label>
-                          <p className="text-gray-900 font-medium flex items-center gap-2 mt-1">
+                        <div className="bg-white dark:bg-gray-900/50 rounded-lg p-4 border border-gray-100 dark:border-gray-700">
+                          <label className="text-sm text-gray-500 dark:text-gray-400">Club Type</label>
+                          <p className="text-gray-900 dark:text-white font-medium flex items-center gap-2 mt-1">
                             {CLUB_TYPE_ICONS[club.clubType]}
                             {CLUB_TYPE_LABELS[club.clubType]}
                           </p>
                         </div>
                         
                         {club.category && (
-                          <div className="bg-white rounded-lg p-4 border border-gray-100">
-                            <label className="text-sm text-gray-500">Category</label>
-                            <p className="text-gray-900 font-medium mt-1">{club.category}</p>
+                          <div className="bg-white dark:bg-gray-900/50 rounded-lg p-4 border border-gray-100 dark:border-gray-700">
+                            <label className="text-sm text-gray-500 dark:text-gray-400">Category</label>
+                            <p className="text-gray-900 dark:text-white font-medium mt-1">{club.category}</p>
                           </div>
                         )}
                         
-                        <div className="bg-white rounded-lg p-4 border border-gray-100">
-                          <label className="text-sm text-gray-500">Privacy</label>
-                          <p className="text-gray-900 font-medium flex items-center gap-2 mt-1">
+                        <div className="bg-white dark:bg-gray-900/50 rounded-lg p-4 border border-gray-100 dark:border-gray-700">
+                          <label className="text-sm text-gray-500 dark:text-gray-400">Privacy</label>
+                          <p className="text-gray-900 dark:text-white font-medium flex items-center gap-2 mt-1">
                             {club.privacy === 'PUBLIC' && <Globe className="w-4 h-4 text-green-500" />}
                             {club.privacy === 'SCHOOL' && <School className="w-4 h-4 text-blue-500" />}
                             {club.privacy === 'PRIVATE' && <Lock className="w-4 h-4 text-amber-500" />}
@@ -894,10 +894,10 @@ export default function ClubDetailPage() {
                           </p>
                         </div>
                         
-                        <div className="bg-white rounded-lg p-4 border border-gray-100">
-                          <label className="text-sm text-gray-500">Created</label>
-                          <p className="text-gray-900 font-medium flex items-center gap-2 mt-1">
-                            <Calendar className="w-4 h-4 text-gray-400" />
+                        <div className="bg-white dark:bg-gray-900/50 rounded-lg p-4 border border-gray-100 dark:border-gray-700">
+                          <label className="text-sm text-gray-500 dark:text-gray-400">Created</label>
+                          <p className="text-gray-900 dark:text-white font-medium flex items-center gap-2 mt-1">
+                            <Calendar className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                             {new Date(club.createdAt).toLocaleDateString('en-US', {
                               year: 'numeric',
                               month: 'long',
@@ -909,22 +909,22 @@ export default function ClubDetailPage() {
                     </div>
                     
                     {/* Stats Card */}
-                    <div className="bg-white rounded-xl border border-gray-100 p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistics</h3>
+                    <div className="bg-white dark:bg-gray-900/40 rounded-xl border border-gray-100 dark:border-gray-700 p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Statistics</h3>
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-100">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center mx-auto mb-2">
-                            <Users className="w-6 h-6 text-amber-600" />
+                        <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 rounded-xl border border-amber-100 dark:border-amber-900/30">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 flex items-center justify-center mx-auto mb-2">
+                            <Users className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                           </div>
-                          <p className="text-2xl font-bold text-gray-900">{club._count.members}</p>
-                          <p className="text-sm text-gray-500">Members</p>
+                          <p className="text-2xl font-bold text-gray-900 dark:text-white">{club._count.members}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">Members</p>
                         </div>
-                        <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center mx-auto mb-2">
-                            <FileText className="w-6 h-6 text-blue-600" />
+                        <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center mx-auto mb-2">
+                            <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                           </div>
-                          <p className="text-2xl font-bold text-gray-900">{club._count.posts}</p>
-                          <p className="text-sm text-gray-500">Posts</p>
+                          <p className="text-2xl font-bold text-gray-900 dark:text-white">{club._count.posts}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">Posts</p>
                         </div>
                       </div>
                     </div>
@@ -937,12 +937,12 @@ export default function ClubDetailPage() {
           {/* Non-member view */}
           {!club.isMember && (
             <div className="p-4">
-              <div className="text-center py-16 bg-gradient-to-r from-amber-50/50 to-orange-50/50 rounded-xl border border-amber-100/50">
-                <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center">
-                  <Lock className="w-10 h-10 text-amber-500" />
+              <div className="text-center py-16 bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-900/10 dark:to-orange-900/10 rounded-xl border border-amber-100/50 dark:border-amber-900/30">
+                <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 rounded-full flex items-center justify-center">
+                  <Lock className="w-10 h-10 text-amber-500 dark:text-amber-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Members Only</h3>
-                <p className="text-gray-500 mb-4">Join this club to view posts and members</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Members Only</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-4">Join this club to view posts and members</p>
                 {club.privacy !== 'PRIVATE' && club.privacy !== 'SECRET' && (
                   <button
                     onClick={handleJoin}
@@ -1017,7 +1017,7 @@ function MemberRow({
   const canChangeToMember = isAdmin && member.role !== 'MEMBER';
 
   return (
-    <div className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+    <div className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
       <Link 
         href={`/${locale}/profile/${member.user.id}`}
         className="flex items-center gap-3"
@@ -1034,11 +1034,11 @@ function MemberRow({
           </div>
         )}
         <div>
-          <p className="font-medium text-gray-900 flex items-center gap-1.5">
+          <p className="font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
             {member.user.firstName} {member.user.lastName}
             {ROLE_ICONS[member.role]}
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {member.user.headline || member.role}
           </p>
         </div>
@@ -1048,16 +1048,16 @@ function MemberRow({
         <div className="relative">
           <button 
             onClick={() => setShowMenu(!showMenu)}
-            className="p-2 hover:bg-gray-100 rounded-full"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
           >
-            <MoreVertical className="w-4 h-4 text-gray-400" />
+            <MoreVertical className="w-4 h-4 text-gray-400 dark:text-gray-500" />
           </button>
           
           {showMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20">
-                <p className="px-3 py-1.5 text-xs font-medium text-gray-400 uppercase">Change Role</p>
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-20">
+                <p className="px-3 py-1.5 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase">Change Role</p>
                 {canChangeToAdmin && (
                   <button
                     onClick={() => {
@@ -1076,7 +1076,7 @@ function MemberRow({
                       onUpdateRole(member.id, member.user.id, 'MODERATOR');
                       setShowMenu(false);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     <Star className="w-4 h-4 text-purple-500" />
                     Make Moderator
@@ -1088,19 +1088,19 @@ function MemberRow({
                       onUpdateRole(member.id, member.user.id, 'MEMBER');
                       setShowMenu(false);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     <Users className="w-4 h-4 text-gray-500" />
                     Make Member
                   </button>
                 )}
-                <div className="border-t border-gray-100 my-1" />
+                <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
                 <button
                   onClick={() => {
                     onRemove(member.user.id);
                     setShowMenu(false);
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                 >
                   <UserMinus className="w-4 h-4" />
                   Remove from Club
@@ -1201,15 +1201,15 @@ function InviteModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div 
-        className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-slideUp"
+        className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl border border-white/10 animate-slideUp"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-900">Invite to {clubName}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
-            <X className="w-5 h-5 text-gray-500" />
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Invite to {clubName}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
+            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
@@ -1221,7 +1221,7 @@ function InviteModal({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search users by name..."
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
               autoFocus
             />
           </div>
@@ -1232,7 +1232,7 @@ function InviteModal({
                 <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
               </div>
             ) : searchResults.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">
+              <p className="text-center text-gray-500 dark:text-gray-400 py-8">
                 {searchQuery ? 'No users found' : 'Search for users to invite'}
               </p>
             ) : (
@@ -1242,16 +1242,16 @@ function InviteModal({
                   onClick={() => toggleUser(user.id)}
                   className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
                     selectedUsers.has(user.id)
-                      ? 'bg-amber-50 border-2 border-amber-500'
-                      : 'hover:bg-gray-50 border-2 border-transparent'
+                      ? 'bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-500'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 border-2 border-transparent'
                   }`}
                 >
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold text-sm">
                     {user.firstName?.[0]}{user.lastName?.[0]}
                   </div>
                   <div className="flex-1 text-left">
-                    <p className="font-medium text-gray-900">{user.firstName} {user.lastName}</p>
-                    <p className="text-sm text-gray-500">{user.email || user.role}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{user.firstName} {user.lastName}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{user.email || user.role}</p>
                   </div>
                   {selectedUsers.has(user.id) && (
                     <div className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
@@ -1266,8 +1266,8 @@ function InviteModal({
           </div>
         </div>
 
-        <div className="flex items-center justify-between p-4 border-t border-gray-100">
-          <p className="text-sm text-gray-500">
+        <div className="flex items-center justify-between p-4 border-t border-gray-100 dark:border-gray-700">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {selectedUsers.size} user{selectedUsers.size !== 1 ? 's' : ''} selected
           </p>
           <button

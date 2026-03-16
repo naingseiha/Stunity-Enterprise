@@ -777,7 +777,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 scrollbar-hide">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 scrollbar-hide text-gray-900 dark:text-gray-100">
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
       {/* LinkedIn-style 3-column layout - cleaner proportions */}
@@ -788,7 +788,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
           <aside className="hidden lg:block lg:col-span-3">
             <div className="sticky top-20 space-y-3">
               {/* Profile Card - Education-Focused Design */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="bg-white dark:bg-gray-900/80 backdrop-blur-xl rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 transition-all duration-300 overflow-hidden hover:shadow-lg dark:hover:shadow-black/20">
                 {/* Cover - Gradient with role-based accent */}
                 <div className="h-32 relative overflow-hidden">
                   {user.coverPhotoUrl ? (
@@ -812,9 +812,9 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                 {/* Avatar - Centered, overlapping cover */}
                 <div className="flex justify-center -mt-8 relative z-10">
                   {user.profilePictureUrl ? (
-                    <img src={user.profilePictureUrl} alt="" className="w-16 h-16 rounded-full object-cover border-3 border-white shadow-lg" />
+                    <img src={user.profilePictureUrl} alt="" className="w-16 h-16 rounded-full object-cover border-3 border-white dark:border-gray-900 shadow-lg" />
                   ) : (
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#F9A825] to-[#FFB74D] flex items-center justify-center text-white text-xl font-bold border-3 border-white shadow-lg">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#F9A825] to-[#FFB74D] flex items-center justify-center text-white text-xl font-bold border-3 border-white dark:border-gray-900 shadow-lg">
                       {getInitials(user.firstName, user.lastName)}
                     </div>
                   )}
@@ -823,7 +823,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                 {/* User Info - Centered */}
                 <div className="text-center px-4 pt-2 pb-3">
                   <Link href={`/${locale}/profile/me`} className="hover:underline">
-                    <h3 className="font-bold text-gray-900 text-sm">{user.firstName} {user.lastName}</h3>
+                    <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm">{user.firstName} {user.lastName}</h3>
                   </Link>
                   <div className="flex items-center justify-center gap-1.5 mt-1">
                     {(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') && <Settings className="w-3 h-3 text-[#F9A825]" />}
@@ -844,34 +844,34 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                 </div>
 
                 {/* Education Metrics - 2x2 Grid */}
-                <div className="border-t border-gray-100 px-3 py-3">
+                <div className="border-t border-gray-100 dark:border-gray-800 px-3 py-3">
                   <div className="grid grid-cols-2 gap-2">
                     {/* Engagement Score */}
                     <button
                       onClick={() => setActiveTab('insights')}
-                      className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-2.5 text-center group hover:from-amber-100 hover:to-orange-100 transition-all"
+                      className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 rounded-lg p-2.5 text-center group hover:from-amber-100 hover:to-orange-100 dark:hover:from-amber-900/20 dark:hover:to-orange-900/20 transition-all"
                     >
                       <div className="flex items-center justify-center gap-1">
                         <Zap className="w-3.5 h-3.5 text-amber-500" />
-                        <span className="text-sm font-bold text-gray-900">{posts.reduce((sum, p) => sum + (p.likesCount || 0), 0)}</span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{posts.reduce((sum, p) => sum + (p.likesCount || 0), 0)}</span>
                       </div>
-                      <p className="text-[10px] text-gray-500 mt-0.5">{tFeed('profileMetrics.engagement')}</p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{tFeed('profileMetrics.engagement')}</p>
                     </button>
 
                     {/* Impact Score - Role-based */}
                     <button
                       onClick={() => setActiveTab('activity')}
-                      className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-2.5 text-center group hover:from-blue-100 hover:to-indigo-100 transition-all"
+                      className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 rounded-lg p-2.5 text-center group hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/20 dark:hover:to-indigo-900/20 transition-all"
                     >
                       <div className="flex items-center justify-center gap-1">
                         <Target className="w-3.5 h-3.5 text-blue-500" />
-                        <span className="text-sm font-bold text-gray-900">
+                        <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
                           {user.role === 'TEACHER' ? Math.floor(posts.reduce((sum, p) => sum + (p.commentsCount || 0), 0) * 1.5) :
                             (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') ? Math.floor((myPosts.length || 0) * 2.5) :
                               posts.reduce((sum, p) => sum + (p.commentsCount || 0), 0)}
                         </span>
                       </div>
-                      <p className="text-[10px] text-gray-500 mt-0.5">
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
                         {user.role === 'TEACHER'
                           ? tFeed('profileMetrics.impact')
                           : (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN')
@@ -883,13 +883,13 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                     {/* Contributions */}
                     <button
                       onClick={() => setActiveTab('posts')}
-                      className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg p-2.5 text-center group hover:from-emerald-100 hover:to-teal-100 transition-all"
+                      className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/10 dark:to-teal-900/10 rounded-lg p-2.5 text-center group hover:from-emerald-100 hover:to-teal-100 dark:hover:from-emerald-900/20 dark:hover:to-teal-900/20 transition-all"
                     >
                       <div className="flex items-center justify-center gap-1">
                         <FileText className="w-3.5 h-3.5 text-emerald-500" />
-                        <span className="text-sm font-bold text-gray-900">{myPosts.length || 0}</span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{myPosts.length || 0}</span>
                       </div>
-                      <p className="text-[10px] text-gray-500 mt-0.5">
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
                         {user.role === 'TEACHER'
                           ? tFeed('profileMetrics.lessons')
                           : (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN')
@@ -901,11 +901,11 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                     {/* Achievement/Level */}
                     <button
                       onClick={() => setActiveTab('insights')}
-                      className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-2.5 text-center group hover:from-purple-100 hover:to-pink-100 transition-all"
+                      className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/10 dark:to-pink-900/10 rounded-lg p-2.5 text-center group hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900/20 dark:hover:to-pink-900/20 transition-all"
                     >
                       <div className="flex items-center justify-center gap-1">
                         <Trophy className="w-3.5 h-3.5 text-purple-500" />
-                        <span className="text-sm font-bold text-gray-900">
+                        <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
                           {user.role === 'TEACHER'
                             ? tFeed('profileMetrics.expert')
                             : (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN')
@@ -915,7 +915,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                                 : tFeed('profileMetrics.active')}
                         </span>
                       </div>
-                      <p className="text-[10px] text-gray-500 mt-0.5">
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
                         {user.role === 'TEACHER'
                           ? tFeed('profileMetrics.educator')
                           : (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN')
@@ -929,7 +929,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                 </div>
 
                 {/* Quick Stats Bar */}
-                <div className="border-t border-gray-100 px-3 py-2 flex items-center justify-between text-[10px] text-gray-400">
+                <div className="border-t border-gray-100 dark:border-gray-800 px-3 py-2 flex items-center justify-between text-[10px] text-gray-400">
                   <div className="flex items-center gap-1">
                     <Eye className="w-3 h-3" />
                     <span>
@@ -944,7 +944,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
               </div>
 
               {/* Quick Links - Minimal */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="bg-white dark:bg-gray-900/80 backdrop-blur-xl rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 transition-all duration-300 overflow-hidden">
                 <nav className="py-1">
                   {sidebarTabs.map((item) => {
                     const Icon = item.icon;
@@ -953,8 +953,8 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                         key={item.id}
                         onClick={() => setActiveTab(item.id)}
                         className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${activeTab === item.id
-                          ? 'bg-amber-50 text-[#F9A825] font-medium'
-                          : 'text-gray-600 hover:bg-gray-50'
+                          ? 'bg-amber-50 dark:bg-amber-900/30 text-[#F9A825] font-medium'
+                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
                           }`}
                       >
                         <Icon className="w-4 h-4" />
@@ -979,7 +979,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex items-center gap-2 px-3 py-2 rounded-full font-medium text-xs transition-all whitespace-nowrap ${activeTab === tab.id
                       ? 'bg-[#F9A825] text-white'
-                      : 'bg-white text-gray-600 border border-gray-200'
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700'
                       }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -990,10 +990,12 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
             </div>
 
             {/* Performance Card - XP, Level, Streak */}
-            <PerformanceCard user={user} locale={locale} />
+            <div className="mb-3 transform hover:scale-[1.01] transition-transform duration-300">
+              <PerformanceCard user={user} locale={locale} />
+            </div>
 
             {/* Create Post Box - LinkedIn Style */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-3">
+            <div className="bg-white dark:bg-gray-900/80 backdrop-blur-xl rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-3 mb-3 transition-all duration-300 hover:border-[#F9A825]/30">
               <div className="flex items-center gap-3">
                 {user.profilePictureUrl ? (
                   <img src={user.profilePictureUrl} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
@@ -1004,36 +1006,36 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                 )}
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="flex-1 text-left px-4 py-2.5 bg-white rounded-full text-gray-500 hover:bg-gray-100 transition-colors text-sm border border-gray-300"
+                  className="flex-1 text-left px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/80 transition-all duration-300 text-sm border border-gray-200 dark:border-gray-700/50"
                 >
                   {tFeed('createPost.askMind')}
                 </button>
               </div>
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors"
                 >
                   <ImageIcon className="w-5 h-5 text-blue-500" />
                   <span className="text-xs font-medium hidden sm:inline">{tFeed('createPost.photo')}</span>
                 </button>
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors"
                 >
                   <BarChart3 className="w-5 h-5 text-amber-500" />
                   <span className="text-xs font-medium hidden sm:inline">{tFeed('poll')}</span>
                 </button>
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors"
                 >
                   <Megaphone className="w-5 h-5 text-rose-500" />
                   <span className="text-xs font-medium hidden sm:inline">{tFeed('createPost.announce')}</span>
                 </button>
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition-colors"
                 >
                   <HelpCircle className="w-5 h-5 text-teal-500" />
                   <span className="text-xs font-medium hidden sm:inline">{tFeed('ask')}</span>
@@ -1050,8 +1052,8 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                     <button
                       onClick={() => setShowFilters(!showFilters)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs border transition-colors ${postTypeFilter !== 'all'
-                        ? 'bg-amber-50 border-[#F9A825] text-[#F9A825]'
-                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                        ? 'bg-amber-50 dark:bg-amber-900/30 border-[#F9A825] text-[#F9A825]'
+                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                         }`}
                     >
                       <Filter className="w-3.5 h-3.5" />
@@ -1061,7 +1063,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                     </button>
 
                     {showFilters && (
-                      <div className="absolute left-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                      <div className="absolute left-0 top-full mt-1 w-44 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-10">
                         {POST_TYPE_FILTERS.map((filter) => {
                           const Icon = filter.icon;
                           return (
@@ -1071,11 +1073,11 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                                 setPostTypeFilter(filter.id);
                                 setShowFilters(false);
                               }}
-                              className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-amber-50 transition-colors ${postTypeFilter === filter.id ? 'bg-gradient-to-r from-amber-50 to-[#F9A825]/10 border-l-2 border-[#F9A825]' : ''
+                              className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors ${postTypeFilter === filter.id ? 'bg-gradient-to-r from-amber-50 to-[#F9A825]/10 dark:from-amber-900/20 dark:to-[#F9A825]/20 border-l-2 border-[#F9A825]' : ''
                                 }`}
                             >
-                              <Icon className={`w-4 h-4 ${postTypeFilter === filter.id ? 'text-[#F9A825]' : 'text-gray-500'}`} />
-                              <span className={`text-sm ${postTypeFilter === filter.id ? 'text-[#F9A825] font-medium' : 'text-gray-700'}`}>
+                              <Icon className={`w-4 h-4 ${postTypeFilter === filter.id ? 'text-[#F9A825]' : 'text-gray-500 dark:text-gray-400'}`} />
+                              <span className={`text-sm ${postTypeFilter === filter.id ? 'text-[#F9A825] font-medium' : 'text-gray-700 dark:text-gray-300'}`}>
                                 {tFeed(filter.labelKey)}
                               </span>
                             </button>
@@ -1088,7 +1090,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                   <button
                     onClick={fetchPosts}
                     disabled={loadingPosts}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-[#F9A825] hover:bg-amber-50 rounded-full transition-all duration-200"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-[#F9A825] hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-full transition-all duration-200"
                   >
                     <RefreshCw className={`w-4 h-4 ${loadingPosts ? 'animate-spin' : ''}`} />
                     {tFeed('actions.refresh')}
@@ -1096,8 +1098,8 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
 
                   {/* Real-time connection indicator */}
                   <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs ${isConnected
-                    ? 'bg-green-50 text-green-600'
-                    : 'bg-gray-100 text-gray-500'
+                    ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
                     }`}>
                     {isConnected ? (
                       <>
@@ -1136,12 +1138,12 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
 
                 {/* Empty State - Stunity Design */}
                 {!loadingPosts && posts.length === 0 && (
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 text-center">
+                  <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-10 text-center">
                     <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-[#F9A825]/20 to-[#FFB74D]/20 flex items-center justify-center animate-pulse">
                       <Sparkles className="w-10 h-10 text-[#F9A825]" />
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{tFeed('empty.welcomeTitle')}</h3>
-                    <p className="text-gray-600 mb-6 max-w-sm mx-auto">{tFeed('empty.welcomeMessage')}</p>
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{tFeed('empty.welcomeTitle')}</h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm mx-auto">{tFeed('empty.welcomeMessage')}</p>
                     <button
                       onClick={() => setShowCreateModal(true)}
                       className="inline-flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-[#F9A825] to-[#FFB74D] text-white rounded-full font-semibold hover:from-[#E89A1E] hover:to-[#FF9800] transition-all shadow-lg shadow-emerald-200 transform hover:scale-105"
@@ -1280,12 +1282,12 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
             {activeTab === 'posts' && (
               <div className="space-y-4">
                 {myPosts.length === 0 ? (
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 text-center">
+                  <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-10 text-center">
                     <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-[#F9A825]/20 to-[#FFB74D]/20 flex items-center justify-center">
                       <BookOpen className="w-10 h-10 text-[#F9A825]" />
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{tFeed('empty.noMyPosts')}</h3>
-                    <p className="text-gray-600 mb-6">{tFeed('empty.shareFirstPost')}</p>
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{tFeed('empty.noMyPosts')}</h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">{tFeed('empty.shareFirstPost')}</p>
                     <button
                       onClick={() => setShowCreateModal(true)}
                       className="inline-flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-[#F9A825] to-[#FFB74D] text-white rounded-full font-semibold hover:from-[#E89A1E] hover:to-[#FF9800] transition-all shadow-lg shadow-emerald-200 transform hover:scale-105"
@@ -1410,12 +1412,12 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
             {activeTab === 'bookmarks' && (
               <div className="space-y-4">
                 {bookmarkedPosts.length === 0 ? (
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 text-center">
-                    <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-100 to-yellow-100 flex items-center justify-center">
+                  <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-10 text-center">
+                    <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-100 dark:from-amber-900/40 to-yellow-100 dark:to-yellow-900/40 flex items-center justify-center">
                       <Bookmark className="w-10 h-10 text-amber-500" />
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{tFeed('empty.noSavedPosts')}</h3>
-                    <p className="text-gray-600">{tFeed('empty.savedPostsHint')}</p>
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{tFeed('empty.noSavedPosts')}</h3>
+                    <p className="text-gray-600 dark:text-gray-400">{tFeed('empty.savedPostsHint')}</p>
                   </div>
                 ) : (
                   bookmarkedPosts.map((post, index) => (
@@ -1539,7 +1541,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
               <QuickResourcesWidget />
 
               {/* Footer Links */}
-              <div className="text-xs text-gray-400 px-2 pt-2">
+              <div className="text-xs text-gray-400 dark:text-gray-500 px-2 pt-2">
                 <div className="flex flex-wrap gap-x-3 gap-y-1">
                   <a href="#" className="hover:text-[#F9A825] transition-colors">{tSettings('about')}</a>
                   <a href="#" className="hover:text-[#F9A825] transition-colors">{tSettings('helpCenter')}</a>

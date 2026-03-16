@@ -110,45 +110,46 @@ interface AvailableTeacher {
 import { useDroppable, useDraggable } from '@dnd-kit/core';
 
 // Material Design inspired color palette for subjects
-const MATERIAL_COLORS: Record<string, { bg: string; border: string; text: string; light: string }> = {
+const MATERIAL_COLORS: Record<string, { bg: string; border: string; text: string; light: string; dark: string }> = {
   // Primary subject categories
-  'Languages': { bg: 'bg-blue-500', border: 'border-blue-400', text: 'text-white', light: 'bg-blue-50' },
-  'Language': { bg: 'bg-blue-500', border: 'border-blue-400', text: 'text-white', light: 'bg-blue-50' },
-  'Mathematics': { bg: 'bg-emerald-500', border: 'border-emerald-400', text: 'text-white', light: 'bg-emerald-50' },
-  'Math': { bg: 'bg-emerald-500', border: 'border-emerald-400', text: 'text-white', light: 'bg-emerald-50' },
-  'Sciences': { bg: 'bg-purple-500', border: 'border-purple-400', text: 'text-white', light: 'bg-purple-50' },
-  'Science': { bg: 'bg-purple-500', border: 'border-purple-400', text: 'text-white', light: 'bg-purple-50' },
-  'Social Sciences': { bg: 'bg-amber-500', border: 'border-amber-400', text: 'text-white', light: 'bg-amber-50' },
-  'Social': { bg: 'bg-amber-500', border: 'border-amber-400', text: 'text-white', light: 'bg-amber-50' },
-  'Arts & Culture': { bg: 'bg-pink-500', border: 'border-pink-400', text: 'text-white', light: 'bg-pink-50' },
-  'Arts': { bg: 'bg-pink-500', border: 'border-pink-400', text: 'text-white', light: 'bg-pink-50' },
-  'Art': { bg: 'bg-pink-500', border: 'border-pink-400', text: 'text-white', light: 'bg-pink-50' },
-  'Physical Education': { bg: 'bg-orange-500', border: 'border-orange-400', text: 'text-white', light: 'bg-orange-50' },
-  'PE': { bg: 'bg-orange-500', border: 'border-orange-400', text: 'text-white', light: 'bg-orange-50' },
-  'Technology': { bg: 'bg-cyan-500', border: 'border-cyan-400', text: 'text-white', light: 'bg-cyan-50' },
-  'Tech': { bg: 'bg-cyan-500', border: 'border-cyan-400', text: 'text-white', light: 'bg-cyan-50' },
+  'Languages': { bg: 'bg-blue-500', border: 'border-blue-400', text: 'text-white', light: 'bg-blue-50', dark: 'dark:bg-blue-500/20' },
+  'Language': { bg: 'bg-blue-500', border: 'border-blue-400', text: 'text-white', light: 'bg-blue-50', dark: 'dark:bg-blue-500/20' },
+  'Mathematics': { bg: 'bg-emerald-500', border: 'border-emerald-400', text: 'text-white', light: 'bg-emerald-50', dark: 'dark:bg-emerald-500/20' },
+  'Math': { bg: 'bg-emerald-500', border: 'border-emerald-400', text: 'text-white', light: 'bg-emerald-50', dark: 'dark:bg-emerald-500/20' },
+  'Sciences': { bg: 'bg-purple-500', border: 'border-purple-400', text: 'text-white', light: 'bg-purple-50', dark: 'dark:bg-purple-500/20' },
+  'Science': { bg: 'bg-purple-500', border: 'border-purple-400', text: 'text-white', light: 'bg-purple-50', dark: 'dark:bg-purple-500/20' },
+  'Social Sciences': { bg: 'bg-amber-500', border: 'border-amber-400', text: 'text-white', light: 'bg-amber-50', dark: 'dark:bg-amber-500/20' },
+  'Social': { bg: 'bg-amber-500', border: 'border-amber-400', text: 'text-white', light: 'bg-amber-50', dark: 'dark:bg-amber-500/20' },
+  'Arts & Culture': { bg: 'bg-pink-500', border: 'border-pink-400', text: 'text-white', light: 'bg-pink-50', dark: 'dark:bg-pink-500/20' },
+  'Arts': { bg: 'bg-pink-500', border: 'border-pink-400', text: 'text-white', light: 'bg-pink-50', dark: 'dark:bg-pink-500/20' },
+  'Art': { bg: 'bg-pink-500', border: 'border-pink-400', text: 'text-white', light: 'bg-pink-50', dark: 'dark:bg-pink-500/20' },
+  'Physical Education': { bg: 'bg-orange-500', border: 'border-orange-400', text: 'text-white', light: 'bg-orange-50', dark: 'dark:bg-orange-500/20' },
+  'PE': { bg: 'bg-orange-500', border: 'border-orange-400', text: 'text-white', light: 'bg-orange-50', dark: 'dark:bg-orange-500/20' },
+  'Technology': { bg: 'bg-cyan-500', border: 'border-cyan-400', text: 'text-white', light: 'bg-cyan-50', dark: 'dark:bg-cyan-500/20' },
+  'Tech': { bg: 'bg-cyan-500', border: 'border-cyan-400', text: 'text-white', light: 'bg-cyan-50', dark: 'dark:bg-cyan-500/20' },
   // Additional colors for variety
-  'Other': { bg: 'bg-indigo-500', border: 'border-indigo-400', text: 'text-white', light: 'bg-indigo-50' },
-  'default': { bg: 'bg-slate-500', border: 'border-slate-400', text: 'text-white', light: 'bg-slate-50' },
+  'Other': { bg: 'bg-indigo-500', border: 'border-indigo-400', text: 'text-white', light: 'bg-indigo-50', dark: 'dark:bg-indigo-500/20' },
+  'default': { bg: 'bg-slate-500', border: 'border-slate-400', text: 'text-white', light: 'bg-slate-50', dark: 'dark:bg-slate-500/20' },
 };
 
 // Extended color palette for generating unique colors per subject/teacher
 const COLOR_PALETTE = [
-  { bg: 'bg-blue-500', border: 'border-blue-400', text: 'text-white', light: 'bg-blue-50' },
-  { bg: 'bg-emerald-500', border: 'border-emerald-400', text: 'text-white', light: 'bg-emerald-50' },
-  { bg: 'bg-purple-500', border: 'border-purple-400', text: 'text-white', light: 'bg-purple-50' },
-  { bg: 'bg-amber-500', border: 'border-amber-400', text: 'text-white', light: 'bg-amber-50' },
-  { bg: 'bg-pink-500', border: 'border-pink-400', text: 'text-white', light: 'bg-pink-50' },
-  { bg: 'bg-orange-500', border: 'border-orange-400', text: 'text-white', light: 'bg-orange-50' },
-  { bg: 'bg-cyan-500', border: 'border-cyan-400', text: 'text-white', light: 'bg-cyan-50' },
-  { bg: 'bg-indigo-500', border: 'border-indigo-400', text: 'text-white', light: 'bg-indigo-50' },
-  { bg: 'bg-teal-500', border: 'border-teal-400', text: 'text-white', light: 'bg-teal-50' },
-  { bg: 'bg-rose-500', border: 'border-rose-400', text: 'text-white', light: 'bg-rose-50' },
-  { bg: 'bg-violet-500', border: 'border-violet-400', text: 'text-white', light: 'bg-violet-50' },
-  { bg: 'bg-lime-500', border: 'border-lime-400', text: 'text-white', light: 'bg-lime-50' },
-  { bg: 'bg-sky-500', border: 'border-sky-400', text: 'text-white', light: 'bg-sky-50' },
-  { bg: 'bg-fuchsia-500', border: 'border-fuchsia-400', text: 'text-white', light: 'bg-fuchsia-50' },
+  { bg: 'bg-blue-500', border: 'border-blue-400', text: 'text-white', light: 'bg-blue-50', dark: 'dark:bg-blue-500/20' },
+  { bg: 'bg-emerald-500', border: 'border-emerald-400', text: 'text-white', light: 'bg-emerald-50', dark: 'dark:bg-emerald-500/20' },
+  { bg: 'bg-purple-500', border: 'border-purple-400', text: 'text-white', light: 'bg-purple-50', dark: 'dark:bg-purple-500/20' },
+  { bg: 'bg-amber-500', border: 'border-amber-400', text: 'text-white', light: 'bg-amber-50', dark: 'dark:bg-amber-500/20' },
+  { bg: 'bg-pink-500', border: 'border-pink-400', text: 'text-white', light: 'bg-pink-50', dark: 'dark:bg-pink-500/20' },
+  { bg: 'bg-orange-500', border: 'border-orange-400', text: 'text-white', light: 'bg-orange-50', dark: 'dark:bg-orange-500/20' },
+  { bg: 'bg-cyan-500', border: 'border-cyan-400', text: 'text-white', light: 'bg-cyan-50', dark: 'dark:bg-cyan-500/20' },
+  { bg: 'bg-indigo-500', border: 'border-indigo-400', text: 'text-white', light: 'bg-indigo-50', dark: 'dark:bg-indigo-500/20' },
+  { bg: 'bg-teal-500', border: 'border-teal-400', text: 'text-white', light: 'bg-teal-50', dark: 'dark:bg-teal-500/20' },
+  { bg: 'bg-rose-500', border: 'border-rose-400', text: 'text-white', light: 'bg-rose-50', dark: 'dark:bg-rose-500/20' },
+  { bg: 'bg-violet-500', border: 'border-violet-400', text: 'text-white', light: 'bg-violet-50', dark: 'dark:bg-violet-500/20' },
+  { bg: 'bg-lime-500', border: 'border-lime-400', text: 'text-white', light: 'bg-lime-50', dark: 'dark:bg-lime-500/20' },
+  { bg: 'bg-sky-500', border: 'border-sky-400', text: 'text-white', light: 'bg-sky-50', dark: 'dark:bg-sky-500/20' },
+  { bg: 'bg-fuchsia-500', border: 'border-fuchsia-400', text: 'text-white', light: 'bg-fuchsia-50', dark: 'dark:bg-fuchsia-500/20' },
 ];
+
 
 // Hash function to generate consistent color index from string
 function hashStringToIndex(str: string): number {
@@ -218,31 +219,33 @@ function DraggableEntry({
         onClick();
       }}
       className={`
-        h-[56px] p-2 rounded-lg cursor-grab active:cursor-grabbing
-        transition-all duration-200 select-none
+        h-[56px] p-2 rounded-xl cursor-grab active:cursor-grabbing
+        transition-all duration-300 select-none
         ${colors.bg} ${colors.text}
-        ${isDragging ? 'shadow-xl ring-2 ring-white scale-105 z-50' : 'hover:shadow-lg hover:scale-[1.02]'}
+        shadow-sm border border-white/10
+        ${isDragging ? 'shadow-2xl ring-4 ring-white/30 dark:ring-indigo-500/50 scale-105 z-50' : 'hover:shadow-xl hover:scale-[1.02] active:scale-95'}
       `}
     >
-      <div className="font-semibold text-[11px] truncate leading-tight drop-shadow-sm">
+      <div className="font-bold text-[11px] truncate leading-tight drop-shadow-md">
         {entry.subject?.name || 'No Subject'}
       </div>
-      <div className="flex items-center gap-1 mt-1 opacity-90">
-        <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+      <div className="flex items-center gap-1.5 mt-1.5 opacity-90">
+        <div className="w-4 h-4 rounded-full bg-white/20 dark:bg-black/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
           <User className="w-2.5 h-2.5" />
         </div>
-        <span className="text-[9px] truncate">
+        <span className="text-[9px] font-semibold truncate tracking-tight">
           {entry.teacher
             ? `${entry.teacher.firstName} ${entry.teacher.lastName}`
             : 'No Teacher'}
         </span>
       </div>
       {entry.room && (
-        <div className="text-[8px] opacity-75 truncate mt-0.5">
-          📍 {entry.room}
+        <div className="text-[8px] font-bold opacity-75 truncate mt-0.5 flex items-center gap-0.5">
+          <span className="opacity-50">📍</span> {entry.room}
         </div>
       )}
     </div>
+
   );
 }
 
@@ -328,27 +331,30 @@ function DroppableCell({
         <div
           onClick={onClick}
           className={`
-            h-[56px] w-full rounded-lg flex flex-col items-center justify-center 
-            transition-all duration-100 cursor-pointer group
+            h-[56px] w-full rounded-xl flex flex-col items-center justify-center 
+            transition-all duration-300 cursor-pointer group
             ${isHighlighted
-              ? 'bg-indigo-100 border-2 border-indigo-400 shadow-md scale-[1.02]'
+              ? 'bg-indigo-100 dark:bg-indigo-500/20 border-2 border-indigo-400 dark:border-indigo-500 shadow-lg scale-[1.02] z-10'
               : showDropZone
-                ? 'bg-indigo-50/50 border-2 border-dashed border-indigo-300'
-                : 'bg-gray-50/30 border border-dashed border-gray-200 hover:bg-indigo-50/30 hover:border-indigo-300'
+                ? 'bg-indigo-50/50 dark:bg-indigo-500/5 border-2 border-dashed border-indigo-300 dark:border-indigo-500/30'
+                : 'bg-gray-50/30 dark:bg-gray-800/10 border border-dashed border-gray-200 dark:border-gray-800 hover:bg-white dark:hover:bg-gray-800/30 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-sm'
             }
           `}
         >
           {isHighlighted ? (
-            <div className="flex flex-col items-center text-indigo-600">
-              <div className="w-6 h-6 rounded-full bg-indigo-200 flex items-center justify-center">
+            <div className="flex flex-col items-center text-indigo-600 dark:text-indigo-400">
+              <div className="w-6 h-6 rounded-full bg-indigo-200 dark:bg-indigo-500/30 flex items-center justify-center">
                 {isDraggingEntry ? <Move className="h-3 w-3" /> : <User className="h-3 w-3" />}
               </div>
-              <span className="text-[9px] font-medium mt-0.5">Drop here</span>
+              <span className="text-[9px] font-black mt-1 uppercase tracking-tighter">Drop</span>
             </div>
           ) : (
-            <Plus className={`h-3.5 w-3.5 ${showDropZone ? 'text-indigo-400' : 'text-gray-300 group-hover:text-indigo-400'} transition-colors`} />
+            <div className="flex flex-col items-center gap-1">
+              <Plus className={`h-4 w-4 ${showDropZone ? 'text-indigo-400' : 'text-gray-300 dark:text-gray-700 group-hover:text-indigo-400 dark:group-hover:text-indigo-500'} transition-all`} />
+            </div>
           )}
         </div>
+
       )}
     </td>
   );
@@ -1348,7 +1354,7 @@ export default function TimetablePage() {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
         <UnifiedNavigation user={user} school={school} />
 
         <div className="lg:ml-64">
@@ -1358,20 +1364,20 @@ export default function TimetablePage() {
             <AnimatedContent animation="fade" delay={0}>
               <div className="mb-6">
                 {/* Breadcrumb */}
-                <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
                   <Home className="h-4 w-4" />
                   <ChevronRight className="h-4 w-4" />
-                  <span className="text-gray-900 font-medium">Timetable</span>
+                  <span className="text-gray-900 dark:text-white font-medium">Timetable</span>
                 </nav>
 
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-3 bg-indigo-100 rounded-xl">
-                      <Calendar className="h-6 w-6 text-indigo-600" />
+                    <div className="p-3 bg-indigo-100 dark:bg-indigo-500/10 rounded-xl">
+                      <Calendar className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     <div>
-                      <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Timetable</h1>
-                      <p className="text-sm text-gray-500 mt-0.5">
+                      <h1 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">Timetable</h1>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                         {gradeLevel === 'SECONDARY' ? 'Secondary (Grades 7-9)' : 'High School (Grades 10-12)'}
                       </p>
                     </div>
@@ -1415,7 +1421,7 @@ export default function TimetablePage() {
                       <>
                         <button
                           onClick={() => setShowCopyModal(true)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all"
                         >
                           <Copy className="h-4 w-4" />
                           <span className="hidden sm:inline">Copy</span>
@@ -1423,7 +1429,7 @@ export default function TimetablePage() {
                         <button
                           onClick={handleClearTimetable}
                           disabled={saving}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 bg-red-50 border border-red-200 text-sm font-medium rounded-lg hover:bg-red-100 transition-all disabled:opacity-50"
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-sm font-medium rounded-lg hover:bg-red-100 dark:hover:bg-red-500/20 transition-all disabled:opacity-50"
                         >
                           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eraser className="h-4 w-4" />}
                           <span className="hidden sm:inline">Clear</span>
@@ -1435,7 +1441,7 @@ export default function TimetablePage() {
                     {(viewMode === 'class' && selectedClassId || viewMode === 'teacher' && selectedTeacherId) && timetableData && (
                       <button
                         onClick={handleExportCSV}
-                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                         title="Export CSV"
                       >
                         <Download className="h-4 w-4" />
@@ -1443,7 +1449,7 @@ export default function TimetablePage() {
                     )}
                     <button
                       onClick={() => window.print()}
-                      className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                       title="Print"
                     >
                       <Printer className="h-4 w-4" />
@@ -1455,61 +1461,62 @@ export default function TimetablePage() {
 
             {/* Messages */}
             {successMessage && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-700 text-sm">
+              <div className="mb-4 p-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-lg flex items-center gap-2 text-green-700 dark:text-green-400 text-sm">
                 <CheckCircle className="h-4 w-4" />
                 {successMessage}
               </div>
             )}
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg flex items-center gap-2 text-red-700 dark:text-red-400 text-sm">
                 <AlertCircle className="h-4 w-4" />
                 {error}
-                <button onClick={() => setError(null)} className="ml-auto p-1 hover:bg-red-100 rounded">
+                <button onClick={() => setError(null)} className="ml-auto p-1 hover:bg-red-100 dark:hover:bg-red-500/20 rounded">
                   <X className="h-4 w-4" />
                 </button>
               </div>
             )}
 
-            {/* Filters - Cleaner card */}
+            {/* Filters - Genesis Style Glassmorphism */}
             <AnimatedContent animation="slide-up" delay={50}>
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-                <div className="flex flex-wrap items-center gap-3">
+              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 mb-8 transition-all hover:shadow-xl dark:hover:shadow-black/20">
+                <div className="flex flex-wrap items-center gap-4">
                   {/* Grade Level Toggle */}
-                  <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                  <div className="flex items-center bg-gray-100/50 dark:bg-gray-800/50 rounded-xl p-1 border border-gray-200/50 dark:border-gray-700/50">
                     <button
                       onClick={() => setGradeLevel('HIGH_SCHOOL')}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-black transition-all ${
                         gradeLevel === 'HIGH_SCHOOL' 
-                          ? 'bg-white shadow-sm text-indigo-600' 
-                          : 'text-gray-500 hover:text-gray-700'
+                          ? 'bg-white dark:bg-gray-700 shadow-md text-indigo-600 dark:text-indigo-400' 
+                          : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400'
                       }`}
                     >
-                      <Building2 className="h-3.5 w-3.5" />
+                      <Building2 className="h-4 w-4" />
                       High School
                     </button>
                     <button
                       onClick={() => setGradeLevel('SECONDARY')}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-black transition-all ${
                         gradeLevel === 'SECONDARY' 
-                          ? 'bg-white shadow-sm text-amber-600' 
-                          : 'text-gray-500 hover:text-gray-700'
+                          ? 'bg-white dark:bg-gray-700 shadow-md text-amber-600 dark:text-amber-400' 
+                          : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400'
                       }`}
                     >
-                      <School className="h-3.5 w-3.5" />
+                      <School className="h-4 w-4" />
                       Secondary
                     </button>
                   </div>
 
-                  <div className="h-6 w-px bg-gray-200" />
+
+                  <div className="h-6 w-px bg-gray-200 dark:bg-gray-700" />
 
                   {/* View Mode Toggle */}
-                  <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                  <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
                     <button
                       onClick={() => setViewMode('class')}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                         viewMode === 'class' 
-                          ? 'bg-white shadow-sm text-indigo-600' 
-                          : 'text-gray-500 hover:text-gray-700'
+                          ? 'bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400' 
+                          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                       }`}
                     >
                       <GraduationCap className="h-3.5 w-3.5" />
@@ -1519,8 +1526,8 @@ export default function TimetablePage() {
                       onClick={() => setViewMode('teacher')}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                         viewMode === 'teacher' 
-                          ? 'bg-white shadow-sm text-indigo-600' 
-                          : 'text-gray-500 hover:text-gray-700'
+                          ? 'bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400' 
+                          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                       }`}
                     >
                       <User className="h-3.5 w-3.5" />
@@ -1530,8 +1537,8 @@ export default function TimetablePage() {
                       onClick={() => setViewMode('overview')}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                         viewMode === 'overview' 
-                          ? 'bg-white shadow-sm text-indigo-600' 
-                          : 'text-gray-500 hover:text-gray-700'
+                          ? 'bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400' 
+                          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                       }`}
                     >
                       <Users className="h-3.5 w-3.5" />
@@ -1539,13 +1546,13 @@ export default function TimetablePage() {
                     </button>
                   </div>
 
-                  <div className="h-6 w-px bg-gray-200" />
+                  <div className="h-6 w-px bg-gray-200 dark:bg-gray-700" />
 
                   {/* Academic Year */}
                   <select
                     value={selectedYearId}
                     onChange={(e) => setSelectedYearId(e.target.value)}
-                    className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white"
+                    className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white dark:bg-gray-800 dark:text-gray-200"
                   >
                     <option value="">Select Year</option>
                     {academicYears.map((year) => (
@@ -1560,7 +1567,7 @@ export default function TimetablePage() {
                     <select
                       value={selectedClassId}
                       onChange={(e) => setSelectedClassId(e.target.value)}
-                      className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white min-w-[140px]"
+                      className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white dark:bg-gray-800 dark:text-gray-200 min-w-[140px]"
                     >
                       <option value="">Select Class</option>
                       {Object.entries(classesByGrade).map(([grade, classList]) => (
@@ -1582,7 +1589,7 @@ export default function TimetablePage() {
                     <select
                       value={selectedTeacherId}
                       onChange={(e) => setSelectedTeacherId(e.target.value)}
-                      className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white min-w-[160px]"
+                      className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white dark:bg-gray-800 dark:text-gray-200 min-w-[160px]"
                     >
                       <option value="">Select Teacher</option>
                       {teachers.map((teacher) => (
@@ -1604,7 +1611,7 @@ export default function TimetablePage() {
                         loadAllClassesStats();
                       }
                     }}
-                    className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors ml-auto"
+                    className="p-2 text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-colors ml-auto"
                     title="Refresh"
                   >
                     <RefreshCw className={`h-4 w-4 ${loadingTimetable ? 'animate-spin' : ''}`} />
@@ -1617,8 +1624,8 @@ export default function TimetablePage() {
             {viewMode === 'overview' ? (
               // Overview Mode - Show all classes with coverage stats
               <AnimatedContent animation="slide-up" delay={100}>
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                     {gradeLevel === 'HIGH_SCHOOL' ? 'High School Classes' : 'Secondary Classes'} - Timetable Coverage
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -1629,13 +1636,13 @@ export default function TimetablePage() {
                           setSelectedClassId(cls.id);
                           setViewMode('class');
                         }}
-                        className="p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer"
+                        className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md transition-all cursor-pointer bg-white dark:bg-gray-800/50"
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium text-gray-900">{cls.name}</span>
-                          <span className="text-sm text-gray-500">Grade {cls.grade}</span>
+                          <span className="font-medium text-gray-900 dark:text-white">{cls.name}</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Grade {cls.grade}</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
                           <div
                             className={`h-2 rounded-full ${
                               (cls.coverage || 0) >= 80
@@ -1648,10 +1655,10 @@ export default function TimetablePage() {
                           />
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">
+                          <span className="text-gray-500 dark:text-gray-400">
                             {cls.entryCount || 0} / {cls.totalSlots || 0} slots
                           </span>
-                          <span className="font-medium">{cls.coverage || 0}%</span>
+                          <span className="font-medium text-gray-900 dark:text-white">{cls.coverage || 0}%</span>
                         </div>
                       </div>
                     ))}
@@ -1661,12 +1668,12 @@ export default function TimetablePage() {
             ) : viewMode === 'teacher' ? (
               // Teacher Schedule View
               <AnimatedContent animation="slide-up" delay={100}>
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden transition-colors">
                   {periods.length === 0 ? (
                     <div className="p-12 text-center">
-                      <Clock className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No Periods Configured</h3>
-                      <p className="text-gray-500 mb-4">
+                      <Clock className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Periods Configured</h3>
+                      <p className="text-gray-500 dark:text-gray-400 mb-4">
                         Set up your school's period schedule to view teacher schedules.
                       </p>
                       <button
@@ -1680,31 +1687,31 @@ export default function TimetablePage() {
                     </div>
                   ) : !selectedTeacherId ? (
                     <div className="p-12 text-center">
-                      <User className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Select a Teacher</h3>
-                      <p className="text-gray-500">Choose a teacher from the dropdown to view their schedule.</p>
+                      <User className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Select a Teacher</h3>
+                      <p className="text-gray-500 dark:text-gray-400">Choose a teacher from the dropdown to view their schedule.</p>
                     </div>
                   ) : (
                     <BlurLoader isLoading={loadingTimetable} showSpinner={false}>
                       {/* Teacher Info Header */}
                       {timetableData && 'teacher' in timetableData && (
-                        <div className="p-4 bg-gray-50 border-b border-gray-200">
+                        <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                                <User className="h-5 w-5 text-indigo-600" />
+                              <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-500/10 rounded-full flex items-center justify-center">
+                                <User className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                               </div>
                               <div>
-                                <h3 className="font-semibold text-gray-900">
+                                <h3 className="font-semibold text-gray-900 dark:text-white">
                                   {timetableData.teacher.firstName} {timetableData.teacher.lastName}
                                 </h3>
                                 {timetableData.teacher.khmerName && (
-                                  <p className="text-sm text-gray-500">{timetableData.teacher.khmerName}</p>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400">{timetableData.teacher.khmerName}</p>
                                 )}
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="text-sm text-gray-500">Total Periods</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">Total Periods</p>
                               <p className="text-2xl font-bold text-indigo-600">{timetableData.totalPeriods}</p>
                             </div>
                           </div>
@@ -1713,14 +1720,14 @@ export default function TimetablePage() {
                       <div className="overflow-x-auto">
                         <table className="w-full min-w-[900px]">
                           <thead>
-                            <tr className="bg-gray-50 border-b border-gray-200">
-                              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 w-36 sticky left-0 bg-gray-50">
+                            <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
+                              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white w-36 sticky left-0 bg-gray-50 dark:bg-gray-800/50">
                                 Time
                               </th>
                               {days.map((day) => (
-                                <th key={day} className="px-4 py-3 text-center text-sm font-semibold text-gray-900">
+                                <th key={day} className="px-4 py-3 text-center text-sm font-semibold text-gray-900 dark:text-white">
                                   {DAY_LABELS[day].en}
-                                  <span className="block text-xs font-normal text-gray-500">{DAY_LABELS[day].kh}</span>
+                                  <span className="block text-xs font-normal text-gray-500 dark:text-gray-400">{DAY_LABELS[day].kh}</span>
                                 </th>
                               ))}
                             </tr>
@@ -1729,11 +1736,11 @@ export default function TimetablePage() {
                             {periods.map((period) => (
                               <tr
                                 key={period.id}
-                                className={`border-b border-gray-200 ${period.isBreak ? 'bg-gray-50' : ''}`}
+                                className={`border-b border-gray-200 dark:border-gray-800 ${period.isBreak ? 'bg-gray-50 dark:bg-gray-800/30' : ''}`}
                               >
-                                <td className="px-4 py-3 sticky left-0 bg-white border-r border-gray-100">
-                                  <div className="font-medium text-gray-900 text-sm">{period.name}</div>
-                                  <div className="text-xs text-gray-500">
+                                <td className="px-4 py-3 sticky left-0 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800">
+                                  <div className="font-medium text-gray-900 dark:text-white text-sm">{period.name}</div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">
                                     {period.startTime} - {period.endTime}
                                   </div>
                                 </td>
@@ -1743,7 +1750,7 @@ export default function TimetablePage() {
                                   return (
                                     <td key={`${day}-${period.id}`} className="px-1 py-1">
                                       {period.isBreak ? (
-                                        <div className="h-[56px] flex items-center justify-center text-gray-400 text-[10px] italic bg-gray-100/30 rounded-lg">
+                                        <div className="h-[56px] flex items-center justify-center text-gray-400 dark:text-gray-500 text-[10px] italic bg-gray-100/30 dark:bg-gray-800/30 rounded-lg">
                                           {period.name}
                                         </div>
                                       ) : entry ? (
@@ -1766,7 +1773,7 @@ export default function TimetablePage() {
                                           )}
                                         </div>
                                       ) : (
-                                        <div className="h-[56px] flex items-center justify-center text-gray-300 bg-gray-50/30 rounded-lg border border-dashed border-gray-200">
+                                        <div className="h-[56px] flex items-center justify-center text-gray-300 dark:text-gray-600 bg-gray-50/30 dark:bg-gray-800/20 rounded-lg border border-dashed border-gray-200 dark:border-gray-700">
                                           —
                                         </div>
                                       )}
@@ -1797,14 +1804,15 @@ export default function TimetablePage() {
                 )}
 
                 <AnimatedContent animation="slide-up" delay={100}>
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-all hover:shadow-2xl dark:hover:shadow-black/20">
+
                     {periods.length === 0 ? (
                       <div className="p-16 text-center">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Clock className="h-8 w-8 text-gray-400" />
+                        <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Clock className="h-8 w-8 text-gray-400 dark:text-gray-500" />
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Periods Configured</h3>
-                        <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Periods Configured</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
                           Set up your school's period schedule to start creating timetables.
                         </p>
                         <button
@@ -1818,39 +1826,39 @@ export default function TimetablePage() {
                       </div>
                     ) : !selectedClassId ? (
                       <div className="p-16 text-center">
-                        <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
                           <Users className="h-8 w-8 text-indigo-400" />
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Select a Class</h3>
-                        <p className="text-sm text-gray-500">Choose a class from the dropdown above to view its timetable.</p>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Select a Class</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Choose a class from the dropdown above to view its timetable.</p>
                       </div>
                     ) : (
                       <BlurLoader isLoading={loadingTimetable} showSpinner={false}>
                         <div className="overflow-x-auto">
                           <table className="w-full min-w-[900px] border-collapse">
                             <thead>
-                            <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50">
-                              <th className="px-4 py-4 text-left w-32 sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100/50 z-10">
-                                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Period</span>
+                            <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-800/50 dark:to-gray-800/30">
+                              <th className="px-4 py-4 text-left w-32 sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-800/50 dark:to-gray-800/30 z-10">
+                                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Period</span>
                               </th>
                               {days.map((day) => (
                                 <th key={day} className="px-2 py-4 text-center">
-                                  <span className="text-sm font-semibold text-gray-800">{DAY_LABELS[day].en}</span>
-                                  <span className="block text-[10px] text-gray-400 mt-0.5">{DAY_LABELS[day].kh}</span>
+                                  <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{DAY_LABELS[day].en}</span>
+                                  <span className="block text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{DAY_LABELS[day].kh}</span>
                                 </th>
                               ))}
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-gray-100">
+                          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                             {periods.map((period) => (
                               <tr
                                 key={period.id}
-                                className={`${period.isBreak ? 'bg-gray-50/50' : 'hover:bg-gray-50/30'} transition-colors`}
+                                className={`${period.isBreak ? 'bg-gray-50/50 dark:bg-gray-800/30' : 'hover:bg-gray-50/30 dark:hover:bg-gray-800/20'} transition-colors`}
                               >
-                                <td className="px-4 py-2 sticky left-0 bg-white z-10 border-r border-gray-100">
+                                <td className="px-4 py-2 sticky left-0 bg-white dark:bg-gray-900 z-10 border-r border-gray-100 dark:border-gray-800">
                                   <div className="flex flex-col">
-                                    <span className="font-semibold text-gray-800 text-sm">{period.name}</span>
-                                    <span className="text-[10px] text-gray-400 mt-0.5">
+                                    <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm">{period.name}</span>
+                                    <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
                                       {period.startTime} - {period.endTime}
                                     </span>
                                   </div>
@@ -1865,8 +1873,8 @@ export default function TimetablePage() {
                                   if (period.isBreak) {
                                     return (
                                       <td key={cellId} className="px-1 py-1">
-                                        <div className="h-[56px] flex items-center justify-center bg-gray-100/30 rounded-lg">
-                                          <span className="text-[10px] text-gray-400 font-medium">{period.name}</span>
+                                        <div className="h-[56px] flex items-center justify-center bg-gray-100/30 dark:bg-gray-800/30 rounded-lg">
+                                          <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">{period.name}</span>
                                         </div>
                                       </td>
                                     );
@@ -1913,7 +1921,7 @@ export default function TimetablePage() {
             {periods.length > 0 && (viewMode === 'class' || viewMode === 'teacher') && (
               <AnimatedContent animation="slide-up" delay={150}>
                 <div className="mt-4 flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-gray-400 font-medium">Subjects:</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">Subjects:</span>
                   {Object.entries({
                     Languages: 'bg-blue-500 text-white',
                     Mathematics: 'bg-emerald-500 text-white',
@@ -1935,36 +1943,36 @@ export default function TimetablePage() {
 
         {/* Entry Modal */}
         {showEntryModal && editingEntry && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
-              <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70">
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-md mx-4 border border-gray-200 dark:border-gray-800">
+              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   {editingEntry.entry ? 'Edit Entry' : 'Add Entry'}
                 </h3>
-                <button onClick={() => setShowEntryModal(false)} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                <button onClick={() => setShowEntryModal(false)} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg">
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
               <div className="p-4 space-y-4">
                 {error && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+                  <div className="p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg flex items-center gap-2 text-red-700 dark:text-red-400 text-sm">
                     <AlertCircle className="h-4 w-4" />
                     {error}
                   </div>
                 )}
 
-                <div className="text-sm text-gray-500 mb-4">
+                <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                   <strong>{DAY_LABELS[editingEntry.dayOfWeek].en}</strong> •{' '}
                   {periods.find((p) => p.id === editingEntry.periodId)?.name}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subject</label>
                   <select
                     value={entryForm.subjectId}
                     onChange={(e) => setEntryForm({ ...entryForm, subjectId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800 dark:text-gray-200"
                   >
                     <option value="">Select Subject</option>
                     {subjects
@@ -1981,11 +1989,11 @@ export default function TimetablePage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Teacher</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teacher</label>
                   <select
                     value={entryForm.teacherId}
                     onChange={(e) => setEntryForm({ ...entryForm, teacherId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800 dark:text-gray-200"
                   >
                     <option value="">Select Teacher</option>
                     {availableTeachers.map((teacher) => (
@@ -1999,25 +2007,25 @@ export default function TimetablePage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Room (Optional)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Room (Optional)</label>
                   <input
                     type="text"
                     value={entryForm.room}
                     onChange={(e) => setEntryForm({ ...entryForm, room: e.target.value })}
                     placeholder="e.g., Room 101"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800 dark:text-gray-200"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+              <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl">
                 {editingEntry.entry && (
                   <button
                     onClick={() => {
                       handleDeleteEntry(editingEntry.entry!.id);
                       setShowEntryModal(false);
                     }}
-                    className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
                     Delete
@@ -2026,7 +2034,7 @@ export default function TimetablePage() {
                 <div className="flex items-center gap-2 ml-auto">
                   <button
                     onClick={() => setShowEntryModal(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
                   >
                     Cancel
                   </button>
@@ -2046,16 +2054,16 @@ export default function TimetablePage() {
 
         {/* Auto-Assign Modal */}
         {showAutoAssignModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4">
-              <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70">
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-lg mx-4 border border-gray-200 dark:border-gray-800">
+              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <Wand2 className="h-5 w-5 text-purple-600" />
+                  <div className="p-2 bg-purple-100 dark:bg-purple-500/10 rounded-lg">
+                    <Wand2 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Auto-Assign Teachers</h3>
-                    <p className="text-sm text-gray-500">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Auto-Assign Teachers</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       Automatically assign teachers to {classes.find((c) => c.id === selectedClassId)?.name}
                     </p>
                   </div>
@@ -2065,7 +2073,7 @@ export default function TimetablePage() {
                     setShowAutoAssignModal(false);
                     setAutoAssignResult(null);
                   }}
-                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"
+                  className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -2073,7 +2081,7 @@ export default function TimetablePage() {
 
               <div className="p-4 space-y-4">
                 {error && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+                  <div className="p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg flex items-center gap-2 text-red-700 dark:text-red-400 text-sm">
                     <AlertCircle className="h-4 w-4" />
                     {error}
                   </div>
@@ -2081,8 +2089,8 @@ export default function TimetablePage() {
 
                 {!autoAssignResult ? (
                   <>
-                    <div className="p-4 bg-gray-50 rounded-lg">
-                      <h4 className="font-medium text-gray-900 mb-3">Options</h4>
+                    <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                      <h4 className="font-medium text-gray-900 dark:text-white mb-3">Options</h4>
                       <div className="space-y-3">
                         <label className="flex items-center gap-3">
                           <input
@@ -2093,7 +2101,7 @@ export default function TimetablePage() {
                             }
                             className="w-4 h-4 text-indigo-600 rounded"
                           />
-                          <span className="text-sm text-gray-700">Balance teacher workload (prefer less busy teachers)</span>
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Balance teacher workload (prefer less busy teachers)</span>
                         </label>
                         <label className="flex items-center gap-3">
                           <input
@@ -2104,15 +2112,15 @@ export default function TimetablePage() {
                             }
                             className="w-4 h-4 text-indigo-600 rounded"
                           />
-                          <span className="text-sm text-gray-700">Clear existing entries for this class first</span>
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Clear existing entries for this class first</span>
                         </label>
                       </div>
                     </div>
 
-                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="p-4 bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/20 rounded-lg">
                       <div className="flex items-start gap-2">
-                        <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                        <div className="text-sm text-yellow-800">
+                        <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                        <div className="text-sm text-yellow-800 dark:text-yellow-300">
                           <strong>Note:</strong> Auto-assign will use teacher-subject assignments to determine which
                           teachers can teach which subjects. Make sure teachers are assigned to their subjects first.
                         </div>
@@ -2121,26 +2129,26 @@ export default function TimetablePage() {
                   </>
                 ) : (
                   <div className="space-y-4">
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex items-center gap-2 text-green-700 font-medium mb-2">
+                    <div className="p-4 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-lg">
+                      <div className="flex items-center gap-2 text-green-700 dark:text-green-400 font-medium mb-2">
                         <Check className="h-5 w-5" />
                         Auto-assignment complete!
                       </div>
-                      <div className="text-sm text-green-600">
+                      <div className="text-sm text-green-600 dark:text-green-400">
                         <p>Assigned: {autoAssignResult.assignedCount} entries</p>
                         {autoAssignResult.unassignedCount > 0 && (
-                          <p className="text-yellow-600">Unassigned: {autoAssignResult.unassignedCount} slots</p>
+                          <p className="text-yellow-600 dark:text-yellow-400">Unassigned: {autoAssignResult.unassignedCount} slots</p>
                         )}
                       </div>
                     </div>
 
                     {autoAssignResult.subjectCoverage && (
                       <div>
-                        <h4 className="font-medium text-gray-900 mb-2">Subject Coverage</h4>
+                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">Subject Coverage</h4>
                         <div className="space-y-2 max-h-48 overflow-y-auto">
                           {autoAssignResult.subjectCoverage.map((s: any) => (
                             <div key={s.subjectId} className="flex items-center justify-between text-sm">
-                              <span className="text-gray-700">{s.subjectName}</span>
+                              <span className="text-gray-700 dark:text-gray-300">{s.subjectName}</span>
                               <span
                                 className={`font-medium ${s.assigned >= s.required ? 'text-green-600' : 'text-red-600'}`}
                               >
@@ -2155,13 +2163,13 @@ export default function TimetablePage() {
                 )}
               </div>
 
-              <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+              <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl">
                 <button
                   onClick={() => {
                     setShowAutoAssignModal(false);
                     setAutoAssignResult(null);
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
                 >
                   {autoAssignResult ? 'Close' : 'Cancel'}
                 </button>
@@ -2183,19 +2191,19 @@ export default function TimetablePage() {
         {/* Drag Overlay */}
         <DragOverlay dropAnimation={null}>
           {(activeTeacher || activeDragTeacher) && (
-            <div className="p-3 bg-white rounded-xl shadow-2xl border-2 border-indigo-500 flex items-center gap-3 cursor-grabbing">
+            <div className="p-3 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border-2 border-indigo-500 flex items-center gap-3 cursor-grabbing">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center flex-shrink-0">
                 <User className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="font-semibold text-gray-900">
+                <p className="font-semibold text-gray-900 dark:text-white">
                   {activeTeacher 
                     ? `${activeTeacher.firstName || activeTeacher.firstNameLatin} ${activeTeacher.lastName || activeTeacher.lastNameLatin}`
                     : activeDragTeacher 
                       ? getTeacherDisplayName(activeDragTeacher)
                       : ''}
                 </p>
-                <p className="text-xs text-gray-500">Drag to assign</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Drag to assign</p>
               </div>
             </div>
           )}
@@ -2203,11 +2211,11 @@ export default function TimetablePage() {
 
         {/* Copy Timetable Modal */}
         {showCopyModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
-              <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <Copy className="h-5 w-5 text-teal-600" />
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70">
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-md mx-4 border border-gray-200 dark:border-gray-800">
+              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Copy className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                   Copy Timetable
                 </h3>
                 <button
@@ -2216,30 +2224,30 @@ export default function TimetablePage() {
                     setCopyTargetClassId('');
                     setCopyClearTarget(false);
                   }}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
               <div className="p-4 space-y-4">
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+                <div className="p-3 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-lg text-sm text-blue-700 dark:text-blue-400">
                   <p className="font-medium">
                     Source: {classes.find((c) => c.id === selectedClassId)?.name || 'Unknown'}
                   </p>
-                  <p className="text-blue-600 mt-1">
+                  <p className="text-blue-600 dark:text-blue-400 mt-1">
                     {timetableData && 'entries' in timetableData ? (timetableData as ClassTimetable).entries.length : 0} entries will be copied
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Copy to Class
                   </label>
                   <select
                     value={copyTargetClassId}
                     onChange={(e) => setCopyTargetClassId(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-800 dark:text-gray-200"
                   >
                     <option value="">Select target class...</option>
                     {filteredClasses
@@ -2259,23 +2267,23 @@ export default function TimetablePage() {
                     onChange={(e) => setCopyClearTarget(e.target.checked)}
                     className="w-4 h-4 text-teal-600 rounded"
                   />
-                  <span className="text-gray-700">Clear existing entries in target class first</span>
+                  <span className="text-gray-700 dark:text-gray-300">Clear existing entries in target class first</span>
                 </label>
 
-                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+                <div className="p-3 bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/20 rounded-lg text-sm text-yellow-700 dark:text-yellow-300">
                   <AlertTriangle className="h-4 w-4 inline mr-1" />
                   Entries with teacher conflicts will be skipped to avoid double-booking.
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+              <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl">
                 <button
                   onClick={() => {
                     setShowCopyModal(false);
                     setCopyTargetClassId('');
                     setCopyClearTarget(false);
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
                 >
                   Cancel
                 </button>

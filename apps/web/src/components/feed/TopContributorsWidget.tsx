@@ -27,10 +27,10 @@ interface LeaderboardUser {
 }
 
 const rankStyles = {
-  first: 'bg-yellow-100 text-yellow-700',
-  second: 'bg-gray-100 text-gray-600',
-  third: 'bg-orange-100 text-orange-600',
-  default: 'bg-gray-50 text-gray-500',
+  first: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400',
+  second: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
+  third: 'bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400',
+  default: 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-500',
 };
 
 export default function TopContributorsWidget() {
@@ -120,16 +120,16 @@ export default function TopContributorsWidget() {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
       {/* Header - Simple */}
-      <div className="px-3 py-2.5 border-b border-gray-100">
+      <div className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-800">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-gray-900 text-sm">{tFeed('widgets.topContributors.title')}</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{tFeed('widgets.topContributors.title')}</h3>
           <div className="flex text-xs">
             <button
               onClick={() => setPeriod('week')}
               className={`px-2 py-0.5 rounded-l border ${
-                period === 'week' ? 'bg-amber-50 border-[#F9A825] text-[#F9A825]' : 'border-gray-200 text-gray-500'
+                period === 'week' ? 'bg-amber-50 dark:bg-amber-900/20 border-[#F9A825] text-[#F9A825]' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
               }`}
             >
               {tFeed('widgets.topContributors.week')}
@@ -137,7 +137,7 @@ export default function TopContributorsWidget() {
             <button
               onClick={() => setPeriod('month')}
               className={`px-2 py-0.5 rounded-r border-t border-r border-b ${
-                period === 'month' ? 'bg-amber-50 border-[#F9A825] text-[#F9A825]' : 'border-gray-200 text-gray-500'
+                period === 'month' ? 'bg-amber-50 dark:bg-amber-900/20 border-[#F9A825] text-[#F9A825]' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
               }`}
             >
               {tFeed('widgets.topContributors.month')}
@@ -147,17 +147,17 @@ export default function TopContributorsWidget() {
       </div>
 
       {/* Contributors List */}
-      <div className="divide-y divide-gray-50">
+      <div className="divide-y divide-gray-50 dark:divide-gray-800">
         {loading ? (
           <div className="px-3 py-5 flex items-center justify-center">
             <Loader2 className="w-4 h-4 animate-spin text-[#F9A825]" />
           </div>
         ) : error ? (
-          <div className="px-3 py-4 text-center text-xs text-gray-500">
+          <div className="px-3 py-4 text-center text-xs text-gray-500 dark:text-gray-400">
             {error === 'load_failed' ? tFeed('widgets.topContributors.loadFailed') : error}
           </div>
         ) : contributors.length === 0 ? (
-          <div className="px-3 py-4 text-center text-xs text-gray-500">
+          <div className="px-3 py-4 text-center text-xs text-gray-500 dark:text-gray-400">
             {tFeed('widgets.topContributors.noContributors')}
           </div>
         ) : (
@@ -165,7 +165,7 @@ export default function TopContributorsWidget() {
           return (
             <div
               key={contributor.id}
-              className="px-3 py-2 flex items-center gap-2.5 hover:bg-gray-50 transition-colors"
+              className="px-3 py-2 flex items-center gap-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
             >
               {/* Rank */}
               <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${getRankStyle(contributor.rank)}`}>
@@ -174,14 +174,14 @@ export default function TopContributorsWidget() {
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-gray-900 text-xs truncate">
+                <h4 className="font-medium text-gray-900 dark:text-gray-100 text-xs truncate">
                   {contributor.name}
                 </h4>
-                <p className="text-[11px] text-gray-400 capitalize">{getRoleLabel(contributor.role)}</p>
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 capitalize">{getRoleLabel(contributor.role)}</p>
               </div>
 
               {/* Points */}
-              <span className="text-xs font-medium text-gray-500">{contributor.points.toLocaleString()}</span>
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{contributor.points.toLocaleString()}</span>
             </div>
           );
           })
@@ -189,10 +189,10 @@ export default function TopContributorsWidget() {
       </div>
 
       {/* Footer */}
-      <div className="px-3 py-2 border-t border-gray-100">
+      <div className="px-3 py-2 border-t border-gray-100 dark:border-gray-800">
         <Link
           href={`/${locale}/leaderboard`}
-          className="text-xs text-gray-500 hover:text-[#F9A825] transition-colors"
+          className="text-xs text-gray-500 dark:text-gray-400 hover:text-[#F9A825] transition-colors"
         >
           {tFeed('widgets.topContributors.viewLeaderboard')} →
         </Link>

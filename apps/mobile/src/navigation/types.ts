@@ -152,6 +152,7 @@ export type ProfileStackParamList = {
   EditProfile: undefined;
   Connections: { type: 'followers' | 'following' };
   Settings: undefined;
+  PasswordSecurity: undefined;
   Bookmarks: undefined;
   MyPosts: undefined;
   AcademicProfile: undefined;

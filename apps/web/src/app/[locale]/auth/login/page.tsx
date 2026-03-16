@@ -111,11 +111,11 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex items-center justify-center p-6 bg-slate-50 selection:bg-stunity-primary-100 selection:text-stunity-primary-900 font-sans">
+    <div className="h-screen w-screen overflow-hidden flex items-center justify-center p-6 bg-slate-50 dark:bg-gray-950 selection:bg-stunity-primary-100 dark:selection:bg-stunity-primary-900/30 selection:text-stunity-primary-900 dark:selection:text-stunity-primary-100 font-sans transition-colors duration-500">
       <div className="w-full max-w-[420px] animate-fade-in relative z-10">
 
         {/* Floating Card: Shadow + Professional Border Radius */}
-        <div className="bg-white p-8 sm:p-10 border border-slate-100 rounded-3xl shadow-2xl shadow-slate-200/80">
+        <div className="bg-white dark:bg-gray-900/80 p-8 sm:p-10 border border-slate-100 dark:border-gray-800 rounded-3xl shadow-2xl shadow-slate-200/80 dark:shadow-none backdrop-blur-xl transition-all duration-500">
 
           {/* Prominent Internal Logo */}
           <div className="flex justify-center mb-6">
@@ -123,11 +123,11 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
           </div>
 
           <div className="text-center mb-8">
-            <h1 className="text-lg font-bold text-slate-800 tracking-tight">{t('title')}</h1>
+            <h1 className="text-lg font-bold text-slate-800 dark:text-white tracking-tight">{t('title')}</h1>
           </div>
 
           {error && (
-            <div className="mb-6 p-3 bg-red-50 text-red-700 rounded-full text-[12px] font-semibold text-center border border-red-100 shadow-sm">
+            <div className="mb-6 p-3 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 rounded-full text-[12px] font-semibold text-center border border-red-100 dark:border-red-500/20 shadow-sm">
               {error}
             </div>
           )}
@@ -141,7 +141,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 required
-                className="w-full px-6 py-3.5 bg-white border border-slate-200 rounded-full text-slate-900 placeholder-slate-400 text-sm shadow-sm focus:shadow-md focus:border-stunity-primary-400 focus:bg-white transition-all outline-none"
+                className="w-full px-6 py-3.5 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-full text-slate-900 dark:text-gray-100 placeholder-slate-400 dark:placeholder-gray-500 text-sm shadow-sm focus:shadow-md dark:focus:shadow-stunity-primary-500/10 focus:border-stunity-primary-400 dark:focus:border-stunity-primary-500 focus:bg-white dark:focus:bg-gray-800 transition-all outline-none"
                 placeholder="Email or Phone Number"
                 disabled={loading}
               />
@@ -151,14 +151,14 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-6 py-3.5 bg-white border border-slate-200 rounded-full text-slate-900 placeholder-slate-400 text-sm shadow-sm focus:shadow-md focus:border-stunity-primary-400 focus:bg-white transition-all outline-none"
+                className="w-full px-6 py-3.5 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-full text-slate-900 dark:text-gray-100 placeholder-slate-400 dark:placeholder-gray-500 text-sm shadow-sm focus:shadow-md dark:focus:shadow-stunity-primary-500/10 focus:border-stunity-primary-400 dark:focus:border-stunity-primary-500 focus:bg-white dark:focus:bg-gray-800 transition-all outline-none"
                 placeholder="Password"
                 disabled={loading}
               />
             </div>
 
             <div className="flex justify-center mt-2">
-              <Link href={`/${locale}/auth/forgot-password`} className="text-[10px] font-bold text-slate-300 hover:text-stunity-primary-600 uppercase tracking-widest transition-colors">{t('password')}</Link>
+              <Link href={`/${locale}/auth/forgot-password`} className="text-[10px] font-bold text-slate-300 dark:text-gray-500 hover:text-stunity-primary-600 dark:hover:text-stunity-primary-400 uppercase tracking-widest transition-colors">{t('password')}</Link>
             </div>
 
             {/* Stacked Primary Action Buttons - Brand Aligned Orange */}
@@ -174,9 +174,9 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
 
               <Link
                 href={`/${locale}/auth/choose-role`}
-                className="w-full py-4 bg-slate-100 text-slate-700 rounded-full font-bold shadow-sm hover:shadow-md hover:bg-slate-200 transition-all flex items-center justify-center gap-2 text-sm active:scale-[0.98] border border-slate-200"
+                className="w-full py-4 bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-300 rounded-full font-bold shadow-sm hover:shadow-md hover:bg-slate-200 dark:hover:bg-gray-700 transition-all flex items-center justify-center gap-2 text-sm active:scale-[0.98] border border-slate-200 dark:border-gray-700"
               >
-                <UserPlus className="w-4 h-4 text-stunity-primary-600" />
+                <UserPlus className="w-4 h-4 text-stunity-primary-600 dark:text-stunity-primary-400" />
                 <span>Create Account</span>
               </Link>
             </div>
@@ -185,10 +185,10 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
           {/* Social Auth Gateway */}
           <div className="relative my-8">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-100" />
+              <div className="w-full border-t border-slate-100 dark:border-gray-800" />
             </div>
             <div className="relative flex justify-center uppercase">
-              <span className="bg-white px-3 text-[10px] font-bold text-slate-300 tracking-[0.2em]">Authentication Gateway</span>
+              <span className="bg-white dark:bg-gray-900/0 px-3 text-[10px] font-bold text-slate-300 dark:text-gray-600 tracking-[0.2em] transition-colors">Authentication Gateway</span>
             </div>
           </div>
 
@@ -202,7 +202,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
               <button
                 key={name}
                 type="button"
-                className="w-11 h-11 flex items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm hover:shadow hover:border-slate-200 transition-all active:scale-95"
+                className="w-11 h-11 flex items-center justify-center rounded-full bg-white dark:bg-gray-800 border border-slate-100 dark:border-gray-700 shadow-sm hover:shadow hover:border-slate-200 dark:hover:border-gray-600 transition-all active:scale-95"
                 title={`Continue with ${name}`}
                 onClick={() => { window.location.href = `${AUTH_SERVICE_URL}${href}`; }}
               >
@@ -215,7 +215,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
           <div className="grid grid-cols-2 gap-4">
             <Link
               href={`/${locale}/auth/parent/register`}
-              className="py-4 bg-slate-50 text-slate-500 border border-slate-100 rounded-full font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-100 transition-all"
+              className="py-4 bg-slate-50 dark:bg-gray-800/50 text-slate-500 dark:text-gray-400 border border-slate-100 dark:border-gray-800 rounded-full font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-100 dark:hover:bg-gray-800 transition-all"
             >
               <Users className="w-4 h-4 text-stunity-primary-500 opacity-80" />
               Parent
@@ -223,7 +223,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
 
             <Link
               href={`/${locale}/register-school`}
-              className="py-4 bg-slate-50 text-slate-500 border border-slate-100 rounded-full font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-100 transition-all"
+              className="py-4 bg-slate-50 dark:bg-gray-800/50 text-slate-500 dark:text-gray-400 border border-slate-100 dark:border-gray-800 rounded-full font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-100 dark:hover:bg-gray-800 transition-all"
             >
               <School className="w-4 h-4 text-stunity-primary-500 opacity-80" />
               School
@@ -233,7 +233,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
 
         {/* Home Link */}
         <div className="mt-8 text-center px-4">
-          <Link href={`/${locale}`} className="text-[10px] font-bold text-slate-300 hover:text-slate-900 uppercase tracking-[0.4em] transition-colors">{t('backToHome')}</Link>
+          <Link href={`/${locale}`} className="text-[10px] font-bold text-slate-300 dark:text-gray-600 hover:text-slate-900 dark:hover:text-gray-100 uppercase tracking-[0.4em] transition-colors">{t('backToHome')}</Link>
         </div>
       </div>
     </div>

@@ -29,6 +29,9 @@ import {
   TrendingUp,
   Percent,
   User,
+  Sparkles,
+  Settings,
+  X,
 } from 'lucide-react';
 
 interface MonthlyStudentData {
@@ -274,45 +277,57 @@ export default function AttendanceReportsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white dark:bg-gray-950 transition-colors duration-500">
       <UnifiedNavigation user={user} school={school} />
 
       <div className="lg:ml-64 min-h-screen">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-teal-600 to-cyan-600 text-white p-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                <ClipboardCheck className="w-8 h-8" />
+        {/* Header Section */}
+        <div className="bg-gradient-to-br from-teal-600 via-cyan-600 to-emerald-600 dark:from-teal-950/40 dark:via-cyan-950/40 dark:to-emerald-950/40 relative overflow-hidden border-b border-white/10">
+          <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:32px_32px]" />
+          <div className="max-w-7xl mx-auto px-8 py-16 relative z-10">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+              <div className="flex items-center gap-6">
+                <div className="w-20 h-20 bg-white/10 backdrop-blur-xl rounded-[2rem] flex items-center justify-center border border-white/20 shadow-2xl">
+                  <ClipboardCheck className="w-10 h-10 text-white" />
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-lg border border-white/10 text-white/70 text-[10px] font-black uppercase tracking-widest mb-3">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Analytics Engine
+                  </div>
+                  <h1 className="text-4xl lg:text-5xl font-black text-white tracking-tighter">
+                    Attendance <span className="text-emerald-300">Reports</span>
+                  </h1>
+                  <p className="text-white/70 font-medium mt-2 max-w-xl">
+                    High-fidelity monthly synthesis of academic presence and engagement metrics.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-3xl font-bold">Attendance Reports</h1>
-                <p className="text-white/80 mt-1">Monthly attendance summary and statistics</p>
-              </div>
+              <button
+                onClick={loadMonthlyAttendance}
+                disabled={loading || !selectedClass}
+                className="group relative flex items-center justify-center gap-3 px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white rounded-2xl font-black uppercase tracking-widest text-[10px] border border-white/10 transition-all shadow-xl disabled:opacity-50 overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-0 transition-transform duration-700" />
+                <RefreshCw className={`w-4 h-4 relative z-10 ${loading ? 'animate-spin' : ''}`} />
+                <span className="relative z-10">Sync Data Stream</span>
+              </button>
             </div>
-            <button
-              onClick={loadMonthlyAttendance}
-              disabled={loading || !selectedClass}
-              className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-xl hover:bg-white/30 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
           </div>
         </div>
 
         <div className="p-8">
           {/* Filters */}
           <AnimatedContent animation="fade" delay={0}>
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-8 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {/* Academic Year */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Academic Year</label>
+                  <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Academic Epoch</label>
                   <select
                     value={selectedAcademicYear}
                     onChange={(e) => setSelectedAcademicYear(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all font-bold text-gray-900 dark:text-white"
                   >
                     <option value="">Select Year</option>
                     {academicYears.map((year) => (
@@ -325,11 +340,11 @@ export default function AttendanceReportsPage() {
 
                 {/* Class */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Class</label>
+                  <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Cohort Segment</label>
                   <select
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all disabled:opacity-50 font-bold text-gray-900 dark:text-white"
                     disabled={!selectedAcademicYear || classes.length === 0}
                   >
                     <option value="">Select Class</option>
@@ -343,20 +358,20 @@ export default function AttendanceReportsPage() {
 
                 {/* Month Navigation */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
-                  <div className="flex items-center gap-2">
+                  <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Temporal Coordinate</label>
+                  <div className="flex items-center gap-3">
                     <button
                       onClick={goToPreviousMonth}
-                      className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="p-3 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-900 text-gray-500 transition-all hover:scale-105"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
-                    <div className="flex-1 px-4 py-2 bg-gray-50 rounded-lg text-center font-medium">
+                    <div className="flex-1 px-6 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-xl text-center font-black uppercase tracking-widest text-sm text-gray-900 dark:text-white">
                       {monthName} {selectedYear}
                     </div>
                     <button
                       onClick={goToNextMonth}
-                      className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="p-3 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-900 text-gray-500 transition-all hover:scale-105"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
@@ -384,59 +399,59 @@ export default function AttendanceReportsPage() {
               <>
                 {/* Statistics Cards */}
                 <AnimatedContent animation="slide-up" delay={100}>
-                  <div className="grid md:grid-cols-5 gap-4 mb-6">
-                    <div className="bg-white rounded-xl shadow-sm border p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <Users className="w-5 h-5 text-blue-600" />
+                  <div className="grid md:grid-cols-5 gap-6 mb-8">
+                    <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-6 hover:scale-105 transition-all">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-600">
+                          <Users className="w-6 h-6" />
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Students</p>
-                          <p className="text-xl font-bold text-gray-900">{statistics.totalStudents}</p>
+                          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1">Students</p>
+                          <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{statistics.totalStudents}</p>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-white rounded-xl shadow-sm border p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-                          <Percent className="w-5 h-5 text-teal-600" />
+                    <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-6 hover:scale-105 transition-all">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-teal-500/10 rounded-2xl flex items-center justify-center text-teal-600">
+                          <Percent className="w-6 h-6" />
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Avg Rate</p>
-                          <p className="text-xl font-bold text-teal-600">{statistics.avgAttendance}%</p>
+                          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1">Avg Rate</p>
+                          <p className="text-2xl font-black text-teal-600 tracking-tight">{statistics.avgAttendance}%</p>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-white rounded-xl shadow-sm border p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                          <CheckCircle className="w-5 h-5 text-green-600" />
+                    <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-6 hover:scale-105 transition-all">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-600">
+                          <CheckCircle className="w-6 h-6" />
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Present</p>
-                          <p className="text-xl font-bold text-green-600">{statistics.totalPresent}</p>
+                          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1">Present</p>
+                          <p className="text-2xl font-black text-emerald-600 tracking-tight">{statistics.totalPresent}</p>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-white rounded-xl shadow-sm border p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                          <XCircle className="w-5 h-5 text-red-600" />
+                    <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-6 hover:scale-105 transition-all">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-rose-500/10 rounded-2xl flex items-center justify-center text-rose-600">
+                          <XCircle className="w-6 h-6" />
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Absent</p>
-                          <p className="text-xl font-bold text-red-600">{statistics.totalAbsent}</p>
+                          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1">Absent</p>
+                          <p className="text-2xl font-black text-rose-600 tracking-tight">{statistics.totalAbsent}</p>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-white rounded-xl shadow-sm border p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                          <Clock className="w-5 h-5 text-orange-600" />
+                    <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-6 hover:scale-105 transition-all">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-600">
+                          <Clock className="w-6 h-6" />
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Late</p>
-                          <p className="text-xl font-bold text-orange-600">{statistics.totalLate}</p>
+                          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1">Late</p>
+                          <p className="text-2xl font-black text-amber-600 tracking-tight">{statistics.totalLate}</p>
                         </div>
                       </div>
                     </div>
@@ -445,41 +460,46 @@ export default function AttendanceReportsPage() {
 
                 {/* Monthly Grid */}
                 <AnimatedContent animation="slide-up" delay={200}>
-                  <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
-                    <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
-                      <h2 className="font-semibold text-gray-900">
-                        {selectedClassData?.name} - {monthName} {selectedYear}
-                      </h2>
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded">P = Present</span>
-                        <span className="px-2 py-1 bg-red-100 text-red-700 rounded">A = Absent</span>
-                        <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded">L = Late</span>
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">E = Excused</span>
-                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded">S = Permission</span>
+                  <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 overflow-hidden group">
+                    <div className="p-6 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div>
+                        <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">
+                          {selectedClassData?.name}
+                        </h2>
+                        <p className="text-[10px] font-black text-teal-600 dark:text-teal-400 animate-pulse uppercase tracking-[0.2em] mt-1">
+                          Cycle: {monthName} {selectedYear}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-[9px] font-black uppercase tracking-widest">
+                        <span className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-lg border border-emerald-200/50 dark:border-emerald-500/20 shadow-sm">P = Present</span>
+                        <span className="px-3 py-1.5 bg-rose-100 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 rounded-lg border border-rose-200/50 dark:border-rose-500/20 shadow-sm">A = Absent</span>
+                        <span className="px-3 py-1.5 bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-lg border border-amber-200/50 dark:border-amber-500/20 shadow-sm">L = Late</span>
+                        <span className="px-3 py-1.5 bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 rounded-lg border border-indigo-200/50 dark:border-indigo-500/20 shadow-sm">E = Excused</span>
+                        <span className="px-3 py-1.5 bg-purple-100 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded-lg border border-purple-200/50 dark:border-purple-500/20 shadow-sm">S = Permission</span>
                       </div>
                     </div>
                     
                     <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
+                      <table className="w-full">
                         <thead>
-                          <tr className="bg-gray-50 border-b">
-                            <th className="sticky left-0 bg-gray-50 px-4 py-3 text-left font-medium text-gray-700 min-w-[200px]">
-                              Student
+                          <tr className="bg-gray-50 dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800">
+                            <th className="sticky left-0 z-20 bg-gray-50 dark:bg-gray-950 px-6 py-5 text-left text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest min-w-[240px] border-r border-gray-100 dark:border-gray-800">
+                              Academic Persona
                             </th>
                             {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => (
-                              <th key={day} className="px-1 py-3 text-center font-medium text-gray-700 min-w-[32px]">
+                              <th key={day} className="px-2 py-5 text-center text-[10px] font-black text-gray-400 dark:text-gray-600 min-w-[36px]">
                                 {day}
                               </th>
                             ))}
-                            <th className="px-3 py-3 text-center font-medium text-gray-700 bg-teal-50 min-w-[60px]">
-                              Total
+                            <th className="px-4 py-5 text-center text-[10px] font-black text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/20 min-w-[80px] uppercase tracking-widest">
+                              Metric
                             </th>
-                            <th className="px-3 py-3 text-center font-medium text-gray-700 bg-teal-50 min-w-[60px]">
-                              Rate
+                            <th className="px-4 py-5 text-center text-[10px] font-black text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/20 min-w-[80px] uppercase tracking-widest">
+                              Efficiency
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y">
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                           {monthlyData?.students?.map((student, idx) => {
                             const totalSessions = student.totals.present + student.totals.absent + 
                                                   student.totals.late + student.totals.excused + 
@@ -489,21 +509,24 @@ export default function AttendanceReportsPage() {
                               : 0;
 
                             return (
-                              <tr key={student.studentId} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                                <td className="sticky left-0 bg-inherit px-4 py-2">
-                                  <div className="flex items-center gap-2">
-                                    {student.photo ? (
-                                      <img src={student.photo} alt="" className="w-8 h-8 rounded-full object-cover" />
-                                    ) : (
-                                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                        <User className="w-4 h-4 text-gray-400" />
-                                      </div>
-                                    )}
+                              <tr key={student.studentId} className={`group/row transition-colors ${idx % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/30 dark:bg-gray-950/30'} hover:bg-teal-50/50 dark:hover:bg-teal-500/5`}>
+                                <td className="sticky left-0 z-10 bg-inherit px-6 py-4 border-r border-gray-100 dark:border-gray-800">
+                                  <div className="flex items-center gap-4">
+                                    <div className="relative">
+                                      {student.photo ? (
+                                        <img src={student.photo} alt="" className="w-10 h-10 rounded-2xl object-cover ring-2 ring-gray-100 dark:ring-gray-800" />
+                                      ) : (
+                                        <div className="w-10 h-10 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center border border-gray-200 dark:border-gray-700 shadow-inner">
+                                          <User className="w-5 h-5 text-gray-400" />
+                                        </div>
+                                      )}
+                                      <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 ${attendanceRate >= 80 ? 'bg-emerald-500' : attendanceRate >= 60 ? 'bg-amber-500' : 'bg-rose-500'}`} />
+                                    </div>
                                     <div className="min-w-0">
-                                      <p className="font-medium text-gray-900 truncate">
+                                      <p className="font-black text-gray-900 dark:text-white tracking-tight group-hover/row:text-teal-600 dark:group-hover/row:text-teal-400 transition-colors">
                                         {student.firstName} {student.lastName}
                                       </p>
-                                      <p className="text-xs text-gray-500">{student.studentNumber}</p>
+                                      <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">{student.studentNumber}</p>
                                     </div>
                                   </div>
                                 </td>
@@ -515,31 +538,41 @@ export default function AttendanceReportsPage() {
                                   const afternoonStatus = dayAttendance?.afternoon?.status;
                                   
                                   return (
-                                    <td key={day} className="px-0.5 py-1">
-                                      <div className="flex flex-col gap-0.5">
-                                        <div className={`text-center text-xs py-0.5 rounded ${getStatusCellClass(morningStatus)}`}>
+                                    <td key={day} className="px-0.5 py-2">
+                                      <div className="flex flex-col gap-1">
+                                        <div className={`text-center text-[9px] font-black py-0.5 rounded-md transition-all ${
+                                          morningStatus === 'PRESENT' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm shadow-emerald-500/10' :
+                                          morningStatus === 'ABSENT' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 shadow-sm shadow-rose-500/10' :
+                                          morningStatus === 'LATE' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 shadow-sm shadow-amber-500/10' :
+                                          morningStatus ? 'bg-gray-100 dark:bg-gray-800 text-gray-500' : 'bg-transparent text-transparent select-none'
+                                        }`}>
                                           {getStatusLabel(morningStatus)}
                                         </div>
-                                        <div className={`text-center text-xs py-0.5 rounded ${getStatusCellClass(afternoonStatus)}`}>
+                                        <div className={`text-center text-[9px] font-black py-0.5 rounded-md transition-all ${
+                                          afternoonStatus === 'PRESENT' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm shadow-emerald-500/10' :
+                                          afternoonStatus === 'ABSENT' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 shadow-sm shadow-rose-500/10' :
+                                          afternoonStatus === 'LATE' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 shadow-sm shadow-amber-500/10' :
+                                          afternoonStatus ? 'bg-gray-100 dark:bg-gray-800 text-gray-500' : 'bg-transparent text-transparent select-none'
+                                        }`}>
                                           {getStatusLabel(afternoonStatus)}
                                         </div>
                                       </div>
                                     </td>
                                   );
                                 })}
-                                <td className="px-3 py-2 text-center bg-teal-50">
-                                  <div className="text-xs space-y-0.5">
-                                    <div className="text-green-600">{student.totals.present}P</div>
-                                    <div className="text-red-600">{student.totals.absent}A</div>
+                                <td className="px-4 py-4 text-center bg-teal-50/50 dark:bg-teal-950/20">
+                                  <div className="text-[10px] space-y-1 font-black">
+                                    <div className="text-emerald-600 dark:text-emerald-400">{student.totals.present}P</div>
+                                    <div className="text-rose-600 dark:text-rose-400">{student.totals.absent}A</div>
                                   </div>
                                 </td>
-                                <td className="px-3 py-2 text-center bg-teal-50">
-                                  <span className={`font-bold ${
-                                    attendanceRate >= 80 ? 'text-green-600' : 
-                                    attendanceRate >= 60 ? 'text-orange-600' : 'text-red-600'
+                                <td className="px-4 py-4 text-center bg-teal-50/50 dark:bg-teal-950/20">
+                                  <div className={`text-sm font-black tracking-tight ${
+                                    attendanceRate >= 80 ? 'text-emerald-600 dark:text-emerald-400' : 
+                                    attendanceRate >= 60 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'
                                   }`}>
                                     {attendanceRate}%
-                                  </span>
+                                  </div>
                                 </td>
                               </tr>
                             );

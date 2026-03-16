@@ -143,7 +143,7 @@ const RARITY_STYLES: Record<string, { bg: string; icon: string; border: string }
   EPIC: { bg: 'bg-gradient-to-r from-purple-500 to-violet-600', icon: 'text-white', border: 'ring-purple-400' },
   RARE: { bg: 'bg-gradient-to-r from-blue-500 to-cyan-500', icon: 'text-white', border: 'ring-blue-400' },
   UNCOMMON: { bg: 'bg-gradient-to-r from-green-500 to-emerald-500', icon: 'text-white', border: 'ring-green-400' },
-  COMMON: { bg: 'bg-gray-200', icon: 'text-gray-600', border: 'ring-gray-300' },
+  COMMON: { bg: 'bg-gray-200 dark:bg-gray-700', icon: 'text-gray-600 dark:text-gray-400', border: 'ring-gray-300 dark:ring-gray-600' },
 };
 
 // Achievement type icons
@@ -290,39 +290,39 @@ export default function PostCard({
   const getTypeConfig = () => {
     switch (post.postType) {
       case 'POLL':
-        return { icon: BarChart3, color: 'violet', label: tFeed('postTypes.poll'), bgColor: 'bg-violet-50', borderColor: 'border-violet-200', textColor: 'text-violet-700' };
+        return { icon: BarChart3, color: 'violet', label: tFeed('postTypes.poll'), bgColor: 'bg-violet-50 dark:bg-violet-900/20', borderColor: 'border-violet-200 dark:border-violet-800', textColor: 'text-violet-700 dark:text-violet-400' };
       case 'ANNOUNCEMENT':
-        return { icon: Megaphone, color: 'rose', label: tFeed('postTypes.announcement'), bgColor: 'bg-rose-50', borderColor: 'border-rose-200', textColor: 'text-rose-700' };
+        return { icon: Megaphone, color: 'rose', label: tFeed('postTypes.announcement'), bgColor: 'bg-rose-50 dark:bg-rose-900/20', borderColor: 'border-rose-200 dark:border-rose-800', textColor: 'text-rose-700 dark:text-rose-400' };
       case 'QUESTION':
-        return { icon: HelpCircle, color: 'teal', label: tFeed('postTypes.question'), bgColor: 'bg-teal-50', borderColor: 'border-teal-200', textColor: 'text-teal-700' };
+        return { icon: HelpCircle, color: 'teal', label: tFeed('postTypes.question'), bgColor: 'bg-teal-50 dark:bg-teal-900/20', borderColor: 'border-teal-200 dark:border-teal-800', textColor: 'text-teal-700 dark:text-teal-400' };
       case 'ACHIEVEMENT':
-        return { icon: Award, color: 'amber', label: tFeed('postTypes.achievement'), bgColor: 'bg-amber-50', borderColor: 'border-amber-200', textColor: 'text-amber-700' };
+        return { icon: Award, color: 'amber', label: tFeed('postTypes.achievement'), bgColor: 'bg-amber-50 dark:bg-amber-900/20', borderColor: 'border-amber-200 dark:border-amber-800', textColor: 'text-amber-700 dark:text-amber-400' };
       case 'TUTORIAL':
-        return { icon: BookOpen, color: 'blue', label: tFeed('postTypes.tutorial'), bgColor: 'bg-blue-50', borderColor: 'border-blue-200', textColor: 'text-blue-700' };
+        return { icon: BookOpen, color: 'blue', label: tFeed('postTypes.tutorial'), bgColor: 'bg-blue-50 dark:bg-blue-900/20', borderColor: 'border-blue-200 dark:border-blue-800', textColor: 'text-blue-700 dark:text-blue-400' };
       case 'RESOURCE':
-        return { icon: FolderOpen, color: 'indigo', label: tFeed('postTypes.resource'), bgColor: 'bg-indigo-50', borderColor: 'border-indigo-200', textColor: 'text-indigo-700' };
+        return { icon: FolderOpen, color: 'indigo', label: tFeed('postTypes.resource'), bgColor: 'bg-indigo-50 dark:bg-indigo-900/20', borderColor: 'border-indigo-200 dark:border-indigo-800', textColor: 'text-indigo-700 dark:text-indigo-400' };
       case 'PROJECT':
-        return { icon: Rocket, color: 'orange', label: tFeed('postTypes.project'), bgColor: 'bg-orange-50', borderColor: 'border-orange-200', textColor: 'text-orange-700' };
+        return { icon: Rocket, color: 'orange', label: tFeed('postTypes.project'), bgColor: 'bg-orange-50 dark:bg-orange-900/20', borderColor: 'border-orange-200 dark:border-orange-800', textColor: 'text-orange-700 dark:text-orange-400' };
       case 'RESEARCH':
-        return { icon: Microscope, color: 'cyan', label: tFeed('postTypes.research'), bgColor: 'bg-cyan-50', borderColor: 'border-cyan-200', textColor: 'text-cyan-700' };
+        return { icon: Microscope, color: 'cyan', label: tFeed('postTypes.research'), bgColor: 'bg-cyan-50 dark:bg-cyan-900/20', borderColor: 'border-cyan-200 dark:border-cyan-800', textColor: 'text-cyan-700 dark:text-cyan-400' };
       case 'COLLABORATION':
-        return { icon: UsersRound, color: 'pink', label: tFeed('postTypes.collaboration'), bgColor: 'bg-pink-50', borderColor: 'border-pink-200', textColor: 'text-pink-700' };
+        return { icon: UsersRound, color: 'pink', label: tFeed('postTypes.collaboration'), bgColor: 'bg-pink-50 dark:bg-pink-900/20', borderColor: 'border-pink-200 dark:border-pink-800', textColor: 'text-pink-700 dark:text-pink-400' };
       case 'COURSE':
-        return { icon: BookOpen, color: 'emerald', label: tFeed('postTypes.course'), bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200', textColor: 'text-emerald-700' };
+        return { icon: BookOpen, color: 'emerald', label: tFeed('postTypes.course'), bgColor: 'bg-emerald-50 dark:bg-emerald-900/20', borderColor: 'border-emerald-200 dark:border-emerald-800', textColor: 'text-emerald-700 dark:text-emerald-400' };
       case 'QUIZ':
-        return { icon: HelpCircle, color: 'purple', label: tFeed('postTypes.quiz'), bgColor: 'bg-purple-50', borderColor: 'border-purple-200', textColor: 'text-purple-700' };
+        return { icon: HelpCircle, color: 'purple', label: tFeed('postTypes.quiz'), bgColor: 'bg-purple-50 dark:bg-purple-900/20', borderColor: 'border-purple-200 dark:border-purple-800', textColor: 'text-purple-700 dark:text-purple-400' };
       case 'EXAM':
-        return { icon: FileText, color: 'red', label: tFeed('postTypes.exam'), bgColor: 'bg-red-50', borderColor: 'border-red-200', textColor: 'text-red-700' };
+        return { icon: FileText, color: 'red', label: tFeed('postTypes.exam'), bgColor: 'bg-red-50 dark:bg-red-900/20', borderColor: 'border-red-200 dark:border-red-800', textColor: 'text-red-700 dark:text-red-400' };
       case 'ASSIGNMENT':
-        return { icon: FileText, color: 'sky', label: tFeed('postTypes.assignment'), bgColor: 'bg-sky-50', borderColor: 'border-sky-200', textColor: 'text-sky-700' };
+        return { icon: FileText, color: 'sky', label: tFeed('postTypes.assignment'), bgColor: 'bg-sky-50 dark:bg-sky-900/20', borderColor: 'border-sky-200 dark:border-sky-800', textColor: 'text-sky-700 dark:text-sky-400' };
       case 'REFLECTION':
-        return { icon: FileText, color: 'slate', label: tFeed('postTypes.reflection'), bgColor: 'bg-slate-50', borderColor: 'border-slate-200', textColor: 'text-slate-700' };
+        return { icon: FileText, color: 'slate', label: tFeed('postTypes.reflection'), bgColor: 'bg-slate-50 dark:bg-slate-900/20', borderColor: 'border-slate-200 dark:border-slate-800', textColor: 'text-slate-700 dark:text-slate-400' };
       case 'CLUB_CREATED':
-        return { icon: Users, color: 'purple', label: tFeed('postTypes.studyClub'), bgColor: 'bg-purple-50', borderColor: 'border-purple-200', textColor: 'text-purple-700' };
+        return { icon: Users, color: 'purple', label: tFeed('postTypes.studyClub'), bgColor: 'bg-purple-50 dark:bg-purple-900/20', borderColor: 'border-purple-200 dark:border-purple-800', textColor: 'text-purple-700 dark:text-purple-400' };
       case 'EVENT_CREATED':
-        return { icon: Calendar, color: 'amber', label: tFeed('postTypes.event'), bgColor: 'bg-amber-50', borderColor: 'border-amber-200', textColor: 'text-amber-700' };
+        return { icon: Calendar, color: 'amber', label: tFeed('postTypes.event'), bgColor: 'bg-amber-50 dark:bg-amber-900/20', borderColor: 'border-amber-200 dark:border-amber-800', textColor: 'text-amber-700 dark:text-amber-400' };
       default:
-        return { icon: FileText, color: 'emerald', label: tFeed('postTypes.article'), bgColor: 'bg-white', borderColor: 'border-gray-100', textColor: 'text-amber-700' };
+        return { icon: FileText, color: 'emerald', label: tFeed('postTypes.article'), bgColor: 'bg-white dark:bg-gray-800', borderColor: 'border-gray-100 dark:border-gray-700', textColor: 'text-amber-700 dark:text-amber-500' };
     }
   };
 
@@ -442,12 +442,12 @@ export default function PostCard({
   const totalVotes = post.pollOptions?.reduce((sum, opt) => sum + (opt.votes || 0), 0) || 0;
 
   return (
-    <div className={`bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow`}>
+    <div className={`bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-lg dark:hover:shadow-black/20 transition-all duration-300`}>
       {/* Type Badge for special posts */}
       {post.postType !== 'ARTICLE' && (
-        <div className={`px-3 py-1.5 flex items-center gap-2 border-b border-gray-100 bg-gray-50`}>
-          <TypeIcon className={`w-4 h-4 ${typeConfig.textColor}`} />
-          <span className={`text-xs font-medium ${typeConfig.textColor}`}>{typeConfig.label}</span>
+        <div className={`px-4 py-2 flex items-center gap-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/30 backdrop-blur-sm`}>
+          <TypeIcon className={`w-3.5 h-3.5 ${typeConfig.textColor}`} />
+          <span className={`text-[10px] font-black uppercase tracking-widest ${typeConfig.textColor}`}>{typeConfig.label}</span>
         </div>
       )}
 
@@ -470,7 +470,7 @@ export default function PostCard({
             </Link>
             <div>
               <div className="flex items-center gap-1.5">
-                <Link href={`/${locale}/profile/${post.author.id}`} className="font-semibold text-gray-900 text-sm hover:text-[#F9A825] hover:underline">
+                <Link href={`/${locale}/profile/${post.author.id}`} className="font-semibold text-gray-900 dark:text-gray-100 text-sm hover:text-[#F9A825] hover:underline">
                   {post.author.firstName} {post.author.lastName}
                 </Link>
                 {/* Verified Badge */}
@@ -520,18 +520,18 @@ export default function PostCard({
           <div className="relative" ref={menuRef}>
             <button 
               onClick={() => setShowMenu(!showMenu)}
-              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
             >
               <MoreHorizontal className="w-5 h-5" />
             </button>
             
             {showMenu && (
-              <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+              <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-20">
                 {isAuthor && (
                   <>
                     <button
                       onClick={handleEditClick}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
                       <Edit2 className="w-4 h-4" />
                       <span>{tFeed('postCard.menu.editPost')}</span>
@@ -581,8 +581,8 @@ export default function PostCard({
         </div>
 
         {/* Content */}
-        <Link href={`/${locale}/feed/post/${post.id}`} className="block mb-3 group">
-          <p className="text-gray-800 text-sm whitespace-pre-wrap leading-relaxed group-hover:text-gray-900">{post.content}</p>
+        <Link href={`/${locale}/feed/post/${post.id}`} className="block mb-4 group">
+          <p className="text-gray-800 dark:text-gray-200 text-[15px] whitespace-pre-wrap leading-relaxed group-hover:text-gray-900 dark:group-hover:text-white transition-colors">{post.content}</p>
         </Link>
 
         {/* Poll Options */}
@@ -600,13 +600,13 @@ export default function PostCard({
                   className={`w-full relative overflow-hidden rounded-md p-2.5 text-left transition-all text-sm ${
                     localVoted
                       ? 'cursor-default'
-                      : 'cursor-pointer hover:bg-gray-100'
-                  } ${isVoted ? 'ring-1 ring-[#F9A825]' : 'border border-gray-200'}`}
+                      : 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700'
+                  } ${isVoted ? 'ring-1 ring-[#F9A825]' : 'border border-gray-200 dark:border-gray-700'}`}
                 >
                   {/* Progress bar background */}
                   {localVoted && (
                     <div
-                      className="absolute inset-0 bg-amber-50 transition-all duration-500"
+                      className="absolute inset-0 bg-amber-50 dark:bg-amber-900/30 transition-all duration-500"
                       style={{ width: `${percentage}%` }}
                     />
                   )}
@@ -658,8 +658,8 @@ export default function PostCard({
 
         {/* Quiz Card */}
         {post.postType === 'QUIZ' && post.quizData && (
-          <div className="mb-3 rounded-xl border border-purple-200 bg-purple-50 p-4">
-            <div className="flex flex-wrap gap-4 text-sm text-purple-700 mb-3">
+          <div className="mb-3 rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 p-4">
+            <div className="flex flex-wrap gap-4 text-sm text-purple-700 dark:text-purple-300 mb-3">
               <span className="flex items-center gap-1">📝 {tFeed('postCard.quizQuestions', { count: post.quizData.questions?.length ?? 0 })}</span>
               <span className="flex items-center gap-1">⏱ {tFeed('postCard.quizMinutes', { count: post.quizData.timeLimit ?? 0 })}</span>
               <span className="flex items-center gap-1">🎯 {tFeed('postCard.quizPass', { score: post.quizData.passingScore ?? 0 })}</span>
@@ -706,7 +706,7 @@ export default function PostCard({
         )}
 
         {/* Actions - with Like, Value, Comment, Share */}
-        <div className="flex items-center justify-between pt-2 border-t border-gray-100 -mx-1">
+        <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800 -mx-1">
           {/* Like - General appreciation */}
           <button
             onClick={handleLike}
@@ -714,7 +714,7 @@ export default function PostCard({
             className={`flex-1 flex items-center justify-center gap-1 py-2 rounded transition-all duration-200 ${
               localIsLiked
                 ? 'text-rose-500 scale-105'
-                : 'text-gray-500 hover:bg-gray-100'
+                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <Heart className={`w-4 h-4 transition-transform duration-200 ${localIsLiked ? 'fill-current animate-pulse' : ''} ${isLiking ? 'scale-110' : ''}`} />
@@ -728,9 +728,9 @@ export default function PostCard({
             onClick={handleValue}
             disabled={isValuing}
             className={`flex-1 flex items-center justify-center gap-1 py-2 rounded transition-all duration-200 ${
-              localIsValued
+              localIsLiked
                 ? 'text-amber-500 scale-105'
-                : 'text-gray-500 hover:bg-gray-100'
+                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <Star className={`w-4 h-4 transition-transform duration-200 ${localIsValued ? 'fill-current animate-pulse' : ''} ${isValuing ? 'scale-110' : ''}`} />
@@ -749,7 +749,7 @@ export default function PostCard({
               }
             }}
             className={`flex-1 flex items-center justify-center gap-1 py-2 rounded transition-colors ${
-              showComments ? 'text-[#F9A825]' : 'text-gray-500 hover:bg-gray-100'
+              showComments ? 'text-[#F9A825]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <MessageCircle className="w-4 h-4" />
@@ -761,14 +761,14 @@ export default function PostCard({
             <button 
               onClick={() => setShowRepostMenu(!showRepostMenu)}
               className={`w-full flex items-center justify-center gap-1 py-2 rounded transition-colors ${
-                showRepostMenu ? 'text-green-600 bg-green-50' : 'text-gray-500 hover:bg-gray-100'
+                showRepostMenu ? 'text-green-600 bg-green-50 dark:bg-green-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               <Repeat2 className="w-4 h-4" />
               <span className="text-xs font-medium">{localSharesCount > 0 ? localSharesCount : ''}</span>
             </button>
             {showRepostMenu && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-20">
                 <button
                   onClick={() => {
                     onRepost?.(post.id);

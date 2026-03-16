@@ -70,10 +70,10 @@ const CLUB_TYPE_ICONS: Record<string, React.ReactNode> = {
 };
 
 const CLUB_TYPE_COLORS: Record<string, string> = {
-  CASUAL_STUDY_GROUP: 'text-blue-600 bg-blue-50',
-  STRUCTURED_CLASS: 'text-emerald-600 bg-emerald-50',
-  PROJECT_GROUP: 'text-orange-600 bg-orange-50',
-  EXAM_PREP: 'text-amber-600 bg-amber-50',
+  CASUAL_STUDY_GROUP: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400',
+  STRUCTURED_CLASS: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400',
+  PROJECT_GROUP: 'text-orange-600 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400',
+  EXAM_PREP: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400',
 };
 
 const PRIVACY_ICONS: Record<string, React.ReactNode> = {
@@ -218,7 +218,7 @@ export default function StudyClubsPage() {
   const ClubCard = ({ club, showJoin = false }: { club: StudyClub; showJoin?: boolean }) => (
     <Link 
       href={`/${locale}/clubs/${club.id}`}
-      className="block bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md hover:border-amber-200 transition-all group"
+      className="block bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md hover:border-amber-200 dark:hover:border-amber-500/50 transition-all group"
     >
       <div className="flex items-start gap-4">
         {/* Club Icon */}
@@ -230,7 +230,7 @@ export default function StudyClubsPage() {
         <div className="flex-1 min-w-0">
           {/* Header row with name and role */}
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-semibold text-gray-900 truncate group-hover:text-amber-600 transition-colors">
+            <h3 className="font-semibold text-gray-900 dark:text-white truncate group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
               {club.name}
             </h3>
             {club.myRole === 'OWNER' && (
@@ -248,7 +248,7 @@ export default function StudyClubsPage() {
           </div>
           
           {/* Description */}
-          <p className="text-sm text-gray-500 line-clamp-2 mb-2">
+          <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">
             {club.description || 'A collaborative study group for learning and growth together.'}
           </p>
           
@@ -261,13 +261,13 @@ export default function StudyClubsPage() {
                 <span className="text-[10px] text-white font-medium">{club.creator.firstName[0]}</span>
               )}
             </div>
-            <span className="text-xs text-gray-500">
-              Created by <span className="font-medium text-gray-700">{club.creator.firstName} {club.creator.lastName}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              Created by <span className="font-medium text-gray-700 dark:text-gray-300">{club.creator.firstName} {club.creator.lastName}</span>
             </span>
           </div>
           
           {/* Meta info row */}
-          <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400">
+          <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400 dark:text-gray-500">
             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${CLUB_TYPE_COLORS[club.clubType] || 'bg-gray-100 text-gray-600'}`}>
               {clubTypes.find(t => t.value === club.clubType)?.label || club.clubType}
             </span>
@@ -309,7 +309,7 @@ export default function StudyClubsPage() {
               )}
             </button>
           ) : (
-            <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all" />
+            <ChevronRight className="w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all" />
           )}
         </div>
       </div>
@@ -325,7 +325,7 @@ export default function StudyClubsPage() {
       />
       
       {showContent && (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
           <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
           
           {/* LinkedIn-style 3-column layout */}
@@ -336,29 +336,29 @@ export default function StudyClubsPage() {
               <aside className="hidden lg:block lg:col-span-3">
                 <div className="sticky top-20 space-y-3">
                   {/* Overview Card */}
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div className="h-16 bg-gradient-to-r from-amber-500 to-orange-500 relative">
                       <Users className="absolute bottom-2 right-3 w-6 h-6 text-white/30" />
                     </div>
                     <div className="p-4">
-                      <h2 className="font-bold text-gray-900">Study Clubs</h2>
-                      <p className="text-xs text-gray-500 mt-0.5">Collaborate and learn together</p>
+                      <h2 className="font-bold text-gray-900 dark:text-white">Study Clubs</h2>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Collaborate and learn together</p>
                       
                       <div className="grid grid-cols-2 gap-2 mt-4">
-                        <div className="bg-amber-50 rounded-lg p-2.5 text-center">
-                          <p className="text-lg font-bold text-gray-900">{clubs.length}</p>
-                          <p className="text-[10px] text-gray-500">Joined</p>
+                        <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2.5 text-center">
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">{clubs.length}</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400">Joined</p>
                         </div>
-                        <div className="bg-blue-50 rounded-lg p-2.5 text-center">
-                          <p className="text-lg font-bold text-gray-900">{discoverClubs.length}</p>
-                          <p className="text-[10px] text-gray-500">Available</p>
+                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2.5 text-center">
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">{discoverClubs.length}</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400">Available</p>
                         </div>
                       </div>
                     </div>
                   </div>
                   
                   {/* Quick Actions */}
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-3">
                     <button
                       onClick={() => setShowCreateModal(true)}
                       className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg font-medium hover:from-amber-600 hover:to-orange-600 transition-all"
@@ -369,18 +369,18 @@ export default function StudyClubsPage() {
                   </div>
                   
                   {/* Club Types Filter */}
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <h3 className="font-semibold text-sm text-gray-900">Categories</h3>
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                      <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Categories</h3>
                     </div>
                     <nav className="py-1">
                       <button
                         onClick={() => { setSelectedType(''); setActiveTab('discover'); }}
                         className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors ${
-                          !selectedType && activeTab === 'discover' ? 'bg-amber-50 text-amber-600 font-medium' : 'text-gray-600 hover:bg-gray-50'
+                          !selectedType && activeTab === 'discover' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                         }`}
                       >
-                        <Sparkles className="w-4 h-4" />
+                        <Sparkles className="w-4 h-4 text-amber-500" />
                         All Types
                       </button>
                       {clubTypes.slice(0, 6).map((type) => (
@@ -388,7 +388,7 @@ export default function StudyClubsPage() {
                           key={type.value}
                           onClick={() => { setSelectedType(type.value); setActiveTab('discover'); }}
                           className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors ${
-                            selectedType === type.value ? 'bg-amber-50 text-amber-600 font-medium' : 'text-gray-600 hover:bg-gray-50'
+                            selectedType === type.value ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                           }`}
                         >
                           {CLUB_TYPE_ICONS[type.value]}
@@ -403,14 +403,14 @@ export default function StudyClubsPage() {
               {/* Main Content */}
               <main className="lg:col-span-6">
                 {/* Tabs */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-4">
-                  <div className="flex border-b border-gray-100">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-4 overflow-hidden">
+                  <div className="flex border-b border-gray-100 dark:border-gray-700">
                     <button
                       onClick={() => setActiveTab('my-clubs')}
                       className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
                         activeTab === 'my-clubs'
-                          ? 'text-amber-600 border-b-2 border-amber-500'
-                          : 'text-gray-600 hover:text-gray-900'
+                          ? 'text-amber-600 border-b-2 border-amber-500 bg-amber-50/50 dark:bg-amber-900/10'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                       }`}
                     >
                       <Users className="w-4 h-4" />
@@ -420,8 +420,8 @@ export default function StudyClubsPage() {
                       onClick={() => setActiveTab('discover')}
                       className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
                         activeTab === 'discover'
-                          ? 'text-amber-600 border-b-2 border-amber-500'
-                          : 'text-gray-600 hover:text-gray-900'
+                          ? 'text-amber-600 border-b-2 border-amber-500 bg-amber-50/50 dark:bg-amber-900/10'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                       }`}
                     >
                       <Compass className="w-4 h-4" />
@@ -431,7 +431,7 @@ export default function StudyClubsPage() {
                   
                   {/* Search - only in Discover */}
                   {activeTab === 'discover' && (
-                    <div className="p-3 border-b border-gray-100">
+                    <div className="p-3 border-b border-gray-100 dark:border-gray-700">
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
@@ -439,7 +439,7 @@ export default function StudyClubsPage() {
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           placeholder="Search clubs..."
-                          className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                          className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
                         />
                       </div>
                     </div>
@@ -451,12 +451,12 @@ export default function StudyClubsPage() {
                   {activeTab === 'my-clubs' && (
                     <>
                       {clubs.length === 0 ? (
-                        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-                          <div className="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                            <Users className="w-7 h-7 text-amber-600" />
+                        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
+                          <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center mx-auto mb-4">
+                            <Users className="w-7 h-7 text-amber-600 dark:text-amber-400" />
                           </div>
-                          <h3 className="font-semibold text-gray-900 mb-1">No clubs yet</h3>
-                          <p className="text-sm text-gray-500 mb-4">Create or join a study club to get started</p>
+                          <h3 className="font-semibold text-gray-900 dark:text-white mb-1">No clubs yet</h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Create or join a study club to get started</p>
                           <div className="flex justify-center gap-3">
                             <button
                               onClick={() => setShowCreateModal(true)}
@@ -466,7 +466,7 @@ export default function StudyClubsPage() {
                             </button>
                             <button
                               onClick={() => setActiveTab('discover')}
-                              className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200"
+                              className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
                             >
                               Discover
                             </button>
@@ -481,12 +481,12 @@ export default function StudyClubsPage() {
                   {activeTab === 'discover' && (
                     <>
                       {discoverClubs.length === 0 ? (
-                        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-                          <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                            <Compass className="w-7 h-7 text-blue-600" />
+                        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
+                          <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-4">
+                            <Compass className="w-7 h-7 text-blue-600 dark:text-blue-400" />
                           </div>
-                          <h3 className="font-semibold text-gray-900 mb-1">No clubs found</h3>
-                          <p className="text-sm text-gray-500">Try adjusting your search or create a new club</p>
+                          <h3 className="font-semibold text-gray-900 dark:text-white mb-1">No clubs found</h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">Try adjusting your search or create a new club</p>
                         </div>
                       ) : (
                         discoverClubs.map((club) => <ClubCard key={club.id} club={club} showJoin />)
@@ -500,24 +500,24 @@ export default function StudyClubsPage() {
               <aside className="hidden lg:block lg:col-span-3">
                 <div className="sticky top-20 space-y-3">
                   {/* Trending Clubs */}
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 text-amber-500" />
-                      <h3 className="font-semibold text-sm text-gray-900">Popular Clubs</h3>
+                      <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Popular Clubs</h3>
                     </div>
                     <div className="p-3 space-y-2">
                       {clubs.slice(0, 3).map((club) => (
                         <Link
                           key={club.id}
                           href={`/${locale}/clubs/${club.id}`}
-                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                         >
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${CLUB_TYPE_COLORS[club.clubType] || 'bg-gray-100'}`}>
                             {CLUB_TYPE_ICONS[club.clubType] || <Users className="w-4 h-4" />}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{club.name}</p>
-                            <p className="text-xs text-gray-500">{club._count.members} members</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{club.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{club._count.members} members</p>
                           </div>
                         </Link>
                       ))}
@@ -618,24 +618,24 @@ function CreateClubModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div 
-        className="bg-white rounded-xl w-full max-w-md shadow-xl"
+        className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md shadow-xl border border-white/10"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-              <Users className="w-5 h-5 text-amber-600" />
+            <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+              <Users className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">Create Study Club</h2>
-              <p className="text-xs text-gray-500">Start a new learning community</p>
+              <h2 className="font-semibold text-gray-900 dark:text-white">Create Study Club</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Start a new learning community</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <X className="w-5 h-5 text-gray-500" />
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
@@ -648,34 +648,34 @@ function CreateClubModal({
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Club Name *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Club Name *</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Advanced Mathematics"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What is this club about?"
               rows={2}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 resize-none"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 resize-none dark:text-white"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Type</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Type</label>
               <select
                 value={clubType}
                 onChange={(e) => setClubType(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
               >
                 {clubTypes.map((type) => (
                   <option key={type.value} value={type.value}>{type.label}</option>
@@ -683,11 +683,11 @@ function CreateClubModal({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Privacy</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Privacy</label>
               <select
                 value={privacy}
                 onChange={(e) => setPrivacy(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
               >
                 <option value="PUBLIC">Public</option>
                 <option value="INVITE_ONLY">Invite Only</option>
@@ -697,22 +697,22 @@ function CreateClubModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Category (optional)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Category (optional)</label>
             <input
               type="text"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               placeholder="e.g., Mathematics, Programming"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 px-5 py-4 border-t border-gray-100 bg-gray-50">
+        <div className="flex justify-end gap-3 px-5 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 text-sm font-medium hover:bg-gray-200 rounded-lg transition-colors"
+            className="px-4 py-2 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
             Cancel
           </button>

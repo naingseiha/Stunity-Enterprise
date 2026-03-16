@@ -8,7 +8,7 @@
  * - Full post cards with all interactions
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -30,7 +30,7 @@ import { Post } from '@/types';
 import { Colors, Shadows } from '@/config';
 
 export default function BookmarksScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const { 
     bookmarkedPosts, 
     isLoadingBookmarks, 
@@ -44,6 +44,52 @@ export default function BookmarksScreen() {
   } = useFeedStore();
   
   const [refreshing, setRefreshing] = React.useState(false);
+
+  const navigateToFeedHome = useCallback(() => {
+    const currentState = navigation.getState?.();
+    if (currentState?.routeNames?.includes('Feed')) {
+      navigation.navigate('Feed');
+      return;
+    }
+
+    const tabNavigator = navigation.getParent?.();
+    const tabRouteNames = tabNavigator?.getState?.()?.routeNames || [];
+    if (tabRouteNames.includes('FeedTab')) {
+      tabNavigator.navigate('FeedTab', { screen: 'Feed' });
+      return;
+    }
+
+    navigation.navigate('Feed');
+  }, [navigation]);
+
+  const handleBack = useCallback(() => {
+    const currentState = navigation.getState?.();
+    const canPopCurrentStack =
+      typeof currentState?.index === 'number' && currentState.index > 0;
+
+    if (canPopCurrentStack) {
+      navigation.goBack();
+      return;
+    }
+
+    const routeNames: string[] = currentState?.routeNames || [];
+    if (routeNames.includes('Profile')) {
+      navigation.navigate('Profile');
+      return;
+    }
+
+    if (routeNames.includes('Feed')) {
+      navigation.navigate('Feed');
+      return;
+    }
+
+    if (navigation.canGoBack?.()) {
+      navigation.goBack();
+      return;
+    }
+
+    navigateToFeedHome();
+  }, [navigation, navigateToFeedHome]);
   
   useEffect(() => {
     fetchBookmarks();
@@ -111,7 +157,7 @@ export default function BookmarksScreen() {
           Bookmark posts to save them for later
         </Text>
         <TouchableOpacity 
-          onPress={() => navigation.goBack()} 
+          onPress={navigateToFeedHome}
           style={styles.emptyButton}
         >
           <LinearGradient
@@ -130,7 +176,7 @@ export default function BookmarksScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
-          onPress={() => navigation.goBack()} 
+          onPress={handleBack}
           style={styles.backButton}
         >
           <Ionicons name="chevron-back" size={24} color="#262626" />

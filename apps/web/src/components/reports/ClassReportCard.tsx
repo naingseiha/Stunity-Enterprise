@@ -2,7 +2,7 @@
 
 import { ClassReportSummary, getGradeLevelColor, getScoreColor } from '@/lib/api/grades';
 import { downloadClassSummaryPDF } from '@/lib/pdf/reportCardPdf';
-import { Users, Trophy, TrendingUp, TrendingDown, BarChart3, CheckCircle, XCircle, Medal, Download } from 'lucide-react';
+import { Users, User, Trophy, TrendingUp, TrendingDown, BarChart3, CheckCircle, XCircle, Medal, Download } from 'lucide-react';
 
 interface ClassReportCardProps {
   report: ClassReportSummary;
@@ -29,87 +29,104 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName }:
   }, {} as Record<string, number>);
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+    <div className="bg-white dark:bg-gray-900 rounded-[3rem] shadow-2xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors duration-500">
       {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6">
-        <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-violet-600 dark:from-indigo-950/40 dark:via-purple-950/40 dark:to-violet-950/40 p-10 relative overflow-hidden group">
+        <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:32px_32px]" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
           <div>
-            <h2 className="text-2xl font-bold">{classInfo?.name || 'Class Report'}</h2>
-            <p className="text-indigo-100 mt-1">
-              {semesterLabel} • {year} • {students.length} Students
-            </p>
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-lg border border-white/10 text-white/70 text-[10px] font-black uppercase tracking-widest mb-4">
+              <Users className="w-3.5 h-3.5" />
+              Cohort Analysis Matrix
+            </div>
+            <h2 className="text-4xl lg:text-5xl font-black text-white tracking-tighter mb-2">{classInfo?.name || 'Academic Cluster'}</h2>
+            <div className="flex items-center gap-4 mt-6 text-[10px] font-black text-white/50 uppercase tracking-[0.2em]">
+              <span className="px-3 py-1 bg-white/5 rounded-md border border-white/5">{semesterLabel}</span>
+              <span className="px-3 py-1 bg-white/5 rounded-md border border-white/5">{year}</span>
+              <span className="px-3 py-1 bg-white/5 rounded-md border border-white/5">{students.length} Entities</span>
+            </div>
           </div>
           <div className="text-right">
-            <div className="text-4xl font-bold">{statistics.classAverage.toFixed(1)}</div>
-            <div className="text-sm text-indigo-100">Class Average</div>
+            <div className="text-7xl font-black text-white tracking-tighter leading-none mb-2">{statistics.classAverage.toFixed(1)}</div>
+            <div className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em] mb-6">Cohort Aggregate Mean</div>
             <button
               onClick={handleDownloadPDF}
-              className="mt-3 flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm transition-colors print:hidden"
+              className="group relative flex items-center gap-3 px-6 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all print:hidden"
             >
               <Download className="w-4 h-4" />
-              Download PDF
+              Export Aggregate Data
             </button>
           </div>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-4 gap-4 p-6 border-b border-gray-100">
-        <div className="text-center">
-          <div className="text-2xl font-bold text-green-600">{statistics.passingCount}</div>
-          <div className="text-sm text-gray-500 flex items-center justify-center gap-1">
-            <CheckCircle className="w-4 h-4" />
-            Passing
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 p-10 border-b border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-950/30">
+        <div className="group p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm hover:shadow-xl transition-all">
+          <div className="text-3xl font-black text-emerald-600 mb-2 leading-none">{statistics.passingCount}</div>
+          <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-2">
+            <div className="p-1.5 bg-emerald-500/10 rounded-md">
+              <CheckCircle className="w-3 h-3 text-emerald-600" />
+            </div>
+            Integrity Verified
           </div>
         </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-red-600">{statistics.failingCount}</div>
-          <div className="text-sm text-gray-500 flex items-center justify-center gap-1">
-            <XCircle className="w-4 h-4" />
-            Failing
+        <div className="group p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm hover:shadow-xl transition-all">
+          <div className="text-3xl font-black text-rose-600 mb-2 leading-none">{statistics.failingCount}</div>
+          <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-2">
+            <div className="p-1.5 bg-rose-500/10 rounded-md">
+              <XCircle className="w-3 h-3 text-rose-600" />
+            </div>
+            Threshold Failed
           </div>
         </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-blue-600">{statistics.highestAverage.toFixed(1)}</div>
-          <div className="text-sm text-gray-500 flex items-center justify-center gap-1">
-            <TrendingUp className="w-4 h-4" />
-            Highest
+        <div className="group p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm hover:shadow-xl transition-all">
+          <div className="text-3xl font-black text-blue-600 mb-2 leading-none">{statistics.highestAverage.toFixed(1)}</div>
+          <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-2">
+            <div className="p-1.5 bg-blue-500/10 rounded-md">
+              <TrendingUp className="w-3 h-3 text-blue-600" />
+            </div>
+            Peak Amplitude
           </div>
         </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-orange-600">{statistics.lowestAverage.toFixed(1)}</div>
-          <div className="text-sm text-gray-500 flex items-center justify-center gap-1">
-            <TrendingDown className="w-4 h-4" />
-            Lowest
+        <div className="group p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm hover:shadow-xl transition-all">
+          <div className="text-3xl font-black text-amber-600 mb-2 leading-none">{statistics.lowestAverage.toFixed(1)}</div>
+          <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-2">
+            <div className="p-1.5 bg-amber-500/10 rounded-md">
+              <TrendingDown className="w-3 h-3 text-amber-600" />
+            </div>
+            Nadir Point
           </div>
         </div>
       </div>
 
       <div className="p-6 grid grid-cols-3 gap-6">
         {/* Top Performers */}
-        <div className="col-span-1">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-yellow-500" />
-            Top Performers
-          </h3>
-          <div className="space-y-3">
+        <div className="col-span-3 lg:col-span-1">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="p-2.5 bg-amber-500/10 rounded-2xl text-amber-600">
+              <Trophy className="w-5 h-5" />
+            </div>
+            <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight leading-none">Apex Entities</h3>
+          </div>
+          <div className="space-y-4">
             {topStudents.map((student, index) => (
               <div 
                 key={student.studentId} 
-                className="flex items-center gap-3 p-3 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg cursor-pointer hover:from-yellow-100 hover:to-amber-100 transition"
+                className="group flex items-center gap-4 p-5 bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-3xl cursor-pointer hover:border-amber-500/30 hover:shadow-xl hover:shadow-amber-500/5 transition-all"
                 onClick={() => onSelectStudent?.(student.studentId)}
               >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                  index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : 'bg-amber-600'
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-lg rotate-3 group-hover:rotate-0 transition-transform ${
+                  index === 0 ? 'bg-amber-500 shadow-amber-500/20' : index === 1 ? 'bg-slate-400 shadow-slate-400/20' : 'bg-orange-600 shadow-orange-600/20'
                 }`}>
                   {index + 1}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-gray-900 truncate">{student.student.khmerName}</div>
-                  <div className="text-xs text-gray-500">{student.student.firstName} {student.student.lastName}</div>
+                  <div className="font-black text-gray-900 dark:text-white truncate tracking-tight">{student.student.khmerName}</div>
+                  <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">{student.student.firstName} {student.student.lastName}</div>
                 </div>
                 <div className="text-right">
-                  <div className={`font-bold ${getScoreColor(student.average)}`}>
+                  <div className={`text-2xl font-black tracking-tighter ${getScoreColor(student.average)}`}>
                     {student.average.toFixed(1)}
                   </div>
                 </div>
@@ -119,33 +136,39 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName }:
         </div>
 
         {/* Grade Distribution */}
-        <div className="col-span-1">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-blue-600" />
-            Grade Distribution
-          </h3>
-          <div className="space-y-2">
+        <div className="col-span-3 lg:col-span-1">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="p-2.5 bg-blue-500/10 rounded-2xl text-blue-600">
+              <BarChart3 className="w-5 h-5" />
+            </div>
+            <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight leading-none">Distinction Spread</h3>
+          </div>
+          <div className="space-y-4">
             {['A', 'B', 'C', 'D', 'E', 'F'].map((grade) => {
               const count = gradeDistribution[grade] || 0;
               const percentage = students.length > 0 ? (count / students.length) * 100 : 0;
               return (
-                <div key={grade} className="flex items-center gap-2">
-                  <span className={`w-8 text-center text-sm font-medium px-2 py-0.5 rounded ${getGradeLevelColor(grade)}`}>
-                    {grade}
-                  </span>
-                  <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full transition-all ${
-                        grade === 'A' ? 'bg-green-500' :
-                        grade === 'B' ? 'bg-green-400' :
-                        grade === 'C' ? 'bg-yellow-500' :
-                        grade === 'D' ? 'bg-orange-500' :
-                        grade === 'E' ? 'bg-red-400' : 'bg-red-600'
-                      }`}
-                      style={{ width: `${percentage}%` }}
-                    />
+                <div key={grade} className="group">
+                  <div className="flex items-center justify-between mb-1.5 px-1">
+                    <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${
+                      grade === 'F' ? 'text-rose-500' : 'text-gray-500 dark:text-gray-400'
+                    }`}>Cluster {grade}</span>
+                    <span className="text-[10px] font-black text-gray-900 dark:text-white">{count} Units</span>
                   </div>
-                  <span className="text-sm text-gray-600 w-12 text-right">{count}</span>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1 h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden shadow-inner">
+                      <div 
+                        className={`h-full transition-all duration-1000 shadow-[0_0_15px_rgba(0,0,0,0.1)] ${
+                          grade === 'A' ? 'bg-gradient-to-r from-emerald-400 to-emerald-600' :
+                          grade === 'B' ? 'bg-gradient-to-r from-emerald-300 to-emerald-500' :
+                          grade === 'C' ? 'bg-gradient-to-r from-amber-400 to-amber-600' :
+                          grade === 'D' ? 'bg-gradient-to-r from-orange-400 to-orange-600' :
+                          grade === 'E' ? 'bg-gradient-to-r from-rose-300 to-rose-500' : 'bg-gradient-to-r from-rose-500 to-rose-700'
+                        }`}
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
               );
             })}
@@ -153,114 +176,124 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName }:
         </div>
 
         {/* Pass Rate */}
-        <div className="col-span-1">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Medal className="w-5 h-5 text-green-600" />
-            Pass Rate
-          </h3>
-          <div className="flex flex-col items-center justify-center h-40">
-            <div className="relative w-32 h-32">
+        <div className="col-span-3 lg:col-span-1">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="p-2.5 bg-emerald-500/10 rounded-2xl text-emerald-600">
+              <Medal className="w-5 h-5" />
+            </div>
+            <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight leading-none">Integrity Quorum</h3>
+          </div>
+          <div className="flex flex-col items-center justify-center p-8 bg-gray-50/50 dark:bg-gray-950/50 rounded-[2rem] border border-gray-100 dark:border-gray-800 border-dashed">
+            <div className="relative w-40 h-40">
               <svg className="w-full h-full transform -rotate-90">
                 <circle
-                  cx="64"
-                  cy="64"
-                  r="56"
+                  cx="80"
+                  cy="80"
+                  r="70"
                   fill="none"
-                  stroke="#e5e7eb"
+                  stroke="currentColor"
                   strokeWidth="12"
+                  className="text-gray-100 dark:text-gray-800"
                 />
                 <circle
-                  cx="64"
-                  cy="64"
-                  r="56"
+                  cx="80"
+                  cy="80"
+                  r="70"
                   fill="none"
-                  stroke={statistics.passRate >= 80 ? '#22c55e' : statistics.passRate >= 60 ? '#f59e0b' : '#ef4444'}
+                  stroke="currentColor"
                   strokeWidth="12"
                   strokeLinecap="round"
-                  strokeDasharray={`${(statistics.passRate / 100) * 351.86} 351.86`}
+                  strokeDasharray={`${(statistics.passRate / 100) * 439.8} 439.8`}
+                  className={`transition-all duration-1000 ${
+                    statistics.passRate >= 80 ? 'text-emerald-500' : statistics.passRate >= 60 ? 'text-amber-500' : 'text-rose-500'
+                  }`}
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className={`text-3xl font-bold ${
-                  statistics.passRate >= 80 ? 'text-green-600' : 
-                  statistics.passRate >= 60 ? 'text-yellow-600' : 'text-red-600'
+                <span className={`text-5xl font-black tracking-tighter ${
+                  statistics.passRate >= 80 ? 'text-emerald-600' : 
+                  statistics.passRate >= 60 ? 'text-amber-600' : 'text-rose-600'
                 }`}>
                   {statistics.passRate}%
                 </span>
+                <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-1">Efficiency</span>
               </div>
             </div>
-            <p className="text-sm text-gray-500 mt-2">
-              {statistics.passingCount} of {students.length} passed
+            <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-8 flex items-center gap-2">
+              <CheckCircle className="w-3 h-3 text-emerald-500" />
+              {statistics.passingCount} / {students.length} Pass Verified
             </p>
           </div>
         </div>
       </div>
 
       {/* Student List */}
-      <div className="p-6 border-t border-gray-100">
-        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Users className="w-5 h-5 text-indigo-600" />
-          All Students ({students.length})
-        </h3>
-        <div className="overflow-x-auto">
+      <div className="p-10 border-t border-gray-100 dark:border-gray-800">
+        <div className="flex items-center gap-3 mb-10">
+          <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-600">
+            <Users className="w-6 h-6" />
+          </div>
+          <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">Entity Directory</h3>
+        </div>
+        <div className="overflow-x-auto rounded-[2rem] border border-gray-100 dark:border-gray-800 shadow-sm">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-2 px-3 text-sm font-medium text-gray-600 w-12">Rank</th>
-                <th className="text-left py-2 px-3 text-sm font-medium text-gray-600">Student</th>
-                <th className="text-center py-2 px-3 text-sm font-medium text-gray-600 w-24">Average</th>
-                <th className="text-center py-2 px-3 text-sm font-medium text-gray-600 w-20">Grade</th>
-                <th className="text-center py-2 px-3 text-sm font-medium text-gray-600 w-24">Status</th>
+              <tr className="bg-gray-50/50 dark:bg-gray-950/50 border-b border-gray-100 dark:border-gray-800">
+                <th className="text-left py-5 px-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest w-24">Vector</th>
+                <th className="text-left py-5 px-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Cognitive Entity</th>
+                <th className="text-center py-5 px-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest w-32">Agg Scalar</th>
+                <th className="text-center py-5 px-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest w-32">Distinction</th>
+                <th className="text-center py-5 px-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest w-32">Integrity</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {students.map((student) => (
                 <tr 
                   key={student.studentId} 
-                  className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
+                  className="group/row hover:bg-gray-50/50 dark:hover:bg-gray-800/20 cursor-pointer transition-colors"
                   onClick={() => onSelectStudent?.(student.studentId)}
                 >
-                  <td className="py-2 px-3">
-                    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
-                      student.rank <= 3 ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'
+                  <td className="py-6 px-6">
+                    <span className={`inline-flex items-center justify-center w-10 h-10 rounded-2xl text-xs font-black shadow-lg ${
+                      student.rank <= 3 ? 'bg-amber-500 text-white rotate-3 group-hover/row:rotate-0 transition-transform' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                     }`}>
                       {student.rank}
                     </span>
                   </td>
-                  <td className="py-2 px-3">
-                    <div className="flex items-center gap-3">
+                  <td className="py-6 px-6">
+                    <div className="flex items-center gap-4">
                       {student.student.photoUrl ? (
-                        <img src={student.student.photoUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                        <img src={student.student.photoUrl} alt="" className="w-12 h-12 rounded-2xl object-cover ring-2 ring-gray-100 dark:ring-gray-800 shadow-lg" />
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                          <Users className="w-4 h-4 text-gray-400" />
+                        <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center border border-gray-200 dark:border-gray-700">
+                          <User className="w-6 h-6 text-gray-400" />
                         </div>
                       )}
                       <div>
-                        <div className="font-medium text-gray-900">{student.student.khmerName}</div>
-                        <div className="text-xs text-gray-500">{student.student.firstName} {student.student.lastName}</div>
+                        <div className="font-black text-gray-900 dark:text-white group-hover/row:text-indigo-600 dark:group-hover/row:text-indigo-400 transition-colors tracking-tight">{student.student.khmerName}</div>
+                        <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">{student.student.firstName} {student.student.lastName}</div>
                       </div>
                     </div>
                   </td>
-                  <td className={`text-center py-2 px-3 font-bold ${getScoreColor(student.average)}`}>
+                  <td className={`text-center py-6 px-6 text-xl font-black tracking-tighter ${getScoreColor(student.average)}`}>
                     {student.average.toFixed(1)}
                   </td>
-                  <td className="text-center py-2 px-3">
-                    <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${getGradeLevelColor(student.gradeLevel)}`}>
+                  <td className="text-center py-6 px-6">
+                    <span className={`inline-block px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border shadow-sm ${getGradeLevelColor(student.gradeLevel)}`}>
                       {student.gradeLevel}
                     </span>
                   </td>
-                  <td className="text-center py-2 px-3">
+                  <td className="text-center py-6 px-6">
                     {student.isPassing ? (
-                      <span className="inline-flex items-center gap-1 text-green-600 text-sm">
-                        <CheckCircle className="w-4 h-4" />
-                        Pass
-                      </span>
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        Verified
+                      </div>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-red-600 text-sm">
-                        <XCircle className="w-4 h-4" />
-                        Fail
-                      </span>
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-rose-500/10 text-rose-600 rounded-xl text-[10px] font-black uppercase tracking-widest">
+                        <XCircle className="w-3.5 h-3.5" />
+                        Failed
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -271,8 +304,8 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName }:
       </div>
 
       {/* Footer */}
-      <div className="bg-gray-50 px-6 py-3 text-center text-xs text-gray-500">
-        Generated on {new Date(report.generatedAt).toLocaleDateString('en-US', { 
+      <div className="bg-gray-50 dark:bg-gray-950 px-10 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-gray-600 border-t border-gray-100 dark:border-gray-800">
+        Temporal Signature: {new Date(report.generatedAt).toLocaleDateString('en-US', { 
           year: 'numeric', 
           month: 'long', 
           day: 'numeric',

@@ -405,25 +405,25 @@ export default function MessagesPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50/30 via-white to-amber-50/20 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-500">
       <div className="max-w-7xl mx-auto h-screen flex">
         {/* Conversation List */}
-        <div className={`w-full md:w-96 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-700/50 flex flex-col ${activeConversation ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`w-full md:w-96 bg-white dark:bg-gray-900/80 backdrop-blur-xl border-r border-gray-200 dark:border-gray-800 flex flex-col ${activeConversation ? 'hidden md:flex' : 'flex'}`}>
           {/* Header */}
-          <div className="p-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-white/50 dark:bg-gray-800/50 backdrop-blur-md">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <Link href={`/${locale}/feed`} className="p-2 text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors">
+                <Link href={`/${locale}/feed`} className="p-2 text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-amber-500 hover:bg-orange-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors">
                   <ArrowLeft className="w-5 h-5" />
                 </Link>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Messages</h1>
+                <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">Messages</h1>
                 {isConnected && (
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="Connected" />
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" title="Connected" />
                 )}
               </div>
               <button
                 onClick={() => setShowNewChat(true)}
-                className="p-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-full shadow-lg shadow-orange-500/25 transition-all hover:scale-105"
+                className="p-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl shadow-lg shadow-orange-500/25 transition-all hover:scale-105"
               >
                 <Plus className="w-5 h-5" />
               </button>
@@ -437,7 +437,7 @@ export default function MessagesPage() {
                 placeholder="Search conversations..."
                 value={showNewChat ? searchQuery : ''}
                 onChange={(e) => showNewChat ? handleSearchUsers(e.target.value) : setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-100/80 dark:bg-gray-700/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:bg-white dark:focus:bg-gray-700 transition-all"
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-100/80 dark:bg-gray-800/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:bg-white dark:focus:bg-gray-700 transition-all border border-transparent dark:border-gray-700/50"
               />
             </div>
           </div>
@@ -511,26 +511,32 @@ export default function MessagesPage() {
                   <button
                     key={conv.id}
                     onClick={() => handleSelectConversation(conv)}
-                    className={`w-full flex items-center gap-3 p-4 hover:bg-orange-50/50 dark:hover:bg-orange-900/10 transition-all ${
-                      activeConversation?.id === conv.id ? 'bg-orange-50 dark:bg-orange-900/20 border-l-3 border-orange-500' : ''
+                    className={`w-full flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all border-l-4 ${
+                      activeConversation?.id === conv.id 
+                        ? 'bg-orange-50/50 dark:bg-orange-900/10 border-orange-500 shadow-[inset_4px_0_0_rgba(249,168,37,1)]' 
+                        : 'border-transparent'
                     }`}
                   >
                     {conv.displayAvatar ? (
-                      <img src={conv.displayAvatar} alt="" className="w-14 h-14 rounded-full object-cover ring-2 ring-white dark:ring-gray-700 shadow-md" />
+                      <img src={conv.displayAvatar} alt="" className="w-14 h-14 rounded-full object-cover ring-2 ring-white dark:ring-gray-800 shadow-md" />
                     ) : (
-                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white font-semibold text-lg shadow-md">
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white font-black text-lg shadow-md">
                         {conv.displayName?.split(' ').map(n => n[0]).join('').slice(0, 2)}
                       </div>
                     )}
                     <div className="flex-1 min-w-0 text-left">
                       <div className="flex items-center justify-between">
-                        <p className="font-semibold text-gray-900 dark:text-white truncate">{conv.displayName}</p>
-                        <span className="text-xs text-gray-500">{formatTime(conv.lastMessageAt)}</span>
+                        <p className={`font-bold truncate ${activeConversation?.id === conv.id ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+                          {conv.displayName}
+                        </p>
+                        <span className="text-[10px] font-medium text-gray-400 uppercase">{formatTime(conv.lastMessageAt)}</span>
                       </div>
                       <div className="flex items-center justify-between mt-1">
-                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{conv.lastMessage || 'No messages yet'}</p>
+                        <p className={`text-sm truncate ${conv.unreadCount > 0 ? 'text-gray-900 dark:text-white font-bold' : 'text-gray-500 dark:text-gray-400'}`}>
+                          {conv.lastMessage || 'No messages yet'}
+                        </p>
                         {conv.unreadCount > 0 && (
-                          <span className="ml-2 min-w-[20px] h-5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-medium rounded-full flex items-center justify-center shadow-sm">
+                          <span className="ml-2 min-w-[20px] h-5 px-1.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30">
                             {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
                           </span>
                         )}
@@ -544,11 +550,11 @@ export default function MessagesPage() {
         </div>
 
         {/* Chat Area */}
-        <div className={`flex-1 flex flex-col bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 ${!activeConversation ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`flex-1 flex flex-col bg-white dark:bg-gray-950 ${!activeConversation ? 'hidden md:flex' : 'flex'}`}>
           {activeConversation ? (
             <>
               {/* Chat Header */}
-              <div className="h-16 px-4 flex items-center justify-between bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50">
+              <div className="h-16 px-4 flex items-center justify-between bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setActiveConversation(null)}
@@ -616,15 +622,15 @@ export default function MessagesPage() {
                       
                       <div className={`max-w-[70%] ${isOwn ? 'order-1' : ''}`}>
                         {msg.replyTo && (
-                          <div className="mb-1 px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded-lg text-xs text-gray-600 dark:text-gray-400 border-l-2 border-orange-500">
-                            <span className="font-medium">{msg.replyTo.sender.firstName}:</span> {msg.replyTo.content.slice(0, 50)}...
+                          <div className="mb-1 px-3 py-1 bg-gray-100 dark:bg-gray-800/50 rounded-lg text-[10px] text-gray-500 dark:text-gray-400 border-l-2 border-orange-500">
+                            <span className="font-bold">{msg.replyTo.sender.firstName}:</span> {msg.replyTo.content.slice(0, 50)}...
                           </div>
                         )}
                         <div
                           className={`px-4 py-2.5 rounded-2xl ${
                             isOwn
-                              ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-br-md shadow-md shadow-orange-500/20'
-                              : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-md shadow-sm'
+                              ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-br-none shadow-md shadow-orange-500/10'
+                              : 'bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-bl-none border border-gray-200 dark:border-gray-800'
                           }`}
                         >
                           {msg.isDeleted ? (
@@ -662,7 +668,7 @@ export default function MessagesPage() {
               )}
 
               {/* Input */}
-              <div className="p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-t border-gray-200/50 dark:border-gray-700/50">
+              <div className="p-4 bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800">
                 <div className="flex items-center gap-2">
                   <button className="p-2 text-gray-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors">
                     <Paperclip className="w-5 h-5" />

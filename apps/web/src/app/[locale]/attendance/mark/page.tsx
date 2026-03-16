@@ -407,42 +407,45 @@ export default function MarkAttendancePage() {
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
       {/* Main Content - Add left margin for sidebar */}
-      <div className="lg:ml-64 min-h-screen bg-gray-50">
-        <div className="max-w-[1600px] mx-auto px-4 py-8">
+      {/* Main Content - Add left margin for sidebar */}
+      <div className="lg:ml-64 min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-500">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+
         {/* Header */}
         <AnimatedContent animation="fade" delay={0}>
           <div className="mb-6">
             {/* Breadcrumbs */}
-            <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
               <Home className="w-4 h-4" />
               <ChevronRight className="w-4 h-4" />
               <span>School</span>
               <ChevronRight className="w-4 h-4" />
               <span>Attendance</span>
               <ChevronRight className="w-4 h-4" />
-              <span className="text-orange-600 font-medium">Mark</span>
+              <span className="text-orange-600 dark:text-orange-400 font-bold">Mark</span>
             </div>
 
             {/* Title */}
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl text-white">
+              <div className="p-3 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-2xl text-white shadow-lg shadow-orange-500/20">
                 <ClipboardList className="w-7 h-7" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Mark Attendance</h1>
-                <p className="text-gray-600">Record student attendance for the day</p>
+                <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Mark Attendance</h1>
+                <p className="text-gray-600 dark:text-gray-400 font-medium">Record student attendance for the day</p>
               </div>
             </div>
           </div>
         </AnimatedContent>
 
-        {/* Selectors Section */}
+        {/* Selectors Section - Genesis Style Glassmorphism */}
         <AnimatedContent animation="slide-up" delay={50}>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 p-8 mb-8 transition-all hover:shadow-2xl dark:hover:shadow-black/20">
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               {/* Academic Year */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-widest text-[10px]">
                   Academic Year <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -452,7 +455,7 @@ export default function MarkAttendancePage() {
                     if (year) setSelectedYear(year);
                     setSelectedClass('');
                   }}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-shadow"
+                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all text-sm dark:text-gray-200"
                 >
                   <option value="">Select Year</option>
                   {allYears.map((year) => (
@@ -465,14 +468,14 @@ export default function MarkAttendancePage() {
 
               {/* Class */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-widest text-[10px]">
                   Class <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={selectedClass}
                   onChange={(e) => setSelectedClass(e.target.value)}
                   disabled={!selectedAcademicYear}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 disabled:bg-gray-100 disabled:cursor-not-allowed transition-shadow"
+                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:cursor-not-allowed transition-all text-sm dark:text-gray-200"
                 >
                   <option value="">Select Class</option>
                   {classes.map((cls) => (
@@ -485,7 +488,7 @@ export default function MarkAttendancePage() {
 
             {/* Date */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-widest text-[10px]">
                 Date <span className="text-red-500">*</span>
               </label>
               <input
@@ -493,32 +496,32 @@ export default function MarkAttendancePage() {
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 max={new Date().toISOString().split('T')[0]}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 text-sm dark:text-gray-200"
               />
             </div>
 
             {/* Session */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-widest text-[10px]">
                 Session <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-2">
                 <button
                   onClick={() => setSelectedSession(AttendanceSession.MORNING)}
-                  className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all ${
+                  className={`flex-1 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${
                     selectedSession === AttendanceSession.MORNING
-                      ? 'bg-orange-500 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                 >
                   Morning
                 </button>
                 <button
                   onClick={() => setSelectedSession(AttendanceSession.AFTERNOON)}
-                  className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all ${
+                  className={`flex-1 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${
                     selectedSession === AttendanceSession.AFTERNOON
-                      ? 'bg-orange-500 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                 >
                   Afternoon
@@ -531,7 +534,7 @@ export default function MarkAttendancePage() {
               <button
                 onClick={loadStudentsAndAttendance}
                 disabled={!canLoad || loadingStudents}
-                className="w-full px-6 py-2.5 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-lg font-medium hover:from-orange-600 hover:to-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                className="w-full px-6 py-2.5 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25"
               >
                 {loadingStudents ? (
                   <>
@@ -562,25 +565,26 @@ export default function MarkAttendancePage() {
           <BlurLoader isLoading={loading} showSpinner={false}>
             {students.length > 0 ? (
               <>
-                {/* Quick Actions & Search */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
-                  <div className="flex flex-wrap items-center gap-3">
+                {/* Quick Actions & Search - Genesis Style */}
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 mb-6 transition-all hover:shadow-xl dark:hover:shadow-black/20">
+                  <div className="flex flex-wrap items-center gap-6">
+
                     {/* Quick Actions */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-700">Quick Actions:</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Global:</span>
                       <button
                         onClick={() => markAllAs(AttendanceStatus.PRESENT)}
-                        className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-all flex items-center gap-2"
+                        className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20"
                       >
                         <CheckCircle className="w-4 h-4" />
-                        Mark All Present
+                        Present
                       </button>
                       <button
                         onClick={() => markAllAs(AttendanceStatus.ABSENT)}
-                        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-all flex items-center gap-2"
+                        className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-rose-500/20"
                       >
                         <XCircle className="w-4 h-4" />
-                        Mark All Absent
+                        Absent
                       </button>
                       <button
                         onClick={clearAll}
@@ -598,35 +602,37 @@ export default function MarkAttendancePage() {
                         type="text"
                         placeholder="Search students..."
                         value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 w-64"
-                  />
-                </div>
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 w-72 text-sm dark:text-gray-200 transition-all font-medium"
+                      />
+                    </div>
               </div>
             </div>
 
             {/* Keyboard Shortcuts Info */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-              <p className="text-sm text-blue-800">
-                <strong>Keyboard Shortcuts:</strong> 1 = Present, 2 = Absent, 3 = Late, 4 = Excused, 5 = Permission
+            <div className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-3 mb-4">
+              <p className="text-[11px] font-bold text-blue-800 dark:text-blue-400 uppercase tracking-widest flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                Shortcuts: 1-Present, 2-Absent, 3-Late, 4-Excused, 5-Permission
               </p>
             </div>
 
-            {/* Student Attendance Grid */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+            {/* Student Attendance Grid - Genesis Style Table */}
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden mb-10 transition-all hover:shadow-2xl dark:hover:shadow-black/20">
+
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white">
+                  <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-semibold">#</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold">Photo</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold">Student Name</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold">Student ID</th>
-                      <th className="px-4 py-3 text-center text-sm font-semibold">Status</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold">Remarks</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">#</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Photo</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Student Name</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Student ID</th>
+                      <th className="px-6 py-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Remarks</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                     {filteredStudents.map((student, index) => {
                       const record = attendanceRecords.get(student.id);
                       const statusOptions = getAllStatusOptions();
@@ -634,39 +640,39 @@ export default function MarkAttendancePage() {
                       return (
                         <tr
                           key={student.id}
-                          className={`transition-colors ${
-                            index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                          } hover:bg-orange-50`}
+                          className={`transition-colors h-20 ${
+                            index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/30 dark:bg-gray-800/20'
+                          } hover:bg-orange-50/30 dark:hover:bg-orange-500/5`}
                         >
-                          <td className="px-4 py-3 text-sm text-gray-700">{index + 1}</td>
-                          <td className="px-4 py-3">
-                            <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                          <td className="px-6 py-4 text-sm font-black text-gray-400 dark:text-gray-600">{index + 1}</td>
+                          <td className="px-6 py-4">
+                            <div className="w-12 h-12 rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center p-0.5">
                               {student.photoUrl ? (
                                 <img
                                   src={student.photoUrl}
                                   alt={student.firstName}
-                                  className="w-full h-full object-cover"
+                                  className="w-full h-full object-cover rounded-[14px]"
                                 />
                               ) : (
-                                <Users className="w-5 h-5 text-gray-400" />
+                                <Users className="w-5 h-5 text-gray-300 dark:text-gray-600" />
                               )}
                             </div>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-6 py-4">
                             <div>
-                              <div className="font-medium text-gray-900">
+                              <div className="font-black text-gray-900 dark:text-white group-hover:text-orange-600 transition-colors">
                                 {student.firstName} {student.lastName}
                               </div>
                               {student.nameKh && (
-                                <div className="text-sm text-gray-600">{student.nameKh}</div>
+                                <div className="text-sm font-medium text-gray-400/80 dark:text-gray-500">{student.nameKh}</div>
                               )}
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-700">
+                          <td className="px-6 py-4 text-sm font-bold text-gray-500 dark:text-gray-400 tracking-tight">
                             {student.studentId || '-'}
                           </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center justify-center gap-1">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center justify-center gap-1.5">
                               {statusOptions.map((status) => {
                                 const info = getStatusInfo(status);
                                 const isActive = record?.status === status;
@@ -675,10 +681,10 @@ export default function MarkAttendancePage() {
                                   <button
                                     key={status}
                                     onClick={() => updateAttendanceStatus(student.id, status)}
-                                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+                                    className={`w-9 h-9 flex items-center justify-center rounded-xl text-[11px] font-black transition-all border ${
                                       isActive
-                                        ? `${info.bgColor} ${info.color} border-current shadow-sm scale-105`
-                                        : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
+                                        ? `${info.bgColor} ${info.color} border-transparent ring-2 ring-offset-2 dark:ring-offset-gray-950 ring-${info.color.includes('green') ? 'emerald' : info.color.includes('red') ? 'rose' : 'orange'}-500/50 scale-110 shadow-lg`
+                                        : 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300'
                                     }`}
                                     title={`${info.label} (${info.shortLabel})`}
                                   >
@@ -688,13 +694,13 @@ export default function MarkAttendancePage() {
                               })}
                             </div>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-6 py-4">
                             <input
                               type="text"
                               value={record?.remarks || ''}
                               onChange={(e) => updateRemarks(student.id, e.target.value)}
-                              placeholder="Optional remarks..."
-                              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                              placeholder="Note..."
+                              className="w-full px-4 py-2 text-xs bg-gray-50/50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all font-medium dark:text-gray-300"
                             />
                           </td>
                         </tr>
@@ -713,112 +719,119 @@ export default function MarkAttendancePage() {
 
             {/* Statistics Panel */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Users className="w-5 h-5 text-blue-600" />
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-5 transition-all hover:shadow-md">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl">
+                    <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <div className="text-sm text-gray-600">Total</div>
-                    <div className="text-2xl font-bold text-gray-900">{statistics.total}</div>
+                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total</div>
+                    <div className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{statistics.total}</div>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-5 transition-all hover:shadow-md">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl">
+                    <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <div>
-                    <div className="text-sm text-gray-600">Present</div>
-                    <div className="text-2xl font-bold text-green-700">
+                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Present</div>
+                    <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
                       {statistics.present}
-                      <span className="text-sm text-gray-500 ml-1">
-                        ({statistics.total > 0 ? Math.round((statistics.present / statistics.total) * 100) : 0}%)
+                      <span className="text-xs font-bold text-gray-400 ml-1.5">
+                        {statistics.total > 0 ? Math.round((statistics.present / statistics.total) * 100) : 0}%
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-red-100 rounded-lg">
-                    <XCircle className="w-5 h-5 text-red-600" />
+              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 transition-all hover:shadow-xl dark:hover:shadow-black/20 group">
+                <div className="flex items-center gap-5">
+                  <div className="p-3.5 bg-rose-50 dark:bg-rose-500/10 rounded-2xl group-hover:scale-110 transition-transform duration-500">
+                    <XCircle className="w-6 h-6 text-rose-600 dark:text-rose-400" />
                   </div>
                   <div>
-                    <div className="text-sm text-gray-600">Absent</div>
-                    <div className="text-2xl font-bold text-red-700">
+                    <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">Absent</div>
+                    <div className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">
                       {statistics.absent}
-                      <span className="text-sm text-gray-500 ml-1">
-                        ({statistics.total > 0 ? Math.round((statistics.absent / statistics.total) * 100) : 0}%)
+                      <span className="text-xs font-bold text-gray-400 dark:text-gray-600 ml-1.5">
+                        {statistics.total > 0 ? Math.round((statistics.absent / statistics.total) * 100) : 0}%
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-100 rounded-lg">
-                    <Clock className="w-5 h-5 text-orange-600" />
+
+              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 transition-all hover:shadow-xl dark:hover:shadow-black/20 group">
+                <div className="flex items-center gap-5">
+                  <div className="p-3.5 bg-orange-50 dark:bg-orange-500/10 rounded-2xl group-hover:scale-110 transition-transform duration-500">
+                    <Clock className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                   </div>
                   <div>
-                    <div className="text-sm text-gray-600">Late</div>
-                    <div className="text-2xl font-bold text-orange-700">
+                    <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">Late</div>
+                    <div className="text-2xl font-black text-orange-600 dark:text-orange-400 tracking-tight">
                       {statistics.late}
-                      <span className="text-sm text-gray-500 ml-1">
-                        ({statistics.total > 0 ? Math.round((statistics.late / statistics.total) * 100) : 0}%)
+                      <span className="text-xs font-bold text-gray-400 dark:text-gray-600 ml-1.5">
+                        {statistics.total > 0 ? Math.round((statistics.late / statistics.total) * 100) : 0}%
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <FileText className="w-5 h-5 text-blue-600" />
+
+              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 transition-all hover:shadow-xl dark:hover:shadow-black/20 group">
+                <div className="flex items-center gap-5">
+                  <div className="p-3.5 bg-blue-50 dark:bg-blue-500/10 rounded-2xl group-hover:scale-110 transition-transform duration-500">
+                    <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <div className="text-sm text-gray-600">Excused</div>
-                    <div className="text-2xl font-bold text-blue-700">
+                    <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">Excused</div>
+                    <div className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight">
                       {statistics.excused}
-                      <span className="text-sm text-gray-500 ml-1">
-                        ({statistics.total > 0 ? Math.round((statistics.excused / statistics.total) * 100) : 0}%)
+                      <span className="text-xs font-bold text-gray-400 dark:text-gray-600 ml-1.5">
+                        {statistics.total > 0 ? Math.round((statistics.excused / statistics.total) * 100) : 0}%
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <CheckSquare className="w-5 h-5 text-purple-600" />
+
+              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 transition-all hover:shadow-xl dark:hover:shadow-black/20 group">
+                <div className="flex items-center gap-5">
+                  <div className="p-3.5 bg-purple-50 dark:bg-purple-500/10 rounded-2xl group-hover:scale-110 transition-transform duration-500">
+                    <CheckSquare className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
-                    <div className="text-sm text-gray-600">Permission</div>
-                    <div className="text-2xl font-bold text-purple-700">
+                    <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">Permission</div>
+                    <div className="text-2xl font-black text-purple-600 dark:text-purple-400 tracking-tight">
                       {statistics.permission}
-                      <span className="text-sm text-gray-500 ml-1">
-                        ({statistics.total > 0 ? Math.round((statistics.permission / statistics.total) * 100) : 0}%)
+                      <span className="text-xs font-bold text-gray-400 dark:text-gray-600 ml-1.5">
+                        {statistics.total > 0 ? Math.round((statistics.permission / statistics.total) * 100) : 0}%
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
+
             </div>
           </>
             ) : (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-                <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Class Selected</h3>
-                <p className="text-gray-600">
+              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 p-16 text-center">
+                <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Calendar className="w-10 h-10 text-gray-400 dark:text-gray-600" />
+                </div>
+                <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">No Class Selected</h3>
+                <p className="text-gray-600 dark:text-gray-400 font-medium max-w-sm mx-auto">
                   Please select an academic year, class, date, and session, then click "Load" to begin marking attendance.
                 </p>
               </div>
+
             )}
           </BlurLoader>
         </AnimatedContent>

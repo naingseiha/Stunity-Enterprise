@@ -47,7 +47,7 @@ export default function ActionCard({
     </div>
   );
 
-  const className = "w-full bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 dark:hover:shadow-black/30 hover:border-transparent transition-all duration-300 text-left group block relative overflow-hidden";
+  const className = "w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/50 p-6 shadow-sm hover:shadow-2xl hover:shadow-slate-200/60 dark:hover:shadow-black/60 hover:border-blue-500/20 dark:hover:border-blue-500/30 transition-all duration-500 text-left group block relative overflow-hidden";
 
   if (href) {
     return (
