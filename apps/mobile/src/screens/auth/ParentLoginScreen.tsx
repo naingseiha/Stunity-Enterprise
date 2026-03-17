@@ -60,10 +60,6 @@ export default function ParentLoginScreen() {
     }
   };
 
-  const handleSocialPlaceholder = (provider: string) => {
-    Alert.alert('Portal Access', `${provider} login for parents will be available soon.`);
-  };
-
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -183,34 +179,14 @@ export default function ParentLoginScreen() {
               <View style={styles.dividerLine} />
             </View>
 
-            {/* OAuth Row */}
+            {/* School Portal Switch */}
             <View style={styles.oauthRow}>
               <TouchableOpacity
-                style={styles.oauthButton}
-                onPress={() => handleSocialPlaceholder('Google')}
-              >
-                <Ionicons name="logo-google" size={22} color="#EA4335" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.oauthButton}
-                onPress={() => handleSocialPlaceholder('Apple')}
-              >
-                <Ionicons name="logo-apple" size={24} color="#000" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.oauthButton}
+                style={[styles.oauthButton, styles.portalSwitchButton]}
                 onPress={() => navigation.navigate('Login')}
               >
                 <Ionicons name="business-outline" size={22} color={BRAND_TEAL} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.oauthButton}
-                onPress={() => handleSocialPlaceholder('Biometric')}
-              >
-                <Ionicons name="finger-print-outline" size={22} color="#8B5CF6" />
+                <Text style={styles.portalSwitchText}>Student / Teacher Portal</Text>
               </TouchableOpacity>
             </View>
 
@@ -371,6 +347,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+  },
+  portalSwitchButton: {
+    width: 'auto',
+    height: 52,
+    borderRadius: 26,
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  portalSwitchText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.gray[700],
   },
   devButton: {
     flexDirection: 'row',

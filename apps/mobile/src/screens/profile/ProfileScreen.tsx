@@ -6,7 +6,7 @@
  * Compact edit button, settings icon, soft purple background
  */
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -106,6 +106,7 @@ export default function ProfileScreen() {
   const userId = route.params?.userId;
   const isOwnProfile = !userId || userId === currentUser?.id;
   const { updateUser } = useAuthStore();
+  const feedItems = useFeedStore((state) => state.feedItems);
 
 
 
@@ -124,6 +125,7 @@ export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState<'performance' | 'posts' | 'about' | 'activity'>('performance');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const profileAuthorId = isOwnProfile ? currentUser?.id : userId;
 
   // Fetch profile on mount and when userId changes
   useEffect(() => {
@@ -280,6 +282,30 @@ export default function ProfileScreen() {
     }
   }, [updateUser, isOwnProfile, currentUser]);
 
+  const profilePosts = useMemo(
+    () =>
+      (Array.isArray(feedItems) ? feedItems : [])
+        .filter((i: any) => i.type === 'POST' && i.data?.author?.id === profileAuthorId)
+        .map((i: any) => i.data),
+    [feedItems, profileAuthorId]
+  );
+
+  const noop = useCallback(() => { }, []);
+  const profilePostHandlersRef = useMemo(
+    () => ({
+      current: {
+        navigation,
+        handleLikePost: noop,
+        handleSharePost: noop,
+        bookmarkPost: noop,
+        handleValuePost: noop,
+        handlePostPress: noop,
+        handleVoteOnPoll: noop,
+      },
+    }),
+    [navigation, noop]
+  );
+
   // ── Shimmer Loading State — matches actual profile layout ──────
   if (loading || !profile) {
     return (
@@ -352,12 +378,15 @@ export default function ProfileScreen() {
     following: profileStats?.following ?? 0,
   };
 
-  const tabs = [
-    { id: 'performance', label: t('profile.performance.title'), icon: 'trending-up' },
-    { id: 'posts', label: t('profile.posts'), icon: 'list' },
-    { id: 'about', label: t('profile.about.title'), icon: 'person' },
-    { id: 'activity', label: t('profile.activity.title'), icon: 'flame' },
-  ];
+  const tabs = useMemo(
+    () => [
+      { id: 'performance' as const, label: t('profile.performance.title'), icon: 'trending-up' },
+      { id: 'posts' as const, label: t('profile.posts'), icon: 'list' },
+      { id: 'about' as const, label: t('profile.about.title'), icon: 'person' },
+      { id: 'activity' as const, label: t('profile.activity.title'), icon: 'flame' },
+    ],
+    [t]
+  );
 
   return (
     <SafeAreaView
@@ -693,24 +722,21 @@ export default function ProfileScreen() {
             <View style={[styles.tabContent, activeTab === 'posts' && { paddingHorizontal: 0 }]}>
               {activeTab === 'posts' && (
                 <View style={{ paddingTop: 12 }}>
-                  {stats.posts === 0 ? (
+                  {profilePosts.length === 0 ? (
                     <View style={styles.contentPlaceholder}>
                       <Ionicons name="document-text-outline" size={48} color="#E5E7EB" />
                       <Text style={styles.placeholderText}>{t('profile.noPosts')}</Text>
                     </View>
                   ) : (
-                    useFeedStore.getState()
-                      .feedItems
-                      .filter((i: any) => i.type === 'POST' && i.data?.author?.id === (isOwnProfile ? currentUser?.id : userId))
-                      .map((item: any) => (
-                        <RenderPostItem
-                          key={item.data.id}
-                          item={item.data}
-                          handlersRef={{ current: { navigation, handleLikePost: () => { }, handleSharePost: () => { }, bookmarkPost: () => { }, handleValuePost: () => { }, handlePostPress: () => { }, handleVoteOnPoll: () => { } } } as any}
-                          isValued={false}
-                          setAnalyticsPostId={() => { }}
-                        />
-                      ))
+                    profilePosts.map((post: any) => (
+                      <RenderPostItem
+                        key={post.id}
+                        item={post}
+                        handlersRef={profilePostHandlersRef as any}
+                        isValued={false}
+                        setAnalyticsPostId={noop}
+                      />
+                    ))
                   )}
                 </View>
               )}

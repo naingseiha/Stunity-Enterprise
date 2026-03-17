@@ -11,19 +11,10 @@ import { useNotificationStore } from '@/stores/notificationStore';
 /**
  * Push Notification Configuration
  *
- * NOTE: expo-notifications plugin is intentionally NOT in app.json plugins.
- * Reason: The google-services.json uses placeholder credentials. Including the
- * expo-notifications plugin compiles Firebase FCM into the native binary, and
- * Firebase CRASHES the Android process when initialized with placeholder credentials.
- *
- * When you have a real Firebase project:
- * 1. Replace google-services.json with the real one from Firebase console.
- * 2. Add expo-notifications back to app.json plugins.
- * 3. Remove the PUSH_NOTIFICATIONS_ENABLED = false guard below.
- *
- * In-app notifications via Supabase Realtime work WITHOUT Firebase and are unaffected.
+ * Firebase credentials are configured for production builds.
+ * Keep this enabled for release binaries; toggle to false only for local troubleshooting.
  */
-const PUSH_NOTIFICATIONS_ENABLED = false; // Set to true once google-services.json is real
+const PUSH_NOTIFICATIONS_ENABLED = true;
 
 // Only set up the notification handler if push notifications are enabled
 if (PUSH_NOTIFICATIONS_ENABLED) {

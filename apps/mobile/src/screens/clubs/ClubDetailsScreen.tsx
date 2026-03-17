@@ -36,31 +36,31 @@ const CLUB_TYPE_CONFIG: Record<
 > = {
   CASUAL_STUDY_GROUP: {
     label: 'Study Group',
-    icon: 'people-outline',
-    gradient: ['#23B8B3', '#0E9D97'],
-    accent: '#0B8B8A',
-    soft: '#E3F6F4',
+    icon: 'people',
+    gradient: ['#8B5CF6', '#7C3AED'], // Purple
+    accent: '#8B5CF6',
+    soft: '#F3E8FF',
   },
   STRUCTURED_CLASS: {
     label: 'Class',
-    icon: 'school-outline',
-    gradient: ['#31BFAF', '#169D90'],
-    accent: '#117A74',
-    soft: '#E2F7F3',
+    icon: 'school',
+    gradient: ['#09CFF7', '#06A8CC'], // Brand Teal
+    accent: '#06A8CC',
+    soft: '#E0F9FD',
   },
   PROJECT_GROUP: {
     label: 'Project',
-    icon: 'rocket-outline',
-    gradient: ['#DEB43A', '#C49420'],
-    accent: '#B28513',
-    soft: '#FFF4D7',
+    icon: 'rocket',
+    gradient: ['#F59E0B', '#D97706'], // Amber
+    accent: '#F59E0B',
+    soft: '#FEF3C7',
   },
   EXAM_PREP: {
     label: 'Exam Prep',
-    icon: 'book-outline',
-    gradient: ['#1BA59D', '#B98E1A'],
-    accent: '#0F847F',
-    soft: '#E5F9F6',
+    icon: 'book',
+    gradient: ['#6366F1', '#4F46E5'], // Indigo
+    accent: '#6366F1',
+    soft: '#E0E7FF',
   },
 };
 
@@ -74,21 +74,28 @@ const MODE_META: Record<
 };
 
 const COLORS = {
-  background: '#F2F6F5',
+  background: '#F8FBFF',
   surface: '#FFFFFF',
-  surfaceMuted: '#F8FCFB',
-  border: '#D7ECE9',
-  textPrimary: '#1E2F36',
-  textSecondary: '#32505A',
-  textMuted: '#55727C',
-  textSubtle: '#7C99A3',
-  primary: '#0EA5A4',
-  primaryStrong: '#0B8B8A',
-  primarySoft: '#E3F6F4',
-  secondary: '#E2B233',
-  secondaryStrong: '#BF931F',
-  secondarySoft: '#FFF6DB',
+  surfaceMuted: '#F1F5F9',
+  border: '#E2E8F0',
+  textPrimary: '#0F172A',
+  textSecondary: '#475569',
+  textMuted: '#94A3B8',
+  textSubtle: '#64748B',
+  primary: '#09CFF7', // Stunity Brand Teal
+  primaryStrong: '#06A8CC',
+  primarySoft: '#E0F9FD',
+  secondary: '#F59E0B',
+  secondaryStrong: '#D97706',
+  secondarySoft: '#FEF3C7',
 } as const;
+
+const DECORATIVE_ICONS = [
+  { name: 'star', color: '#FFFFFF', size: 24, top: 40, left: 30 },
+  { name: 'rocket', color: '#FFFFFF', size: 28, top: 100, right: 40 },
+  { name: 'book', color: '#FFFFFF', size: 22, bottom: 60, left: 50 },
+  { name: 'people', color: '#FFFFFF', size: 26, top: 20, right: 80 },
+];
 
 const getRoleLabel = (role: string): string => {
   if (role === 'OWNER') return 'Owner';
@@ -279,19 +286,26 @@ export default function ClubDetailsScreen() {
           />
         }
       >
-        <LinearGradient
-          colors={typeConfig.gradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.heroCard}
-        >
-          <View style={styles.heroDecorPrimary} />
-          <View style={styles.heroDecorSecondary} />
+        <View style={styles.heroCard}>
+          {DECORATIVE_ICONS.map((icon, idx) => (
+            <View
+              key={idx}
+              style={[
+                styles.decorativeIcon,
+                icon.top !== undefined && { top: icon.top },
+                icon.bottom !== undefined && { bottom: icon.bottom },
+                icon.left !== undefined && { left: icon.left },
+                icon.right !== undefined && { right: icon.right },
+              ]}
+            >
+              <Ionicons name={icon.name as any} size={icon.size} color={typeConfig.accent} style={{ opacity: 0.15 }} />
+            </View>
+          ))}
 
           <View style={styles.heroTopRow}>
-            <View style={styles.heroTypeBadge}>
-              <Ionicons name={typeConfig.icon} size={14} color="#FFFFFF" />
-              <Text style={styles.heroTypeText}>{typeConfig.label}</Text>
+            <View style={[styles.heroTypeBadge, { backgroundColor: typeConfig.soft, borderColor: typeConfig.accent + '33' }]}>
+              <Ionicons name={typeConfig.icon} size={14} color={typeConfig.accent} />
+              <Text style={[styles.heroTypeText, { color: typeConfig.accent }]}>{typeConfig.label}</Text>
             </View>
 
             <View style={styles.heroModeBadge}>
@@ -300,11 +314,11 @@ export default function ClubDetailsScreen() {
             </View>
           </View>
 
-          <Text style={styles.clubTitle} numberOfLines={2}>{club.name}</Text>
+          <Text style={[styles.clubTitle, { color: COLORS.textPrimary }]} numberOfLines={2}>{club.name}</Text>
 
-          <Text style={styles.heroSubtitle} numberOfLines={2}>{club.description}</Text>
+          <Text style={[styles.heroSubtitle, { color: COLORS.textSecondary }]} numberOfLines={2}>{club.description}</Text>
 
-          <Text style={styles.heroMetaText}>Community • {visibleMemberCount} members</Text>
+          <Text style={[styles.heroMetaText, { color: COLORS.textMuted }]}>Community • {visibleMemberCount} members</Text>
 
           <TouchableOpacity
             style={[
@@ -314,30 +328,37 @@ export default function ClubDetailsScreen() {
             ]}
             onPress={handleToggleMembership}
             disabled={joiningLoading}
-            activeOpacity={0.85}
+            activeOpacity={0.8}
           >
             {joiningLoading ? (
               <ActivityIndicator size="small" color={isJoined ? COLORS.primaryStrong : COLORS.textSecondary} />
             ) : (
-              <>
-                <Text style={[styles.ctaButtonText, isJoined && styles.ctaButtonTextJoined]}>
+              <LinearGradient
+                colors={isJoined ? ['#F59E0B', '#D97706'] : [COLORS.primary, COLORS.primaryStrong]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.ctaButtonGradient}
+              >
+                <Text style={[styles.ctaButtonText, { color: '#FFF' }]}>
                   {isJoined ? 'Joined' : 'Join Club'}
                 </Text>
-                <View style={[styles.ctaButtonIconWrap, isJoined && styles.ctaButtonIconWrapJoined]}>
+                <View style={[styles.ctaButtonIconWrap, isJoined && styles.ctaButtonIconWrapJoined, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
                   <Ionicons
-                    name={isJoined ? 'checkmark' : 'arrow-forward'}
+                    name={isJoined ? 'checkmark' : 'chevron-forward'}
                     size={14}
-                    color={isJoined ? COLORS.primaryStrong : COLORS.textSecondary}
+                    color="#FFF"
                   />
                 </View>
-              </>
+              </LinearGradient>
             )}
           </TouchableOpacity>
-        </LinearGradient>
+        </View>
 
         <View style={styles.quickStatsRow}>
           <View style={styles.quickStatCard}>
-            <Ionicons name="people-outline" size={16} color={typeConfig.accent} />
+            <View style={[styles.statIconBadge, { backgroundColor: typeConfig.soft }]}>
+              <Ionicons name="people" size={16} color={typeConfig.accent} />
+            </View>
             <Text style={[styles.quickStatValue, { color: typeConfig.accent }]}>
               {visibleMemberCount}
             </Text>
@@ -345,7 +366,9 @@ export default function ClubDetailsScreen() {
           </View>
 
           <View style={styles.quickStatCard}>
-            <Ionicons name="sparkles-outline" size={16} color={COLORS.primaryStrong} />
+            <View style={[styles.statIconBadge, { backgroundColor: COLORS.primarySoft }]}>
+              <Ionicons name="sparkles" size={16} color={COLORS.primaryStrong} />
+            </View>
             <Text style={[styles.quickStatValue, { color: COLORS.primaryStrong }]}>
               {activeMembers.length}
             </Text>
@@ -353,7 +376,9 @@ export default function ClubDetailsScreen() {
           </View>
 
           <View style={styles.quickStatCard}>
-            <Ionicons name={modeMeta.icon} size={16} color={COLORS.secondaryStrong} />
+            <View style={[styles.statIconBadge, { backgroundColor: COLORS.secondarySoft }]}>
+              <Ionicons name={modeMeta.icon} size={16} color={COLORS.secondaryStrong} />
+            </View>
             <Text style={[styles.quickStatValueSmall, { color: COLORS.secondaryStrong }]} numberOfLines={1}>
               {modeMeta.label}
             </Text>
@@ -554,31 +579,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingTop: 16,
     paddingBottom: 18,
-    borderWidth: 1.2,
-    borderColor: 'rgba(255,255,255,0.55)',
-    shadowColor: '#1D4B4B',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.14,
-    shadowRadius: 16,
-    elevation: 4,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
   },
-  heroDecorPrimary: {
+  decorativeIcon: {
     position: 'absolute',
-    width: 170,
-    height: 170,
-    borderRadius: 85,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    top: -58,
-    right: -52,
-  },
-  heroDecorSecondary: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    bottom: -44,
-    right: -24,
+    zIndex: 0,
   },
   heroTopRow: {
     flexDirection: 'row',
@@ -643,19 +655,27 @@ const styles = StyleSheet.create({
   },
   ctaButton: {
     marginTop: 14,
-    height: 50,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
+    height: 54,
+    borderRadius: 27,
+    overflow: 'hidden',
+    shadowColor: COLORS.primaryStrong,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
     zIndex: 1,
   },
+  ctaButtonGradient: {
+    flex: 1,
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
   ctaButtonJoined: {
-    backgroundColor: 'rgba(255,255,255,0.94)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.8)',
   },
   ctaButtonDisabled: {
     opacity: 0.82,
@@ -687,13 +707,26 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 92,
-    borderRadius: 16,
+    minHeight: 100,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: COLORS.border,
     backgroundColor: COLORS.surface,
     paddingHorizontal: 8,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  statIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
   },
   quickStatValue: {
     marginTop: 6,
@@ -752,18 +785,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tagChip: {
-    paddingHorizontal: 10,
-    height: 30,
-    borderRadius: 999,
+    paddingHorizontal: 12,
+    height: 32,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primarySoft,
     borderWidth: 1,
-    borderColor: '#BFE2DD',
+    borderColor: 'rgba(9, 207, 247, 0.2)',
   },
   tagText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.primaryStrong,
   },
   sectionHeaderRow: {
@@ -784,13 +817,18 @@ const styles = StyleSheet.create({
   },
   memberCard: {
     width: memberCardWidth,
-    borderRadius: 14,
-    paddingVertical: 12,
+    borderRadius: 18,
+    paddingVertical: 14,
     paddingHorizontal: 8,
     alignItems: 'center',
-    backgroundColor: '#F7FCFB',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: '#D9EBE8',
+    borderColor: COLORS.border,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 1,
   },
   memberName: {
     marginTop: 8,
@@ -801,10 +839,10 @@ const styles = StyleSheet.create({
     maxWidth: memberCardWidth - 14,
   },
   memberRolePill: {
-    marginTop: 4,
-    paddingHorizontal: 8,
-    height: 22,
-    borderRadius: 999,
+    marginTop: 6,
+    paddingHorizontal: 10,
+    height: 24,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primarySoft,

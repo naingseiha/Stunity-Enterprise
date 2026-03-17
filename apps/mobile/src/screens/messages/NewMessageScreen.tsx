@@ -14,7 +14,7 @@ import {
     TouchableOpacity,
     TextInput,
     StatusBar,
-    ActivityIndicator, Animated} from 'react-native';
+    ActivityIndicator, Animated, Platform} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -93,7 +93,9 @@ export default function NewMessageScreen() {
         }
     }, [navigation, startConversation]);
 
-    const renderContact = ({ item, index }: { item: ContactItem; index: number }) => (
+    const keyExtractor = useCallback((item: ContactItem) => item.id, []);
+
+    const renderContact = useCallback(({ item }: { item: ContactItem; index: number }) => (
         <Animated.View>
             <TouchableOpacity
                 style={styles.contactRow}
@@ -120,9 +122,9 @@ export default function NewMessageScreen() {
                 <Ionicons name="chatbubble-outline" size={18} color="#9CA3AF" />
             </TouchableOpacity>
         </Animated.View>
-    );
+    ), [handleContactPress, loading]);
 
-    const renderEmpty = () => (
+    const renderEmpty = useCallback(() => (
         <View style={styles.emptyContainer}>
             <View style={styles.emptyIcon}>
                 <Ionicons name="people-outline" size={36} color="#CBD5E1" />
@@ -136,7 +138,7 @@ export default function NewMessageScreen() {
                     : 'Your contacts will appear here once you start conversations'}
             </Text>
         </View>
-    );
+    ), [search]);
 
     return (
         <View style={styles.container}>
@@ -194,11 +196,16 @@ export default function NewMessageScreen() {
             <FlatList
                 data={filteredContacts}
                 renderItem={renderContact}
-                keyExtractor={(item) => item.id}
+                keyExtractor={keyExtractor}
                 ListEmptyComponent={renderEmpty}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.listContent}
                 keyboardShouldPersistTaps="handled"
+                initialNumToRender={12}
+                maxToRenderPerBatch={10}
+                windowSize={10}
+                updateCellsBatchingPeriod={50}
+                removeClippedSubviews={Platform.OS === 'android'}
             />
         </View>
     );

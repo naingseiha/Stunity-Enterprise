@@ -202,23 +202,6 @@ export default function SettingsScreen() {
         );
     }, [logout, t]);
 
-    const handleDeleteAccount = useCallback(() => {
-        Alert.alert(
-            'Delete Account',
-            'This action is permanent and cannot be undone. All your data, posts, and achievements will be permanently deleted.',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: () => {
-                        Alert.alert('Contact Support', 'Please contact support@stunity.com to proceed with account deletion.');
-                    },
-                },
-            ]
-        );
-    }, []);
-
     const handleViewProfile = useCallback(() => {
         // Navigate to ProfileTab → Profile screen to ensure correct tab is active
         navigation.navigate('ProfileTab', { screen: 'Profile' });
@@ -574,19 +557,9 @@ export default function SettingsScreen() {
                     danger: true,
                     onPress: handleLogout,
                 },
-                {
-                    icon: 'trash-outline',
-                    iconColor: '#DC2626',
-                    iconBg: '#FEF2F2',
-                    label: t('settings.deleteAccount'),
-                    sublabel: t('settings.deleteAccountSub'),
-                    type: 'action',
-                    danger: true,
-                    onPress: handleDeleteAccount,
-                },
             ],
         },
-    ], [biometrics, profileVisibility, onlineStatus, pushNotifications, emailNotifications, darkMode, autoPlay, hapticFeedback, handleLogout, handleDeleteAccount, navigation, user?.email, t, i18n.language, openExternalLink, openSupportEmail, handleBiometricsToggle, handleProfileVisibilityToggle, handleOnlineStatusToggle]);
+    ], [biometrics, profileVisibility, onlineStatus, pushNotifications, emailNotifications, darkMode, autoPlay, hapticFeedback, handleLogout, navigation, user?.email, t, i18n.language, openExternalLink, openSupportEmail, handleBiometricsToggle, handleProfileVisibilityToggle, handleOnlineStatusToggle]);
 
     // ── Render ─────────────────────────────────────────────────────
 

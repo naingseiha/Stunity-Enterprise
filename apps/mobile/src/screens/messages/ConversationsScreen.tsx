@@ -5,7 +5,7 @@
  * Real-time updates via messagingStore + Supabase Realtime
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import {
   RefreshControl,
   StatusBar,
   TextInput,
-  Image, Animated} from 'react-native';
+  Image, Animated, Platform} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -82,16 +82,22 @@ export default function ConversationsScreen() {
     navigation.navigate('NewMessage' as any);
   }, [navigation]);
 
-  const filteredConversations = conversations.filter((conv) =>
-    conv.displayName.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredConversations = useMemo(
+    () => conversations.filter((conv) =>
+      conv.displayName.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    [conversations, searchQuery]
   );
 
-  const onlineConversations = conversations.filter((c) =>
-    c.participants.some(p => p.isOnline)
+  const onlineConversations = useMemo(
+    () => conversations.filter((c) => c.participants.some(p => p.isOnline)),
+    [conversations]
   );
+
+  const keyExtractor = useCallback((item: DMConversation) => item.id, []);
 
   // ── Conversation Row ─────────────────────────────────────
-  const renderConversation = ({ item, index }: { item: DMConversation; index: number }) => {
+  const renderConversation = useCallback(({ item }: { item: DMConversation; index: number }) => {
     const isUnread = item.unreadCount > 0;
     const firstParticipant = item.participants[0];
     const displayName = item.displayName;
@@ -151,10 +157,33 @@ export default function ConversationsScreen() {
         </TouchableOpacity>
       </Animated.View>
     );
-  };
+  }, [handleConversationPress, t, user?.id]);
+
+  const renderOnlineConversation = useCallback(({ item }: { item: DMConversation }) => {
+    const participant = item.participants.find((p) => p.isOnline) || item.participants[0];
+    return (
+      <TouchableOpacity
+        onPress={() => handleConversationPress(item)}
+        style={styles.onlineItem}
+        activeOpacity={0.7}
+      >
+        <View style={styles.onlineAvatarWrap}>
+          <Avatar
+            uri={participant?.profilePictureUrl}
+            name={item.displayName}
+            size="md"
+          />
+          <View style={styles.onlineIndicator} />
+        </View>
+        <Text style={styles.onlineName} numberOfLines={1}>
+          {participant?.firstName || item.displayName.split(' ')[0]}
+        </Text>
+      </TouchableOpacity>
+    );
+  }, [handleConversationPress]);
 
   // ── Empty State ──────────────────────────────────────────
-  const renderEmpty = () => (
+  const renderEmpty = useCallback(() => (
     <View style={styles.emptyContainer}>
       <View style={styles.emptyIcon}>
         <Ionicons name="chatbubbles-outline" size={40} color="#CBD5E1" />
@@ -175,7 +204,7 @@ export default function ConversationsScreen() {
         </LinearGradient>
       </TouchableOpacity>
     </View>
-  );
+  ), [handleNewMessage, t]);
 
   return (
     <View style={styles.container}>
@@ -235,31 +264,14 @@ export default function ConversationsScreen() {
           <FlatList
             horizontal
             data={onlineConversations}
-            keyExtractor={(item) => item.id}
+            keyExtractor={keyExtractor}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.onlineList}
-            renderItem={({ item }) => {
-              const p = item.participants.find(p => p.isOnline) || item.participants[0];
-              return (
-                <TouchableOpacity
-                  onPress={() => handleConversationPress(item)}
-                  style={styles.onlineItem}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.onlineAvatarWrap}>
-                    <Avatar
-                      uri={p?.profilePictureUrl}
-                      name={item.displayName}
-                      size="md"
-                    />
-                    <View style={styles.onlineIndicator} />
-                  </View>
-                  <Text style={styles.onlineName} numberOfLines={1}>
-                    {p?.firstName || item.displayName.split(' ')[0]}
-                  </Text>
-                </TouchableOpacity>
-              );
-            }}
+            renderItem={renderOnlineConversation}
+            initialNumToRender={8}
+            maxToRenderPerBatch={8}
+            windowSize={5}
+            removeClippedSubviews={Platform.OS === 'android'}
           />
         </View>
       )}
@@ -268,10 +280,15 @@ export default function ConversationsScreen() {
       <FlatList
         data={filteredConversations}
         renderItem={renderConversation}
-        keyExtractor={(item) => item.id}
+        keyExtractor={keyExtractor}
         ListEmptyComponent={renderEmpty}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
+        initialNumToRender={12}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        updateCellsBatchingPeriod={50}
+        removeClippedSubviews={Platform.OS === 'android'}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

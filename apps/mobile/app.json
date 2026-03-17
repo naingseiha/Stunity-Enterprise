@@ -79,7 +79,8 @@
         }
       ],
       "expo-font",
-      "expo-localization"
+      "expo-localization",
+      "expo-notifications"
     ],
     "extra": {
       "eas": {

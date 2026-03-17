@@ -14,6 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { statsAPI, type UserStats } from '@/services/stats';
+import { useAuthStore } from '@/stores';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '@/navigation/types';
 
@@ -74,14 +75,19 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [userId, setUserId] = useState('current-user-id');
+  const userId = useAuthStore((state) => state.user?.id);
 
   // Animation values
   const progressValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     loadStats();
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     if (stats) {
@@ -94,6 +100,12 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
   }, [stats]);
 
   const loadStats = async () => {
+    if (!userId) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+
     try {
       const data = await statsAPI.getUserStats(userId);
       setStats(data);

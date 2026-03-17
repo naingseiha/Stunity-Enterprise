@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import type { Challenge } from '@/services/stats';
+import { useAuthStore } from '@/stores';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '@/navigation/types';
 
@@ -20,7 +21,7 @@ type Props = NativeStackScreenProps<MainStackParamList, 'ChallengeResult'>;
 
 export const ChallengeResultScreen: React.FC<Props> = ({ route, navigation }) => {
   const { challenge } = route.params;
-  const [userId] = React.useState('current-user-id'); // Get from auth context
+  const userId = useAuthStore((state) => state.user?.id ?? '');
   
   const confettiRef = useRef<any>(null);
   const scaleAnim = useRef(new Animated.Value(0)).current;

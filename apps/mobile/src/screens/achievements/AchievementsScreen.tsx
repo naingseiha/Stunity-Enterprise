@@ -13,6 +13,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { statsAPI, type Achievement, type UserAchievement } from '@/services/stats';
+import { useAuthStore } from '@/stores';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '@/navigation/types';
 
@@ -53,13 +54,24 @@ export const AchievementsScreen: React.FC<Props> = ({ navigation }) => {
   const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [userId, setUserId] = useState('current-user-id');
+  const userId = useAuthStore((state) => state.user?.id);
 
   useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     loadData();
-  }, []);
+  }, [userId]);
 
   const loadData = async () => {
+    if (!userId) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+
     try {
       const [allData, userData] = await Promise.all([
         statsAPI.getAchievements(),

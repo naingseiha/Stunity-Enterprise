@@ -13,6 +13,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { statsAPI, type Challenge } from '@/services/stats';
+import { useAuthStore } from '@/stores';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '@/navigation/types';
 
@@ -22,7 +23,7 @@ export const ChallengeScreen: React.FC<Props> = ({ navigation }) => {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [userId] = useState('current-user-id'); // Get from auth context
+  const userId = useAuthStore((state) => state.user?.id ?? '');
 
   useEffect(() => {
     loadChallenges();

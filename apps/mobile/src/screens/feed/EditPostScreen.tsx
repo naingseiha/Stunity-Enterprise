@@ -216,6 +216,28 @@ export default function EditPostScreen() {
     }
   };
 
+  // Take photo
+  const handleTakePhoto = async () => {
+    if (mediaUrls.length >= 10) {
+      Alert.alert('Limit Reached', 'Maximum 10 images per post.');
+      return;
+    }
+
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.[0]) {
+        setMediaUrls(prev => [...prev, result.assets[0].uri]);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to open camera');
+    }
+  };
+
   // Remove image
   const handleRemoveImage = (index: number) => {
     Haptics.selectionAsync();
@@ -460,25 +482,21 @@ export default function EditPostScreen() {
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.mediaButton}>
+            <TouchableOpacity
+              onPress={handleTakePhoto}
+              style={styles.mediaButton}
+              disabled={mediaUrls.length >= 10 || isSubmitting}
+            >
               <View style={[styles.mediaButtonIcon, { backgroundColor: '#3B82F620' }]}>
-                <Ionicons name="camera" size={20} color="#3B82F6" />
+                <Ionicons
+                  name="camera"
+                  size={20}
+                  color={mediaUrls.length >= 10 ? '#9CA3AF' : '#3B82F6'}
+                />
               </View>
-              <Text style={styles.mediaButtonText}>Camera</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.mediaButton}>
-              <View style={[styles.mediaButtonIcon, { backgroundColor: '#8B5CF620' }]}>
-                <Ionicons name="videocam" size={20} color="#8B5CF6" />
-              </View>
-              <Text style={styles.mediaButtonText}>Video</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.mediaButton}>
-              <View style={[styles.mediaButtonIcon, { backgroundColor: '#0EA5E920' }]}>
-                <Ionicons name="document" size={20} color="#0EA5E9" />
-              </View>
-              <Text style={styles.mediaButtonText}>File</Text>
+              <Text style={[styles.mediaButtonText, mediaUrls.length >= 10 && { color: '#9CA3AF' }]}>
+                Camera
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -639,7 +657,8 @@ const styles = StyleSheet.create({
   },
   mediaActions: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'center',
+    gap: 24,
   },
   mediaButton: {
     alignItems: 'center',

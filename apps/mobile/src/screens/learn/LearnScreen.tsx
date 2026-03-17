@@ -1,7 +1,33 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+/**
+ * LearnScreen — Optimized for performance
+ *
+ * Perf changes (mirrors FeedScreen patterns):
+ * - ScrollView (no virtualization) → FlashList with flat data model
+ * - estimatedItemSize for immediate layout measurement
+ * - drawDistance pre-renders off-screen cells
+ * - getItemType bucketing: 'header' | 'course' | 'enrolled_course' | 'path'
+ * - CourseCard + PathCard extracted as React.memo components
+ * - All render/handler callbacks wrapped in useCallback
+ * - Skeleton loading on initial load instead of full-page spinner
+ * - removeClippedSubviews on Android only
+ *
+ * Architecture: Flat data array with typed items for FlashList:
+ *   { type: 'HEADER' }
+ *   { type: 'COURSE', data: LearnCourse, showEnroll?: boolean, enrolledData?: LearnEnrolledCourse }
+ *   { type: 'PATH', data: LearnPath }
+ *   { type: 'EMPTY', title, subtitle, icon }
+ */
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   RefreshControl,
   ScrollView,
   StatusBar,
@@ -11,6 +37,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,10 +52,10 @@ type NavigationProp = LearnStackScreenProps<'LearnHub'>['navigation'];
 type TabType = 'explore' | 'enrolled' | 'created' | 'paths';
 
 const TABS: { id: TabType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { id: 'explore', label: 'Explore', icon: 'compass-outline' },
-  { id: 'enrolled', label: 'My Courses', icon: 'book-outline' },
-  { id: 'created', label: 'Created', icon: 'school-outline' },
-  { id: 'paths', label: 'Paths', icon: 'git-branch-outline' },
+  { id: 'explore',  label: 'Explore',     icon: 'compass-outline'    },
+  { id: 'enrolled', label: 'My Courses',  icon: 'book-outline'       },
+  { id: 'created',  label: 'Created',     icon: 'school-outline'     },
+  { id: 'paths',    label: 'Paths',       icon: 'git-branch-outline' },
 ];
 
 interface LearnCategoryItem {
@@ -40,25 +67,25 @@ interface LearnCategoryItem {
 }
 
 const PRESET_CATEGORIES: Omit<LearnCategoryItem, 'count'>[] = [
-  { name: 'Programming', icon: 'code-slash-outline', iconColor: '#EF4444', iconBackground: '#FEE2E2' },
-  { name: 'Data Science', icon: 'analytics-outline', iconColor: '#0284C7', iconBackground: '#E0F2FE' },
-  { name: 'Machine Learning', icon: 'hardware-chip-outline', iconColor: '#7C3AED', iconBackground: '#EDE9FE' },
-  { name: 'Mobile Development', icon: 'phone-portrait-outline', iconColor: '#059669', iconBackground: '#D1FAE5' },
-  { name: 'Web Development', icon: 'globe-outline', iconColor: '#2563EB', iconBackground: '#DBEAFE' },
-  { name: 'Design', icon: 'color-palette-outline', iconColor: '#DB2777', iconBackground: '#FCE7F3' },
-  { name: 'Business', icon: 'briefcase-outline', iconColor: '#D97706', iconBackground: '#FEF3C7' },
-  { name: 'Marketing', icon: 'megaphone-outline', iconColor: '#EA580C', iconBackground: '#FFEDD5' },
-  { name: 'Photography', icon: 'camera-outline', iconColor: '#2563EB', iconBackground: '#DBEAFE' },
-  { name: 'Music', icon: 'musical-notes-outline', iconColor: '#7C3AED', iconBackground: '#F3E8FF' },
-  { name: 'Languages', icon: 'language-outline', iconColor: '#0F766E', iconBackground: '#CCFBF1' },
-  { name: 'Personal Development', icon: 'sparkles-outline', iconColor: '#7C3AED', iconBackground: '#F3E8FF' },
-  { name: 'Health & Fitness', icon: 'fitness-outline', iconColor: '#16A34A', iconBackground: '#DCFCE7' },
-  { name: 'Database', icon: 'layers-outline', iconColor: '#0284C7', iconBackground: '#E0F2FE' },
-  { name: 'Cloud Computing', icon: 'cloud-outline', iconColor: '#2563EB', iconBackground: '#DBEAFE' },
-  { name: 'Mathematics', icon: 'calculator-outline', iconColor: '#4F46E5', iconBackground: '#E0E7FF' },
-  { name: 'Science', icon: 'flask-outline', iconColor: '#0EA5E9', iconBackground: '#E0F2FE' },
-  { name: 'Technology', icon: 'construct-outline', iconColor: '#4F46E5', iconBackground: '#E0E7FF' },
-  { name: 'Other', icon: 'grid-outline', iconColor: '#475569', iconBackground: '#E2E8F0' },
+  { name: 'Programming',         icon: 'code-slash-outline',    iconColor: '#EF4444', iconBackground: '#FEE2E2' },
+  { name: 'Data Science',        icon: 'analytics-outline',     iconColor: '#0284C7', iconBackground: '#E0F2FE' },
+  { name: 'Machine Learning',    icon: 'hardware-chip-outline', iconColor: '#7C3AED', iconBackground: '#EDE9FE' },
+  { name: 'Mobile Development',  icon: 'phone-portrait-outline',iconColor: '#059669', iconBackground: '#D1FAE5' },
+  { name: 'Web Development',     icon: 'globe-outline',         iconColor: '#2563EB', iconBackground: '#DBEAFE' },
+  { name: 'Design',              icon: 'color-palette-outline', iconColor: '#DB2777', iconBackground: '#FCE7F3' },
+  { name: 'Business',            icon: 'briefcase-outline',     iconColor: '#D97706', iconBackground: '#FEF3C7' },
+  { name: 'Marketing',           icon: 'megaphone-outline',     iconColor: '#EA580C', iconBackground: '#FFEDD5' },
+  { name: 'Photography',         icon: 'camera-outline',        iconColor: '#2563EB', iconBackground: '#DBEAFE' },
+  { name: 'Music',               icon: 'musical-notes-outline', iconColor: '#7C3AED', iconBackground: '#F3E8FF' },
+  { name: 'Languages',           icon: 'language-outline',      iconColor: '#0F766E', iconBackground: '#CCFBF1' },
+  { name: 'Personal Development',icon: 'sparkles-outline',      iconColor: '#7C3AED', iconBackground: '#F3E8FF' },
+  { name: 'Health & Fitness',    icon: 'fitness-outline',       iconColor: '#16A34A', iconBackground: '#DCFCE7' },
+  { name: 'Database',            icon: 'layers-outline',        iconColor: '#0284C7', iconBackground: '#E0F2FE' },
+  { name: 'Cloud Computing',     icon: 'cloud-outline',         iconColor: '#2563EB', iconBackground: '#DBEAFE' },
+  { name: 'Mathematics',         icon: 'calculator-outline',    iconColor: '#4F46E5', iconBackground: '#E0E7FF' },
+  { name: 'Science',             icon: 'flask-outline',         iconColor: '#0EA5E9', iconBackground: '#E0F2FE' },
+  { name: 'Technology',          icon: 'construct-outline',     iconColor: '#4F46E5', iconBackground: '#E0E7FF' },
+  { name: 'Other',               icon: 'grid-outline',          iconColor: '#475569', iconBackground: '#E2E8F0' },
 ];
 
 const DEFAULT_CATEGORY_STYLE: Omit<LearnCategoryItem, 'name' | 'count'> = {
@@ -72,7 +99,7 @@ const formatDuration = (minutes: number) => {
   if (!minutes || minutes <= 0) return '0m';
   if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
+  const mins  = minutes % 60;
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 };
 
@@ -82,69 +109,241 @@ const formatK = (value: number) => {
   return `${(value / 1000).toFixed(1)}k`;
 };
 
+// ─── Flat list item types ─────────────────────────────────────────────────────
+type ListItem =
+  | { type: 'HEADER' }
+  | { type: 'COURSE'; data: LearnCourse; showEnroll?: boolean; enrolledData?: LearnEnrolledCourse }
+  | { type: 'PATH'; data: LearnPath }
+  | { type: 'EMPTY'; title: string; subtitle: string; icon: keyof typeof Ionicons.glyphMap };
+
+// ─── Skeleton cards ───────────────────────────────────────────────────────────
+const CourseCardSkeleton = React.memo(function CourseCardSkeleton() {
+  return (
+    <View style={skeletonStyles.card}>
+      <View style={skeletonStyles.badgeRow}>
+        <View style={skeletonStyles.badge} />
+      </View>
+      <View style={skeletonStyles.titleLine} />
+      <View style={skeletonStyles.descLine1} />
+      <View style={skeletonStyles.descLine2} />
+      <View style={skeletonStyles.metaRow}>
+        <View style={skeletonStyles.metaPill} />
+        <View style={skeletonStyles.metaPill} />
+        <View style={skeletonStyles.metaPill} />
+      </View>
+      <View style={skeletonStyles.footer} />
+    </View>
+  );
+});
+
+const skeletonStyles = StyleSheet.create({
+  card:      { backgroundColor: '#FFF', borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 12, padding: 12, overflow: 'hidden' },
+  badgeRow:  { flexDirection: 'row', marginBottom: 8 },
+  badge:     { height: 20, width: 64, borderRadius: 12, backgroundColor: '#F1F5F9' },
+  titleLine: { height: 15, borderRadius: 8, backgroundColor: '#F1F5F9', marginBottom: 8 },
+  descLine1: { height: 12, borderRadius: 6, backgroundColor: '#F1F5F9', marginBottom: 6 },
+  descLine2: { height: 12, borderRadius: 6, backgroundColor: '#F1F5F9', width: '60%', marginBottom: 12 },
+  metaRow:   { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  metaPill:  { height: 20, width: 60, borderRadius: 10, backgroundColor: '#F1F5F9' },
+  footer:    { height: 16, borderRadius: 8, backgroundColor: '#F1F5F9', width: '40%' },
+});
+
+// ─── Course Card (memoized) ───────────────────────────────────────────────────
+interface CourseCardProps {
+  course: LearnCourse;
+  showEnroll?: boolean;
+  enrolledData?: LearnEnrolledCourse;
+  isEnrolled: boolean;
+  isBusy: boolean;
+  onPress: (courseId: string) => void;
+  onEnroll: (courseId: string) => void;
+}
+
+const CourseCard = React.memo(function CourseCard({
+  course,
+  showEnroll,
+  enrolledData,
+  isEnrolled,
+  isBusy,
+  onPress,
+  onEnroll,
+}: CourseCardProps) {
+  return (
+    <View style={styles.card}>
+      <TouchableOpacity activeOpacity={0.8} onPress={() => onPress(course.id)}>
+        <View style={styles.cardHeader}>
+          <View style={styles.badgesRow}>
+            <View style={styles.levelBadge}>
+              <Text style={styles.levelBadgeText}>{course.level.replace('_', ' ')}</Text>
+            </View>
+            {course.isFeatured && (
+              <View style={styles.featuredBadge}>
+                <Text style={styles.featuredBadgeText}>Featured</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.courseTitle} numberOfLines={2}>{course.title}</Text>
+          <Text style={styles.courseDescription} numberOfLines={2}>{course.description}</Text>
+        </View>
+
+        <View style={styles.metaRow}>
+          <View style={styles.metaItem}>
+            <Ionicons name="star" size={14} color="#F59E0B" />
+            <Text style={styles.metaText}>{course.rating.toFixed(1)}</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Ionicons name="play-circle-outline" size={14} color="#6B7280" />
+            <Text style={styles.metaText}>{course.lessonsCount} lessons</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Ionicons name="people-outline" size={14} color="#6B7280" />
+            <Text style={styles.metaText}>{formatK(course.enrolledCount)}</Text>
+          </View>
+        </View>
+
+        <View style={styles.footerRow}>
+          <Text style={styles.instructorText} numberOfLines={1}>{course.instructor.name}</Text>
+          <Text style={styles.priceText}>{course.isFree ? 'FREE' : `$${course.price}`}</Text>
+        </View>
+
+        <View style={styles.durationRow}>
+          <Ionicons name="time-outline" size={13} color="#6B7280" />
+          <Text style={styles.durationText}>{formatDuration(course.duration)}</Text>
+        </View>
+      </TouchableOpacity>
+
+      {enrolledData && (
+        <View style={styles.progressSection}>
+          <View style={styles.progressLabels}>
+            <Text style={styles.progressText}>{Math.round(enrolledData.progress)}% complete</Text>
+            <Text style={styles.progressSubText}>{enrolledData.completedLessons}/{course.lessonsCount}</Text>
+          </View>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${Math.max(0, Math.min(100, enrolledData.progress))}%` }]} />
+          </View>
+        </View>
+      )}
+
+      {showEnroll && !isEnrolled && (
+        <TouchableOpacity
+          style={[styles.actionButton, isBusy && styles.actionButtonDisabled]}
+          activeOpacity={0.8}
+          onPress={() => onEnroll(course.id)}
+          disabled={isBusy}
+        >
+          {isBusy ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <Ionicons name="add-circle-outline" size={16} color="#fff" />
+              <Text style={styles.actionButtonText}>Enroll</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+});
+
+// ─── Path Card (memoized) ─────────────────────────────────────────────────────
+interface PathCardProps {
+  path: LearnPath;
+  isBusy: boolean;
+  onEnroll: (pathId: string) => void;
+}
+
+const PathCard = React.memo(function PathCard({ path, isBusy, onEnroll }: PathCardProps) {
+  return (
+    <View style={styles.pathCard}>
+      <Text style={styles.pathTitle}>{path.title}</Text>
+      <Text style={styles.pathDescription} numberOfLines={2}>{path.description}</Text>
+      <View style={styles.pathMetaRow}>
+        <Text style={styles.pathMetaText}>{path.coursesCount} courses</Text>
+        <Text style={styles.pathMetaDot}>•</Text>
+        <Text style={styles.pathMetaText}>{formatDuration(path.totalDuration)}</Text>
+        <Text style={styles.pathMetaDot}>•</Text>
+        <Text style={styles.pathMetaText}>{formatK(path.enrolledCount)} learners</Text>
+      </View>
+      <TouchableOpacity
+        style={[styles.pathActionButton, (path.isEnrolled || isBusy) && styles.pathActionButtonDisabled]}
+        activeOpacity={0.8}
+        onPress={() => onEnroll(path.id)}
+        disabled={path.isEnrolled || isBusy}
+      >
+        {isBusy ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.pathActionText}>{path.isEnrolled ? 'Enrolled' : 'Start Path'}</Text>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+});
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function LearnScreen() {
-  const navigation = useNavigation<NavigationProp>();
+  const navigation   = useNavigation<NavigationProp>();
   const { openSidebar } = useNavigationContext();
 
-  const [activeTab, setActiveTab] = useState<TabType>('explore');
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab,        setActiveTab]        = useState<TabType>('explore');
+  const [loading,          setLoading]          = useState(true);
+  const [refreshing,       setRefreshing]       = useState(false);
+  const [searchQuery,      setSearchQuery]      = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [showAllCategories, setShowAllCategories] = useState(false);
-  const [courses, setCourses] = useState<LearnCourse[]>([]);
-  const [enrolledCourses, setEnrolledCourses] = useState<LearnEnrolledCourse[]>([]);
-  const [createdCourses, setCreatedCourses] = useState<LearnCourse[]>([]);
-  const [paths, setPaths] = useState<LearnPath[]>([]);
-  const [stats, setStats] = useState<LearningStats | null>(null);
-  const [busyCourseId, setBusyCourseId] = useState<string | null>(null);
-  const [busyPathId, setBusyPathId] = useState<string | null>(null);
+  const [showAllCategories,setShowAllCategories]= useState(false);
+  const [courses,          setCourses]          = useState<LearnCourse[]>([]);
+  const [enrolledCourses,  setEnrolledCourses]  = useState<LearnEnrolledCourse[]>([]);
+  const [createdCourses,   setCreatedCourses]   = useState<LearnCourse[]>([]);
+  const [paths,            setPaths]            = useState<LearnPath[]>([]);
+  const [stats,            setStats]            = useState<LearningStats | null>(null);
+  const [busyCourseId,     setBusyCourseId]     = useState<string | null>(null);
+  const [busyPathId,       setBusyPathId]       = useState<string | null>(null);
 
   const enrolledCourseIds = useMemo(
-    () => new Set(enrolledCourses.map(course => course.id)),
+    () => new Set(enrolledCourses.map((c) => c.id)),
     [enrolledCourses]
   );
 
+  // ── Data loading ─────────────────────────────────────────────────────────
   const loadLearningData = useCallback(async () => {
     try {
-      const [courseList, myCourses, myCreatedCourses, learningPaths, learningStats] = await Promise.all([
+      const [courseList, myCourses, myCreated, learningPaths, learningStats] = await Promise.all([
         learnApi.getCourses({ limit: 30 }),
         learnApi.getMyCourses(),
         learnApi.getMyCreatedCourses(),
         learnApi.getLearningPaths({ limit: 20 }),
         learnApi.getLearningStats(),
       ]);
-
       setCourses(courseList);
       setEnrolledCourses(myCourses);
-      setCreatedCourses(myCreatedCourses);
+      setCreatedCourses(myCreated);
       setPaths(learningPaths);
       setStats(learningStats);
     } catch (error: any) {
-      const message = error?.message || 'Failed to load learning data';
-      Alert.alert('Learning', message);
+      Alert.alert('Learning', error?.message || 'Failed to load learning data');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, []);
 
-  useEffect(() => {
-    loadLearningData();
-  }, [loadLearningData]);
+  useEffect(() => { loadLearningData(); }, [loadLearningData]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     loadLearningData();
   }, [loadLearningData]);
 
-  const handleCoursePress = useCallback((courseId: string) => {
-    navigation.navigate('CourseDetail', { courseId });
-  }, [navigation]);
+  // ── Actions ───────────────────────────────────────────────────────────────
+  const handleCoursePress = useCallback(
+    (courseId: string) => navigation.navigate('CourseDetail', { courseId }),
+    [navigation]
+  );
 
-  const handleCreateCourse = useCallback(() => {
-    navigation.navigate('CreateCourse');
-  }, [navigation]);
+  const handleCreateCourse = useCallback(
+    () => navigation.navigate('CreateCourse'),
+    [navigation]
+  );
 
   const handleEnrollCourse = useCallback(async (courseId: string) => {
     try {
@@ -182,22 +381,7 @@ export default function LearnScreen() {
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
 
-  const filteredCourses = useMemo(
-    () => courses.filter(course => {
-      const courseCategory = (course.category || 'General').trim() || 'General';
-      return (
-        (selectedCategory === 'All' || courseCategory === selectedCategory) &&
-        (
-          !normalizedQuery ||
-          course.title.toLowerCase().includes(normalizedQuery) ||
-          course.description.toLowerCase().includes(normalizedQuery) ||
-          courseCategory.toLowerCase().includes(normalizedQuery)
-        )
-      );
-    }),
-    [courses, normalizedQuery, selectedCategory]
-  );
-
+  // ── Category data ─────────────────────────────────────────────────────────
   const categoryItems = useMemo<LearnCategoryItem[]>(() => {
     const counts = new Map<string, number>();
     courses.forEach((course) => {
@@ -205,21 +389,12 @@ export default function LearnScreen() {
       counts.set(category, (counts.get(category) || 0) + 1);
     });
 
-    const presetNameSet = new Set(PRESET_CATEGORIES.map(category => category.name));
-
-    const presetItems = PRESET_CATEGORIES.map((category) => ({
-      ...category,
-      count: counts.get(category.name) || 0,
-    }));
-
+    const presetNameSet = new Set(PRESET_CATEGORIES.map((c) => c.name));
+    const presetItems   = PRESET_CATEGORIES.map((c) => ({ ...c, count: counts.get(c.name) || 0 }));
     const extraItems: LearnCategoryItem[] = [...counts.entries()]
       .filter(([name]) => !presetNameSet.has(name))
       .sort((a, b) => b[1] - a[1])
-      .map(([name, count]) => ({
-        name,
-        count,
-        ...DEFAULT_CATEGORY_STYLE,
-      }));
+      .map(([name, count]) => ({ name, count, ...DEFAULT_CATEGORY_STYLE }));
 
     return [...presetItems, ...extraItems];
   }, [courses]);
@@ -228,356 +403,276 @@ export default function LearnScreen() {
     () =>
       categoryItems
         .map((item, index) => ({ item, index }))
-        .sort((a, b) => {
-          if (b.item.count !== a.item.count) return b.item.count - a.item.count;
-          return a.index - b.index;
-        })
+        .sort((a, b) => b.item.count !== a.item.count ? b.item.count - a.item.count : a.index - b.index)
         .map(({ item }) => item),
     [categoryItems]
   );
 
   const visibleCategoryItems = useMemo<LearnCategoryItem[]>(() => {
     if (showAllCategories) return rankedCategoryItems;
-
     const limited = rankedCategoryItems.slice(0, TOP_CATEGORY_LIMIT);
-
-    if (selectedCategory !== 'All' && !limited.some(category => category.name === selectedCategory)) {
-      const selectedItem = rankedCategoryItems.find(category => category.name === selectedCategory);
-      if (selectedItem) {
-        return [...limited.slice(0, Math.max(0, TOP_CATEGORY_LIMIT - 1)), selectedItem];
-      }
+    if (selectedCategory !== 'All' && !limited.some((c) => c.name === selectedCategory)) {
+      const selectedItem = rankedCategoryItems.find((c) => c.name === selectedCategory);
+      if (selectedItem) return [...limited.slice(0, Math.max(0, TOP_CATEGORY_LIMIT - 1)), selectedItem];
     }
-
     return limited;
   }, [rankedCategoryItems, selectedCategory, showAllCategories]);
 
   const canToggleCategoryList = rankedCategoryItems.length > TOP_CATEGORY_LIMIT;
 
+  // ── Filtered data per tab ─────────────────────────────────────────────────
+  const filteredCourses = useMemo(
+    () => courses.filter((course) => {
+      const cat = (course.category || 'General').trim() || 'General';
+      return (
+        (selectedCategory === 'All' || cat === selectedCategory) &&
+        (!normalizedQuery ||
+          course.title.toLowerCase().includes(normalizedQuery) ||
+          course.description.toLowerCase().includes(normalizedQuery) ||
+          cat.toLowerCase().includes(normalizedQuery))
+      );
+    }),
+    [courses, normalizedQuery, selectedCategory]
+  );
+
   const filteredEnrolled = useMemo(
-    () => enrolledCourses.filter(course =>
-      !normalizedQuery ||
-      course.title.toLowerCase().includes(normalizedQuery) ||
-      course.category.toLowerCase().includes(normalizedQuery)
+    () => enrolledCourses.filter((c) =>
+      !normalizedQuery || c.title.toLowerCase().includes(normalizedQuery) || c.category.toLowerCase().includes(normalizedQuery)
     ),
     [enrolledCourses, normalizedQuery]
   );
 
   const filteredCreated = useMemo(
-    () => createdCourses.filter(course =>
-      !normalizedQuery ||
-      course.title.toLowerCase().includes(normalizedQuery) ||
-      course.category.toLowerCase().includes(normalizedQuery)
+    () => createdCourses.filter((c) =>
+      !normalizedQuery || c.title.toLowerCase().includes(normalizedQuery) || c.category.toLowerCase().includes(normalizedQuery)
     ),
     [createdCourses, normalizedQuery]
   );
 
   const filteredPaths = useMemo(
-    () => paths.filter(path =>
-      !normalizedQuery ||
-      path.title.toLowerCase().includes(normalizedQuery) ||
-      path.description.toLowerCase().includes(normalizedQuery)
+    () => paths.filter((p) =>
+      !normalizedQuery || p.title.toLowerCase().includes(normalizedQuery) || p.description.toLowerCase().includes(normalizedQuery)
     ),
     [paths, normalizedQuery]
   );
 
-  const renderStatCards = () => {
-    if (!stats) return null;
+  // ── Build flat list data array ────────────────────────────────────────────
+  const listData = useMemo<ListItem[]>(() => {
+    const items: ListItem[] = [{ type: 'HEADER' }];
 
-    const statCards: Array<{
-      key: string;
-      value: string;
-      label: string;
-      icon: keyof typeof Ionicons.glyphMap;
-      iconColor: string;
-      iconBackground: string;
-      cardBackground: string;
-      borderColor: string;
-    }> = [
-      {
-        key: 'enrolled',
-        value: `${stats.enrolledCourses}`,
-        label: 'Enrolled',
-        icon: 'book-outline',
-        iconColor: '#2563EB',
-        iconBackground: '#DBEAFE',
-        cardBackground: '#EFF6FF',
-        borderColor: '#BFDBFE',
-      },
-      {
-        key: 'completed',
-        value: `${stats.completedCourses}`,
-        label: 'Completed',
-        icon: 'checkmark-circle-outline',
-        iconColor: '#059669',
-        iconBackground: '#D1FAE5',
-        cardBackground: '#ECFDF5',
-        borderColor: '#A7F3D0',
-      },
-      {
-        key: 'hours',
-        value: `${stats.hoursLearned}h`,
-        label: 'Hours',
-        icon: 'time-outline',
-        iconColor: '#D97706',
-        iconBackground: '#FEF3C7',
-        cardBackground: '#FFFBEB',
-        borderColor: '#FDE68A',
-      },
-      {
-        key: 'streak',
-        value: `${stats.currentStreak}`,
-        label: 'Streak',
-        icon: 'flame-outline',
-        iconColor: '#EA580C',
-        iconBackground: '#FFEDD5',
-        cardBackground: '#FFF7ED',
-        borderColor: '#FDBA74',
-      },
-    ];
-
-    return (
-      <View style={styles.statsRow}>
-        {statCards.map((item) => (
-          <View
-            key={item.key}
-            style={[styles.statCard, { backgroundColor: item.cardBackground, borderColor: item.borderColor }]}
-          >
-            <View style={styles.statCardTopRow}>
-              <View style={[styles.statIconWrap, { backgroundColor: item.iconBackground }]}>
-                <Ionicons name={item.icon} size={14} color={item.iconColor} />
-              </View>
-              <Text style={[styles.statValue, { color: item.iconColor }]}>{item.value}</Text>
-            </View>
-            <Text style={styles.statLabel}>{item.label}</Text>
-          </View>
-        ))}
-      </View>
-    );
-  };
-
-  const renderCategoryGrid = () => (
-    <View style={styles.categorySection}>
-      <View style={styles.categoryHeaderRow}>
-        <View style={styles.categoryHeaderInfo}>
-          <Text style={styles.categoryHeaderTitle}>Explore categories</Text>
-          <Text style={styles.categoryHeaderSubtitle}>
-            {showAllCategories ? 'Browse all categories' : `Top ${TOP_CATEGORY_LIMIT} categories for you`}
-          </Text>
-        </View>
-        <View style={styles.categoryHeaderActions}>
-          {selectedCategory !== 'All' && (
-            <TouchableOpacity style={styles.categoryHeaderButton} onPress={() => setSelectedCategory('All')}>
-              <Text style={styles.categoryHeaderButtonText}>All courses</Text>
-            </TouchableOpacity>
-          )}
-          {canToggleCategoryList && (
-            <TouchableOpacity
-              style={styles.categoryHeaderButton}
-              onPress={() => setShowAllCategories(value => !value)}
-            >
-              <Text style={styles.categoryHeaderButtonText}>
-                {showAllCategories ? 'View less' : 'View all'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      <View style={styles.categoryGrid}>
-        {visibleCategoryItems.map((category, index) => {
-          const isActive = selectedCategory === category.name;
-          const isTopCategory = category.count > 0 && index < 3;
-          return (
-            <TouchableOpacity
-              key={category.name}
-              style={[styles.categoryCard, isActive && styles.categoryCardActive]}
-              onPress={() => setSelectedCategory(category.name)}
-              activeOpacity={0.85}
-            >
-              <View style={styles.categoryContent}>
-                <View style={styles.categoryTitleRow}>
-                  <Text numberOfLines={1} style={[styles.categoryLabel, isActive && styles.categoryLabelActive]}>
-                    {category.name}
-                  </Text>
-                  {isTopCategory && (
-                    <View style={[styles.categoryTrendBadge, isActive && styles.categoryTrendBadgeActive]}>
-                      <Text style={[styles.categoryTrendText, isActive && styles.categoryTrendTextActive]}>Top</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={[styles.categoryCount, isActive && styles.categoryCountActive]}>
-                  {category.count} courses
-                </Text>
-              </View>
-              <View style={[styles.categoryIconWrap, { backgroundColor: category.iconBackground }, isActive && styles.categoryIconWrapActive]}>
-                <Ionicons
-                  name={category.icon}
-                  size={18}
-                  color={category.iconColor}
-                />
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
-
-  const renderCourseCard = (course: LearnCourse, options?: { enrolled?: LearnEnrolledCourse; showEnroll?: boolean }) => {
-    const enrolledData = options?.enrolled;
-    const isEnrolled = enrolledCourseIds.has(course.id);
-
-    return (
-      <View key={course.id} style={styles.card}>
-        <TouchableOpacity activeOpacity={0.8} onPress={() => handleCoursePress(course.id)}>
-          <View style={styles.cardHeader}>
-            <View style={styles.badgesRow}>
-              <View style={styles.levelBadge}>
-                <Text style={styles.levelBadgeText}>{course.level.replace('_', ' ')}</Text>
-              </View>
-              {course.isFeatured && (
-                <View style={styles.featuredBadge}>
-                  <Text style={styles.featuredBadgeText}>Featured</Text>
-                </View>
-              )}
-            </View>
-            <Text style={styles.courseTitle} numberOfLines={2}>{course.title}</Text>
-            <Text style={styles.courseDescription} numberOfLines={2}>{course.description}</Text>
-          </View>
-
-          <View style={styles.metaRow}>
-            <View style={styles.metaItem}>
-              <Ionicons name="star" size={14} color="#F59E0B" />
-              <Text style={styles.metaText}>{course.rating.toFixed(1)}</Text>
-            </View>
-            <View style={styles.metaItem}>
-              <Ionicons name="play-circle-outline" size={14} color="#6B7280" />
-              <Text style={styles.metaText}>{course.lessonsCount} lessons</Text>
-            </View>
-            <View style={styles.metaItem}>
-              <Ionicons name="people-outline" size={14} color="#6B7280" />
-              <Text style={styles.metaText}>{formatK(course.enrolledCount)}</Text>
-            </View>
-          </View>
-
-          <View style={styles.footerRow}>
-            <Text style={styles.instructorText} numberOfLines={1}>
-              {course.instructor.name}
-            </Text>
-            <Text style={styles.priceText}>
-              {course.isFree ? 'FREE' : `$${course.price}`}
-            </Text>
-          </View>
-
-          <View style={styles.durationRow}>
-            <Ionicons name="time-outline" size={13} color="#6B7280" />
-            <Text style={styles.durationText}>{formatDuration(course.duration)}</Text>
-          </View>
-        </TouchableOpacity>
-
-        {enrolledData && (
-          <View style={styles.progressSection}>
-            <View style={styles.progressLabels}>
-              <Text style={styles.progressText}>{Math.round(enrolledData.progress)}% complete</Text>
-              <Text style={styles.progressSubText}>{enrolledData.completedLessons}/{course.lessonsCount}</Text>
-            </View>
-            <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: `${Math.max(0, Math.min(100, enrolledData.progress))}%` }]} />
-            </View>
-          </View>
-        )}
-
-        {options?.showEnroll && !isEnrolled && (
-          <TouchableOpacity
-            style={[styles.actionButton, busyCourseId === course.id && styles.actionButtonDisabled]}
-            activeOpacity={0.8}
-            onPress={() => handleEnrollCourse(course.id)}
-            disabled={busyCourseId === course.id}
-          >
-            {busyCourseId === course.id ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <Ionicons name="add-circle-outline" size={16} color="#fff" />
-                <Text style={styles.actionButtonText}>Enroll</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        )}
-      </View>
-    );
-  };
-
-  const renderPathCard = (path: LearnPath) => (
-    <View key={path.id} style={styles.pathCard}>
-      <Text style={styles.pathTitle}>{path.title}</Text>
-      <Text style={styles.pathDescription} numberOfLines={2}>{path.description}</Text>
-      <View style={styles.pathMetaRow}>
-        <Text style={styles.pathMetaText}>{path.coursesCount} courses</Text>
-        <Text style={styles.pathMetaDot}>•</Text>
-        <Text style={styles.pathMetaText}>{formatDuration(path.totalDuration)}</Text>
-        <Text style={styles.pathMetaDot}>•</Text>
-        <Text style={styles.pathMetaText}>{formatK(path.enrolledCount)} learners</Text>
-      </View>
-      <TouchableOpacity
-        style={[styles.pathActionButton, (path.isEnrolled || busyPathId === path.id) && styles.pathActionButtonDisabled]}
-        activeOpacity={0.8}
-        onPress={() => handleEnrollPath(path.id)}
-        disabled={path.isEnrolled || busyPathId === path.id}
-      >
-        {busyPathId === path.id ? (
-          <ActivityIndicator size="small" color="#fff" />
-        ) : (
-          <Text style={styles.pathActionText}>{path.isEnrolled ? 'Enrolled' : 'Start Path'}</Text>
-        )}
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderEmptyState = (title: string, subtitle: string, icon: keyof typeof Ionicons.glyphMap) => (
-    <View style={styles.emptyState}>
-      <Ionicons name={icon} size={40} color="#9CA3AF" />
-      <Text style={styles.emptyTitle}>{title}</Text>
-      <Text style={styles.emptySubtitle}>{subtitle}</Text>
-    </View>
-  );
-
-  const renderActiveTab = () => {
     if (activeTab === 'explore') {
-      return (
-        <>
-          {renderCategoryGrid()}
-          {renderStatCards()}
-          {filteredCourses.length === 0
-            ? renderEmptyState('No courses found', 'Try another keyword or refresh.', 'search-outline')
-            : filteredCourses.map(course => renderCourseCard(course, { showEnroll: true }))}
-        </>
-      );
+      if (filteredCourses.length === 0) {
+        items.push({ type: 'EMPTY', title: 'No courses found', subtitle: 'Try another keyword or refresh.', icon: 'search-outline' });
+      } else {
+        filteredCourses.forEach((c) => items.push({ type: 'COURSE', data: c, showEnroll: true }));
+      }
+      return items;
     }
 
     if (activeTab === 'enrolled') {
-      return filteredEnrolled.length === 0
-        ? renderEmptyState('No enrolled courses', 'Enroll in a course from Explore to start learning.', 'book-outline')
-        : filteredEnrolled.map(course => renderCourseCard(course, { enrolled: course }));
+      if (filteredEnrolled.length === 0) {
+        items.push({ type: 'EMPTY', title: 'No enrolled courses', subtitle: 'Enroll in a course from Explore to start learning.', icon: 'book-outline' });
+      } else {
+        filteredEnrolled.forEach((c) => items.push({ type: 'COURSE', data: c, enrolledData: c }));
+      }
+      return items;
     }
 
     if (activeTab === 'created') {
-      return filteredCreated.length === 0
-        ? renderEmptyState('No created courses', 'Your created courses will appear here.', 'school-outline')
-        : filteredCreated.map(course => renderCourseCard(course));
+      if (filteredCreated.length === 0) {
+        items.push({ type: 'EMPTY', title: 'No created courses', subtitle: 'Your created courses will appear here.', icon: 'school-outline' });
+      } else {
+        filteredCreated.forEach((c) => items.push({ type: 'COURSE', data: c }));
+      }
+      return items;
     }
 
-    return filteredPaths.length === 0
-      ? renderEmptyState('No learning paths', 'Learning paths will appear here soon.', 'git-branch-outline')
-      : filteredPaths.map(renderPathCard);
-  };
+    // paths tab
+    if (filteredPaths.length === 0) {
+      items.push({ type: 'EMPTY', title: 'No learning paths', subtitle: 'Learning paths will appear here soon.', icon: 'git-branch-outline' });
+    } else {
+      filteredPaths.forEach((p) => items.push({ type: 'PATH', data: p }));
+    }
+    return items;
+  }, [activeTab, filteredCourses, filteredEnrolled, filteredCreated, filteredPaths]);
 
+  // ── Header component (stats + category grid) ──────────────────────────────
+  const renderHeader = useCallback(() => {
+    // Stat cards
+    const statCards = stats ? [
+      { key: 'enrolled',  value: `${stats.enrolledCourses}`,  label: 'Enrolled',   icon: 'book-outline' as const,             iconColor: '#2563EB', iconBackground: '#DBEAFE', cardBackground: '#EFF6FF', borderColor: '#BFDBFE' },
+      { key: 'completed', value: `${stats.completedCourses}`, label: 'Completed',  icon: 'checkmark-circle-outline' as const, iconColor: '#059669', iconBackground: '#D1FAE5', cardBackground: '#ECFDF5', borderColor: '#A7F3D0' },
+      { key: 'hours',     value: `${stats.hoursLearned}h`,    label: 'Hours',      icon: 'time-outline' as const,             iconColor: '#D97706', iconBackground: '#FEF3C7', cardBackground: '#FFFBEB', borderColor: '#FDE68A' },
+      { key: 'streak',    value: `${stats.currentStreak}`,    label: 'Streak',     icon: 'flame-outline' as const,            iconColor: '#EA580C', iconBackground: '#FFEDD5', cardBackground: '#FFF7ED', borderColor: '#FDBA74' },
+    ] : [];
+
+    return (
+      <View>
+        {/* Category grid */}
+        <View style={styles.categorySection}>
+          <View style={styles.categoryHeaderRow}>
+            <View style={styles.categoryHeaderInfo}>
+              <Text style={styles.categoryHeaderTitle}>Explore categories</Text>
+              <Text style={styles.categoryHeaderSubtitle}>
+                {showAllCategories ? 'Browse all categories' : `Top ${TOP_CATEGORY_LIMIT} categories for you`}
+              </Text>
+            </View>
+            <View style={styles.categoryHeaderActions}>
+              {selectedCategory !== 'All' && (
+                <TouchableOpacity style={styles.categoryHeaderButton} onPress={() => setSelectedCategory('All')}>
+                  <Text style={styles.categoryHeaderButtonText}>All courses</Text>
+                </TouchableOpacity>
+              )}
+              {canToggleCategoryList && (
+                <TouchableOpacity
+                  style={styles.categoryHeaderButton}
+                  onPress={() => setShowAllCategories((v) => !v)}
+                >
+                  <Text style={styles.categoryHeaderButtonText}>{showAllCategories ? 'View less' : 'View all'}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.categoryGrid}>
+            {visibleCategoryItems.map((category, index) => {
+              const isActive     = selectedCategory === category.name;
+              const isTopCategory= category.count > 0 && index < 3;
+              return (
+                <TouchableOpacity
+                  key={category.name}
+                  style={[styles.categoryCard, isActive && styles.categoryCardActive]}
+                  onPress={() => setSelectedCategory(category.name)}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.categoryContent}>
+                    <View style={styles.categoryTitleRow}>
+                      <Text numberOfLines={1} style={[styles.categoryLabel, isActive && styles.categoryLabelActive]}>
+                        {category.name}
+                      </Text>
+                      {isTopCategory && (
+                        <View style={[styles.categoryTrendBadge, isActive && styles.categoryTrendBadgeActive]}>
+                          <Text style={[styles.categoryTrendText, isActive && styles.categoryTrendTextActive]}>Top</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.categoryCount, isActive && styles.categoryCountActive]}>
+                      {category.count} courses
+                    </Text>
+                  </View>
+                  <View style={[styles.categoryIconWrap, { backgroundColor: category.iconBackground }, isActive && styles.categoryIconWrapActive]}>
+                    <Ionicons name={category.icon} size={18} color={category.iconColor} />
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Stat cards */}
+        {stats && (
+          <View style={styles.statsRow}>
+            {statCards.map((item) => (
+              <View key={item.key} style={[styles.statCard, { backgroundColor: item.cardBackground, borderColor: item.borderColor }]}>
+                <View style={styles.statCardTopRow}>
+                  <View style={[styles.statIconWrap, { backgroundColor: item.iconBackground }]}>
+                    <Ionicons name={item.icon} size={14} color={item.iconColor} />
+                  </View>
+                  <Text style={[styles.statValue, { color: item.iconColor }]}>{item.value}</Text>
+                </View>
+                <Text style={styles.statLabel}>{item.label}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  }, [stats, visibleCategoryItems, selectedCategory, showAllCategories, canToggleCategoryList]);
+
+  // ── Render items ──────────────────────────────────────────────────────────
+  const renderItem = useCallback(
+    ({ item }: { item: ListItem }) => {
+      if (item.type === 'HEADER') {
+        return renderHeader();
+      }
+
+      if (item.type === 'COURSE') {
+        return (
+          <CourseCard
+            course={item.data}
+            showEnroll={item.showEnroll}
+            enrolledData={item.enrolledData}
+            isEnrolled={enrolledCourseIds.has(item.data.id)}
+            isBusy={busyCourseId === item.data.id}
+            onPress={handleCoursePress}
+            onEnroll={handleEnrollCourse}
+          />
+        );
+      }
+
+      if (item.type === 'PATH') {
+        return (
+          <PathCard
+            path={item.data}
+            isBusy={busyPathId === item.data.id}
+            onEnroll={handleEnrollPath}
+          />
+        );
+      }
+
+      if (item.type === 'EMPTY') {
+        return (
+          <View style={styles.emptyState}>
+            <Ionicons name={item.icon} size={40} color="#9CA3AF" />
+            <Text style={styles.emptyTitle}>{item.title}</Text>
+            <Text style={styles.emptySubtitle}>{item.subtitle}</Text>
+          </View>
+        );
+      }
+
+      return null;
+    },
+    [renderHeader, enrolledCourseIds, busyCourseId, busyPathId, handleCoursePress, handleEnrollCourse, handleEnrollPath]
+  );
+
+  // ── getItemType — prevents tall 'HEADER' cell from recycling into short 'COURSE' cells
+  const getItemType = useCallback(
+    (item: ListItem) => item.type,
+    []
+  );
+
+  const keyExtractor = useCallback(
+    (item: ListItem, index: number) => {
+      if (item.type === 'COURSE') return `course-${item.data.id}`;
+      if (item.type === 'PATH')   return `path-${item.data.id}`;
+      if (item.type === 'EMPTY')  return `empty-${index}`;
+      return 'header';
+    },
+    []
+  );
+
+  // ── Skeleton loading ──────────────────────────────────────────────────────
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingContainer} edges={['top']}>
-        <ActivityIndicator size="large" color="#1A73E8" />
-        <Text style={styles.loadingText}>Loading your learning hub...</Text>
-      </SafeAreaView>
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+        <SafeAreaView edges={['top']} style={styles.headerSafe}>
+          <View style={styles.topBar}>
+            <TouchableOpacity onPress={openSidebar} style={styles.iconButton}>
+              <Ionicons name="menu-outline" size={24} color="#374151" />
+            </TouchableOpacity>
+            <StunityLogo width={108} height={30} />
+            <View style={styles.topBarActions}>
+              <TouchableOpacity style={styles.iconButton}>
+                <Ionicons name="add-circle-outline" size={22} color="#374151" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
+        <View style={styles.content}>
+          {[1, 2, 3].map((i) => <CourseCardSkeleton key={i} />)}
+        </View>
+      </View>
     );
   }
 
@@ -585,6 +680,7 @@ export default function LearnScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
+      {/* Header bar */}
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={openSidebar} style={styles.iconButton}>
@@ -602,6 +698,7 @@ export default function LearnScreen() {
         </View>
       </SafeAreaView>
 
+      {/* Search bar — outside the list so it stays fixed */}
       <View style={styles.searchContainer}>
         <Ionicons name="search-outline" size={18} color="#6B7280" />
         <TextInput
@@ -618,13 +715,14 @@ export default function LearnScreen() {
         )}
       </View>
 
+      {/* Tab bar — fixed outside list */}
       <ScrollView
         horizontal
         style={styles.tabsScroll}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.tabsContainer}
       >
-        {TABS.map(tab => {
+        {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <TouchableOpacity
@@ -642,18 +740,33 @@ export default function LearnScreen() {
         })}
       </ScrollView>
 
-      <ScrollView
-        style={styles.content}
+      {/* ── FlashList replaces ScrollView — cell recycling + virtualization ── */}
+      {/* @ts-ignore FlashList types omit some valid props */}
+      <FlashList
+        data={listData}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        getItemType={getItemType}
+        estimatedItemSize={200}
+        drawDistance={600}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#1A73E8" />}
-      >
-        {renderActiveTab()}
-        <View style={{ height: 32 }} />
-      </ScrollView>
+        // iOS: removeClippedSubviews causes native layer hide/show jank — Android only
+        removeClippedSubviews={Platform.OS === 'android'}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#1A73E8"
+            colors={['#1A73E8']}
+          />
+        }
+      />
     </View>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -661,17 +774,6 @@ const styles = StyleSheet.create({
   },
   headerSafe: {
     backgroundColor: '#FFFFFF',
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
-  },
-  loadingText: {
-    marginTop: 12,
-    color: '#6B7280',
-    fontSize: 14,
   },
   topBar: {
     flexDirection: 'row',
@@ -753,6 +855,11 @@ const styles = StyleSheet.create({
   tabLabelActive: {
     color: '#1A73E8',
   },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 40,
+  },
+  // Category section
   categorySection: {
     marginBottom: 12,
   },
@@ -885,10 +992,7 @@ const styles = StyleSheet.create({
   categoryCountActive: {
     color: '#2563EB',
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
+  // Stats
   statsRow: {
     flexDirection: 'row',
     gap: 8,
@@ -929,6 +1033,11 @@ const styles = StyleSheet.create({
     color: '#475569',
     fontWeight: '600',
   },
+  content: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  // Course cards
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
@@ -1082,6 +1191,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
+  // Path cards
   pathCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
@@ -1132,6 +1242,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
+  // Empty state
   emptyState: {
     marginTop: 24,
     alignItems: 'center',

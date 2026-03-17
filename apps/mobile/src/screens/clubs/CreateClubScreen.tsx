@@ -21,16 +21,16 @@ import { clubsApi } from '@/api';
 import type { CreateClubData } from '@/api/clubs';
 
 // ── Brand colours ────────────────────────────────────────────────
-const TEAL       = '#0D9488';
-const TEAL_DARK  = '#0F766E';
-const TEAL_LIGHT = '#CCFBF1';
+const TEAL       = '#09CFF7'; // Stunity Brand Teal
+const TEAL_DARK  = '#06A8CC';
+const TEAL_LIGHT = '#E0F9FD';
 
 const COLORS = {
-  background:    '#F6F8FB',
+  background:    '#F8FBFF',
   surface:       '#FFFFFF',
   border:        '#E2E8F0',
   borderFocus:   TEAL,
-  textPrimary:   '#1E293B',
+  textPrimary:   '#0F172A',
   textSecondary: '#475569',
   textMuted:     '#94A3B8',
   error:         '#EF4444',
@@ -52,25 +52,25 @@ const CLUB_TYPES: Array<{
     id: 'CASUAL_STUDY_GROUP',
     name: 'Study Group',
     icon: 'people',
-    accent: '#4B7BEC',
-    soft: '#EEF2FF',
-    gradient: ['#6C8EF5', '#4B7BEC'],
+    accent: '#8B5CF6', // Purple
+    soft: '#F3E8FF',
+    gradient: ['#A78BFA', '#8B5CF6'],
     description: 'Casual learning with peers',
   },
   {
     id: 'STRUCTURED_CLASS',
     name: 'Class',
     icon: 'school',
-    accent: TEAL,
-    soft: TEAL_LIGHT,
-    gradient: [TEAL, TEAL_DARK],
+    accent: '#06A8CC', // Teal
+    soft: '#E0F9FD',
+    gradient: ['#09CFF7', '#06A8CC'],
     description: 'Formal structured course',
   },
   {
     id: 'PROJECT_GROUP',
     name: 'Project',
     icon: 'rocket',
-    accent: '#F59E0B',
+    accent: '#F59E0B', // Amber
     soft: '#FEF3C7',
     gradient: ['#FBBF24', '#F59E0B'],
     description: 'Collaborative project team',
@@ -79,9 +79,9 @@ const CLUB_TYPES: Array<{
     id: 'EXAM_PREP',
     name: 'Exam Prep',
     icon: 'book',
-    accent: '#8B5CF6',
-    soft: '#F3E8FF',
-    gradient: ['#A78BFA', '#8B5CF6'],
+    accent: '#6366F1', // Indigo
+    soft: '#E0E7FF',
+    gradient: ['#818CF8', '#6366F1'],
     description: 'Test preparation group',
   },
 ];
@@ -198,8 +198,8 @@ export default function CreateClubScreen() {
           {/* ── Club Name ── */}
           <View style={s.card}>
             <View style={s.fieldLabel}>
-              <View style={[s.labelIcon, { backgroundColor: '#EEF2FF' }]}>
-                <Ionicons name="text" size={14} color="#4B7BEC" />
+              <View style={[s.labelIcon, { backgroundColor: TEAL_LIGHT }]}>
+                <Ionicons name="text" size={14} color={TEAL_DARK} />
               </View>
               <Text style={s.labelText}>Club Name <Text style={s.required}>*</Text></Text>
             </View>
@@ -255,8 +255,8 @@ export default function CreateClubScreen() {
           {/* ── Club Type ── */}
           <View style={s.card}>
             <View style={s.fieldLabel}>
-              <View style={[s.labelIcon, { backgroundColor: '#FEF3C7' }]}>
-                <Ionicons name="apps" size={14} color="#F59E0B" />
+              <View style={[s.labelIcon, { backgroundColor: TEAL_LIGHT }]}>
+                <Ionicons name="apps" size={14} color={TEAL_DARK} />
               </View>
               <Text style={s.labelText}>Club Type <Text style={s.required}>*</Text></Text>
             </View>
@@ -299,8 +299,8 @@ export default function CreateClubScreen() {
           {/* ── Privacy ── */}
           <View style={s.card}>
             <View style={s.fieldLabel}>
-              <View style={[s.labelIcon, { backgroundColor: '#F3E8FF' }]}>
-                <Ionicons name="shield-checkmark" size={14} color="#8B5CF6" />
+              <View style={[s.labelIcon, { backgroundColor: TEAL_LIGHT }]}>
+                <Ionicons name="shield-checkmark" size={14} color={TEAL_DARK} />
               </View>
               <Text style={s.labelText}>Privacy <Text style={s.required}>*</Text></Text>
             </View>
@@ -334,8 +334,8 @@ export default function CreateClubScreen() {
           {/* ── Tags ── */}
           <View style={s.card}>
             <View style={s.fieldLabel}>
-              <View style={[s.labelIcon, { backgroundColor: '#FFF7ED' }]}>
-                <Ionicons name="pricetag" size={14} color="#F59E0B" />
+              <View style={[s.labelIcon, { backgroundColor: TEAL_LIGHT }]}>
+                <Ionicons name="pricetag" size={14} color={TEAL_DARK} />
               </View>
               <Text style={s.labelText}>Tags <Text style={s.optional}>(optional)</Text></Text>
             </View>
@@ -372,43 +372,42 @@ export default function CreateClubScreen() {
 
             {/* Matches the ClubCard style */}
             <View style={s.previewCard}>
-              {/* Header row */}
               <View style={s.previewHeader}>
-                <LinearGradient
-                  colors={selectedTypeConfig.gradient}
-                  style={s.previewIconBox}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <Ionicons name={selectedTypeConfig.icon} size={18} color="#fff" />
-                </LinearGradient>
+                <View style={[s.previewIconBox, { backgroundColor: selectedTypeConfig.accent }]}>
+                  <Ionicons name={selectedTypeConfig.icon} size={20} color="#fff" />
+                </View>
                 <Text style={s.previewTitle} numberOfLines={1}>
                   {name || 'Your Club Name'}
                 </Text>
                 <View style={s.previewViewBtn}>
                   <Text style={s.previewViewText}>View</Text>
-                  <Ionicons name="chevron-forward" size={13} color={TEAL} />
                 </View>
               </View>
 
-              {/* Description */}
               <Text style={s.previewDesc} numberOfLines={2}>
                 {description || `${selectedTypeConfig.name} · Join to explore topics and connect with peers.`}
               </Text>
 
-              {/* Bottom: privacy + type badges */}
               <View style={s.previewFooter}>
-                <View style={[s.previewBadge, { backgroundColor: selectedTypeConfig.soft }]}>
-                  <Ionicons name={selectedTypeConfig.icon} size={11} color={selectedTypeConfig.accent} />
-                  <Text style={[s.previewBadgeText, { color: selectedTypeConfig.accent }]}>{selectedTypeConfig.name}</Text>
+                <View style={s.avatarStack}>
+                  {[1, 2].map(i => (
+                    <View key={i} style={[s.avatarCircle, { marginLeft: i > 1 ? -10 : 0 }]}>
+                      <Ionicons name="person" size={12} color="#CBD5E1" />
+                    </View>
+                  ))}
                 </View>
-                <View style={s.previewBadge}>
-                  <Ionicons name={selectedModeConfig.icon} size={11} color={COLORS.textSecondary} />
-                  <Text style={s.previewBadgeText}>{selectedModeConfig.name}</Text>
-                </View>
+                <Text style={s.memberCountText}>1,234 members</Text>
+                <View style={{ flex: 1 }} />
+                <LinearGradient
+                  colors={[TEAL, TEAL_DARK]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={s.previewJoinPill}
+                >
+                  <Text style={s.previewJoinText}>Join Now →</Text>
+                </LinearGradient>
               </View>
 
-              {/* Progress bar */}
               <View style={s.previewBar}>
                 <View style={[s.previewBarFill, { backgroundColor: selectedTypeConfig.accent }]} />
               </View>
@@ -546,10 +545,11 @@ const s = StyleSheet.create({
   typesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    justifyContent: 'space-between',
+    rowGap: 12,
   },
   typeCard: {
-    width: '47.5%',
+    width: '48.5%',
     backgroundColor: '#F8FAFC',
     borderRadius: 14,
     borderWidth: 1.5,
@@ -626,67 +626,115 @@ const s = StyleSheet.create({
 
   // Live preview card (mirrors the club list card style)
   previewCard: {
-    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#E2E8F0',
     overflow: 'hidden',
-    backgroundColor: '#FAFCFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 1,
   },
   previewHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingTop: 14,
-    paddingBottom: 12,
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: '#F8FAFC',
   },
   previewIconBox: {
-    width: 32, height: 32,
-    borderRadius: 10,
-    alignItems: 'center', justifyContent: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  previewTitle: { flex: 1, fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
+  previewTitle: {
+    flex: 1,
+    fontSize: 17,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
   previewViewBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: TEAL_LIGHT,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
-  previewViewText: { fontSize: 12, fontWeight: '600', color: TEAL },
+  previewViewText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: TEAL_DARK,
+  },
   previewDesc: {
-    fontSize: 13,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    fontSize: 14,
+    lineHeight: 20,
     color: COLORS.textSecondary,
-    lineHeight: 19,
-    paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 10,
+    fontWeight: '500',
   },
   previewFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingBottom: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
-  previewBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 8, paddingVertical: 4,
-    borderRadius: 999,
+  avatarStack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
     backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  previewBadgeText: { fontSize: 11, fontWeight: '700', color: COLORS.textSecondary },
+  memberCountText: {
+    marginLeft: 8,
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.textMuted,
+  },
+  previewJoinPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 14,
+    shadowColor: TEAL,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  previewJoinText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
   previewBar: {
     height: 6,
     backgroundColor: '#F1F5F9',
-    marginHorizontal: 14,
-    marginBottom: 14,
+    marginHorizontal: 16,
+    marginBottom: 20,
     borderRadius: 3,
     overflow: 'hidden',
   },
   previewBarFill: {
-    width: '30%',
     height: '100%',
     borderRadius: 3,
-    opacity: 0.7,
   },
 
   // Sticky bottom bar
