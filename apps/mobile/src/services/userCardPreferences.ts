@@ -1,16 +1,20 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {
+  DEFAULT_USER_CARD_DESIGN_ID,
   DEFAULT_USER_CARD_ORIENTATION,
   DEFAULT_USER_CARD_STYLE_ID,
+  UserCardDesignId,
   UserCardOrientation,
   UserCardStyleId,
+  isUserCardDesignId,
   isUserCardOrientation,
   isUserCardStyleId,
 } from '@/config/userCardStyles';
 
 const USER_CARD_STYLE_PREFERENCE_KEY = '@stunity:user-card-style:v1';
 const USER_CARD_ORIENTATION_PREFERENCE_KEY = '@stunity:user-card-orientation:v1';
+const USER_CARD_DESIGN_PREFERENCE_KEY = '@stunity:user-card-design:v1';
 
 export const getUserCardStylePreference = async (): Promise<UserCardStyleId> => {
   try {
@@ -36,6 +40,34 @@ export const saveUserCardStylePreference = async (styleId: UserCardStyleId): Pro
     await AsyncStorage.setItem(USER_CARD_STYLE_PREFERENCE_KEY, styleId);
   } catch (error) {
     console.error('Failed to save user card style preference.', error);
+    throw error;
+  }
+};
+
+export const getUserCardDesignPreference = async (): Promise<UserCardDesignId> => {
+  try {
+    const storedValue = await AsyncStorage.getItem(USER_CARD_DESIGN_PREFERENCE_KEY);
+    if (storedValue && isUserCardDesignId(storedValue)) {
+      return storedValue;
+    }
+
+    if (storedValue && !isUserCardDesignId(storedValue)) {
+      console.warn('Invalid user card design preference found. Resetting to default.');
+      await AsyncStorage.removeItem(USER_CARD_DESIGN_PREFERENCE_KEY);
+    }
+
+    return DEFAULT_USER_CARD_DESIGN_ID;
+  } catch (error) {
+    console.error('Failed to read user card design preference. Falling back to default design.', error);
+    return DEFAULT_USER_CARD_DESIGN_ID;
+  }
+};
+
+export const saveUserCardDesignPreference = async (designId: UserCardDesignId): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(USER_CARD_DESIGN_PREFERENCE_KEY, designId);
+  } catch (error) {
+    console.error('Failed to save user card design preference.', error);
     throw error;
   }
 };

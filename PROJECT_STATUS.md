@@ -35,10 +35,13 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
   - Card `marginHorizontal: 12` directly on cards (matches PostCard feed approach); `paddingHorizontal: 0` on FlatList container.
   - Category chips: white/flat-border; teal active fill. Quiz cards: white with `borderColor: #E2E8F0`.
 - **Education Card Hub + Navigation refinements (mobile)**
-  - Added a premium **My Education Card** experience with multiple themes, horizontal/vertical layout options, and front/back card views.
-  - Refined card visual language to a cleaner premium style (reference-aligned) and improved circular avatar presentation.
+  - Added a premium **My Education Card** experience with independent design + color theme controls, horizontal/vertical layout options, and front/back card views.
+  - Introduced four refined templates (`luxe`, `wave`, `prism`, `classic`) and upgraded card visual language to a cleaner premium style with improved avatar framing.
+  - Reworked color selection into swatch-only picker UX and curated attractive palettes (including expanded pink variants).
+  - Standardized vertical card sizing to CR80 ratio and simplified content hierarchy to match horizontal premium standards.
   - Enforced consistent card dimensions so front/back sides keep the same height in both orientations.
-  - Upgraded hamburger sidebar into a card-first hub with quick actions below, including teacher attendance and quiz studio.
+  - Upgraded hamburger sidebar into a card-first hub with quick actions below (including teacher attendance and quiz studio), and made the sidebar preview fully design-aware (matches selected design/style/orientation).
+  - Final sidebar preview polish: clearer iOS contrast, single-border look, thicker card edge, full-width alignment with action CTA, and larger preview profile photo.
   - Replaced mobile Events placeholders with working calendar list/detail/RSVP flow through feed-service calendar APIs.
   - Fixed attendance/settings back-stack behavior so users no longer bounce back into stale attendance routes unexpectedly.
 - **Attendance GPS retry reliability (mobile)**

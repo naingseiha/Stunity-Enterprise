@@ -31,10 +31,13 @@
   - Quiz cards: white `#FFFFFF` background, `borderRadius: 16`, `borderColor: #E2E8F0`, teal start-quiz gradient button.
 
 - **Education Card Hub + sidebar-first profile actions (mobile)**
-  - Added a premium **My Education Card** screen with selectable styles/themes, front/back view switching, and horizontal/vertical layouts.
-  - Latest card pass refined the design to a cleaner premium visual style and upgraded in-card profile avatar treatment.
+  - Added a premium **My Education Card** screen with independent **design** and **color theme** selection, front/back switching, and horizontal/vertical layouts.
+  - Rolled out four polished templates (`luxe`, `wave`, `prism`, `classic`) with updated front/back visuals and cleaner premium hierarchy.
+  - Upgraded color customization to a swatch-only picker (Canva-like interaction) with curated vibrant palettes, including expanded pink options.
+  - Vertical card style was redesigned to match horizontal premium language and standardized to CR80 ratio sizing.
   - Front/back card surfaces now keep identical fixed heights per orientation for stable transitions.
-  - Sidebar now acts as a card-first hub with quick menu actions under the card (including teacher attendance and quiz studio).
+  - Sidebar now acts as a card-first hub with quick menu actions under the card (including teacher attendance and quiz studio), and preview now mirrors selected design/style/orientation from the card page.
+  - Sidebar preview polish includes stronger visual clarity on iOS, full-width alignment with action buttons, single-border treatment, thicker card edge, and larger preview avatar framing.
   - Mobile Events is fully implemented (calendar list, event detail, RSVP) using feed-service calendar APIs.
   - Attendance/settings navigation flow was hardened so back actions no longer reopen stale attendance screens.
 

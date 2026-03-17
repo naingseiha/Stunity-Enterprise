@@ -24,8 +24,10 @@ import { Avatar } from '@/components/common';
 import { useAuthStore } from '@/stores';
 import { useTranslation } from 'react-i18next';
 import {
+  DEFAULT_USER_CARD_DESIGN_ID,
   DEFAULT_USER_CARD_ORIENTATION,
   DEFAULT_USER_CARD_STYLE_ID,
+  UserCardDesignId,
   UserCardOrientation,
   UserCardStyleId,
   USER_CARD_ROLE_ICONS,
@@ -36,6 +38,7 @@ import {
   getUserRoleLabel,
 } from '@/config/userCardStyles';
 import {
+  getUserCardDesignPreference,
   getUserCardOrientationPreference,
   getUserCardStylePreference,
 } from '@/services/userCardPreferences';
@@ -60,9 +63,13 @@ interface SidebarProps {
   onNavigate: (screen: string) => void;
 }
 
+const CARD_ASPECT_RATIO = 1.586;
+const VERTICAL_CARD_ASPECT_RATIO = 1 / CARD_ASPECT_RATIO;
+
 export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) {
   const { user, logout } = useAuthStore();
   const { t } = useTranslation();
+  const [selectedDesignId, setSelectedDesignId] = useState<UserCardDesignId>(DEFAULT_USER_CARD_DESIGN_ID);
   const [selectedStyleId, setSelectedStyleId] = useState<UserCardStyleId>(DEFAULT_USER_CARD_STYLE_ID);
   const [selectedOrientation, setSelectedOrientation] = useState<UserCardOrientation>(DEFAULT_USER_CARD_ORIENTATION);
 
@@ -71,11 +78,12 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
 
     let mounted = true;
 
-    Promise.all([getUserCardStylePreference(), getUserCardOrientationPreference()])
-      .then(([styleId, orientation]) => {
+    Promise.all([getUserCardStylePreference(), getUserCardOrientationPreference(), getUserCardDesignPreference()])
+      .then(([styleId, orientation, designId]) => {
         if (!mounted) return;
         setSelectedStyleId(styleId);
         setSelectedOrientation(orientation);
+        setSelectedDesignId(designId);
       })
       .catch((error) => {
         console.error('Failed to load card preferences in sidebar:', error);
@@ -99,6 +107,10 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
   const verificationCode = formatUserCardVerificationCode(user?.id);
   const institutionName = user?.school?.name || t('profile.userCard.defaultInstitution', 'Stunity Learning Network');
   const isVertical = selectedOrientation === 'vertical';
+  const isWaveDesign = selectedDesignId === 'wave';
+  const isPrismDesign = selectedDesignId === 'prism';
+  const isLuxeDesign = selectedDesignId === 'luxe';
+  const cardLastFour = cardNumber.replace(/\s/g, '').slice(-4).padStart(4, '0');
   const attendanceMenuItem: MenuItem | null = role === 'TEACHER'
     ? {
       key: 'attendance',
@@ -170,6 +182,180 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
     },
   ];
 
+  const renderSidebarCornerMotif = () => {
+    if (!isWaveDesign && !isPrismDesign && !isLuxeDesign) {
+      return <View style={[styles.sidebarClassicAccent, { backgroundColor: selectedCardStyle.outline }]} />;
+    }
+
+    if (isWaveDesign) {
+      return (
+        <View style={styles.sidebarWaveCornerWrap}>
+          <View style={[styles.sidebarWaveBlobA, { backgroundColor: selectedCardStyle.outline }]} />
+          <View style={[styles.sidebarWaveBlobB, { backgroundColor: selectedCardStyle.gradient[1] }]} />
+          <View style={[styles.sidebarWaveBlobC, { backgroundColor: selectedCardStyle.accent }]} />
+        </View>
+      );
+    }
+
+    if (isPrismDesign) {
+      return (
+        <View style={styles.sidebarPrismCornerWrap}>
+          <View style={[styles.sidebarPrismShapeA, { backgroundColor: selectedCardStyle.outline }]} />
+          <View style={[styles.sidebarPrismShapeB, { backgroundColor: selectedCardStyle.gradient[1] }]} />
+          <View style={[styles.sidebarPrismShapeC, { backgroundColor: selectedCardStyle.accent }]} />
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.sidebarLuxeCornerWrap}>
+        <View style={[styles.sidebarLuxeStripeA, { backgroundColor: selectedCardStyle.outline }]} />
+        <View style={[styles.sidebarLuxeStripeB, { backgroundColor: selectedCardStyle.gradient[1] }]} />
+        <View style={[styles.sidebarLuxeStripeC, { backgroundColor: selectedCardStyle.accent }]} />
+      </View>
+    );
+  };
+
+  const renderSidebarHorizontalPreview = () => {
+    const isClassic = !isWaveDesign && !isPrismDesign && !isLuxeDesign;
+
+    return (
+      <View
+        style={[
+          styles.sidebarPreviewShell,
+          styles.sidebarPreviewShellHorizontal,
+          {
+            shadowColor: selectedCardStyle.outline,
+            backgroundColor: `${selectedCardStyle.outline}14`,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.sidebarPreviewCardBase,
+            styles.sidebarPreviewCardHorizontal,
+            {
+              borderColor: `${selectedCardStyle.outline}45`,
+            },
+          ]}
+        >
+          <LinearGradient
+            colors={isClassic ? selectedCardStyle.gradient : ['#FFFFFF', '#F5F0FF', '#EEF7FF']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.sidebarPreviewCanvas}
+          />
+          <LinearGradient
+            colors={['rgba(255,255,255,0.74)', 'rgba(255,255,255,0.24)', 'rgba(255,255,255,0)']}
+            start={{ x: 0.08, y: 0 }}
+            end={{ x: 1, y: 0.95 }}
+            style={styles.sidebarPreviewGloss}
+          />
+          {renderSidebarCornerMotif()}
+
+          <View style={styles.sidebarPreviewHorizontalHeader}>
+            <StunityLogo width={70} height={18} />
+            <Text style={[styles.sidebarPreviewTopRight, { color: isClassic ? selectedCardStyle.mutedForeground : '#94A3B8' }]}>
+              {t('profile.userCard.educationCard', 'EDUCATION CARD')}
+            </Text>
+          </View>
+
+          <View style={[styles.sidebarPreviewHorizontalAvatarFrame, { borderColor: selectedCardStyle.outline }]}>
+            <Avatar
+              uri={user?.profilePictureUrl}
+              name={userName}
+              size="lg"
+              showBorder={false}
+              gradientBorder="none"
+            />
+          </View>
+
+          <View style={styles.sidebarPreviewHorizontalBottom}>
+            <Text style={[styles.sidebarPreviewName, { color: isClassic ? selectedCardStyle.foreground : '#0F172A' }]} numberOfLines={1}>
+              {userName.toUpperCase()}
+            </Text>
+            <Text style={[styles.sidebarPreviewRole, { color: isClassic ? selectedCardStyle.mutedForeground : '#475569' }]} numberOfLines={1}>
+              {roleText}
+            </Text>
+            <Text style={[styles.sidebarPreviewDigits, { color: isClassic ? selectedCardStyle.foreground : '#1E293B' }]}>
+              {`\u2022 \u2022 \u2022 \u2022  ${cardLastFour}`}
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  const renderSidebarVerticalPreview = () => {
+    const isClassic = !isWaveDesign && !isPrismDesign && !isLuxeDesign;
+
+    return (
+      <View
+        style={[
+          styles.sidebarPreviewShell,
+          styles.sidebarPreviewShellVertical,
+          {
+            shadowColor: selectedCardStyle.outline,
+            backgroundColor: `${selectedCardStyle.outline}14`,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.sidebarPreviewCardBase,
+            styles.sidebarPreviewCardVertical,
+            {
+              borderColor: `${selectedCardStyle.outline}45`,
+            },
+          ]}
+        >
+          <LinearGradient
+            colors={isClassic ? selectedCardStyle.gradient : ['#FFFFFF', '#F5F0FF', '#EEF7FF']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.sidebarPreviewCanvas}
+          />
+          <LinearGradient
+            colors={['rgba(255,255,255,0.74)', 'rgba(255,255,255,0.24)', 'rgba(255,255,255,0)']}
+            start={{ x: 0.08, y: 0 }}
+            end={{ x: 1, y: 0.95 }}
+            style={styles.sidebarPreviewGloss}
+          />
+          {renderSidebarCornerMotif()}
+
+          <View style={styles.sidebarPreviewVerticalHeader}>
+            <StunityLogo width={66} height={17} />
+            <Text style={[styles.sidebarPreviewTopRight, { color: isClassic ? selectedCardStyle.mutedForeground : '#94A3B8' }]}>
+              {t('profile.userCard.educationCard', 'EDUCATION CARD')}
+            </Text>
+          </View>
+
+          <View style={[styles.sidebarPreviewVerticalAvatarFrame, { borderColor: selectedCardStyle.outline }]}>
+            <Avatar
+              uri={user?.profilePictureUrl}
+              name={userName}
+              size="lg"
+              showBorder={false}
+              gradientBorder="none"
+            />
+          </View>
+
+          <View style={styles.sidebarPreviewVerticalBottom}>
+            <Text style={[styles.sidebarPreviewName, { color: isClassic ? selectedCardStyle.foreground : '#0F172A' }]} numberOfLines={1}>
+              {userName.toUpperCase()}
+            </Text>
+            <Text style={[styles.sidebarPreviewRole, { color: isClassic ? selectedCardStyle.mutedForeground : '#475569' }]} numberOfLines={1}>
+              {roleText}
+            </Text>
+            <Text style={[styles.sidebarPreviewDigits, { color: isClassic ? selectedCardStyle.foreground : '#1E293B' }]}>
+              {`\u2022 \u2022 \u2022 \u2022  ${cardLastFour}`}
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   const handleLogout = () => {
     Alert.alert(
       t('common.logout'),
@@ -239,107 +425,16 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
                 : t('profile.userCard.horizontal', 'Horizontal')}
             </Text>
 
-            <LinearGradient
-              colors={selectedCardStyle.gradient}
-              style={[styles.card, isVertical ? styles.cardVertical : styles.cardHorizontal]}
+            <View
+              style={[
+                styles.cardPreviewStage,
+                {
+                  backgroundColor: `${selectedCardStyle.outline}0C`,
+                },
+              ]}
             >
-              <View style={[styles.cardGlowOne, { backgroundColor: selectedCardStyle.panelTint }]} />
-              <View style={[styles.cardGlowTwo, { backgroundColor: selectedCardStyle.panelTint }]} />
-              {selectedCardStyle.template === 'split-stripe' && (
-                <View style={[styles.cardTemplateStripe, { backgroundColor: selectedCardStyle.mutedForeground }]} />
-              )}
-              {selectedCardStyle.template === 'glass-grid' && (
-                <View style={[styles.cardTemplateBand, { backgroundColor: selectedCardStyle.panelTint }]} />
-              )}
-
-              <View style={styles.cardTopRow}>
-                <View>
-                  <Text style={[styles.cardBrand, { color: selectedCardStyle.foreground }]}>STUNITY</Text>
-                  <Text style={[styles.cardBrandSub, { color: selectedCardStyle.mutedForeground }]}>
-                    {t('profile.userCard.eduPass', 'EDU PASS')}
-                  </Text>
-                </View>
-                <View style={[styles.verifiedWrap, { backgroundColor: selectedCardStyle.panelTint }]}>
-                  <Ionicons name="shield-checkmark" size={15} color={selectedCardStyle.accent} />
-                  <Text style={[styles.verifiedText, { color: selectedCardStyle.accent }]}>
-                    {t('profile.userCard.verified', 'Verified')}
-                  </Text>
-                </View>
-              </View>
-
-              {isVertical ? (
-                <>
-                  <View style={[styles.cardVerticalAvatarWrap, { borderColor: selectedCardStyle.accent, backgroundColor: selectedCardStyle.panelTint }]}>
-                    <Avatar
-                      uri={user?.profilePictureUrl}
-                      name={userName}
-                      size="sm"
-                      showBorder={false}
-                      gradientBorder="none"
-                    />
-                  </View>
-                  <Text style={[styles.cardVerticalName, { color: selectedCardStyle.foreground }]} numberOfLines={1}>
-                    {userName}
-                  </Text>
-                  <Text style={[styles.cardVerticalRole, { color: selectedCardStyle.mutedForeground }]} numberOfLines={1}>
-                    {roleText}
-                  </Text>
-                  <View style={[styles.cardVerticalInstitution, { backgroundColor: selectedCardStyle.panelTint }]}>
-                    <Text style={[styles.cardVerticalInstitutionText, { color: selectedCardStyle.foreground }]} numberOfLines={2}>
-                      {institutionName}
-                    </Text>
-                  </View>
-
-                  <View style={styles.cardMetaRowVertical}>
-                    <View style={styles.cardMetaCol}>
-                      <Text style={[styles.cardMetaLabel, { color: selectedCardStyle.mutedForeground }]}>
-                        {t('profile.userCard.expires', 'Expires')}
-                      </Text>
-                      <Text style={[styles.cardMetaValue, { color: selectedCardStyle.foreground }]}>{expiresAt}</Text>
-                    </View>
-                    <View style={styles.cardMetaCol}>
-                      <Text style={[styles.cardMetaLabel, { color: selectedCardStyle.mutedForeground }]}>
-                        {t('profile.userCard.code', 'Code')}
-                      </Text>
-                      <Text style={[styles.cardMetaValue, { color: selectedCardStyle.foreground }]}>
-                        {verificationCode.slice(-4)}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Text style={[styles.cardNumberVertical, { color: selectedCardStyle.foreground }]}>{cardNumber}</Text>
-                </>
-              ) : (
-                <>
-                  <Text style={[styles.cardNumber, { color: selectedCardStyle.foreground }]}>{cardNumber}</Text>
-
-                  <View style={styles.cardMetaRow}>
-                    <View style={styles.cardMetaCol}>
-                      <Text style={[styles.cardMetaLabel, { color: selectedCardStyle.mutedForeground }]}>
-                        {t('profile.userCard.holder', 'Holder')}
-                      </Text>
-                      <Text style={[styles.cardMetaValue, { color: selectedCardStyle.foreground }]} numberOfLines={1}>
-                        {user?.firstName || t('common.profile', 'Profile')}
-                      </Text>
-                    </View>
-                    <View style={styles.cardMetaCol}>
-                      <Text style={[styles.cardMetaLabel, { color: selectedCardStyle.mutedForeground }]}>
-                        {t('profile.userCard.expires', 'Expires')}
-                      </Text>
-                      <Text style={[styles.cardMetaValue, { color: selectedCardStyle.foreground }]}>{expiresAt}</Text>
-                    </View>
-                    <View style={styles.cardMetaCol}>
-                      <Text style={[styles.cardMetaLabel, { color: selectedCardStyle.mutedForeground }]}>
-                        {t('profile.userCard.code', 'Code')}
-                      </Text>
-                      <Text style={[styles.cardMetaValue, { color: selectedCardStyle.foreground }]}>
-                        {verificationCode.slice(-4)}
-                      </Text>
-                    </View>
-                  </View>
-                </>
-              )}
-            </LinearGradient>
+              {isVertical ? renderSidebarVerticalPreview() : renderSidebarHorizontalPreview()}
+            </View>
 
             <TouchableOpacity
               activeOpacity={0.72}
@@ -429,11 +524,16 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 8,
     marginBottom: 16,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#D2DCE9',
     borderRadius: 18,
     padding: 12,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 2,
   },
   identityHeader: {
     flexDirection: 'row',
@@ -474,6 +574,260 @@ const styles = StyleSheet.create({
     color: '#64748B',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
+  },
+  cardPreviewStage: {
+    borderRadius: 16,
+    width: '100%',
+    paddingVertical: 8,
+    paddingHorizontal: 0,
+  },
+  sidebarPreviewShell: {
+    borderRadius: 22,
+    padding: 0,
+    shadowOpacity: 0.16,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  sidebarPreviewShellHorizontal: {
+    width: '100%',
+    alignSelf: 'stretch',
+  },
+  sidebarPreviewShellVertical: {
+    alignSelf: 'center',
+  },
+  sidebarPreviewCardBase: {
+    borderRadius: 19,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+  },
+  sidebarPreviewCardHorizontal: {
+    width: '100%',
+    aspectRatio: CARD_ASPECT_RATIO,
+  },
+  sidebarPreviewCardVertical: {
+    width: 220,
+    aspectRatio: VERTICAL_CARD_ASPECT_RATIO,
+    alignSelf: 'center',
+  },
+  sidebarPreviewCanvas: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  sidebarPreviewGloss: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 19,
+  },
+  sidebarClassicAccent: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: 6,
+    opacity: 0.82,
+  },
+  sidebarWaveCornerWrap: {
+    position: 'absolute',
+    right: -30,
+    bottom: -28,
+    width: 170,
+    height: 130,
+  },
+  sidebarWaveBlobA: {
+    position: 'absolute',
+    right: 0,
+    bottom: -6,
+    width: 118,
+    height: 82,
+    borderTopLeftRadius: 92,
+    opacity: 0.74,
+    transform: [{ rotate: '-18deg' }],
+  },
+  sidebarWaveBlobB: {
+    position: 'absolute',
+    right: 28,
+    bottom: -4,
+    width: 94,
+    height: 66,
+    borderTopLeftRadius: 82,
+    opacity: 0.8,
+    transform: [{ rotate: '-22deg' }],
+  },
+  sidebarWaveBlobC: {
+    position: 'absolute',
+    right: 56,
+    bottom: 0,
+    width: 76,
+    height: 54,
+    borderTopLeftRadius: 72,
+    opacity: 0.86,
+    transform: [{ rotate: '-24deg' }],
+  },
+  sidebarPrismCornerWrap: {
+    position: 'absolute',
+    right: -34,
+    bottom: -30,
+    width: 172,
+    height: 134,
+  },
+  sidebarPrismShapeA: {
+    position: 'absolute',
+    right: 6,
+    bottom: -2,
+    width: 98,
+    height: 62,
+    borderRadius: 8,
+    opacity: 0.8,
+    transform: [{ rotate: '-18deg' }],
+  },
+  sidebarPrismShapeB: {
+    position: 'absolute',
+    right: 38,
+    bottom: -10,
+    width: 84,
+    height: 54,
+    borderRadius: 8,
+    opacity: 0.86,
+    transform: [{ rotate: '-22deg' }],
+  },
+  sidebarPrismShapeC: {
+    position: 'absolute',
+    right: 72,
+    bottom: -18,
+    width: 68,
+    height: 46,
+    borderRadius: 8,
+    opacity: 0.92,
+    transform: [{ rotate: '-20deg' }],
+  },
+  sidebarLuxeCornerWrap: {
+    position: 'absolute',
+    right: -36,
+    bottom: -34,
+    width: 182,
+    height: 140,
+  },
+  sidebarLuxeStripeA: {
+    position: 'absolute',
+    right: 0,
+    bottom: 8,
+    width: 134,
+    height: 34,
+    borderRadius: 34,
+    opacity: 0.66,
+    transform: [{ rotate: '-32deg' }],
+  },
+  sidebarLuxeStripeB: {
+    position: 'absolute',
+    right: 16,
+    bottom: 22,
+    width: 116,
+    height: 28,
+    borderRadius: 34,
+    opacity: 0.74,
+    transform: [{ rotate: '-32deg' }],
+  },
+  sidebarLuxeStripeC: {
+    position: 'absolute',
+    right: 34,
+    bottom: 36,
+    width: 98,
+    height: 22,
+    borderRadius: 34,
+    opacity: 0.82,
+    transform: [{ rotate: '-32deg' }],
+  },
+  sidebarPreviewHorizontalHeader: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    right: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sidebarPreviewVerticalHeader: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    right: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sidebarPreviewTopRight: {
+    fontSize: 8,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  sidebarPreviewHorizontalAvatarFrame: {
+    position: 'absolute',
+    right: 12,
+    top: 34,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 1.8,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    padding: 1,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.14,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  sidebarPreviewHorizontalBottom: {
+    position: 'absolute',
+    left: 12,
+    right: 92,
+    bottom: 12,
+  },
+  sidebarPreviewVerticalAvatarFrame: {
+    position: 'absolute',
+    top: 44,
+    left: '50%',
+    marginLeft: -35,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 1.8,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    padding: 1,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.14,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  sidebarPreviewVerticalBottom: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 12,
+    alignItems: 'center',
+  },
+  sidebarPreviewName: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  sidebarPreviewRole: {
+    marginTop: 2,
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  sidebarPreviewDigits: {
+    marginTop: 8,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.4,
   },
   card: {
     borderRadius: 18,
@@ -627,6 +981,7 @@ const styles = StyleSheet.create({
   },
   profileShortcut: {
     marginTop: 10,
+    width: '100%',
     borderRadius: 999,
     borderWidth: 1,
     borderColor: '#BFDBFE',
