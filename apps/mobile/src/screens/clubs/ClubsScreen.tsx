@@ -18,7 +18,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 
 import StunityLogo from '../../../assets/Stunity.svg';
-import { Avatar } from '@/components/common';
 import { clubsApi } from '@/api';
 import type { Club } from '@/api/clubs';
 import { useNavigationContext } from '@/contexts';
@@ -34,6 +33,12 @@ const PRIMARY_FILTERS: Array<{
   { id: 'discover', label: 'Discover' },
 ];
 
+const PRIMARY_FILTER_ICONS: Record<ClubFilter, keyof typeof Ionicons.glyphMap> = {
+  all: 'sparkles-outline',
+  joined: 'heart-outline',
+  discover: 'compass-outline',
+};
+
 const CLUB_TYPE_META: Record<
   Club['type'],
   {
@@ -41,36 +46,36 @@ const CLUB_TYPE_META: Record<
     icon: keyof typeof Ionicons.glyphMap;
     accent: string;
     soft: string;
-    gradient: [string, string];
+    cardGradient: [string, string];
   }
 > = {
   CASUAL_STUDY_GROUP: {
     label: 'Study Group',
     icon: 'people-outline',
-    accent: '#2563EB',
-    soft: '#DBEAFE',
-    gradient: ['#EEF4FF', '#DBEAFE'],
+    accent: '#0B8B8A',
+    soft: '#E3F6F4',
+    cardGradient: ['#23B8B3', '#0E9D97'],
   },
   STRUCTURED_CLASS: {
     label: 'Class',
     icon: 'school-outline',
-    accent: '#059669',
-    soft: '#D1FAE5',
-    gradient: ['#ECFDF5', '#D1FAE5'],
+    accent: '#117A74',
+    soft: '#E2F7F3',
+    cardGradient: ['#31BFAF', '#169D90'],
   },
   PROJECT_GROUP: {
     label: 'Project',
     icon: 'rocket-outline',
-    accent: '#EA580C',
-    soft: '#FFEDD5',
-    gradient: ['#FFF7ED', '#FFEDD5'],
+    accent: '#B28513',
+    soft: '#FFF4D7',
+    cardGradient: ['#DEB43A', '#C49420'],
   },
   EXAM_PREP: {
     label: 'Exam Prep',
     icon: 'book-outline',
-    accent: '#7C3AED',
-    soft: '#EDE9FE',
-    gradient: ['#F5F3FF', '#EDE9FE'],
+    accent: '#0F847F',
+    soft: '#E5F9F6',
+    cardGradient: ['#1BA59D', '#B98E1A'],
   },
 };
 
@@ -83,6 +88,29 @@ const MODE_META: Record<
   APPROVAL_REQUIRED: { label: 'Approval', icon: 'checkmark-circle-outline' },
 };
 
+const COLORS = {
+  background: '#F2F6F5',
+  surface: '#FFFFFF',
+  surfaceMuted: '#F8FCFB',
+  border: '#D7ECE9',
+  borderStrong: '#BBDDD8',
+  textPrimary: '#1E2F36',
+  textSecondary: '#32505A',
+  textMuted: '#55727C',
+  textSubtle: '#7C99A3',
+  primary: '#0EA5A4',
+  primaryStrong: '#0B8B8A',
+  primarySoft: '#E3F6F4',
+  primarySoftBorder: '#9FD7D1',
+  primaryTint: '#EAFBFA',
+  primaryTintBorder: '#C2ECE7',
+  secondary: '#E2B233',
+  secondaryStrong: '#BF931F',
+  secondarySoft: '#FFF6DB',
+  cardBorder: '#8EC4BE',
+  cardBorderJoined: '#0B8B8A',
+} as const;
+
 export default function ClubsScreen() {
   const navigation = useNavigation<any>();
   const { openSidebar } = useNavigationContext();
@@ -91,7 +119,6 @@ export default function ClubsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<ClubFilter>('all');
-  const [selectedType, setSelectedType] = useState<'all' | Club['type']>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [clubs, setClubs] = useState<Club[]>([]);
   const [joinedClubIds, setJoinedClubIds] = useState<string[]>([]);
@@ -159,10 +186,6 @@ export default function ClubsScreen() {
       data = data.filter(club => !joinedClubSet.has(club.id));
     }
 
-    if (selectedType !== 'all') {
-      data = data.filter(club => club.type === selectedType);
-    }
-
     if (normalizedQuery) {
       data = data.filter((club) => {
         const tags = (club.tags || []).join(' ').toLowerCase();
@@ -175,146 +198,122 @@ export default function ClubsScreen() {
     }
 
     return data;
-  }, [clubs, joinedClubSet, selectedFilter, selectedType, normalizedQuery]);
+  }, [clubs, joinedClubSet, selectedFilter, normalizedQuery]);
 
-  const discoverCount = Math.max(clubs.length - joinedClubIds.length, 0);
+  const cyclePrimaryFilter = useCallback(() => {
+    setSelectedFilter((prev) => {
+      if (prev === 'all') return 'joined';
+      if (prev === 'joined') return 'discover';
+      return 'all';
+    });
+  }, []);
 
   const renderPrimaryFilterBar = () => (
-    <View style={styles.primaryFilterBar}>
-      <View style={styles.primaryTabsRow}>
-        {PRIMARY_FILTERS.map((filter) => {
-          const isActive = selectedFilter === filter.id;
-          return (
-            <TouchableOpacity
-              key={filter.id}
-              style={styles.primaryTab}
-              onPress={() => setSelectedFilter(filter.id)}
-              activeOpacity={0.85}
-            >
-              <Text
-                style={[
-                  styles.primaryTabText,
-                  isActive && styles.primaryTabTextActive,
-                ]}
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.primaryFilterRow}
+    >
+      {PRIMARY_FILTERS.map((filter) => {
+        const isActive = selectedFilter === filter.id;
+        const icon = PRIMARY_FILTER_ICONS[filter.id];
+
+        return (
+          <TouchableOpacity
+            key={filter.id}
+            onPress={() => setSelectedFilter(filter.id)}
+            activeOpacity={0.88}
+            style={styles.primaryChipWrapper}
+          >
+            {isActive ? (
+              <LinearGradient
+                colors={['#0EA5A4', '#B98E1A']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.primaryChip, styles.primaryChipActive]}
               >
-                {filter.label}
-              </Text>
-              <View style={[styles.primaryTabIndicator, isActive && styles.primaryTabIndicatorActive]} />
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
+                <Ionicons name={icon} size={14} color="#FFFFFF" />
+                <Text style={[styles.primaryChipText, styles.primaryChipTextActive]}>{filter.label}</Text>
+              </LinearGradient>
+            ) : (
+              <View style={styles.primaryChip}>
+                <Ionicons name={icon} size={14} color={COLORS.textMuted} />
+                <Text style={styles.primaryChipText}>{filter.label}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
   );
 
   const renderHeader = () => (
     <View style={styles.listHeader}>
-      <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={18} color="#6B7280" />
-        <TextInput
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder="Search clubs, topics, tags..."
-          placeholderTextColor="#9CA3AF"
-          style={styles.searchInput}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 6, left: 6, right: 6, bottom: 6 }}>
-            <Ionicons name="close-circle" size={18} color="#9CA3AF" />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <View style={styles.introBlock}>
-        <Text style={styles.introTitle}>Find your learning community</Text>
-        <Text style={styles.introSubtitle}>Join clubs, collaborate with classmates, and grow together.</Text>
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-      >
-        <TouchableOpacity
-          style={[styles.typeChip, selectedType === 'all' && styles.typeChipActive]}
-          onPress={() => setSelectedType('all')}
-          activeOpacity={0.85}
-        >
-          <Ionicons
-            name="grid-outline"
-            size={14}
-            color={selectedType === 'all' ? '#0284C7' : '#64748B'}
+      <View style={styles.searchRow}>
+        <View style={styles.searchContainer}>
+          <Ionicons name="search-outline" size={22} color={COLORS.textSubtle} />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search"
+            placeholderTextColor={COLORS.textSubtle}
+            style={styles.searchInput}
           />
-          <Text style={[styles.typeChipText, selectedType === 'all' && styles.typeChipTextActive]}>
-            All Types
-          </Text>
-        </TouchableOpacity>
-
-        {Object.entries(CLUB_TYPE_META).map(([type, meta]) => {
-          const isActive = selectedType === type;
-          return (
-            <TouchableOpacity
-              key={type}
-              style={[
-                styles.typeChip,
-                isActive && {
-                  backgroundColor: meta.soft,
-                  borderColor: meta.accent,
-                },
-              ]}
-              onPress={() => setSelectedType(isActive ? 'all' : (type as Club['type']))}
-              activeOpacity={0.85}
-            >
-              <Ionicons
-                name={meta.icon}
-                size={14}
-                color={isActive ? meta.accent : '#64748B'}
-              />
-              <Text
-                style={[
-                  styles.typeChipText,
-                  isActive && { color: meta.accent },
-                ]}
-              >
-                {meta.label}
-              </Text>
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 6, left: 6, right: 6, bottom: 6 }}>
+              <Ionicons name="close-circle" size={18} color={COLORS.textSubtle} />
             </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+          )}
+        </View>
 
-      <View style={styles.summaryRow}>
-        <View style={[styles.summaryCard, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
-          <Text style={styles.summaryValue}>{clubs.length}</Text>
-          <Text style={styles.summaryLabel}>Total</Text>
-        </View>
-        <View style={[styles.summaryCard, { backgroundColor: '#FDF2F8', borderColor: '#FBCFE8' }]}>
-          <Text style={styles.summaryValue}>{joinedClubIds.length}</Text>
-          <Text style={styles.summaryLabel}>Joined</Text>
-        </View>
-        <View style={[styles.summaryCard, { backgroundColor: '#EEF2FF', borderColor: '#C7D2FE' }]}>
-          <Text style={styles.summaryValue}>{discoverCount}</Text>
-          <Text style={styles.summaryLabel}>Discover</Text>
-        </View>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={cyclePrimaryFilter}
+          onLongPress={openSidebar}
+          activeOpacity={0.88}
+        >
+          <Ionicons name="options-outline" size={20} color={COLORS.textSecondary} />
+        </TouchableOpacity>
       </View>
 
-      <Text style={styles.resultCount}>
-        {filteredClubs.length} {filteredClubs.length === 1 ? 'club' : 'clubs'}
-      </Text>
+      {renderPrimaryFilterBar()}
+
+      <View style={styles.sectionTitleRow}>
+        <Text style={styles.sectionTitle}>Special Offers</Text>
+        <Text style={styles.sectionActionText}>See all</Text>
+      </View>
+
+      <View style={styles.resultCountRow}>
+        <Ionicons name="sparkles-outline" size={14} color={COLORS.secondaryStrong} />
+        <Text style={styles.resultCount}>
+          Curated communities for your learning goals
+        </Text>
+      </View>
     </View>
   );
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <Ionicons name="sparkles-outline" size={38} color="#9CA3AF" />
-      <Text style={styles.emptyTitle}>No clubs found</Text>
+      <Ionicons name="sparkles-outline" size={38} color={COLORS.textSubtle} />
+      <Text style={styles.emptyTitle}>
+        {selectedFilter === 'joined' && !searchQuery ? 'No clubs joined yet' : 'No clubs found'}
+      </Text>
       <Text style={styles.emptySubtitle}>
         {searchQuery
-          ? 'Try a different keyword.'
+          ? 'Try another keyword.'
           : selectedFilter === 'joined'
-            ? 'Join some clubs to see them here.'
+            ? 'Join clubs to build your personalized list.'
             : 'Try a different filter.'}
       </Text>
+      {selectedFilter === 'joined' && !searchQuery && (
+        <TouchableOpacity
+          style={styles.emptyActionButton}
+          onPress={() => setSelectedFilter('discover')}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.emptyActionButtonText}>Discover clubs</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
@@ -324,115 +323,73 @@ export default function ClubsScreen() {
     const isJoined = joinedClubSet.has(item.id);
 
     return (
-      <View style={styles.clubCard}>
-        <TouchableOpacity
-          style={styles.clubBodyPressable}
-          activeOpacity={0.9}
-          onPress={() => navigation.navigate('ClubDetails', { clubId: item.id })}
+      <View style={[styles.clubCard, isJoined && styles.clubCardJoined]}>
+        <LinearGradient
+          colors={typeMeta.cardGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.clubCardGradient}
         >
-          <LinearGradient
-            colors={typeMeta.gradient}
-            style={styles.clubHero}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <View style={styles.heroTopRow}>
-              <View style={[styles.heroTypeBadge, { backgroundColor: 'rgba(255,255,255,0.8)' }]}>
-                <Ionicons name={typeMeta.icon} size={13} color={typeMeta.accent} />
-                <Text style={[styles.heroTypeText, { color: typeMeta.accent }]}>{typeMeta.label}</Text>
-              </View>
-              <View style={styles.heroModeBadge}>
-                <Ionicons name={modeMeta.icon} size={12} color="#475569" />
-                <Text style={styles.heroModeText}>{modeMeta.label}</Text>
-              </View>
-            </View>
+          <View style={styles.cardDecorCirclePrimary} />
+          <View style={styles.cardDecorCircleSecondary} />
 
-            <Text style={styles.clubName} numberOfLines={2}>{item.name}</Text>
-            <Text style={styles.clubDescription} numberOfLines={2}>{item.description}</Text>
-          </LinearGradient>
-
-          <View style={styles.clubBody}>
-            {!!item.tags?.length && (
-              <View style={styles.tagsRow}>
-                {item.tags.slice(0, 3).map(tag => (
-                  <View key={tag} style={[styles.tag, { backgroundColor: typeMeta.soft }]}>
-                    <Text style={[styles.tagText, { color: typeMeta.accent }]}>#{tag}</Text>
-                  </View>
-                ))}
-                {item.tags.length > 3 && (
-                  <Text style={styles.moreTagText}>+{item.tags.length - 3}</Text>
-                )}
-              </View>
-            )}
-
-            <View style={styles.metaRow}>
-              <View style={styles.creatorRow}>
-                {item.creator ? (
-                  <Avatar
-                    uri={item.creator.profilePictureUrl}
-                    name={`${item.creator.firstName} ${item.creator.lastName}`}
-                    size="xs"
-                    variant="post"
-                  />
-                ) : (
-                  <View style={styles.creatorFallback}>
-                    <Ionicons name="person-outline" size={12} color="#64748B" />
-                  </View>
-                )}
-                <Text style={styles.creatorName} numberOfLines={1}>
-                  {item.creator ? `${item.creator.firstName} ${item.creator.lastName}` : 'Club Team'}
-                </Text>
-              </View>
-              <View style={[styles.memberPill, { backgroundColor: typeMeta.soft }]}>
-                <Ionicons name="people-outline" size={13} color={typeMeta.accent} />
-                <Text style={[styles.memberCount, { color: typeMeta.accent }]}>{item.memberCount || 0}</Text>
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-
-        <View style={styles.cardActionRow}>
           <TouchableOpacity
-            style={styles.detailsButton}
+            style={styles.clubBodyPressable}
+            activeOpacity={0.9}
             onPress={() => navigation.navigate('ClubDetails', { clubId: item.id })}
-            activeOpacity={0.85}
           >
-            <Ionicons name="eye-outline" size={14} color="#475569" />
-            <Text style={styles.detailsButtonText}>Details</Text>
+            <View style={styles.clubBody}>
+              <View style={styles.offerTopRow}>
+                <Text style={styles.offerEyebrow}>{typeMeta.label}</Text>
+                {isJoined && (
+                  <View style={styles.memberStatusBadge}>
+                    <Ionicons name="checkmark-circle-outline" size={12} color={COLORS.primaryStrong} />
+                    <Text style={styles.memberStatusText}>Joined</Text>
+                  </View>
+                )}
+              </View>
+
+              <Text style={styles.clubName} numberOfLines={2}>{item.name}</Text>
+              <Text style={styles.offerSubline} numberOfLines={1}>
+                {modeMeta.label} • {item.memberCount || 0} members
+              </Text>
+            </View>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.joinButton,
-              isJoined
-                ? styles.joinedButton
-                : { backgroundColor: typeMeta.accent, borderColor: typeMeta.accent },
-            ]}
-            onPress={() => handleToggleMembership(item.id)}
-            activeOpacity={0.85}
-            disabled={busyClubId === item.id}
-          >
-            {busyClubId === item.id ? (
-              <ActivityIndicator size="small" color={isJoined ? typeMeta.accent : '#fff'} />
-            ) : (
-              <>
+          <View style={styles.cardActionRow}>
+            <TouchableOpacity
+              style={styles.offerPrimaryButton}
+              onPress={() => navigation.navigate('ClubDetails', { clubId: item.id })}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.offerPrimaryButtonText}>Get Offer Now</Text>
+              <View style={styles.offerPrimaryIconWrap}>
+                <Ionicons name="arrow-forward" size={14} color={COLORS.primaryStrong} />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.offerJoinButton,
+                isJoined && styles.offerJoinButtonActive,
+                busyClubId === item.id && styles.offerJoinButtonBusy,
+              ]}
+              onPress={() => handleToggleMembership(item.id)}
+              activeOpacity={0.85}
+              disabled={busyClubId === item.id}
+            >
+              {busyClubId === item.id ? (
+                <ActivityIndicator size="small" color={isJoined ? COLORS.primaryStrong : '#FFFFFF'} />
+              ) : (
                 <Ionicons
-                  name={isJoined ? 'checkmark-circle-outline' : 'add-circle-outline'}
-                  size={16}
-                  color={isJoined ? typeMeta.accent : '#fff'}
+                  name={isJoined ? 'checkmark' : 'add'}
+                  size={18}
+                  color={isJoined ? COLORS.primaryStrong : '#FFFFFF'}
                 />
-                <Text
-                  style={[
-                    styles.joinButtonText,
-                    isJoined && { color: typeMeta.accent },
-                  ]}
-                >
-                  {isJoined ? 'Joined' : 'Join'}
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
+              )}
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
       </View>
     );
   };
@@ -440,8 +397,32 @@ export default function ClubsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer} edges={['top']}>
-        <ActivityIndicator size="large" color="#0284C7" />
-        <Text style={styles.loadingText}>Loading clubs...</Text>
+        <View style={styles.loadingTopBar}>
+          <View style={styles.loadingIconSkeleton} />
+          <View style={styles.loadingLogoSkeleton} />
+          <View style={styles.loadingActionsRow}>
+            <View style={styles.loadingIconSkeleton} />
+            <View style={styles.loadingIconSkeleton} />
+          </View>
+        </View>
+
+        <View style={styles.loadingBody}>
+          <View style={styles.loadingSearchSkeleton} />
+
+          <View style={styles.loadingChipRow}>
+            <View style={[styles.loadingChipSkeleton, styles.loadingChipWide]} />
+            <View style={[styles.loadingChipSkeleton, styles.loadingChipMedium]} />
+            <View style={[styles.loadingChipSkeleton, styles.loadingChipNarrow]} />
+          </View>
+
+          <View style={styles.loadingCardSkeleton} />
+          <View style={styles.loadingCardSkeleton} />
+        </View>
+
+        <View style={styles.loadingFooter}>
+          <ActivityIndicator size="small" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading clubs...</Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -451,10 +432,17 @@ export default function ClubsScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={openSidebar} style={styles.iconButton}>
-            <Ionicons name="menu-outline" size={24} color="#374151" />
+            <Ionicons name="menu-outline" size={24} color={COLORS.textSecondary} />
           </TouchableOpacity>
           <StunityLogo width={108} height={30} />
-          <View style={{ width: 38 }} />
+          <View style={styles.topBarActions}>
+            <TouchableOpacity onPress={() => loadClubs()} style={styles.iconButton}>
+              <Ionicons name="refresh-outline" size={22} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('CreateClub')} style={styles.iconButton}>
+              <Ionicons name="add-circle-outline" size={22} color={COLORS.primaryStrong} />
+            </TouchableOpacity>
+          </View>
         </View>
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={48} color="#EF4444" />
@@ -474,21 +462,19 @@ export default function ClubsScreen() {
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={openSidebar} style={styles.iconButton}>
-            <Ionicons name="menu-outline" size={24} color="#374151" />
+            <Ionicons name="menu-outline" size={24} color={COLORS.textSecondary} />
           </TouchableOpacity>
           <StunityLogo width={108} height={30} />
           <View style={styles.topBarActions}>
             <TouchableOpacity onPress={() => loadClubs()} style={styles.iconButton}>
-              <Ionicons name="refresh-outline" size={22} color="#374151" />
+              <Ionicons name="refresh-outline" size={22} color={COLORS.textSecondary} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => navigation.navigate('CreateClub')} style={styles.iconButton}>
-              <Ionicons name="add-circle-outline" size={22} color="#374151" />
+              <Ionicons name="add-circle-outline" size={22} color={COLORS.primaryStrong} />
             </TouchableOpacity>
           </View>
         </View>
       </SafeAreaView>
-
-      {renderPrimaryFilterBar()}
 
       <FlatList
         data={filteredClubs}
@@ -499,7 +485,7 @@ export default function ClubsScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0284C7" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
         }
       />
 
@@ -509,7 +495,7 @@ export default function ClubsScreen() {
         activeOpacity={0.9}
       >
         <LinearGradient
-          colors={['#38BDF8', '#0EA5E9', '#0284C7']}
+          colors={['#19B0A9', '#0D8E89', '#B98D1A']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.fabGradient}
@@ -524,10 +510,10 @@ export default function ClubsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: COLORS.background,
   },
   headerSafe: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
   },
   topBar: {
     flexDirection: 'row',
@@ -535,9 +521,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#DBEAFE',
+    borderBottomColor: COLORS.border,
   },
   topBarActions: {
     flexDirection: 'row',
@@ -550,241 +536,248 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.surfaceMuted,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingBottom: 90,
-  },
-  primaryFilterBar: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    paddingHorizontal: 12,
-  },
-  primaryTabsRow: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-  },
-  primaryTab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 10,
-    paddingBottom: 8,
-  },
-  primaryTabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  primaryTabTextActive: {
-    color: '#0F172A',
-    fontWeight: '700',
-  },
-  primaryTabIndicator: {
-    marginTop: 7,
-    height: 2,
-    width: '58%',
-    borderRadius: 999,
-    backgroundColor: 'transparent',
-  },
-  primaryTabIndicatorActive: {
-    backgroundColor: '#BFDBFE',
-  },
-  listHeader: {
     paddingTop: 12,
-    paddingBottom: 10,
-    gap: 12,
+    paddingBottom: 96,
   },
-  searchContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 12,
-    height: 46,
+  primaryFilterRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: '#111827',
-  },
-  introBlock: {
-    gap: 4,
-  },
-  introTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  introSubtitle: {
-    fontSize: 13,
-    color: '#64748B',
-    lineHeight: 18,
-  },
-  filterRow: {
-    gap: 8,
+    gap: 10,
     paddingRight: 8,
   },
-  typeChip: {
+  primaryChipWrapper: {
+    borderRadius: 999,
+  },
+  primaryChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    height: 32,
-    paddingHorizontal: 11,
+    justifyContent: 'center',
+    height: 40,
+    paddingHorizontal: 14,
     borderRadius: 999,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.border,
   },
-  typeChipActive: {
-    backgroundColor: '#E0F2FE',
-    borderColor: '#0284C7',
+  primaryChipActive: {
+    borderColor: 'transparent',
   },
-  typeChipText: {
-    fontSize: 12,
+  primaryChipText: {
+    fontSize: 15,
     fontWeight: '600',
-    color: '#64748B',
+    color: COLORS.textMuted,
   },
-  typeChipTextActive: {
-    color: '#0284C7',
+  primaryChipTextActive: {
+    color: '#FFFFFF',
   },
-  summaryRow: {
+  listHeader: {
+    paddingTop: 6,
+    paddingBottom: 14,
+    gap: 14,
+  },
+  searchRow: {
     flexDirection: 'row',
-    gap: 8,
-  },
-  summaryCard: {
-    flex: 1,
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingVertical: 10,
     alignItems: 'center',
+    gap: 10,
   },
-  summaryValue: {
-    fontSize: 18,
+  searchContainer: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 16,
+    height: 54,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  filterButton: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: COLORS.textPrimary,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sectionTitle: {
+    fontSize: 21,
+    lineHeight: 27,
     fontWeight: '800',
-    color: '#0F172A',
+    color: COLORS.textPrimary,
   },
-  summaryLabel: {
-    marginTop: 2,
-    fontSize: 12,
+  sectionActionText: {
+    fontSize: 15,
     fontWeight: '600',
-    color: '#64748B',
+    color: COLORS.secondaryStrong,
+  },
+  resultCountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   resultCount: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#475569',
-    marginTop: 2,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
   },
   clubCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderRadius: 16,
+    borderWidth: 1.25,
+    borderColor: COLORS.cardBorder,
     overflow: 'hidden',
-    marginBottom: 14,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 14,
-    elevation: 3,
+    marginBottom: 16,
+    shadowColor: COLORS.textPrimary,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  clubCardJoined: {
+    borderWidth: 1.5,
+    borderColor: COLORS.cardBorderJoined,
+  },
+  clubCardGradient: {
+    position: 'relative',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.58)',
+  },
+  cardDecorCirclePrimary: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(255,255,255,0.34)',
+    top: -62,
+    right: -50,
+  },
+  cardDecorCircleSecondary: {
+    position: 'absolute',
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: 'rgba(255,255,255,0.28)',
+    bottom: 34,
+    right: -24,
   },
   clubBodyPressable: {
     overflow: 'hidden',
   },
-  clubHero: {
-    paddingHorizontal: 14,
-    paddingTop: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(148,163,184,0.2)',
+  clubBody: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 12,
     gap: 10,
+    zIndex: 1,
   },
-  heroTopRow: {
+  offerTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
   },
-  heroTypeBadge: {
+  offerEyebrow: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
+  },
+  cardMetaTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  offerTypeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
-    height: 26,
+    height: 28,
     borderRadius: 999,
+    paddingHorizontal: 11,
+    backgroundColor: 'rgba(255,255,255,0.24)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.36)',
   },
-  heroTypeText: {
+  offerTypeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  cardRightMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  memberStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    height: 28,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.95)',
+  },
+  memberStatusText: {
     fontSize: 11,
     fontWeight: '700',
+    color: COLORS.primaryStrong,
   },
-  heroModeBadge: {
+  cardModeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    paddingHorizontal: 10,
-    height: 24,
+    paddingHorizontal: 9,
+    height: 28,
     borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.95)',
   },
-  heroModeText: {
-    fontSize: 11,
+  cardModeText: {
+    fontSize: 12,
     fontWeight: '600',
-    color: '#475569',
+    color: COLORS.textMuted,
   },
   clubName: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#0F172A',
-    lineHeight: 32,
-    marginTop: 2,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    lineHeight: 27,
   },
-  clubDescription: {
-    fontSize: 13,
-    color: '#334155',
-    lineHeight: 19,
-  },
-  clubBody: {
-    paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 12,
-    gap: 10,
-  },
-  tagsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    alignItems: 'center',
-  },
-  tag: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  tagText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  moreTagText: {
-    fontSize: 11,
-    color: '#64748B',
-    fontWeight: '600',
+  offerSubline: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.88)',
+    lineHeight: 20,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
+    marginTop: 4,
   },
   creatorRow: {
     flexDirection: 'row',
@@ -798,67 +791,79 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#E2E8F0',
+    backgroundColor: 'rgba(255,255,255,0.34)',
   },
   creatorName: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#334155',
+    color: '#FFFFFF',
     flex: 1,
   },
   memberPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
-    height: 28,
+    paddingHorizontal: 9,
+    height: 30,
     borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
   memberCount: {
     fontSize: 12,
     fontWeight: '700',
+    color: '#FFFFFF',
   },
   cardActionRow: {
     flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingBottom: 14,
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    paddingTop: 8,
+    zIndex: 1,
   },
-  detailsButton: {
+  offerPrimaryButton: {
     flex: 1,
-    height: 40,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#F8FAFC',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  detailsButtonText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#475569',
-  },
-  joinButton: {
-    flex: 1,
-    height: 40,
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  joinedButton: {
+    borderColor: '#FFFFFF',
     backgroundColor: '#FFFFFF',
-    borderColor: '#CBD5E1',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
-  joinButtonText: {
-    fontSize: 13,
+  offerPrimaryButtonText: {
+    fontSize: 15,
     fontWeight: '700',
-    color: '#fff',
+    color: COLORS.textSecondary,
+  },
+  offerPrimaryIconWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.secondarySoft,
+  },
+  offerJoinButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.8)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.22)',
+  },
+  offerJoinButtonActive: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#FFFFFF',
+  },
+  offerJoinButtonBusy: {
+    opacity: 0.78,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -869,22 +874,103 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#334155',
+    color: COLORS.textSecondary,
   },
   emptySubtitle: {
     fontSize: 13,
-    color: '#64748B',
+    color: COLORS.textMuted,
+    textAlign: 'center',
+    maxWidth: 260,
+  },
+  emptyActionButton: {
+    marginTop: 8,
+    height: 38,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+  },
+  emptyActionButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   loadingContainer: {
     flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  loadingTopBar: {
+    height: 58,
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  loadingActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  loadingIconSkeleton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#E5F0EF',
+  },
+  loadingLogoSkeleton: {
+    width: 108,
+    height: 22,
+    borderRadius: 8,
+    backgroundColor: '#E5F0EF',
+  },
+  loadingBody: {
+    paddingHorizontal: 16,
+    paddingTop: 18,
+    gap: 12,
+  },
+  loadingSearchSkeleton: {
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#E5F0EF',
+  },
+  loadingChipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  loadingChipSkeleton: {
+    height: 38,
+    borderRadius: 999,
+    backgroundColor: '#E5F0EF',
+  },
+  loadingChipWide: {
+    width: 112,
+  },
+  loadingChipMedium: {
+    width: 94,
+  },
+  loadingChipNarrow: {
+    width: 88,
+  },
+  loadingCardSkeleton: {
+    height: 196,
+    borderRadius: 18,
+    backgroundColor: '#E5F0EF',
+  },
+  loadingFooter: {
+    marginTop: 6,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
+    gap: 8,
   },
   loadingText: {
-    marginTop: 10,
     fontSize: 14,
-    color: '#64748B',
+    color: COLORS.textMuted,
   },
   errorContainer: {
     flex: 1,
@@ -903,7 +989,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#0284C7',
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -917,7 +1003,7 @@ const styles = StyleSheet.create({
     right: 22,
     bottom: 26,
     borderRadius: 30,
-    shadowColor: '#0284C7',
+    shadowColor: '#0EA5A4',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
