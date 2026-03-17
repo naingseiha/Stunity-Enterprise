@@ -608,32 +608,22 @@ export default function ProfileScreen() {
                         <Ionicons name="create-outline" size={16} color="#fff" style={{ marginRight: 4 }} />
                         <Text style={styles.capsuleBtnFilledText}>{t('profile.editProfile')}</Text>
                       </TouchableOpacity>
-
-                      {/* Secondary Actions Row */}
-                      <View style={styles.secondaryActionRow}>
-                        {currentUser?.role === 'TEACHER' && (
-                          <TouchableOpacity
-                            style={[styles.secondaryActionBtn, { backgroundColor: '#F0F9FF', borderColor: '#BAE6FD', borderWidth: 1 }]}
-                            onPress={() => navigation.navigate('AttendanceCheckIn' as any)}
-                            activeOpacity={0.7}
-                          >
-                            <View style={styles.secondaryActionContent}>
-                              <Ionicons name="finger-print-outline" size={18} color="#0284C7" style={{ marginRight: 6 }} />
-                              <Text style={[styles.secondaryActionText, { color: '#0284C7' }]}>{t('profile.attendance')}</Text>
-                            </View>
-                          </TouchableOpacity>
-                        )}
-                        <TouchableOpacity
-                          style={[styles.secondaryActionBtn, { backgroundColor: '#FFFBEB', borderColor: '#FEF08A', borderWidth: 1 }]}
-                          onPress={() => navigation.navigate('QuizStudio' as any)}
-                          activeOpacity={0.7}
-                        >
-                          <View style={styles.secondaryActionContent}>
-                            <Ionicons name="cube-outline" size={18} color="#D97706" style={{ marginRight: 6 }} />
-                            <Text style={[styles.secondaryActionText, { color: '#D97706' }]}>{t('profile.quizStudio')}</Text>
-                          </View>
-                        </TouchableOpacity>
-                      </View>
+                      <TouchableOpacity
+                        style={styles.userCardActionBtn}
+                        onPress={() => navigation.navigate('UserCard' as any)}
+                        activeOpacity={0.82}
+                      >
+                        <LinearGradient
+                          colors={['#FFC53D', '#FFA600']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={StyleSheet.absoluteFill}
+                        />
+                        <Ionicons name="card-outline" size={16} color="#78350F" style={{ marginRight: 5 }} />
+                        <Text style={styles.userCardActionText}>
+                          {t('profile.userCard.cta', 'Open My Education Card')}
+                        </Text>
+                      </TouchableOpacity>
                     </View>
                   ) : (
                     // Other user's profile: Follow + Message
@@ -1246,26 +1236,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#78350F',
   },
-
-  secondaryActionRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  secondaryActionBtn: {
-    flex: 1,
+  userCardActionBtn: {
     borderRadius: 50,
-  },
-  secondaryActionContent: {
-    flex: 1,
-    flexDirection: 'row',
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    flexDirection: 'row',
+    paddingVertical: 14,
+    ...Shadows.md,
   },
-  secondaryActionText: {
-    fontSize: 14,
+  userCardActionText: {
+    fontSize: 15,
     fontWeight: '700',
-    color: '#0284C7',
+    color: '#78350F',
   },
   // ── Legacy (kept for followPill if needed elsewhere) ──
   editPill: {

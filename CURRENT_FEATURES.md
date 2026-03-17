@@ -8,6 +8,14 @@
 
 ## ⚡ Latest Rollout (Mar 17, 2026)
 
+- **Education Card Hub + sidebar-first profile actions (mobile)**
+  - Added a premium **My Education Card** screen with selectable styles/themes, front/back view switching, and horizontal/vertical layouts.
+  - Latest card pass refined the design to a cleaner premium visual style and upgraded in-card profile avatar treatment.
+  - Front/back card surfaces now keep identical fixed heights per orientation for stable transitions.
+  - Sidebar now acts as a card-first hub with quick menu actions under the card (including teacher attendance and quiz studio).
+  - Mobile Events is fully implemented (calendar list, event detail, RSVP) using feed-service calendar APIs.
+  - Attendance/settings navigation flow was hardened so back actions no longer reopen stale attendance screens.
+
 - **Attendance GPS reliability + recovery (mobile)**
   - Tapping the top GPS section now performs robust manual re-location (permission/service re-check + high-accuracy refresh).
   - Better denied/disabled handling with Settings shortcut and clearer fallback states before attendance verification.

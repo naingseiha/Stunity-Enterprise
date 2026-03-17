@@ -197,6 +197,35 @@ export const AttendanceReportScreen = () => {
         fetchSummary();
     };
 
+    const navigateToFeedTab = useCallback(() => {
+        const nav = navigation as any;
+        const currentState = nav.getState?.();
+        const hasStackHistory =
+            typeof currentState?.index === 'number' && currentState.index > 0;
+
+        if (hasStackHistory && typeof nav.popToTop === 'function') {
+            nav.popToTop();
+        }
+
+        const tabNavigator = nav.getParent?.();
+        const tabRouteNames: string[] = tabNavigator?.getState?.()?.routeNames || [];
+        if (tabRouteNames.includes('FeedTab')) {
+            tabNavigator.navigate('FeedTab', { screen: 'Feed' });
+            return;
+        }
+
+        const currentRouteNames: string[] = currentState?.routeNames || [];
+        if (currentRouteNames.includes('Feed')) {
+            nav.navigate('Feed');
+            return;
+        }
+
+        nav.navigate?.('MainTabs', {
+            screen: 'FeedTab',
+            params: { screen: 'Feed' },
+        });
+    }, [navigation]);
+
     if (loading) {
         return (
             <View style={styles.centerContainer}>
@@ -267,7 +296,7 @@ export const AttendanceReportScreen = () => {
                         style={styles.backButton}
                         onPress={() => {
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                            navigation.goBack();
+                            navigateToFeedTab();
                         }}
                     >
                         <Ionicons name="chevron-back" size={20} color={BRAND_TEAL} />

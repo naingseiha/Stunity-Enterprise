@@ -27,9 +27,9 @@ import { Sidebar } from '@/components/navigation';
 import { NavigationProvider, useNavigationContext } from '@/contexts';
 
 // Implemented Screens
-import { FeedScreen, CreatePostScreen, EditPostScreen, PostDetailScreen, CommentsScreen, BookmarksScreen, MyPostsScreen, SearchScreen, SuggestedUsersScreen } from '@/screens/feed';
+import { FeedScreen, CreatePostScreen, EditPostScreen, PostDetailScreen, CommentsScreen, BookmarksScreen, MyPostsScreen, EventsScreen, EventDetailScreen, SearchScreen, SuggestedUsersScreen } from '@/screens/feed';
 import { LearnScreen, CourseDetailScreen, LessonViewerScreen, CreateCourseScreen } from '@/screens/learn';
-import { ProfileScreen, EditProfileScreen, SettingsScreen, PasswordSecurityScreen, AcademicProfileScreen, ManageDeadlinesScreen } from '@/screens/profile';
+import { ProfileScreen, EditProfileScreen, UserCardScreen, SettingsScreen, PasswordSecurityScreen, AcademicProfileScreen, ManageDeadlinesScreen } from '@/screens/profile';
 import { ConversationsScreen, ChatScreen, NewMessageScreen } from '@/screens/messages';
 import { ClubsScreen, ClubDetailsScreen, CreateClubScreen } from '@/screens/clubs';
 import {
@@ -71,8 +71,6 @@ const PlaceholderScreen = ({ title }: { title: string }) => (
 
 // Feed Stack Screens (placeholders for remaining)
 const HashtagScreen = () => <PlaceholderScreen title="Hashtag" />;
-const EventsScreen = () => <PlaceholderScreen title="Events" />;
-const EventDetailScreen = () => <PlaceholderScreen title="Event Detail" />;
 
 // Learn Stack Screens (placeholders for remaining)
 const EditCourseScreen = () => <PlaceholderScreen title="Edit Course" />;
@@ -170,6 +168,7 @@ const ProfileStackNavigator = () => (
   <ProfileStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true }}>
     <ProfileStack.Screen name="Profile" component={ProfileScreen} />
     <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} />
+    <ProfileStack.Screen name="UserCard" component={UserCardScreen} />
     <ProfileStack.Screen name="Connections" component={ConnectionsScreen} />
     <ProfileStack.Screen name="Settings" component={SettingsScreen} />
     <ProfileStack.Screen name="PasswordSecurity" component={PasswordSecurityScreen} />
@@ -200,7 +199,9 @@ const MainNavigatorContent = () => {
     const screenToTabMap: Record<string, { tab: string; screen?: string; params?: Record<string, unknown> }> = {
       'Settings': { tab: 'ProfileTab', screen: 'Settings' },
       'Bookmarks': { tab: 'ProfileTab', screen: 'Bookmarks' },
+      'AttendanceCheckIn': { tab: 'ProfileTab', screen: 'AttendanceCheckIn' },
       'MyPosts': { tab: 'ProfileTab', screen: 'MyPosts' },
+      'UserCard': { tab: 'ProfileTab', screen: 'UserCard' },
       'Connections': { tab: 'ProfileTab', screen: 'Connections', params: { type: 'followers' } },
       'EditProfile': { tab: 'ProfileTab', screen: 'EditProfile' },
       'ProfileTab': { tab: 'ProfileTab' },

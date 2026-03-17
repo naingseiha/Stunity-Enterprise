@@ -1,13 +1,12 @@
 /**
  * Sidebar Component
- * 
- * Premium sidebar menu — enterprise e-learning design
- * - Gradient profile card matching feed performance card style
- * - Clean menu items with colored icon circles
- * - Refined logout with confirmation
+ *
+ * Card-first sidebar flow:
+ * - Premium education card shown at the top
+ * - Navigation menu shown below the card
  */
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -16,22 +15,39 @@ import {
   ScrollView,
   Modal,
   Platform,
-  Dimensions,
-  Image,
   StatusBar,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar } from '@/components/common';
 import { useAuthStore } from '@/stores';
 import { useTranslation } from 'react-i18next';
+import {
+  DEFAULT_USER_CARD_ORIENTATION,
+  DEFAULT_USER_CARD_STYLE_ID,
+  UserCardOrientation,
+  UserCardStyleId,
+  USER_CARD_ROLE_ICONS,
+  formatUserCardExpiry,
+  formatUserCardNumber,
+  formatUserCardVerificationCode,
+  getUserCardStyleById,
+  getUserRoleLabel,
+} from '@/config/userCardStyles';
+import {
+  getUserCardOrientationPreference,
+  getUserCardStylePreference,
+} from '@/services/userCardPreferences';
 
 import StunityLogo from '../../../assets/Stunity.svg';
+
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 interface MenuItem {
   key: string;
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IoniconsName;
   iconColor: string;
   iconBg: string;
   badge?: number;
@@ -47,11 +63,58 @@ interface SidebarProps {
 export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) {
   const { user, logout } = useAuthStore();
   const { t } = useTranslation();
+  const [selectedStyleId, setSelectedStyleId] = useState<UserCardStyleId>(DEFAULT_USER_CARD_STYLE_ID);
+  const [selectedOrientation, setSelectedOrientation] = useState<UserCardOrientation>(DEFAULT_USER_CARD_ORIENTATION);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    let mounted = true;
+
+    Promise.all([getUserCardStylePreference(), getUserCardOrientationPreference()])
+      .then(([styleId, orientation]) => {
+        if (!mounted) return;
+        setSelectedStyleId(styleId);
+        setSelectedOrientation(orientation);
+      })
+      .catch((error) => {
+        console.error('Failed to load card preferences in sidebar:', error);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [visible]);
+
+  const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
+  const role = user?.role ?? 'STUDENT';
+  const selectedCardStyle = useMemo(
+    () => getUserCardStyleById(selectedStyleId),
+    [selectedStyleId]
+  );
+  const roleText = getUserRoleLabel(role, t);
+  const roleIcon = USER_CARD_ROLE_ICONS[role];
+  const cardNumber = formatUserCardNumber(user?.id, role);
+  const expiresAt = formatUserCardExpiry(user?.createdAt);
+  const verificationCode = formatUserCardVerificationCode(user?.id);
+  const institutionName = user?.school?.name || t('profile.userCard.defaultInstitution', 'Stunity Learning Network');
+  const isVertical = selectedOrientation === 'vertical';
+  const attendanceMenuItem: MenuItem | null = role === 'TEACHER'
+    ? {
+      key: 'attendance',
+      label: t('profile.attendance'),
+      icon: 'finger-print-outline',
+      iconColor: '#0284C7',
+      iconBg: '#E0F2FE',
+      onPress: () => { onNavigate('AttendanceCheckIn'); onClose(); },
+    }
+    : null;
 
   const menuItems: MenuItem[] = [
+    ...(attendanceMenuItem ? [attendanceMenuItem] : []),
     {
       key: 'leaderboard',
-      label: t('settings.achievements'), // Reusing achievements label or can add leaderboard
+      label: t('settings.achievements'),
       icon: 'podium',
       iconColor: '#8B5CF6',
       iconBg: '#EDE9FE',
@@ -59,7 +122,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
     },
     {
       key: 'events',
-      label: t('auth.forParents').replace('FOR ', ''), // Simplified
+      label: t('profile.userCard.eventsMenu', 'Events'),
       icon: 'calendar',
       iconColor: '#EC4899',
       iconBg: '#FCE7F3',
@@ -72,6 +135,14 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
       iconColor: '#6366F1',
       iconBg: '#EEF2FF',
       onPress: () => { onNavigate('Bookmarks'); onClose(); },
+    },
+    {
+      key: 'quiz-studio',
+      label: t('profile.quizStudio'),
+      icon: 'cube-outline',
+      iconColor: '#D97706',
+      iconBg: '#FFEDD5',
+      onPress: () => { onNavigate('QuizStudio'); onClose(); },
     },
     {
       key: 'connections',
@@ -114,11 +185,6 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
     );
   };
 
-  const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
-  const userRole = user?.role === 'TEACHER' ? 'Teacher'
-    : user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'SCHOOL_ADMIN' ? 'Admin'
-      : 'Student';
-
   return (
     <Modal
       visible={visible}
@@ -130,7 +196,6 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-        {/* Header with Logo and Close */}
         <View style={styles.header}>
           <StunityLogo width={120} height={30} />
           <TouchableOpacity
@@ -147,41 +212,154 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* Profile Card */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => { onNavigate('Profile'); onClose(); }}
-            style={styles.profileCard}
-          >
-            <Avatar
-              uri={user?.profilePictureUrl}
-              name={userName}
-              size="lg"
-              showBorder={false}
-              gradientBorder="none"
-            />
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{userName}</Text>
-              <View style={styles.profileRoleBadge}>
-                <Ionicons
-                  name={userRole === 'Teacher' ? 'school' : userRole === 'Admin' ? 'shield-checkmark' : 'person'}
-                  size={11}
-                  color="#0EA5E9"
-                />
-                <Text style={styles.profileRoleText}>{userRole}</Text>
+          <View style={styles.identitySection}>
+            <View style={styles.identityHeader}>
+              <Avatar
+                uri={user?.profilePictureUrl}
+                name={userName}
+                size="md"
+                showBorder={false}
+                gradientBorder="none"
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.identityHello}>
+                  {t('profile.userCard.hello', 'Hello')}, {user?.firstName || t('common.profile', 'Profile')}
+                </Text>
+                <Text style={styles.identityInstitution}>{institutionName}</Text>
+              </View>
+              <View style={[styles.identityRoleChip, { backgroundColor: selectedCardStyle.chipBackground }]}>
+                <Ionicons name={roleIcon} size={13} color="#0F172A" />
+                <Text style={styles.identityRoleText}>{roleText}</Text>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
-          </TouchableOpacity>
 
-          {/* Menu Items */}
+            <Text style={styles.cardPreviewLabel}>
+              {t('profile.userCard.previewLabel', 'Preview')} · {isVertical
+                ? t('profile.userCard.vertical', 'Vertical')
+                : t('profile.userCard.horizontal', 'Horizontal')}
+            </Text>
+
+            <LinearGradient
+              colors={selectedCardStyle.gradient}
+              style={[styles.card, isVertical ? styles.cardVertical : styles.cardHorizontal]}
+            >
+              <View style={[styles.cardGlowOne, { backgroundColor: selectedCardStyle.panelTint }]} />
+              <View style={[styles.cardGlowTwo, { backgroundColor: selectedCardStyle.panelTint }]} />
+              {selectedCardStyle.template === 'split-stripe' && (
+                <View style={[styles.cardTemplateStripe, { backgroundColor: selectedCardStyle.mutedForeground }]} />
+              )}
+              {selectedCardStyle.template === 'glass-grid' && (
+                <View style={[styles.cardTemplateBand, { backgroundColor: selectedCardStyle.panelTint }]} />
+              )}
+
+              <View style={styles.cardTopRow}>
+                <View>
+                  <Text style={[styles.cardBrand, { color: selectedCardStyle.foreground }]}>STUNITY</Text>
+                  <Text style={[styles.cardBrandSub, { color: selectedCardStyle.mutedForeground }]}>
+                    {t('profile.userCard.eduPass', 'EDU PASS')}
+                  </Text>
+                </View>
+                <View style={[styles.verifiedWrap, { backgroundColor: selectedCardStyle.panelTint }]}>
+                  <Ionicons name="shield-checkmark" size={15} color={selectedCardStyle.accent} />
+                  <Text style={[styles.verifiedText, { color: selectedCardStyle.accent }]}>
+                    {t('profile.userCard.verified', 'Verified')}
+                  </Text>
+                </View>
+              </View>
+
+              {isVertical ? (
+                <>
+                  <View style={[styles.cardVerticalAvatarWrap, { borderColor: selectedCardStyle.accent, backgroundColor: selectedCardStyle.panelTint }]}>
+                    <Avatar
+                      uri={user?.profilePictureUrl}
+                      name={userName}
+                      size="sm"
+                      showBorder={false}
+                      gradientBorder="none"
+                    />
+                  </View>
+                  <Text style={[styles.cardVerticalName, { color: selectedCardStyle.foreground }]} numberOfLines={1}>
+                    {userName}
+                  </Text>
+                  <Text style={[styles.cardVerticalRole, { color: selectedCardStyle.mutedForeground }]} numberOfLines={1}>
+                    {roleText}
+                  </Text>
+                  <View style={[styles.cardVerticalInstitution, { backgroundColor: selectedCardStyle.panelTint }]}>
+                    <Text style={[styles.cardVerticalInstitutionText, { color: selectedCardStyle.foreground }]} numberOfLines={2}>
+                      {institutionName}
+                    </Text>
+                  </View>
+
+                  <View style={styles.cardMetaRowVertical}>
+                    <View style={styles.cardMetaCol}>
+                      <Text style={[styles.cardMetaLabel, { color: selectedCardStyle.mutedForeground }]}>
+                        {t('profile.userCard.expires', 'Expires')}
+                      </Text>
+                      <Text style={[styles.cardMetaValue, { color: selectedCardStyle.foreground }]}>{expiresAt}</Text>
+                    </View>
+                    <View style={styles.cardMetaCol}>
+                      <Text style={[styles.cardMetaLabel, { color: selectedCardStyle.mutedForeground }]}>
+                        {t('profile.userCard.code', 'Code')}
+                      </Text>
+                      <Text style={[styles.cardMetaValue, { color: selectedCardStyle.foreground }]}>
+                        {verificationCode.slice(-4)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text style={[styles.cardNumberVertical, { color: selectedCardStyle.foreground }]}>{cardNumber}</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={[styles.cardNumber, { color: selectedCardStyle.foreground }]}>{cardNumber}</Text>
+
+                  <View style={styles.cardMetaRow}>
+                    <View style={styles.cardMetaCol}>
+                      <Text style={[styles.cardMetaLabel, { color: selectedCardStyle.mutedForeground }]}>
+                        {t('profile.userCard.holder', 'Holder')}
+                      </Text>
+                      <Text style={[styles.cardMetaValue, { color: selectedCardStyle.foreground }]} numberOfLines={1}>
+                        {user?.firstName || t('common.profile', 'Profile')}
+                      </Text>
+                    </View>
+                    <View style={styles.cardMetaCol}>
+                      <Text style={[styles.cardMetaLabel, { color: selectedCardStyle.mutedForeground }]}>
+                        {t('profile.userCard.expires', 'Expires')}
+                      </Text>
+                      <Text style={[styles.cardMetaValue, { color: selectedCardStyle.foreground }]}>{expiresAt}</Text>
+                    </View>
+                    <View style={styles.cardMetaCol}>
+                      <Text style={[styles.cardMetaLabel, { color: selectedCardStyle.mutedForeground }]}>
+                        {t('profile.userCard.code', 'Code')}
+                      </Text>
+                      <Text style={[styles.cardMetaValue, { color: selectedCardStyle.foreground }]}>
+                        {verificationCode.slice(-4)}
+                      </Text>
+                    </View>
+                  </View>
+                </>
+              )}
+            </LinearGradient>
+
+            <TouchableOpacity
+              activeOpacity={0.72}
+              onPress={() => { onNavigate('Profile'); onClose(); }}
+              style={styles.profileShortcut}
+            >
+              <Ionicons name="person-circle-outline" size={18} color="#1D4ED8" />
+              <Text style={styles.profileShortcutText}>{t('settings.viewProfile')}</Text>
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.menuSection}>
+            <Text style={styles.menuHeaderText}>{t('profile.userCard.sidebarMenuTitle', 'Quick Menu')}</Text>
+
             {menuItems.map((item) => (
               <TouchableOpacity
                 key={item.key}
                 style={styles.menuItem}
                 onPress={item.onPress}
-                activeOpacity={0.6}
+                activeOpacity={0.62}
               >
                 <View style={[styles.menuIconCircle, { backgroundColor: item.iconBg }]}>
                   <Ionicons name={item.icon} size={20} color={item.iconColor} />
@@ -199,10 +377,8 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
             ))}
           </View>
 
-          {/* Divider */}
           <View style={styles.divider} />
 
-          {/* Logout */}
           <TouchableOpacity
             style={styles.logoutButton}
             onPress={handleLogout}
@@ -214,9 +390,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
             <Text style={styles.logoutText}>{t('common.logout')}</Text>
           </TouchableOpacity>
 
-          {/* App Version */}
           <Text style={styles.versionText}>Stunity v1.0.0</Text>
-
           <View style={styles.bottomSpacer} />
         </ScrollView>
       </View>
@@ -237,10 +411,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
   },
-  logo: {
-    width: 120,
-    height: 30,
-  },
   closeButton: {
     width: 40,
     height: 40,
@@ -255,53 +425,231 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 20,
   },
-
-  // ── Profile Card ──
-  profileCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  identitySection: {
     marginHorizontal: 16,
     marginTop: 8,
-    marginBottom: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 16,
-    gap: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    marginBottom: 16,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 18,
+    padding: 12,
   },
-  profileInfo: {
-    flex: 1,
-  },
-  profileName: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#1F2937',
-    letterSpacing: -0.2,
-    marginBottom: 4,
-  },
-  profileRoleBadge: {
+  identityHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E0F2FE',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 10,
-    gap: 4,
-    alignSelf: 'flex-start',
+    gap: 10,
+    marginBottom: 12,
   },
-  profileRoleText: {
+  identityHello: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.2,
+  },
+  identityInstitution: {
+    marginTop: 2,
     fontSize: 12,
-    fontWeight: '600',
-    color: '#0EA5E9',
+    fontWeight: '500',
+    color: '#64748B',
   },
-
-  // ── Menu Items ──
+  identityRoleChip: {
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: '#E2E8F0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  identityRoleText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  cardPreviewLabel: {
+    marginBottom: 8,
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  card: {
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  cardHorizontal: {
+    minHeight: 178,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  cardVertical: {
+    width: 220,
+    minHeight: 290,
+    alignSelf: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  cardTemplateStripe: {
+    position: 'absolute',
+    top: -20,
+    right: 34,
+    width: 28,
+    height: 340,
+    transform: [{ rotate: '16deg' }],
+    opacity: 0.35,
+  },
+  cardTemplateBand: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 18,
+    height: 18,
+    borderRadius: 8,
+  },
+  cardVerticalAvatarWrap: {
+    marginTop: 14,
+    alignSelf: 'center',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardVerticalName: {
+    marginTop: 8,
+    textAlign: 'center',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  cardVerticalRole: {
+    marginTop: 2,
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  cardVerticalInstitution: {
+    marginTop: 9,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+  },
+  cardVerticalInstitutionText: {
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '700',
+    lineHeight: 14,
+  },
+  cardMetaRowVertical: {
+    marginTop: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  cardNumberVertical: {
+    marginTop: 12,
+    fontSize: 14,
+    letterSpacing: 1.4,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  cardGlowOne: {
+    position: 'absolute',
+    width: 130,
+    height: 130,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    top: -38,
+    right: -38,
+  },
+  cardGlowTwo: {
+    position: 'absolute',
+    width: 110,
+    height: 110,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    bottom: -46,
+    left: -30,
+  },
+  cardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cardBrand: {
+    fontSize: 20,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  cardBrandSub: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.1,
+  },
+  verifiedWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  verifiedText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  cardNumber: {
+    marginTop: 26,
+    fontSize: 17,
+    letterSpacing: 1.8,
+    fontWeight: '700',
+  },
+  cardMetaRow: {
+    marginTop: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 6,
+  },
+  cardMetaCol: {
+    flex: 1,
+  },
+  cardMetaLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    marginBottom: 2,
+    textTransform: 'uppercase',
+  },
+  cardMetaValue: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  profileShortcut: {
+    marginTop: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    paddingVertical: 10,
+  },
+  profileShortcutText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1D4ED8',
+  },
   menuSection: {
     paddingHorizontal: 16,
+  },
+  menuHeaderText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 4,
   },
   menuItem: {
     flexDirection: 'row',
@@ -342,16 +690,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
-
-  // ── Divider ──
   divider: {
     height: 1,
     backgroundColor: '#F3F4F6',
     marginHorizontal: 16,
     marginVertical: 12,
   },
-
-  // ── Logout ──
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -374,8 +718,6 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     letterSpacing: -0.2,
   },
-
-  // ── Footer ──
   versionText: {
     textAlign: 'center',
     fontSize: 12,

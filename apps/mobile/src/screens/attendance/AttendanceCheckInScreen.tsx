@@ -246,6 +246,35 @@ export const AttendanceCheckInScreen = () => {
         return session === 'MORNING' ? t('attendance.morning') : t('attendance.afternoon');
     }, [t]);
 
+    const navigateToFeedTab = useCallback(() => {
+        const nav = navigation as any;
+        const currentState = nav.getState?.();
+        const hasStackHistory =
+            typeof currentState?.index === 'number' && currentState.index > 0;
+
+        if (hasStackHistory && typeof nav.popToTop === 'function') {
+            nav.popToTop();
+        }
+
+        const tabNavigator = nav.getParent?.();
+        const tabRouteNames: string[] = tabNavigator?.getState?.()?.routeNames || [];
+        if (tabRouteNames.includes('FeedTab')) {
+            tabNavigator.navigate('FeedTab', { screen: 'Feed' });
+            return;
+        }
+
+        const currentRouteNames: string[] = currentState?.routeNames || [];
+        if (currentRouteNames.includes('Feed')) {
+            nav.navigate('Feed');
+            return;
+        }
+
+        nav.navigate?.('MainTabs', {
+            screen: 'FeedTab',
+            params: { screen: 'Feed' },
+        });
+    }, [navigation]);
+
     const fetchTodayStatus = useCallback(async () => {
         try {
             const result = await attendanceService.getTodayStatus();
@@ -543,7 +572,7 @@ export const AttendanceCheckInScreen = () => {
                 <View style={[StyleSheet.absoluteFill, { backgroundColor: '#F8FAFC' }]} />
                 <SafeAreaView style={styles.safeArea} edges={['top']}>
                     <View style={styles.navHeader}>
-                        <TouchableOpacity style={styles.navIconButton} onPress={() => navigation.goBack()}>
+                        <TouchableOpacity style={styles.navIconButton} onPress={navigateToFeedTab}>
                             <Ionicons name="chevron-back" size={22} color={BRAND_TEAL} />
                         </TouchableOpacity>
                         <View style={styles.navTitleWrap}>
@@ -583,7 +612,7 @@ export const AttendanceCheckInScreen = () => {
                         style={styles.navIconButton}
                         onPress={() => {
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                            navigation.goBack();
+                            navigateToFeedTab();
                         }}
                     >
                         <Ionicons name="chevron-back" size={24} color={BRAND_TEAL} />

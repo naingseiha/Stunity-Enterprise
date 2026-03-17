@@ -150,6 +150,7 @@ export type ClubsStackParamList = {
 export type ProfileStackParamList = {
   Profile: { userId?: string } | undefined;
   EditProfile: undefined;
+  UserCard: undefined;
   Connections: { type: 'followers' | 'following' };
   Settings: undefined;
   PasswordSecurity: undefined;

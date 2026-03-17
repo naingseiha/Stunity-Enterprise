@@ -224,6 +224,44 @@ export default function SettingsScreen() {
         navigation.navigate('ProfileTab', { screen: 'Profile' });
     }, [navigation]);
 
+    const navigateToFeedTab = useCallback(() => {
+        const tabNavigator = navigation.getParent?.();
+        const tabRouteNames: string[] = tabNavigator?.getState?.()?.routeNames || [];
+        if (tabRouteNames.includes('FeedTab')) {
+            tabNavigator.navigate('FeedTab', { screen: 'Feed' });
+            return;
+        }
+
+        const currentRouteNames: string[] = navigation.getState?.()?.routeNames || [];
+        if (currentRouteNames.includes('Feed')) {
+            navigation.navigate('Feed');
+            return;
+        }
+
+        navigation.navigate('MainTabs', {
+            screen: 'FeedTab',
+            params: { screen: 'Feed' },
+        });
+    }, [navigation]);
+
+    const handleBackPress = useCallback(() => {
+        const state = navigation.getState?.();
+        const routes = state?.routes || [];
+        const index = typeof state?.index === 'number' ? state.index : routes.length - 1;
+        const previousRouteName = index > 0 ? routes[index - 1]?.name : undefined;
+
+        if (previousRouteName === 'AttendanceCheckIn' || previousRouteName === 'AttendanceReport') {
+            const nav = navigation as any;
+            if (typeof nav.popToTop === 'function') {
+                nav.popToTop();
+            }
+            navigateToFeedTab();
+            return;
+        }
+
+        navigation.goBack();
+    }, [navigation, navigateToFeedTab]);
+
     const openExternalLink = useCallback(async (url: string) => {
         try {
             await Linking.openURL(url);
@@ -716,7 +754,7 @@ export default function SettingsScreen() {
             {/* Animated Header */}
             <Animated.View>
                 <SafeAreaView edges={['top']} style={styles.header}>
-                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                    <TouchableOpacity style={styles.backBtn} onPress={handleBackPress}>
                         <Ionicons name="chevron-back" size={22} color="#1F2937" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>{t('common.settings')}</Text>

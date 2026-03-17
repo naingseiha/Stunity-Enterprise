@@ -20,6 +20,13 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 ## ✅ Completed Features (v23.6)
 
 ### ⚡ Latest Platform Updates (Mar 17, 2026)
+- **Education Card Hub + Navigation refinements (mobile)**
+  - Added a premium **My Education Card** experience with multiple themes, horizontal/vertical layout options, and front/back card views.
+  - Refined card visual language to a cleaner premium style (reference-aligned) and improved circular avatar presentation.
+  - Enforced consistent card dimensions so front/back sides keep the same height in both orientations.
+  - Upgraded hamburger sidebar into a card-first hub with quick actions below, including teacher attendance and quiz studio.
+  - Replaced mobile Events placeholders with working calendar list/detail/RSVP flow through feed-service calendar APIs.
+  - Fixed attendance/settings back-stack behavior so users no longer bounce back into stale attendance routes unexpectedly.
 - **Attendance GPS retry reliability (mobile)**
   - Tapping the attendance top GPS card now re-checks permissions/services and performs a stronger manual location refresh (high-accuracy + longer timeout).
   - Added better recovery UX for denied/disabled location (Settings shortcut + clearer fallback status handling).
