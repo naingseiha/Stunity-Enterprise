@@ -1,12 +1,34 @@
 # ✅ Stunity Enterprise — Current Features
 
-**Version:** 23.6 | **Updated:** March 17, 2026
+**Version:** 23.7 | **Updated:** March 17, 2026
 
 > This document lists all implemented and working features. For what's coming next, see NEXT_IMPLEMENTATION.md.
 
 ---
 
 ## ⚡ Latest Rollout (Mar 17, 2026)
+
+- **Mobile Clubs Screen Redesign**
+  - Complete redesign of `ClubsScreen.tsx` to match the app's white / flat-border card aesthetic.
+  - Club cards now use `backgroundColor: #FFFFFF`, `borderRadius: 16`, `borderColor: #E2E8F0` — identical to the Profile Performance tab card style.
+  - Card layout: icon chip + title in header row with "View →" link, description body, stacked member avatars + count, teal "Join Now →" pill, and a branded progress bar.
+  - All horizontal margins reduced from 20 px → 12 px to align with the social feed card spacing.
+  - `CLUB_TYPE_META` updated with per-type background tints and gradient icon colors.
+
+- **Mobile Create Club Screen Redesign**
+  - Full rewrite of `CreateClubScreen.tsx` with a modern teal gradient top bar, premium section cards, and a live preview.
+  - Club Type picker: 2×2 grid with gradient icon boxes (blue, teal, amber, purple) and checkmark overlay on selection.
+  - Privacy picker: Radio-button rows with colored icon circles and inner-dot radio indicators.
+  - Tags field: Live tag-pill previews below input.
+  - Live Preview card mirrors the real club card layout (icon, title, type badge, privacy badge, progress bar).
+  - Sticky Create button with solid teal gradient (`#0D9488 → #0F766E`) and disabled grey state.
+
+- **Mobile Browse Quizzes Screen Redesign**
+  - `BrowseQuizzesScreen.tsx` converted from dark purple glassmorphism to a light white card theme matching the rest of the app.
+  - Background changed to `#F6F8FB`; all purple/violet accents replaced with Stunity brand teal (`#09CFF7 / #06A8CC`).
+  - Card margins reduced from `paddingHorizontal: 16` (container) to `marginHorizontal: 12` on each card — matching PostCard feed pattern.
+  - Category filter chips: white with flat border, teal fill when active.
+  - Quiz cards: white `#FFFFFF` background, `borderRadius: 16`, `borderColor: #E2E8F0`, teal start-quiz gradient button.
 
 - **Education Card Hub + sidebar-first profile actions (mobile)**
   - Added a premium **My Education Card** screen with selectable styles/themes, front/back view switching, and horizontal/vertical layouts.

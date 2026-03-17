@@ -28,7 +28,12 @@ import * as Haptics from 'expo-haptics';
 
 import { browseQuizzes, QuizItem } from '@/services/quiz';
 
-const BACKGROUND_COLOR = '#0F172A';
+const BACKGROUND_COLOR = '#F6F8FB';
+// Stunity brand teal (from logo)
+const TEAL = '#09CFF7';
+const TEAL_DARK = '#06A8CC';
+const TEAL_LIGHT = '#E0F9FD';
+
 
 const CATEGORIES = [
     { id: 'ALL', label: 'All', icon: 'apps-outline' },
@@ -130,17 +135,14 @@ export default function BrowseQuizzesScreen() {
                 onPress={() => handleQuizPress(item)}
                 activeOpacity={0.85}
             >
-                <LinearGradient
-                    colors={['rgba(255,255,255,0.07)', 'rgba(255,255,255,0.03)']}
-                    style={styles.quizCardGradient}
-                >
+                <View style={styles.quizCardBody}>
                     {/* Header */}
                     <View style={styles.quizCardHeader}>
                         <View style={styles.quizIconCircle}>
-                            <Ionicons name="rocket" size={20} color="#A78BFA" />
+                            <Ionicons name="rocket" size={20} color={TEAL_DARK} />
                         </View>
                         {hasAttempt && (
-                            <View style={[styles.attemptBadge, { backgroundColor: item.userAttempt!.passed ? '#10B981' + '22' : '#EF4444' + '22' }]}>
+                            <View style={[styles.attemptBadge, { backgroundColor: item.userAttempt!.passed ? '#10B98122' : '#EF444422' }]}>
                                 <Ionicons
                                     name={item.userAttempt!.passed ? 'checkmark-circle' : 'close-circle'}
                                     size={12}
@@ -162,17 +164,17 @@ export default function BrowseQuizzesScreen() {
                     {/* Stats Row */}
                     <View style={styles.quizStatsRow}>
                         <View style={styles.quizStat}>
-                            <Ionicons name="document-text-outline" size={13} color="#64748B" />
+                            <Ionicons name="document-text-outline" size={13} color="#94A3B8" />
                             <Text style={styles.quizStatText}>{questionCount} Qs</Text>
                         </View>
                         {item.timeLimit ? (
                             <View style={styles.quizStat}>
-                                <Ionicons name="time-outline" size={13} color="#64748B" />
+                                <Ionicons name="time-outline" size={13} color="#94A3B8" />
                                 <Text style={styles.quizStatText}>{item.timeLimit}m</Text>
                             </View>
                         ) : null}
                         <View style={styles.quizStat}>
-                            <Ionicons name="star-outline" size={13} color="#64748B" />
+                            <Ionicons name="star-outline" size={13} color="#94A3B8" />
                             <Text style={styles.quizStatText}>{item.totalPoints} pts</Text>
                         </View>
                         {item.topicTags && item.topicTags.length > 0 && (
@@ -184,32 +186,29 @@ export default function BrowseQuizzesScreen() {
 
                     {/* CTA */}
                     <LinearGradient
-                        colors={hasAttempt ? ['#6366F1', '#4F46E5'] : ['#8B5CF6', '#7C3AED']}
+                        colors={[TEAL, TEAL_DARK]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
                         style={styles.ctaButton}
                     >
                         <Ionicons name={hasAttempt ? 'refresh' : 'play-circle'} size={16} color="#fff" />
-                        <Text style={styles.ctaButtonText}>{hasAttempt ? 'Retake' : 'Start Quiz'}</Text>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff' }}>{hasAttempt ? 'Retake' : 'Start Quiz'}</Text>
                     </LinearGradient>
-                </LinearGradient>
+                </View>
             </TouchableOpacity>
         );
     };
 
+
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" />
-            <LinearGradient
-                colors={[BACKGROUND_COLOR, '#131B2E']}
-                style={StyleSheet.absoluteFill}
-            />
+            <StatusBar barStyle="dark-content" />
 
             <SafeAreaView edges={['top']} style={styles.safeArea}>
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                        <Ionicons name="chevron-back" size={24} color="#fff" />
+                        <Ionicons name="chevron-back" size={24} color={TEAL_DARK} />
                     </TouchableOpacity>
                     <View style={styles.headerTitleContainer}>
                         <Text style={styles.headerTitle}>Browse Quizzes</Text>
@@ -268,11 +267,11 @@ export default function BrowseQuizzesScreen() {
                 {/* Quiz List */}
                 {loading ? (
                     <View style={styles.centerBox}>
-                        <ActivityIndicator size="large" color="#A78BFA" />
+                        <ActivityIndicator size="large" color={TEAL} />
                     </View>
                 ) : quizzes.length === 0 ? (
                     <View style={styles.centerBox}>
-                        <Ionicons name="search-outline" size={48} color="#334155" />
+                        <Ionicons name="search-outline" size={48} color="#CBD5E1" />
                         <Text style={styles.emptyText}>No quizzes found</Text>
                         <Text style={styles.emptySubText}>Try a different search or category</Text>
                     </View>
@@ -287,7 +286,7 @@ export default function BrowseQuizzesScreen() {
                         onEndReachedThreshold={0.3}
                         ListFooterComponent={
                             loadingMore ? (
-                                <ActivityIndicator size="small" color="#A78BFA" style={{ marginVertical: 16 }} />
+                                <ActivityIndicator size="small" color={TEAL} style={{ marginVertical: 16 }} />
                             ) : null
                         }
                     />
@@ -312,23 +311,23 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 14,
-        backgroundColor: 'rgba(255,255,255,0.10)',
+        backgroundColor: TEAL_LIGHT,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitleContainer: { flex: 1 },
-    headerTitle: { fontSize: 20, fontWeight: '700', color: '#F1F5F9' },
+    headerTitle: { fontSize: 20, fontWeight: '800', color: '#1E293B' },
     headerSubtitle: { fontSize: 13, color: '#64748B', marginTop: 1 },
 
     searchWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginHorizontal: 16,
+        marginHorizontal: 12,
         marginBottom: 12,
-        backgroundColor: 'rgba(255,255,255,0.06)',
+        backgroundColor: '#FFFFFF',
         borderRadius: 14,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: '#E2E8F0',
         paddingHorizontal: 14,
         paddingVertical: 10,
         gap: 10,
@@ -337,12 +336,12 @@ const styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         fontSize: 15,
-        color: '#F1F5F9',
+        color: '#1E293B',
         padding: 0,
     },
 
     categoriesContainer: {
-        paddingHorizontal: 16,
+        paddingHorizontal: 12,
         paddingBottom: 12,
         flexDirection: 'row',
         gap: 8,
@@ -354,26 +353,26 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingVertical: 8,
         borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.06)',
+        backgroundColor: '#FFFFFF',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: '#E2E8F0',
         height: 36,
     },
     categoryChipActive: {
-        backgroundColor: '#8B5CF6',
-        borderColor: '#7C3AED',
+        backgroundColor: TEAL,
+        borderColor: TEAL_DARK,
     },
     categoryChipText: {
         fontSize: 13,
         fontWeight: '500',
-        color: '#94A3B8',
+        color: '#64748B',
     },
     categoryChipTextActive: { color: '#fff' },
 
     listContent: {
-        paddingHorizontal: 16,
+        paddingHorizontal: 0,
         paddingBottom: 40,
-        gap: 12,
+        gap: 0,
     },
     centerBox: {
         flex: 1,
@@ -381,17 +380,21 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 8,
     },
-    emptyText: { fontSize: 17, fontWeight: '600', color: '#475569', marginTop: 8 },
-    emptySubText: { fontSize: 14, color: '#334155' },
+    emptyText: { fontSize: 17, fontWeight: '600', color: '#94A3B8', marginTop: 8 },
+    emptySubText: { fontSize: 14, color: '#CBD5E1' },
 
+    // Quiz cards — white, flat border (matching PostCard feed style)
     quizCard: {
-        borderRadius: 18,
+        borderRadius: 16,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: '#E2E8F0',
+        backgroundColor: '#FFFFFF',
+        marginHorizontal: 12,
+        marginBottom: 12,
     },
-    quizCardGradient: {
-        padding: 18,
+    quizCardBody: {
+        padding: 16,
         gap: 12,
     },
     quizCardHeader: {
@@ -402,8 +405,8 @@ const styles = StyleSheet.create({
     quizIconCircle: {
         width: 38,
         height: 38,
-        borderRadius: 19,
-        backgroundColor: 'rgba(167,139,250,0.12)',
+        borderRadius: 12,
+        backgroundColor: TEAL_LIGHT,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -422,7 +425,7 @@ const styles = StyleSheet.create({
     quizTitle: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#F1F5F9',
+        color: '#1E293B',
         lineHeight: 22,
     },
     quizDesc: {
@@ -451,11 +454,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         paddingVertical: 3,
         borderRadius: 6,
-        backgroundColor: 'rgba(99,102,241,0.15)',
+        backgroundColor: TEAL_LIGHT,
     },
     tagChipText: {
         fontSize: 11,
-        color: '#818CF8',
+        color: TEAL_DARK,
         fontWeight: '600',
     },
     ctaButton: {
@@ -466,9 +469,5 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         gap: 6,
     },
-    ctaButtonText: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: '#fff',
-    },
 });
+

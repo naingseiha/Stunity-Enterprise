@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Animated,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -18,15 +17,33 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 
-import StunityLogo from '../../../assets/Stunity.svg';
 import { clubsApi } from '@/api';
 import type { CreateClubData } from '@/api/clubs';
 
+// ── Brand colours ────────────────────────────────────────────────
+const TEAL       = '#0D9488';
+const TEAL_DARK  = '#0F766E';
+const TEAL_LIGHT = '#CCFBF1';
+
+const COLORS = {
+  background:    '#F6F8FB',
+  surface:       '#FFFFFF',
+  border:        '#E2E8F0',
+  borderFocus:   TEAL,
+  textPrimary:   '#1E293B',
+  textSecondary: '#475569',
+  textMuted:     '#94A3B8',
+  error:         '#EF4444',
+  errorSoft:     '#FEF2F2',
+  warning:       '#B45309',
+} as const;
+
+// ── Club type config ─────────────────────────────────────────────
 const CLUB_TYPES: Array<{
   id: CreateClubData['type'];
   name: string;
   icon: keyof typeof Ionicons.glyphMap;
-  color: string;
+  accent: string;
   soft: string;
   gradient: [string, string];
   description: string;
@@ -34,140 +51,104 @@ const CLUB_TYPES: Array<{
   {
     id: 'CASUAL_STUDY_GROUP',
     name: 'Study Group',
-    icon: 'people-outline',
-    color: '#0EA5A4',
-    soft: '#E2F6F4',
-    gradient: ['#24B7B1', '#0E9C96'],
+    icon: 'people',
+    accent: '#4B7BEC',
+    soft: '#EEF2FF',
+    gradient: ['#6C8EF5', '#4B7BEC'],
     description: 'Casual learning with peers',
   },
   {
     id: 'STRUCTURED_CLASS',
     name: 'Class',
-    icon: 'school-outline',
-    color: '#128E87',
-    soft: '#E0F3F1',
-    gradient: ['#31BBAE', '#138F88'],
+    icon: 'school',
+    accent: TEAL,
+    soft: TEAL_LIGHT,
+    gradient: [TEAL, TEAL_DARK],
     description: 'Formal structured course',
   },
   {
     id: 'PROJECT_GROUP',
     name: 'Project',
-    icon: 'rocket-outline',
-    color: '#C79822',
-    soft: '#FFF5DC',
-    gradient: ['#E1B84A', '#C99824'],
+    icon: 'rocket',
+    accent: '#F59E0B',
+    soft: '#FEF3C7',
+    gradient: ['#FBBF24', '#F59E0B'],
     description: 'Collaborative project team',
   },
   {
     id: 'EXAM_PREP',
     name: 'Exam Prep',
-    icon: 'book-outline',
-    color: '#1D9F95',
-    soft: '#E8F8F6',
-    gradient: ['#2FB4A7', '#B88E1A'],
+    icon: 'book',
+    accent: '#8B5CF6',
+    soft: '#F3E8FF',
+    gradient: ['#A78BFA', '#8B5CF6'],
     description: 'Test preparation group',
   },
 ];
 
+// ── Club mode config ─────────────────────────────────────────────
 const CLUB_MODES: Array<{
   id: CreateClubData['mode'];
   name: string;
   icon: keyof typeof Ionicons.glyphMap;
   description: string;
 }> = [
-  { id: 'PUBLIC', name: 'Public', icon: 'globe-outline', description: 'Anyone can join' },
-  { id: 'INVITE_ONLY', name: 'Invite Only', icon: 'lock-closed-outline', description: 'Join by invitation' },
-  {
-    id: 'APPROVAL_REQUIRED',
-    name: 'Approval Required',
-    icon: 'checkmark-circle-outline',
-    description: 'Join after approval',
-  },
+  { id: 'PUBLIC',            name: 'Public',           icon: 'globe-outline',           description: 'Anyone can discover and join' },
+  { id: 'INVITE_ONLY',       name: 'Invite Only',      icon: 'lock-closed-outline',     description: 'Join by member invitation only' },
+  { id: 'APPROVAL_REQUIRED', name: 'Approval Required', icon: 'checkmark-circle-outline', description: 'Request to join, admin approves' },
 ];
 
-const COLORS = {
-  background: '#F2F6F5',
-  surface: '#FFFFFF',
-  surfaceSoft: '#F8FCFB',
-  field: '#F4FAF9',
-  border: '#D7ECE9',
-  borderStrong: '#B9DDD8',
-  textPrimary: '#1E2F36',
-  textSecondary: '#4E6871',
-  textMuted: '#86A0A8',
-  primary: '#0EA5A4',
-  primaryStrong: '#0B8B8A',
-  primarySoft: '#E3F6F4',
-  secondary: '#E2B233',
-  secondarySoft: '#FFF6DB',
-} as const;
-
+// ── Screen ───────────────────────────────────────────────────────
 export default function CreateClubScreen() {
   const navigation = useNavigation<any>();
 
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedType, setSelectedType] = useState<CreateClubData['type']>('CASUAL_STUDY_GROUP');
-  const [selectedMode, setSelectedMode] = useState<CreateClubData['mode']>('PUBLIC');
-  const [tags, setTags] = useState('');
-  const [creating, setCreating] = useState(false);
+  const [name,            setName]            = useState('');
+  const [description,     setDescription]     = useState('');
+  const [selectedType,    setSelectedType]    = useState<CreateClubData['type']>('CASUAL_STUDY_GROUP');
+  const [selectedMode,    setSelectedMode]    = useState<CreateClubData['mode']>('PUBLIC');
+  const [tags,            setTags]            = useState('');
+  const [creating,        setCreating]        = useState(false);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  const [nameFocused,     setNameFocused]     = useState(false);
+  const [descFocused,     setDescFocused]     = useState(false);
 
   const selectedTypeConfig = useMemo(
-    () => CLUB_TYPES.find((type) => type.id === selectedType) || CLUB_TYPES[0],
+    () => CLUB_TYPES.find(t => t.id === selectedType) || CLUB_TYPES[0],
     [selectedType],
   );
-
   const selectedModeConfig = useMemo(
-    () => CLUB_MODES.find((mode) => mode.id === selectedMode) || CLUB_MODES[0],
+    () => CLUB_MODES.find(m => m.id === selectedMode) || CLUB_MODES[0],
     [selectedMode],
   );
-
   const parsedTags = useMemo(
-    () =>
-      tags
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter((tag) => tag.length > 0),
+    () => tags.split(',').map(t => t.trim()).filter(t => t.length > 0),
     [tags],
   );
 
-  const nameError = name.trim().length === 0 ? 'Club name is required.' : null;
+  const nameError        = name.trim().length === 0 ? 'Club name is required.' : null;
   const descriptionError = description.trim().length === 0 ? 'Description is required.' : null;
-  const canSubmit = !nameError && !descriptionError;
-  const showNameError = attemptedSubmit && !!nameError;
-  const showDescriptionError = attemptedSubmit && !!descriptionError;
-  const hasTooManyTags = parsedTags.length > 5;
+  const canSubmit        = !nameError && !descriptionError;
+  const showNameError    = attemptedSubmit && !!nameError;
+  const showDescError    = attemptedSubmit && !!descriptionError;
+  const hasTooManyTags   = parsedTags.length > 5;
 
   const handleCreate = async () => {
     setAttemptedSubmit(true);
-    if (!canSubmit) {
-      return;
-    }
+    if (!canSubmit) return;
 
     try {
       setCreating(true);
-
-      const payload: CreateClubData = {
-        name: name.trim(),
+      await clubsApi.createClub({
+        name:        name.trim(),
         description: description.trim(),
-        type: selectedType,
-        mode: selectedMode,
-        tags: parsedTags.length > 0 ? parsedTags.slice(0, 5) : undefined,
-      };
-
-      await clubsApi.createClub(payload);
-
-      Alert.alert('Success!', 'Your club has been created successfully!', [
-        {
-          text: 'OK',
-          onPress: () => {
-            navigation.goBack();
-          },
-        },
+        type:        selectedType,
+        mode:        selectedMode,
+        tags:        parsedTags.length > 0 ? parsedTags.slice(0, 5) : undefined,
+      });
+      Alert.alert('Club Created! 🎉', 'Your club is live and ready for members.', [
+        { text: 'Awesome', onPress: () => navigation.goBack() },
       ]);
     } catch (err: any) {
-      console.error('Failed to create club:', err);
       Alert.alert('Error', err?.message || 'Failed to create club. Please try again.');
     } finally {
       setCreating(false);
@@ -175,265 +156,289 @@ export default function CreateClubScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={s.root}>
+      <StatusBar barStyle="light-content" />
 
-      <SafeAreaView edges={['top']} style={styles.topSafeArea}>
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
-            <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
-          </TouchableOpacity>
+      {/* ── Top bar ── */}
+      <LinearGradient colors={[TEAL, TEAL_DARK]} style={s.topGradient}>
+        <SafeAreaView edges={['top']}>
+          <View style={s.topBar}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn} activeOpacity={0.8}>
+              <Ionicons name="chevron-back" size={22} color="#fff" />
+            </TouchableOpacity>
 
-          <StunityLogo width={108} height={30} />
+            <View style={s.topBarCenter}>
+              <Text style={s.topBarTitle}>Create Club</Text>
+              <Text style={s.topBarSub}>Set up your new learning space</Text>
+            </View>
 
-          <TouchableOpacity
-            onPress={handleCreate}
-            disabled={creating}
-            style={[styles.iconButton, !canSubmit && styles.iconButtonInactive]}
-          >
-            {creating ? (
-              <ActivityIndicator size="small" color={COLORS.primaryStrong} />
-            ) : (
-              <Ionicons
-                name="checkmark"
-                size={22}
-                color={canSubmit ? COLORS.primaryStrong : COLORS.textMuted}
-              />
-            )}
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+            <TouchableOpacity
+              style={[s.doneBtn, !canSubmit && s.doneBtnDisabled]}
+              onPress={handleCreate}
+              disabled={creating}
+              activeOpacity={0.85}
+            >
+              {creating
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Ionicons name="checkmark" size={20} color="#fff" />
+              }
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboardView}
-      >
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
+          style={s.scroll}
+          contentContainerStyle={s.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Animated.View style={styles.heroCard}>
-            <Text style={styles.heroTitle}>Create Club</Text>
-            <Text style={styles.heroSubtitle}>
-              Build a professional community with clear details and a focused purpose.
-            </Text>
 
-            <View style={styles.heroMetaRow}>
-              <View style={[styles.heroMetaPill, { backgroundColor: selectedTypeConfig.soft }]}> 
-                <Ionicons name={selectedTypeConfig.icon} size={14} color={selectedTypeConfig.color} />
-                <Text style={[styles.heroMetaText, { color: selectedTypeConfig.color }]}>
-                  {selectedTypeConfig.name}
-                </Text>
+          {/* ── Club Name ── */}
+          <View style={s.card}>
+            <View style={s.fieldLabel}>
+              <View style={[s.labelIcon, { backgroundColor: '#EEF2FF' }]}>
+                <Ionicons name="text" size={14} color="#4B7BEC" />
               </View>
-
-              <View style={styles.heroMetaPill}> 
-                <Ionicons name={selectedModeConfig.icon} size={14} color={COLORS.textSecondary} />
-                <Text style={styles.heroMetaText}>{selectedModeConfig.name}</Text>
-              </View>
+              <Text style={s.labelText}>Club Name <Text style={s.required}>*</Text></Text>
             </View>
-          </Animated.View>
-
-          <Animated.View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Club Name *</Text>
             <TextInput
-              style={[styles.input, showNameError && styles.inputError]}
+              style={[s.input, nameFocused && s.inputFocused, showNameError && s.inputError]}
               placeholder="e.g., Advanced Mathematics Study Group"
               placeholderTextColor={COLORS.textMuted}
               value={name}
               onChangeText={setName}
+              onFocus={() => setNameFocused(true)}
+              onBlur={() => setNameFocused(false)}
               maxLength={100}
             />
-            {showNameError ? <Text style={styles.inlineErrorText}>{nameError}</Text> : null}
-            <Text style={styles.charCount}>{name.length}/100</Text>
-          </Animated.View>
+            <View style={s.inputFooter}>
+              {showNameError
+                ? <Text style={s.errorText}>{nameError}</Text>
+                : <Text style={s.footerHint}>Give your club a clear, memorable name</Text>
+              }
+              <Text style={[s.charCount, name.length > 90 && s.charCountWarn]}>{name.length}/100</Text>
+            </View>
+          </View>
 
-          <Animated.View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Description *</Text>
+          {/* ── Description ── */}
+          <View style={s.card}>
+            <View style={s.fieldLabel}>
+              <View style={[s.labelIcon, { backgroundColor: TEAL_LIGHT }]}>
+                <Ionicons name="document-text" size={14} color={TEAL} />
+              </View>
+              <Text style={s.labelText}>Description <Text style={s.required}>*</Text></Text>
+            </View>
             <TextInput
-              style={[styles.input, styles.textArea, showDescriptionError && styles.inputError]}
+              style={[s.input, s.textArea, descFocused && s.inputFocused, showDescError && s.inputError]}
               placeholder="Tell others what this club is about and who should join..."
               placeholderTextColor={COLORS.textMuted}
               value={description}
               onChangeText={setDescription}
+              onFocus={() => setDescFocused(true)}
+              onBlur={() => setDescFocused(false)}
               multiline
-              numberOfLines={4}
+              numberOfLines={5}
               textAlignVertical="top"
               maxLength={500}
             />
-            {showDescriptionError ? <Text style={styles.inlineErrorText}>{descriptionError}</Text> : null}
-            <Text style={styles.charCount}>{description.length}/500</Text>
-          </Animated.View>
+            <View style={s.inputFooter}>
+              {showDescError
+                ? <Text style={s.errorText}>{descriptionError}</Text>
+                : <Text style={s.footerHint}>Be specific to attract the right members</Text>
+              }
+              <Text style={[s.charCount, description.length > 460 && s.charCountWarn]}>{description.length}/500</Text>
+            </View>
+          </View>
 
-          <Animated.View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Club Type *</Text>
-            <View style={styles.optionsGrid}>
-              {CLUB_TYPES.map((type) => {
-                const selected = selectedType === type.id;
+          {/* ── Club Type ── */}
+          <View style={s.card}>
+            <View style={s.fieldLabel}>
+              <View style={[s.labelIcon, { backgroundColor: '#FEF3C7' }]}>
+                <Ionicons name="apps" size={14} color="#F59E0B" />
+              </View>
+              <Text style={s.labelText}>Club Type <Text style={s.required}>*</Text></Text>
+            </View>
 
+            <View style={s.typesGrid}>
+              {CLUB_TYPES.map(type => {
+                const sel = selectedType === type.id;
                 return (
                   <TouchableOpacity
                     key={type.id}
-                    style={[
-                      styles.typeOption,
-                      selected && {
-                        borderColor: type.color,
-                        backgroundColor: type.soft,
-                        shadowColor: type.color,
-                        shadowOpacity: 0.14,
-                      },
-                    ]}
+                    style={[s.typeCard, sel && { borderColor: type.accent, backgroundColor: type.soft }]}
                     onPress={() => setSelectedType(type.id)}
-                    activeOpacity={0.86}
+                    activeOpacity={0.85}
                   >
-                    <View style={[styles.typeIconWrap, { backgroundColor: type.soft }]}> 
-                      <Ionicons name={type.icon} size={22} color={type.color} />
-                    </View>
-
-                    <Text style={styles.typeName}>{type.name}</Text>
-                    <Text style={styles.typeDescription}>{type.description}</Text>
-
-                    {selected ? (
-                      <View style={[styles.selectedBadge, { backgroundColor: type.color }]}> 
-                        <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                    {/* Selected checkmark */}
+                    {sel && (
+                      <View style={[s.typeCheck, { backgroundColor: type.accent }]}>
+                        <Ionicons name="checkmark" size={11} color="#fff" />
                       </View>
-                    ) : null}
+                    )}
+
+                    {/* Icon */}
+                    <LinearGradient
+                      colors={type.gradient}
+                      style={s.typeIconBox}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                    >
+                      <Ionicons name={type.icon} size={22} color="#fff" />
+                    </LinearGradient>
+
+                    <Text style={[s.typeName, sel && { color: type.accent }]}>{type.name}</Text>
+                    <Text style={s.typeDesc}>{type.description}</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
-          </Animated.View>
+          </View>
 
-          <Animated.View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Privacy *</Text>
-            <View style={styles.modeOptions}>
-              {CLUB_MODES.map((mode) => {
-                const selected = selectedMode === mode.id;
+          {/* ── Privacy ── */}
+          <View style={s.card}>
+            <View style={s.fieldLabel}>
+              <View style={[s.labelIcon, { backgroundColor: '#F3E8FF' }]}>
+                <Ionicons name="shield-checkmark" size={14} color="#8B5CF6" />
+              </View>
+              <Text style={s.labelText}>Privacy <Text style={s.required}>*</Text></Text>
+            </View>
 
+            <View style={s.modeList}>
+              {CLUB_MODES.map(mode => {
+                const sel = selectedMode === mode.id;
                 return (
                   <TouchableOpacity
                     key={mode.id}
-                    style={[styles.modeOption, selected && styles.modeOptionSelected]}
+                    style={[s.modeRow, sel && s.modeRowSelected]}
                     onPress={() => setSelectedMode(mode.id)}
-                    activeOpacity={0.86}
+                    activeOpacity={0.85}
                   >
-                    <View style={[styles.modeIconWrap, selected && styles.modeIconWrapSelected]}>
-                      <Ionicons
-                        name={mode.icon}
-                        size={18}
-                        color={selected ? COLORS.primaryStrong : COLORS.textSecondary}
-                      />
+                    <View style={[s.modeIconCircle, sel && s.modeIconCircleSel]}>
+                      <Ionicons name={mode.icon} size={17} color={sel ? TEAL : COLORS.textSecondary} />
                     </View>
-
-                    <View style={styles.modeInfo}>
-                      <Text style={[styles.modeName, selected && styles.modeNameSelected]}>{mode.name}</Text>
-                      <Text style={styles.modeDescription}>{mode.description}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.modeName, sel && s.modeNameSel]}>{mode.name}</Text>
+                      <Text style={s.modeDesc}>{mode.description}</Text>
                     </View>
-
-                    {selected ? (
-                      <Ionicons name="checkmark-circle" size={18} color={COLORS.primaryStrong} />
-                    ) : null}
+                    <View style={[s.modeRadio, sel && s.modeRadioSel]}>
+                      {sel && <View style={s.modeRadioDot} />}
+                    </View>
                   </TouchableOpacity>
                 );
               })}
             </View>
-          </Animated.View>
+          </View>
 
-          <Animated.View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Tags (Optional)</Text>
+          {/* ── Tags ── */}
+          <View style={s.card}>
+            <View style={s.fieldLabel}>
+              <View style={[s.labelIcon, { backgroundColor: '#FFF7ED' }]}>
+                <Ionicons name="pricetag" size={14} color="#F59E0B" />
+              </View>
+              <Text style={s.labelText}>Tags <Text style={s.optional}>(optional)</Text></Text>
+            </View>
             <TextInput
-              style={styles.input}
+              style={s.input}
               placeholder="e.g., Math, Calculus, Problem Solving"
               placeholderTextColor={COLORS.textMuted}
               value={tags}
               onChangeText={setTags}
             />
-            <Text style={styles.hint}>Separate tags with commas. Max 5 tags.</Text>
-            {hasTooManyTags ? (
-              <Text style={styles.warningText}>Only the first 5 tags will be used.</Text>
-            ) : null}
-          </Animated.View>
+            {hasTooManyTags
+              ? <Text style={s.warnText}>Only the first 5 tags will be used.</Text>
+              : <Text style={s.footerHint}>Separate tags with commas · Max 5 tags</Text>
+            }
+            {parsedTags.length > 0 && (
+              <View style={s.tagPills}>
+                {parsedTags.slice(0, 5).map(tag => (
+                  <View key={tag} style={[s.tagPill, { backgroundColor: selectedTypeConfig.soft }]}>
+                    <Text style={[s.tagPillText, { color: selectedTypeConfig.accent }]}>#{tag}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
 
-          <Animated.View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Live Preview</Text>
+          {/* ── Live Preview ── */}
+          <View style={s.card}>
+            <View style={s.fieldLabel}>
+              <View style={[s.labelIcon, { backgroundColor: '#F0FDF4' }]}>
+                <Ionicons name="eye" size={14} color="#10B981" />
+              </View>
+              <Text style={s.labelText}>Live Preview</Text>
+            </View>
 
-            <View style={styles.previewCard}>
-              <LinearGradient
-                colors={selectedTypeConfig.gradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.previewHeader}
-              >
-                <Ionicons name={selectedTypeConfig.icon} size={30} color="rgba(255,255,255,0.95)" />
-              </LinearGradient>
-
-              <View style={styles.previewBody}>
-                <Text style={styles.previewName} numberOfLines={1}>
+            {/* Matches the ClubCard style */}
+            <View style={s.previewCard}>
+              {/* Header row */}
+              <View style={s.previewHeader}>
+                <LinearGradient
+                  colors={selectedTypeConfig.gradient}
+                  style={s.previewIconBox}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Ionicons name={selectedTypeConfig.icon} size={18} color="#fff" />
+                </LinearGradient>
+                <Text style={s.previewTitle} numberOfLines={1}>
                   {name || 'Your Club Name'}
                 </Text>
-
-                <Text style={styles.previewDescription} numberOfLines={2}>
-                  {description || 'Your club description will appear here...'}
-                </Text>
-
-                <View style={styles.previewMetaRow}>
-                  <View style={styles.previewMetaChip}>
-                    <Ionicons name={selectedModeConfig.icon} size={12} color={COLORS.textSecondary} />
-                    <Text style={styles.previewMetaText}>{selectedModeConfig.name}</Text>
-                  </View>
-
-                  <View style={[styles.previewMetaChip, { backgroundColor: selectedTypeConfig.soft }]}> 
-                    <Text style={[styles.previewMetaText, { color: selectedTypeConfig.color }]}> 
-                      {selectedTypeConfig.name}
-                    </Text>
-                  </View>
+                <View style={s.previewViewBtn}>
+                  <Text style={s.previewViewText}>View</Text>
+                  <Ionicons name="chevron-forward" size={13} color={TEAL} />
                 </View>
+              </View>
 
-                {parsedTags.length > 0 ? (
-                  <View style={styles.previewTags}>
-                    {parsedTags.slice(0, 3).map((tag) => (
-                      <View
-                        key={tag}
-                        style={[styles.previewTag, { backgroundColor: selectedTypeConfig.soft }]}
-                      >
-                        <Text style={[styles.previewTagText, { color: selectedTypeConfig.color }]}>#{tag}</Text>
-                      </View>
-                    ))}
-                  </View>
-                ) : null}
+              {/* Description */}
+              <Text style={s.previewDesc} numberOfLines={2}>
+                {description || `${selectedTypeConfig.name} · Join to explore topics and connect with peers.`}
+              </Text>
+
+              {/* Bottom: privacy + type badges */}
+              <View style={s.previewFooter}>
+                <View style={[s.previewBadge, { backgroundColor: selectedTypeConfig.soft }]}>
+                  <Ionicons name={selectedTypeConfig.icon} size={11} color={selectedTypeConfig.accent} />
+                  <Text style={[s.previewBadgeText, { color: selectedTypeConfig.accent }]}>{selectedTypeConfig.name}</Text>
+                </View>
+                <View style={s.previewBadge}>
+                  <Ionicons name={selectedModeConfig.icon} size={11} color={COLORS.textSecondary} />
+                  <Text style={s.previewBadgeText}>{selectedModeConfig.name}</Text>
+                </View>
+              </View>
+
+              {/* Progress bar */}
+              <View style={s.previewBar}>
+                <View style={[s.previewBarFill, { backgroundColor: selectedTypeConfig.accent }]} />
               </View>
             </View>
-          </Animated.View>
+          </View>
 
-          <View style={styles.bottomSpacer} />
+          <View style={{ height: 16 }} />
         </ScrollView>
 
-        <SafeAreaView edges={['bottom']} style={styles.bottomSafeArea}>
+        {/* ── Sticky Create Button ── */}
+        <SafeAreaView edges={['bottom']} style={s.stickyBar}>
           <TouchableOpacity
-            style={[styles.createButton, (creating || !canSubmit) && styles.createButtonDisabled]}
+            style={[s.createBtn, (!canSubmit || creating) && s.createBtnDisabled]}
             onPress={handleCreate}
             disabled={creating}
             activeOpacity={0.9}
           >
             <LinearGradient
-              colors={
-                canSubmit
-                  ? ['#1AAFA8', '#0E8F88', '#B98E1B']
-                  : ['#B8CBC7', '#A8BDB8', '#9DB1AD']
-              }
+              colors={canSubmit ? [TEAL, TEAL_DARK] : ['#CBD5E1', '#94A3B8']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={styles.createButtonGradient}
+              style={s.createBtnGradient}
             >
-              {creating ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <>
-                  <Ionicons name="add-circle" size={20} color="#FFFFFF" />
-                  <Text style={styles.createButtonText}>Create Club</Text>
-                </>
-              )}
+              {creating
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <>
+                    <Ionicons name="add-circle" size={20} color="#fff" />
+                    <Text style={s.createBtnText}>Create Club</Text>
+                  </>
+              }
             </LinearGradient>
           </TouchableOpacity>
         </SafeAreaView>
@@ -442,355 +447,278 @@ export default function CreateClubScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  topSafeArea: {
-    backgroundColor: COLORS.surface,
-  },
+// ── Styles ───────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: COLORS.background },
+
+  // Top bar (gradient)
+  topGradient: {},
   topBar: {
-    height: 56,
-    backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
+    paddingTop: 4,
+    paddingBottom: 16,
+    gap: 10,
   },
-  iconButton: {
+  backBtn: {
     width: 38,
     height: 38,
-    borderRadius: 19,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.surfaceSoft,
+  },
+  topBarCenter: { flex: 1 },
+  topBarTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
+  topBarSub:   { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 1 },
+  doneBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doneBtnDisabled: { backgroundColor: 'rgba(255,255,255,0.10)' },
+
+  // Scroll
+  scroll:        { flex: 1 },
+  scrollContent: { paddingHorizontal: 12, paddingTop: 14, paddingBottom: 8, gap: 12 },
+
+  // White cards
+  card: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
-  },
-  iconButtonInactive: {
-    backgroundColor: '#F0F7F6',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 20,
+    padding: 16,
     gap: 12,
   },
-  heroCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+
+  // Field label row
+  fieldLabel: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  labelIcon: {
+    width: 28, height: 28,
+    borderRadius: 8,
+    alignItems: 'center', justifyContent: 'center',
   },
-  heroTitle: {
-    fontSize: 21,
-    lineHeight: 28,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
-  },
-  heroSubtitle: {
-    marginTop: 6,
-    fontSize: 14,
-    lineHeight: 20,
-    color: COLORS.textSecondary,
-  },
-  heroMetaRow: {
-    marginTop: 12,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  heroMetaPill: {
-    height: 32,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.surfaceSoft,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  heroMetaPillSecondary: {
-    height: 32,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.surfaceSoft,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  heroMetaText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
-  },
-  sectionCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    marginBottom: 10,
-  },
+  labelText: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
+  required:  { color: '#EF4444' },
+  optional:  { fontSize: 13, fontWeight: '500', color: COLORS.textMuted },
+
+  // Text inputs
   input: {
+    backgroundColor: '#F8FAFC',
     borderRadius: 12,
-    backgroundColor: COLORS.field,
     borderWidth: 1,
-    borderColor: COLORS.borderStrong,
+    borderColor: COLORS.border,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: COLORS.textPrimary,
     fontSize: 15,
+    color: COLORS.textPrimary,
+  },
+  inputFocused: {
+    borderColor: TEAL,
+    backgroundColor: '#F0FDFA',
   },
   inputError: {
-    borderColor: '#E87979',
-    backgroundColor: '#FFF8F8',
+    borderColor: '#EF4444',
+    backgroundColor: '#FEF2F2',
   },
   textArea: {
-    minHeight: 116,
+    minHeight: 110,
     paddingTop: 12,
   },
-  inlineErrorText: {
-    marginTop: 6,
-    color: '#D14343',
-    fontSize: 12,
-    fontWeight: '600',
+  inputFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: -4,
   },
-  charCount: {
-    marginTop: 6,
-    textAlign: 'right',
-    color: COLORS.textMuted,
-    fontSize: 12,
-  },
-  hint: {
-    marginTop: 6,
-    color: COLORS.textSecondary,
-    fontSize: 12,
-  },
-  warningText: {
-    marginTop: 5,
-    color: '#B45309',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  optionsGrid: {
+  footerHint:     { fontSize: 12, color: COLORS.textMuted },
+  errorText:      { fontSize: 12, fontWeight: '600', color: '#EF4444' },
+  charCount:      { fontSize: 12, color: COLORS.textMuted },
+  charCountWarn:  { color: '#F59E0B' },
+  warnText:       { fontSize: 12, fontWeight: '600', color: '#B45309' },
+
+  // Club type grid
+  typesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
   },
-  typeOption: {
-    flex: 1,
-    minWidth: '47%',
-    backgroundColor: COLORS.surfaceSoft,
+  typeCard: {
+    width: '47.5%',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    padding: 14,
+    position: 'relative',
+    gap: 6,
+  },
+  typeCheck: {
+    position: 'absolute',
+    top: 10, right: 10,
+    width: 20, height: 20,
+    borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  typeIconBox: {
+    width: 44, height: 44,
+    borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 4,
+  },
+  typeName: { fontSize: 14, fontWeight: '800', color: COLORS.textPrimary },
+  typeDesc: { fontSize: 12, lineHeight: 16, color: COLORS.textSecondary },
+
+  // Privacy mode list
+  modeList: { gap: 8 },
+  modeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: '#F8FAFC',
+  },
+  modeRowSelected: {
+    borderColor: TEAL,
+    backgroundColor: '#F0FDFA',
+  },
+  modeIconCircle: {
+    width: 36, height: 36,
+    borderRadius: 10,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  modeIconCircleSel: {
+    backgroundColor: TEAL_LIGHT,
+  },
+  modeName:    { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 2 },
+  modeNameSel: { color: TEAL_DARK },
+  modeDesc:    { fontSize: 12, color: COLORS.textSecondary, lineHeight: 16 },
+  modeRadio: {
+    width: 20, height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  modeRadioSel: { borderColor: TEAL },
+  modeRadioDot: {
+    width: 10, height: 10,
+    borderRadius: 5,
+    backgroundColor: TEAL,
+  },
+
+  // Tags
+  tagPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: -4 },
+  tagPill: {
+    borderRadius: 999,
+    paddingHorizontal: 10, paddingVertical: 4,
+  },
+  tagPillText: { fontSize: 12, fontWeight: '700' },
+
+  // Live preview card (mirrors the club list card style)
+  previewCard: {
     borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.border,
-    padding: 12,
-    position: 'relative',
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 10,
-    elevation: 1,
-  },
-  typeIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-  typeName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    marginBottom: 4,
-  },
-  typeDescription: {
-    fontSize: 12,
-    lineHeight: 16,
-    color: COLORS.textSecondary,
-  },
-  selectedBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
-  },
-  modeOptions: {
-    gap: 9,
-  },
-  modeOption: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.surfaceSoft,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    gap: 10,
-  },
-  modeOptionSelected: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.primarySoft,
-  },
-  modeIconWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  modeIconWrapSelected: {
-    borderColor: '#BFE4DF',
-    backgroundColor: '#ECFAF8',
-  },
-  modeInfo: {
-    flex: 1,
-  },
-  modeName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    marginBottom: 2,
-  },
-  modeNameSelected: {
-    color: COLORS.primaryStrong,
-  },
-  modeDescription: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-  },
-  previewCard: {
-    borderRadius: 16,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#FAFCFF',
   },
   previewHeader: {
-    height: 112,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  previewBody: {
+    gap: 10,
     paddingHorizontal: 14,
-    paddingVertical: 14,
-    backgroundColor: COLORS.surface,
+    paddingTop: 14,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
-  previewName: {
-    fontSize: 17,
-    lineHeight: 23,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
+  previewIconBox: {
+    width: 32, height: 32,
+    borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center',
   },
-  previewDescription: {
-    marginTop: 7,
+  previewTitle: { flex: 1, fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
+  previewViewBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 2,
+  },
+  previewViewText: { fontSize: 12, fontWeight: '600', color: TEAL },
+  previewDesc: {
     fontSize: 13,
-    lineHeight: 19,
     color: COLORS.textSecondary,
+    lineHeight: 19,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 10,
   },
-  previewMetaRow: {
-    marginTop: 10,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  previewMetaChip: {
-    minHeight: 30,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.surfaceSoft,
-    paddingHorizontal: 10,
+  previewFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingBottom: 12,
   },
-  previewMetaText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
-  },
-  previewTags: {
-    marginTop: 10,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  previewTag: {
+  previewBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 8, paddingVertical: 4,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    backgroundColor: '#F1F5F9',
   },
-  previewTagText: {
-    fontSize: 11,
-    fontWeight: '700',
+  previewBadgeText: { fontSize: 11, fontWeight: '700', color: COLORS.textSecondary },
+  previewBar: {
+    height: 6,
+    backgroundColor: '#F1F5F9',
+    marginHorizontal: 14,
+    marginBottom: 14,
+    borderRadius: 3,
+    overflow: 'hidden',
   },
-  bottomSpacer: {
-    height: 12,
+  previewBarFill: {
+    width: '30%',
+    height: '100%',
+    borderRadius: 3,
+    opacity: 0.7,
   },
-  bottomSafeArea: {
+
+  // Sticky bottom bar
+  stickyBar: {
     backgroundColor: COLORS.surface,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 8 : 14,
+    paddingBottom: Platform.OS === 'ios' ? 6 : 14,
   },
-  createButton: {
-    borderRadius: 16,
+  createBtn: {
+    borderRadius: 14,
     overflow: 'hidden',
-    shadowColor: '#0EA5A4',
-    shadowOffset: { width: 0, height: 7 },
-    shadowOpacity: 0.26,
-    shadowRadius: 14,
-    elevation: 4,
+    shadowColor: TEAL,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 5,
   },
-  createButtonDisabled: {
-    opacity: 0.88,
-  },
-  createButtonGradient: {
-    minHeight: 52,
-    borderRadius: 16,
+  createBtnDisabled: { shadowOpacity: 0 },
+  createBtnGradient: {
+    height: 52,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  createButtonText: {
-    color: '#FFFFFF',
+  createBtnText: {
     fontSize: 16,
     fontWeight: '800',
-    letterSpacing: 0.2,
+    color: '#fff',
+    letterSpacing: 0.3,
   },
 });
