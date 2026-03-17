@@ -1,8 +1,8 @@
 # 🎓 Stunity Enterprise — Project Status
 
-**Last Updated:** March 16, 2026
-**Version:** 23.5
-**Status:** 99% Complete — Feed Widgets + Learn Experience Polish 🚀
+**Last Updated:** March 17, 2026
+**Version:** 23.6
+**Status:** 99% Complete — Mobile Reliability + Settings Polish 🚀
 
 ---
 
@@ -17,9 +17,32 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 
 ---
 
-## ✅ Completed Features (v23.5)
+## ✅ Completed Features (v23.6)
 
-### ⚡ Latest Platform Updates (Mar 16, 2026)
+### ⚡ Latest Platform Updates (Mar 17, 2026)
+- **Attendance GPS retry reliability (mobile)**
+  - Tapping the attendance top GPS card now re-checks permissions/services and performs a stronger manual location refresh (high-accuracy + longer timeout).
+  - Added better recovery UX for denied/disabled location (Settings shortcut + clearer fallback status handling).
+  - Attendance submit flow now re-validates location permission/services before check-in/check-out requests.
+- **Genesis Premium Aesthetic Rollout (Web)**
+  - Transformed core administrative screens with a high-fidelity "Genesis" dark mode aesthetic.
+  - **Academic Ledger (Grades Entry)**: Redesigned as a pro-grade data entry grid with glassmorphism, sticky blurred headers, real-time save status indicators, and integrated performance analytics.
+  - **Attendance Dashboard**: Refined with premium visual hierarchy, glassmorphism cards, and enhanced filtering.
+  - **Classes & Subjects Management**: Applied consistent Genesis styling across administrative registry modules.
+  - **Platform-wide Polish**: Resolved layout inconsistencies and JSX structural errors on core management pages.
+- **Settings screen completion + API alignment (mobile)**
+  - Added real **Password & Security** screen and wired it to authenticated `POST /auth/change-password` flow.
+  - Wired previously dead-end actions (Achievements quick action, support/help/privacy links, blocked-user support escalation).
+  - Synced settings toggles with real persistence:
+    - `profileVisibility` now updates via `PUT /users/me/profile` with rollback on API failure.
+    - biometric preference now loads/saves through secure token service storage.
+    - online status now updates local user state consistently for UI.
+- **Saved Posts navigation state fix (mobile)**
+  - Fixed issue where Saved Posts could remain the visible screen when user expected Profile.
+  - Sidebar profile shortcut now routes to `Profile` directly.
+  - Bookmarks back/empty-state actions now use stack-aware fallbacks to Profile/Feed instead of blind `goBack()`.
+
+### ⚡ Previous Platform Updates (Mar 16, 2026)
 - **Local Development Environment Fixes**
   - Resolved hardcoded absolute paths in startup shell scripts (`quick-start.sh`, `start-all-services.sh`, etc.) to use the correct project directory structure.
   - Configured `apps/web/.env.local` to correctly map `NEXT_PUBLIC_*` service URLs to localhost ports, fixing web app 404 auth errors during local development.
@@ -39,7 +62,7 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
   - Course Detail and Lesson Viewer received upgraded progress presentation (progress cards/bars), richer stat cards, and better lesson state styling.
   - Updated app bars/safe areas to match Feed/Learn light header standard (removed heavy dark header look).
 
-### ⚡ Previous Platform Updates (Mar 14, 2026)
+### ⚡ Earlier Platform Updates (Mar 14, 2026)
 - **Web language parity + feed localization (web)**
   - Completed Khmer/English language switching behavior on web with locale cookie persistence and safe locale-path replacement.
   - Localized major feed surfaces (feed page, create-post modal, post card, analytics/activity/insights, and right sidebar widgets) with `next-intl` message keys in both `en` and `km`.

@@ -200,46 +200,46 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
           {/* Stats Cards */}
           <AnimatedContent animation="slide-up" delay={50}>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-gray-800/60 p-5 shadow-sm hover:shadow-md transition-all">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Teachers</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">{totalCount}</p>
+                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Total Teachers</p>
+                    <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{totalCount}</p>
                   </div>
-                  <div className="h-10 w-10 bg-purple-50 dark:bg-purple-500/10 rounded-lg flex items-center justify-center">
+                  <div className="h-10 w-10 bg-purple-50 dark:bg-purple-500/10 rounded-xl flex items-center justify-center">
                     <UserCog className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                   </div>
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-gray-800/60 p-5 shadow-sm hover:shadow-md transition-all">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Male</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">{maleCount}</p>
+                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Male</p>
+                    <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{maleCount}</p>
                   </div>
-                  <div className="h-10 w-10 bg-blue-50 dark:bg-blue-500/10 rounded-lg flex items-center justify-center">
+                  <div className="h-10 w-10 bg-blue-50 dark:bg-blue-500/10 rounded-xl flex items-center justify-center">
                     <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   </div>
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-gray-800/60 p-5 shadow-sm hover:shadow-md transition-all">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Female</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">{femaleCount}</p>
+                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Female</p>
+                    <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{femaleCount}</p>
                   </div>
-                  <div className="h-10 w-10 bg-pink-50 dark:bg-pink-500/10 rounded-lg flex items-center justify-center">
+                  <div className="h-10 w-10 bg-pink-50 dark:bg-pink-500/10 rounded-xl flex items-center justify-center">
                     <Users className="h-5 w-5 text-pink-600 dark:text-pink-400" />
                   </div>
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-gray-800/60 p-5 shadow-sm hover:shadow-md transition-all">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Academic Year</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">{selectedYear?.name || '-'}</p>
+                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Academic Year</p>
+                    <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{selectedYear?.name || '-'}</p>
                   </div>
-                  <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg flex items-center justify-center">
+                  <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl flex items-center justify-center">
                     <BookOpen className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                   </div>
                 </div>
@@ -249,7 +249,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
 
           {/* Main Content Card */}
           <AnimatedContent animation="slide-up" delay={100}>
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm shadow-gray-200/50 dark:shadow-none">
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-2xl shadow-gray-200/50 dark:shadow-none">
 
               {/* Toolbar */}
               <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
@@ -340,13 +340,13 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead>
-                          <tr className="border-b border-gray-100 dark:border-gray-800">
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Teacher</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">ID</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Gender</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Position</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Contact</th>
-                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Actions</th>
+                          <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/30">
+                            <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Faculty Member</th>
+                            <th className="px-4 py-5 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Digital ID</th>
+                            <th className="px-4 py-5 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Gender</th>
+                            <th className="px-4 py-5 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Position</th>
+                            <th className="px-4 py-5 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Comms Node</th>
+                            <th className="px-4 py-5 text-right text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Control</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
@@ -479,17 +479,17 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
 
                     {/* Pagination Footer */}
                     {totalPages > 1 && (
-                      <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          Showing <span className="font-medium text-gray-900 dark:text-white">{(page - 1) * ITEMS_PER_PAGE + 1}</span>–
-                          <span className="font-medium text-gray-900 dark:text-white">{Math.min(page * ITEMS_PER_PAGE, totalCount)}</span> of{' '}
-                          <span className="font-medium text-gray-900 dark:text-white">{totalCount}</span>
+                      <div className="px-6 py-6 border-t border-gray-100 dark:border-gray-800/60 flex items-center justify-between bg-gray-50/30 dark:bg-gray-950/30">
+                        <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+                          Showing <span className="text-gray-900 dark:text-white">{(page - 1) * ITEMS_PER_PAGE + 1}</span>–
+                          <span className="text-gray-900 dark:text-white">{Math.min(page * ITEMS_PER_PAGE, totalCount)}</span> of{' '}
+                          <span className="text-gray-900 dark:text-white">{totalCount}</span>
                         </p>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => setPage(Math.max(1, page - 1))}
                             disabled={page === 1}
-                            className="inline-flex items-center justify-center h-8 w-8 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            className="inline-flex items-center justify-center h-9 w-9 text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                           >
                             <ChevronLeft className="w-4 h-4" />
                           </button>
@@ -508,10 +508,10 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                               <button
                                 key={pageNum}
                                 onClick={() => setPage(pageNum)}
-                                className={`inline-flex items-center justify-center h-8 min-w-[32px] px-2 text-sm font-medium rounded-md transition-colors ${
+                                className={`inline-flex items-center justify-center h-9 min-w-[36px] px-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
                                   page === pageNum
-                                    ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
-                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+                                    ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-xl shadow-gray-900/20 dark:shadow-none'
+                                    : 'text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800'
                                 }`}
                               >
                                 {pageNum}
@@ -521,7 +521,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                           <button
                             onClick={() => setPage(Math.min(totalPages, page + 1))}
                             disabled={page === totalPages}
-                            className="inline-flex items-center justify-center h-8 w-8 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            className="inline-flex items-center justify-center h-9 w-9 text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                           >
                             <ChevronRight className="w-4 h-4" />
                           </button>

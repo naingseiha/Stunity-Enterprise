@@ -401,50 +401,50 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
           {/* Stats Cards */}
           <AnimatedContent animation="slide-up" delay={50}>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-gray-800/60 p-5 shadow-sm hover:shadow-md transition-all">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Students</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">{pagination.total || 0}</p>
+                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Total Students</p>
+                    <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{pagination.total || 0}</p>
                   </div>
-                  <div className="h-10 w-10 bg-blue-50 dark:bg-blue-500/10 rounded-lg flex items-center justify-center">
+                  <div className="h-10 w-10 bg-blue-50 dark:bg-blue-500/10 rounded-xl flex items-center justify-center">
                     <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   </div>
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-gray-800/60 p-5 shadow-sm hover:shadow-md transition-all">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Assigned</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">
+                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Assigned</p>
+                    <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
                       {students.filter(s => s.class).length}
                     </p>
                   </div>
-                  <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg flex items-center justify-center">
+                  <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl flex items-center justify-center">
                     <GraduationCap className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                   </div>
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-gray-800/60 p-5 shadow-sm hover:shadow-md transition-all">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Unassigned</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">
+                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Unassigned</p>
+                    <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
                       {students.filter(s => !s.class).length}
                     </p>
                   </div>
-                  <div className="h-10 w-10 bg-amber-50 dark:bg-amber-500/10 rounded-lg flex items-center justify-center">
+                  <div className="h-10 w-10 bg-amber-50 dark:bg-amber-500/10 rounded-xl flex items-center justify-center">
                     <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                   </div>
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-gray-800/60 p-5 shadow-sm hover:shadow-md transition-all">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Classes</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white mt-1">{availableClasses.length}</p>
+                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Classes</p>
+                    <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{availableClasses.length}</p>
                   </div>
-                  <div className="h-10 w-10 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg flex items-center justify-center">
+                  <div className="h-10 w-10 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl flex items-center justify-center">
                     <BookOpen className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                   </div>
                 </div>
@@ -454,7 +454,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
           {/* Main Content Card */}
           <AnimatedContent animation="slide-up" delay={100}>
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm shadow-gray-200/50 dark:shadow-none">
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-2xl shadow-gray-200/50 dark:shadow-none">
 
               {/* Toolbar */}
               <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
@@ -476,7 +476,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     <select
                       value={classFilter}
                       onChange={(e) => setClassFilter(e.target.value)}
-                      className="h-10 px-3 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border-0 rounded-lg focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all cursor-pointer appearance-none"
+                      className="h-10 px-4 text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 bg-gray-100/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:bg-white dark:focus:bg-gray-900 focus:ring-4 focus:ring-gray-900/5 dark:focus:ring-white/5 transition-all cursor-pointer appearance-none min-w-[140px]"
                     >
                       <option value="all">All Classes</option>
                       <option value="unassigned">Unassigned</option>
@@ -591,8 +591,8 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead>
-                          <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30">
-                            <th className="w-12 px-4 py-3">
+                          <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/30">
+                            <th className="w-12 px-6 py-5">
                               <button
                                 onClick={toggleSelectAll}
                                 className="flex items-center justify-center w-5 h-5"
@@ -600,18 +600,18 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                 {selectedStudents.size === filteredStudents.length && filteredStudents.length > 0 ? (
                                   <CheckSquare className="w-[18px] h-[18px] text-gray-900 dark:text-white" />
                                 ) : selectedStudents.size > 0 ? (
-                                  <div className="w-[18px] h-[18px] border-2 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 rounded" />
+                                  <div className="w-[18px] h-[18px] border-2 border-orange-500 bg-orange-500/10 rounded shadow-[0_0_10px_rgba(249,115,22,0.2)]" />
                                 ) : (
-                                  <Square className="w-[18px] h-[18px] text-gray-300 dark:text-gray-600" />
+                                  <Square className="w-[18px] h-[18px] text-gray-300 dark:text-gray-700 hover:text-orange-500 transition-colors" />
                                 )}
                               </button>
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Student</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">ID</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Gender</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Birth Date</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Class</th>
-                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Actions</th>
+                            <th className="px-4 py-5 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Student Persona</th>
+                            <th className="px-4 py-5 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Digital ID</th>
+                            <th className="px-4 py-5 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Gender</th>
+                            <th className="px-4 py-5 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Epoch of Birth</th>
+                            <th className="px-4 py-5 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Cohort</th>
+                            <th className="px-4 py-5 text-right text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Control</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
@@ -822,17 +822,17 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
               {/* Pagination Footer */}
               {totalPages > 1 && (
-                <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/30 dark:bg-gray-900/10">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Showing <span className="font-medium text-gray-900 dark:text-white">{(page - 1) * ITEMS_PER_PAGE + 1}</span>–
-                    <span className="font-medium text-gray-900 dark:text-white">{Math.min(page * ITEMS_PER_PAGE, totalCount)}</span> of{' '}
-                    <span className="font-medium text-gray-900 dark:text-white">{totalCount}</span>
+                <div className="px-6 py-6 border-t border-gray-100 dark:border-gray-800/60 flex items-center justify-between bg-gray-50/30 dark:bg-gray-950/30">
+                  <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+                    Showing <span className="text-gray-900 dark:text-white">{(page - 1) * ITEMS_PER_PAGE + 1}</span>–
+                    <span className="text-gray-900 dark:text-white">{Math.min(page * ITEMS_PER_PAGE, totalCount)}</span> of{' '}
+                    <span className="text-gray-900 dark:text-white">{totalCount}</span>
                   </p>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => setPage(Math.max(1, page - 1))}
                       disabled={page === 1}
-                      className="inline-flex items-center justify-center h-8 w-8 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="inline-flex items-center justify-center h-9 w-9 text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
@@ -851,9 +851,9 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                         <button
                           key={pageNum}
                           onClick={() => setPage(pageNum)}
-                          className={`inline-flex items-center justify-center h-8 min-w-[32px] px-2 text-sm font-medium rounded-md transition-colors ${page === pageNum
-                            ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-sm'
-                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+                          className={`inline-flex items-center justify-center h-9 min-w-[36px] px-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${page === pageNum
+                            ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-xl shadow-gray-900/20 dark:shadow-none'
+                            : 'text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800'
                             }`}
                         >
                           {pageNum}
@@ -863,7 +863,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     <button
                       onClick={() => setPage(Math.min(totalPages, page + 1))}
                       disabled={page === totalPages}
-                      className="inline-flex items-center justify-center h-8 w-8 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="inline-flex items-center justify-center h-9 w-9 text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>

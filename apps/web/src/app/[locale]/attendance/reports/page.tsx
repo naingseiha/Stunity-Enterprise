@@ -319,15 +319,15 @@ export default function AttendanceReportsPage() {
         <div className="p-8">
           {/* Filters */}
           <AnimatedContent animation="fade" delay={0}>
-            <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-8 mb-8">
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-8 mb-8">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {/* Academic Year */}
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Academic Epoch</label>
+                  <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3 ml-2">Academic Epoch</label>
                   <select
                     value={selectedAcademicYear}
                     onChange={(e) => setSelectedAcademicYear(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all font-bold text-gray-900 dark:text-white"
+                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-2xl focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all font-black text-xs tracking-tight text-gray-900 dark:text-white appearance-none"
                   >
                     <option value="">Select Year</option>
                     {academicYears.map((year) => (
@@ -340,11 +340,11 @@ export default function AttendanceReportsPage() {
 
                 {/* Class */}
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Cohort Segment</label>
+                  <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3 ml-2">Cohort Segment</label>
                   <select
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all disabled:opacity-50 font-bold text-gray-900 dark:text-white"
+                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-2xl focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all disabled:opacity-50 font-black text-xs tracking-tight text-gray-900 dark:text-white appearance-none"
                     disabled={!selectedAcademicYear || classes.length === 0}
                   >
                     <option value="">Select Class</option>
@@ -358,20 +358,20 @@ export default function AttendanceReportsPage() {
 
                 {/* Month Navigation */}
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Temporal Coordinate</label>
+                  <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3 ml-2">Temporal Coordinate</label>
                   <div className="flex items-center gap-3">
                     <button
                       onClick={goToPreviousMonth}
-                      className="p-3 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-900 text-gray-500 transition-all hover:scale-105"
+                      className="p-4 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-2xl hover:bg-white dark:hover:bg-gray-900 text-gray-500 hover:text-teal-600 dark:hover:text-teal-400 transition-all shadow-sm active:scale-95"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
-                    <div className="flex-1 px-6 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-xl text-center font-black uppercase tracking-widest text-sm text-gray-900 dark:text-white">
+                    <div className="flex-1 px-8 py-4 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-2xl text-center font-black uppercase tracking-[0.2em] text-xs text-gray-900 dark:text-white shadow-inner">
                       {monthName} {selectedYear}
                     </div>
                     <button
                       onClick={goToNextMonth}
-                      className="p-3 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-900 text-gray-500 transition-all hover:scale-105"
+                      className="p-4 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-2xl hover:bg-white dark:hover:bg-gray-900 text-gray-500 hover:text-teal-600 dark:hover:text-teal-400 transition-all shadow-sm active:scale-95"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
@@ -399,10 +399,12 @@ export default function AttendanceReportsPage() {
               <>
                 {/* Statistics Cards */}
                 <AnimatedContent animation="slide-up" delay={100}>
+                <AnimatedContent animation="slide-up" delay={100}>
                   <div className="grid md:grid-cols-5 gap-6 mb-8">
-                    <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-6 hover:scale-105 transition-all">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-600">
+                    <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-6 hover:translate-y-[-5px] transition-all group overflow-hidden relative">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-blue-500/10 transition-all duration-700" />
+                      <div className="flex items-center gap-4 relative z-10">
+                        <div className="w-12 h-12 bg-blue-50 dark:bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-inner group-hover:scale-110 transition-transform">
                           <Users className="w-6 h-6" />
                         </div>
                         <div>
@@ -411,56 +413,61 @@ export default function AttendanceReportsPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-6 hover:scale-105 transition-all">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-teal-500/10 rounded-2xl flex items-center justify-center text-teal-600">
+                    <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-6 hover:translate-y-[-5px] transition-all group overflow-hidden relative">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-teal-500/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-teal-500/10 transition-all duration-700" />
+                      <div className="flex items-center gap-4 relative z-10">
+                        <div className="w-12 h-12 bg-teal-50 dark:bg-teal-500/10 rounded-2xl flex items-center justify-center text-teal-600 dark:text-teal-400 shadow-inner group-hover:scale-110 transition-transform">
                           <Percent className="w-6 h-6" />
                         </div>
                         <div>
                           <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1">Avg Rate</p>
-                          <p className="text-2xl font-black text-teal-600 tracking-tight">{statistics.avgAttendance}%</p>
+                          <p className="text-2xl font-black text-teal-600 dark:text-teal-400 tracking-tight">{statistics.avgAttendance}%</p>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-6 hover:scale-105 transition-all">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-600">
+                    <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-6 hover:translate-y-[-5px] transition-all group overflow-hidden relative">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-emerald-500/10 transition-all duration-700" />
+                      <div className="flex items-center gap-4 relative z-10">
+                        <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-inner group-hover:scale-110 transition-transform">
                           <CheckCircle className="w-6 h-6" />
                         </div>
                         <div>
                           <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1">Present</p>
-                          <p className="text-2xl font-black text-emerald-600 tracking-tight">{statistics.totalPresent}</p>
+                          <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">{statistics.totalPresent}</p>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-6 hover:scale-105 transition-all">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-rose-500/10 rounded-2xl flex items-center justify-center text-rose-600">
+                    <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-6 hover:translate-y-[-5px] transition-all group overflow-hidden relative">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-rose-500/10 transition-all duration-700" />
+                      <div className="flex items-center gap-4 relative z-10">
+                        <div className="w-12 h-12 bg-rose-50 dark:bg-rose-500/10 rounded-2xl flex items-center justify-center text-rose-600 dark:text-rose-400 shadow-inner group-hover:scale-110 transition-transform">
                           <XCircle className="w-6 h-6" />
                         </div>
                         <div>
                           <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1">Absent</p>
-                          <p className="text-2xl font-black text-rose-600 tracking-tight">{statistics.totalAbsent}</p>
+                          <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">{statistics.totalAbsent}</p>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-6 hover:scale-105 transition-all">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-600">
+                    <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-6 hover:translate-y-[-5px] transition-all group overflow-hidden relative">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-amber-500/10 transition-all duration-700" />
+                      <div className="flex items-center gap-4 relative z-10">
+                        <div className="w-12 h-12 bg-amber-50 dark:bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-600 dark:text-amber-400 shadow-inner group-hover:scale-110 transition-transform">
                           <Clock className="w-6 h-6" />
                         </div>
                         <div>
                           <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1">Late</p>
-                          <p className="text-2xl font-black text-amber-600 tracking-tight">{statistics.totalLate}</p>
+                          <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight">{statistics.totalLate}</p>
                         </div>
                       </div>
                     </div>
                   </div>
                 </AnimatedContent>
+                </AnimatedContent>
 
                 {/* Monthly Grid */}
                 <AnimatedContent animation="slide-up" delay={200}>
-                  <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 overflow-hidden group">
+                  <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 overflow-hidden group">
                     <div className="p-6 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div>
                         <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">
@@ -479,27 +486,27 @@ export default function AttendanceReportsPage() {
                       </div>
                     </div>
                     
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto custom-scrollbar">
                       <table className="w-full">
                         <thead>
-                          <tr className="bg-gray-50 dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800">
-                            <th className="sticky left-0 z-20 bg-gray-50 dark:bg-gray-950 px-6 py-5 text-left text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest min-w-[240px] border-r border-gray-100 dark:border-gray-800">
+                          <tr className="bg-gray-50/50 dark:bg-gray-950/30 border-b border-gray-100 dark:border-gray-800">
+                            <th className="sticky left-0 z-20 bg-gray-50/90 dark:bg-gray-950/90 backdrop-blur-md px-6 py-6 text-left text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] min-w-[240px] border-r border-gray-100 dark:border-gray-800">
                               Academic Persona
                             </th>
                             {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => (
-                              <th key={day} className="px-2 py-5 text-center text-[10px] font-black text-gray-400 dark:text-gray-600 min-w-[36px]">
+                              <th key={day} className="px-2 py-6 text-center text-[10px] font-black text-gray-400 dark:text-gray-600 min-w-[40px]">
                                 {day}
                               </th>
                             ))}
-                            <th className="px-4 py-5 text-center text-[10px] font-black text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/20 min-w-[80px] uppercase tracking-widest">
-                              Metric
+                            <th className="px-4 py-6 text-center text-[10px] font-black text-teal-600 dark:text-teal-400 bg-teal-50/30 dark:bg-teal-950/10 min-w-[90px] uppercase tracking-[0.2em]">
+                              Metrics
                             </th>
-                            <th className="px-4 py-5 text-center text-[10px] font-black text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/20 min-w-[80px] uppercase tracking-widest">
+                            <th className="px-4 py-6 text-center text-[10px] font-black text-teal-600 dark:text-teal-400 bg-teal-50/30 dark:bg-teal-950/10 min-w-[90px] uppercase tracking-[0.2em]">
                               Efficiency
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
                           {monthlyData?.students?.map((student, idx) => {
                             const totalSessions = student.totals.present + student.totals.absent + 
                                                   student.totals.late + student.totals.excused + 
@@ -509,24 +516,24 @@ export default function AttendanceReportsPage() {
                               : 0;
 
                             return (
-                              <tr key={student.studentId} className={`group/row transition-colors ${idx % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/30 dark:bg-gray-950/30'} hover:bg-teal-50/50 dark:hover:bg-teal-500/5`}>
-                                <td className="sticky left-0 z-10 bg-inherit px-6 py-4 border-r border-gray-100 dark:border-gray-800">
+                              <tr key={student.studentId} className={`group/row transition-colors ${idx % 2 === 0 ? 'bg-white/40 dark:bg-gray-900/40' : 'bg-gray-50/40 dark:bg-gray-950/40'} hover:bg-teal-50/60 dark:hover:bg-teal-500/10`}>
+                                <td className="sticky left-0 z-10 bg-inherit backdrop-blur-md px-6 py-5 border-r border-gray-100 dark:border-gray-800">
                                   <div className="flex items-center gap-4">
                                     <div className="relative">
                                       {student.photo ? (
-                                        <img src={student.photo} alt="" className="w-10 h-10 rounded-2xl object-cover ring-2 ring-gray-100 dark:ring-gray-800" />
+                                        <img src={student.photo} alt="" className="w-11 h-11 rounded-2xl object-cover ring-2 ring-gray-100 dark:ring-gray-800 shadow-sm" />
                                       ) : (
-                                        <div className="w-10 h-10 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center border border-gray-200 dark:border-gray-700 shadow-inner">
-                                          <User className="w-5 h-5 text-gray-400" />
+                                        <div className="w-11 h-11 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center border border-gray-200 dark:border-gray-700 shadow-inner">
+                                          <User className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                                         </div>
                                       )}
-                                      <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 ${attendanceRate >= 80 ? 'bg-emerald-500' : attendanceRate >= 60 ? 'bg-amber-500' : 'bg-rose-500'}`} />
+                                      <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-950 shadow-sm ${attendanceRate >= 80 ? 'bg-emerald-500' : attendanceRate >= 60 ? 'bg-amber-500' : 'bg-rose-500'}`} />
                                     </div>
                                     <div className="min-w-0">
                                       <p className="font-black text-gray-900 dark:text-white tracking-tight group-hover/row:text-teal-600 dark:group-hover/row:text-teal-400 transition-colors">
                                         {student.firstName} {student.lastName}
                                       </p>
-                                      <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">{student.studentNumber}</p>
+                                      <p className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest leading-none mt-1">{student.studentNumber}</p>
                                     </div>
                                   </div>
                                 </td>
@@ -538,21 +545,25 @@ export default function AttendanceReportsPage() {
                                   const afternoonStatus = dayAttendance?.afternoon?.status;
                                   
                                   return (
-                                    <td key={day} className="px-0.5 py-2">
-                                      <div className="flex flex-col gap-1">
-                                        <div className={`text-center text-[9px] font-black py-0.5 rounded-md transition-all ${
-                                          morningStatus === 'PRESENT' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm shadow-emerald-500/10' :
-                                          morningStatus === 'ABSENT' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 shadow-sm shadow-rose-500/10' :
-                                          morningStatus === 'LATE' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 shadow-sm shadow-amber-500/10' :
-                                          morningStatus ? 'bg-gray-100 dark:bg-gray-800 text-gray-500' : 'bg-transparent text-transparent select-none'
+                                    <td key={day} className="px-0.5 py-3">
+                                      <div className="flex flex-col gap-1.5">
+                                        <div className={`text-center text-[10px] font-black py-1 px-1 rounded-lg border transition-all duration-300 ${
+                                          morningStatus === 'PRESENT' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]' :
+                                          morningStatus === 'ABSENT' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.1)]' :
+                                          morningStatus === 'LATE' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]' :
+                                          morningStatus === 'EXCUSED' ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20' :
+                                          morningStatus === 'PERMISSION' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' :
+                                          morningStatus ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 border-gray-200 dark:border-gray-700' : 'bg-transparent text-transparent border-transparent select-none'
                                         }`}>
                                           {getStatusLabel(morningStatus)}
                                         </div>
-                                        <div className={`text-center text-[9px] font-black py-0.5 rounded-md transition-all ${
-                                          afternoonStatus === 'PRESENT' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm shadow-emerald-500/10' :
-                                          afternoonStatus === 'ABSENT' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 shadow-sm shadow-rose-500/10' :
-                                          afternoonStatus === 'LATE' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 shadow-sm shadow-amber-500/10' :
-                                          afternoonStatus ? 'bg-gray-100 dark:bg-gray-800 text-gray-500' : 'bg-transparent text-transparent select-none'
+                                        <div className={`text-center text-[10px] font-black py-1 px-1 rounded-lg border transition-all duration-300 ${
+                                          afternoonStatus === 'PRESENT' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]' :
+                                          afternoonStatus === 'ABSENT' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.1)]' :
+                                          afternoonStatus === 'LATE' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]' :
+                                          afternoonStatus === 'EXCUSED' ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20' :
+                                          afternoonStatus === 'PERMISSION' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' :
+                                          afternoonStatus ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 border-gray-200 dark:border-gray-700' : 'bg-transparent text-transparent border-transparent select-none'
                                         }`}>
                                           {getStatusLabel(afternoonStatus)}
                                         </div>
@@ -560,10 +571,10 @@ export default function AttendanceReportsPage() {
                                     </td>
                                   );
                                 })}
-                                <td className="px-4 py-4 text-center bg-teal-50/50 dark:bg-teal-950/20">
-                                  <div className="text-[10px] space-y-1 font-black">
-                                    <div className="text-emerald-600 dark:text-emerald-400">{student.totals.present}P</div>
-                                    <div className="text-rose-600 dark:text-rose-400">{student.totals.absent}A</div>
+                                <td className="px-4 py-4 text-center bg-teal-50/50 dark:bg-teal-950/20 border-l border-gray-100 dark:border-gray-800">
+                                  <div className="text-[10px] space-y-1.5 font-black uppercase tracking-widest">
+                                    <div className="text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1"><span className="opacity-50 font-medium">P:</span>{student.totals.present}</div>
+                                    <div className="text-rose-600 dark:text-rose-400 flex items-center justify-center gap-1"><span className="opacity-50 font-medium">A:</span>{student.totals.absent}</div>
                                   </div>
                                 </td>
                                 <td className="px-4 py-4 text-center bg-teal-50/50 dark:bg-teal-950/20">

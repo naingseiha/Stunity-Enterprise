@@ -285,15 +285,13 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
     <>
       <UnifiedNavigation user={userData?.user} school={userData?.school} onLogout={handleLogout} />
 
-      {/* Main Content - Add left margin for sidebar */}
-      {/* Main Content - Add left margin for sidebar */}
-      <div className="lg:ml-64 min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
-        <main className="p-4 lg:p-8">
+      <div className="lg:ml-64 min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-500">
+        <main className="max-w-7xl mx-auto p-4 lg:p-12">
           {/* Header */}
           <AnimatedContent animation="fade" delay={0}>
             <div className="mb-8">
               {/* Breadcrumb */}
-              <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-6">
+              <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-gray-500 mb-6">
                 <div className="flex items-center gap-2 hover:text-orange-500 dark:hover:text-orange-400 cursor-pointer transition-colors">
                   <Home className="h-3.5 w-3.5" />
                   <span>Stunity</span>
@@ -301,7 +299,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                 <ChevronRight className="h-3.5 w-3.5 text-gray-300 dark:text-gray-700" />
                 <span className="hover:text-orange-500 dark:hover:text-orange-400 cursor-pointer transition-colors">Settings</span>
                 <ChevronRight className="h-3.5 w-3.5 text-gray-300 dark:text-gray-700" />
-                <span className="text-gray-900 dark:text-white">Subjects Registry</span>
+                <span className="text-slate-900 dark:text-white underline decoration-orange-500/30 underline-offset-4">Subjects Registry</span>
               </nav>
 
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
@@ -313,15 +311,15 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                     </div>
                   </div>
                   <div>
-                    <h1 className="text-3xl lg:text-4xl font-black text-gray-900 dark:text-white tracking-tight">
-                      Subject Management
+                    <h1 className="text-3xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-2">
+                      Subject <span className="bg-gradient-to-r from-orange-600 to-yellow-500 bg-clip-text text-transparent">Management</span>
                     </h1>
-                    <div className="flex items-center gap-3 mt-1">
-                      <p className="text-gray-500 dark:text-gray-400 font-medium">
+                    <div className="flex items-center gap-3">
+                      <p className="text-slate-500 dark:text-gray-400 font-bold text-xs uppercase tracking-widest">
                         Curriculum & Academic Blueprint
                       </p>
-                      <div className="w-1 h-1 bg-gray-300 dark:bg-gray-700 rounded-full" />
-                      <span className="text-orange-600 dark:text-orange-500 font-black text-xs uppercase tracking-widest">
+                      <div className="w-1.5 h-1.5 bg-orange-500/30 rounded-full" />
+                      <span className="text-orange-600 dark:text-orange-500 font-black text-xs uppercase tracking-[0.2em]">
                         {statistics?.total || 0} Registered Modules
                       </span>
                     </div>
@@ -352,53 +350,50 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
           {/* Statistics Cards */}
           {statistics && (
             <AnimatedContent animation="slide-up" delay={25}>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white dark:bg-gray-900 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 p-6 group hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-500">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Total Subjects</p>
-                      <p className="text-4xl font-black text-gray-900 dark:text-white tracking-tight">{statistics.total}</p>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 p-8 group hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-500">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-4 bg-orange-50 dark:bg-orange-500/10 rounded-2xl group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
+                      <BookOpen className="w-7 h-7 text-orange-600 dark:text-orange-500" />
                     </div>
-                    <div className="p-4 bg-blue-50 dark:bg-blue-500/10 rounded-2xl group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
-                      <BookOpen className="w-7 h-7 text-blue-600 dark:text-blue-500" />
+                    <div className="flex flex-col items-end">
+                      <TrendingUp className="w-4 h-4 text-emerald-500 mb-1" />
+                      <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">+2.4%</span>
                     </div>
                   </div>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-1">Total Subjects</p>
+                  <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none">{statistics.total}</p>
                 </div>
 
-                <div className="bg-white dark:bg-gray-900 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 p-6 group hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-500">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Active Modules</p>
-                      <p className="text-4xl font-black text-emerald-600 dark:text-emerald-500 tracking-tight">{statistics.active}</p>
-                    </div>
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 p-8 group hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500">
+                  <div className="flex items-center justify-between mb-4">
                     <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-500">
                       <CheckCircle className="w-7 h-7 text-emerald-600 dark:text-emerald-500" />
                     </div>
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                   </div>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-1">Active Modules</p>
+                  <p className="text-4xl font-black text-emerald-600 dark:text-emerald-500 tracking-tight leading-none">{statistics.active}</p>
                 </div>
 
-                <div className="bg-white dark:bg-gray-900 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 p-6 group hover:shadow-xl hover:shadow-gray-500/5 transition-all duration-500">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Inactive</p>
-                      <p className="text-4xl font-black text-gray-500 dark:text-gray-400 tracking-tight">{statistics.inactive}</p>
-                    </div>
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 p-8 group hover:shadow-2xl hover:shadow-gray-500/10 transition-all duration-500">
+                  <div className="flex items-center justify-between mb-4">
                     <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl group-hover:scale-110 transition-transform duration-500">
                       <XCircle className="w-7 h-7 text-gray-400 dark:text-gray-500" />
                     </div>
                   </div>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-1">Retired / Draft</p>
+                  <p className="text-4xl font-black text-slate-400 dark:text-gray-400 tracking-tight leading-none">{statistics.inactive}</p>
                 </div>
 
-                <div className="bg-white dark:bg-gray-900 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 p-6 group hover:shadow-xl hover:shadow-purple-500/5 transition-all duration-500">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Categories</p>
-                      <p className="text-4xl font-black text-purple-600 dark:text-purple-500 tracking-tight">{statistics.byCategory.length}</p>
-                    </div>
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 p-8 group hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-500">
+                  <div className="flex items-center justify-between mb-4">
                     <div className="p-4 bg-purple-50 dark:bg-purple-500/10 rounded-2xl group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">
                       <Layers className="w-7 h-7 text-purple-600 dark:text-purple-500" />
                     </div>
                   </div>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-1">Disciplines</p>
+                  <p className="text-4xl font-black text-purple-600 dark:text-purple-500 tracking-tight leading-none">{statistics.byCategory.length}</p>
                 </div>
               </div>
             </AnimatedContent>
@@ -406,22 +401,22 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
 
           {/* Search and Filters */}
           <AnimatedContent animation="slide-up" delay={50}>
-            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 p-6 mb-8">
-              <div className="flex flex-col xl:flex-row gap-6">
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 p-8 mb-12">
+              <div className="flex flex-col xl:flex-row gap-8">
                 {/* Search */}
                 <div className="flex-1 relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-orange-500">
-                    <Search className="w-5 h-5 text-gray-400 group-focus-within:text-orange-500 transition-colors" />
+                  <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                    <Search className="w-5 h-5 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
                   </div>
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Quick search by name or identification code..."
-                    className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 text-sm"
+                    placeholder="Search curriculum by name, code, or description..."
+                    className="w-full pl-14 pr-6 py-5 bg-slate-50 dark:bg-gray-800/50 border border-slate-100 dark:border-gray-700 rounded-3xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all placeholder:text-slate-400 dark:placeholder:text-gray-600 text-sm"
                   />
-                  <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                    <kbd className="hidden sm:inline-flex items-center h-5 px-1.5 font-mono text-[10px] font-black text-gray-400 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded uppercase tracking-tighter shadow-sm">
+                  <div className="absolute inset-y-0 right-5 flex items-center pointer-events-none">
+                    <kbd className="hidden sm:inline-flex items-center h-6 px-2 font-mono text-[10px] font-black text-slate-400 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-lg uppercase tracking-tighter shadow-sm">
                       CMD + K
                     </kbd>
                   </div>
@@ -429,78 +424,60 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
 
                 <div className="flex flex-wrap items-center gap-4">
                   {/* Grade Filter */}
-                  <div className="relative">
+                  <div className="relative group/select">
                     <select
                       value={filterGrade}
                       onChange={(e) => setFilterGrade(e.target.value)}
-                      className="pl-5 pr-10 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all appearance-none cursor-pointer text-sm min-w-[140px]"
+                      className="pl-6 pr-12 py-5 bg-white dark:bg-gray-950 border border-slate-100 dark:border-gray-800 rounded-3xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-black text-[10px] uppercase tracking-widest transition-all appearance-none cursor-pointer min-w-[180px] shadow-sm"
                     >
                       <option value="">All Academic Levels</option>
                       {getUniqueGrades().map((grade) => (
                         <option key={grade} value={grade}>{grade}</option>
                       ))}
                     </select>
-                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                      <ChevronRight className="w-4 h-4 text-gray-400 rotate-90" />
+                    <div className="absolute inset-y-0 right-5 flex items-center pointer-events-none group-hover/select:translate-y-0.5 transition-transform">
+                      <Filter className="w-3.5 h-3.5 text-slate-400" />
                     </div>
                   </div>
 
                   {/* Category Filter */}
-                  <div className="relative">
+                  <div className="relative group/select">
                     <select
                       value={filterCategory}
                       onChange={(e) => setFilterCategory(e.target.value)}
-                      className="pl-5 pr-10 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all appearance-none cursor-pointer text-sm min-w-[160px]"
+                      className="pl-6 pr-12 py-5 bg-white dark:bg-gray-950 border border-slate-100 dark:border-gray-800 rounded-3xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-black text-[10px] uppercase tracking-widest transition-all appearance-none cursor-pointer min-w-[200px] shadow-sm"
                     >
                       <option value="">All Disciplines</option>
                       {getUniqueCategories().map((category) => (
                         <option key={category} value={category}>
-                          {category} • {getCategoryCount(category)}
+                          {category} ({getCategoryCount(category)})
                         </option>
                       ))}
                     </select>
-                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                      <ChevronRight className="w-4 h-4 text-gray-400 rotate-90" />
-                    </div>
-                  </div>
-
-                  {/* Status Filter */}
-                  <div className="relative">
-                    <select
-                      value={filterStatus}
-                      onChange={(e) => setFilterStatus(e.target.value as any)}
-                      className="pl-5 pr-10 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all appearance-none cursor-pointer text-sm min-w-[140px]"
-                    >
-                      <option value="all">Module Status: All</option>
-                      <option value="active">Active Only</option>
-                      <option value="inactive">Retired / Drafts</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                      <ChevronRight className="w-4 h-4 text-gray-400 rotate-90" />
+                    <div className="absolute inset-y-0 right-5 flex items-center pointer-events-none group-hover/select:translate-y-0.5 transition-transform">
+                      <Layers className="w-3.5 h-3.5 text-slate-400" />
                     </div>
                   </div>
 
                   {/* View Toggle */}
-                  <div className="flex items-center gap-1 bg-gray-50 dark:bg-gray-800/50 p-1.5 rounded-2xl ring-1 ring-gray-200 dark:ring-gray-700">
+                  <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-gray-800/50 p-1.5 rounded-[1.5rem] border border-slate-100 dark:border-gray-700 shadow-inner">
                     <button
                       onClick={() => setViewMode('grid')}
-                      className={`p-2.5 rounded-xl transition-all duration-300 ${
+                      className={`p-3 rounded-xl transition-all duration-500 ${
                         viewMode === 'grid' 
-                          ? 'bg-white dark:bg-gray-900 text-orange-600 dark:text-orange-500 shadow-sm' 
-                          : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                          ? 'bg-white dark:bg-gray-900 text-orange-600 dark:text-orange-500 shadow-lg scale-110' 
+                          : 'text-slate-400 hover:text-slate-600 dark:hover:text-gray-300'
                       }`}
-                      title="Grid View"
                     >
                       <Grid3x3 className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => setViewMode('list')}
-                      className={`p-2.5 rounded-xl transition-all duration-300 ${
+                      className={`p-3 rounded-xl transition-all duration-500 ${
                         viewMode === 'list' 
-                          ? 'bg-white dark:bg-gray-900 text-orange-600 dark:text-orange-500 shadow-sm' 
-                          : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                          ? 'bg-white dark:bg-gray-900 text-orange-600 dark:text-orange-500 shadow-lg scale-110' 
+                          : 'text-slate-400 hover:text-slate-600 dark:hover:text-gray-300'
                       }`}
-                      title="Table View"
                     >
                       <List className="w-5 h-5" />
                     </button>
@@ -560,242 +537,205 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredSubjects.map((subject) => (
-              <div
-                key={subject.id}
-                className={`group relative bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-sm border transition-all duration-500 hover:shadow-2xl hover:shadow-orange-500/5 ${
-                  subject.isActive 
-                    ? 'border-gray-100 dark:border-gray-800 hover:border-orange-500/50' 
-                    : 'border-gray-200 dark:border-gray-800 opacity-60 grayscale'
-                }`}
-              >
-                <div className="p-8">
-                  {/* Status Badge */}
-                  <div className="absolute top-6 right-6">
-                    {subject.isActive ? (
-                      <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-full">
-                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                        <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest">Active</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full">
-                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
-                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Retired</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Icon & Category */}
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="p-4 bg-orange-50 dark:bg-orange-500/10 rounded-2xl group-hover:bg-orange-500 group-hover:rotate-6 transition-all duration-500">
-                      <BookOpen className="w-6 h-6 text-orange-600 dark:text-orange-500 group-hover:text-white transition-colors" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-black text-orange-600 dark:text-orange-500 uppercase tracking-widest">
-                        {subject.category}
-                      </span>
-                      <h3 className="text-xl font-black text-gray-900 dark:text-white truncate max-w-[180px] tracking-tight group-hover:text-orange-600 dark:group-hover:text-orange-500 transition-colors">
-                        {subject.nameKh || subject.name}
-                      </h3>
-                    </div>
-                  </div>
-
-                  {/* Subtitle */}
-                  <p className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-6 line-clamp-1 border-l-2 border-gray-100 dark:border-gray-800 pl-4">{subject.nameEn || subject.name}</p>
-                  
-                  {/* Detailed Stats */}
-                  <div className="grid grid-cols-2 gap-4 mb-8">
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50 group-hover:border-orange-500/20 transition-colors">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">
-                        <Target className="w-3 h-3 text-orange-500" />
-                        Code
-                      </div>
-                      <p className="text-sm font-black text-gray-900 dark:text-white font-mono">{subject.code}</p>
-                    </div>
-
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50 group-hover:border-orange-500/20 transition-colors">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">
-                        <GraduationCap className="w-3 h-3 text-orange-500" />
-                        Level
-                      </div>
-                      <p className="text-sm font-black text-gray-900 dark:text-white">{subject.grade}</p>
-                    </div>
-
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50 group-hover:border-orange-500/20 transition-colors">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">
-                        <Clock className="w-3 h-3 text-orange-500" />
-                        Weekly
-                      </div>
-                      <p className="text-sm font-black text-gray-900 dark:text-white">{subject.weeklyHours}h <span className="text-[10px] text-gray-400">/ week</span></p>
-                    </div>
-
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700/50 group-hover:border-orange-500/20 transition-colors">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">
-                        <Award className="w-3 h-3 text-orange-500" />
-                        Factor
-                      </div>
-                      <p className="text-sm font-black text-gray-900 dark:text-white">x{subject.coefficient}</p>
-                    </div>
-                  </div>
-
-                  {/* Secondary Metrics */}
-                  <div className="flex items-center justify-between px-2 mb-8">
-                    <div className="flex items-center gap-2">
-                       <Users className="w-4 h-4 text-gray-400" />
-                       <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
-                         {subject._count?.subjectTeachers || 0} Faculty Members
-                       </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                       <Hash className="w-4 h-4 text-gray-400" />
-                       <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
-                         {subject.maxScore} Base Score
-                       </span>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-4 p-1 bg-gray-50 dark:bg-gray-800 rounded-[1.5rem]">
-                    <button
-                      onClick={() => handleToggleStatus(subject)}
-                      className={`flex-1 px-4 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all active:scale-95 ${
-                        subject.isActive
-                          ? 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:text-rose-600 dark:hover:text-rose-500 shadow-sm border border-gray-100 dark:border-gray-700'
-                          : 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 hover:scale-105'
-                      }`}
-                    >
-                      {subject.isActive ? 'Deactivate' : 'Reactivate'}
-                    </button>
-                    <button
-                      onClick={() => handleEdit(subject)}
-                      className="p-3 bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-500 border border-gray-100 dark:border-gray-700 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-sm"
-                    >
-                      <Edit className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(subject)}
-                      className="p-3 bg-white dark:bg-gray-900 text-rose-600 dark:text-rose-500 border border-gray-100 dark:border-gray-700 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-sm"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
-                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                    Academic Subject
-                  </th>
-                  <th className="px-6 py-5 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                    ID Code
-                  </th>
-                  <th className="px-6 py-5 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                    Level & Track
-                  </th>
-                  <th className="px-6 py-5 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                    Discipline
-                  </th>
-                  <th className="px-6 py-5 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                    Weight
-                  </th>
-                  <th className="px-6 py-5 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                    Workload
-                  </th>
-                  <th className="px-6 py-5 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                    Registry
-                  </th>
-                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest text-right">
-                    Management
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {filteredSubjects.map((subject) => (
-                  <tr key={subject.id} className="group hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all">
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-orange-50 dark:bg-orange-500/10 rounded-xl">
-                          <BookOpen className="w-5 h-5 text-orange-600 dark:text-orange-500" />
-                        </div>
-                        <div>
-                          <p className="font-black text-gray-900 dark:text-white tracking-tight">{subject.nameKh || subject.name}</p>
-                          <p className="text-xs font-bold text-gray-400 dark:text-gray-600">{subject.nameEn || subject.name}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-6 font-mono text-sm font-black text-orange-600 dark:text-orange-500">
-                      {subject.code}
-                    </td>
-                    <td className="px-6 py-6">
-                      <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-500 text-[10px] font-black uppercase tracking-widest rounded-full">
-                          {subject.grade}
-                        </span>
-                        {subject.track && (
-                          <span className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-500 text-[10px] font-bold uppercase tracking-widest rounded-full">
-                            {subject.track}
-                          </span>
+                  <div
+                    key={subject.id}
+                    className={`group relative bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-sm border transition-all duration-500 hover:shadow-2xl hover:shadow-orange-500/10 hover:-translate-y-2 ${
+                      subject.isActive 
+                        ? 'border-slate-100 dark:border-gray-800' 
+                        : 'border-slate-200 dark:border-gray-800 opacity-60 grayscale'
+                    }`}
+                  >
+                    <div className="p-8">
+                      {/* Status Badge */}
+                      <div className="absolute top-8 right-8">
+                        {subject.isActive ? (
+                          <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-full">
+                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                            <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest leading-none">Live</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 dark:bg-gray-800 border border-slate-100 dark:border-gray-700 rounded-full">
+                            <div className="w-1.5 h-1.5 bg-slate-400 rounded-full" />
+                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">Draft</span>
+                          </div>
                         )}
                       </div>
-                    </td>
-                    <td className="px-6 py-6">
-                      <span className="px-3 py-1 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-500 text-[10px] font-black uppercase tracking-widest rounded-full">
-                        {subject.category}
-                      </span>
-                    </td>
-                    <td className="px-6 py-6 text-sm font-black text-gray-900 dark:text-white">
-                      x{subject.coefficient}
-                    </td>
-                    <td className="px-6 py-6">
-                       <div className="flex items-center gap-2 text-sm font-black text-gray-900 dark:text-white">
-                         <Clock className="w-4 h-4 text-orange-500" />
-                         {subject.weeklyHours}h
-                       </div>
-                    </td>
-                    <td className="px-6 py-6">
-                      {subject.isActive ? (
-                        <div className="flex items-center gap-2 text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest">
-                          <CheckCircle className="w-4 h-4" />
-                          Online
+
+                      {/* Icon & Category */}
+                      <div className="flex items-center gap-5 mb-8">
+                        <div className="p-4 bg-orange-50 dark:bg-orange-500/10 rounded-[1.5rem] group-hover:bg-gradient-to-br group-hover:from-orange-500 group-hover:to-yellow-500 group-hover:rotate-6 transition-all duration-500 group-hover:shadow-lg group-hover:shadow-orange-500/20">
+                          <BookOpen className="w-7 h-7 text-orange-600 dark:text-orange-500 group-hover:text-white transition-colors" />
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                          <XCircle className="w-4 h-4" />
-                          Retired
+                        <div>
+                          <span className="text-[9px] font-black text-orange-600 dark:text-orange-500 uppercase tracking-[0.2em] block mb-1">
+                            {subject.category}
+                          </span>
+                          <h3 className="text-2xl font-black text-slate-900 dark:text-white truncate max-w-[180px] tracking-tight group-hover:text-orange-600 dark:group-hover:text-orange-500 transition-colors leading-none">
+                            {subject.nameKh || subject.name}
+                          </h3>
                         </div>
-                      )}
-                    </td>
-                    <td className="px-8 py-6 text-right">
-                      <div className="flex items-center justify-end gap-3 translate-x-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                      </div>
+
+                      {/* Subtitle */}
+                      <p className="text-sm font-bold text-slate-500 dark:text-gray-400 mb-8 line-clamp-1 border-l-2 border-orange-500/30 pl-4">{subject.nameEn || subject.name}</p>
+                      
+                      {/* Detailed Stats */}
+                      <div className="grid grid-cols-2 gap-4 mb-8">
+                        <div className="p-4 bg-slate-50/50 dark:bg-gray-800/50 rounded-2xl border border-slate-100 dark:border-gray-700/50 group-hover:border-orange-500/20 transition-colors">
+                          <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
+                            <Target className="w-3 h-3 text-orange-500" />
+                            Code
+                          </div>
+                          <p className="text-sm font-black text-slate-900 dark:text-white font-mono">{subject.code}</p>
+                        </div>
+
+                        <div className="p-4 bg-slate-50/50 dark:bg-gray-800/50 rounded-2xl border border-slate-100 dark:border-gray-700/50 group-hover:border-orange-500/20 transition-colors">
+                          <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
+                            <GraduationCap className="w-3 h-3 text-orange-500" />
+                            Level
+                          </div>
+                          <p className="text-sm font-black text-slate-900 dark:text-white">{subject.grade}</p>
+                        </div>
+
+                        <div className="p-4 bg-slate-50/50 dark:bg-gray-800/50 rounded-2xl border border-slate-100 dark:border-gray-700/50 group-hover:border-orange-500/20 transition-colors">
+                          <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
+                            <Clock className="w-3 h-3 text-orange-500" />
+                            Weekly
+                          </div>
+                          <p className="text-sm font-black text-slate-900 dark:text-white">{subject.weeklyHours}h <span className="text-[9px] text-slate-400">/ week</span></p>
+                        </div>
+
+                        <div className="p-4 bg-slate-50/50 dark:bg-gray-800/50 rounded-2xl border border-slate-100 dark:border-gray-700/50 group-hover:border-orange-500/20 transition-colors">
+                          <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
+                            <Award className="w-3 h-3 text-orange-500" />
+                            Factor
+                          </div>
+                          <p className="text-sm font-black text-slate-900 dark:text-white underline decoration-orange-500/30">x{subject.coefficient}</p>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-3 p-1.5 bg-slate-50 dark:bg-gray-800/50 rounded-[1.8rem] border border-slate-100 dark:border-gray-700 transition-all">
                         <button
                           onClick={() => handleToggleStatus(subject)}
-                          className="p-2 text-gray-400 hover:text-orange-600 dark:hover:text-orange-500 transition-colors"
-                          title={subject.isActive ? 'Deactivate' : 'Activate'}
+                          className={`flex-1 px-4 py-3.5 rounded-[1.2rem] font-black uppercase tracking-widest text-[9px] transition-all active:scale-95 shadow-sm ${
+                            subject.isActive
+                              ? 'bg-white dark:bg-gray-900 text-slate-600 dark:text-gray-400 hover:text-rose-600 dark:hover:text-rose-500 border border-slate-100 dark:border-gray-700'
+                              : 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 hover:scale-105'
+                          }`}
                         >
-                          <RefreshCw className="w-4 h-4" />
+                          {subject.isActive ? 'Suspend' : 'Resume'}
                         </button>
                         <button
                           onClick={() => handleEdit(subject)}
-                          className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-500 transition-colors"
+                          className="p-3.5 bg-white dark:bg-gray-900 text-indigo-600 dark:text-indigo-400 border border-slate-100 dark:border-gray-700 rounded-[1.2rem] hover:scale-105 active:scale-95 transition-all shadow-sm"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-5 h-5" />
                         </button>
                         <button
                           onClick={() => handleDelete(subject)}
-                          className="p-2 text-gray-400 hover:text-rose-600 dark:hover:text-rose-500 transition-colors"
+                          className="p-3.5 bg-white dark:bg-gray-900 text-rose-600 dark:text-rose-500 border border-slate-100 dark:border-gray-700 rounded-[1.2rem] hover:scale-105 active:scale-95 transition-all shadow-sm"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-5 h-5" />
                         </button>
                       </div>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+        ) : (
+          <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-gray-800 overflow-hidden hover:shadow-2xl transition-all duration-500">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-slate-50/50 dark:bg-gray-800/30 border-b border-slate-100 dark:border-gray-800">
+                    <th className="px-8 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">Academic Subject</th>
+                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">ID Code</th>
+                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">Curriculum Level</th>
+                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">Discipline</th>
+                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">Load</th>
+                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">Status</th>
+                    <th className="px-8 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-gray-800/50">
+                  {filteredSubjects.map((subject) => (
+                    <tr key={subject.id} className="group hover:bg-slate-50/50 dark:hover:bg-gray-800/30 transition-all duration-300">
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 bg-orange-50 dark:bg-orange-500/10 rounded-2xl group-hover:scale-110 group-hover:rotate-6 transition-all">
+                            <BookOpen className="w-5 h-5 text-orange-600 dark:text-orange-500" />
+                          </div>
+                          <div>
+                            <p className="font-black text-slate-900 dark:text-white tracking-tight text-lg leading-none mb-1">{subject.nameKh || subject.name}</p>
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-widest">{subject.nameEn || subject.name}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-6">
+                        <span className="px-3 py-1.5 bg-slate-50 dark:bg-gray-800 border border-slate-100 dark:border-gray-700 text-slate-900 dark:text-white font-mono text-xs font-black rounded-lg">
+                          {subject.code}
+                        </span>
+                      </td>
+                      <td className="px-6 py-6">
+                        <div className="flex items-center gap-2">
+                          <span className="px-4 py-1.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-500 text-[10px] font-black uppercase tracking-widest rounded-xl border border-blue-100/50 dark:border-blue-500/20">
+                            {subject.grade}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-6">
+                        <span className="px-4 py-1.5 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-500 text-[10px] font-black uppercase tracking-widest rounded-xl border border-purple-100/50 dark:border-purple-500/20">
+                          {subject.category}
+                        </span>
+                      </td>
+                      <td className="px-6 py-6">
+                         <div className="flex items-center gap-2 text-sm font-black text-slate-900 dark:text-white">
+                           <Clock className="w-4 h-4 text-orange-500" />
+                           {subject.weeklyHours}h
+                           <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">/wk</span>
+                         </div>
+                      </td>
+                      <td className="px-6 py-6">
+                        {subject.isActive ? (
+                          <div className="flex items-center gap-2 text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest">
+                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                            Live
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            <div className="w-1.5 h-1.5 bg-slate-400 rounded-full" />
+                            Draft
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-8 py-6 text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 translate-x-4 transition-all duration-300">
+                          <button
+                            onClick={() => handleToggleStatus(subject)}
+                            className="p-3 bg-white dark:bg-gray-800 text-slate-400 hover:text-orange-600 dark:hover:text-orange-500 rounded-xl shadow-sm border border-slate-100 dark:border-gray-700 transition-all hover:scale-110 active:scale-95"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleEdit(subject)}
+                            className="p-3 bg-white dark:bg-gray-800 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl shadow-sm border border-slate-100 dark:border-gray-700 transition-all hover:scale-110 active:scale-95"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(subject)}
+                            className="p-3 bg-white dark:bg-gray-800 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-xl shadow-sm border border-slate-100 dark:border-gray-700 transition-all hover:scale-110 active:scale-95"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
             )}
           </BlurLoader>

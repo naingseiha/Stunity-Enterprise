@@ -27,6 +27,13 @@ import {
   Home,
   ClipboardList,
   Zap,
+  Filter,
+  Layers,
+  BookOpen,
+  Award,
+  TrendingUp,
+  TrendingDown,
+  Edit3,
 } from 'lucide-react';
 
 interface GradeEntry {
@@ -529,24 +536,35 @@ export default function GradeEntryPage() {
           <AnimatedContent animation="fade" delay={0}>
             <div className="mb-6">
               {/* Breadcrumb */}
-              <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-500 mb-6 font-medium uppercase tracking-widest text-[10px]">
-                <Home className="h-3.5 w-3.5" />
-                <ChevronRight className="h-3 w-3 text-gray-300 dark:text-gray-700" />
-                <span>Grades</span>
-                <ChevronRight className="h-3 w-3 text-gray-300 dark:text-gray-700" />
-                <span className="text-gray-900 dark:text-white">Grade Entry</span>
+              <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-gray-500 mb-6">
+                <div className="flex items-center gap-2 hover:text-orange-500 dark:hover:text-orange-400 cursor-pointer transition-colors">
+                  <Home className="h-3.5 w-3.5" />
+                  <span>Stunity</span>
+                </div>
+                <ChevronRight className="h-3.5 w-3.5 text-gray-300 dark:text-gray-700" />
+                <span className="hover:text-orange-500 dark:hover:text-orange-400 cursor-pointer transition-colors">Academic Ledger</span>
+                <ChevronRight className="h-3.5 w-3.5 text-gray-300 dark:text-gray-700" />
+                <span className="text-slate-900 dark:text-white underline decoration-orange-500/30 underline-offset-4">Grade Entry Grid</span>
               </nav>
 
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-3.5 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-2xl text-white shadow-lg shadow-orange-500/20">
-                    <ClipboardList className="h-6 w-6 text-white" />
+                <div className="flex items-center gap-5">
+                  <div className="p-4 bg-gradient-to-br from-orange-600 to-yellow-500 rounded-2xl text-white shadow-xl shadow-orange-500/20 rotate-3 hover:rotate-0 transition-transform duration-500">
+                    <ClipboardList className="h-7 w-7 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-2xl lg:text-4xl font-black text-gray-900 dark:text-white tracking-tight">Grade Entry</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1 font-medium">
-                      Enter and manage student grades with Excel-like grid
-                    </p>
+                    <h1 className="text-3xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-2">
+                       Academic <span className="bg-gradient-to-r from-orange-600 to-yellow-500 bg-clip-text text-transparent">Ledger</span>
+                    </h1>
+                    <div className="flex items-center gap-3">
+                      <p className="text-slate-500 dark:text-gray-400 font-bold text-xs uppercase tracking-widest">
+                        Standardized Evaluation System
+                      </p>
+                      <div className="w-1.5 h-1.5 bg-orange-500/30 rounded-full" />
+                      <span className="text-orange-600 dark:text-orange-500 font-black text-xs uppercase tracking-[0.2em]">
+                        Live Entry Mode
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -730,127 +748,131 @@ export default function GradeEntryPage() {
           </AnimatedContent>
           
           {/* Main Grid Area - Genesis style */}
-          <AnimatedContent animation="slide-up" delay={100}>
-            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-all hover:shadow-2xl dark:hover:shadow-black/20">
-
-
-        {/* Quick Fill Modal */}
-        {showQuickFill && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4 border border-gray-200 dark:border-gray-800 animate-in fade-in zoom-in duration-200">
-              <h3 className="text-xl font-black text-gray-900 dark:text-white mb-6 flex items-center gap-3">
-                <div className="p-2 bg-indigo-500/10 rounded-xl">
-                  <Zap className="w-6 h-6 text-indigo-500" />
+          <div className="relative">
+            {/* Quick Fill Modal */}
+            {showQuickFill && (
+              <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[100] p-6 animate-in fade-in duration-300">
+                <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-2xl rounded-[3rem] shadow-2xl p-10 max-w-md w-full border border-white dark:border-gray-800 animate-in zoom-in-95 duration-300">
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="p-4 bg-orange-500/10 rounded-2xl">
+                      <Zap className="w-8 h-8 text-orange-500" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none">Quick <span className="text-orange-600">Fill</span></h3>
+                      <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest mt-1">Bulk Ledger Operations</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-8">
+                    <div className="group/input">
+                      <label className="block text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest mb-3 ml-2">
+                        Assignment Score (Max: {maxScore})
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max={maxScore}
+                        step="0.5"
+                        value={quickFillScore}
+                        onChange={(e) => setQuickFillScore(e.target.value)}
+                        className="w-full px-8 py-6 bg-slate-50 dark:bg-gray-800/50 border border-slate-100 dark:border-gray-700 rounded-3xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-black text-3xl text-center transition-all"
+                        placeholder="0.0"
+                        autoFocus
+                      />
+                    </div>
+                    
+                    <div className="flex flex-col gap-3">
+                      <button
+                        onClick={() => {
+                          const score = parseFloat(quickFillScore);
+                          if (!isNaN(score) && score >= 0 && score <= maxScore) {
+                            const count = quickFillEmptyScores(score);
+                            if (count === 0) alert('No empty cells to fill!');
+                          } else {
+                            alert(`Please enter a valid score between 0 and ${maxScore}`);
+                          }
+                        }}
+                        disabled={!quickFillScore}
+                        className="w-full py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 active:scale-95 disabled:opacity-50 transition-all shadow-xl"
+                      >
+                        Fill Empty Records
+                      </button>
+                      <button
+                        onClick={() => {
+                          const score = parseFloat(quickFillScore);
+                          if (!isNaN(score) && score >= 0 && score <= maxScore) {
+                            if (confirm('This will overwrite ALL existing scores. Continue?')) {
+                              quickFillAllScores(score);
+                            }
+                          } else {
+                            alert(`Please enter a valid score between 0 and ${maxScore}`);
+                          }
+                        }}
+                        disabled={!quickFillScore}
+                        className="w-full py-5 bg-white dark:bg-gray-800 text-slate-900 dark:text-white border border-slate-200 dark:border-gray-700 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-50 dark:hover:bg-gray-700 transition-all"
+                      >
+                        Overwrite Entire Ledger
+                      </button>
+                    </div>
+                    
+                    <button
+                      onClick={() => {
+                        setShowQuickFill(false);
+                        setQuickFillScore('');
+                      }}
+                      className="w-full text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest hover:text-slate-600 dark:hover:text-gray-300 transition-colors"
+                    >
+                      Dismiss Control
+                    </button>
+                  </div>
                 </div>
-                Quick Fill Scores
-              </h3>
-              
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">
-                    Score to Fill (max {maxScore})
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max={maxScore}
-                    step="0.5"
-                    value={quickFillScore}
-                    onChange={(e) => setQuickFillScore(e.target.value)}
-                    className="w-full px-5 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-black text-lg text-center dark:text-white"
-                    placeholder={`0 - ${maxScore}`}
-                    autoFocus
-                  />
-                </div>
-                
-                <div className="flex flex-col gap-3">
-                  <button
-                    onClick={() => {
-                      const score = parseFloat(quickFillScore);
-                      if (!isNaN(score) && score >= 0 && score <= maxScore) {
-                        const count = quickFillEmptyScores(score);
-                        if (count === 0) {
-                          alert('No empty cells to fill!');
-                        }
-                      } else {
-                        alert(`Please enter a valid score between 0 and ${maxScore}`);
-                      }
-                    }}
-                    disabled={!quickFillScore}
-                    className="w-full px-6 py-3.5 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 disabled:opacity-50 font-bold transition-all shadow-lg shadow-indigo-500/20 active:scale-[0.98]"
-                  >
-                    Fill Empty Only
-                  </button>
-                  <button
-                    onClick={() => {
-                      const score = parseFloat(quickFillScore);
-                      if (!isNaN(score) && score >= 0 && score <= maxScore) {
-                        if (confirm('This will overwrite ALL existing scores. Continue?')) {
-                          quickFillAllScores(score);
-                        }
-                      } else {
-                        alert(`Please enter a valid score between 0 and ${maxScore}`);
-                      }
-                    }}
-                    disabled={!quickFillScore}
-                    className="w-full px-6 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 font-bold transition-all active:scale-[0.98]"
-                  >
-                    Overwrite All
-                  </button>
-                </div>
-                
-                <button
-                  onClick={() => {
-                    setShowQuickFill(false);
-                    setQuickFillScore('');
-                  }}
-                  className="w-full px-6 py-3 text-gray-500 dark:text-gray-400 rounded-2xl hover:text-gray-900 dark:hover:text-white font-bold text-sm transition-all"
-                >
-                  Cancel
-                </button>
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-          {/* Save Indicator */}
-        {saveStatus !== 'idle' && (
-          <div className="fixed top-24 right-8 z-50 animate-in slide-in-from-right duration-300">
-            <div className={`px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-md border ${
-              saveStatus === 'saving' ? 'bg-blue-500/90 border-blue-400 text-white' :
-              saveStatus === 'saved' ? 'bg-emerald-500/90 border-emerald-400 text-white' :
-              'bg-rose-500/90 border-rose-400 text-white'
-            }`}>
-              {saveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin" />}
-              {saveStatus === 'saved' && <CheckCircle className="w-4 h-4" />}
-              {saveStatus === 'error' && <XCircle className="w-4 h-4" />}
-              <span className="font-bold text-xs uppercase tracking-wider">
-                {saveStatus === 'saving' ? 'Saving Changes' :
-                 saveStatus === 'saved' ? 'All Changes Saved' :
-                 'Save Failed'}
-              </span>
-            </div>
-          </div>
-        )}
+            {/* Save Status Floating Indicator */}
+            {saveStatus !== 'idle' && (
+              <div className="fixed top-24 right-8 z-50 animate-in slide-in-from-top-4 duration-500">
+                <div className={`px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-4 backdrop-blur-2xl border transition-all ${
+                  saveStatus === 'saving' ? 'bg-orange-500/90 border-orange-400 text-white' :
+                  saveStatus === 'saved' ? 'bg-emerald-500/90 border-emerald-400 text-white' :
+                  'bg-rose-500/90 border-rose-400 text-white'
+                }`}>
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    {saveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {saveStatus === 'saved' && <CheckCircle className="w-4 h-4" />}
+                    {saveStatus === 'error' && <XCircle className="w-4 h-4" />}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-black text-[10px] uppercase tracking-[0.2em]">
+                      {saveStatus === 'saving' ? 'Synchronizing' :
+                       saveStatus === 'saved' ? 'Ledger Updated' :
+                       'Sync Failure'}
+                    </span>
+                    <span className="text-[9px] opacity-70 font-bold uppercase tracking-widest leading-none">
+                      Cloud Systems Integrated
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
 
-        {/* Excel-Like Grid */}
-        <AnimatedContent animation="slide-up" delay={100}>
-          <BlurLoader 
+            <AnimatedContent animation="slide-up" delay={100}>
+              <BlurLoader 
             isLoading={loadingGrid}
             skeleton={
-              <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+              <div className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-gray-800 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
+                    <thead className="bg-slate-50/50 dark:bg-gray-800/50 border-b border-slate-100 dark:border-gray-800">
                       <tr>
-                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">No.</th>
-                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest min-w-[80px]">Photo</th>
-                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest min-w-[200px]">Student Name</th>
-                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Student ID</th>
-                        <th className="px-6 py-4 text-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest min-w-[120px]">Score</th>
-                        <th className="px-6 py-4 text-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Percentage</th>
-                        <th className="px-6 py-4 text-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Grade</th>
-                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest min-w-[200px]">Remarks</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">No.</th>
+                        <th className="px-6 py-6 text-left text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] min-w-[80px]">Photo</th>
+                        <th className="px-6 py-6 text-left text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] min-w-[200px]">Student Name</th>
+                        <th className="px-6 py-6 text-left text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">Student ID</th>
+                        <th className="px-6 py-6 text-center text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] min-w-[120px]">Score</th>
+                        <th className="px-6 py-6 text-center text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">Percentage</th>
+                        <th className="px-6 py-6 text-center text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">Grade</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] min-w-[200px]">Remarks</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -862,22 +884,21 @@ export default function GradeEntryPage() {
             }
           >
             {gridData.length > 0 ? (
-              <div className="transition-all">
+              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-gray-800 overflow-hidden hover:shadow-2xl transition-all duration-500">
                 <div className="overflow-x-auto">
-
-                  <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10 backdrop-blur-md">
+                  <table className="w-full text-left">
+                    <thead className="bg-slate-50/50 dark:bg-gray-800/30 border-b border-slate-100 dark:border-gray-800 sticky top-0 z-10 backdrop-blur-md">
                       <tr>
-                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">No.</th>
-                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest min-w-[80px]">Photo</th>
-                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest min-w-[200px]">Student Name</th>
-                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Student ID</th>
-                        <th className="px-6 py-4 text-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest min-w-[120px]">
-                          Score (/{maxScore})
+                        <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">Rank</th>
+                        <th className="px-6 py-6 text-left text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] min-w-[80px]">Identity</th>
+                        <th className="px-6 py-6 text-left text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] min-w-[200px]">Student Scholar</th>
+                        <th className="px-6 py-6 text-left text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">Registry ID</th>
+                        <th className="px-6 py-6 text-center text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] min-w-[120px]">
+                          Performance Score (/{maxScore})
                         </th>
-                        <th className="px-6 py-4 text-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Percentage</th>
-                        <th className="px-6 py-4 text-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Grade</th>
-                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest min-w-[200px]">Remarks</th>
+                        <th className="px-6 py-6 text-center text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">Percentage</th>
+                        <th className="px-6 py-6 text-center text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">Tier</th>
+                        <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] min-w-[200px]">Annotated Remarks</th>
                       </tr>
                     </thead>
                 <tbody>
@@ -892,100 +913,126 @@ export default function GradeEntryPage() {
                     return (
                       <tr
                         key={item.student.id}
-                        className={`transition-colors h-22 group/row ${
-                          isEven ? 'bg-white/40 dark:bg-gray-900/40' : 'bg-gray-50/20 dark:bg-gray-800/10'
-                        } hover:bg-orange-50/40 dark:hover:bg-orange-500/10`}
+                        className={`group border-b border-slate-100 dark:border-gray-800/50 hover:bg-orange-50/30 dark:hover:bg-orange-500/5 transition-all duration-300 ${
+                          isEven ? 'bg-white/40 dark:bg-gray-900/40' : 'bg-slate-50/20 dark:bg-gray-800/10'
+                        }`}
                       >
-
-                        <td className="px-6 py-4 text-sm font-black text-gray-400 dark:text-gray-600">
-                          {index + 1}
+                        <td className="px-8 py-6">
+                           <span className="text-[10px] font-black text-slate-400 dark:text-gray-600 font-mono tracking-tighter bg-slate-100 dark:bg-gray-800 px-2 py-1 rounded-md">
+                             {String(index + 1).padStart(2, '0')}
+                           </span>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="w-12 h-12 rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-0.5 group-hover/row:scale-105 transition-transform duration-300">
-                            <img
-                              src={item.student.photoUrl || '/default-avatar.png'}
-                              alt={item.student.firstName}
-                              className="w-full h-full object-cover rounded-[14px]"
-                            />
+                        <td className="px-6 py-6">
+                          <div className="relative group/photo flex-shrink-0">
+                            <div className="w-14 h-14 rounded-2xl overflow-hidden bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 p-0.5 group-hover/row:scale-110 group-hover/row:rotate-3 transition-all duration-500 shadow-sm group-hover/row:shadow-xl group-hover/row:shadow-orange-500/10">
+                              <img
+                                src={item.student.photoUrl || '/default-avatar.png'}
+                                alt={item.student.firstName}
+                                className="w-full h-full object-cover rounded-[14px]"
+                              />
+                            </div>
+                            {percentage >= 90 && (
+                              <div className="absolute -top-2 -right-2 p-1 bg-amber-400 rounded-full shadow-lg border-2 border-white dark:border-gray-900">
+                                <Award className="w-3 h-3 text-white" />
+                              </div>
+                            )}
                           </div>
-
                         </td>
-                        <td className="px-6 py-4">
-                          <div>
-                            <div className="text-sm font-black text-gray-900 dark:text-white group-hover:text-orange-600 transition-colors">
+                        <td className="px-6 py-6">
+                          <div className="flex flex-col">
+                            <span className="text-base font-black text-slate-900 dark:text-white group-hover/row:text-orange-600 transition-colors tracking-tight leading-none mb-1">
                               {item.student.firstName} {item.student.lastName}
-                            </div>
-                            <div className="text-xs font-medium text-gray-400 dark:text-gray-500">
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-widest leading-none">
                               {item.student.khmerName}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm font-bold text-gray-500 dark:text-gray-400 tracking-tight">
-                          {item.student.studentId || '-'}
-                        </td>
-                        <td className="px-6 py-4">
-                          <input
-                            ref={(el) => {
-                              if (el) inputRefs.current.set(`${item.student.id}-score`, el);
-                            }}
-                            type="number"
-                            min="0"
-                            max={maxScore}
-                            step="0.5"
-                            value={score ?? ''}
-                            onChange={(e) => handleScoreChange(item.student.id, e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, item.student.id, 'score')}
-                            placeholder="0"
-                            className={`w-full px-4 py-2 bg-white/50 dark:bg-gray-800/50 border rounded-xl text-center font-black focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all ${
-                              score !== null && score !== undefined
-                                ? score > maxScore
-                                  ? 'border-red-500 text-red-700 dark:text-red-400'
-                                  : percentage >= 50
-                                    ? 'border-emerald-500/50 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
-                                    : 'border-rose-500/50 dark:border-rose-500/30 text-rose-700 dark:text-rose-400'
-                                : 'border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100'
-                            }`}
-
-                          />
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className={`text-center font-black tracking-tight ${
-                            score !== null 
-                              ? percentage >= 50 
-                                ? 'text-emerald-600 dark:text-emerald-400' 
-                                : 'text-rose-600 dark:text-rose-400'
-                              : 'text-gray-300 dark:text-gray-700'
-                          }`}>
-                            {score !== null ? `${percentage.toFixed(1)}%` : '-'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex justify-center">
-                            <span className={`px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest border border-transparent shadow-sm ${
-                              gradeLevel === '-'
-                                ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600'
-                                : gradeLevel === 'F'
-                                  ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400'
-                                  : gradeLevel === 'E' || gradeLevel === 'D'
-                                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                                    : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                            }`}>
-                              {gradeLevel}
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <input
-                            ref={(el) => {
-                              if (el) inputRefs.current.set(`${item.student.id}-remarks`, el);
-                            }}
-                            type="text"
-                            value={remarks}
-                            onChange={(e) => handleRemarksChange(item.student.id, e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, item.student.id, 'remarks')}
-                            placeholder="Note..."
-                            className="w-full px-4 py-2 text-xs bg-gray-50/50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all font-medium dark:text-gray-300"
-                          />
+                        <td className="px-6 py-6">
+                          <span className="text-xs font-black text-slate-500 dark:text-gray-400 font-mono bg-slate-50 dark:bg-gray-800/50 px-3 py-1.5 rounded-xl border border-slate-100 dark:border-gray-700">
+                            {item.student.studentId || '-'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-6 h-full">
+                          <div className="relative group/field max-w-[120px] mx-auto">
+                            <input
+                              ref={(el) => {
+                                if (el) inputRefs.current.set(`${item.student.id}-score`, el);
+                              }}
+                              type="number"
+                              min="0"
+                              max={maxScore}
+                              step="0.5"
+                              value={score ?? ''}
+                              onChange={(e) => handleScoreChange(item.student.id, e.target.value)}
+                              onKeyDown={(e) => handleKeyDown(e, item.student.id, 'score')}
+                              placeholder="0"
+                              className={`w-full px-4 py-4 bg-white/50 dark:bg-gray-800/50 border rounded-2xl text-center font-black text-xl focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all ${
+                                score !== null && score !== undefined
+                                  ? score > maxScore
+                                    ? 'border-red-500 text-red-600 dark:text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.1)]'
+                                    : percentage >= 50
+                                      ? 'border-emerald-500/30 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                                      : 'border-rose-500/30 dark:border-rose-500/20 text-rose-600 dark:text-rose-400'
+                                  : 'border-slate-100 dark:border-gray-800 text-slate-900 dark:text-gray-100'
+                              }`}
+                            />
+                            <div className="absolute -bottom-1 left-4 right-4 h-0.5 bg-orange-500 scale-x-0 group-focus-within/field:scale-x-100 transition-transform duration-300 origin-center" />
+                          </div>
+                        </td>
+                        <td className="px-6 py-6">
+                           <div className="flex flex-col items-center">
+                            <span className={`text-lg font-black tracking-tight leading-none mb-1 ${
+                              score !== null 
+                                ? percentage >= 50 
+                                  ? 'text-emerald-600 dark:text-emerald-400' 
+                                  : 'text-rose-600 dark:text-rose-400'
+                                : 'text-slate-200 dark:text-gray-800'
+                            }`}>
+                              {score !== null ? `${percentage.toFixed(1)}%` : '—'}
+                            </span>
+                            {score !== null && (
+                              <div className="w-16 h-1 bg-slate-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full transition-all duration-1000 ${percentage >= 50 ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                                  style={{ width: `${percentage}%` }}
+                                />
+                              </div>
+                            )}
+                           </div>
+                        </td>
+                        <td className="px-6 py-6">
+                          <div className="flex justify-center">
+                            <span className={`px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border shadow-sm transition-all duration-500 group-hover/row:scale-110 ${
+                              gradeLevel === '-'
+                                ? 'bg-slate-50 dark:bg-gray-800/50 text-slate-300 dark:text-gray-700 border-slate-100 dark:border-gray-800'
+                                : gradeLevel === 'F'
+                                  ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-500/20'
+                                  : gradeLevel === 'E' || gradeLevel === 'D'
+                                    ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-500/20'
+                                    : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20'
+                            }`}>
+                              {gradeLevel === 'F' ? 'FAIL' : gradeLevel === '-' ? 'UNGRADED' : `GRADE ${gradeLevel}`}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-8 py-6">
+                          <div className="relative group/remarks">
+                            <input
+                              ref={(el) => {
+                                if (el) inputRefs.current.set(`${item.student.id}-remarks`, el);
+                              }}
+                              type="text"
+                              value={remarks}
+                              onChange={(e) => handleRemarksChange(item.student.id, e.target.value)}
+                              onKeyDown={(e) => handleKeyDown(e, item.student.id, 'remarks')}
+                              placeholder="Clinical notes..."
+                              className="w-full px-5 py-4 text-xs bg-slate-50/50 dark:bg-gray-800/50 border border-slate-100/50 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all font-bold dark:text-gray-300 placeholder:text-slate-300 dark:placeholder:text-gray-700"
+                            />
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover/remarks:opacity-100 transition-opacity">
+                              <Edit3 className="w-3.5 h-3.5 text-slate-300" />
+                            </div>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -995,60 +1042,77 @@ export default function GradeEntryPage() {
             </div>
 
             {/* Statistics Footer - Genesis style cards */}
-            <div className="bg-gray-50/50 dark:bg-black/20 px-8 py-8 border-t border-gray-100 dark:border-gray-800">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800 group hover:shadow-xl dark:hover:shadow-black/20 transition-all">
-                  <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <div className="p-1.5 bg-blue-50 dark:bg-blue-500/10 rounded-lg">
-                      <Calculator className="w-3.5 h-3.5 text-blue-500" />
+            <div className="bg-slate-50/50 dark:bg-black/20 px-8 py-10 border-t border-slate-100 dark:border-gray-800">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-gray-800 group hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500">
+                  <div className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <div className="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-xl">
+                      <Calculator className="w-4 h-4 text-blue-500" />
                     </div>
-                    Class Average
+                    Class average
                   </div>
-                  <div className={`text-2xl font-black tracking-tight group-hover:scale-105 transition-transform duration-500 ${
+                  <div className={`text-3xl font-black tracking-tighter group-hover:scale-105 transition-transform duration-500 ${
                     statistics.average >= 50 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                   }`}>
                     {statistics.average.toFixed(1)}%
                   </div>
-                </div>
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800 group hover:shadow-xl dark:hover:shadow-black/20 transition-all">
-                  <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <div className="p-1.5 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg">
-                      <span className="text-xs">⬆️</span>
-                    </div>
-                    Highest Score
+                  <div className="mt-2 h-1 w-full bg-slate-50 dark:bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${statistics.average}%` }} />
                   </div>
-                  <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight group-hover:scale-105 transition-transform duration-500">
+                </div>
+
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-gray-800 group hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500">
+                  <div className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl">
+                      <TrendingUp className="w-4 h-4 text-emerald-500" />
+                    </div>
+                    Highest Peak
+                  </div>
+                  <div className="text-3xl font-black text-emerald-600 dark:text-emerald-500 tracking-tighter group-hover:scale-105 transition-transform duration-500">
                     {statistics.highest.toFixed(1)}%
                   </div>
+                  <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase tracking-widest">Achieved Excellence</p>
                 </div>
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800 group hover:shadow-xl dark:hover:shadow-black/20 transition-all">
-                  <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <div className="p-1.5 bg-rose-50 dark:bg-rose-500/10 rounded-lg">
-                      <span className="text-xs">⬇️</span>
+
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-gray-800 group hover:shadow-2xl hover:shadow-rose-500/10 transition-all duration-500">
+                  <div className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <div className="p-2 bg-rose-50 dark:bg-rose-500/10 rounded-xl">
+                      <TrendingDown className="w-4 h-4 text-rose-500" />
                     </div>
-                    Lowest Score
+                    Critical Low
                   </div>
-                  <div className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight group-hover:scale-105 transition-transform duration-500">
+                  <div className="text-3xl font-black text-rose-600 dark:text-rose-400 tracking-tighter group-hover:scale-105 transition-transform duration-500">
                     {statistics.lowest.toFixed(1)}%
                   </div>
+                  <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase tracking-widest">Support Required</p>
                 </div>
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-800 group hover:shadow-xl dark:hover:shadow-black/20 transition-all">
-                  <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <div className="p-1.5 bg-orange-50 dark:bg-orange-500/10 rounded-lg">
-                      <span className="text-xs">✓</span>
+
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-gray-800 group hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-500">
+                  <div className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <div className="p-2 bg-orange-50 dark:bg-orange-500/10 rounded-xl">
+                      <Zap className="w-4 h-4 text-orange-500" />
                     </div>
                     Pass Rate (≥50%)
                   </div>
-                  <div className={`text-2xl font-black tracking-tight group-hover:scale-105 transition-transform duration-500 ${
+                  <div className={`text-3xl font-black tracking-tighter group-hover:scale-105 transition-transform duration-500 ${
                     statistics.passRate >= 80 ? 'text-emerald-600 dark:text-emerald-400' : 
                     statistics.passRate >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'
                   }`}>
                     {statistics.passRate.toFixed(1)}%
                   </div>
+                  <div className="flex gap-1 mt-3">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div 
+                        key={i} 
+                        className={`h-1 flex-1 rounded-full ${i < (statistics.passRate / 20) ? 'bg-orange-500' : 'bg-slate-100 dark:bg-gray-800'}`} 
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : (
+                </div>
+              </div>
+            ) : (
             <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 p-16 text-center">
               <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
                 <AlertCircle className="w-10 h-10 text-gray-300 dark:text-gray-600" />
@@ -1059,73 +1123,72 @@ export default function GradeEntryPage() {
               </p>
             </div>
           )}
-        </BlurLoader>
-      </AnimatedContent>
-    </div>
-  </AnimatedContent>
+          </BlurLoader>
+        </AnimatedContent>
+      </div>
 
-  {/* Keyboard Shortcuts Help - Genesis style */}
-  <AnimatedContent animation="fade" delay={150}>
-    <div className="mt-8 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 p-8 overflow-hidden transition-all hover:shadow-xl dark:hover:shadow-black/20">
-      <details className="group">
-        <summary className="cursor-pointer font-black text-gray-900 dark:text-white flex items-center justify-between list-none">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded-xl group-open:bg-orange-50 dark:group-open:bg-orange-500/10 transition-colors">
-              <Zap className="w-5 h-5 text-gray-400 dark:text-gray-500 group-open:text-orange-500 transition-colors" />
-            </div>
-            <span className="text-sm tracking-tight">Pro Keyboard Shortcuts & Tips</span>
-          </div>
-          <ChevronDown className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" />
-        </summary>
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-top-2 duration-300">
-          <div className="p-4 bg-gray-50/50 dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800/50">
-            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Navigation</div>
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500 dark:text-gray-400">Next Field</span>
-                <kbd className="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md font-sans font-bold shadow-sm">Tab</kbd>
+      {/* Keyboard Shortcuts Help - Genesis style */}
+      <AnimatedContent animation="fade" delay={150}>
+        <div className="mt-8 bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[3rem] shadow-sm border border-slate-100 dark:border-gray-800 p-10 overflow-hidden hover:shadow-2xl transition-all duration-500">
+          <details className="group">
+            <summary className="cursor-pointer font-black text-slate-900 dark:text-white flex items-center justify-between list-none">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-slate-50 dark:bg-gray-800 rounded-2xl group-open:bg-orange-500/10 transition-all">
+                  <Zap className="w-6 h-6 text-slate-400 group-open:text-orange-500 transition-colors" />
+                </div>
+                <div>
+                  <span className="text-xl tracking-tight leading-none">Pro Ledger Shortcuts</span>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest mt-1">Accelerated Workflow Guide</p>
+                </div>
               </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500 dark:text-gray-400">Previous Field</span>
-                <kbd className="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md font-sans font-bold shadow-sm">Shift + Tab</kbd>
+              <ChevronDown className="w-6 h-6 text-slate-300 group-open:rotate-180 transition-transform duration-500" />
+            </summary>
+            <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-8 animate-in slide-in-from-top-4 duration-500">
+              <div className="p-6 bg-slate-50/50 dark:bg-gray-800/30 rounded-[2rem] border border-slate-100 dark:border-gray-800/50">
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Focus & Navigation</div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500 dark:text-gray-400">Next Record</span>
+                    <kbd className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl font-mono text-[10px] font-black shadow-sm">TAB</kbd>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500 dark:text-gray-400">Jump Vertical</span>
+                    <kbd className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl font-mono text-[10px] font-black shadow-sm">ENTER</kbd>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          <div className="p-4 bg-gray-50/50 dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800/50">
-            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Grid Actions</div>
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500 dark:text-gray-400">Move Down</span>
-                <kbd className="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md font-sans font-bold shadow-sm">Enter</kbd>
+              <div className="p-6 bg-slate-50/50 dark:bg-gray-800/30 rounded-[2rem] border border-slate-100 dark:border-gray-800/50">
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Grid Precision</div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500 dark:text-gray-400">Step Control</span>
+                    <kbd className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl font-mono text-[10px] font-black shadow-sm">↑ ↓</kbd>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500 dark:text-gray-400">Reverse Step</span>
+                    <kbd className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl font-mono text-[10px] font-black shadow-sm">⇧ TAB</kbd>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500 dark:text-gray-400">Arrow Keys</span>
-                <div className="flex gap-1">
-                  <kbd className="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md font-sans shadow-sm">↑</kbd>
-                  <kbd className="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md font-sans shadow-sm">↓</kbd>
+              <div className="p-6 bg-slate-50/50 dark:bg-gray-800/30 rounded-[2rem] border border-slate-100 dark:border-gray-800/50">
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">System Protocols</div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500 dark:text-gray-400">Abort Edit</span>
+                    <kbd className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl font-mono text-[10px] font-black shadow-sm">ESC</kbd>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500 dark:text-gray-400">Synchronization</span>
+                    <span className="text-[9px] font-black text-orange-500 uppercase tracking-widest bg-orange-500/10 px-2 py-1 rounded-lg">Active Auto-Save</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div className="p-4 bg-gray-50/50 dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800/50">
-            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Miscellaneous</div>
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500 dark:text-gray-400">Cancel Edit</span>
-                <kbd className="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md font-sans font-bold shadow-sm">Esc</kbd>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500 dark:text-gray-400">Auto-save</span>
-                <span className="font-bold text-orange-500">2s Inactivity</span>
-              </div>
-            </div>
-          </div>
+          </details>
         </div>
-      </details>
-    </div>
-  </AnimatedContent>
-</main>
-</div>
+      </AnimatedContent>
+    </main>
+  </div>
 </>
 );
 }

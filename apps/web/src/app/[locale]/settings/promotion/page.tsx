@@ -601,66 +601,80 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
           )}
 
           {step === 4 && results && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle2 className="w-10 h-10 text-green-600" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Promotion Complete!</h2>
-                <p className="text-gray-600">
-                  Successfully promoted {results.results?.promoted ?? results.results?.successCount ?? 0}{' '}
-                  students
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-green-50 rounded-xl p-4 text-center">
-                  <p className="text-3xl font-bold text-green-600">
-                    {results.results?.promoted ?? results.results?.successCount ?? 0}
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-[3rem] shadow-2xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-12 overflow-hidden relative group animate-in zoom-in-95 duration-700">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl -mr-48 -mt-48 group-hover:bg-emerald-500/10 transition-all duration-700" />
+              
+              <div className="relative z-10">
+                <div className="text-center mb-12">
+                  <div className="w-24 h-24 bg-emerald-50 dark:bg-emerald-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-inner animate-bounce-subtle">
+                    <CheckCircle2 className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.3em] mb-2">Protocol Successful</p>
+                  <h2 className="text-4xl lg:text-5xl font-black text-gray-900 dark:text-white tracking-tighter mb-4">Promotion Finalized</h2>
+                  <p className="text-gray-500 dark:text-gray-400 font-medium max-w-md mx-auto">
+                    The student academic trajectories have been successfully remapped to the new temporal horizon.
                   </p>
-                  <p className="text-sm text-green-700">Successful</p>
                 </div>
-                <div className="bg-red-50 rounded-xl p-4 text-center">
-                  <p className="text-3xl font-bold text-red-600">
-                    {results.results?.failed ?? results.results?.failureCount ?? 0}
-                  </p>
-                  <p className="text-sm text-red-700">Failed</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                  <div className="bg-emerald-50/50 dark:bg-emerald-500/5 rounded-[2rem] p-8 border border-emerald-100/50 dark:border-emerald-500/10 text-center group/stat">
+                    <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-2">Modules Promoted</p>
+                    <p className="text-5xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter group-hover:scale-110 transition-transform">
+                      {results.results?.promoted ?? results.results?.successCount ?? 0}
+                    </p>
+                  </div>
+                  <div className="bg-rose-50/50 dark:bg-rose-500/5 rounded-[2rem] p-8 border border-rose-100/50 dark:border-rose-500/10 text-center group/stat">
+                    <p className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-2">Anomalies Detected</p>
+                    <p className="text-5xl font-black text-rose-600 dark:text-rose-400 tracking-tighter group-hover:scale-110 transition-transform">
+                      {results.results?.failed ?? results.results?.failureCount ?? 0}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              {(results.results?.errors?.length > 0 || results.results?.failed > 0) && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-                  <p className="font-semibold text-red-900 mb-2">Failed Promotions:</p>
-                  <ul className="text-sm text-red-800 space-y-1">
-                    {(results.results.errors || []).map((e: any, idx: number) => (
-                      <li key={idx}>
-                        {e.studentId}: {e.error}
-                      </li>
-                    ))}
-                  </ul>
+
+                {(results.results?.errors?.length > 0 || results.results?.failed > 0) && (
+                  <div className="bg-gray-50 dark:bg-gray-950 rounded-[2rem] p-8 border border-gray-100 dark:border-gray-800 mb-12 animate-in slide-in-from-bottom-4">
+                    <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                       <AlertCircle className="w-3.5 h-3.5" />
+                       Anomaly Log
+                    </p>
+                    <div className="space-y-3 max-h-48 overflow-y-auto pr-4 custom-scrollbar">
+                      {(results.results.errors || []).map((e: any, idx: number) => (
+                        <div key={idx} className="flex items-center gap-4 p-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800">
+                          <span className="text-[10px] font-mono text-gray-400">#{e.studentId?.slice(-4) || idx}</span>
+                          <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{e.error}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-6">
+                  <button
+                    onClick={() => router.push(`/${locale}/students`)}
+                    className="flex-1 px-10 py-5 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 rounded-3xl font-black uppercase tracking-widest text-[10px] hover:text-gray-900 dark:hover:text-white transition-all shadow-xl shadow-gray-200/50 dark:shadow-none"
+                  >
+                    Return to Registry
+                  </button>
+                  <button
+                    onClick={() => {
+                      setStep(1);
+                      setFromYearId('');
+                      setToYearId('');
+                      setEligibleStudents(null);
+                      setPreviewData(null);
+                      setPromotions([]);
+                      setResults(null);
+                      setError('');
+                    }}
+                    className="flex-[1.5] group relative px-10 py-5 bg-gradient-to-r from-orange-600 to-yellow-600 text-white rounded-3xl font-black uppercase tracking-[0.2em] text-[10px] hover:scale-[1.02] active:scale-95 transition-all shadow-2xl shadow-orange-500/30 overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-0 transition-transform duration-700" />
+                    <span className="relative flex items-center justify-center gap-3">
+                      <RefreshCw className="w-4 h-4" />
+                      Initialize New Cycle
+                    </span>
+                  </button>
                 </div>
-              )}
-              <div className="flex gap-4">
-                <button
-                  onClick={() => router.push(`/${locale}/students`)}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-                >
-                  View Students
-                </button>
-                <button
-                  onClick={() => {
-                    setStep(1);
-                    setFromYearId('');
-                    setToYearId('');
-                    setEligibleStudents(null);
-                    setPreviewData(null);
-                    setPromotions([]);
-                    setResults(null);
-                    setError('');
-                  }}
-                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all shadow-md"
-                >
-                  <RefreshCw className="w-5 h-5" />
-                  Start New Promotion
-                </button>
               </div>
             </div>
           )}

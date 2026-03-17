@@ -1,12 +1,31 @@
 # ✅ Stunity Enterprise — Current Features
 
-**Version:** 23.5 | **Updated:** March 16, 2026
+**Version:** 23.6 | **Updated:** March 17, 2026
 
 > This document lists all implemented and working features. For what's coming next, see NEXT_IMPLEMENTATION.md.
 
 ---
 
-## ⚡ Latest Rollout (Mar 16, 2026)
+## ⚡ Latest Rollout (Mar 17, 2026)
+
+- **Attendance GPS reliability + recovery (mobile)**
+  - Tapping the top GPS section now performs robust manual re-location (permission/service re-check + high-accuracy refresh).
+  - Better denied/disabled handling with Settings shortcut and clearer fallback states before attendance verification.
+- **Genesis Premium Aesthetic (Web)**
+  - Full rollout of high-fidelity "Genesis" dark mode aesthetic across core modules.
+  - **Grades Entry (Academic Ledger)**: Professional data entry grid with glassmorphism, real-time sync indicators, and integrated class analytics.
+  - **Attendance Dashboard**: Redesigned with premium cards, enhanced filtering, and glassmorphism.
+  - **Subjects & Classes**: Refined registry UI for consistent platform-wide branding.
+- **Settings screen completion (mobile)**
+  - Added a functional **Password & Security** flow using authenticated `POST /auth/change-password`.
+  - Replaced dead-end actions with working navigation/links (Achievements, Help Center, Privacy Policy, Contact Support).
+  - Settings persistence aligned with existing APIs/services:
+    - `profileVisibility` toggle persists via `PUT /users/me/profile` with rollback on failure.
+    - biometric toggle persists via secure token service storage.
+    - online-status toggle now updates local auth user state consistently.
+- **Saved Posts navigation fix (mobile)**
+  - Fixed back-navigation state issue where Saved Posts could reappear when returning to profile.
+  - Sidebar profile shortcut now opens Profile directly, and Saved Posts back/empty CTA now use stack-aware fallback navigation.
 
 - **Web feed widgets are now fully live**
   - Learning Spotlight now loads featured courses from API with working links/fallback states.

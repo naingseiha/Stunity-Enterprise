@@ -9,6 +9,7 @@ import {
   Plus,
   Search,
   Edit,
+  Edit2,
   Trash2,
   GraduationCap,
   Home,
@@ -177,18 +178,23 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                   <span>Dashboard</span>
                 </Link>
                 <ChevronRight className="h-3 w-3 text-slate-300 dark:text-gray-700" />
-                <span className="text-slate-900 dark:text-white">Classes</span>
+                <span className="text-slate-900 dark:text-white font-black">Classes</span>
               </nav>
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-xl bg-white dark:bg-gray-800 border border-slate-200/80 dark:border-gray-700 shadow-sm">
-                    <School className="h-6 w-6 text-stunity-primary-600 dark:text-stunity-primary-400" />
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div className="flex items-center gap-5">
+                  <div className="p-4 rounded-2xl bg-white dark:bg-gray-900 border border-slate-200/50 dark:border-gray-800/50 shadow-sm group hover:scale-110 transition-transform duration-500">
+                    <School className="h-8 w-8 text-stunity-primary-600 dark:text-stunity-primary-400" />
                   </div>
                   <div>
-                    <h1 className="text-2xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">Class Management</h1>
-                    <p className="text-slate-500 dark:text-gray-400 mt-1 font-medium">
+                    <h1 className="text-3xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight">Class Management</h1>
+                    <p className="text-slate-500 dark:text-gray-400 mt-1 font-medium flex items-center gap-2">
                       {selectedYear ? `Academic Year ${selectedYear.name}` : 'Select an academic year'} 
-                      {classes.length > 0 && ` • ${classes.length} classes`}
+                      {classes.length > 0 && (
+                        <>
+                          <span className="w-1 h-1 bg-slate-300 dark:bg-gray-700 rounded-full" />
+                          <span className="text-stunity-primary-600 dark:text-stunity-primary-400 font-bold uppercase tracking-widest text-[10px]">{classes.length} active classes</span>
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -197,72 +203,69 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                   <button
                     onClick={() => mutate()}
                     disabled={isValidating}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-sm disabled:opacity-50"
+                    className="flex items-center gap-2 px-5 py-3 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-sm disabled:opacity-50 font-bold text-gray-700 dark:text-gray-300"
                   >
-                    <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''} text-gray-500 dark:text-gray-400`} />
-                    <span className="hidden sm:inline text-gray-700 dark:text-gray-300 font-medium">Refresh</span>
+                    <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
+                    <span className="hidden sm:inline">Refresh</span>
                   </button>
                   <button
                     onClick={handleAdd}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 dark:from-green-600 dark:to-emerald-700 text-white rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-green-500/20"
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 dark:from-green-600 dark:to-emerald-700 text-white rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-green-500/25 font-black uppercase tracking-widest text-xs"
                   >
                     <Plus className="h-5 w-5" />
-                    <span className="font-bold">Add Class</span>
+                    Add Class
                   </button>
                 </div>
               </div>
             </div>
-          </AnimatedContent>
-
-          {/* Statistics Cards */}
+          </AnimatedContent>          {/* Statistics Cards */}
           {selectedYear && classes.length > 0 && (
             <AnimatedContent animation="slide-up" delay={50}>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm transition-all hover:shadow-xl dark:hover:shadow-black/20 group">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2rem] p-7 border border-gray-100 dark:border-gray-800/50 shadow-sm transition-all hover:shadow-2xl hover:shadow-blue-500/5 dark:hover:shadow-black/40 group">
                   <div className="flex items-center gap-5">
-                    <div className="p-3.5 bg-blue-50 dark:bg-blue-500/10 rounded-2xl group-hover:scale-110 transition-transform duration-500">
-                      <School className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    <div className="p-4 bg-blue-50 dark:bg-blue-500/10 rounded-2xl group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
+                      <School className="h-7 w-7 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                      <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{classes.length}</p>
-                      <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">Total Classes</p>
+                      <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">Total Classes</p>
+                      <p className="text-3xl font-black text-gray-900 dark:text-white tracking-tight leading-none">{classes.length}</p>
                     </div>
                   </div>
                 </div>
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm transition-all hover:shadow-xl dark:hover:shadow-black/20 group">
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2rem] p-7 border border-gray-100 dark:border-gray-800/50 shadow-sm transition-all hover:shadow-2xl hover:shadow-green-500/5 dark:hover:shadow-black/40 group">
                   <div className="flex items-center gap-5">
-                    <div className="p-3.5 bg-green-50 dark:bg-green-500/10 rounded-2xl group-hover:scale-110 transition-transform duration-500">
-                      <Users className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    <div className="p-4 bg-green-50 dark:bg-green-500/10 rounded-2xl group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-500">
+                      <Users className="h-7 w-7 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
-                      <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{statistics.totalStudents}</p>
-                      <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">Total Students</p>
+                      <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">Total Students</p>
+                      <p className="text-3xl font-black text-gray-900 dark:text-white tracking-tight leading-none">{statistics.totalStudents}</p>
                     </div>
                   </div>
                 </div>
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm transition-all hover:shadow-xl dark:hover:shadow-black/20 group">
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2rem] p-7 border border-gray-100 dark:border-gray-800/50 shadow-sm transition-all hover:shadow-2xl hover:shadow-purple-500/5 dark:hover:shadow-black/40 group">
                   <div className="flex items-center gap-5">
-                    <div className="p-3.5 bg-purple-50 dark:bg-purple-500/10 rounded-2xl group-hover:scale-110 transition-transform duration-500">
-                      <BarChart3 className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                    <div className="p-4 bg-purple-50 dark:bg-purple-500/10 rounded-2xl group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">
+                      <BarChart3 className="h-7 w-7 text-purple-600 dark:text-purple-400" />
                     </div>
                     <div>
-                      <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{statistics.avgStudentsPerClass}</p>
-                      <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">Avg per Class</p>
+                      <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">Avg per Class</p>
+                      <p className="text-3xl font-black text-gray-900 dark:text-white tracking-tight leading-none">{statistics.avgStudentsPerClass}</p>
                     </div>
                   </div>
                 </div>
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm transition-all hover:shadow-xl dark:hover:shadow-black/20 group">
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2rem] p-7 border border-gray-100 dark:border-gray-800/50 shadow-sm transition-all hover:shadow-2xl hover:shadow-amber-500/5 dark:hover:shadow-black/40 group">
                   <div className="flex items-center gap-5">
-                    <div className="p-3.5 bg-amber-50 dark:bg-amber-500/10 rounded-2xl group-hover:scale-110 transition-transform duration-500">
-                      <GraduationCap className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                    <div className="p-4 bg-amber-50 dark:bg-amber-500/10 rounded-2xl group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-500">
+                      <GraduationCap className="h-7 w-7 text-amber-600 dark:text-amber-400" />
                     </div>
                     <div>
-                      <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{Object.keys(statistics.gradeDistribution).length}</p>
-                      <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">Grade Levels</p>
+                      <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">Grade Levels</p>
+                      <p className="text-3xl font-black text-gray-900 dark:text-white tracking-tight leading-none">{Object.keys(statistics.gradeDistribution).length}</p>
                     </div>
                   </div>
                 </div>
-
               </div>
             </AnimatedContent>
           )}
@@ -272,14 +275,16 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
             <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 mb-8">
               <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                 {/* Search */}
-                <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
+                <div className="relative flex-1 max-w-md group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none group-focus-within:text-green-500 transition-colors">
+                    <Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                  </div>
                   <input
                     type="text"
                     placeholder="Search classes, teachers..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all text-sm dark:text-white"
+                    className="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/50 rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all font-bold text-sm dark:text-white placeholder:text-gray-400"
                   />
                 </div>
 
@@ -287,12 +292,11 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                 <div className="flex items-center gap-2 flex-wrap">
                   <button
                     onClick={() => setSelectedGrade(undefined)}
-                    className={`px-4 py-2 rounded-xl text-sm font-black transition-all ${
+                    className={`px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
                       selectedGrade === undefined
-                        ? 'bg-green-500 text-white shadow-lg shadow-green-500/20'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700'
+                        ? 'bg-green-500 text-white shadow-xl shadow-green-500/30'
+                        : 'bg-gray-100 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 border border-transparent dark:border-gray-700/50'
                     }`}
-
                   >
                     All Grades
                   </button>
@@ -303,17 +307,16 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                       <button
                         key={grade}
                         onClick={() => setSelectedGrade(grade === selectedGrade ? undefined : grade)}
-                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                        className={`px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2.5 ${
                           selectedGrade === grade
-                            ? `${colors.bg} text-white shadow-lg shadow-${colors.bg.split('-')[1]}-500/20`
-                            : `${colors.light} dark:bg-${colors.bg.split('-')[1]}-500/10 ${colors.text} dark:text-${colors.bg.split('-')[1]}-400 hover:opacity-80`
+                            ? `${colors.bg} text-white shadow-xl shadow-${colors.bg.split('-')[1]}-500/30`
+                            : `${colors.light} dark:bg-${colors.bg.split('-')[1]}-500/10 ${colors.text} dark:text-${colors.bg.split('-')[1]}-400 hover:opacity-80 border border-transparent dark:border-${colors.bg.split('-')[1]}-500/20`
                         }`}
-
                       >
                         <span>Grade {grade}</span>
                         {count > 0 && (
-                          <span className={`px-1.5 py-0.5 rounded-full text-xs ${
-                            selectedGrade === grade ? 'bg-white/20' : 'bg-white'
+                          <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black ${
+                            selectedGrade === grade ? 'bg-white/20' : 'bg-white dark:bg-gray-900 border border-slate-100 dark:border-gray-700 shadow-sm'
                           }`}>
                             {count}
                           </span>
@@ -324,11 +327,11 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                 </div>
 
                 {/* View Toggle */}
-                <div className="flex items-center gap-1 p-1 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
+                <div className="flex items-center gap-1.5 p-1.5 bg-gray-100/50 dark:bg-gray-800/30 rounded-2xl border border-gray-200/50 dark:border-gray-700/30">
                   <button
                     onClick={() => setViewMode('grid')}
-                    className={`p-2.5 rounded-lg transition-all ${
-                      viewMode === 'grid' ? 'bg-white dark:bg-gray-700 shadow-md text-stunity-primary-600 dark:text-stunity-primary-400' : 'text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700/50'
+                    className={`p-3 rounded-[1.125rem] transition-all duration-300 ${
+                      viewMode === 'grid' ? 'bg-white dark:bg-gray-950 shadow-md text-stunity-primary-600 dark:text-stunity-primary-400 border border-slate-100 dark:border-gray-800' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
                     }`}
                     title="Grid View"
                   >
@@ -336,8 +339,8 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                   </button>
                   <button
                     onClick={() => setViewMode('list')}
-                    className={`p-2.5 rounded-lg transition-all ${
-                      viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow-md text-stunity-primary-600 dark:text-stunity-primary-400' : 'text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700/50'
+                    className={`p-3 rounded-[1.125rem] transition-all duration-300 ${
+                      viewMode === 'list' ? 'bg-white dark:bg-gray-950 shadow-md text-stunity-primary-600 dark:text-stunity-primary-400 border border-slate-100 dark:border-gray-800' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
                     }`}
                     title="List View"
                   >
@@ -388,7 +391,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                       </p>
                       <button
                         onClick={handleAdd}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors"
+                        className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-green-500/25 font-black uppercase tracking-widest text-xs"
                       >
                         <Plus className="h-5 w-5" />
                         Create First Class
@@ -398,271 +401,165 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                 </div>
               ) : viewMode === 'grid' ? (
                 /* Grid View */
-                (<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredClasses.map((classItem) => {
-                    const colors = getGradeColor(classItem.grade);
-                    const studentCount = classItem._count?.students || 0;
-                    const capacityPercent = classItem.capacity ? Math.round((studentCount / classItem.capacity) * 100) : 0;
-                    
+                (<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {filteredClasses.map((cls) => {
+                    const colors = getGradeColor(cls.grade);
+                    const studentCount = cls._count?.students || 0;
+                    const isFull = studentCount >= (cls.capacity || 0);
+
                     return (
                       <div
-                        key={classItem.id}
-                        className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden hover:shadow-2xl hover:shadow-slate-200/50 dark:hover:shadow-black/50 transition-all duration-500 group"
+                        key={cls.id}
+                        className="group bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-2xl hover:shadow-stunity-primary-500/10 dark:hover:shadow-black/40 transition-all duration-500 hover:-translate-y-2"
                       >
-                        {/* Header with gradient */}
-                        <div className={`p-5 ${colors.bg} relative overflow-hidden`}>
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-                          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
-                          
-                          <div className="relative z-10 flex items-start justify-between">
-                            <div>
-                              <h3 className="text-xl font-bold text-white">{classItem.name}</h3>
-                              <p className="text-white/80 text-sm mt-1">
-                                Grade {classItem.grade} {classItem.section && `• Section ${classItem.section}`}
-                              </p>
-                            </div>
-                            
-                            {/* Actions Dropdown */}
-                            <div className="relative">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveDropdown(activeDropdown === classItem.id ? null : classItem.id);
-                                }}
-                                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-                              >
-                                <MoreVertical className="h-5 w-5 text-white" />
-                              </button>
-                              
-                              {activeDropdown === classItem.id && (
-                                  <div className="absolute right-0 top-full mt-2 w-56 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 py-3 z-20 overflow-hidden">
-                                    <button
-                                      onClick={() => router.push(`/${locale}/classes/${classItem.id}/manage`)}
-                                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-green-50 dark:hover:bg-green-500/10 flex items-center gap-3 transition-colors group/item"
-                                    >
-                                      <div className="p-2 bg-green-50 dark:bg-green-500/20 rounded-lg group-hover/item:scale-110 transition-transform">
-                                        <UserPlus className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                      </div>
-                                      <span className="font-bold text-gray-700 dark:text-gray-300">Manage Students</span>
-                                    </button>
-                                    <button
-                                      onClick={() => router.push(`/${locale}/classes/${classItem.id}/roster`)}
-                                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-blue-50 dark:hover:bg-blue-500/10 flex items-center gap-3 transition-colors group/item"
-                                    >
-                                      <div className="p-2 bg-blue-50 dark:bg-blue-500/20 rounded-lg group-hover/item:scale-110 transition-transform">
-                                        <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                      </div>
-                                      <span className="font-bold text-gray-700 dark:text-gray-300">View Roster</span>
-                                    </button>
-                                    <button
-                                      onClick={() => router.push(`/${locale}/attendance/mark?classId=${classItem.id}`)}
-                                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-purple-50 dark:hover:bg-purple-500/10 flex items-center gap-3 transition-colors group/item"
-                                    >
-                                      <div className="p-2 bg-purple-50 dark:bg-purple-500/20 rounded-lg group-hover/item:scale-110 transition-transform">
-                                        <ClipboardList className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                                      </div>
-                                      <span className="font-bold text-gray-700 dark:text-gray-300">Mark Attendance</span>
-                                    </button>
-                                    <button
-                                      onClick={() => router.push(`/${locale}/grades/entry?classId=${classItem.id}`)}
-                                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-amber-50 dark:hover:bg-amber-500/10 flex items-center gap-3 transition-colors group/item"
-                                    >
-                                      <div className="p-2 bg-amber-50 dark:bg-amber-500/20 rounded-lg group-hover/item:scale-110 transition-transform">
-                                        <BookOpen className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                      </div>
-                                      <span className="font-bold text-gray-700 dark:text-gray-300">Enter Grades</span>
-                                    </button>
-                                    <div className="border-t border-gray-100 dark:border-gray-800 my-2" />
-                                    <button
-                                      onClick={() => handleEdit(classItem)}
-                                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-3 transition-colors group/item"
-                                    >
-                                      <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg group-hover/item:scale-110 transition-transform">
-                                        <Edit className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                                      </div>
-                                      <span className="font-bold text-gray-700 dark:text-gray-300">Edit Class</span>
-                                    </button>
-                                    <button
-                                      onClick={() => handleDelete(classItem.id)}
-                                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-3 transition-colors group/item"
-                                    >
-                                      <div className="p-2 bg-red-50 dark:bg-red-500/20 rounded-lg group-hover/item:scale-110 transition-transform">
-                                        <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
-                                      </div>
-                                      <span className="font-bold text-red-600 dark:text-red-400">Delete Class</span>
-                                    </button>
-                                  </div>
-
-                              )}
-                            </div>
+                        <div className="flex justify-between items-start mb-6">
+                          <div className={`w-14 h-14 rounded-2xl ${colors.bg} flex items-center justify-center text-white shadow-lg shadow-${colors.bg.split('-')[1]}-500/30 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500`}>
+                            <GraduationCap className="h-7 w-7" />
                           </div>
-                          
-                          {/* Student count badge */}
-                          <div className="mt-4 flex items-center gap-2">
-                            <Users className="h-4 w-4 text-white/80" />
-                            <span className="text-white font-semibold">{studentCount}</span>
-                            <span className="text-white/80 text-sm">students</span>
-                            {classItem.capacity && (
-                              <span className="text-white/60 text-sm ml-auto">/ {classItem.capacity} capacity</span>
-                            )}
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEdit(cls)}
+                              className="p-3 bg-slate-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 hover:text-stunity-primary-600 dark:hover:text-white rounded-xl transition-all hover:scale-110 active:scale-95"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(cls.id)}
+                              className="p-3 bg-slate-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 hover:text-rose-600 dark:hover:text-rose-400 rounded-xl transition-all hover:scale-110 active:scale-95"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
                           </div>
                         </div>
 
-                        {/* Body */}
-                        <div className="p-5">
-                          {/* Capacity Progress */}
-                          {classItem.capacity && (
-                            <div className="mb-4">
-                              <div className="flex items-center justify-between text-sm mb-1">
-                                <span className="text-gray-500">Capacity</span>
-                                <span className={`font-medium ${
-                                  capacityPercent >= 100 ? 'text-red-600' : capacityPercent >= 80 ? 'text-amber-600' : 'text-green-600'
-                                }`}>{capacityPercent}%</span>
-                              </div>
-                              <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                                <div 
-                                  className={`h-full rounded-full transition-all ${
-                                    capacityPercent >= 100 ? 'bg-red-500' : capacityPercent >= 80 ? 'bg-amber-500' : 'bg-green-500'
-                                  }`}
-                                  style={{ width: `${Math.min(capacityPercent, 100)}%` }}
-                                />
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Class Info */}
-                          <div className="space-y-4">
-                            {classItem.track && (
-                              <div className="flex items-center gap-3 text-sm">
-                                <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                                  <GraduationCap className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                                </div>
-                                <span className="text-gray-600 dark:text-gray-400 font-bold">{classItem.track} Track</span>
-                              </div>
-                            )}
-                            {classItem.room && (
-                              <div className="flex items-center gap-3 text-sm">
-                                <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                                  <School className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                                </div>
-                                <span className="text-gray-600 dark:text-gray-400 font-bold">Room {classItem.room}</span>
-                              </div>
-                            )}
-                            {classItem.homeroomTeacher && (
-                              <div className="flex items-center gap-3 text-sm">
-                                <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                                  <Users className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="text-gray-900 dark:text-white font-bold leading-none">
-                                    {classItem.homeroomTeacher.firstNameLatin} {classItem.homeroomTeacher.lastNameLatin}
-                                  </span>
-                                  <span className="text-[10px] text-blue-600 dark:text-blue-400 font-black uppercase tracking-widest mt-1">Homeroom Teacher</span>
-                                </div>
-                              </div>
-                            )}
+                        <div className="mb-6">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none">{cls.name}</h3>
+                            <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${colors.text} ${colors.light} border-${colors.bg.split('-')[1]}-200/50 dark:border-${colors.bg.split('-')[1]}-800/20`}>
+                              Grade {cls.grade}
+                            </span>
                           </div>
-
-
-                          {/* Quick Actions */}
-                          <div className="mt-5 pt-5 border-t border-gray-100 dark:border-gray-800 flex items-center gap-3">
-                            <button
-                               onClick={() => router.push(`/${locale}/classes/${classItem.id}/manage`)}
-                               className="flex-1 py-3 text-[11px] uppercase tracking-wider font-black bg-stunity-primary-50 dark:bg-stunity-primary-500/10 text-stunity-primary-700 dark:text-stunity-primary-400 rounded-2xl hover:bg-stunity-primary-100 dark:hover:bg-stunity-primary-500/20 transition-all flex items-center justify-center gap-2"
-                             >
-                               <UserPlus className="h-3.5 w-3.5" />
-                               Manage
-                             </button>
-                             <button
-                               onClick={() => router.push(`/${locale}/classes/${classItem.id}/roster`)}
-                               className="flex-1 py-3 text-[11px] uppercase tracking-wider font-black bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded-2xl hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all flex items-center justify-center gap-2"
-                             >
-                               <Eye className="h-3.5 w-3.5" />
-                               Roster
-                             </button>
+                          <div className="flex items-center gap-2 text-slate-500 dark:text-gray-400 font-bold text-xs uppercase tracking-widest">
+                            <Users className="h-3.5 w-3.5" />
+                            <span>{cls.homeroomTeacher?.firstNameLatin} {cls.homeroomTeacher?.lastNameLatin}</span>
                           </div>
+                        </div>
+
+                        <div className="space-y-4 pt-6 border-t border-gray-100 dark:border-gray-800/50">
+                          <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                            <span className="text-slate-400 dark:text-gray-500">Capacity Utilization</span>
+                            <span className={isFull ? 'text-rose-500' : 'text-slate-900 dark:text-white'}>
+                              {studentCount} / {cls.capacity}
+                            </span>
+                          </div>
+                          <div className="h-2 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden ring-1 ring-inset ring-black/5 dark:ring-white/5">
+                            <div
+                              className={`h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(0,0,0,0.1)] ${
+                                isFull ? 'bg-gradient-to-r from-rose-500 to-rose-400' : 'bg-gradient-to-r from-stunity-primary-500 to-emerald-400'
+                              }`}
+                              style={{ width: `${Math.min((studentCount / (cls.capacity || 1)) * 100, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Quick Actions */}
+                        <div className="mt-6 flex items-center gap-3">
+                          <button
+                            onClick={() => router.push(`/${locale}/classes/${cls.id}/manage`)}
+                            className="flex-1 py-3.5 bg-stunity-primary-50 dark:bg-stunity-primary-500/10 text-stunity-primary-700 dark:text-stunity-primary-400 rounded-2xl hover:bg-stunity-primary-100 dark:hover:bg-stunity-primary-500/20 transition-all font-black uppercase tracking-widest text-[10px]"
+                          >
+                            Manage
+                          </button>
+                          <button
+                            onClick={() => router.push(`/${locale}/classes/${cls.id}/roster`)}
+                            className="flex-1 py-3.5 bg-slate-50 dark:bg-gray-800 text-slate-600 dark:text-gray-300 rounded-2xl hover:bg-slate-100 dark:hover:bg-gray-750 transition-all font-black uppercase tracking-widest text-[10px]"
+                          >
+                            Roster
+                          </button>
                         </div>
                       </div>
                     );
                   })}
-                </div>)
+                </div>
+)
               ) : (
                 /* List View */
-                             <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden hover:shadow-2xl transition-all duration-500">
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
-                          <th className="text-left py-4 px-6 font-black text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-widest">Class</th>
-                          <th className="text-left py-4 px-4 font-black text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-widest">Grade</th>
-                          <th className="text-left py-4 px-4 font-black text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-widest">Section</th>
-                          <th className="text-left py-4 px-4 font-black text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-widest">Students</th>
-                          <th className="text-left py-4 px-4 font-black text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-widest">Homeroom Teacher</th>
-                          <th className="text-left py-4 px-4 font-black text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-widest">Room</th>
-                          <th className="text-right py-4 px-6 font-black text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-widest">Actions</th>
+                        <tr className="border-b border-gray-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-800/30">
+                          <th className="px-8 py-5 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest underline decoration-stunity-primary-500/30 underline-offset-8">Class Name</th>
+                          <th className="px-8 py-5 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Grade</th>
+                          <th className="px-8 py-5 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Homeroom Teacher</th>
+                          <th className="px-8 py-5 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest w-72">Capacity</th>
+                          <th className="px-8 py-5 text-right text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
-                        {filteredClasses.map((classItem) => {
-                          const colors = getGradeColor(classItem.grade);
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                        {filteredClasses.map((cls) => {
+                          const studentCount = cls._count?.students || 0;
+                          const isFull = studentCount >= (cls.capacity || 0);
+                          const colors = getGradeColor(cls.grade);
                           return (
-                            <tr key={classItem.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors group">
-                              <td className="py-4 px-6">
-                                <div className="flex items-center gap-3">
-                                  <div className={`w-10 h-10 rounded-xl ${colors.bg} flex items-center justify-center shadow-lg shadow-${colors.bg.split('-')[1]}-500/20`}>
-                                    <span className="text-white font-black text-sm">{classItem.grade}</span>
+                            <tr key={cls.id} className="group hover:bg-slate-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                              <td className="px-8 py-6">
+                                <div className="flex items-center gap-4">
+                                  <div className={`w-12 h-12 rounded-2xl ${colors.bg} flex items-center justify-center text-white shadow-lg shadow-${colors.bg.split('-')[1]}-500/20 group-hover:scale-110 transition-transform duration-500`}>
+                                    <GraduationCap className="h-6 w-6" />
                                   </div>
-                                  <span className="font-bold text-gray-900 dark:text-white">{classItem.name}</span>
+                                  <div>
+                                    <span className="font-black text-slate-900 dark:text-white tracking-tight text-lg">{cls.name}</span>
+                                    <div className="flex items-center gap-1.5 mt-0.5 sm:hidden">
+                                       <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest ${colors.text} ${colors.light}`}>
+                                        Grade {cls.grade}
+                                      </span>
+                                    </div>
+                                  </div>
                                 </div>
                               </td>
-                              <td className="py-4 px-4">
-                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${colors.light} dark:bg-${colors.bg.split('-')[1]}-500/10 ${colors.text} dark:text-${colors.bg.split('-')[1]}-400`}>
-                                  Grade {classItem.grade}
+                              <td className="px-8 py-6">
+                                <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${colors.text} ${colors.light} border-${colors.bg.split('-')[1]}-200/50 dark:border-${colors.bg.split('-')[1]}-800/30 shadow-sm`}>
+                                  Grade {cls.grade}
                                 </span>
                               </td>
-                              <td className="py-4 px-4 text-gray-600 dark:text-gray-400 font-medium">{classItem.section || '—'}</td>
-                              <td className="py-4 px-4">
-                                <div className="flex items-center gap-2">
-                                  <Users className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                                  <span className="font-bold dark:text-white">{classItem._count?.students || 0}</span>
-                                  {classItem.capacity && (
-                                    <span className="text-gray-400 dark:text-gray-600">/ {classItem.capacity}</span>
-                                  )}
+                              <td className="px-8 py-6">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-gray-800 flex items-center justify-center text-slate-400 dark:text-gray-600 font-bold text-xs">
+                                    {cls.homeroomTeacher?.firstNameLatin?.[0]}
+                                  </div>
+                                  <span className="font-bold text-slate-700 dark:text-gray-300 text-sm">{cls.homeroomTeacher?.firstNameLatin} {cls.homeroomTeacher?.lastNameLatin}</span>
                                 </div>
                               </td>
-                              <td className="py-4 px-4 text-gray-600 dark:text-gray-400 font-medium">
-                                {classItem.homeroomTeacher 
-                                  ? `${classItem.homeroomTeacher.firstNameLatin} ${classItem.homeroomTeacher.lastNameLatin}`
-                                  : '—'}
+                              <td className="px-8 py-6">
+                                <div className="space-y-3">
+                                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                                    <span className="text-slate-400 dark:text-gray-500">Utilization</span>
+                                    <span className={isFull ? 'text-rose-500' : 'text-slate-900 dark:text-white'}>
+                                      {studentCount} / {cls.capacity}
+                                    </span>
+                                  </div>
+                                  <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden ring-1 ring-inset ring-black/5 dark:ring-white/5">
+                                    <div
+                                      className={`h-full rounded-full transition-all duration-1000 ${
+                                        isFull ? 'bg-gradient-to-r from-rose-500 to-rose-400' : 'bg-gradient-to-r from-stunity-primary-500 to-emerald-400'
+                                      }`}
+                                      style={{ width: `${Math.min((studentCount / (cls.capacity || 1)) * 100, 100)}%` }}
+                                    />
+                                  </div>
+                                </div>
                               </td>
-                              <td className="py-4 px-4 text-gray-600 dark:text-gray-400 font-medium">{classItem.room || '—'}</td>
-                              <td className="py-4 px-6">
-                                <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <td className="px-8 py-6 text-right">
+                                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <button
-                                    onClick={() => router.push(`/${locale}/classes/${classItem.id}/manage`)}
-                                    className="p-2 hover:bg-green-100 dark:hover:bg-green-500/10 rounded-lg text-green-600 dark:text-green-400 transition-colors"
-                                    title="Manage Students"
+                                    onClick={() => handleEdit(cls)}
+                                    className="p-3 bg-white dark:bg-gray-800 text-gray-400 dark:text-gray-500 hover:text-stunity-primary-600 dark:hover:text-white rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-all hover:scale-110 active:scale-95"
                                   >
-                                    <UserPlus className="h-4 w-4" />
+                                    <Edit2 className="h-4 w-4" />
                                   </button>
                                   <button
-                                    onClick={() => router.push(`/${locale}/classes/${classItem.id}/roster`)}
-                                    className="p-2 hover:bg-blue-100 dark:hover:bg-blue-500/10 rounded-lg text-blue-600 dark:text-blue-400 transition-colors"
-                                    title="View Roster"
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleEdit(classItem)}
-                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-600 dark:text-gray-400 transition-colors"
-                                    title="Edit"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDelete(classItem.id)}
-                                    className="p-2 hover:bg-red-100 dark:hover:bg-red-500/10 rounded-lg text-red-600 dark:text-red-400 transition-colors"
-                                    title="Delete"
+                                    onClick={() => handleDelete(cls.id)}
+                                    className="p-3 bg-white dark:bg-gray-800 text-gray-400 dark:text-gray-500 hover:text-rose-600 dark:hover:text-rose-400 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-all hover:scale-110 active:scale-95"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </button>
