@@ -21,12 +21,12 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   Platform,
   RefreshControl,
   ScrollView,
@@ -41,6 +41,7 @@ import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import StunityLogo from '../../../assets/Stunity.svg';
 import { learnApi } from '@/api';
@@ -48,6 +49,7 @@ import type { LearnCourse, LearnEnrolledCourse, LearnPath, LearningStats } from 
 import { LearnStackScreenProps } from '@/navigation/types';
 import { useNavigationContext } from '@/contexts';
 import { Skeleton } from '@/components/common/Loading';
+import { CourseCard } from '@/components/learn/CourseCard';
 
 type NavigationProp = LearnStackScreenProps<'LearnHub'>['navigation'];
 type TabType = 'explore' | 'enrolled' | 'created' | 'paths';
@@ -57,6 +59,117 @@ const TABS: { id: TabType; label: string; icon: keyof typeof Ionicons.glyphMap }
   { id: 'enrolled', label: 'My Courses',  icon: 'book-outline'       },
   { id: 'created',  label: 'Created',     icon: 'school-outline'     },
   { id: 'paths',    label: 'Paths',       icon: 'git-branch-outline' },
+];
+
+interface TabColorPalette {
+  inactiveBackground: string;
+  inactiveBorder: string;
+  inactiveIcon: string;
+  inactiveText: string;
+  activeBackground: string;
+  activeBorder: string;
+}
+
+const TAB_COLOR_PALETTES: Record<TabType, TabColorPalette> = {
+  explore: {
+    inactiveBackground: '#E0F2FE',
+    inactiveBorder: '#BAE6FD',
+    inactiveIcon: '#0284C7',
+    inactiveText: '#0369A1',
+    activeBackground: '#0EA5E9',
+    activeBorder: '#0284C7',
+  },
+  enrolled: {
+    inactiveBackground: '#DCFCE7',
+    inactiveBorder: '#BBF7D0',
+    inactiveIcon: '#059669',
+    inactiveText: '#047857',
+    activeBackground: '#10B981',
+    activeBorder: '#059669',
+  },
+  created: {
+    inactiveBackground: '#FEF3C7',
+    inactiveBorder: '#FDE68A',
+    inactiveIcon: '#D97706',
+    inactiveText: '#B45309',
+    activeBackground: '#F59E0B',
+    activeBorder: '#D97706',
+  },
+  paths: {
+    inactiveBackground: '#EDE9FE',
+    inactiveBorder: '#DDD6FE',
+    inactiveIcon: '#7C3AED',
+    inactiveText: '#6D28D9',
+    activeBackground: '#8B5CF6',
+    activeBorder: '#7C3AED',
+  },
+};
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const FEATURED_CARD_WIDTH = SCREEN_WIDTH * 0.88;
+const FEATURED_CARD_GAP = 16;
+
+interface FeaturedCourseTheme {
+  accentColor: string;
+  accentDeepColor: string;
+  accentSoftColor: string;
+  badgeBackground: string;
+  badgeColor: string;
+  levelBackground: string;
+  levelColor: string;
+  iconColor: string;
+  buttonColor: string;
+  shadowColor: string;
+  orbColor: string;
+}
+
+interface SuggestedCourseItem {
+  course: LearnCourse;
+  badgeLabel: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  theme: FeaturedCourseTheme;
+}
+
+const FEATURED_COURSE_THEMES: FeaturedCourseTheme[] = [
+  {
+    accentColor: '#F59E0B',
+    accentDeepColor: '#B45309',
+    accentSoftColor: '#FEF3C7',
+    badgeBackground: '#FFFBEB',
+    badgeColor: '#F97316',
+    levelBackground: '#EEF2FF',
+    levelColor: '#4F46E5',
+    iconColor: '#0EA5E9',
+    buttonColor: '#2563EB',
+    shadowColor: 'rgba(37, 99, 235, 0.26)',
+    orbColor: 'rgba(14, 165, 233, 0.12)',
+  },
+  {
+    accentColor: '#7C3AED',
+    accentDeepColor: '#6D28D9',
+    accentSoftColor: '#EDE9FE',
+    badgeBackground: '#FDF2F8',
+    badgeColor: '#EC4899',
+    levelBackground: '#ECFDF5',
+    levelColor: '#059669',
+    iconColor: '#7C3AED',
+    buttonColor: '#7C3AED',
+    shadowColor: 'rgba(124, 58, 237, 0.28)',
+    orbColor: 'rgba(124, 58, 237, 0.12)',
+  },
+  {
+    accentColor: '#0EA5E9',
+    accentDeepColor: '#0369A1',
+    accentSoftColor: '#E0F2FE',
+    badgeBackground: '#FEF3C7',
+    badgeColor: '#D97706',
+    levelBackground: '#E0F2FE',
+    levelColor: '#0284C7',
+    iconColor: '#0F766E',
+    buttonColor: '#0F766E',
+    shadowColor: 'rgba(15, 118, 110, 0.26)',
+    orbColor: 'rgba(6, 182, 212, 0.12)',
+  },
 ];
 
 interface LearnCategoryItem {
@@ -96,6 +209,21 @@ const DEFAULT_CATEGORY_STYLE: Omit<LearnCategoryItem, 'name' | 'count'> = {
 };
 const TOP_CATEGORY_LIMIT = 6;
 
+const getSuggestionIconForCourse = (course: LearnCourse): keyof typeof Ionicons.glyphMap => {
+  const presetMatch = PRESET_CATEGORIES.find((item) => item.name.toLowerCase() === course.category.toLowerCase());
+  if (presetMatch) return presetMatch.icon;
+
+  const normalized = course.category.toLowerCase();
+  if (normalized.includes('data') || normalized.includes('analysis')) return 'analytics-outline';
+  if (normalized.includes('design')) return 'color-palette-outline';
+  if (normalized.includes('business') || normalized.includes('marketing')) return 'briefcase-outline';
+  if (normalized.includes('language')) return 'language-outline';
+  if (normalized.includes('science')) return 'flask-outline';
+  if (normalized.includes('music')) return 'musical-notes-outline';
+  if (normalized.includes('photo')) return 'camera-outline';
+  return 'sparkles-outline';
+};
+
 const formatDuration = (minutes: number) => {
   if (!minutes || minutes <= 0) return '0m';
   if (minutes < 60) return `${minutes}m`;
@@ -124,6 +252,16 @@ const LearnHeaderSkeleton = React.memo(function LearnHeaderSkeleton() {
       {/* Search bar */}
       <View style={skeletonStyles.searchBar}>
         <Skeleton width="100%" height={48} borderRadius={14} />
+      </View>
+
+      {/* Suggested courses strip */}
+      <View style={skeletonStyles.suggestWrap}>
+        <View style={skeletonStyles.suggestHeader}>
+          <Skeleton width={140} height={17} borderRadius={8} />
+          <Skeleton width={120} height={13} borderRadius={6} style={{ marginTop: 6 }} />
+        </View>
+        <Skeleton style={skeletonStyles.suggestCard} height={198} borderRadius={20} />
+        <Skeleton style={[skeletonStyles.suggestCard, { marginTop: 12 }]} height={198} borderRadius={20} />
       </View>
 
       {/* Tabs row: Explore / My Courses / Created / Paths */}
@@ -187,16 +325,19 @@ const CourseCardSkeleton = React.memo(function CourseCardSkeleton() {
 
 const skeletonStyles = StyleSheet.create({
   // Header skeleton
-  searchBar:         { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
-  tabsRow:           { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
-  sectionHeader:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12 },
-  categoryGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 16, marginBottom: 16 },
+  searchBar:         { paddingHorizontal: 12, paddingTop: 16, paddingBottom: 8 },
+  suggestWrap:       { marginBottom: 12 },
+  suggestHeader:     { paddingHorizontal: 12, marginBottom: 10 },
+  suggestCard:       { marginHorizontal: 12 },
+  tabsRow:           { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingVertical: 12 },
+  sectionHeader:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, paddingBottom: 12 },
+  categoryGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 12, marginBottom: 16 },
   categoryChip:      { width: '47%' },
-  statsRow:          { flexDirection: 'row', gap: 10, paddingHorizontal: 16, marginBottom: 20 },
+  statsRow:          { flexDirection: 'row', gap: 10, paddingHorizontal: 12, marginBottom: 20 },
   statCard:          { flex: 1 },
-  listSectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12 },
+  listSectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, paddingBottom: 12 },
   // Course card skeleton
-  card:      { backgroundColor: '#FFF', borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 12, marginHorizontal: 16, padding: 12, overflow: 'hidden' },
+  card:      { backgroundColor: '#FFF', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 14, marginHorizontal: 12, padding: 16, overflow: 'hidden' },
   badgeRow:  { flexDirection: 'row', marginBottom: 8 },
   badge:     { height: 20, width: 64, borderRadius: 12, backgroundColor: '#F1F5F9' },
   titleLine: { height: 15, borderRadius: 8, backgroundColor: '#F1F5F9', marginBottom: 8 },
@@ -205,103 +346,6 @@ const skeletonStyles = StyleSheet.create({
   metaRow:   { flexDirection: 'row', gap: 8, marginBottom: 12 },
   metaPill:  { height: 20, width: 60, borderRadius: 10, backgroundColor: '#F1F5F9' },
   footer:    { height: 16, borderRadius: 8, backgroundColor: '#F1F5F9', width: '40%' },
-});
-
-// ─── Course Card (memoized) ───────────────────────────────────────────────────
-interface CourseCardProps {
-  course: LearnCourse;
-  showEnroll?: boolean;
-  enrolledData?: LearnEnrolledCourse;
-  isEnrolled: boolean;
-  isBusy: boolean;
-  onPress: (courseId: string) => void;
-  onEnroll: (courseId: string) => void;
-}
-
-const CourseCard = React.memo(function CourseCard({
-  course,
-  showEnroll,
-  enrolledData,
-  isEnrolled,
-  isBusy,
-  onPress,
-  onEnroll,
-}: CourseCardProps) {
-  return (
-    <View style={styles.card}>
-      <TouchableOpacity activeOpacity={0.8} onPress={() => onPress(course.id)}>
-        <View style={styles.cardHeader}>
-          <View style={styles.badgesRow}>
-            <View style={styles.levelBadge}>
-              <Text style={styles.levelBadgeText}>{course.level.replace('_', ' ')}</Text>
-            </View>
-            {course.isFeatured && (
-              <View style={styles.featuredBadge}>
-                <Text style={styles.featuredBadgeText}>Featured</Text>
-              </View>
-            )}
-          </View>
-          <Text style={styles.courseTitle} numberOfLines={2}>{course.title}</Text>
-          <Text style={styles.courseDescription} numberOfLines={2}>{course.description}</Text>
-        </View>
-
-        <View style={styles.metaRow}>
-          <View style={styles.metaItem}>
-            <Ionicons name="star" size={14} color="#F59E0B" />
-            <Text style={styles.metaText}>{course.rating.toFixed(1)}</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Ionicons name="play-circle-outline" size={14} color="#6B7280" />
-            <Text style={styles.metaText}>{course.lessonsCount} lessons</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Ionicons name="people-outline" size={14} color="#6B7280" />
-            <Text style={styles.metaText}>{formatK(course.enrolledCount)}</Text>
-          </View>
-        </View>
-
-        <View style={styles.footerRow}>
-          <Text style={styles.instructorText} numberOfLines={1}>{course.instructor.name}</Text>
-          <Text style={styles.priceText}>{course.isFree ? 'FREE' : `$${course.price}`}</Text>
-        </View>
-
-        <View style={styles.durationRow}>
-          <Ionicons name="time-outline" size={13} color="#6B7280" />
-          <Text style={styles.durationText}>{formatDuration(course.duration)}</Text>
-        </View>
-      </TouchableOpacity>
-
-      {enrolledData && (
-        <View style={styles.progressSection}>
-          <View style={styles.progressLabels}>
-            <Text style={styles.progressText}>{Math.round(enrolledData.progress)}% complete</Text>
-            <Text style={styles.progressSubText}>{enrolledData.completedLessons}/{course.lessonsCount}</Text>
-          </View>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${Math.max(0, Math.min(100, enrolledData.progress))}%` }]} />
-          </View>
-        </View>
-      )}
-
-      {showEnroll && !isEnrolled && (
-        <TouchableOpacity
-          style={[styles.actionButton, isBusy && styles.actionButtonDisabled]}
-          activeOpacity={0.8}
-          onPress={() => onEnroll(course.id)}
-          disabled={isBusy}
-        >
-          {isBusy ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <>
-              <Ionicons name="add-circle-outline" size={16} color="#fff" />
-              <Text style={styles.actionButtonText}>Enroll</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      )}
-    </View>
-  );
 });
 
 // ─── Path Card (memoized) ─────────────────────────────────────────────────────
@@ -479,6 +523,23 @@ export default function LearnScreen() {
 
   const canToggleCategoryList = rankedCategoryItems.length > TOP_CATEGORY_LIMIT;
 
+  const suggestedCourses = useMemo<SuggestedCourseItem[]>(() => {
+    const ranked = [...courses]
+      .sort((a, b) => {
+        const scoreA = (a.isFeatured ? 120000 : 0) + (a.isNew ? 25000 : 0) + Math.round(a.rating * 1000) + a.enrolledCount;
+        const scoreB = (b.isFeatured ? 120000 : 0) + (b.isNew ? 25000 : 0) + Math.round(b.rating * 1000) + b.enrolledCount;
+        return scoreB - scoreA;
+      })
+      .slice(0, 2);
+
+    return ranked.map((course, index) => ({
+      course,
+      badgeLabel: course.isFeatured ? 'Featured' : course.isNew ? 'New' : 'Popular',
+      icon: getSuggestionIconForCourse(course),
+      theme: FEATURED_COURSE_THEMES[index % FEATURED_COURSE_THEMES.length],
+    }));
+  }, [courses]);
+
   // ── Filtered data per tab ─────────────────────────────────────────────────
   const filteredCourses = useMemo(
     () => courses.filter((course) => {
@@ -566,87 +627,207 @@ export default function LearnScreen() {
     ] : [];
 
     return (
-      <View>
-        {/* Category grid */}
-        <View style={styles.categorySection}>
-          <View style={styles.categoryHeaderRow}>
-            <View style={styles.categoryHeaderInfo}>
-              <Text style={styles.categoryHeaderTitle}>Explore categories</Text>
-              <Text style={styles.categoryHeaderSubtitle}>
-                {showAllCategories ? 'Browse all categories' : `Top ${TOP_CATEGORY_LIMIT} categories for you`}
-              </Text>
+      <View style={styles.headerContent}>
+        {activeTab === 'explore' && suggestedCourses.length > 0 && (
+          <View style={styles.featuredSection}>
+            <View style={styles.featuredSectionHeader}>
+              <Text style={styles.featuredSectionTitle}>Suggested courses</Text>
             </View>
-            <View style={styles.categoryHeaderActions}>
-              {selectedCategory !== 'All' && (
-                <TouchableOpacity style={styles.categoryHeaderButton} onPress={() => setSelectedCategory('All')}>
-                  <Text style={styles.categoryHeaderButtonText}>All courses</Text>
-                </TouchableOpacity>
-              )}
-              {canToggleCategoryList && (
-                <TouchableOpacity
-                  style={styles.categoryHeaderButton}
-                  onPress={() => setShowAllCategories((v) => !v)}
-                >
-                  <Text style={styles.categoryHeaderButtonText}>{showAllCategories ? 'View less' : 'View all'}</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
 
-          <View style={styles.categoryGrid}>
-            {visibleCategoryItems.map((category, index) => {
-              const isActive     = selectedCategory === category.name;
-              const isTopCategory= category.count > 0 && index < 3;
-              return (
-                <TouchableOpacity
-                  key={category.name}
-                  style={[styles.categoryCard, isActive && styles.categoryCardActive]}
-                  onPress={() => setSelectedCategory(category.name)}
-                  activeOpacity={0.85}
-                >
-                  <View style={styles.categoryContent}>
-                    <View style={styles.categoryTitleRow}>
-                      <Text numberOfLines={1} style={[styles.categoryLabel, isActive && styles.categoryLabelActive]}>
-                        {category.name}
-                      </Text>
-                      {isTopCategory && (
-                        <View style={[styles.categoryTrendBadge, isActive && styles.categoryTrendBadgeActive]}>
-                          <Text style={[styles.categoryTrendText, isActive && styles.categoryTrendTextActive]}>Top</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.featuredHorizontalScroll}
+              snapToInterval={FEATURED_CARD_WIDTH + FEATURED_CARD_GAP}
+              snapToAlignment="start"
+              decelerationRate="fast"
+            >
+              {suggestedCourses.map((item) => {
+                const { course, theme } = item;
+                const isEnrolled = enrolledCourseIds.has(course.id);
+                return (
+                  <TouchableOpacity
+                    key={course.id}
+                    style={[styles.featuredCardWrap, { shadowColor: theme.shadowColor }]}
+                    activeOpacity={0.9}
+                    onPress={() => handleCoursePress(course.id)}
+                  >
+                    <View style={[styles.featuredCard, { borderColor: theme.accentSoftColor }]}>
+                      <View style={styles.featuredAbstractBg}>
+                        <LinearGradient
+                          colors={['rgba(34, 211, 238, 0.08)', 'rgba(8, 145, 178, 0.15)']}
+                          style={styles.featuredAbstractShape1}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                        />
+                        <LinearGradient
+                          colors={['rgba(34, 211, 238, 0.2)', 'rgba(8, 145, 178, 0.25)']}
+                          style={styles.featuredAbstractShape2}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                        />
+                      </View>
+  
+                      <View style={styles.featuredCardBody}>
+                      <View style={styles.featuredTopRow}>
+                        <View style={[styles.featuredBadgePill, { backgroundColor: theme.badgeBackground, borderColor: `${theme.badgeColor}33` }]}>
+                          <Ionicons name="flame" size={13} color={theme.badgeColor} />
+                          <Text style={[styles.featuredHeroBadgeText, { color: theme.badgeColor }]}>{item.badgeLabel}</Text>
                         </View>
-                      )}
+                        <View style={[styles.featuredLevelPill, { backgroundColor: theme.levelBackground, borderColor: `${theme.levelColor}2A` }]}>
+                          <Text style={[styles.featuredLevelText, { color: theme.levelColor }]}>{course.level.replace('_', ' ')}</Text>
+                        </View>
+                      </View>
+  
+                      <View style={styles.featuredContentRow}>
+                        <View style={styles.featuredTextBlock}>
+                          <Text style={styles.featuredTitle} numberOfLines={2}>{course.title}</Text>
+                          <Text style={styles.featuredSubtitle} numberOfLines={1}>
+                            {course.category} · {formatDuration(course.duration)}
+                          </Text>
+                          <Text style={styles.featuredDescription} numberOfLines={2}>
+                            {course.description}
+                          </Text>
+                        </View>
+  
+                        <View style={styles.featuredArtworkWrap}>
+                          <View style={[styles.featuredArtworkHalo, { backgroundColor: `${theme.iconColor}20` }]} />
+                          <View style={[styles.featuredIconWrap, { backgroundColor: `${theme.iconColor}18`, borderColor: `${theme.iconColor}33` }]}>
+                            <Ionicons name={item.icon} size={30} color={theme.iconColor} />
+                          </View>
+                        </View>
+                      </View>
+  
+                      <View style={styles.featuredBottomRow}>
+                        <View style={styles.featuredMetaRow}>
+                          <View style={styles.featuredMetaItem}>
+                            <Ionicons name="star" size={12} color={theme.badgeColor} />
+                            <Text style={styles.featuredMetaText}>{course.rating.toFixed(1)}</Text>
+                          </View>
+                          <Text style={styles.featuredMetaDivider}>•</Text>
+                          <View style={styles.featuredMetaItem}>
+                            <Ionicons name="people-outline" size={12} color={theme.levelColor} />
+                            <Text style={styles.featuredMetaText}>{formatK(course.enrolledCount)} learners</Text>
+                          </View>
+                          <Text style={styles.featuredMetaDivider}>•</Text>
+                          <View style={styles.featuredMetaItem}>
+                            <Ionicons name="play-circle-outline" size={12} color={theme.accentColor} />
+                            <Text style={styles.featuredMetaText}>{course.lessonsCount} lessons</Text>
+                          </View>
+                        </View>
+  
+                        <View style={[styles.featuredCtaButton, { backgroundColor: theme.buttonColor, borderColor: `${theme.buttonColor}66` }]}>
+                          <Text style={styles.featuredCtaText}>
+                            {isEnrolled ? 'Continue' : 'Start course'}
+                          </Text>
+                          <View style={styles.featuredCtaArrowWrap}>
+                            <Ionicons name="arrow-forward" size={14} color={theme.buttonColor} />
+                          </View>
+                        </View>
+                      </View>
                     </View>
-                    <Text style={[styles.categoryCount, isActive && styles.categoryCountActive]}>
-                      {category.count} courses
-                    </Text>
-                  </View>
-                  <View style={[styles.categoryIconWrap, { backgroundColor: category.iconBackground }, isActive && styles.categoryIconWrapActive]}>
-                    <Ionicons name={category.icon} size={18} color={category.iconColor} />
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Category grid */}
+        <View style={styles.categorySurface}>
+          <View style={styles.categorySection}>
+            <View style={styles.categoryHeaderRow}>
+              <View style={styles.categoryHeaderInfo}>
+                <Text style={styles.categoryHeaderTitle}>Explore categories</Text>
+              </View>
+              <View style={styles.categoryHeaderActions}>
+                {selectedCategory !== 'All' && (
+                  <TouchableOpacity style={styles.categoryHeaderButton} onPress={() => setSelectedCategory('All')}>
+                    <Text style={styles.categoryHeaderButtonText}>All courses</Text>
+                  </TouchableOpacity>
+                )}
+                {canToggleCategoryList && (
+                  <TouchableOpacity
+                    style={styles.categoryHeaderButton}
+                    onPress={() => setShowAllCategories((v) => !v)}
+                  >
+                    <Text style={styles.categoryHeaderButtonText}>{showAllCategories ? 'View less' : 'View all'}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.categoryGrid}>
+              {visibleCategoryItems.map((category, index) => {
+                const isActive     = selectedCategory === category.name;
+                const isTopCategory= category.count > 0 && index < 3;
+                return (
+                  <TouchableOpacity
+                    key={category.name}
+                    style={[styles.categoryCard, isActive && styles.categoryCardActive]}
+                    onPress={() => setSelectedCategory(category.name)}
+                    activeOpacity={0.85}
+                  >
+                    <View style={styles.categoryContent}>
+                      <View style={styles.categoryTitleRow}>
+                        <Text numberOfLines={1} style={[styles.categoryLabel, isActive && styles.categoryLabelActive]}>
+                          {category.name}
+                        </Text>
+                        {isTopCategory && (
+                          <View style={[styles.categoryTrendBadge, isActive && styles.categoryTrendBadgeActive]}>
+                            <Text style={[styles.categoryTrendText, isActive && styles.categoryTrendTextActive]}>Top</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={[styles.categoryCount, isActive && styles.categoryCountActive]}>
+                        {category.count} courses
+                      </Text>
+                    </View>
+                    <View style={[styles.categoryIconWrap, { backgroundColor: category.iconBackground }, isActive && styles.categoryIconWrapActive]}>
+                      <Ionicons name={category.icon} size={18} color={category.iconColor} />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         </View>
 
         {/* Stat cards */}
         {stats && (
-          <View style={styles.statsRow}>
-            {statCards.map((item) => (
-              <View key={item.key} style={[styles.statCard, { backgroundColor: item.cardBackground, borderColor: item.borderColor }]}>
-                <View style={styles.statCardTopRow}>
-                  <View style={[styles.statIconWrap, { backgroundColor: item.iconBackground }]}>
-                    <Ionicons name={item.icon} size={14} color={item.iconColor} />
+          <View style={styles.statsSection}>
+            <View style={styles.statsSectionHeader}>
+              <Text style={styles.statsSectionTitle}>Learning snapshot</Text>
+            </View>
+            <View style={styles.statsRow}>
+              {statCards.map((item) => (
+                <View key={item.key} style={[styles.statCard, { backgroundColor: item.cardBackground, borderColor: item.borderColor }]}>
+                  <View style={styles.statCardTopRow}>
+                    <View style={[styles.statIconWrap, { backgroundColor: item.iconBackground }]}>
+                      <Ionicons name={item.icon} size={15} color={item.iconColor} />
+                    </View>
+                    <Text style={[styles.statValue, { color: item.iconColor }]}>{item.value}</Text>
                   </View>
-                  <Text style={[styles.statValue, { color: item.iconColor }]}>{item.value}</Text>
+                  <Text style={styles.statLabel}>{item.label}</Text>
                 </View>
-                <Text style={styles.statLabel}>{item.label}</Text>
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
         )}
       </View>
     );
-  }, [stats, visibleCategoryItems, selectedCategory, showAllCategories, canToggleCategoryList]);
+  }, [
+    activeTab,
+    stats,
+    suggestedCourses,
+    enrolledCourseIds,
+    handleCoursePress,
+    visibleCategoryItems,
+    selectedCategory,
+    showAllCategories,
+    canToggleCategoryList,
+  ]);
 
   // ── Render items ──────────────────────────────────────────────────────────
   const renderItem = useCallback(
@@ -659,12 +840,13 @@ export default function LearnScreen() {
         return (
           <CourseCard
             course={item.data}
-            showEnroll={item.showEnroll}
-            enrolledData={item.enrolledData}
+            variant="full"
             isEnrolled={enrolledCourseIds.has(item.data.id)}
             isBusy={busyCourseId === item.data.id}
-            onPress={handleCoursePress}
-            onEnroll={handleEnrollCourse}
+            progress={item.enrolledData?.progress}
+            completedLessons={item.enrolledData?.completedLessons}
+            onPress={() => handleCoursePress(item.data.id)}
+            onEnroll={item.showEnroll ? () => handleEnrollCourse(item.data.id) : undefined}
           />
         );
       }
@@ -760,7 +942,7 @@ export default function LearnScreen() {
 
       {/* Search bar — outside the list so it stays fixed */}
       <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={18} color="#6B7280" />
+        <Ionicons name="search-outline" size={18} color="#64748B" />
         <TextInput
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -784,15 +966,28 @@ export default function LearnScreen() {
       >
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
+          const palette = TAB_COLOR_PALETTES[tab.id];
           return (
             <TouchableOpacity
               key={tab.id}
-              style={[styles.tabButton, isActive && styles.tabButtonActive]}
+              style={[
+                styles.tabButton,
+                { backgroundColor: palette.inactiveBackground, borderColor: palette.inactiveBorder },
+                isActive && styles.tabButtonActive,
+                isActive && { backgroundColor: palette.activeBackground, borderColor: palette.activeBorder },
+              ]}
               onPress={() => setActiveTab(tab.id)}
               activeOpacity={0.8}
             >
-              <Ionicons name={tab.icon} size={14} color={isActive ? '#1A73E8' : '#6B7280'} />
-              <Text allowFontScaling={false} style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+              <Ionicons name={tab.icon} size={14} color={isActive ? '#FFFFFF' : palette.inactiveIcon} />
+              <Text
+                allowFontScaling={false}
+                style={[
+                  styles.tabLabel,
+                  { color: isActive ? '#FFFFFF' : palette.inactiveText },
+                  isActive && styles.tabLabelActive,
+                ]}
+              >
                 {tab.label}
               </Text>
             </TouchableOpacity>
@@ -834,7 +1029,7 @@ export default function LearnScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F1F5F9', // Clean light grey screen background
   },
   headerSafe: {
     backgroundColor: '#FFFFFF',
@@ -844,10 +1039,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 8,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#DBEAFE',
   },
   topBarActions: {
     flexDirection: 'row',
@@ -863,89 +1056,310 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
   },
   searchContainer: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 10,
+    marginHorizontal: 12,
+    marginTop: 10,
+    marginBottom: 12,
     backgroundColor: '#FFFFFF',
-    borderRadius: 999,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 12,
-    height: 46,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    gap: 10,
   },
   searchInput: {
     flex: 1,
+    fontSize: 15,
+    color: '#1E293B',
+    padding: 0,
+  },
+  featuredSection: {
+    marginBottom: 24,
+  },
+  featuredHorizontalScroll: {
+    paddingHorizontal: 12,
+    gap: FEATURED_CARD_GAP,
+    paddingBottom: 10,
+  },
+  featuredSectionHeader: {
+    marginBottom: 10,
+    paddingHorizontal: 12,
+  },
+  featuredSectionTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  featuredSectionSubtitle: {
+    marginTop: 2,
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  featuredCardWrap: {
+    width: FEATURED_CARD_WIDTH,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  featuredCard: {
+    minHeight: 232,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1.25,
+    borderColor: '#E0F2FE',
+    backgroundColor: '#F0FDFA', // Subtle Teal/Cyan background
+  },
+  featuredAbstractBg: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+    zIndex: -1,
+  },
+  featuredAbstractShape1: {
+    position: 'absolute',
+    bottom: -40,
+    right: -20,
+    width: 200,
+    height: 80,
+    borderRadius: 40,
+    transform: [{ rotate: '-35deg' }],
+  },
+  featuredAbstractShape2: {
+    position: 'absolute',
+    bottom: -20,
+    right: -50,
+    width: 220,
+    height: 90,
+    borderRadius: 45,
+    transform: [{ rotate: '-35deg' }],
+  },
+  featuredCardBody: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  featuredTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  featuredBadgePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+  },
+  featuredHeroBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#C2410C',
+  },
+  featuredLevelPill: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#EEF2FF',
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  featuredLevelText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4F46E5',
+  },
+  featuredContentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  featuredTextBlock: {
+    flex: 1,
+    minHeight: 120,
+    paddingRight: 4,
+  },
+  featuredArtworkWrap: {
+    width: 84,
+    height: 84,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featuredArtworkHalo: {
+    position: 'absolute',
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: 'rgba(14, 165, 233, 0.14)',
+  },
+  featuredIconWrap: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(14, 165, 233, 0.22)',
+  },
+  featuredTitle: {
+    fontSize: 18,
+    lineHeight: 30,
+    fontWeight: '600',
+    color: '#0F172A',
+    paddingTop: 2,
+  },
+  featuredSubtitle: {
+    marginTop: 3,
+    fontSize: 13,
+    color: '#334155',
+    fontWeight: '600',
+  },
+  featuredDescription: {
+    marginTop: 5,
+    fontSize: 12,
+    lineHeight: 18,
+    color: '#475569',
+  },
+  featuredBottomRow: {
+    marginTop: 10,
+    gap: 10,
+  },
+  featuredMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    rowGap: 5,
+    columnGap: 7,
+  },
+  featuredMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  featuredMetaText: {
+    fontSize: 11,
+    color: '#334155',
+    fontWeight: '600',
+  },
+  featuredMetaDivider: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '600',
+  },
+  featuredCtaButton: {
+    alignSelf: 'flex-start',
+    paddingLeft: 16,
+    paddingRight: 8,
+    height: 42,
+    borderRadius: 999,
+    backgroundColor: '#1D4ED8',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#1E40AF66',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  featuredCtaText: {
     fontSize: 14,
-    color: '#111827',
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  featuredCtaArrowWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
   },
   tabsContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     gap: 8,
-    paddingBottom: 8,
+    paddingBottom: 12,
     alignItems: 'center',
   },
   tabsScroll: {
-    maxHeight: 54,
+    maxHeight: 52,
   },
   tabButton: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    minHeight: 36,
+    height: 36,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
   },
   tabButtonActive: {
-    borderColor: '#BFDBFE',
-    backgroundColor: '#EFF6FF',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 1,
   },
   tabLabel: {
-    fontSize: 12,
-    color: '#4B5563',
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
   },
   tabLabelActive: {
-    color: '#1A73E8',
+    fontWeight: '700',
   },
   listContent: {
-    paddingHorizontal: 16,
+    paddingTop: 4,
     paddingBottom: 40,
+  },
+  headerContent: {
+    marginBottom: 6,
+  },
+  categorySurface: {
+    marginHorizontal: 12,
+    marginBottom: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+    padding: 16,
   },
   // Category section
   categorySection: {
-    marginBottom: 12,
+    marginBottom: 0,
   },
   categoryHeaderRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   categoryHeaderInfo: {
     flex: 1,
     marginRight: 8,
   },
   categoryHeaderTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
-    color: '#111827',
+    color: '#1E293B',
   },
   categoryHeaderSubtitle: {
-    marginTop: 2,
-    fontSize: 12,
-    color: '#6B7280',
+    marginTop: 3,
+    fontSize: 13,
+    color: '#64748B',
     fontWeight: '500',
   },
   categoryHeaderActions: {
@@ -953,18 +1367,18 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'flex-end',
     gap: 6,
-    maxWidth: '52%',
+    maxWidth: '56%',
   },
   categoryHeaderButton: {
-    borderRadius: 999,
-    backgroundColor: '#F8FAFC',
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#D1E4FF',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   categoryHeaderButtonText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: '#2563EB',
   },
@@ -975,22 +1389,22 @@ const styles = StyleSheet.create({
   },
   categoryCard: {
     width: '49%',
-    minHeight: 72,
+    minHeight: 76,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF', // Back to white as requested
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 10,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 1,
+    elevation: 2,
   },
   categoryCardActive: {
     borderColor: '#93C5FD',
@@ -1057,23 +1471,45 @@ const styles = StyleSheet.create({
     color: '#2563EB',
   },
   // Stats
+  statsSection: {
+    marginHorizontal: 12,
+    marginBottom: 24,
+  },
+  statsSectionHeader: {
+    marginBottom: 10,
+    paddingHorizontal: 2,
+  },
+  statsSectionTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  statsSectionSubtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
+  },
   statsRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-    marginTop: 2,
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 10,
+    columnGap: 10,
   },
   statCard: {
-    flex: 1,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingVertical: 9,
-    paddingHorizontal: 8,
+    width: '48.5%',
+    borderRadius: 14,
+    backgroundColor: '#F0FDFA', // Subtle Teal/Cyan
+    borderWidth: 1.25,
+    borderColor: '#E0F2FE',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   statCardTopRow: {
     flexDirection: 'row',
@@ -1081,19 +1517,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   statIconWrap: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   statValue: {
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: -0.5,
   },
   statLabel: {
-    marginTop: 7,
-    fontSize: 11,
+    marginTop: 8,
+    fontSize: 12,
     color: '#475569',
     fontWeight: '600',
   },
@@ -1104,16 +1541,17 @@ const styles = StyleSheet.create({
   // Course cards
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginBottom: 12,
+    borderColor: '#E2E8F0',
+    marginHorizontal: 12,
+    marginBottom: 14,
     overflow: 'hidden',
   },
   cardHeader: {
-    paddingHorizontal: 12,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 10,
   },
   badgesRow: {
     flexDirection: 'row',
@@ -1155,11 +1593,11 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   metaRow: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 8,
+    gap: 12,
+    marginBottom: 10,
   },
   metaItem: {
     flexDirection: 'row',
@@ -1172,8 +1610,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   footerRow: {
-    paddingHorizontal: 12,
-    marginBottom: 8,
+    paddingHorizontal: 16,
+    marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -1188,11 +1626,11 @@ const styles = StyleSheet.create({
     color: '#0F766E',
   },
   durationRow: {
-    paddingHorizontal: 12,
-    paddingBottom: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   durationText: {
     fontSize: 12,
@@ -1201,10 +1639,10 @@ const styles = StyleSheet.create({
   },
   progressSection: {
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 12,
+    borderTopColor: '#E2E8F0',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 14,
   },
   progressLabels: {
     flexDirection: 'row',
@@ -1232,20 +1670,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#1A73E8',
   },
   actionButton: {
-    marginHorizontal: 12,
-    marginBottom: 12,
-    borderRadius: 999,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 12,
     backgroundColor: '#1A73E8',
-    height: 40,
+    height: 42,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 6,
     shadowColor: '#1A73E8',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.22,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.16,
+    shadowRadius: 6,
+    elevation: 2,
   },
   actionButtonDisabled: {
     opacity: 0.7,
@@ -1258,11 +1696,12 @@ const styles = StyleSheet.create({
   // Path cards
   pathCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginBottom: 12,
-    padding: 12,
+    borderColor: '#E2E8F0',
+    marginHorizontal: 12,
+    marginBottom: 14,
+    padding: 16,
   },
   pathTitle: {
     fontSize: 15,
@@ -1292,9 +1731,9 @@ const styles = StyleSheet.create({
   },
   pathActionButton: {
     marginTop: 12,
-    borderRadius: 10,
+    borderRadius: 12,
     backgroundColor: '#7C3AED',
-    height: 40,
+    height: 42,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1308,15 +1747,16 @@ const styles = StyleSheet.create({
   },
   // Empty state
   emptyState: {
-    marginTop: 24,
+    marginTop: 12,
+    marginHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
+    borderColor: '#E2E8F0',
+    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 28,
+    paddingVertical: 30,
   },
   emptyTitle: {
     marginTop: 10,
