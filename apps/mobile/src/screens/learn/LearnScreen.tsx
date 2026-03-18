@@ -70,39 +70,20 @@ interface TabColorPalette {
   activeBorder: string;
 }
 
+const UNIFIED_PALETTE: TabColorPalette = {
+  inactiveBackground: '#FFFFFF',
+  inactiveBorder: '#E2E8F0',
+  inactiveIcon: '#64748B',
+  inactiveText: '#475569',
+  activeBackground: '#0F172A',
+  activeBorder: '#0F172A',
+};
+
 const TAB_COLOR_PALETTES: Record<TabType, TabColorPalette> = {
-  explore: {
-    inactiveBackground: '#E0F2FE',
-    inactiveBorder: '#BAE6FD',
-    inactiveIcon: '#0284C7',
-    inactiveText: '#0369A1',
-    activeBackground: '#0EA5E9',
-    activeBorder: '#0284C7',
-  },
-  enrolled: {
-    inactiveBackground: '#DCFCE7',
-    inactiveBorder: '#BBF7D0',
-    inactiveIcon: '#059669',
-    inactiveText: '#047857',
-    activeBackground: '#10B981',
-    activeBorder: '#059669',
-  },
-  created: {
-    inactiveBackground: '#FEF3C7',
-    inactiveBorder: '#FDE68A',
-    inactiveIcon: '#D97706',
-    inactiveText: '#B45309',
-    activeBackground: '#F59E0B',
-    activeBorder: '#D97706',
-  },
-  paths: {
-    inactiveBackground: '#EDE9FE',
-    inactiveBorder: '#DDD6FE',
-    inactiveIcon: '#7C3AED',
-    inactiveText: '#6D28D9',
-    activeBackground: '#8B5CF6',
-    activeBorder: '#7C3AED',
-  },
+  explore: { ...UNIFIED_PALETTE, activeBackground: '#0EA5E9', activeBorder: '#0EA5E9' },
+  enrolled: { ...UNIFIED_PALETTE, activeBackground: '#0EA5E9', activeBorder: '#0EA5E9' },
+  created: { ...UNIFIED_PALETTE, activeBackground: '#0EA5E9', activeBorder: '#0EA5E9' },
+  paths: { ...UNIFIED_PALETTE, activeBackground: '#0EA5E9', activeBorder: '#0EA5E9' },
 };
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -620,10 +601,10 @@ export default function LearnScreen() {
   const renderHeader = useCallback(() => {
     // Stat cards
     const statCards = stats ? [
-      { key: 'enrolled',  value: `${stats.enrolledCourses}`,  label: 'Enrolled',   icon: 'book-outline' as const,             iconColor: '#2563EB', iconBackground: '#DBEAFE', cardBackground: '#EFF6FF', borderColor: '#BFDBFE' },
-      { key: 'completed', value: `${stats.completedCourses}`, label: 'Completed',  icon: 'checkmark-circle-outline' as const, iconColor: '#059669', iconBackground: '#D1FAE5', cardBackground: '#ECFDF5', borderColor: '#A7F3D0' },
-      { key: 'hours',     value: `${stats.hoursLearned}h`,    label: 'Hours',      icon: 'time-outline' as const,             iconColor: '#D97706', iconBackground: '#FEF3C7', cardBackground: '#FFFBEB', borderColor: '#FDE68A' },
-      { key: 'streak',    value: `${stats.currentStreak}`,    label: 'Streak',     icon: 'flame-outline' as const,            iconColor: '#EA580C', iconBackground: '#FFEDD5', cardBackground: '#FFF7ED', borderColor: '#FDBA74' },
+      { key: 'enrolled',  value: `${stats.enrolledCourses}`,  label: 'Enrolled',   icon: 'book' as const,             iconColor: '#2563EB', iconBackground: '#EFF6FF', cardBackground: '#FFFFFF', borderColor: '#F1F5F9' },
+      { key: 'completed', value: `${stats.completedCourses}`, label: 'Completed',  icon: 'checkmark-circle' as const, iconColor: '#059669', iconBackground: '#ECFDF5', cardBackground: '#FFFFFF', borderColor: '#F1F5F9' },
+      { key: 'hours',     value: `${stats.hoursLearned}h`,    label: 'Hours',      icon: 'time' as const,             iconColor: '#D97706', iconBackground: '#FFFBEB', cardBackground: '#FFFFFF', borderColor: '#F1F5F9' },
+      { key: 'streak',    value: `${stats.currentStreak}`,    label: 'Streak',     icon: 'flame' as const,            iconColor: '#EA580C', iconBackground: '#FFF7ED', cardBackground: '#FFFFFF', borderColor: '#F1F5F9' },
     ] : [];
 
     return (
@@ -669,63 +650,53 @@ export default function LearnScreen() {
                       </View>
   
                       <View style={styles.featuredCardBody}>
-                      <View style={styles.featuredTopRow}>
-                        <View style={[styles.featuredBadgePill, { backgroundColor: theme.badgeBackground, borderColor: `${theme.badgeColor}33` }]}>
-                          <Ionicons name="flame" size={13} color={theme.badgeColor} />
-                          <Text style={[styles.featuredHeroBadgeText, { color: theme.badgeColor }]}>{item.badgeLabel}</Text>
-                        </View>
-                        <View style={[styles.featuredLevelPill, { backgroundColor: theme.levelBackground, borderColor: `${theme.levelColor}2A` }]}>
-                          <Text style={[styles.featuredLevelText, { color: theme.levelColor }]}>{course.level.replace('_', ' ')}</Text>
-                        </View>
-                      </View>
-  
-                      <View style={styles.featuredContentRow}>
-                        <View style={styles.featuredTextBlock}>
-                          <Text style={styles.featuredTitle} numberOfLines={2}>{course.title}</Text>
-                          <Text style={styles.featuredSubtitle} numberOfLines={1}>
-                            {course.category} · {formatDuration(course.duration)}
-                          </Text>
-                          <Text style={styles.featuredDescription} numberOfLines={2}>
-                            {course.description}
-                          </Text>
-                        </View>
-  
                         <View style={styles.featuredArtworkWrap}>
-                          <View style={[styles.featuredArtworkHalo, { backgroundColor: `${theme.iconColor}20` }]} />
-                          <View style={[styles.featuredIconWrap, { backgroundColor: `${theme.iconColor}18`, borderColor: `${theme.iconColor}33` }]}>
-                            <Ionicons name={item.icon} size={30} color={theme.iconColor} />
-                          </View>
-                        </View>
-                      </View>
-  
-                      <View style={styles.featuredBottomRow}>
-                        <View style={styles.featuredMetaRow}>
-                          <View style={styles.featuredMetaItem}>
-                            <Ionicons name="star" size={12} color={theme.badgeColor} />
-                            <Text style={styles.featuredMetaText}>{course.rating.toFixed(1)}</Text>
-                          </View>
-                          <Text style={styles.featuredMetaDivider}>•</Text>
-                          <View style={styles.featuredMetaItem}>
-                            <Ionicons name="people-outline" size={12} color={theme.levelColor} />
-                            <Text style={styles.featuredMetaText}>{formatK(course.enrolledCount)} learners</Text>
-                          </View>
-                          <Text style={styles.featuredMetaDivider}>•</Text>
-                          <View style={styles.featuredMetaItem}>
-                            <Ionicons name="play-circle-outline" size={12} color={theme.accentColor} />
-                            <Text style={styles.featuredMetaText}>{course.lessonsCount} lessons</Text>
+                          <View style={[styles.featuredArtworkHalo, { backgroundColor: `${theme.iconColor}15` }]} />
+                          <View style={[styles.featuredIconWrap, { backgroundColor: `${theme.iconColor}10`, borderColor: `${theme.iconColor}20` }]}>
+                            <Ionicons name={item.icon} size={32} color={theme.iconColor} />
                           </View>
                         </View>
   
-                        <View style={[styles.featuredCtaButton, { backgroundColor: theme.buttonColor, borderColor: `${theme.buttonColor}66` }]}>
-                          <Text style={styles.featuredCtaText}>
-                            {isEnrolled ? 'Continue' : 'Start course'}
-                          </Text>
-                          <View style={styles.featuredCtaArrowWrap}>
-                            <Ionicons name="arrow-forward" size={14} color={theme.buttonColor} />
+                        <View style={styles.featuredContentRow}>
+                          <View style={styles.featuredTopRow}>
+                            <View style={[styles.featuredBadgePill, { backgroundColor: theme.badgeBackground, borderColor: `${theme.badgeColor}33` }]}>
+                              <Ionicons name="flame" size={11} color={theme.badgeColor} />
+                              <Text style={[styles.featuredHeroBadgeText, { color: theme.badgeColor }]}>{item.badgeLabel}</Text>
+                            </View>
+                            <View style={[styles.featuredLevelPill, { backgroundColor: theme.levelBackground, borderColor: `${theme.levelColor}2A` }]}>
+                              <Text style={[styles.featuredLevelText, { color: theme.levelColor }]}>{course.level.replace('_', ' ')}</Text>
+                            </View>
+                          </View>
+  
+                          <View style={styles.featuredTextBlock}>
+                            <Text style={styles.featuredTitle} numberOfLines={2}>{course.title}</Text>
+                            <Text style={styles.featuredSubtitle} numberOfLines={1}>
+                              {course.category} · {formatDuration(course.duration)}
+                            </Text>
+                          </View>
+  
+                          <View style={styles.featuredBottomRow}>
+                            <View style={styles.featuredMetaRow}>
+                              <View style={styles.featuredMetaItem}>
+                                <Ionicons name="star" size={12} color="#F59E0B" />
+                                <Text style={[styles.featuredMetaText, { color: '#F59E0B', fontWeight: '700' }]}>{course.rating.toFixed(1)}</Text>
+                              </View>
+                              <Text style={styles.featuredMetaDivider}>•</Text>
+                              <View style={styles.featuredMetaItem}>
+                                <Ionicons name="people" size={12} color="#64748B" />
+                                <Text style={styles.featuredMetaText}>{formatK(course.enrolledCount)} learners</Text>
+                              </View>
+                            </View>
+  
+                            <View style={[styles.featuredCtaButton, { backgroundColor: theme.buttonColor }]}>
+                              <Text style={styles.featuredCtaText}>
+                                {isEnrolled ? 'Continue' : 'Start'}
+                              </Text>
+                              <Ionicons name="arrow-forward" size={12} color="#FFF" />
+                            </View>
                           </View>
                         </View>
                       </View>
-                    </View>
                     </View>
                   </TouchableOpacity>
                 );
@@ -897,19 +868,21 @@ export default function LearnScreen() {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" />
-        <SafeAreaView edges={['top']} style={styles.headerSafe}>
-          <View style={styles.topBar}>
-            <TouchableOpacity onPress={openSidebar} style={styles.iconButton}>
-              <Ionicons name="menu-outline" size={24} color="#374151" />
-            </TouchableOpacity>
-            <StunityLogo width={108} height={30} />
-            <View style={styles.topBarActions}>
-              <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="add-circle-outline" size={22} color="#374151" />
+        <View style={styles.heroHeaderBg}>
+          <SafeAreaView edges={['top']} style={styles.headerSafe}>
+            <View style={styles.topBar}>
+              <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
+                <Ionicons name="menu-outline" size={24} color="#0F172A" />
               </TouchableOpacity>
+              <StunityLogo width={108} height={30} />
+              <View style={styles.topBarActions}>
+                <TouchableOpacity style={styles.headerIconButton}>
+                  <Ionicons name="add" size={24} color="#0F172A" />
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </SafeAreaView>
+          </SafeAreaView>
+        </View>
         <ScrollView showsVerticalScrollIndicator={false}>
           <LearnHeaderSkeleton />
           {[1, 2, 3].map((i) => <CourseCardSkeleton key={i} />)}
@@ -922,39 +895,40 @@ export default function LearnScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Header bar */}
-      <SafeAreaView edges={['top']} style={styles.headerSafe}>
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={openSidebar} style={styles.iconButton}>
-            <Ionicons name="menu-outline" size={24} color="#374151" />
-          </TouchableOpacity>
-          <StunityLogo width={108} height={30} />
-          <View style={styles.topBarActions}>
-            <TouchableOpacity onPress={handleCreateCourse} style={styles.iconButton}>
-              <Ionicons name="add-circle-outline" size={22} color="#374151" />
+      {/* ── Premium Hero Header ── */}
+      <View style={styles.heroHeaderBg}>
+        <SafeAreaView edges={['top']} style={styles.headerSafe}>
+          <View style={styles.topBar}>
+            <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
+              <Ionicons name="menu-outline" size={24} color="#0F172A" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={onRefresh} style={styles.iconButton}>
-              <Ionicons name="refresh-outline" size={22} color="#374151" />
-            </TouchableOpacity>
+            <StunityLogo width={108} height={30} />
+            <View style={styles.topBarActions}>
+              <TouchableOpacity onPress={handleCreateCourse} style={styles.headerIconButton}>
+                <Ionicons name="add" size={24} color="#0F172A" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={onRefresh} style={styles.headerIconButton}>
+                <Ionicons name="refresh" size={22} color="#0F172A" />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </SafeAreaView>
 
-      {/* Search bar — outside the list so it stays fixed */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={18} color="#64748B" />
-        <TextInput
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder="Search courses, paths, topics..."
-          placeholderTextColor="#9CA3AF"
-          style={styles.searchInput}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={18} color="#9CA3AF" />
-          </TouchableOpacity>
-        )}
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={20} color="#94A3B8" />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search courses, paths, topics..."
+              placeholderTextColor="#94A3B8"
+              style={styles.searchInput}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={18} color="#CBD5E1" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </SafeAreaView>
       </View>
 
       {/* Tab bar — fixed outside list */}
@@ -1029,51 +1003,55 @@ export default function LearnScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F1F5F9', // Clean light grey screen background
+    backgroundColor: '#F8FAFC', // Ultra clean very light slate
+  },
+  heroHeaderBg: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingBottom: 16,
+    zIndex: 10,
   },
   headerSafe: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
   },
   topBarActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
-  iconButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+  headerIconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F3F4F6',
   },
   searchContainer: {
-    marginHorizontal: 12,
-    marginTop: 10,
-    marginBottom: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    minHeight: 44,
+    marginHorizontal: 16,
+    marginTop: 4,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    height: 48,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
-    color: '#1E293B',
+    fontSize: 16,
+    color: '#0F172A',
+    fontWeight: '500',
     padding: 0,
   },
   featuredSection: {
@@ -1100,17 +1078,17 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   featuredCardWrap: {
-    width: FEATURED_CARD_WIDTH,
-    borderRadius: 22,
+    width: FEATURED_CARD_WIDTH, // Keep it scrollable width
+    borderRadius: 24,
     backgroundColor: '#FFFFFF',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.16,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
     shadowRadius: 16,
-    elevation: 8,
+    elevation: 6,
   },
   featuredCard: {
-    minHeight: 232,
-    borderRadius: 20,
+    height: 148,
+    borderRadius: 24,
     overflow: 'hidden',
     borderWidth: 1.25,
     borderColor: '#E0F2FE',
@@ -1120,206 +1098,182 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     overflow: 'hidden',
     zIndex: -1,
+    opacity: 0.6,
   },
   featuredAbstractShape1: {
     position: 'absolute',
-    bottom: -40,
+    top: -20,
     right: -20,
-    width: 200,
-    height: 80,
-    borderRadius: 40,
-    transform: [{ rotate: '-35deg' }],
+    width: 140,
+    height: 100,
+    borderRadius: 50,
+    transform: [{ rotate: '-15deg' }],
   },
   featuredAbstractShape2: {
     position: 'absolute',
-    bottom: -20,
-    right: -50,
-    width: 220,
-    height: 90,
-    borderRadius: 45,
-    transform: [{ rotate: '-35deg' }],
+    bottom: -30,
+    right: 40,
+    width: 160,
+    height: 80,
+    borderRadius: 40,
+    transform: [{ rotate: '15deg' }],
   },
   featuredCardBody: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    flexDirection: 'row',
+    padding: 12,
+    alignItems: 'center',
+  },
+  featuredArtworkWrap: {
+    width: 110,
+    height: 124,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  featuredArtworkHalo: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  featuredIconWrap: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    backgroundColor: '#FFFFFF', 
+  },
+  featuredContentRow: {
+    flex: 1,
+    paddingLeft: 14,
+    height: 124,
+    justifyContent: 'space-between',
   },
   featuredTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
+    gap: 6,
   },
   featuredBadgePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 999,
     backgroundColor: '#FFF7ED',
     borderWidth: 1,
-    borderColor: '#FED7AA',
   },
   featuredHeroBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#C2410C',
+    fontSize: 10,
+    fontWeight: '800',
   },
   featuredLevelPill: {
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderWidth: 1,
-    borderColor: '#C7D2FE',
   },
   featuredLevelText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#4F46E5',
-  },
-  featuredContentRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 10,
+    fontSize: 10,
+    fontWeight: '800',
   },
   featuredTextBlock: {
     flex: 1,
-    minHeight: 120,
-    paddingRight: 4,
-  },
-  featuredArtworkWrap: {
-    width: 84,
-    height: 84,
-    alignItems: 'center',
     justifyContent: 'center',
-  },
-  featuredArtworkHalo: {
-    position: 'absolute',
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: 'rgba(14, 165, 233, 0.14)',
-  },
-  featuredIconWrap: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(14, 165, 233, 0.22)',
   },
   featuredTitle: {
-    fontSize: 18,
-    lineHeight: 30,
-    fontWeight: '600',
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '800',
     color: '#0F172A',
-    paddingTop: 2,
+    marginBottom: 4,
   },
   featuredSubtitle: {
-    marginTop: 3,
-    fontSize: 13,
-    color: '#334155',
+    fontSize: 12,
+    color: '#475569',
     fontWeight: '600',
   },
-  featuredDescription: {
-    marginTop: 5,
-    fontSize: 12,
-    lineHeight: 18,
-    color: '#475569',
-  },
   featuredBottomRow: {
-    marginTop: 10,
-    gap: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 4,
   },
   featuredMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    rowGap: 5,
-    columnGap: 7,
+    gap: 4,
   },
   featuredMetaItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
   },
   featuredMetaText: {
     fontSize: 11,
-    color: '#334155',
+    color: '#475569',
     fontWeight: '600',
   },
   featuredMetaDivider: {
     fontSize: 11,
-    color: '#94A3B8',
+    color: '#CBD5E1',
     fontWeight: '600',
+    marginHorizontal: 1,
   },
   featuredCtaButton: {
-    alignSelf: 'flex-start',
-    paddingLeft: 16,
-    paddingRight: 8,
-    height: 42,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: '#1D4ED8',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    borderWidth: 1,
-    borderColor: '#1E40AF66',
+    gap: 4,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   featuredCtaText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  featuredCtaArrowWrap: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-  },
   tabsContainer: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     gap: 8,
-    paddingBottom: 12,
+    paddingTop: 8,
+    paddingBottom: 16,
     alignItems: 'center',
   },
   tabsScroll: {
-    maxHeight: 52,
+    maxHeight: 64,
   },
   tabButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    height: 36,
-    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    height: 40,
+    borderRadius: 999,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
   },
   tabButtonActive: {
+    borderWidth: 0,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   tabLabel: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '600',
   },
   tabLabelActive: {
-    fontWeight: '700',
+    fontWeight: '800',
   },
   listContent: {
     paddingTop: 4,
@@ -1329,13 +1283,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   categorySurface: {
-    marginHorizontal: 12,
+    marginHorizontal: 16,
     marginBottom: 24,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
-    padding: 16,
+    backgroundColor: 'transparent',
   },
   // Category section
   categorySection: {
@@ -1388,22 +1338,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   categoryCard: {
-    width: '49%',
+    width: '48.5%',
     minHeight: 76,
-    borderRadius: 14,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF', // Back to white as requested
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    borderColor: '#F1F5F9',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 12,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
     elevation: 2,
   },
   categoryCardActive: {
@@ -1472,7 +1422,7 @@ const styles = StyleSheet.create({
   },
   // Stats
   statsSection: {
-    marginHorizontal: 12,
+    marginHorizontal: 16,
     marginBottom: 24,
   },
   statsSectionHeader: {
@@ -1499,17 +1449,17 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: '48.5%',
-    borderRadius: 14,
-    backgroundColor: '#F0FDFA', // Subtle Teal/Cyan
-    borderWidth: 1.25,
-    borderColor: '#E0F2FE',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 3,
   },
   statCardTopRow: {
     flexDirection: 'row',

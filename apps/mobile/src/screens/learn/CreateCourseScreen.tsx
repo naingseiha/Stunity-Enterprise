@@ -13,9 +13,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { learnApi } from '@/api';
 import type { CreateCoursePayload, CreateLessonPayload, LearnCourseLevel } from '@/api/learn';
@@ -69,6 +70,7 @@ const createEmptyLesson = (index: number): DraftLesson => ({
 
 export default function CreateCourseScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const insets = useSafeAreaInsets();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -206,163 +208,239 @@ export default function CreateCourseScreen() {
   const totalDuration = normalizedLessons.reduce((total, lesson) => total + lesson.duration, 0);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={s.container} edges={['top']}>
       <StatusBar barStyle="dark-content" />
 
-      <KeyboardAvoidingView style={styles.keyboardContainer} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={20} color="#374151" />
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <View style={s.header}>
+        <TouchableOpacity
+          style={s.headerBackBtn}
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Ionicons name="chevron-back" size={24} color="#1F2937" />
+        </TouchableOpacity>
+
+        <Text style={s.headerTitle}>Create Course</Text>
+
+        <View style={s.headerActions}>
+          <TouchableOpacity
+            style={[s.draftBtn, (!canSaveDraft || savingDraft || publishing) && s.btnDisabled]}
+            onPress={() => submitCourse(false)}
+            disabled={savingDraft || publishing || !canSaveDraft}
+          >
+            {savingDraft ? (
+              <ActivityIndicator size="small" color="#475569" />
+            ) : (
+              <Text style={s.draftBtnText}>Draft</Text>
+            )}
           </TouchableOpacity>
-          <View style={styles.headerTitleWrap}>
-            <Text style={styles.headerTitle}>Create Course</Text>
-            <Text style={styles.headerSubtitle}>Build course, lessons, then save or publish</Text>
-          </View>
+
+          <TouchableOpacity
+            style={[s.publishBtn, (!canPublish || savingDraft || publishing) && s.btnDisabled]}
+            onPress={() => submitCourse(true)}
+            disabled={savingDraft || publishing || !canPublish}
+          >
+            {publishing ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <LinearGradient
+                colors={['#0EA5E9', '#0284C7']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={s.publishBtnGrad}
+              >
+                <Text style={s.publishBtnText}>Publish</Text>
+              </LinearGradient>
+            )}
+          </TouchableOpacity>
         </View>
+      </View>
 
-        <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer} keyboardShouldPersistTaps="handled">
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Basic Info</Text>
+      {/* ── Form ───────────────────────────────────────────────── */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView
+          style={s.scroll}
+          contentContainerStyle={[s.scrollContent, { paddingBottom: insets.bottom + 32 }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
 
-            <Text style={styles.label}>Course title *</Text>
+          {/* ── Basic Info ──────────────────────────────────── */}
+          <Text style={s.sectionLabel}>Basic Info</Text>
+
+          <Text style={s.fieldLabel}>Course Title *</Text>
+          <View style={s.inputWrap}>
             <TextInput
               value={title}
               onChangeText={setTitle}
-              placeholder="Complete Python Programming Masterclass"
+              placeholder="E.g. Complete Python Masterclass"
               placeholderTextColor="#9CA3AF"
-              style={styles.input}
+              style={s.input}
               maxLength={100}
             />
-            <Text style={styles.helperText}>{title.length}/100 characters</Text>
+          </View>
+          <Text style={s.helperText}>{title.length}/100 characters</Text>
 
-            <Text style={styles.label}>Description *</Text>
+          <Text style={s.fieldLabel}>Description *</Text>
+          <View style={[s.inputWrap, s.textAreaWrap]}>
             <TextInput
               value={description}
               onChangeText={setDescription}
-              placeholder="Describe what students will learn..."
+              placeholder="Describe the journey..."
               placeholderTextColor="#9CA3AF"
-              style={[styles.input, styles.textArea]}
+              style={[s.input, s.textArea]}
               multiline
               textAlignVertical="top"
               maxLength={2000}
             />
-            <Text style={styles.helperText}>{description.length}/2000 characters (minimum 20)</Text>
+          </View>
+          <Text style={s.helperText}>{description.length}/2000 characters (min 20)</Text>
 
-            <Text style={styles.label}>Thumbnail URL</Text>
+          <Text style={s.fieldLabel}>Thumbnail URL</Text>
+          <View style={s.inputWrap}>
+            <Ionicons name="image-outline" size={18} color="#9CA3AF" style={{ marginRight: 10 }} />
             <TextInput
               value={thumbnail}
               onChangeText={setThumbnail}
-              placeholder="https://example.com/course-image.jpg"
+              placeholder="https://example.com/cover.jpg"
               placeholderTextColor="#9CA3AF"
-              style={styles.input}
+              style={s.inputFlex}
               autoCapitalize="none"
             />
-
-            <Text style={styles.label}>Category *</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
-              {CATEGORIES.map(item => {
-                const active = category === item;
-                return (
-                  <TouchableOpacity
-                    key={item}
-                    style={[styles.chip, active && styles.chipActive]}
-                    onPress={() => setCategory(item)}
-                  >
-                    <Text style={[styles.chipText, active && styles.chipTextActive]}>{item}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-
-            <Text style={styles.label}>Level</Text>
-            <View style={styles.levelGrid}>
-              {LEVELS.map(item => {
-                const active = level === item.value;
-                return (
-                  <TouchableOpacity
-                    key={item.value}
-                    style={[styles.levelOption, active && styles.levelOptionActive]}
-                    onPress={() => setLevel(item.value)}
-                  >
-                    <Text style={[styles.levelOptionText, active && styles.levelOptionTextActive]}>{item.label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Tags</Text>
-            <View style={styles.tagInputRow}>
+          {/* ── Category ────────────────────────────────────── */}
+          <Text style={s.sectionLabel}>Category *</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>
+            {CATEGORIES.map(item => {
+              const active = category === item;
+              return (
+                <TouchableOpacity
+                  key={item}
+                  style={[s.chip, active && s.chipActive]}
+                  onPress={() => setCategory(item)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[s.chipText, active && s.chipTextActive]}>{item}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          {/* ── Level ───────────────────────────────────────── */}
+          <Text style={s.sectionLabel}>Level</Text>
+          <View style={s.levelGrid}>
+            {LEVELS.map(item => {
+              const active = level === item.value;
+              return (
+                <TouchableOpacity
+                  key={item.value}
+                  style={[s.levelOption, active && s.levelOptionActive]}
+                  onPress={() => setLevel(item.value)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[s.levelOptionText, active && s.levelOptionTextActive]}>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* ── Tags ────────────────────────────────────────── */}
+          <Text style={s.sectionLabel}>Tags</Text>
+          <View style={s.tagInputRow}>
+            <View style={[s.inputWrap, { flex: 1, marginBottom: 0 }]}>
+              <Ionicons name="pricetag-outline" size={18} color="#9CA3AF" style={{ marginRight: 10 }} />
               <TextInput
                 value={tagInput}
                 onChangeText={setTagInput}
-                placeholder="Add a tag"
+                placeholder="Add a tag..."
                 placeholderTextColor="#9CA3AF"
-                style={[styles.input, styles.tagInput]}
+                style={s.inputFlex}
                 onSubmitEditing={addTag}
               />
-              <TouchableOpacity style={styles.addTagButton} onPress={addTag} disabled={!tagInput.trim()}>
-                <Text style={styles.addTagText}>Add</Text>
-              </TouchableOpacity>
             </View>
-            <View style={styles.tagsWrap}>
-              {tags.map(tag => (
-                <View key={tag} style={styles.tagBadge}>
-                  <Text style={styles.tagBadgeText}>{tag}</Text>
-                  <TouchableOpacity onPress={() => removeTag(tag)}>
-                    <Ionicons name="close" size={14} color="#B45309" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-              {tags.length === 0 && <Text style={styles.helperText}>No tags added yet</Text>}
-            </View>
+            <TouchableOpacity
+              style={[s.addTagBtn, !tagInput.trim() && s.btnDisabled]}
+              onPress={addTag}
+              disabled={!tagInput.trim()}
+            >
+              <Ionicons name="add" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+          <View style={s.tagsWrap}>
+            {tags.map(tag => (
+              <View key={tag} style={s.tagBadge}>
+                <Text style={s.tagBadgeText}>{tag}</Text>
+                <TouchableOpacity onPress={() => removeTag(tag)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                  <Ionicons name="close-circle" size={16} color="#64748B" />
+                </TouchableOpacity>
+              </View>
+            ))}
+            {tags.length === 0 && <Text style={s.helperText}>No tags added yet</Text>}
           </View>
 
-          <View style={styles.card}>
-            <View style={styles.lessonHeader}>
-              <View>
-                <Text style={styles.sectionTitle}>Lessons *</Text>
-                <Text style={styles.lessonSummary}>
-                  {normalizedLessons.length} lesson{normalizedLessons.length !== 1 ? 's' : ''} • {totalDuration} min total
-                </Text>
-              </View>
-              <TouchableOpacity style={styles.addLessonButton} onPress={addLesson}>
-                <Ionicons name="add" size={16} color="#fff" />
-                <Text style={styles.addLessonText}>Lesson</Text>
-              </TouchableOpacity>
+          {/* ── Lessons ─────────────────────────────────────── */}
+          <View style={s.lessonHeader}>
+            <View>
+              <Text style={s.sectionLabel}>Lessons *</Text>
+              <Text style={s.helperText}>
+                {normalizedLessons.length} lesson{normalizedLessons.length !== 1 ? 's' : ''} · {totalDuration}m total
+              </Text>
             </View>
+            <TouchableOpacity style={s.addLessonBtn} onPress={addLesson}>
+              <Ionicons name="add" size={16} color="#0EA5E9" />
+              <Text style={s.addLessonText}>Add</Text>
+            </TouchableOpacity>
+          </View>
 
-            {lessons.map((lesson, index) => (
-              <View key={lesson.id} style={styles.lessonCard}>
-                <View style={styles.lessonCardHeader}>
-                  <Text style={styles.lessonCardTitle}>Lesson {index + 1}</Text>
-                  <TouchableOpacity onPress={() => removeLesson(lesson.id)} style={styles.deleteLessonButton}>
-                    <Ionicons name="trash-outline" size={16} color="#DC2626" />
-                  </TouchableOpacity>
+          {lessons.map((lesson, index) => (
+            <View key={lesson.id} style={s.lessonCard}>
+              {/* Lesson card header */}
+              <View style={s.lessonCardHeader}>
+                <View style={s.lessonNumBadge}>
+                  <Text style={s.lessonNumText}>{index + 1}</Text>
                 </View>
+                <Text style={s.lessonCardTitle}>Lesson {index + 1}</Text>
+                <TouchableOpacity
+                  style={s.deleteBtn}
+                  onPress={() => removeLesson(lesson.id)}
+                >
+                  <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                </TouchableOpacity>
+              </View>
 
+              <Text style={s.fieldLabel}>Title *</Text>
+              <View style={s.inputWrap}>
                 <TextInput
                   value={lesson.title}
                   onChangeText={(value) => updateLesson(lesson.id, 'title', value)}
-                  placeholder="Lesson title *"
+                  placeholder="Lesson title"
                   placeholderTextColor="#9CA3AF"
-                  style={styles.input}
+                  style={s.input}
                 />
+              </View>
 
+              <Text style={s.fieldLabel}>Description</Text>
+              <View style={[s.inputWrap, s.textAreaWrap]}>
                 <TextInput
                   value={lesson.description}
                   onChangeText={(value) => updateLesson(lesson.id, 'description', value)}
                   placeholder="Lesson description"
                   placeholderTextColor="#9CA3AF"
-                  style={[styles.input, styles.smallTextArea]}
+                  style={[s.input, s.textAreaSmall]}
                   multiline
                   textAlignVertical="top"
                 />
+              </View>
 
-                <View style={styles.lessonRow}>
-                  <View style={styles.durationWrap}>
-                    <Text style={styles.labelInline}>Duration (min)</Text>
+              <View style={s.lessonMeta}>
+                <View style={s.durationWrap}>
+                  <Text style={s.fieldLabel}>Duration (min)</Text>
+                  <View style={s.inputWrap}>
+                    <Ionicons name="time-outline" size={18} color="#9CA3AF" style={{ marginRight: 10 }} />
                     <TextInput
                       value={String(lesson.duration)}
                       onChangeText={(value) => {
@@ -371,379 +449,359 @@ export default function CreateCourseScreen() {
                       }}
                       placeholder="10"
                       placeholderTextColor="#9CA3AF"
-                      style={styles.durationInput}
+                      style={s.inputFlex}
                       keyboardType="numeric"
-                    />
-                  </View>
-                  <View style={styles.freeSwitchWrap}>
-                    <Text style={styles.labelInline}>Free preview</Text>
-                    <Switch
-                      value={lesson.isFree}
-                      onValueChange={(value) => updateLesson(lesson.id, 'isFree', value)}
                     />
                   </View>
                 </View>
 
-                <TextInput
-                  value={lesson.videoUrl}
-                  onChangeText={(value) => updateLesson(lesson.id, 'videoUrl', value)}
-                  placeholder="Video URL (optional)"
-                  placeholderTextColor="#9CA3AF"
-                  style={styles.input}
-                  autoCapitalize="none"
-                />
+                <View style={s.switchWrap}>
+                  <Text style={s.fieldLabel}>Preview free</Text>
+                  <Switch
+                    value={lesson.isFree}
+                    onValueChange={(value) => updateLesson(lesson.id, 'isFree', value)}
+                    trackColor={{ false: '#E2E8F0', true: '#0EA5E9' }}
+                    thumbColor="#FFFFFF"
+                  />
+                </View>
+              </View>
 
+              <Text style={s.fieldLabel}>Content (optional)</Text>
+              <View style={[s.inputWrap, s.textAreaWrap]}>
                 <TextInput
                   value={lesson.content}
                   onChangeText={(value) => updateLesson(lesson.id, 'content', value)}
-                  placeholder="Lesson content (optional)"
+                  placeholder="Lesson content notes..."
                   placeholderTextColor="#9CA3AF"
-                  style={[styles.input, styles.textArea]}
+                  style={[s.input, s.textArea]}
                   multiline
                   textAlignVertical="top"
                 />
               </View>
-            ))}
-          </View>
+            </View>
+          ))}
         </ScrollView>
-
-        <View style={styles.bottomBar}>
-          <TouchableOpacity
-            style={[styles.secondaryButton, (savingDraft || publishing || !canSaveDraft) && styles.disabledButton]}
-            onPress={() => submitCourse(false)}
-            disabled={savingDraft || publishing || !canSaveDraft}
-          >
-            {savingDraft ? (
-              <ActivityIndicator size="small" color="#111827" />
-            ) : (
-              <>
-                <Ionicons name="save-outline" size={16} color="#111827" />
-                <Text style={styles.secondaryButtonText}>Save Draft</Text>
-              </>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.primaryButton, (savingDraft || publishing || !canPublish) && styles.disabledButton]}
-            onPress={() => submitCourse(true)}
-            disabled={savingDraft || publishing || !canPublish}
-          >
-            {publishing ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <Ionicons name="rocket-outline" size={16} color="#fff" />
-                <Text style={styles.primaryButtonText}>Publish</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+// ── Styles: Profile-Edit Flat Design ─────────────────────────────────────────
+
+const s = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F0F4F8',
   },
-  keyboardContainer: {
-    flex: 1,
-  },
+
+  // ── Header ────────────────────────────────────────────────────
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    paddingTop: 4,
+    backgroundColor: '#F8FAFC',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#E8EDF2',
+    gap: 8,
   },
-  headerButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#F3F4F6',
+  headerBackBtn: {
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitleWrap: {
-    flex: 1,
-  },
   headerTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#111827',
-  },
-  headerSubtitle: {
-    marginTop: 2,
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  content: {
     flex: 1,
-  },
-  contentContainer: {
-    padding: 14,
-    gap: 12,
-    paddingBottom: 28,
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    padding: 12,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 10,
-  },
-  label: {
-    fontSize: 12,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#374151',
-    marginBottom: 6,
-    marginTop: 8,
+    color: '#1F2937',
   },
-  input: {
-    height: 44,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 10,
-    paddingHorizontal: 12,
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  draftBtn: {
+    height: 36,
+    paddingHorizontal: 14,
+    borderRadius: 18,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  draftBtnText: {
     fontSize: 14,
-    color: '#111827',
-    backgroundColor: '#FFFFFF',
+    fontWeight: '700',
+    color: '#475569',
   },
-  textArea: {
-    height: 100,
-    paddingTop: 10,
+  publishBtn: {
+    height: 36,
+    borderRadius: 18,
+    overflow: 'hidden',
   },
-  smallTextArea: {
-    height: 76,
-    paddingTop: 10,
+  publishBtnGrad: {
+    height: 36,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 18,
+  },
+  publishBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  // ── Scroll ────────────────────────────────────────────────────
+  scroll: { flex: 1 },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    gap: 2,
+  },
+
+  // ── Section Labels ────────────────────────────────────────────
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginTop: 28,
+    marginBottom: 12,
+    marginLeft: 4,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginBottom: 8,
+    marginTop: 14,
+    marginLeft: 4,
   },
   helperText: {
-    marginTop: 4,
     fontSize: 11,
-    color: '#6B7280',
+    color: '#9CA3AF',
+    fontWeight: '500',
+    marginTop: 4,
+    marginLeft: 4,
+    marginBottom: 4,
   },
-  chipsRow: {
-    gap: 8,
-    paddingVertical: 2,
+
+  // ── Inputs: Fully Rounded Flat Style ──────────────────────────
+  inputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#E8EDF2',
+  },
+  textAreaWrap: {
+    height: 'auto',
+    borderRadius: 20,
+    alignItems: 'flex-start',
+    paddingVertical: 14,
+  },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    color: '#1F2937',
+    height: '100%',
+  },
+  inputFlex: {
+    flex: 1,
+    fontSize: 15,
+    color: '#1F2937',
+    height: '100%',
+  },
+  textArea: {
+    height: 110,
+    paddingTop: 0,
+  },
+  textAreaSmall: {
+    height: 80,
+    paddingTop: 0,
+  },
+
+  // ── Category Chips ────────────────────────────────────────────
+  chipRow: {
+    gap: 10,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
   },
   chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 999,
     backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8EDF2',
   },
   chipActive: {
-    borderColor: '#93C5FD',
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   chipText: {
-    fontSize: 12,
-    color: '#4B5563',
+    fontSize: 13,
+    color: '#475569',
     fontWeight: '600',
   },
   chipTextActive: {
-    color: '#1D4ED8',
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
+
+  // ── Level Grid ────────────────────────────────────────────────
   levelGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
   },
   levelOption: {
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
+    width: '48%',
+    paddingVertical: 14,
+    borderRadius: 20,
     backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8EDF2',
+    alignItems: 'center',
   },
   levelOptionActive: {
-    borderColor: '#93C5FD',
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   levelOptionText: {
-    fontSize: 12,
-    color: '#4B5563',
-    fontWeight: '700',
+    fontSize: 14,
+    color: '#475569',
+    fontWeight: '600',
   },
   levelOptionTextActive: {
-    color: '#1D4ED8',
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
+
+  // ── Tags ──────────────────────────────────────────────────────
   tagInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
-  tagInput: {
-    flex: 1,
-  },
-  addTagButton: {
-    height: 44,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    backgroundColor: '#1A73E8',
+  addTagBtn: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#0F172A',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  addTagText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
   },
   tagsWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginTop: 10,
+    marginTop: 14,
   },
   tagBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 14,
-    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   tagBadgeText: {
-    fontSize: 12,
-    color: '#B45309',
-    fontWeight: '700',
+    fontSize: 13,
+    color: '#0F172A',
+    fontWeight: '600',
   },
+
+  // ── Lessons ───────────────────────────────────────────────────
   lessonHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginTop: 28,
+    marginBottom: 4,
   },
-  lessonSummary: {
-    marginTop: 2,
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  addLessonButton: {
+  addLessonBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    height: 34,
-    borderRadius: 8,
-    backgroundColor: '#1A73E8',
-    paddingHorizontal: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: '#EFF6FF',
   },
   addLessonText: {
-    color: '#fff',
-    fontSize: 12,
+    color: '#0EA5E9',
+    fontSize: 14,
     fontWeight: '700',
   },
   lessonCard: {
-    marginTop: 10,
+    marginTop: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 10,
-    padding: 10,
-    gap: 8,
+    borderColor: '#E8EDF2',
   },
   lessonCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    marginBottom: 4,
+    gap: 10,
   },
-  lessonCardTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#111827',
-  },
-  deleteLessonButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#FEE2E2',
+  lessonNumBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  lessonRow: {
-    flexDirection: 'row',
+  lessonNumText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#475569',
+  },
+  lessonCardTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1F2937',
+  },
+  deleteBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FEF2F2',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
+    justifyContent: 'center',
+  },
+  lessonMeta: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 16,
+    marginTop: 4,
   },
   durationWrap: {
     flex: 1,
   },
-  durationInput: {
-    height: 40,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    fontSize: 14,
-    color: '#111827',
-  },
-  freeSwitchWrap: {
-    width: 130,
-    alignItems: 'flex-start',
-  },
-  labelInline: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  bottomBar: {
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    gap: 8,
-  },
-  secondaryButton: {
-    flex: 1,
-    height: 44,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#F9FAFB',
+  switchWrap: {
     alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 6,
+    paddingTop: 14,
+    gap: 10,
   },
-  secondaryButtonText: {
-    color: '#111827',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  primaryButton: {
-    flex: 1,
-    height: 44,
-    borderRadius: 10,
-    backgroundColor: '#1A73E8',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 6,
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  disabledButton: {
-    opacity: 0.6,
+
+  // ── Disabled State ────────────────────────────────────────────
+  btnDisabled: {
+    opacity: 0.4,
   },
 });

@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -44,6 +44,7 @@ export default function CourseDetailScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteParams>();
   const { courseId } = route.params;
+  const insets = useSafeAreaInsets();
 
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [loading, setLoading] = useState(true);
@@ -86,7 +87,16 @@ export default function CourseDetailScreen() {
 
   const nextLesson = useMemo(() => {
     if (!course?.lessons?.length) return null;
-    return course.lessons.find(lesson => !lesson.isCompleted && !lesson.isLocked) || course.lessons[0];
+    let fallback = course.lessons[0];
+    for (const lesson of course.lessons) {
+      if (!lesson.isCompleted && !lesson.isLocked) {
+        return lesson;
+      }
+      if (!lesson.isLocked) {
+        fallback = lesson;
+      }
+    }
+    return fallback;
   }, [course?.lessons]);
 
   const totalDuration = useMemo(
@@ -112,41 +122,41 @@ export default function CourseDetailScreen() {
         key: 'lessons',
         label: 'Lessons',
         value: `${course.lessonsCount}`,
-        icon: 'library-outline',
+        icon: 'library',
         iconColor: '#2563EB',
         iconBackground: '#DBEAFE',
-        cardBackground: '#F8FBFF',
-        borderColor: '#BFDBFE',
+        cardBackground: '#FFFFFF',
+        borderColor: '#E2E8F0',
       },
       {
         key: 'completed',
         label: 'Completed',
         value: `${completedLessonsCount}`,
-        icon: 'checkmark-circle-outline',
+        icon: 'checkmark-circle',
         iconColor: '#059669',
         iconBackground: '#D1FAE5',
-        cardBackground: '#ECFDF5',
-        borderColor: '#A7F3D0',
+        cardBackground: '#FFFFFF',
+        borderColor: '#E2E8F0',
       },
       {
         key: 'duration',
         label: 'Duration',
         value: formatDuration(totalDuration || course.duration),
-        icon: 'time-outline',
+        icon: 'time',
         iconColor: '#D97706',
-        iconBackground: '#FDE68A',
-        cardBackground: '#FFFBEB',
-        borderColor: '#FCD34D',
+        iconBackground: '#FEF3C7',
+        cardBackground: '#FFFFFF',
+        borderColor: '#E2E8F0',
       },
       {
         key: 'access',
         label: 'Access',
         value: course.isFree ? 'FREE' : `$${course.price}`,
-        icon: course.isFree ? 'gift-outline' : 'pricetag-outline',
-        iconColor: course.isFree ? '#7C3AED' : '#0F766E',
+        icon: course.isFree ? 'gift' : 'pricetag',
+        iconColor: course.isFree ? '#7C3AED' : '#0D9488',
         iconBackground: course.isFree ? '#EDE9FE' : '#CCFBF1',
-        cardBackground: course.isFree ? '#F5F3FF' : '#F0FDFA',
-        borderColor: course.isFree ? '#DDD6FE' : '#99F6E4',
+        cardBackground: '#FFFFFF',
+        borderColor: '#E2E8F0',
       },
     ];
   }, [completedLessonsCount, course, totalDuration]);
@@ -159,7 +169,7 @@ export default function CourseDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer} edges={['top']}>
-        <ActivityIndicator size="large" color="#1A73E8" />
+        <ActivityIndicator size="large" color="#0EA5E9" />
         <Text style={styles.loadingText}>Loading course...</Text>
       </SafeAreaView>
     );
@@ -168,9 +178,9 @@ export default function CourseDetailScreen() {
   if (!course) {
     return (
       <SafeAreaView style={styles.loadingContainer} edges={['top']}>
-        <Ionicons name="book-outline" size={38} color="#9CA3AF" />
+        <Ionicons name="book-outline" size={38} color="#94A3B8" />
         <Text style={styles.loadingText}>Course not found</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.backButtonPlaceholder} onPress={() => navigation.goBack()}>
           <Text style={styles.backButtonText}>Go Back</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -181,74 +191,78 @@ export default function CourseDetailScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
+      {/* Absolute Stick Top Nav */}
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.headerIconButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={22} color="#334155" />
+        <View style={styles.topNavRow}>
+          <TouchableOpacity style={styles.navIconButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={24} color="#0F172A" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle} numberOfLines={1}>{course.title}</Text>
-          <TouchableOpacity style={styles.headerIconButton} onPress={onRefresh}>
-            <Ionicons name="refresh-outline" size={20} color="#334155" />
+          <View style={{ flex: 1 }} />
+          <TouchableOpacity style={styles.navIconButton} onPress={onRefresh}>
+            <Ionicons name="refresh" size={20} color="#0F172A" />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
 
+      {/* Scrollable Content */}
       <ScrollView
-        style={styles.content}
+        style={styles.contentWrap}
+        contentContainerStyle={styles.contentScrollBox}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#1A73E8" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0EA5E9" />}
       >
-        <View style={styles.heroCard}>
-          <Text style={styles.levelPill}>{course.level.replace('_', ' ')}</Text>
+        <View style={styles.heroContent}>
+          <View style={styles.levelPillWrap}>
+            <Text style={styles.levelPillText}>{course.level.replace('_', ' ')}</Text>
+          </View>
           <Text style={styles.courseTitle}>{course.title}</Text>
           <Text style={styles.courseDescription}>{course.description}</Text>
 
           <View style={styles.heroMetaRow}>
-            <View style={styles.heroMetaItem}>
-              <Ionicons name="star" size={14} color="#F59E0B" />
-              <Text style={styles.heroMetaText}>{course.rating.toFixed(1)}</Text>
+            <View style={[styles.heroMetaItemPill, { backgroundColor: '#FEF3C7' }]}>
+              <Ionicons name="star" size={14} color="#D97706" />
+              <Text style={[styles.heroMetaTextPill, { color: '#B45309' }]}>{course.rating.toFixed(1)}</Text>
             </View>
-            <View style={styles.heroMetaItem}>
-              <Ionicons name="people-outline" size={14} color="#6B7280" />
-              <Text style={styles.heroMetaText}>{course.enrolledCount}</Text>
+            <View style={[styles.heroMetaItemPill, { backgroundColor: '#E0E7FF' }]}>
+              <Ionicons name="people" size={14} color="#4338CA" />
+              <Text style={[styles.heroMetaTextPill, { color: '#3730A3' }]}>{course.enrolledCount} learners</Text>
             </View>
-            <View style={styles.heroMetaItem}>
-              <Ionicons name="play-circle-outline" size={14} color="#6B7280" />
-              <Text style={styles.heroMetaText}>{course.lessonsCount} lessons</Text>
-            </View>
-            <View style={styles.heroMetaItem}>
-              <Ionicons name="time-outline" size={14} color="#6B7280" />
-              <Text style={styles.heroMetaText}>{formatDuration(totalDuration || course.duration)}</Text>
+            <View style={[styles.heroMetaItemPill, { backgroundColor: '#E0F2FE' }]}>
+              <Ionicons name="play-circle" size={14} color="#0284C7" />
+              <Text style={[styles.heroMetaTextPill, { color: '#075985' }]}>{course.lessonsCount} lessons</Text>
             </View>
           </View>
-
           <Text style={styles.instructorText}>By {course.instructor.name}</Text>
         </View>
 
-        <View style={styles.tabRow}>
+        {/* Segmented Control Tabs */}
+        <View style={styles.tabContainer}>
           <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'overview' && styles.tabButtonActive]}
+            style={[styles.tabActiveBtn, activeTab === 'overview' && styles.tabActiveStateBtn]}
             onPress={() => setActiveTab('overview')}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.tabButtonText, activeTab === 'overview' && styles.tabButtonTextActive]}>Overview</Text>
+            <Text style={[styles.tabLabel, activeTab === 'overview' && styles.tabLabelActive]}>Overview</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'curriculum' && styles.tabButtonActive]}
+            style={[styles.tabActiveBtn, activeTab === 'curriculum' && styles.tabActiveStateBtn]}
             onPress={() => setActiveTab('curriculum')}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.tabButtonText, activeTab === 'curriculum' && styles.tabButtonTextActive]}>Curriculum</Text>
+            <Text style={[styles.tabLabel, activeTab === 'curriculum' && styles.tabLabelActive]}>Curriculum</Text>
           </TouchableOpacity>
         </View>
 
         {activeTab === 'overview' && (
-          <View style={styles.section}>
-            <View style={styles.progressCard}>
+          <View style={styles.sectionCanvas}>
+            {/* Progress Widget */}
+            <View style={styles.progressWidget}>
               <View style={styles.progressHeader}>
                 <View style={styles.progressIconWrap}>
-                  <Ionicons name="trending-up-outline" size={16} color="#1D4ED8" />
+                  <Ionicons name="trending-up" size={18} color="#0EA5E9" />
                 </View>
                 <View style={styles.progressTextWrap}>
-                  <Text style={styles.progressTitle}>Course progress</Text>
+                  <Text style={styles.progressTitle}>Your Journey</Text>
                   <Text style={styles.progressSubtitle}>
                     {course.isEnrolled
                       ? `${completedLessonsCount}/${course.lessonsCount} lessons completed`
@@ -257,35 +271,34 @@ export default function CourseDetailScreen() {
                 </View>
                 <Text style={styles.progressValue}>{Math.round(progressPercentage)}%</Text>
               </View>
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${progressPercentage}%` }]} />
+              <View style={styles.progressTrackPro}>
+                <View style={[styles.progressFillPro, { width: `${progressPercentage}%` }]} />
               </View>
             </View>
 
-            <View style={styles.statGrid}>
+            {/* High-End Stat Grid */}
+            <View style={styles.statGridPro}>
               {overviewStats.map((item) => (
-                <View
-                  key={item.key}
-                  style={[styles.statItem, { backgroundColor: item.cardBackground, borderColor: item.borderColor }]}
-                >
-                  <View style={styles.statItemTopRow}>
-                    <View style={[styles.statIconWrap, { backgroundColor: item.iconBackground }]}>
-                      <Ionicons name={item.icon} size={14} color={item.iconColor} />
+                <View key={item.key} style={styles.statWidget}>
+                  <View style={styles.statTopRow}>
+                    <View style={[styles.statIconPad, { backgroundColor: item.iconBackground }]}>
+                      <Ionicons name={item.icon} size={16} color={item.iconColor} />
                     </View>
-                    <Text style={[styles.statValue, { color: item.iconColor }]}>{item.value}</Text>
+                    <Text style={[styles.statValuePro, { color: item.iconColor }]}>{item.value}</Text>
                   </View>
-                  <Text style={styles.statLabel}>{item.label}</Text>
+                  <Text style={styles.statLabelPro}>{item.label}</Text>
                 </View>
               ))}
             </View>
 
+            {/* Tags section */}
             <View style={styles.tagsContainer}>
               {course.tags.length === 0 ? (
-                <Text style={styles.mutedText}>No tags available for this course yet.</Text>
+                <Text style={styles.mutedTextPro}>No tags available for this course yet.</Text>
               ) : (
                 course.tags.map(tag => (
-                  <View key={tag} style={styles.tag}>
-                    <Text style={styles.tagText}>{tag}</Text>
+                  <View key={tag} style={styles.tagPro}>
+                    <Text style={styles.tagProText}>{tag}</Text>
                   </View>
                 ))
               )}
@@ -294,77 +307,96 @@ export default function CourseDetailScreen() {
         )}
 
         {activeTab === 'curriculum' && (
-          <View style={styles.section}>
-            {course.lessons.map((lesson, index) => (
-              <TouchableOpacity
-                key={lesson.id}
-                style={[
-                  styles.lessonRow,
-                  lesson.isCompleted && styles.lessonRowCompleted,
-                  lesson.isLocked && styles.lessonRowLocked,
-                ]}
-                activeOpacity={lesson.isLocked ? 1 : 0.8}
-                onPress={() => handleOpenLesson(lesson.id, lesson.isLocked)}
-              >
-                <View
+          <View style={styles.sectionCanvas}>
+            {course.lessons.map((lesson, index) => {
+              const isCompleted = lesson.isCompleted;
+              const isLocked = lesson.isLocked;
+              const isAccent = isCompleted ? '#10B981' : isLocked ? '#94A3B8' : '#0EA5E9';
+              
+              // Determine icon based on title/order for visual variety
+              const isVideo = lesson.title.toLowerCase().includes('video') || index % 2 === 0;
+              const iconName = isVideo ? 'play-circle' : 'book';
+              const iconColor = isVideo ? '#EF4444' : '#8B5CF6';
+              const iconBg = isVideo ? '#FEE2E2' : '#F5F3FF';
+
+              return (
+                <TouchableOpacity
+                  key={lesson.id}
                   style={[
-                    styles.lessonIndex,
-                    lesson.isCompleted && styles.lessonIndexCompleted,
-                    lesson.isLocked && styles.lessonIndexLocked,
+                    styles.lessonIsland,
+                    isLocked && styles.lessonIslandLocked,
+                    { borderLeftColor: isAccent }
                   ]}
+                  activeOpacity={isLocked ? 1 : 0.8}
+                  onPress={() => handleOpenLesson(lesson.id, isLocked)}
                 >
-                  {lesson.isCompleted ? (
-                    <Ionicons name="checkmark" size={14} color="#fff" />
-                  ) : lesson.isLocked ? (
-                    <Ionicons name="lock-closed" size={13} color="#fff" />
-                  ) : (
-                    <Text style={styles.lessonIndexText}>{index + 1}</Text>
-                  )}
-                </View>
-                <View style={styles.lessonBody}>
-                  <Text style={styles.lessonTitle} numberOfLines={1}>{lesson.title}</Text>
-                  <View style={styles.lessonMeta}>
-                    <Text style={styles.lessonMetaText}>{formatDuration(lesson.duration)}</Text>
-                    {lesson.isFree && <Text style={styles.previewBadge}>Preview</Text>}
-                    {lesson.isCompleted && <Text style={styles.completedBadge}>Completed</Text>}
-                    {lesson.isLocked && <Text style={styles.lockedBadge}>Locked</Text>}
+                  <View
+                    style={[
+                      styles.islandIndex,
+                      isCompleted ? { backgroundColor: '#D1FAE5' } : isLocked ? { backgroundColor: '#F1F5F9' } : { backgroundColor: iconBg }
+                    ]}
+                  >
+                    {isCompleted ? (
+                      <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                    ) : isLocked ? (
+                      <Ionicons name="lock-closed" size={16} color="#64748B" />
+                    ) : (
+                      <Ionicons name={iconName} size={18} color={iconColor} />
+                    )}
                   </View>
-                </View>
-                {!lesson.isLocked && <Ionicons name="chevron-forward" size={16} color="#6B7280" />}
-              </TouchableOpacity>
-            ))}
+
+                  <View style={styles.islandBody}>
+                    <Text style={styles.islandTitle} numberOfLines={1}>{lesson.title}</Text>
+                    <View style={styles.islandMetaRow}>
+                      <Text style={styles.islandDurationText}>{formatDuration(lesson.duration)}</Text>
+                      {lesson.isFree && <Text style={styles.tagPreviewPro}>Free</Text>}
+                      {isCompleted && <Text style={styles.tagCompletedPro}>Done</Text>}
+                      {isLocked && <Text style={styles.tagLockedPro}>Locked</Text>}
+                    </View>
+                  </View>
+                  {!lesson.isLocked && (
+                    <View style={styles.islandChevronWrap}>
+                      <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              )
+            })}
           </View>
         )}
-
-        <View style={{ height: 28 }} />
       </ScrollView>
 
-      <View style={styles.bottomBar}>
+      {/* Elevated Floating Action Panel */}
+      <View style={[styles.floatingActionPanel, { paddingBottom: insets.bottom > 0 ? insets.bottom + 8 : 16 }]}>
         {course.isEnrolled ? (
           <TouchableOpacity
-            style={[styles.primaryButton, !nextLesson && styles.primaryButtonDisabled]}
+            style={[styles.primaryActionPill, !nextLesson && styles.primaryActionPillDisabled]}
             onPress={() => {
               if (nextLesson) {
                 navigation.navigate('LessonViewer', { courseId, lessonId: nextLesson.id });
               }
             }}
             disabled={!nextLesson}
+            activeOpacity={0.8}
           >
-            <Ionicons name="play" size={16} color="#fff" />
-            <Text style={styles.primaryButtonText}>Continue Learning</Text>
+            <Ionicons name="play" size={20} color="#FFFFFF" />
+            <Text style={styles.primaryActionPillText}>
+              {completedLessonsCount === 0 ? "Start Learning" : "Continue Learning"}
+            </Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            style={[styles.primaryButton, enrolling && styles.primaryButtonDisabled]}
+            style={[styles.primaryActionPill, enrolling && styles.primaryActionPillDisabled]}
             onPress={handleEnroll}
             disabled={enrolling}
+            activeOpacity={0.8}
           >
             {enrolling ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <>
-                <Ionicons name="add-circle-outline" size={16} color="#fff" />
-                <Text style={styles.primaryButtonText}>Enroll Now</Text>
+                <Ionicons name="book" size={20} color="#FFFFFF" />
+                <Text style={styles.primaryActionPillText}>Enroll Now</Text>
               </>
             )}
           </TouchableOpacity>
@@ -374,13 +406,12 @@ export default function CourseDetailScreen() {
   );
 }
 
+// ── Ultra Premium Genesis Pro Styles ─────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-  },
-  headerSafe: {
-    backgroundColor: '#FFFFFF',
   },
   loadingContainer: {
     flex: 1,
@@ -389,364 +420,400 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   loadingText: {
-    marginTop: 12,
-    color: '#6B7280',
-    fontSize: 14,
+    marginTop: 16,
+    color: '#64748B',
+    fontSize: 15,
+    fontWeight: '600',
   },
-  backButton: {
-    marginTop: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: '#1A73E8',
+  backButtonPlaceholder: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 999,
+    backgroundColor: '#0F172A',
   },
   backButtonText: {
-    color: '#fff',
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 14,
   },
-  header: {
-    height: 52,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
+  headerSafe: {
+    backgroundColor: 'transparent',
+  },
+  heroSection: {
+    backgroundColor: '#F8FAFC',
+  },
+  topNavRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#DBEAFE',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  headerIconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  navIconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#DBEAFE',
-  },
-  headerTitle: {
-    flex: 1,
-    color: '#1F2937',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 14,
-    paddingTop: 12,
-  },
-  heroCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    padding: 12,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 2,
   },
-  levelPill: {
+  heroContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 24,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  levelPillWrap: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 10,
-    backgroundColor: '#EEF2FF',
-    color: '#4338CA',
-    fontSize: 10,
-    fontWeight: '700',
-    marginBottom: 8,
+    backgroundColor: '#E0F2FE',
+    marginBottom: 12,
+  },
+  levelPillText: {
+    color: '#0284C7',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   courseTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#111827',
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: -0.5,
+    lineHeight: 40,
   },
   courseDescription: {
-    marginTop: 6,
-    color: '#6B7280',
-    lineHeight: 19,
-    fontSize: 13,
+    marginTop: 12,
+    color: '#475569',
+    lineHeight: 26,
+    fontSize: 14,
+    fontWeight: '500',
   },
   heroMetaRow: {
-    marginTop: 10,
+    marginTop: 24,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
   },
-  heroMetaItem: {
+  heroMetaItemPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 99,
   },
-  heroMetaText: {
-    fontSize: 12,
-    color: '#4B5563',
-    fontWeight: '600',
+  heroMetaTextPill: {
+    fontSize: 13,
+    fontWeight: '800',
   },
   instructorText: {
-    marginTop: 8,
-    fontSize: 12,
-    color: '#6B7280',
+    marginTop: 20,
+    fontSize: 13,
+    color: '#94A3B8',
+    fontWeight: '700',
   },
-  tabRow: {
-    marginTop: 12,
+  contentWrap: {
+    flex: 1,
+  },
+  contentScrollBox: {
+    paddingHorizontal: 20,
+    paddingBottom: 130, // Extremely crucial for overlapping action bar
+  },
+  tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#F1F5F9', // plush container instead of border
+    borderRadius: 14,
     padding: 4,
-    gap: 4,
+    marginBottom: 24,
   },
-  tabButton: {
+  tabActiveBtn: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    height: 36,
-    borderRadius: 8,
+    height: 42,
+    borderRadius: 10,
   },
-  tabButtonActive: {
-    backgroundColor: '#EFF6FF',
+  tabActiveStateBtn: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  tabButtonText: {
-    fontSize: 13,
-    color: '#6B7280',
+  tabLabel: {
+    fontSize: 14,
+    color: '#64748B',
     fontWeight: '700',
   },
-  tabButtonTextActive: {
-    color: '#1D4ED8',
+  tabLabelActive: {
+    color: '#0F172A',
+    fontWeight: '800',
   },
-  section: {
-    marginTop: 12,
+  sectionCanvas: {
+    flex: 1,
+  },
+  progressWidget: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    padding: 12,
-  },
-  progressCard: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    backgroundColor: '#F8FBFF',
-    padding: 10,
-    marginBottom: 10,
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.03,
+    shadowRadius: 16,
+    elevation: 2,
   },
   progressHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 14,
   },
   progressIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#DBEAFE',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F0F9FF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
+    marginRight: 10,
   },
   progressTextWrap: {
     flex: 1,
   },
   progressTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1F2937',
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.2,
   },
   progressSubtitle: {
-    marginTop: 1,
-    fontSize: 11,
+    marginTop: 2,
+    fontSize: 12,
     color: '#64748B',
     fontWeight: '500',
   },
   progressValue: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1D4ED8',
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#0EA5E9',
+    letterSpacing: -0.5,
   },
-  progressTrack: {
-    height: 8,
+  progressTrackPro: {
+    height: 10,
     borderRadius: 999,
-    backgroundColor: '#E0E7FF',
+    backgroundColor: '#F1F5F9', // Crisp track background
     overflow: 'hidden',
   },
-  progressFill: {
+  progressFillPro: {
     height: '100%',
     borderRadius: 999,
-    backgroundColor: '#2563EB',
+    backgroundColor: '#0EA5E9',
   },
-  statGrid: {
+  statGridPro: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    gap: 12,
   },
-  statItem: {
-    width: '49%',
+  statWidget: {
+    width: '48%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 2,
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    marginBottom: 8,
+    borderColor: '#E2E8F0',
   },
-  statItemTopRow: {
+  statTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 12,
   },
-  statIconWrap: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  statIconPad: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statValue: {
-    fontSize: 15,
-    fontWeight: '800',
+  statValuePro: {
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: -0.5,
   },
-  statLabel: {
-    marginTop: 7,
-    fontSize: 11,
-    color: '#475569',
-    fontWeight: '600',
+  statLabelPro: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '700',
   },
   tagsContainer: {
-    marginTop: 10,
+    marginTop: 20,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-  },
-  tag: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 14,
-    backgroundColor: '#EEF2FF',
-  },
-  tagText: {
-    fontSize: 11,
-    color: '#4338CA',
-    fontWeight: '700',
-  },
-  mutedText: {
-    color: '#6B7280',
-    fontSize: 12,
-  },
-  lessonRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    marginBottom: 8,
+  },
+  tagPro: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
     backgroundColor: '#FFFFFF',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
   },
-  lessonRowCompleted: {
-    borderColor: '#A7F3D0',
-    backgroundColor: '#ECFDF5',
-  },
-  lessonRowLocked: {
-    opacity: 0.75,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
-  },
-  lessonIndex: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#DBEAFE',
-  },
-  lessonIndexCompleted: {
-    backgroundColor: '#10B981',
-  },
-  lessonIndexLocked: {
-    backgroundColor: '#94A3B8',
-  },
-  lessonIndexText: {
-    color: '#1D4ED8',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  lessonBody: {
-    flex: 1,
-  },
-  lessonTitle: {
+  tagProText: {
     fontSize: 13,
-    color: '#111827',
+    color: '#475569',
     fontWeight: '700',
   },
-  lessonMeta: {
-    marginTop: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  lessonMetaText: {
-    fontSize: 11,
-    color: '#64748B',
+  mutedTextPro: {
+    color: '#94A3B8',
+    fontSize: 13,
     fontWeight: '500',
   },
-  previewBadge: {
-    fontSize: 10,
-    color: '#047857',
-    backgroundColor: '#D1FAE5',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  completedBadge: {
-    fontSize: 10,
-    color: '#047857',
-    backgroundColor: '#A7F3D0',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  lockedBadge: {
-    fontSize: 10,
-    color: '#475569',
-    backgroundColor: '#E2E8F0',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  bottomBar: {
-    borderTopWidth: 1,
-    borderTopColor: '#DBEAFE',
+  lessonIsland: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4, // The only accent border
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 2,
   },
-  primaryButton: {
-    height: 44,
+  lessonIslandLocked: {
+    backgroundColor: '#FAFAFA',
+    opacity: 0.85,
+    shadowOpacity: 0.01,
+  },
+  islandIndex: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  islandIndexText: {
+    color: '#0284C7',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  islandBody: {
+    flex: 1,
+  },
+  islandTitle: {
+    fontSize: 15,
+    color: '#0F172A',
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  islandMetaRow: {
+    marginTop: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  islandDurationText: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  islandChevronWrap: {
+    marginLeft: 8,
+    width: 24,
+    alignItems: 'center',
+  },
+  tagPreviewPro: {
+    fontSize: 11,
+    color: '#0D9488',
+    backgroundColor: '#CCFBF1',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    fontWeight: '700',
+    overflow: 'hidden',
+  },
+  tagCompletedPro: {
+    fontSize: 11,
+    color: '#0F766E',
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    fontWeight: '700',
+    overflow: 'hidden',
+  },
+  tagLockedPro: {
+    fontSize: 11,
+    color: '#475569',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    fontWeight: '700',
+    overflow: 'hidden',
+  },
+  floatingActionPanel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#F8FAFC',
+    paddingTop: 16,
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  primaryActionPill: {
+    height: 56,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: 6,
-    backgroundColor: '#1A73E8',
-    shadowColor: '#1A73E8',
+    gap: 8,
+    backgroundColor: '#0EA5E9',
+    shadowColor: '#0EA5E9',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  primaryButtonDisabled: {
-    opacity: 0.7,
+  primaryActionPillDisabled: {
+    opacity: 0.6,
   },
-  primaryButtonText: {
+  primaryActionPillText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.2,
   },
 });

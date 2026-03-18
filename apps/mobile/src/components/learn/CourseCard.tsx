@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   compactThumbnail: {
-    height: 110,
+    height: 160,
   },
   thumbnail: {
     width: '100%',
@@ -426,9 +426,9 @@ const styles = StyleSheet.create({
     left: 20,
   },
   thumbIconCircle: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: 'rgba(255,255,255,0.8)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   compactContent: {
-    padding: 12,
+    padding: 14,
   },
   title: {
     fontSize: 16,
