@@ -18,6 +18,7 @@ import {
   StatusBar,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar } from '@/components/common';
@@ -67,6 +68,7 @@ const CARD_ASPECT_RATIO = 1.586;
 const VERTICAL_CARD_ASPECT_RATIO = 1 / CARD_ASPECT_RATIO;
 
 export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) {
+  const insets = useSafeAreaInsets();
   const { user, logout } = useAuthStore();
   const { t } = useTranslation();
   const [selectedDesignId, setSelectedDesignId] = useState<UserCardDesignId>(DEFAULT_USER_CARD_DESIGN_ID);
@@ -374,15 +376,16 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
   return (
     <Modal
       visible={visible}
-      transparent={false}
+      transparent={true}
       animationType="slide"
       onRequestClose={onClose}
       presentationStyle="fullScreen"
+      statusBarTranslucent={true}
     >
       <View style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <StatusBar barStyle="dark-content" />
 
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
           <StunityLogo width={120} height={30} />
           <TouchableOpacity
             onPress={onClose}
@@ -486,7 +489,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
           </TouchableOpacity>
 
           <Text style={styles.versionText}>Stunity v1.0.0</Text>
-          <View style={styles.bottomSpacer} />
+          <View style={{ height: Math.max(insets.bottom, 20) }} />
         </ScrollView>
       </View>
     </Modal>
@@ -497,7 +500,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    paddingTop: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight || 0,
   },
   header: {
     flexDirection: 'row',
@@ -1079,8 +1081,5 @@ const styles = StyleSheet.create({
     color: '#D1D5DB',
     fontWeight: '500',
     marginTop: 20,
-  },
-  bottomSpacer: {
-    height: Platform.OS === 'ios' ? 50 : 30,
   },
 });

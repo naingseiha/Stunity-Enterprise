@@ -26,6 +26,7 @@ const DEFAULT_LOCALE = 'en';
 const KHMER_LOCALE = 'km';
 const NUMERIC_ONLY_TEXT_RE = /^[\d\s.,/%:+\-()]+$/;
 const NAME_LIKE_TEXT_RE = /^[A-Za-z\u1780-\u17FF\s.'’-]+$/;
+const CONTAINS_EMOJI_RE = /[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF]/; // Robust surrogate-pair and emoji range detection
 let activeLocale = DEFAULT_LOCALE;
 let patchApplied = false;
 
@@ -62,6 +63,12 @@ const isNumericOnlyChildren = (children: ReactNode): boolean => {
   return NUMERIC_ONLY_TEXT_RE.test(plainText);
 };
 
+const containsEmoji = (children: ReactNode): boolean => {
+  const plainText = extractChildrenText(children);
+  if (!plainText) return false;
+  return CONTAINS_EMOJI_RE.test(plainText);
+};
+
 const normalizeText = (text: string): string => text.replace(/\s+/g, ' ').trim();
 
 const toNumericWeight = (fontWeight: TextStyle['fontWeight']): number => {
@@ -75,9 +82,10 @@ const flattenTextStyle = (style: StyleProp<TextStyle>): TextStyle =>
   (StyleSheet.flatten(style) || {}) as TextStyle;
 
 const hasExistingCustomFont = (style: TextStyle): boolean =>
+  // Treat ANY explicit fontFamily (including 'System') as an opt-out of Khmer patching.
+  // This allows components like flag emojis to set fontFamily:'System' to bypass the patcher.
   typeof style.fontFamily === 'string' &&
-  style.fontFamily.length > 0 &&
-  style.fontFamily !== 'System';
+  style.fontFamily.length > 0;
 
 const isLikelyButtonText = (style: TextStyle, plainText: string): boolean => {
   const weight = toNumericWeight(style.fontWeight);
@@ -172,6 +180,12 @@ const getKhmerAwareStyle = (
 
   // Keep pure numeric strings in Latin/system glyphs (e.g., ring counters like "1", "95%").
   if (isNumericOnlyChildren(children)) {
+    return style;
+  }
+
+  // Skip patching for text containing emojis, as custom fonts often lack emoji glyphs
+  // and iOS/Android system fallback is better with the default system font.
+  if (containsEmoji(children)) {
     return style;
   }
 

@@ -2,6 +2,7 @@ import React from 'react';
 import {
   View,
   Text,
+  Image,
   TouchableOpacity,
   StyleSheet,
   Modal,
@@ -15,13 +16,17 @@ interface Language {
   code: string;
   name: string;
   nativeName: string;
-  flag: string;
+  // countryCode is the ISO 3166-1 alpha-2 country code for the flag image
+  countryCode: string;
 }
 
 const LANGUAGES: Language[] = [
-  { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' },
-  { code: 'km', name: 'Khmer', nativeName: 'ភាសាខ្មែរ', flag: '🇰🇭' },
+  { code: 'en', name: 'English',  nativeName: 'English',    countryCode: 'us' },
+  { code: 'km', name: 'Khmer',    nativeName: 'ភាសាខ្មែរ',  countryCode: 'kh' },
 ];
+
+const getFlagUrl = (countryCode: string) =>
+  `https://flagcdn.com/w80/${countryCode}.png`;
 
 interface LanguageSelectorProps {
   visible: boolean;
@@ -45,7 +50,11 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ visible, onC
         onPress={() => changeLanguage(item.code)}
       >
         <View style={styles.languageInfo}>
-          <Text style={styles.flag}>{item.flag}</Text>
+          <Image
+            source={{ uri: getFlagUrl(item.countryCode) }}
+            style={styles.flag}
+            resizeMode="contain"
+          />
           <View>
             <Text style={[styles.languageName, isSelected && styles.languageTextActive]}>
               {item.nativeName}
@@ -133,8 +142,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   flag: {
-    fontSize: 32,
+    width: 40,
+    height: 28,
     marginRight: 16,
+    borderRadius: 3,
   },
   languageName: {
     fontSize: 16,
