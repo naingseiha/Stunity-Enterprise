@@ -1,12 +1,34 @@
 # ✅ Stunity Enterprise — Current Features
 
-**Version:** 23.7 | **Updated:** March 17, 2026
+**Version:** 23.8 | **Updated:** March 18, 2026
 
 > This document lists all implemented and working features. For what's coming next, see NEXT_IMPLEMENTATION.md.
 
 ---
 
-## ⚡ Latest Rollout (Mar 17, 2026)
+## ⚡ Latest Rollout (Mar 18, 2026)
+
+- **Mobile release hardening pass (P0/P1, chat intentionally excluded)**
+  - Removed self-service **Delete Account** action from mobile settings to align with school-managed account policy.
+  - Replaced hardcoded user IDs in achievements/challenge/stats screens with authenticated user IDs.
+  - Parent Login now keeps only real portal actions (placeholder social/biometric actions removed).
+  - Edit Post toolbar now supports real camera capture and no longer shows unwired media actions.
+
+- **Push notification production readiness (mobile)**
+  - `expo-notifications` plugin enabled in app config.
+  - Notification runtime gate switched on for production push registration flow.
+  - Android Firebase config validated with real `google-services.json` package mapping.
+
+- **Performance optimization pass beyond Feed (mobile)**
+  - ProfileScreen optimized with memoized profile-post derivation and stable handlers.
+  - Fixed ProfileScreen hook-order render crash (`Rendered more hooks than during the previous render`).
+  - Conversations and New Message screens tuned with memoized list rendering + FlatList virtualization settings.
+
+- **Android app icon branding update + build outcome**
+  - Official Android icons wired through tracked Expo assets (`android.icon`, adaptive foreground image) for EAS persistence.
+  - Android EAS production build completed successfully (`.aab` generated).
+
+## ⚡ Previous Rollout (Mar 17, 2026)
 
 - **Mobile Clubs Screen Redesign**
   - Complete redesign of `ClubsScreen.tsx` to match the app's white / flat-border card aesthetic.

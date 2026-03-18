@@ -30,9 +30,10 @@
     "android": {
       "package": "com.stunity.mobile",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 5,
+      "versionCode": 6,
+      "icon": "./assets/android-icon.png",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
+        "foregroundImage": "./assets/android-adaptive-foreground.png",
         "backgroundColor": "#0ad2fa"
       },
       "splash": {

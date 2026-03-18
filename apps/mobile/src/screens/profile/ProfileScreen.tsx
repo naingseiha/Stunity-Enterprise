@@ -306,6 +306,16 @@ export default function ProfileScreen() {
     [navigation, noop]
   );
 
+  const tabs = useMemo(
+    () => [
+      { id: 'performance' as const, label: t('profile.performance.title'), icon: 'trending-up' },
+      { id: 'posts' as const, label: t('profile.posts'), icon: 'list' },
+      { id: 'about' as const, label: t('profile.about.title'), icon: 'person' },
+      { id: 'activity' as const, label: t('profile.activity.title'), icon: 'flame' },
+    ],
+    [t]
+  );
+
   // ── Shimmer Loading State — matches actual profile layout ──────
   if (loading || !profile) {
     return (
@@ -377,16 +387,6 @@ export default function ProfileScreen() {
     followers: profileStats?.followers ?? 0,
     following: profileStats?.following ?? 0,
   };
-
-  const tabs = useMemo(
-    () => [
-      { id: 'performance' as const, label: t('profile.performance.title'), icon: 'trending-up' },
-      { id: 'posts' as const, label: t('profile.posts'), icon: 'list' },
-      { id: 'about' as const, label: t('profile.about.title'), icon: 'person' },
-      { id: 'activity' as const, label: t('profile.activity.title'), icon: 'flame' },
-    ],
-    [t]
-  );
 
   return (
     <SafeAreaView

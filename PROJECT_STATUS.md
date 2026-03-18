@@ -1,8 +1,8 @@
 # 🎓 Stunity Enterprise — Project Status
 
-**Last Updated:** March 17, 2026
-**Version:** 23.7
-**Status:** 99% Complete — Mobile UI Consistency & Brand Polish 🎨
+**Last Updated:** March 18, 2026
+**Version:** 23.8
+**Status:** 99% Complete — Mobile Release Hardening & Android Build Verified 🚀
 
 ---
 
@@ -17,9 +17,26 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 
 ---
 
-## ✅ Completed Features (v23.7)
+## ✅ Completed Features (v23.8)
 
-### ⚡ Latest Platform Updates (Mar 17, 2026)
+### ⚡ Latest Platform Updates (Mar 18, 2026)
+- **Mobile release hardening pass (P0/P1, chat intentionally excluded)**
+  - Removed self-service **Delete Account** action from mobile settings per school-managed account policy.
+  - Replaced hardcoded user IDs in achievements/challenge/stats flows with authenticated user IDs to prevent cross-user data errors.
+  - Removed dead-end Parent Login placeholder actions and kept real portal routing only.
+  - Edit Post toolbar now supports real camera capture and no longer shows unwired media actions.
+- **Push notification release readiness (mobile)**
+  - Re-enabled `expo-notifications` plugin in mobile app config.
+  - Enabled runtime push registration gate in NotificationContext for production behavior.
+  - Verified Android Firebase config wiring with real `google-services.json` package alignment.
+- **Performance optimization beyond Feed (mobile)**
+  - Profile screen render path optimized with memoized post derivation and stable handlers; fixed hook-order crash (`Rendered more hooks than during the previous render`).
+  - Conversations and New Message lists optimized with memoized filters/renderers and tuned list virtualization for smoother scrolling.
+- **Android branding/icon rollout + build verification**
+  - Wired official Android launcher/adaptive icons through tracked Expo assets (`android.icon` and `android.adaptiveIcon.foregroundImage`) for EAS build persistence.
+  - Android EAS production build completed successfully and generated signed `.aab`.
+
+### ⚡ Previous Platform Updates (Mar 17, 2026)
 - **Mobile Clubs Screen — UI Consistency Pass**
   - Club cards redesigned to match the Profile Performance card style: white background, flat `#E2E8F0` border, `borderRadius: 16`.
   - Card layout: icon chip + bold title + "View →" link in header; description; avatar stack + member count; teal "Join Now →" pill; progress bar.
