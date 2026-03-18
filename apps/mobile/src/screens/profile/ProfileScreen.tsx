@@ -121,17 +121,23 @@ export default function ProfileScreen() {
   const [allAchievements, setAllAchievements] = useState<Achievement[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
+  // For own profile, currentUser is already in state — no need to show a skeleton
+  // For other profiles, we start with loading=true until the API returns
+  const [loading, setLoading] = useState(!isOwnProfile || !currentUser);
   const [activeTab, setActiveTab] = useState<'performance' | 'posts' | 'about' | 'activity'>('performance');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const profileAuthorId = isOwnProfile ? currentUser?.id : userId;
 
-  // Fetch profile on mount and when userId changes
+  // For own profile: show cached data immediately, update in background silently
   useEffect(() => {
-    loadProfile();
+    if (isOwnProfile && currentUser) {
+      // Already showing data — refresh stats silently (no skeleton)
+      loadProfile();
+    } else {
+      loadProfile();
+    }
   }, [userId, isOwnProfile]);
-
 
 
   const loadProfile = async () => {
@@ -322,58 +328,73 @@ export default function ProfileScreen() {
       <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: '#fff' }]}>
         <StatusBar style="dark" />
         <View style={{ flex: 1, backgroundColor: '#F1F5F9' }}>
-          {/* Cover shimmer - matches generic placeholder */}
-          <View style={{ height: COVER_HEIGHT, backgroundColor: '#E5E7EB' }} />
 
-          <View style={styles.contentContainer}>
-            <Animated.View style={styles.avatarSection}>
-              {/* Avatar overlay - matches real layout (160x160) */}
-              <View style={[styles.avatarWrapper, { backgroundColor: 'transparent', elevation: 0, shadowOpacity: 0 }]}>
+          {/* Cover shimmer — exact same height as real screen */}
+          <View style={{ height: COVER_HEIGHT, backgroundColor: '#E2E8F0' }} />
+
+          {/* Content container — matches real marginTop: -90 */}
+          <View style={[styles.contentContainer]}>
+
+            {/* Avatar — centred, white ring, overlapping cover */}
+            <View style={styles.avatarSection}>
+              <View style={[
+                styles.avatarWrapper,
+                { backgroundColor: '#F1F5F9', shadowOpacity: 0 },
+              ]}>
                 <Skeleton width={160} height={160} borderRadius={80} />
               </View>
-            </Animated.View>
-
-            {/* Name + role badge + headline */}
-            <View style={[styles.nameSection, { alignItems: 'center', gap: 12, marginTop: -30 }]}>
-              <Skeleton width={200} height={28} borderRadius={14} />
-              <Skeleton width={120} height={24} borderRadius={12} />
-              <Skeleton width={160} height={16} borderRadius={8} />
             </View>
 
-            {/* Text Stats Row: Posts | Followers | Following */}
-            <View style={[styles.textStatsRow, { justifyContent: 'center', gap: 32, marginTop: 24 }]}>
-              <View style={{ alignItems: 'center', gap: 4 }}>
-                <Skeleton width={24} height={24} borderRadius={8} />
-                <Skeleton width={40} height={12} borderRadius={6} />
+            {/* Name + role badge + headline — matches nameSection alignItems center */}
+            <View style={[styles.nameSection, { alignItems: 'center', gap: 10 }]}>
+              {/* Name */}
+              <Skeleton width={180} height={26} borderRadius={13} />
+              {/* Role badge */}
+              <Skeleton width={100} height={22} borderRadius={11} />
+              {/* Headline */}
+              <Skeleton width={150} height={14} borderRadius={7} />
+            </View>
+
+            {/* Text Stats Row: Posts | divider | Followers | divider | Following */}
+            <View style={[styles.textStatsRow]}>
+              <View style={styles.textStat}>
+                <Skeleton width={28} height={24} borderRadius={6} />
+                <Skeleton width={48} height={13} borderRadius={6} style={{ marginTop: 4 }} />
               </View>
-              <View style={{ width: 1, height: 24, backgroundColor: '#E5E7EB' }} />
-              <View style={{ alignItems: 'center', gap: 4 }}>
-                <Skeleton width={24} height={24} borderRadius={8} />
-                <Skeleton width={56} height={12} borderRadius={6} />
+              <View style={styles.statDivider} />
+              <View style={styles.textStat}>
+                <Skeleton width={28} height={24} borderRadius={6} />
+                <Skeleton width={64} height={13} borderRadius={6} style={{ marginTop: 4 }} />
               </View>
-              <View style={{ width: 1, height: 24, backgroundColor: '#E5E7EB' }} />
-              <View style={{ alignItems: 'center', gap: 4 }}>
-                <Skeleton width={24} height={24} borderRadius={8} />
-                <Skeleton width={56} height={12} borderRadius={6} />
+              <View style={styles.statDivider} />
+              <View style={styles.textStat}>
+                <Skeleton width={28} height={24} borderRadius={6} />
+                <Skeleton width={64} height={13} borderRadius={6} style={{ marginTop: 4 }} />
               </View>
             </View>
 
-            {/* Action buttons (Follow, Message) */}
-            <View style={[styles.capsuleRow, { marginTop: 20 }]}>
-              <Skeleton width={120} height={44} borderRadius={22} />
-              <Skeleton width={120} height={44} borderRadius={22} />
+            {/* Action Buttons — full-width flex row, matches capsuleRow */}
+            <View style={styles.capsuleRow}>
+              <Skeleton style={{ flex: 1 }} height={48} borderRadius={50} />
+              <Skeleton style={{ flex: 1 }} height={48} borderRadius={50} />
             </View>
 
-            {/* Tabs scroll header placeholder */}
-            <View style={[styles.tabsScroll, { marginTop: 24, flexDirection: 'row', gap: 20 }]}>
-              <Skeleton width={100} height={24} borderRadius={12} />
-              <Skeleton width={80} height={24} borderRadius={12} />
-              <Skeleton width={80} height={24} borderRadius={12} />
+            {/* Tabs — matches tabsScroll padding + gap */}
+            <View style={[{ paddingHorizontal: 12, flexDirection: 'row', gap: 8, marginBottom: 16 }]}>
+              <Skeleton width={110} height={36} borderRadius={12} />
+              <Skeleton width={80} height={36} borderRadius={12} />
+              <Skeleton width={80} height={36} borderRadius={12} />
+              <Skeleton width={80} height={36} borderRadius={12} />
             </View>
 
-            {/* Tab content placeholder */}
-            <View style={[styles.tabContent, { marginTop: 16 }]}>
-              <Skeleton width="100%" height={240} borderRadius={16} />
+            {/* Tab content — two perf stat cards */}
+            <View style={[styles.tabContent]}>
+              <Skeleton width="100%" height={140} borderRadius={16} />
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+                <Skeleton style={{ flex: 1 }} height={100} borderRadius={16} />
+                <Skeleton style={{ flex: 1 }} height={100} borderRadius={16} />
+                <Skeleton style={{ flex: 1 }} height={100} borderRadius={16} />
+              </View>
             </View>
           </View>
         </View>

@@ -47,6 +47,7 @@ import { learnApi } from '@/api';
 import type { LearnCourse, LearnEnrolledCourse, LearnPath, LearningStats } from '@/api/learn';
 import { LearnStackScreenProps } from '@/navigation/types';
 import { useNavigationContext } from '@/contexts';
+import { Skeleton } from '@/components/common/Loading';
 
 type NavigationProp = LearnStackScreenProps<'LearnHub'>['navigation'];
 type TabType = 'explore' | 'enrolled' | 'created' | 'paths';
@@ -117,6 +118,54 @@ type ListItem =
   | { type: 'EMPTY'; title: string; subtitle: string; icon: keyof typeof Ionicons.glyphMap };
 
 // ─── Skeleton cards ───────────────────────────────────────────────────────────
+const LearnHeaderSkeleton = React.memo(function LearnHeaderSkeleton() {
+  return (
+    <View>
+      {/* Search bar */}
+      <View style={skeletonStyles.searchBar}>
+        <Skeleton width="100%" height={48} borderRadius={14} />
+      </View>
+
+      {/* Tabs row: Explore / My Courses / Created / Paths */}
+      <View style={skeletonStyles.tabsRow}>
+        <Skeleton width={76} height={34} borderRadius={20} />
+        <Skeleton width={96} height={34} borderRadius={20} />
+        <Skeleton width={72} height={34} borderRadius={20} />
+        <Skeleton width={60} height={34} borderRadius={20} />
+      </View>
+
+      {/* Category section header */}
+      <View style={skeletonStyles.sectionHeader}>
+        <View>
+          <Skeleton width={150} height={17} borderRadius={8} />
+          <Skeleton width={110} height={13} borderRadius={6} style={{ marginTop: 6 }} />
+        </View>
+        <Skeleton width={55} height={14} borderRadius={7} />
+      </View>
+
+      {/* Category chips grid — 6 items, 2-column */}
+      <View style={skeletonStyles.categoryGrid}>
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <Skeleton key={i} style={skeletonStyles.categoryChip} height={52} borderRadius={12} />
+        ))}
+      </View>
+
+      {/* Stats row — 4 cards */}
+      <View style={skeletonStyles.statsRow}>
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton key={i} style={skeletonStyles.statCard} height={68} borderRadius={14} />
+        ))}
+      </View>
+
+      {/* Section title above course list */}
+      <View style={skeletonStyles.listSectionHeader}>
+        <Skeleton width={130} height={16} borderRadius={8} />
+        <Skeleton width={50} height={13} borderRadius={6} />
+      </View>
+    </View>
+  );
+});
+
 const CourseCardSkeleton = React.memo(function CourseCardSkeleton() {
   return (
     <View style={skeletonStyles.card}>
@@ -137,7 +186,17 @@ const CourseCardSkeleton = React.memo(function CourseCardSkeleton() {
 });
 
 const skeletonStyles = StyleSheet.create({
-  card:      { backgroundColor: '#FFF', borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 12, padding: 12, overflow: 'hidden' },
+  // Header skeleton
+  searchBar:         { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
+  tabsRow:           { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
+  sectionHeader:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12 },
+  categoryGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 16, marginBottom: 16 },
+  categoryChip:      { width: '47%' },
+  statsRow:          { flexDirection: 'row', gap: 10, paddingHorizontal: 16, marginBottom: 20 },
+  statCard:          { flex: 1 },
+  listSectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12 },
+  // Course card skeleton
+  card:      { backgroundColor: '#FFF', borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 12, marginHorizontal: 16, padding: 12, overflow: 'hidden' },
   badgeRow:  { flexDirection: 'row', marginBottom: 8 },
   badge:     { height: 20, width: 64, borderRadius: 12, backgroundColor: '#F1F5F9' },
   titleLine: { height: 15, borderRadius: 8, backgroundColor: '#F1F5F9', marginBottom: 8 },
@@ -669,9 +728,10 @@ export default function LearnScreen() {
             </View>
           </View>
         </SafeAreaView>
-        <View style={styles.content}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <LearnHeaderSkeleton />
           {[1, 2, 3].map((i) => <CourseCardSkeleton key={i} />)}
-        </View>
+        </ScrollView>
       </View>
     );
   }
@@ -749,6 +809,10 @@ export default function LearnScreen() {
         getItemType={getItemType}
         estimatedItemSize={200}
         drawDistance={600}
+        // extraData tells FlashList to re-render cells when these values change,
+        // even if listData itself hasn't changed (e.g. toggling showAllCategories
+        // changes renderHeader output but not the HEADER list item reference)
+        extraData={{ showAllCategories, selectedCategory, stats, busyCourseId, busyPathId }}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         // iOS: removeClippedSubviews causes native layer hide/show jank — Android only

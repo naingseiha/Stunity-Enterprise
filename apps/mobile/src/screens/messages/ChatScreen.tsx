@@ -234,7 +234,7 @@ export default function ChatScreen() {
     setInputText('');
   }, []);
 
-  const renderMessage = ({ item, index }: { item: DirectMessage; index: number }) => {
+  const renderMessage = useCallback(({ item, index }: { item: DirectMessage; index: number }) => {
     const isMe = item.senderId === user?.id || item.senderId === 'me';
     const showAvatar = !isMe && (index === 0 || messages[index - 1].senderId !== item.senderId);
 
@@ -327,7 +327,7 @@ export default function ChatScreen() {
         </TouchableOpacity>
       </Animated.View>
     );
-  };
+  }, [otherParticipant, user?.id, handleLongPress, messages, t]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -391,11 +391,15 @@ export default function ChatScreen() {
           <FlatList
             ref={flatListRef}
             data={messages}
-            extraData={messages}
+            extraData={messages.length}
             renderItem={renderMessage}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.messagesList}
             showsVerticalScrollIndicator={false}
+            initialNumToRender={15}
+            maxToRenderPerBatch={10}
+            windowSize={7}
+            updateCellsBatchingPeriod={50}
           />
         )}
 

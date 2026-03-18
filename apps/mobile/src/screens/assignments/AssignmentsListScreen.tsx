@@ -4,7 +4,7 @@
  * Display all assignments for a club with tabs: All, Active, Submitted, Graded
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,8 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
-  ActivityIndicator, Animated} from 'react-native';
+  ActivityIndicator, Animated,
+  Platform} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,7 +28,111 @@ import type { ClubsStackScreenProps } from '@/navigation/types';
 
 type Tab = 'all' | 'active' | 'submitted' | 'graded';
 
+// ─── Helpers (stable — defined outside component to avoid recreation) ─────────
+const getTypeIcon = (type: string): any => {
+  switch (type) {
+    case 'HOMEWORK': return 'document-text';
+    case 'QUIZ':     return 'help-circle';
+    case 'EXAM':     return 'school';
+    case 'PROJECT':  return 'rocket';
+    default:         return 'document';
+  }
+};
 
+const getTypeColor = (type: string): string => {
+  switch (type) {
+    case 'HOMEWORK': return '#3B82F6';
+    case 'QUIZ':     return '#8B5CF6';
+    case 'EXAM':     return '#EF4444';
+    case 'PROJECT':  return '#10B981';
+    default:         return Colors.primary;
+  }
+};
+
+// ─── Memoized Card Component ──────────────────────────────────────────────────
+interface AssignmentCardProps {
+  item: ClubAssignment;
+  clubId: string;
+  onPress: (assignmentId: string, clubId: string) => void;
+}
+
+const AssignmentCard = React.memo(function AssignmentCard({ item, clubId, onPress }: AssignmentCardProps) {
+  const dueDate = new Date(item.dueDate);
+  const isOverdue = isPast(dueDate) && !item.userSubmission;
+  const isSubmitted = item.userSubmission != null;
+  const isGraded = item.userSubmission?.status === 'GRADED';
+  const typeColor = getTypeColor(item.type);
+
+  return (
+    <Animated.View style={styles.assignmentCard}>
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={() => onPress(item.id, clubId)}
+      >
+        <View style={styles.cardHeader}>
+          <View style={[styles.typeIcon, { backgroundColor: `${typeColor}15` }]}>
+            <Ionicons name={getTypeIcon(item.type)} size={20} color={typeColor} />
+          </View>
+          <View style={styles.cardTitleContainer}>
+            <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
+            {item.subject && (
+              <Text style={styles.subjectLabel}>{item.subject.name}</Text>
+            )}
+          </View>
+          {isGraded && (
+            <View style={styles.scoreContainer}>
+              <Text style={styles.scoreText}>
+                {item.userSubmission?.score}/{item.maxPoints}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.cardBody}>
+          {item.description && (
+            <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
+          )}
+
+          <View style={styles.cardMeta}>
+            <View style={styles.metaItem}>
+              <Ionicons name="calendar-outline" size={14} color={Colors.gray[500]} />
+              <Text style={[styles.metaText, isOverdue && styles.overdueText]}>
+                {format(dueDate, 'MMM d, h:mm a')}
+              </Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Ionicons name="trophy-outline" size={14} color={Colors.gray[500]} />
+              <Text style={styles.metaText}>{item.maxPoints} pts</Text>
+            </View>
+          </View>
+
+          {(isSubmitted || isOverdue) && (
+            <View style={styles.statusBar}>
+              {isGraded && (
+                <View style={[styles.statusBadge, styles.gradedBadge]}>
+                  <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                  <Text style={styles.gradedText}>Graded</Text>
+                </View>
+              )}
+              {isSubmitted && !isGraded && (
+                <View style={[styles.statusBadge, styles.submittedBadge]}>
+                  <Ionicons name="checkmark-circle-outline" size={16} color="#3B82F6" />
+                  <Text style={styles.submittedText}>Submitted</Text>
+                </View>
+              )}
+              {isOverdue && !isSubmitted && (
+                <View style={[styles.statusBadge, styles.overdueBadge]}>
+                  <Ionicons name="alert-circle" size={16} color="#EF4444" />
+                  <Text style={styles.overdueText}>Overdue</Text>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+});
 
 export default function AssignmentsListScreen() {
   const { t, i18n } = useTranslation();
@@ -73,146 +178,35 @@ export default function AssignmentsListScreen() {
     fetchAssignments();
   }, [fetchAssignments]);
 
-  const filteredAssignments = assignments.filter(assignment => {
+  const filteredAssignments = useMemo(() => assignments.filter(assignment => {
     if (selectedTab === 'all') return true;
     
-    const now = new Date();
     const dueDate = new Date(assignment.dueDate);
     const hasSubmission = assignment.userSubmission != null;
     const isGraded = assignment.userSubmission?.status === 'GRADED';
     
     switch (selectedTab) {
-      case 'active':
-        return !hasSubmission && isFuture(dueDate);
-      case 'submitted':
-        return hasSubmission && !isGraded;
-      case 'graded':
-        return isGraded;
-      default:
-        return true;
+      case 'active':    return !hasSubmission && isFuture(dueDate);
+      case 'submitted': return hasSubmission && !isGraded;
+      case 'graded':    return isGraded;
+      default:          return true;
     }
-  });
+  }), [assignments, selectedTab]);
 
-  const renderAssignmentCard = ({ item, index }: { item: ClubAssignment; index: number }) => {
-    const dueDate = new Date(item.dueDate);
-    const isOverdue = isPast(dueDate) && !item.userSubmission;
-    const isSubmitted = item.userSubmission != null;
-    const isGraded = item.userSubmission?.status === 'GRADED';
-    
-    const getTypeIcon = (type: string) => {
-      switch (type) {
-        case 'HOMEWORK': return 'document-text';
-        case 'QUIZ': return 'help-circle';
-        case 'EXAM': return 'school';
-        case 'PROJECT': return 'rocket';
-        default: return 'document';
-      }
-    };
+  const handleCardPress = useCallback(
+    (assignmentId: string, cId: string) =>
+      navigation.navigate('AssignmentDetail', { assignmentId, clubId: cId }),
+    [navigation]
+  );
 
-    const getTypeColor = (type: string) => {
-      switch (type) {
-        case 'HOMEWORK': return '#3B82F6';
-        case 'QUIZ': return '#8B5CF6';
-        case 'EXAM': return '#EF4444';
-        case 'PROJECT': return '#10B981';
-        default: return Colors.primary;
-      }
-    };
+  const renderAssignmentCard = useCallback(
+    ({ item }: { item: ClubAssignment }) => (
+      <AssignmentCard item={item} clubId={clubId} onPress={handleCardPress} />
+    ),
+    [clubId, handleCardPress]
+  );
 
-    return (
-      <Animated.View
-        style={styles.assignmentCard}
-      >
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => navigation.navigate('AssignmentDetail', { 
-            assignmentId: item.id,
-            clubId 
-          })}
-        >
-          <View style={styles.cardHeader}>
-            <View style={[
-              styles.typeIcon,
-              { backgroundColor: `${getTypeColor(item.type)}15` }
-            ]}>
-              <Ionicons 
-                name={getTypeIcon(item.type) as any} 
-                size={20} 
-                color={getTypeColor(item.type)} 
-              />
-            </View>
-            <View style={styles.cardTitleContainer}>
-              <Text style={styles.cardTitle} numberOfLines={1}>
-                {item.title}
-              </Text>
-              {item.subject && (
-                <Text style={styles.subjectLabel}>
-                  {item.subject.name}
-                </Text>
-              )}
-            </View>
-            {isGraded && (
-              <View style={styles.scoreContainer}>
-                <Text style={styles.scoreText}>
-                  {item.userSubmission?.score}/{item.maxPoints}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.cardBody}>
-            {item.description && (
-              <Text style={styles.description} numberOfLines={2}>
-                {item.description}
-              </Text>
-            )}
-
-            <View style={styles.cardMeta}>
-              <View style={styles.metaItem}>
-                <Ionicons name="calendar-outline" size={14} color={Colors.gray[500]} />
-                <Text style={[
-                  styles.metaText,
-                  isOverdue && styles.overdueText
-                ]}>
-                  {t('assignments.list.meta.due', { date: format(dueDate, 'MMM d, h:mm a') })}
-                </Text>
-              </View>
-              
-              <View style={styles.metaItem}>
-                <Ionicons name="trophy-outline" size={14} color={Colors.gray[500]} />
-                <Text style={styles.metaText}>
-                  {t('assignments.list.meta.pts', { count: item.maxPoints })}
-                </Text>
-              </View>
-            </View>
-
-            {(isSubmitted || isOverdue) && (
-              <View style={styles.statusBar}>
-                {isGraded && (
-                  <View style={[styles.statusBadge, styles.gradedBadge]}>
-                    <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                    <Text style={styles.gradedText}>{t('assignments.list.status.graded')}</Text>
-                  </View>
-                )}
-                {isSubmitted && !isGraded && (
-                  <View style={[styles.statusBadge, styles.submittedBadge]}>
-                    <Ionicons name="checkmark-circle-outline" size={16} color="#3B82F6" />
-                    <Text style={styles.submittedText}>{t('assignments.list.status.submitted')}</Text>
-                  </View>
-                )}
-                {isOverdue && !isSubmitted && (
-                  <View style={[styles.statusBadge, styles.overdueBadge]}>
-                    <Ionicons name="alert-circle" size={16} color="#EF4444" />
-                    <Text style={styles.overdueText}>{t('assignments.list.status.overdue')}</Text>
-                  </View>
-                )}
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  };
+  const keyExtractor = useCallback((item: ClubAssignment) => item.id, []);
 
   if (loading) {
     return (
@@ -271,7 +265,12 @@ export default function AssignmentsListScreen() {
       <FlatList
         data={filteredAssignments}
         renderItem={renderAssignmentCard}
-        keyExtractor={(item) => item.id}
+        keyExtractor={keyExtractor}
+        initialNumToRender={8}
+        maxToRenderPerBatch={6}
+        windowSize={7}
+        updateCellsBatchingPeriod={50}
+        removeClippedSubviews={Platform.OS === 'android'}
         contentContainerStyle={styles.listContainer}
         refreshControl={
           <RefreshControl

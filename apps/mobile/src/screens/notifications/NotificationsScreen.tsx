@@ -8,7 +8,7 @@
  * - Empty state
  */
 
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import {
     View,
     Text,
@@ -136,7 +136,7 @@ export default function NotificationsScreen() {
         );
     }, [handleNotificationPress, deleteNotification]);
 
-    const renderEmpty = () => {
+    const renderEmpty = useCallback(() => {
         if (isLoading) return null;
         return (
             <EmptyState
@@ -145,7 +145,18 @@ export default function NotificationsScreen() {
                 message={t('notifications.empty.message')}
             />
         );
-    };
+    }, [isLoading, t]);
+
+    // Fixed-height rows: 72px item + 1px hairline divider
+    const ITEM_HEIGHT = 73;
+    const getItemLayout = useCallback(
+        (_: any, index: number) => ({
+            length: ITEM_HEIGHT,
+            offset: ITEM_HEIGHT * index,
+            index,
+        }),
+        []
+    );
 
     return (
         <View style={styles.container}>
@@ -183,6 +194,12 @@ export default function NotificationsScreen() {
                 renderItem={renderNotification}
                 keyExtractor={(item) => item.id}
                 ListEmptyComponent={renderEmpty}
+                getItemLayout={getItemLayout}
+                initialNumToRender={10}
+                maxToRenderPerBatch={8}
+                windowSize={7}
+                updateCellsBatchingPeriod={50}
+                removeClippedSubviews={Platform.OS === 'android'}
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}

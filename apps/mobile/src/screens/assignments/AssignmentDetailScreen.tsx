@@ -418,16 +418,14 @@ const styles = StyleSheet.create({
   },
   titleSection: {
     backgroundColor: '#FFFFFF',
-    
-    
     borderRadius: 12,
     padding: 20,
     marginBottom: 12,
     shadowColor: '#000',
-    
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    
+    elevation: 2,
   },
   typeHeader: {
     flexDirection: 'row',
@@ -472,16 +470,14 @@ const styles = StyleSheet.create({
   },
   statusCard: {
     backgroundColor: '#FFFFFF',
-    
-    
     borderRadius: 12,
     padding: 20,
     marginBottom: 12,
     shadowColor: '#000',
-    
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    
+    elevation: 2,
   },
   statusHeader: {
     flexDirection: 'row',
@@ -550,26 +546,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     backgroundColor: '#FFFFFF',
-    
-    
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     gap: 12,
     shadowColor: '#000',
-    
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    
+    elevation: 2,
   },
   dueDateCardOverdue: {
     backgroundColor: '#FEF2F2',
-    
+    borderWidth: 1,
     borderColor: '#FCA5A5',
   },
   dueDateCardSoon: {
     backgroundColor: '#FFFFFF',
-    
+    borderWidth: 1,
     borderColor: '#7DD3FC',
   },
   dueDateContent: {
@@ -594,16 +590,14 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     backgroundColor: '#FFFFFF',
-    
-    
     borderRadius: 12,
     padding: 20,
     marginBottom: 12,
     shadowColor: '#000',
-    
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    
+    elevation: 2,
   },
   sectionTitle: {
     fontSize: 16,
@@ -634,16 +628,14 @@ const styles = StyleSheet.create({
   },
   descriptionCard: {
     backgroundColor: '#FFFFFF',
-    
-    
     borderRadius: 12,
     padding: 20,
     marginBottom: 12,
     shadowColor: '#000',
-    
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    
+    elevation: 2,
   },
   descriptionText: {
     fontSize: 15,
@@ -652,16 +644,14 @@ const styles = StyleSheet.create({
   },
   instructionsCard: {
     backgroundColor: '#FFFFFF',
-    
-    
     borderRadius: 12,
     padding: 20,
     marginBottom: 12,
     shadowColor: '#000',
-    
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    
+    elevation: 2,
   },
   instructionsText: {
     fontSize: 15,
@@ -670,16 +660,14 @@ const styles = StyleSheet.create({
   },
   attachmentsCard: {
     backgroundColor: '#FFFFFF',
-    
-    
     borderRadius: 12,
     padding: 20,
     marginBottom: 12,
     shadowColor: '#000',
-    
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
-    
+    elevation: 2,
   },
   attachmentItem: {
     flexDirection: 'row',
@@ -709,8 +697,8 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.05,
-    
-    
+    shadowRadius: 4,
+    elevation: 4,
   },
   submitButton: {
     flexDirection: 'row',
@@ -738,10 +726,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 8,
     shadowColor: '#0EA5E9',
-    
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    
-    
+    shadowRadius: 8,
+    elevation: 4,
   },
   instructorButtonText: {
     fontSize: 16,

@@ -25,7 +25,8 @@
         "NSMicrophoneUsageDescription": "Stunity needs microphone access to record videos.",
         "NSFaceIDUsageDescription": "Stunity uses Face ID for secure login.",
         "NSLocationWhenInUseUsageDescription": "Stunity needs your location to verify your check-in at school."
-      }
+      },
+      "newArchEnabled": true
     },
     "android": {
       "package": "com.stunity.mobile",

@@ -18,6 +18,7 @@ import {
   Alert,
   Platform,
   RefreshControl,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -35,6 +36,7 @@ import { clubsApi } from '@/api';
 import type { Club } from '@/api/clubs';
 import { useNavigationContext } from '@/contexts';
 import StunityLogo from '../../../assets/Stunity.svg';
+import { Skeleton } from '@/components/common/Loading';
 
 type ClubFilter = 'all' | 'joined' | 'discover';
 
@@ -60,7 +62,42 @@ const COLORS = {
   border:        '#E2E8F0',
 };
 
-// ─── Skeleton Card ────────────────────────────────────────────────────────────
+// ─── Header Skeleton ─────────────────────────────────────────────────────────
+const ClubsHeaderSkeleton = React.memo(function ClubsHeaderSkeleton() {
+  return (
+    <View>
+      {/* Shortcuts row: 4 circles */}
+      <View style={skeletonStyles.shortcutsRow}>
+        {[0, 1, 2, 3].map((i) => (
+          <View key={i} style={skeletonStyles.shortcutItem}>
+            <Skeleton width={68} height={68} borderRadius={34} />
+            <Skeleton width={52} height={12} borderRadius={6} style={{ marginTop: 8 }} />
+          </View>
+        ))}
+      </View>
+
+      {/* Banner placeholder */}
+      <View style={skeletonStyles.bannerWrap}>
+        <Skeleton width="100%" height={120} borderRadius={24} />
+        <View style={skeletonStyles.paginationRow}>
+          <Skeleton width={16} height={6} borderRadius={3} />
+          <Skeleton width={6} height={6} borderRadius={3} style={{ marginLeft: 6 }} />
+          <Skeleton width={6} height={6} borderRadius={3} style={{ marginLeft: 6 }} />
+        </View>
+      </View>
+
+      {/* Section title + View all */}
+      <View style={skeletonStyles.sectionHeaderRow}>
+        <Skeleton width={140} height={20} borderRadius={10} />
+        <Skeleton width={60} height={16} borderRadius={8} />
+      </View>
+
+      {/* Search bar */}
+      <Skeleton width="100%" height={52} borderRadius={16} style={skeletonStyles.searchSkeleton} />
+    </View>
+  );
+});
+
 const ClubCardSkeleton = React.memo(function ClubCardSkeleton() {
   return (
     <View style={skeletonStyles.card}>
@@ -81,6 +118,14 @@ const ClubCardSkeleton = React.memo(function ClubCardSkeleton() {
 });
 
 const skeletonStyles = StyleSheet.create({
+  // Header skeleton
+  shortcutsRow:    { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 20, paddingBottom: 20 },
+  shortcutItem:    { alignItems: 'center' },
+  bannerWrap:      { paddingHorizontal: 12, paddingBottom: 24, alignItems: 'center' },
+  paginationRow:   { flexDirection: 'row', marginTop: 16 },
+  sectionHeaderRow:{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, paddingBottom: 16 },
+  searchSkeleton:  { marginHorizontal: 16, marginBottom: 16 },
+  // Card skeleton
   card:        { backgroundColor: '#FFF', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', marginHorizontal: 12, marginBottom: 16, overflow: 'hidden' },
   header:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   icon:        { width: 34, height: 34, borderRadius: 10, backgroundColor: '#F1F5F9' },
@@ -376,7 +421,7 @@ export default function ClubsScreen() {
         {/* Section heading + search */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Today's Clubs</Text>
-          <TouchableOpacity activeOpacity={0.8}>
+          <TouchableOpacity activeOpacity={0.8} onPress={() => handleFilterChange('all')}>
             <Text style={styles.viewAllText}>View all</Text>
           </TouchableOpacity>
         </View>
@@ -460,7 +505,10 @@ export default function ClubsScreen() {
           </View>
         </SafeAreaView>
         <View style={styles.safeArea}>
-          {[1, 2, 3].map((i) => <ClubCardSkeleton key={i} />)}
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <ClubsHeaderSkeleton />
+            {[1, 2, 3].map((i) => <ClubCardSkeleton key={i} />)}
+          </ScrollView>
         </View>
       </View>
     );

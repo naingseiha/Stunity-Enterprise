@@ -353,7 +353,7 @@ export default function FeedScreen() {
 
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
-        console.log('🔌 [FeedScreen] App foregrounded — Re-subscribing to feed');
+        if (__DEV__) console.log('🔌 [FeedScreen] App foregrounded — Re-subscribing to feed');
         subscribeToFeed();
 
         // Foreground refresh: check for new posts missed while backgrounded
@@ -390,7 +390,7 @@ export default function FeedScreen() {
           }).catch(() => { });
         }
       } else if (nextState === 'background' || nextState === 'inactive') {
-        console.log('🔌 [FeedScreen] App backgrounded — Unsubscribing from feed');
+        if (__DEV__) console.log('🔌 [FeedScreen] App backgrounded — Unsubscribing from feed');
         unsubscribeFromFeed();
       }
     });
