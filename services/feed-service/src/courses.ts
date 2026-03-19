@@ -1,8 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma, prismaRead } from './context';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // ============================================
 // AUTH MIDDLEWARE
@@ -200,16 +199,25 @@ router.get('/my-courses', async (req: AuthRequest, res: Response) => {
       completedAt: enrollment.completedAt,
     }));
 
-    // Get completed lessons count for each course
-    for (const course of courses) {
-      const completedCount = await prisma.lessonProgress.count({
+    // Fix N+1: get completed lesson counts for ALL courses in a single query
+    if (courses.length > 0) {
+      const courseIds = courses.map(c => c.id);
+      const allProgress = await prisma.lessonProgress.findMany({
         where: {
           userId,
-          lesson: { courseId: course.id },
+          lesson: { courseId: { in: courseIds } },
           completed: true,
         },
+        select: { lesson: { select: { courseId: true } } },
       });
-      course.completedLessons = completedCount;
+      const completedMap = new Map<string, number>();
+      for (const p of allProgress) {
+        const cId = p.lesson.courseId;
+        completedMap.set(cId, (completedMap.get(cId) ?? 0) + 1);
+      }
+      for (const course of courses) {
+        course.completedLessons = completedMap.get(course.id) ?? 0;
+      }
     }
 
     res.json({ courses });
@@ -279,6 +287,238 @@ router.get('/my-created', async (req: AuthRequest, res: Response) => {
   } catch (error: any) {
     console.error('Error fetching created courses:', error);
     res.status(500).json({ message: 'Error fetching created courses', error: error.message });
+  }
+});
+
+/**
+ * GET /courses/learn-hub - Combined endpoint: courses + myCourses + myCreated + paths + stats
+ * Replaces 5 separate mobile API calls with a single request.
+ * All DB queries run in parallel server-side.
+ */
+router.get('/learn-hub', async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    let limit = parseInt((req.query.limit as string) || '30');
+    let pathLimit = parseInt((req.query.pathLimit as string) || '20');
+    
+    // Safety fallback
+    if (isNaN(limit) || limit < 1) limit = 30;
+    if (isNaN(pathLimit) || pathLimit < 1) pathLimit = 20;
+
+    // ── 1. Fire all independent queries in parallel ────────────────────────────
+    const [
+      rawCourses,
+      rawEnrollments,
+      rawCreated,
+      rawPaths,
+      userRecord,
+      enrolledCount,
+      completedCount,
+      completedLessonsCount,
+    ] = await Promise.all([
+      // Public courses
+      prismaRead.course.findMany({
+        where: { isPublished: true },
+        include: {
+          instructor: {
+            select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, professionalTitle: true },
+          },
+          _count: { select: { lessons: true, enrollments: true, reviews: true } },
+        },
+        orderBy: [{ isFeatured: 'desc' }, { enrolledCount: 'desc' }, { createdAt: 'desc' }],
+        take: limit,
+      }),
+      // Enrolled courses
+      userId ? prismaRead.enrollment.findMany({
+        where: { userId },
+        include: {
+          course: {
+            include: {
+              instructor: {
+                select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, professionalTitle: true },
+              },
+              _count: { select: { lessons: true } },
+            },
+          },
+        },
+        orderBy: { lastAccessedAt: 'desc' },
+      }) : Promise.resolve([]),
+      // Created courses
+      userId ? prismaRead.course.findMany({
+        where: { instructorId: userId },
+        include: {
+          instructor: {
+            select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, professionalTitle: true },
+          },
+          _count: { select: { lessons: true, enrollments: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }) : Promise.resolve([]),
+      // Learning paths
+      prismaRead.learningPath.findMany({
+        where: { isPublished: true },
+        include: {
+          creator: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true } },
+          courses: {
+            include: { course: { select: { id: true, title: true, thumbnail: true, duration: true } } },
+            orderBy: { order: 'asc' },
+          },
+          _count: { select: { enrollments: true } },
+        },
+        orderBy: [{ isFeatured: 'desc' }, { enrolledCount: 'desc' }],
+        take: pathLimit,
+      }),
+      // User stats fields
+      userId ? prismaRead.user.findUnique({
+        where: { id: userId },
+        select: { totalLearningHours: true, currentStreak: true, totalPoints: true, level: true },
+      }) : Promise.resolve(null),
+      // Enrollment counts
+      userId ? prismaRead.enrollment.count({ where: { userId } }) : Promise.resolve(0),
+      userId ? prismaRead.enrollment.count({ where: { userId, completedAt: { not: null } } }) : Promise.resolve(0),
+      userId ? prismaRead.lessonProgress.count({ where: { userId, completed: true } }) : Promise.resolve(0),
+    ]);
+
+    // ── 2. Batch-resolve completedLessons for enrolled courses (one extra query) ─
+    let completedMap = new Map<string, number>();
+    if (userId && rawEnrollments.length > 0) {
+      const courseIds = rawEnrollments.map(e => e.courseId);
+      const allProgress = await prismaRead.lessonProgress.findMany({
+        where: { userId, lesson: { courseId: { in: courseIds } }, completed: true },
+        select: { lesson: { select: { courseId: true } } },
+      });
+      for (const p of allProgress) {
+        const cId = p.lesson.courseId;
+        completedMap.set(cId, (completedMap.get(cId) ?? 0) + 1);
+      }
+    }
+
+    // ── 3. Batch-resolve path enrollments (one extra query) ───────────────────
+    const enrolledPathSet = new Set<string>();
+    if (userId && rawPaths.length > 0) {
+      const pathIds = rawPaths.map(p => p.id);
+      const pathEnrollments = await prismaRead.pathEnrollment.findMany({
+        where: { userId, pathId: { in: pathIds } },
+        select: { pathId: true },
+      });
+      for (const pe of pathEnrollments) enrolledPathSet.add(pe.pathId);
+    }
+
+    // ── 4. Transform and respond ───────────────────────────────────────────────
+    const now = Date.now();
+    const twoWeeksMs = 14 * 24 * 60 * 60 * 1000;
+
+    const courses = rawCourses.map(course => ({
+      id: course.id,
+      title: course.title,
+      description: course.description,
+      thumbnail: course.thumbnail,
+      category: course.category,
+      level: course.level,
+      duration: course.duration,
+      lessonsCount: course._count.lessons,
+      enrolledCount: course.enrolledCount,
+      rating: course.rating,
+      reviewsCount: course._count.reviews,
+      price: course.price,
+      isFree: course.isFree,
+      isFeatured: course.isFeatured,
+      isNew: new Date(course.createdAt).getTime() > now - twoWeeksMs,
+      tags: course.tags,
+      instructor: {
+        id: course.instructor.id,
+        name: `${course.instructor.firstName} ${course.instructor.lastName}`,
+        avatar: course.instructor.profilePictureUrl,
+        title: course.instructor.professionalTitle,
+      },
+      createdAt: course.createdAt,
+      updatedAt: course.updatedAt,
+    }));
+
+    const myCourses = rawEnrollments.map(enrollment => ({
+      id: enrollment.course.id,
+      title: enrollment.course.title,
+      description: enrollment.course.description,
+      thumbnail: enrollment.course.thumbnail,
+      category: enrollment.course.category,
+      level: enrollment.course.level,
+      duration: enrollment.course.duration,
+      lessonsCount: enrollment.course._count.lessons,
+      enrolledCount: enrollment.course.enrolledCount,
+      rating: enrollment.course.rating,
+      price: enrollment.course.price,
+      isFree: enrollment.course.isFree,
+      instructor: {
+        id: enrollment.course.instructor.id,
+        name: `${enrollment.course.instructor.firstName} ${enrollment.course.instructor.lastName}`,
+        avatar: enrollment.course.instructor.profilePictureUrl,
+        title: enrollment.course.instructor.professionalTitle,
+      },
+      progress: enrollment.progress,
+      completedLessons: completedMap.get(enrollment.courseId) ?? 0,
+      enrolledAt: enrollment.enrolledAt,
+      lastAccessedAt: enrollment.lastAccessedAt,
+      completedAt: enrollment.completedAt,
+    }));
+
+    const myCreated = rawCreated.map(course => ({
+      id: course.id,
+      title: course.title,
+      description: course.description,
+      thumbnail: course.thumbnail,
+      category: course.category,
+      level: course.level,
+      duration: course.duration,
+      lessonsCount: course._count.lessons,
+      enrolledCount: course._count.enrollments,
+      rating: course.rating,
+      price: course.price,
+      isFree: course.isFree,
+      isPublished: course.isPublished,
+      createdAt: course.createdAt,
+      updatedAt: course.updatedAt,
+      instructor: {
+        id: course.instructor.id,
+        name: `${course.instructor.firstName} ${course.instructor.lastName}`,
+        avatar: course.instructor.profilePictureUrl,
+        title: course.instructor.professionalTitle,
+      },
+    }));
+
+    const paths = rawPaths.map(path => ({
+      id: path.id,
+      title: path.title,
+      description: path.description,
+      thumbnail: path.thumbnail,
+      level: path.level,
+      isFeatured: path.isFeatured,
+      totalDuration: path.totalDuration,
+      coursesCount: path.coursesCount,
+      enrolledCount: path.enrolledCount,
+      isEnrolled: enrolledPathSet.has(path.id),
+      courses: path.courses.map(pc => ({
+        id: pc.course.id,
+        title: pc.course.title,
+        thumbnail: pc.course.thumbnail,
+        duration: pc.course.duration,
+        order: pc.order,
+      })),
+    }));
+
+    const stats = {
+      enrolledCourses: enrolledCount,
+      completedCourses: completedCount,
+      completedLessons: completedLessonsCount,
+      hoursLearned: userRecord?.totalLearningHours ?? 0,
+      currentStreak: userRecord?.currentStreak ?? 0,
+      totalPoints: userRecord?.totalPoints ?? 0,
+      level: userRecord?.level ?? 1,
+    };
+
+    res.json({ courses, myCourses, myCreated, paths, stats });
+  } catch (error: any) {
+    console.error('Error fetching learn hub:', error);
+    res.status(500).json({ message: 'Error fetching learn hub data', error: error.message });
   }
 });
 
@@ -737,6 +977,72 @@ router.post('/:id/enroll', async (req: AuthRequest, res: Response) => {
   } catch (error: any) {
     console.error('Error enrolling in course:', error);
     res.status(500).json({ message: 'Error enrolling in course', error: error.message });
+  }
+});
+
+/**
+ * POST /courses/bulk - Create a course and all its lessons in one transaction
+ */
+router.post('/bulk', async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const {
+      title,
+      description,
+      category,
+      level = 'BEGINNER',
+      thumbnail,
+      tags = [],
+      lessons = [],
+      publish = false,
+    } = req.body;
+
+    if (!title || !description || !category) {
+      return res.status(400).json({ message: 'Missing required fields (title, description, category)' });
+    }
+
+    // Use a transaction to ensure atomic creation
+    const result = await prisma.$transaction(async (tx) => {
+      const course = await tx.course.create({
+        data: {
+          title,
+          description,
+          category,
+          level,
+          thumbnail: thumbnail || null,
+          tags,
+          instructorId: userId,
+          isPublished: publish,
+          lessons: {
+            create: lessons.map((lesson: any, index: number) => ({
+              title: lesson.title,
+              description: lesson.description || '',
+              duration: lesson.duration || 0,
+              isFree: lesson.isFree || false,
+              content: lesson.content || '',
+              videoUrl: lesson.videoUrl || '',
+              order: index + 1,
+            })),
+          },
+        },
+        include: {
+          lessons: true,
+          instructor: {
+            select: { id: true, firstName: true, lastName: true, profilePictureUrl: true },
+          },
+        },
+      });
+      return course;
+    });
+
+    res.status(201).json(result);
+  } catch (error: any) {
+    console.error('Error in POST /courses/bulk:', error);
+    res.status(500).json({ message: 'Internal server error during bulk course creation', error: error.message });
   }
 });
 

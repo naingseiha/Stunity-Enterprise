@@ -46,7 +46,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import StunityLogo from '../../../assets/Stunity.svg';
 import { learnApi } from '@/api';
-import type { LearnCourse, LearnEnrolledCourse, LearnPath, LearningStats } from '@/api/learn';
+import type { LearnCourse, LearnEnrolledCourse, LearnPath, LearningStats, LearnHubData } from '@/api/learn';
 import { LearnStackScreenProps } from '@/navigation/types';
 import { useNavigationContext } from '@/contexts';
 import { Skeleton } from '@/components/common/Loading';
@@ -411,25 +411,23 @@ export default function LearnScreen() {
   // hasFetched prevents re-firing the 5 API calls every time React Navigation
   // re-renders the screen tree mid-navigate (same pattern as FeedScreen).
   const hasFetched = useRef(false);
-  const loadLearningData = useCallback(async () => {
+  const isRefreshing = useRef(false);
+  const loadLearningData = useCallback(async (force = false) => {
     try {
-      const [courseList, myCourses, myCreated, learningPaths, learningStats] = await Promise.all([
-        learnApi.getCourses({ limit: 30 }),
-        learnApi.getMyCourses(),
-        learnApi.getMyCreatedCourses(),
-        learnApi.getLearningPaths({ limit: 20 }),
-        learnApi.getLearningStats(),
-      ]);
-      setCourses(courseList);
-      setEnrolledCourses(myCourses);
-      setCreatedCourses(myCreated);
-      setPaths(learningPaths);
-      setStats(learningStats);
+      // Single HTTP request — /courses/learn-hub runs all queries server-side in parallel.
+      // Cache hit (within 30s) returns instantly with zero network.
+      const hub: LearnHubData = await learnApi.getLearnHub(force);
+      setCourses(hub.courses);
+      setEnrolledCourses(hub.myCourses);
+      setCreatedCourses(hub.myCreated);
+      setPaths(hub.paths);
+      setStats(hub.stats);
     } catch (error: any) {
       Alert.alert('Learning', error?.message || 'Failed to load learning data');
     } finally {
       setLoading(false);
       setRefreshing(false);
+      isRefreshing.current = false;
     }
   }, []);
 
@@ -444,8 +442,11 @@ export default function LearnScreen() {
   );
 
   const onRefresh = useCallback(() => {
+    if (isRefreshing.current) return;
+    isRefreshing.current = true;
+    learnApi.invalidateLearnHubCache();
     setRefreshing(true);
-    loadLearningData();
+    loadLearningData(true);
   }, [loadLearningData]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
@@ -463,12 +464,11 @@ export default function LearnScreen() {
     try {
       setBusyCourseId(courseId);
       await learnApi.enrollInCourse(courseId);
-      const [courseList, myCourses] = await Promise.all([
-        learnApi.getCourses({ limit: 30 }),
-        learnApi.getMyCourses(),
-      ]);
-      setCourses(courseList);
-      setEnrolledCourses(myCourses);
+      // Bust cache so next load gets fresh enrolment state
+      learnApi.invalidateLearnHubCache();
+      const hub = await learnApi.getLearnHub(true);
+      setCourses(hub.courses);
+      setEnrolledCourses(hub.myCourses);
     } catch (error: any) {
       Alert.alert('Enrollment', error?.message || 'Unable to enroll in this course');
     } finally {
@@ -480,12 +480,10 @@ export default function LearnScreen() {
     try {
       setBusyPathId(pathId);
       await learnApi.enrollInPath(pathId);
-      const [myCourses, updatedPaths] = await Promise.all([
-        learnApi.getMyCourses(),
-        learnApi.getLearningPaths({ limit: 20 }),
-      ]);
-      setEnrolledCourses(myCourses);
-      setPaths(updatedPaths);
+      learnApi.invalidateLearnHubCache();
+      const hub = await learnApi.getLearnHub(true);
+      setEnrolledCourses(hub.myCourses);
+      setPaths(hub.paths);
     } catch (error: any) {
       Alert.alert('Learning Path', error?.message || 'Unable to enroll in this learning path');
     } finally {
@@ -898,6 +896,18 @@ export default function LearnScreen() {
     []
   );
 
+  // ── overrideItemLayout: give FlashList exact heights upfront so it can
+  // pre-compute layout without measuring each cell.  Eliminates the jitter
+  // you see when quickly scrolling through a heavy list.
+  const overrideItemLayout = useCallback(
+    (layout: { span?: number; size?: number }, item: ListItem) => {
+      if (item.type === 'COURSE') layout.size = 360; // thumbnail 180 + content ~180
+      if (item.type === 'PATH')   layout.size = 180;
+      if (item.type === 'EMPTY')  layout.size = 220;
+    },
+    []
+  );
+
   // ── Skeleton loading ──────────────────────────────────────────────────────
   if (loading) {
     return (
@@ -1045,6 +1055,7 @@ export default function LearnScreen() {
         getItemType={getItemType}
         ListHeaderComponent={renderHeader}
         estimatedItemSize={320}
+        overrideItemLayout={overrideItemLayout}
         drawDistance={600}
         // extraData: busyCourseId/busyPathId drive enroll spinner; stats drives stat cards;
         // enrolledCourseIds drives isEnrolled flag without rebuilding listData

@@ -169,17 +169,13 @@ export default function CreateCourseScreen() {
 
     try {
       const coursePayload = buildCoursePayload();
-      const { id: courseId } = await learnApi.createCourse(coursePayload);
+      const lessonsPayload = normalizedLessons.map((lesson, index) => buildLessonPayload(lesson, index + 1));
 
-      for (let i = 0; i < normalizedLessons.length; i += 1) {
-        const lesson = normalizedLessons[i];
-        const lessonPayload = buildLessonPayload(lesson, i + 1);
-        await learnApi.addLessonToCourse(courseId, lessonPayload);
-      }
-
-      if (publishNow) {
-        await learnApi.publishCourse(courseId);
-      }
+      const { id: courseId } = await learnApi.bulkCreateCourse({
+        ...coursePayload,
+        lessons: lessonsPayload,
+        publish: publishNow,
+      });
 
       Alert.alert(
         publishNow ? 'Course published' : 'Draft saved',

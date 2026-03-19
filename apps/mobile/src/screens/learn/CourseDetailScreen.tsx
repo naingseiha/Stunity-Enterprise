@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { learnApi } from '@/api';
 import type { LearnCourseDetail } from '@/api/learn';
 import { LearnStackParamList, LearnStackScreenProps } from '@/navigation/types';
+import { CourseDetailSkeleton } from '@/components/common/Loading';
 
 type RouteParams = RouteProp<LearnStackParamList, 'CourseDetail'>;
 type NavigationProp = LearnStackScreenProps<'CourseDetail'>['navigation'];
@@ -52,8 +53,9 @@ export default function CourseDetailScreen() {
   const [enrolling, setEnrolling] = useState(false);
   const [course, setCourse] = useState<LearnCourseDetail | null>(null);
 
-  const loadCourse = useCallback(async () => {
+  const loadCourse = useCallback(async (isBusting = false) => {
     try {
+      if (isBusting) learnApi.invalidateLearnHubCache();
       const data = await learnApi.getCourseDetail(courseId);
       setCourse(data);
     } catch (error: any) {
@@ -70,13 +72,15 @@ export default function CourseDetailScreen() {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    loadCourse();
+    loadCourse(true);
   }, [loadCourse]);
 
   const handleEnroll = useCallback(async () => {
     try {
       setEnrolling(true);
       await learnApi.enrollInCourse(courseId);
+      // Invalidate Learn Hub cache so the main list reflects the "Enrolled" status
+      learnApi.invalidateLearnHubCache();
       await loadCourse();
     } catch (error: any) {
       Alert.alert('Enrollment', error?.message || 'Unable to enroll in this course');
@@ -169,8 +173,7 @@ export default function CourseDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer} edges={['top']}>
-        <ActivityIndicator size="large" color="#14B8A6" />
-        <Text style={styles.loadingText}>Loading course...</Text>
+        <CourseDetailSkeleton />
       </SafeAreaView>
     );
   }

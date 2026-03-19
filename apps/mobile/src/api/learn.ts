@@ -125,6 +125,19 @@ export interface LearningStats {
   level: number;
 }
 
+export interface LearnHubData {
+  courses: LearnCourse[];
+  myCourses: LearnEnrolledCourse[];
+  myCreated: LearnCourse[];
+  paths: LearnPath[];
+  stats: LearningStats;
+}
+
+export interface CreateCourseBulkPayload extends CreateCoursePayload {
+  lessons: CreateLessonPayload[];
+  publish?: boolean;
+}
+
 export interface CreateCoursePayload {
   title: string;
   description: string;
@@ -348,6 +361,83 @@ export const getLearningStats = async (): Promise<LearningStats> => {
   };
 };
 
+// ─── Learn Hub (combined single-request loader) ───────────────────────────────
+
+const LEARN_HUB_CACHE_TTL = 30_000; // 30 seconds
+let _learnHubCache: { data: LearnHubData; ts: number } | null = null;
+
+const normalizeStats = (data: any): LearningStats => ({
+  enrolledCourses: Number(data?.enrolledCourses ?? 0),
+  completedCourses: Number(data?.completedCourses ?? 0),
+  completedLessons: Number(data?.completedLessons ?? 0),
+  hoursLearned: Number(data?.hoursLearned ?? 0),
+  currentStreak: Number(data?.currentStreak ?? 0),
+  totalPoints: Number(data?.totalPoints ?? 0),
+  level: Number(data?.level ?? 1),
+});
+
+const normalizeEnrolledCourse = (course: any): LearnEnrolledCourse => ({
+  ...normalizeCourse(course),
+  progress: Number(course?.progress ?? 0),
+  completedLessons: Number(course?.completedLessons ?? 0),
+  enrolledAt: typeof course?.enrolledAt === 'string' ? course.enrolledAt : undefined,
+  lastAccessedAt: typeof course?.lastAccessedAt === 'string' ? course.lastAccessedAt : undefined,
+  completedAt: typeof course?.completedAt === 'string' ? course.completedAt : undefined,
+});
+
+const normalizePath = (path: any): LearnPath => ({
+  id: String(path?.id ?? ''),
+  title: String(path?.title ?? ''),
+  description: String(path?.description ?? ''),
+  thumbnail: path?.thumbnail || undefined,
+  level: String(path?.level ?? 'BEGINNER'),
+  isFeatured: Boolean(path?.isFeatured),
+  totalDuration: Number(path?.totalDuration ?? 0),
+  coursesCount: Number(path?.coursesCount ?? 0),
+  enrolledCount: Number(path?.enrolledCount ?? 0),
+  isEnrolled: Boolean(path?.isEnrolled),
+  courses: Array.isArray(path?.courses)
+    ? path.courses.map((c: any) => ({
+        id: String(c?.id ?? ''),
+        title: String(c?.title ?? ''),
+        thumbnail: c?.thumbnail || undefined,
+        duration: Number(c?.duration ?? 0),
+        order: Number(c?.order ?? 0),
+      }))
+    : [],
+});
+
+/**
+ * Fetches all Learn screen data in a single HTTP request.
+ * Results are cached for 30 seconds — subsequent calls within the TTL
+ * are instant (zero network). Pass force=true to bypass the cache
+ * (e.g., on pull-to-refresh or post-enroll).
+ */
+export const getLearnHub = async (force = false): Promise<LearnHubData> => {
+  if (!force && _learnHubCache && Date.now() - _learnHubCache.ts < LEARN_HUB_CACHE_TTL) {
+    return _learnHubCache.data;
+  }
+
+  const response = await api.get('/courses/learn-hub', { params: { limit: 30, pathLimit: 20 } });
+  const d = response.data;
+
+  const data: LearnHubData = {
+    courses:   Array.isArray(d?.courses)   ? d.courses.map(normalizeCourse)        : [],
+    myCourses: Array.isArray(d?.myCourses) ? d.myCourses.map(normalizeEnrolledCourse) : [],
+    myCreated: Array.isArray(d?.myCreated) ? d.myCreated.map(normalizeCourse)      : [],
+    paths:     Array.isArray(d?.paths)     ? d.paths.map(normalizePath)            : [],
+    stats:     normalizeStats(d?.stats),
+  };
+
+  _learnHubCache = { data, ts: Date.now() };
+  return data;
+};
+
+/** Call this after an enroll action so the next navigation shows fresh data. */
+export const invalidateLearnHubCache = (): void => {
+  _learnHubCache = null;
+};
+
 export const createCourse = async (payload: CreateCoursePayload): Promise<{ id: string }> => {
   const normalizedPayload = {
     title: payload.title.trim(),
@@ -362,6 +452,40 @@ export const createCourse = async (payload: CreateCoursePayload): Promise<{ id: 
   const id = String(response.data?.course?.id ?? '');
   if (!id) {
     throw new Error('Course creation failed: invalid response');
+  }
+
+  return { id };
+};
+
+/**
+ * Creates a course and all its lessons in a single transaction.
+ * This is the preferred way to create courses to prevent N+2 network requests.
+ */
+export const bulkCreateCourse = async (payload: CreateCourseBulkPayload): Promise<{ id: string }> => {
+  const normalizedPayload = {
+    title: payload.title.trim(),
+    description: payload.description.trim(),
+    category: payload.category,
+    level: payload.level,
+    thumbnail: payload.thumbnail?.trim() || undefined,
+    tags: (payload.tags || []).map(tag => tag.trim()).filter(Boolean),
+    publish: payload.publish,
+    lessons: (payload.lessons || []).map(lesson => ({
+      title: lesson.title.trim(),
+      description: lesson.description?.trim() || '',
+      duration: lesson.duration || 0,
+      isFree: lesson.isFree || false,
+      content: lesson.content?.trim() || '',
+      videoUrl: lesson.videoUrl?.trim() || '',
+    })),
+  };
+
+  const response = await api.post('/courses/bulk', normalizedPayload);
+  invalidateLearnHubCache();
+  
+  const id = String(response.data?.id ?? '');
+  if (!id) {
+    throw new Error('Bulk course creation failed: invalid response');
   }
 
   return { id };

@@ -138,7 +138,6 @@ export const ProfileSkeleton: React.FC = () => {
   );
 };
 
-// List Item Skeleton
 export const ListItemSkeleton: React.FC = () => {
   return (
     <View style={styles.listItem}>
@@ -146,6 +145,40 @@ export const ListItemSkeleton: React.FC = () => {
       <View style={styles.listItemContent}>
         <Skeleton width={140} height={16} />
         <Skeleton width={200} height={14} style={{ marginTop: 6 }} />
+      </View>
+    </View>
+  );
+};
+
+// Course Detail Skeleton
+export const CourseDetailSkeleton: React.FC = () => {
+  return (
+    <View style={styles.detailSkeleton}>
+      <View style={styles.detailHero}>
+        <Skeleton width={100} height={20} borderRadius={10} />
+        <Skeleton height={32} style={{ marginTop: 12 }} />
+        <Skeleton height={32} width="60%" style={{ marginTop: 8 }} />
+        <Skeleton height={80} style={{ marginTop: 16 }} borderRadius={16} />
+        <View style={styles.detailMetaRows}>
+          <Skeleton width={80} height={24} borderRadius={12} />
+          <Skeleton width={100} height={24} borderRadius={12} />
+          <Skeleton width={90} height={24} borderRadius={12} />
+        </View>
+      </View>
+      
+      <View style={styles.detailTabs}>
+        <Skeleton width="48%" height={40} borderRadius={10} />
+        <Skeleton width="48%" height={40} borderRadius={10} />
+      </View>
+
+      <View style={styles.detailContent}>
+        <Skeleton height={100} borderRadius={20} />
+        <View style={styles.detailStats}>
+          <Skeleton width="48%" height={80} borderRadius={16} />
+          <Skeleton width="48%" height={80} borderRadius={16} />
+          <Skeleton width="48%" height={80} borderRadius={16} />
+          <Skeleton width="48%" height={80} borderRadius={16} />
+        </View>
       </View>
     </View>
   );
@@ -235,6 +268,38 @@ const styles = StyleSheet.create({
   listItemContent: {
     marginLeft: Spacing[3],
     flex: 1,
+  },
+  // Course Detail Skeleton Styles
+  detailSkeleton: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  detailHero: {
+    padding: 24,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#E2E8F0',
+  },
+  detailMetaRows: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+  },
+  detailTabs: {
+    flexDirection: 'row',
+    padding: 20,
+    gap: 12,
+  },
+  detailContent: {
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  detailStats: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginTop: 16,
   },
 });
 
