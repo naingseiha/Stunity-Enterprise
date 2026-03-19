@@ -138,11 +138,7 @@ const LearnStackNavigator = () => (
     <LearnStack.Screen name="LearnHub" component={LearnScreen} />
     <LearnStack.Screen name="CourseDetail" component={CourseDetailScreen} />
     <LearnStack.Screen name="LessonViewer" component={LessonViewerScreen} />
-    <LearnStack.Screen name="CreateCourse" component={CreateCourseScreen} />
     <LearnStack.Screen name="EditCourse" component={EditCourseScreen} />
-    <LearnStack.Screen name="LearningPath" component={LearningPathScreen} />
-    <LearnStack.Screen name="MyCourses" component={MyCoursesScreen} />
-    <LearnStack.Screen name="MyCreatedCourses" component={MyCreatedCoursesScreen} />
   </LearnStack.Navigator>
 );
 
@@ -207,6 +203,9 @@ const MainNavigatorContent = () => {
       'ProfileTab': { tab: 'ProfileTab' },
       'Profile': { tab: 'ProfileTab', screen: 'Profile' },
       'Events': { tab: 'FeedTab', screen: 'Events' },
+      'MyCourses': { tab: 'LearnTab', screen: 'LearnHub', params: { initialTab: 'enrolled' } },
+      'LearningPath': { tab: 'LearnTab', screen: 'LearnHub', params: { initialTab: 'paths' } },
+      'MyCreatedCourses': { tab: 'LearnTab', screen: 'LearnHub', params: { initialTab: 'created' } },
     };
 
     const mapping = screenToTabMap[screen];

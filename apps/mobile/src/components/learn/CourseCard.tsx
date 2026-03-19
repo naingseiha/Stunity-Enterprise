@@ -194,9 +194,9 @@ export const CourseCard: React.FC<CourseCardProps> = ({
       </View>
       {/* ── Thumbnail ── */}
       <View style={[styles.thumbnailContainer, isCompact && styles.compactThumbnail]}>
-        {course.thumbnailUrl ? (
+        {(course.thumbnail || course.thumbnailUrl) ? (
           <Image
-            source={{ uri: course.thumbnailUrl }}
+            source={{ uri: course.thumbnail || course.thumbnailUrl }}
             style={styles.thumbnail}
             contentFit="cover"
             transition={300}

@@ -110,7 +110,7 @@ export type FeedStackParamList = {
 
 // Learn Stack
 export type LearnStackParamList = {
-  LearnHub: undefined;
+  LearnHub: { initialTab?: 'explore' | 'enrolled' | 'created' | 'paths' } | undefined;
   CourseDetail: { courseId: string };
   LessonViewer: { courseId: string; lessonId: string };
   CreateCourse: undefined;

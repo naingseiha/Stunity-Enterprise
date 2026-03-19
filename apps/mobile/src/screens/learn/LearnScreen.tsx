@@ -39,7 +39,7 @@ import {
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -366,10 +366,19 @@ const PathCard = React.memo(function PathCard({ path, isBusy, onEnroll }: PathCa
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function LearnScreen() {
-  const navigation   = useNavigation<NavigationProp>();
+  const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<LearnStackScreenProps<'LearnHub'>['route']>();
   const { openSidebar } = useNavigationContext();
 
-  const [activeTab,        setActiveTab]        = useState<TabType>('explore');
+  const initialTab = route.params?.initialTab;
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab || 'explore');
+
+  // Sync state if initialTab changes from navigation
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
   const [loading,          setLoading]          = useState(true);
   const [refreshing,       setRefreshing]       = useState(false);
   const [searchQuery,      setSearchQuery]      = useState('');
@@ -684,7 +693,7 @@ export default function LearnScreen() {
                               <Text style={styles.featuredMetaDivider}>•</Text>
                               <View style={styles.featuredMetaItem}>
                                 <Ionicons name="people" size={12} color="#64748B" />
-                                <Text style={styles.featuredMetaText}>{formatK(course.enrolledCount)} learners</Text>
+                                <Text style={styles.featuredMetaText}>{formatK(course.enrolledCount)}</Text>
                               </View>
                             </View>
   
