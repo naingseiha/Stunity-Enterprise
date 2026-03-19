@@ -25,7 +25,12 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Pressable,
+  Dimensions,
 } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -56,9 +61,9 @@ const COLORS = {
   textPrimary:   '#0F172A',
   textSecondary: '#475569',
   textMuted:     '#94A3B8',
-  primary:       '#09CFF7', // Stunity Brand Teal
-  primaryDark:   '#06A8CC',
-  primaryLight:  '#E0F9FD',
+  primary:       '#09CFF7', // Bright Cyan
+  primaryDark:   '#06A8CC', // Deep Cyan
+  primaryLight:  '#E0F9FD', // Light Cyan
   border:        '#E2E8F0',
 };
 
@@ -160,12 +165,24 @@ const ClubCard = React.memo(function ClubCard({
   const avatarColors = ['#0D9488', '#4B7BEC', '#F59E0B', '#F43F5E'];
   const visibleAvatars = avatarColors.slice(0, Math.min(4, memberCount > 0 ? memberCount : 4));
 
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const handlePressIn = () => { scale.value = withSpring(0.96, { damping: 15 }); };
+  const handlePressOut = () => { scale.value = withSpring(1, { damping: 15 }); };
+
   return (
-    <TouchableOpacity
-      style={styles.clubCard}
-      activeOpacity={0.92}
+    <AnimatedPressable
+      style={[styles.clubCard, animatedStyle]}
       onPress={() => onPress(item.id)}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
     >
+      <LinearGradient
+        colors={[`${typeMeta.accent}15`, `${typeMeta.accent}00`]}
+        style={styles.abstractShape}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      />
       {/* Card Header: icon chip + title + view button */}
       <View style={styles.cardHeader}>
         <View style={[styles.cardHeaderIcon, { backgroundColor: typeMeta.soft }]}>
@@ -246,7 +263,102 @@ const ClubCard = React.memo(function ClubCard({
           ]}
         />
       </View>
-    </TouchableOpacity>
+    </AnimatedPressable>
+  );
+});
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const BannerCarousel = React.memo(({ navigation }: any) => {
+  const [activeIndex, setActiveIndex] = useState(0);
+  
+  const banners = [
+    { id: '1', title: 'Check your ranking', subtitle: 'and climb the charts!', eyebrow: 'WEEKLY LEADERBOARD', icon: 'star-shooting', colors: ['#09CFF7', '#06A8CC'], route: 'Leaderboard' },
+    { id: '2', title: 'Join Study Groups', subtitle: 'Connect with peers now', eyebrow: 'NEW CLUBS', icon: 'account-group', colors: ['#10B981', '#059669'], route: 'All' },
+    { id: '3', title: 'Ace your Exams', subtitle: 'Explore exam prep clubs', eyebrow: 'EXAM PREP', icon: 'school', colors: ['#A78BFA', '#8B5CF6'], route: 'Discover' },
+  ];
+
+  const handleScroll = (event: any) => {
+    const slideSize = event.nativeEvent.layoutMeasurement.width;
+    const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
+    if(index !== activeIndex) {
+      setActiveIndex(index);
+    }
+  };
+
+  return (
+    <View style={styles.bannerContainer}>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        snapToAlignment="center"
+      >
+        {banners.map((b) => (
+          <AnimatedPressable 
+             key={b.id} 
+             onPress={() => {
+               if(b.route === 'Leaderboard') navigation.navigate('Leaderboard');
+             }} 
+             style={{ width: SCREEN_WIDTH, paddingHorizontal: 12 }}
+          >
+            <LinearGradient
+              colors={b.colors as [string, string]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.bannerGradient}
+            >
+              <View style={styles.bannerDecorCircle1} />
+              <View style={styles.bannerDecorCircle2} />
+              <View style={styles.bannerDecorCircle3} />
+              <View style={styles.bannerLeft}>
+                <View style={styles.bannerIconWrapper}>
+                  <MaterialCommunityIcons name={b.icon as any} size={42} color="#FFFFFF" />
+                </View>
+              </View>
+              <View style={styles.bannerRight}>
+                <Text style={styles.bannerEyebrow}>{b.eyebrow}</Text>
+                <Text style={styles.bannerTitle}>{b.title}</Text>
+                <Text style={styles.bannerSubtitle}>{b.subtitle}</Text>
+              </View>
+              <View style={styles.bannerAction}>
+                <Ionicons name="arrow-forward" size={18} color={b.colors[1]} />
+              </View>
+            </LinearGradient>
+          </AnimatedPressable>
+        ))}
+      </ScrollView>
+      <View style={styles.paginationRow}>
+        {banners.map((_, i) => (
+          <View key={i} style={[styles.dot, activeIndex === i && styles.dotActive]} />
+        ))}
+      </View>
+    </View>
+  );
+});
+
+const ShortcutItem = React.memo(({ s, isActive, onPress }: any) => {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const handlePressIn = () => { scale.value = withSpring(0.92, { damping: 12 }); };
+  const handlePressOut = () => { scale.value = withSpring(1, { damping: 12 }); };
+
+  return (
+    <AnimatedPressable
+      style={[styles.shortcutItem, animatedStyle]}
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+    >
+      <View style={[styles.shortcutOuter, isActive && styles.shortcutOuterActive]}>
+        <View style={[styles.shortcutInner, { backgroundColor: s.bgInner }]}>
+          <Ionicons name={s.icon as any} size={28} color={s.color} />
+        </View>
+      </View>
+      <Text style={[styles.shortcutLabel, isActive && styles.shortcutLabelActive]}>{s.label}</Text>
+    </AnimatedPressable>
   );
 });
 
@@ -369,54 +481,18 @@ export default function ClubsScreen() {
           {shortcuts.map((s) => {
             const isActive = selectedFilter === s.id;
             return (
-              <TouchableOpacity
+              <ShortcutItem
                 key={s.id}
-                style={styles.shortcutItem}
-                activeOpacity={0.8}
+                s={s}
+                isActive={isActive}
                 onPress={() => s.id === 'create' ? handleCreateClub() : handleFilterChange(s.id as ClubFilter)}
-              >
-                <View style={[styles.shortcutOuter, isActive && styles.shortcutOuterActive]}>
-                  <View style={[styles.shortcutInner, { backgroundColor: s.bgInner }]}>
-                    <Ionicons name={s.icon as any} size={28} color={s.color} />
-                  </View>
-                </View>
-                <Text style={[styles.shortcutLabel, isActive && styles.shortcutLabelActive]}>{s.label}</Text>
-              </TouchableOpacity>
+              />
             );
           })}
         </View>
 
-        {/* Banner */}
-        <View style={styles.bannerContainer}>
-          <LinearGradient
-            colors={['#09CFF7', '#06A8CC']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.bannerGradient}
-          >
-            <View style={styles.bannerDecorCircle1} />
-            <View style={styles.bannerDecorCircle2} />
-            <View style={styles.bannerDecorCircle3} />
-            <View style={styles.bannerLeft}>
-              <View style={styles.bannerIconWrapper}>
-                <MaterialCommunityIcons name="star-shooting" size={42} color="#FFFFFF" />
-              </View>
-            </View>
-            <View style={styles.bannerRight}>
-              <Text style={styles.bannerEyebrow}>WEEKLY LEADERBOARD</Text>
-              <Text style={styles.bannerTitle}>Check your ranking</Text>
-              <Text style={styles.bannerSubtitle}>and climb the charts!</Text>
-            </View>
-            <TouchableOpacity style={styles.bannerAction} activeOpacity={0.8} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Ionicons name="arrow-forward" size={18} color="#06A8CC" />
-            </TouchableOpacity>
-          </LinearGradient>
-          <View style={styles.paginationRow}>
-            <View style={[styles.dot, styles.dotActive]} />
-            <View style={styles.dot} />
-            <View style={styles.dot} />
-          </View>
-        </View>
+        {/* Banner Carousel */}
+        <BannerCarousel navigation={navigation} />
 
         {/* Section heading + search */}
         <View style={styles.sectionHeader}>
@@ -620,17 +696,12 @@ const styles = StyleSheet.create({
   shortcutOuter: {
     width: 68,
     height: 68,
-    borderRadius: 34,
+    borderRadius: 18,
     backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 4,
-    borderWidth: 2,
-    borderColor: '#FFF',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
   },
   shortcutOuterActive: {
     borderColor: COLORS.primaryDark,
@@ -638,7 +709,7 @@ const styles = StyleSheet.create({
   shortcutInner: {
     width: 52,
     height: 52,
-    borderRadius: 26,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -653,7 +724,6 @@ const styles = StyleSheet.create({
 
   // Banner
   bannerContainer: {
-    paddingHorizontal: 12,
     paddingBottom: 24,
     alignItems: 'center',
   },
@@ -666,11 +736,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     justifyContent: 'space-between',
     overflow: 'hidden',
-    shadowColor: '#06A8CC',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 8,
   },
   bannerDecorCircle1: {
     position: 'absolute',
@@ -746,11 +811,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 4,
   },
   paginationRow: {
     flexDirection: 'row',
@@ -790,13 +850,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 16,
     height: 52,
-    borderWidth: 1.2,
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
     gap: 12,
     marginBottom: 16,
   },
@@ -808,19 +863,22 @@ const styles = StyleSheet.create({
   },
 
   // Cards
+  abstractShape: {
+    position: 'absolute',
+    top: -80,
+    right: -80,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+  },
   clubCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
     marginHorizontal: 16,
     marginBottom: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
-    elevation: 1,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -901,11 +959,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
   },
   joinPillJoined: {
     backgroundColor: COLORS.primaryLight,
