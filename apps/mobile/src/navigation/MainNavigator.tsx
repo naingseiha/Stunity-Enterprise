@@ -138,6 +138,7 @@ const LearnStackNavigator = () => (
     <LearnStack.Screen name="LearnHub" component={LearnScreen} />
     <LearnStack.Screen name="CourseDetail" component={CourseDetailScreen} />
     <LearnStack.Screen name="LessonViewer" component={LessonViewerScreen} />
+    <LearnStack.Screen name="CreateCourse" component={CreateCourseScreen} />
     <LearnStack.Screen name="EditCourse" component={EditCourseScreen} />
   </LearnStack.Navigator>
 );

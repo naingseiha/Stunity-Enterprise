@@ -123,8 +123,8 @@ export default function CourseDetailScreen() {
         label: 'Lessons',
         value: `${course.lessonsCount}`,
         icon: 'library',
-        iconColor: '#2563EB',
-        iconBackground: '#DBEAFE',
+        iconColor: '#0369A1',
+        iconBackground: '#E0F2FE',
         cardBackground: '#FFFFFF',
         borderColor: '#E2E8F0',
       },
@@ -169,7 +169,7 @@ export default function CourseDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer} edges={['top']}>
-        <ActivityIndicator size="large" color="#0EA5E9" />
+        <ActivityIndicator size="large" color="#14B8A6" />
         <Text style={styles.loadingText}>Loading course...</Text>
       </SafeAreaView>
     );
@@ -209,7 +209,7 @@ export default function CourseDetailScreen() {
         style={styles.contentWrap}
         contentContainerStyle={styles.contentScrollBox}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0EA5E9" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#14B8A6" />}
       >
         <View style={styles.heroContent}>
           <View style={styles.levelPillWrap}>
@@ -259,7 +259,7 @@ export default function CourseDetailScreen() {
             <View style={styles.progressWidget}>
               <View style={styles.progressHeader}>
                 <View style={styles.progressIconWrap}>
-                  <Ionicons name="trending-up" size={18} color="#0EA5E9" />
+                  <Ionicons name="trending-up" size={18} color="#14B8A6" />
                 </View>
                 <View style={styles.progressTextWrap}>
                   <Text style={styles.progressTitle}>Your Journey</Text>
@@ -311,7 +311,7 @@ export default function CourseDetailScreen() {
             {course.lessons.map((lesson, index) => {
               const isCompleted = lesson.isCompleted;
               const isLocked = lesson.isLocked;
-              const isAccent = isCompleted ? '#10B981' : isLocked ? '#94A3B8' : '#0EA5E9';
+              const isAccent = isCompleted ? '#10B981' : isLocked ? '#94A3B8' : '#14B8A6';
               
               // Determine icon based on title/order for visual variety
               const isVideo = lesson.title.toLowerCase().includes('video') || index % 2 === 0;
@@ -456,23 +456,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
   },
   heroContent: {
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
     padding: 24,
     marginBottom: 24,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.04,
-    shadowRadius: 16,
-    elevation: 2,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
   },
   levelPillWrap: {
@@ -574,11 +566,8 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 20,
     marginBottom: 16,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.03,
-    shadowRadius: 16,
-    elevation: 2,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
   },
   progressHeader: {
     flexDirection: 'row',
@@ -612,19 +601,19 @@ const styles = StyleSheet.create({
   progressValue: {
     fontSize: 22,
     fontWeight: '900',
-    color: '#0EA5E9',
+    color: '#14B8A6',
     letterSpacing: -0.5,
   },
   progressTrackPro: {
     height: 10,
     borderRadius: 999,
-    backgroundColor: '#F1F5F9', // Crisp track background
+    backgroundColor: '#CCFBF1', // Crisp track background
     overflow: 'hidden',
   },
   progressFillPro: {
     height: '100%',
     borderRadius: 999,
-    backgroundColor: '#0EA5E9',
+    backgroundColor: '#14B8A6',
   },
   statGridPro: {
     flexDirection: 'row',
@@ -637,12 +626,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 16,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
-    elevation: 2,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
   },
   statTopRow: {
@@ -679,11 +663,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     backgroundColor: '#FFFFFF',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
   },
   tagProText: {
     fontSize: 13,
@@ -703,11 +684,10 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderLeftWidth: 4, // The only accent border
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
-    elevation: 2,
+    borderTopWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderColor: '#E2E8F0',
   },
   lessonIslandLocked: {
     backgroundColor: '#FAFAFA',
@@ -764,7 +744,7 @@ const styles = StyleSheet.create({
   },
   tagCompletedPro: {
     fontSize: 11,
-    color: '#0F766E',
+    color: '#14B8A6',
     backgroundColor: '#D1FAE5',
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -800,12 +780,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 8,
-    backgroundColor: '#0EA5E9',
-    shadowColor: '#0EA5E9',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 4,
+    backgroundColor: '#14B8A6',
   },
   primaryActionPillDisabled: {
     opacity: 0.6,

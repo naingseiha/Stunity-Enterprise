@@ -80,10 +80,10 @@ const UNIFIED_PALETTE: TabColorPalette = {
 };
 
 const TAB_COLOR_PALETTES: Record<TabType, TabColorPalette> = {
-  explore: { ...UNIFIED_PALETTE, activeBackground: '#0EA5E9', activeBorder: '#0EA5E9' },
-  enrolled: { ...UNIFIED_PALETTE, activeBackground: '#0EA5E9', activeBorder: '#0EA5E9' },
-  created: { ...UNIFIED_PALETTE, activeBackground: '#0EA5E9', activeBorder: '#0EA5E9' },
-  paths: { ...UNIFIED_PALETTE, activeBackground: '#0EA5E9', activeBorder: '#0EA5E9' },
+  explore: { ...UNIFIED_PALETTE, activeBackground: '#14B8A6', activeBorder: '#14B8A6' },
+  enrolled: { ...UNIFIED_PALETTE, activeBackground: '#14B8A6', activeBorder: '#14B8A6' },
+  created: { ...UNIFIED_PALETTE, activeBackground: '#14B8A6', activeBorder: '#14B8A6' },
+  paths: { ...UNIFIED_PALETTE, activeBackground: '#14B8A6', activeBorder: '#14B8A6' },
 };
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -120,7 +120,7 @@ const FEATURED_COURSE_THEMES: FeaturedCourseTheme[] = [
     badgeColor: '#F97316',
     levelBackground: '#EEF2FF',
     levelColor: '#4F46E5',
-    iconColor: '#0EA5E9',
+    iconColor: '#14B8A6',
     buttonColor: '#2563EB',
     shadowColor: 'rgba(37, 99, 235, 0.26)',
     orbColor: 'rgba(14, 165, 233, 0.12)',
@@ -139,15 +139,15 @@ const FEATURED_COURSE_THEMES: FeaturedCourseTheme[] = [
     orbColor: 'rgba(124, 58, 237, 0.12)',
   },
   {
-    accentColor: '#0EA5E9',
+    accentColor: '#14B8A6',
     accentDeepColor: '#0369A1',
     accentSoftColor: '#E0F2FE',
     badgeBackground: '#FEF3C7',
     badgeColor: '#D97706',
     levelBackground: '#E0F2FE',
     levelColor: '#0284C7',
-    iconColor: '#0F766E',
-    buttonColor: '#0F766E',
+    iconColor: '#14B8A6',
+    buttonColor: '#14B8A6',
     shadowColor: 'rgba(15, 118, 110, 0.26)',
     orbColor: 'rgba(6, 182, 212, 0.12)',
   },
@@ -172,13 +172,13 @@ const PRESET_CATEGORIES: Omit<LearnCategoryItem, 'count'>[] = [
   { name: 'Marketing',           icon: 'megaphone-outline',     iconColor: '#EA580C', iconBackground: '#FFEDD5' },
   { name: 'Photography',         icon: 'camera-outline',        iconColor: '#2563EB', iconBackground: '#DBEAFE' },
   { name: 'Music',               icon: 'musical-notes-outline', iconColor: '#7C3AED', iconBackground: '#F3E8FF' },
-  { name: 'Languages',           icon: 'language-outline',      iconColor: '#0F766E', iconBackground: '#CCFBF1' },
+  { name: 'Languages',           icon: 'language-outline',      iconColor: '#14B8A6', iconBackground: '#CCFBF1' },
   { name: 'Personal Development',icon: 'sparkles-outline',      iconColor: '#7C3AED', iconBackground: '#F3E8FF' },
   { name: 'Health & Fitness',    icon: 'fitness-outline',       iconColor: '#16A34A', iconBackground: '#DCFCE7' },
   { name: 'Database',            icon: 'layers-outline',        iconColor: '#0284C7', iconBackground: '#E0F2FE' },
   { name: 'Cloud Computing',     icon: 'cloud-outline',         iconColor: '#2563EB', iconBackground: '#DBEAFE' },
   { name: 'Mathematics',         icon: 'calculator-outline',    iconColor: '#4F46E5', iconBackground: '#E0E7FF' },
-  { name: 'Science',             icon: 'flask-outline',         iconColor: '#0EA5E9', iconBackground: '#E0F2FE' },
+  { name: 'Science',             icon: 'flask-outline',         iconColor: '#14B8A6', iconBackground: '#E0F2FE' },
   { name: 'Technology',          icon: 'construct-outline',     iconColor: '#4F46E5', iconBackground: '#E0E7FF' },
   { name: 'Other',               icon: 'grid-outline',          iconColor: '#475569', iconBackground: '#E2E8F0' },
 ];
@@ -877,13 +877,20 @@ export default function LearnScreen() {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" />
-        <View style={styles.heroHeaderBg}>
+        <LinearGradient
+          colors={['#CCFBF1', '#FFFFFF']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroHeaderBg}
+        >
           <SafeAreaView edges={['top']} style={styles.headerSafe}>
             <View style={styles.topBar}>
               <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
                 <Ionicons name="menu-outline" size={24} color="#0F172A" />
               </TouchableOpacity>
-              <StunityLogo width={108} height={30} />
+              <View>
+                <StunityLogo width={108} height={30} />
+              </View>
               <View style={styles.topBarActions}>
                 <TouchableOpacity style={styles.headerIconButton}>
                   <Ionicons name="add" size={24} color="#0F172A" />
@@ -891,7 +898,7 @@ export default function LearnScreen() {
               </View>
             </View>
           </SafeAreaView>
-        </View>
+        </LinearGradient>
         <ScrollView showsVerticalScrollIndicator={false}>
           <LearnHeaderSkeleton />
           {[1, 2, 3].map((i) => <CourseCardSkeleton key={i} />)}
@@ -905,13 +912,20 @@ export default function LearnScreen() {
       <StatusBar barStyle="dark-content" />
 
       {/* ── Premium Hero Header ── */}
-      <View style={styles.heroHeaderBg}>
+      <LinearGradient
+        colors={['#CCFBF1', '#FFFFFF']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.heroHeaderBg}
+      >
         <SafeAreaView edges={['top']} style={styles.headerSafe}>
           <View style={styles.topBar}>
             <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
               <Ionicons name="menu-outline" size={24} color="#0F172A" />
             </TouchableOpacity>
-            <StunityLogo width={108} height={30} />
+            <View>
+              <StunityLogo width={108} height={30} />
+            </View>
             <View style={styles.topBarActions}>
               <TouchableOpacity onPress={handleCreateCourse} style={styles.headerIconButton}>
                 <Ionicons name="add" size={24} color="#0F172A" />
@@ -922,14 +936,14 @@ export default function LearnScreen() {
             </View>
           </View>
 
-          <View style={styles.searchContainer}>
+          <View style={[styles.searchContainer, { backgroundColor: '#FFFFFF', borderColor: '#E2E8F0', borderWidth: 1 }]}>
             <Ionicons name="search" size={20} color="#94A3B8" />
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Search courses, paths, topics..."
               placeholderTextColor="#94A3B8"
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: '#0F172A' }]}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
@@ -938,7 +952,7 @@ export default function LearnScreen() {
             )}
           </View>
         </SafeAreaView>
-      </View>
+      </LinearGradient>
 
       {/* Tab bar — fixed outside list */}
       <ScrollView
@@ -999,8 +1013,8 @@ export default function LearnScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#1A73E8"
-            colors={['#1A73E8']}
+            tintColor="#14B8A6"
+            colors={['#14B8A6']}
           />
         }
       />
@@ -1015,11 +1029,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC', // Ultra clean very light slate
   },
   heroHeaderBg: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    paddingBottom: 16,
+    paddingBottom: 24,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
     zIndex: 10,
+    overflow: 'hidden',
   },
   headerSafe: {
     backgroundColor: 'transparent',
@@ -1264,18 +1278,13 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     height: 40,
     borderRadius: 999,
-    borderWidth: 1,
+    borderWidth: 1.5,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
   tabButtonActive: {
-    borderWidth: 0,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+    borderWidth: 1.5,
   },
   tabLabel: {
     fontSize: 14,
@@ -1292,7 +1301,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   categorySurface: {
-    marginHorizontal: 16,
+    marginHorizontal: 12,
     marginBottom: 24,
     backgroundColor: 'transparent',
   },
@@ -1349,9 +1358,9 @@ const styles = StyleSheet.create({
   categoryCard: {
     width: '48.5%',
     minHeight: 76,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
     backgroundColor: '#FFFFFF',
     paddingVertical: 14,
     paddingHorizontal: 14,
@@ -1359,15 +1368,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
-    elevation: 2,
   },
   categoryCardActive: {
-    borderColor: '#93C5FD',
-    backgroundColor: '#F8FBFF',
+    borderColor: '#14B8A6',
+    backgroundColor: '#F0FDFA',
   },
   categoryContent: {
     flex: 1,
@@ -1398,7 +1402,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   categoryLabelActive: {
-    color: '#1A73E8',
+    color: '#14B8A6',
   },
   categoryTrendBadge: {
     borderRadius: 999,
@@ -1431,7 +1435,7 @@ const styles = StyleSheet.create({
   },
   // Stats
   statsSection: {
-    marginHorizontal: 16,
+    marginHorizontal: 12,
     marginBottom: 24,
   },
   statsSectionHeader: {
@@ -1460,15 +1464,10 @@ const styles = StyleSheet.create({
     width: '48.5%',
     borderRadius: 20,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
     paddingVertical: 16,
     paddingHorizontal: 16,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.04,
-    shadowRadius: 16,
-    elevation: 3,
   },
   statCardTopRow: {
     flexDirection: 'row',
@@ -1582,7 +1581,7 @@ const styles = StyleSheet.create({
   priceText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0F766E',
+    color: '#14B8A6',
   },
   durationRow: {
     paddingHorizontal: 16,
@@ -1626,19 +1625,19 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
     borderRadius: 6,
-    backgroundColor: '#1A73E8',
+    backgroundColor: '#14B8A6',
   },
   actionButton: {
     marginHorizontal: 16,
     marginBottom: 16,
     borderRadius: 12,
-    backgroundColor: '#1A73E8',
+    backgroundColor: '#14B8A6',
     height: 42,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 6,
-    shadowColor: '#1A73E8',
+    shadowColor: '#14B8A6',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.16,
     shadowRadius: 6,
