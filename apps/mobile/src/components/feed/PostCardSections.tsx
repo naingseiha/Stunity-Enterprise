@@ -265,6 +265,111 @@ export const QuizSection = React.memo<QuizSectionProps>(({
 });
 
 // ═══════════════════════════════════════════
+// Event Created Section
+// ═══════════════════════════════════════════
+
+interface EventCreatedSectionProps {
+    eventData?: {
+        id: string;
+        title: string;
+        startDate?: string;
+        location?: string;
+    };
+    typeConfig: { color: string; bgColor: string };
+    onPress?: () => void;
+}
+
+export const EventCreatedSection = React.memo<EventCreatedSectionProps>(({ eventData, typeConfig, onPress }) => (
+    <View style={sectionStyles.eventCreatedContainer}>
+        {/* Title text only — clean, no icon */}
+        <Text style={sectionStyles.eventTitle} numberOfLines={2}>
+            {eventData?.title || 'Upcoming Event'}
+        </Text>
+
+        {/* Inner container: icon + meta info */}
+        <LinearGradient
+            colors={[typeConfig.bgColor, '#FFFFFF']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={sectionStyles.eventGradient}
+        >
+            <View style={sectionStyles.eventMetaRow}>
+                <View style={[sectionStyles.eventIconBg, { backgroundColor: typeConfig.color + '18' }]}>
+                    <Ionicons name="calendar" size={20} color={typeConfig.color} />
+                </View>
+                <Ionicons name="time-outline" size={14} color="#6B7280" />
+                <Text style={sectionStyles.eventMetaText}>
+                    {eventData?.startDate ? new Date(eventData.startDate).toLocaleDateString() : 'Date TBD'}
+                </Text>
+                <View style={sectionStyles.metaSeparator} />
+                <Ionicons name="location-outline" size={14} color="#6B7280" />
+                <Text style={sectionStyles.eventMetaText} numberOfLines={1}>
+                    {eventData?.location || 'Stunity Campus'}
+                </Text>
+            </View>
+            <TouchableOpacity
+                style={[sectionStyles.eventActionButton, { backgroundColor: typeConfig.color }]}
+                onPress={onPress}
+                activeOpacity={0.8}
+            >
+                <Ionicons name="ticket-outline" size={18} color="#FFF" />
+                <Text style={sectionStyles.eventActionButtonText}>Join Event</Text>
+            </TouchableOpacity>
+        </LinearGradient>
+    </View>
+));
+
+// ═══════════════════════════════════════════
+// Club Created Section
+// ═══════════════════════════════════════════
+
+interface ClubCreatedSectionProps {
+    clubData?: {
+        id: string;
+        name: string;
+        category?: string;
+        memberCount?: number;
+    };
+    typeConfig: { color: string; bgColor: string };
+    onPress?: () => void;
+}
+
+export const ClubCreatedSection = React.memo<ClubCreatedSectionProps>(({ clubData, typeConfig, onPress }) => (
+    <View style={sectionStyles.clubCreatedContainer}>
+        {/* Club name + category outside — clean title only */}
+        {!!clubData?.name && (
+            <Text style={sectionStyles.clubName} numberOfLines={1}>{clubData.name}</Text>
+        )}
+        {!!clubData?.category && (
+            <Text style={sectionStyles.clubCategory}>{clubData.category}</Text>
+        )}
+
+        {/* Inner container: icon + stats + button */}
+        <View style={[sectionStyles.clubCard, { borderColor: typeConfig.color + '30' }]}>
+            <View style={sectionStyles.clubStatsRowTiny}>
+                <View style={[sectionStyles.clubIconCircleLarge, { backgroundColor: typeConfig.color + '18' }]}>
+                    <Ionicons name="people" size={20} color={typeConfig.color} />
+                </View>
+                <Ionicons name="person-outline" size={13} color="#6B7280" />
+                <Text style={sectionStyles.clubStatTextTiny}>{clubData?.memberCount || 0} Members</Text>
+                <View style={sectionStyles.metaSeparator} />
+                <Ionicons name="shield-checkmark-outline" size={13} color="#6B7280" />
+                <Text style={sectionStyles.clubStatTextTiny}>Verified Club</Text>
+            </View>
+
+            <TouchableOpacity
+                style={[sectionStyles.clubActionBtn, { backgroundColor: typeConfig.color }]}
+                onPress={onPress}
+                activeOpacity={0.8}
+            >
+                <Text style={sectionStyles.clubActionBtnText}>View Club</Text>
+                <Ionicons name="arrow-forward" size={16} color="#FFF" />
+            </TouchableOpacity>
+        </View>
+    </View>
+));
+
+// ═══════════════════════════════════════════
 // Styles (extracted from PostCard)
 // ═══════════════════════════════════════════
 
@@ -461,5 +566,162 @@ const sectionStyles = StyleSheet.create({
     quizRoundedBtnText: {
         fontSize: 13,
         fontWeight: '600',
+    },
+
+    // Event Created
+    eventCreatedContainer: {
+        marginHorizontal: 16,
+        marginTop: 6,
+        marginBottom: 8,
+    },
+    eventTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        paddingHorizontal: 4,
+        marginBottom: 10,
+    },
+    eventGradient: {
+        borderRadius: 14,
+        padding: 14,
+        borderWidth: 1,
+        borderColor: '#F3F4F6',
+    },
+    eventContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 16,
+    },
+    eventIconBg: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    eventInfo: {
+        flex: 1,
+    },
+    eventTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#111827',
+        flex: 1,
+        paddingHorizontal: 4,
+        marginBottom: 8,
+    },
+    eventMetaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+        gap: 4,
+    },
+    eventMetaText: {
+        fontSize: 13,
+        color: '#6B7280',
+        fontWeight: '500',
+    },
+    metaSeparator: {
+        width: 3,
+        height: 3,
+        borderRadius: 1.5,
+        backgroundColor: '#D1D5DB',
+        marginHorizontal: 4,
+    },
+    eventActionButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+        borderRadius: 999,
+        gap: 8,
+    },
+    eventActionButtonText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#FFF',
+    },
+
+    // Club Created
+    clubCreatedContainer: {
+        marginHorizontal: 16,
+        marginTop: 6,
+        marginBottom: 8,
+    },
+    clubTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        paddingHorizontal: 4,
+        marginBottom: 10,
+    },
+    clubTitleTextWrap: {
+        flex: 1,
+    },
+    clubCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 14,
+        padding: 14,
+        borderWidth: 1,
+        borderStyle: 'dashed',
+    },
+    clubHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 12,
+    },
+    clubIconCircleLarge: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    clubHeaderTextMain: {
+        flex: 1,
+    },
+    clubName: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#111827',
+        paddingHorizontal: 4,
+    },
+    clubCategory: {
+        fontSize: 13,
+        color: '#6B7280',
+        marginTop: 2,
+        marginBottom: 12,
+        paddingHorizontal: 4,
+    },
+    clubStatsRowTiny: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        marginBottom: 12,
+    },
+    clubStatTiny: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    clubStatTextTiny: {
+        fontSize: 13,
+        color: '#6B7280',
+        fontWeight: '500',
+    },
+    clubActionBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+        borderRadius: 999,
+        gap: 8,
+    },
+    clubActionBtnText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#FFF',
     },
 });

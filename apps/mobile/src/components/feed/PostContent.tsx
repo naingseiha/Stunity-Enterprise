@@ -1,11 +1,11 @@
 import React, { memo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { ImageCarousel } from '@/components/common';
 import { PollVoting } from './PollVoting';
-import { ClubAnnouncement, DeadlineBanner, QuizSection } from './PostCardSections';
+import { ClubAnnouncement, DeadlineBanner, QuizSection, EventCreatedSection, ClubCreatedSection } from './PostCardSections';
 import { formatNumber, formatRelativeTime } from '@/utils';
 
 const { width } = Dimensions.get('window');
@@ -23,6 +23,26 @@ interface PostContentProps {
   DIFFICULTY_CONFIG: any; // Pass this config
 }
 
+const cleanText = (text: string): string => {
+  if (!text) return '';
+  return text
+    // Strip markdown bold/italic
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
+    .replace(/__/g, '')
+    // Strip all emoji characters (comprehensive Unicode ranges)
+    .replace(/[\u{1F300}-\u{1F9FF}\u{1FA00}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F1FF}\u{1F200}-\u{1F2FF}\u{E0020}-\u{E007F}]/gu, '')
+    // Strip variation selectors and zero-width joiners
+    .replace(/\uFE0F|\u200D/g, '')
+    // Strip known verbose server-generated prefixes (case-insensitive)
+    .replace(/just created a new study group[:\s-]*/i, '')
+    .replace(/just created a new event[:\s-]*/i, '')
+    .replace(/new competition[:\s-]*/i, '')
+    // Trim leading/trailing whitespace and collapse multiple spaces
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
 const PostContent = ({
   post,
   onPress,
@@ -37,6 +57,7 @@ const PostContent = ({
   const { t } = useTranslation();
 
   const isQuestion = post.postType === 'QUESTION';
+  const isAutomated = ['EVENT_CREATED', 'CLUB_CREATED'].includes(post.postType);
   const showProgress = (post.postType === 'COURSE' || post.postType === 'QUIZ') && learningMeta?.progress !== undefined;
 
   // Quiz Gradient logic - simplified or passed down
@@ -89,12 +110,14 @@ const PostContent = ({
         </View>
       )}
 
-      {/* Content Text */}
-      <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={styles.contentSection}>
-        <Text style={styles.contentText} numberOfLines={4}>
-          {post.content}
-        </Text>
-      </TouchableOpacity>
+      {/* Content Text - Hidden for automated posts to avoid redundancy and messiness */}
+      {!isAutomated && (
+        <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={styles.contentSection}>
+          <Text style={styles.contentText} numberOfLines={4}>
+            {Platform.OS === 'ios' ? cleanText(post.content) : post.content}
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {/* Embedded Repost Card */}
       {!!post.repostOfId && !!post.repostOf && (
@@ -163,6 +186,34 @@ const PostContent = ({
           // Default colors if not passed
           quizThemeColor={'#EC4899'}
           quizGradient={['#EC4899', '#DB2777']}
+        />
+      )}
+
+      {/* Event Created Section */}
+      {post.postType === 'EVENT_CREATED' && (
+        <EventCreatedSection
+          eventData={{
+            id: post.id,
+            title: cleanText(post.title || post.content.split('\n')[0]),
+            startDate: learningMeta?.scheduledAt,
+            location: learningMeta?.location,
+          }}
+          typeConfig={typeConfig}
+          onPress={onPress}
+        />
+      )}
+
+      {/* Club Created Section */}
+      {post.postType === 'CLUB_CREATED' && (
+        <ClubCreatedSection
+          clubData={{
+            id: post.id,
+            name: cleanText(learningMeta?.studyGroupName || post.title || post.content.split('\n')[0]),
+            category: learningMeta?.category,
+            memberCount: learningMeta?.participantCount,
+          }}
+          typeConfig={typeConfig}
+          onPress={onPress}
         />
       )}
 
@@ -236,7 +287,7 @@ const PostContent = ({
       )}
 
       {/* Generic CTA Button (Courses, Projects, Events, Assignments) */}
-      {!post.quizData && post.postType !== 'POLL' && post.postType !== 'QUESTION' && post.postType !== 'CLUB_ANNOUNCEMENT' && !!typeConfig.ctaLabel && (
+      {!post.quizData && post.postType !== 'POLL' && post.postType !== 'QUESTION' && post.postType !== 'CLUB_ANNOUNCEMENT' && post.postType !== 'EVENT_CREATED' && post.postType !== 'CLUB_CREATED' && !!typeConfig.ctaLabel && (
         <View style={styles.genericCtaContainer}>
           <TouchableOpacity activeOpacity={0.8} onPress={onPress}>
             <View style={[styles.genericCtaButton, { backgroundColor: typeConfig.color + '15' }]}>

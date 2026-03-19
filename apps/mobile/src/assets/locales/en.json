@@ -128,7 +128,9 @@
       "research": "Research",
       "studyClub": "Study Club",
       "reflection": "Reflection",
-      "collaboration": "Collaboration"
+      "collaboration": "Collaboration",
+      "eventCreated": "New Event",
+      "clubCreated": "New Club"
     },
     "difficulty": {
       "beginner": "Beginner",

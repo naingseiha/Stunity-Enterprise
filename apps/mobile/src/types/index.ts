@@ -190,7 +190,9 @@ export type PostType =
   | 'RESEARCH'
   | 'REFLECTION'
   | 'COLLABORATION'
-  | 'CLUB_ANNOUNCEMENT';
+  | 'CLUB_ANNOUNCEMENT'
+  | 'EVENT_CREATED'
+  | 'CLUB_CREATED';
 
 // E-Learning specific metadata for posts
 export type DifficultyLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
@@ -231,6 +233,7 @@ export interface PostLearningMeta {
   hasCode?: boolean;
   hasPdf?: boolean;
   hasFormula?: boolean;
+  category?: string;
 }
 
 export interface Post {

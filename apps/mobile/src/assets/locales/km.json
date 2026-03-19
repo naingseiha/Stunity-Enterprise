@@ -130,7 +130,9 @@
       "research": "ការស្រាវជ្រាវ",
       "studyClub": "ក្លឹបសិក្សា",
       "reflection": "ការឆ្លុះបញ្ចាំង",
-      "collaboration": "កិច្ចសហការ"
+      "collaboration": "កិច្ចសហការ",
+      "eventCreated": "ព្រឹត្តិការណ៍ថ្មី",
+      "clubCreated": "ក្លឹបថ្មី"
     },
     "difficulty": {
       "beginner": "ដំបូង",
