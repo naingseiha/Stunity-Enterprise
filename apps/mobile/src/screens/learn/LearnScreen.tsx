@@ -21,6 +21,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -39,7 +40,7 @@ import {
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -221,112 +222,110 @@ const formatK = (value: number) => {
 
 // ─── Flat list item types ─────────────────────────────────────────────────────
 type ListItem =
-  | { type: 'HEADER' }
   | { type: 'COURSE'; data: LearnCourse; showEnroll?: boolean; enrolledData?: LearnEnrolledCourse }
   | { type: 'PATH'; data: LearnPath }
   | { type: 'EMPTY'; title: string; subtitle: string; icon: keyof typeof Ionicons.glyphMap };
 
-// ─── Skeleton cards ───────────────────────────────────────────────────────────
+// ─── Skeleton components ─────────────────────────────────────────────────────
+
+// Header content skeleton — matches renderHeader() output:
+//   Suggested courses (horizontal scroll) → Category grid → Stats row
+// The search bar + tabs are part of the fixed chrome above, not this component.
 const LearnHeaderSkeleton = React.memo(function LearnHeaderSkeleton() {
+  const cardW = FEATURED_CARD_WIDTH;
   return (
     <View>
-      {/* Search bar */}
-      <View style={skeletonStyles.searchBar}>
-        <Skeleton width="100%" height={48} borderRadius={14} />
-      </View>
-
-      {/* Suggested courses strip */}
-      <View style={skeletonStyles.suggestWrap}>
+      {/* ─ Suggested courses ─ */}
+      <View style={skeletonStyles.suggestSection}>
+        {/* Section title */}
         <View style={skeletonStyles.suggestHeader}>
-          <Skeleton width={140} height={17} borderRadius={8} />
-          <Skeleton width={120} height={13} borderRadius={6} style={{ marginTop: 6 }} />
+          <Skeleton width={160} height={18} borderRadius={8} />
         </View>
-        <Skeleton style={skeletonStyles.suggestCard} height={198} borderRadius={20} />
-        <Skeleton style={[skeletonStyles.suggestCard, { marginTop: 12 }]} height={198} borderRadius={20} />
-      </View>
-
-      {/* Tabs row: Explore / My Courses / Created / Paths */}
-      <View style={skeletonStyles.tabsRow}>
-        <Skeleton width={76} height={34} borderRadius={20} />
-        <Skeleton width={96} height={34} borderRadius={20} />
-        <Skeleton width={72} height={34} borderRadius={20} />
-        <Skeleton width={60} height={34} borderRadius={20} />
-      </View>
-
-      {/* Category section header */}
-      <View style={skeletonStyles.sectionHeader}>
-        <View>
-          <Skeleton width={150} height={17} borderRadius={8} />
-          <Skeleton width={110} height={13} borderRadius={6} style={{ marginTop: 6 }} />
+        {/* Horizontal card strip — mirrors the real horizontal ScrollView */}
+        <View style={skeletonStyles.suggestRow}>
+          <Skeleton width={cardW} height={148} borderRadius={24} style={skeletonStyles.suggestCard} />
+          <Skeleton width={cardW} height={148} borderRadius={24} style={skeletonStyles.suggestCard} />
         </View>
-        <Skeleton width={55} height={14} borderRadius={7} />
       </View>
 
-      {/* Category chips grid — 6 items, 2-column */}
-      <View style={skeletonStyles.categoryGrid}>
-        {[0, 1, 2, 3, 4, 5].map((i) => (
-          <Skeleton key={i} style={skeletonStyles.categoryChip} height={52} borderRadius={12} />
-        ))}
+      {/* ─ Category section ─ */}
+      <View style={skeletonStyles.categorySurface}>
+        {/* Header row */}
+        <View style={skeletonStyles.sectionHeaderRow}>
+          <Skeleton width={148} height={17} borderRadius={8} />
+          <Skeleton width={58} height={28} borderRadius={20} />
+        </View>
+        {/* 2-column chip grid  — 6 chips matching TOP_CATEGORY_LIMIT */}
+        <View style={skeletonStyles.categoryGrid}>
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} style={skeletonStyles.categoryChip} height={76} borderRadius={20} />
+          ))}
+        </View>
       </View>
 
-      {/* Stats row — 4 cards */}
-      <View style={skeletonStyles.statsRow}>
-        {[0, 1, 2, 3].map((i) => (
-          <Skeleton key={i} style={skeletonStyles.statCard} height={68} borderRadius={14} />
-        ))}
-      </View>
-
-      {/* Section title above course list */}
-      <View style={skeletonStyles.listSectionHeader}>
-        <Skeleton width={130} height={16} borderRadius={8} />
-        <Skeleton width={50} height={13} borderRadius={6} />
+      {/* ─ Stats row — 4 cards ─ */}
+      <View style={skeletonStyles.statsSection}>
+        <Skeleton width={140} height={16} borderRadius={8} style={{ marginBottom: 12 }} />
+        <View style={skeletonStyles.statsRow}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} style={skeletonStyles.statCard} height={68} borderRadius={14} />
+          ))}
+        </View>
       </View>
     </View>
   );
 });
 
+// Course card skeleton — mirrors actual CourseCard layout:
+//   Thumbnail block (180h) with badge overlays → content area below
 const CourseCardSkeleton = React.memo(function CourseCardSkeleton() {
   return (
     <View style={skeletonStyles.card}>
-      <View style={skeletonStyles.badgeRow}>
-        <View style={skeletonStyles.badge} />
+      {/* Thumbnail area */}
+      <Skeleton width="100%" height={180} borderRadius={0} />
+      {/* Content area */}
+      <View style={skeletonStyles.cardContent}>
+        <Skeleton width="85%" height={16} borderRadius={8} style={{ marginBottom: 8 }} />
+        <Skeleton width="100%" height={12} borderRadius={6} style={{ marginBottom: 5 }} />
+        <Skeleton width="60%" height={12} borderRadius={6} style={{ marginBottom: 14 }} />
+        {/* Stats row */}
+        <View style={skeletonStyles.metaRow}>
+          <Skeleton width={70} height={18} borderRadius={10} />
+          <Skeleton width={55} height={18} borderRadius={10} />
+          <Skeleton width={75} height={18} borderRadius={10} />
+        </View>
+        {/* Footer */}
+        <View style={skeletonStyles.footerRow}>
+          <Skeleton width={90} height={28} borderRadius={14} />
+          <Skeleton width={70} height={28} borderRadius={14} />
+        </View>
       </View>
-      <View style={skeletonStyles.titleLine} />
-      <View style={skeletonStyles.descLine1} />
-      <View style={skeletonStyles.descLine2} />
-      <View style={skeletonStyles.metaRow}>
-        <View style={skeletonStyles.metaPill} />
-        <View style={skeletonStyles.metaPill} />
-        <View style={skeletonStyles.metaPill} />
-      </View>
-      <View style={skeletonStyles.footer} />
     </View>
   );
 });
 
 const skeletonStyles = StyleSheet.create({
-  // Header skeleton
-  searchBar:         { paddingHorizontal: 12, paddingTop: 16, paddingBottom: 8 },
-  suggestWrap:       { marginBottom: 12 },
+  // Suggested courses
+  suggestSection:    { marginBottom: 24 },
   suggestHeader:     { paddingHorizontal: 12, marginBottom: 10 },
-  suggestCard:       { marginHorizontal: 12 },
-  tabsRow:           { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingVertical: 12 },
-  sectionHeader:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, paddingBottom: 12 },
-  categoryGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 12, marginBottom: 16 },
-  categoryChip:      { width: '47%' },
-  statsRow:          { flexDirection: 'row', gap: 10, paddingHorizontal: 12, marginBottom: 20 },
+  suggestRow:        { flexDirection: 'row', gap: FEATURED_CARD_GAP, paddingHorizontal: 12, paddingBottom: 10 },
+  suggestCard:       {},
+  // Category
+  categorySurface:   { marginHorizontal: 12, marginBottom: 24 },
+  sectionHeaderRow:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  categoryGrid:      { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  categoryChip:      { width: '48.5%', marginBottom: 12 },
+  // Stats
+  statsSection:      { paddingHorizontal: 12, marginBottom: 20 },
+  statsRow:          { flexDirection: 'row', gap: 10 },
   statCard:          { flex: 1 },
-  listSectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, paddingBottom: 12 },
-  // Course card skeleton
-  card:      { backgroundColor: '#FFF', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 14, marginHorizontal: 12, padding: 16, overflow: 'hidden' },
-  badgeRow:  { flexDirection: 'row', marginBottom: 8 },
-  badge:     { height: 20, width: 64, borderRadius: 12, backgroundColor: '#F1F5F9' },
-  titleLine: { height: 15, borderRadius: 8, backgroundColor: '#F1F5F9', marginBottom: 8 },
-  descLine1: { height: 12, borderRadius: 6, backgroundColor: '#F1F5F9', marginBottom: 6 },
-  descLine2: { height: 12, borderRadius: 6, backgroundColor: '#F1F5F9', width: '60%', marginBottom: 12 },
-  metaRow:   { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  metaPill:  { height: 20, width: 60, borderRadius: 10, backgroundColor: '#F1F5F9' },
-  footer:    { height: 16, borderRadius: 8, backgroundColor: '#F1F5F9', width: '40%' },
+  // Tab bar row (used in skeleton loading screen)
+  tabsRow:           { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16, alignItems: 'center' },
+  // Course card
+  card:              { backgroundColor: '#F0FDFA', borderRadius: 20, borderWidth: 1.5, borderColor: '#E0F2FE', marginBottom: 16, marginHorizontal: 12, overflow: 'hidden' },
+  cardContent:       { padding: 16 },
+  metaRow:           { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  footerRow:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 });
 
 // ─── Path Card (memoized) ─────────────────────────────────────────────────────
@@ -382,6 +381,7 @@ export default function LearnScreen() {
   const [loading,          setLoading]          = useState(true);
   const [refreshing,       setRefreshing]       = useState(false);
   const [searchQuery,      setSearchQuery]      = useState('');
+  const [debouncedQuery,   setDebouncedQuery]   = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showAllCategories,setShowAllCategories]= useState(false);
   const [courses,          setCourses]          = useState<LearnCourse[]>([]);
@@ -397,7 +397,20 @@ export default function LearnScreen() {
     [enrolledCourses]
   );
 
-  // ── Data loading ─────────────────────────────────────────────────────────
+  // ── Search debounce — only re-filter after user stops typing (300ms) ──────
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleSearchChange = useCallback((text: string) => {
+    setSearchQuery(text);
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      setDebouncedQuery(text.trim().toLowerCase());
+    }, 300);
+  }, []);
+
+  // ── Data loading — useFocusEffect with hasFetched guard ───────────────────
+  // hasFetched prevents re-firing the 5 API calls every time React Navigation
+  // re-renders the screen tree mid-navigate (same pattern as FeedScreen).
+  const hasFetched = useRef(false);
   const loadLearningData = useCallback(async () => {
     try {
       const [courseList, myCourses, myCreated, learningPaths, learningStats] = await Promise.all([
@@ -420,7 +433,15 @@ export default function LearnScreen() {
     }
   }, []);
 
-  useEffect(() => { loadLearningData(); }, [loadLearningData]);
+  // Only load once on mount — useFocusEffect fires on every focus, hasFetched guards it
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFetched.current) {
+        hasFetched.current = true;
+        loadLearningData();
+      }
+    }, [loadLearningData])
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -472,7 +493,7 @@ export default function LearnScreen() {
     }
   }, []);
 
-  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const normalizedQuery = debouncedQuery;
 
   // ── Category data ─────────────────────────────────────────────────────────
   const categoryItems = useMemo<LearnCategoryItem[]>(() => {
@@ -567,8 +588,10 @@ export default function LearnScreen() {
   );
 
   // ── Build flat list data array ────────────────────────────────────────────
+  // Note: HEADER is no longer in listData — it is rendered via ListHeaderComponent
+  // so FlashList doesn't try to recycle it alongside course/path cells.
   const listData = useMemo<ListItem[]>(() => {
-    const items: ListItem[] = [{ type: 'HEADER' }];
+    const items: ListItem[] = [];
 
     if (activeTab === 'explore') {
       if (filteredCourses.length === 0) {
@@ -809,24 +832,28 @@ export default function LearnScreen() {
     canToggleCategoryList,
   ]);
 
-  // ── Render items ──────────────────────────────────────────────────────────
+  // ── Stable handler ref — avoids new arrow functions in renderItem on every render
+  // (same pattern as FeedScreen uses for handlersRef)
+  const handlersRef = useRef({ handleCoursePress, handleEnrollCourse, handleEnrollPath });
+  useEffect(() => {
+    handlersRef.current = { handleCoursePress, handleEnrollCourse, handleEnrollPath };
+  });
+
+  // ── Render items ───────────────────────────────────────────────────────
   const renderItem = useCallback(
     ({ item }: { item: ListItem }) => {
-      if (item.type === 'HEADER') {
-        return renderHeader();
-      }
-
       if (item.type === 'COURSE') {
+        const courseId = item.data.id;
         return (
           <CourseCard
             course={item.data}
             variant="full"
-            isEnrolled={enrolledCourseIds.has(item.data.id)}
-            isBusy={busyCourseId === item.data.id}
+            isEnrolled={enrolledCourseIds.has(courseId)}
+            isBusy={busyCourseId === courseId}
             progress={item.enrolledData?.progress}
             completedLessons={item.enrolledData?.completedLessons}
-            onPress={() => handleCoursePress(item.data.id)}
-            onEnroll={item.showEnroll ? () => handleEnrollCourse(item.data.id) : undefined}
+            onPress={() => handlersRef.current.handleCoursePress(courseId)}
+            onEnroll={item.showEnroll ? () => handlersRef.current.handleEnrollCourse(courseId) : undefined}
           />
         );
       }
@@ -836,7 +863,7 @@ export default function LearnScreen() {
           <PathCard
             path={item.data}
             isBusy={busyPathId === item.data.id}
-            onEnroll={handleEnrollPath}
+            onEnroll={handlersRef.current.handleEnrollPath}
           />
         );
       }
@@ -853,7 +880,7 @@ export default function LearnScreen() {
 
       return null;
     },
-    [renderHeader, enrolledCourseIds, busyCourseId, busyPathId, handleCoursePress, handleEnrollCourse, handleEnrollPath]
+    [enrolledCourseIds, busyCourseId, busyPathId]
   );
 
   // ── getItemType — prevents tall 'HEADER' cell from recycling into short 'COURSE' cells
@@ -866,8 +893,7 @@ export default function LearnScreen() {
     (item: ListItem, index: number) => {
       if (item.type === 'COURSE') return `course-${item.data.id}`;
       if (item.type === 'PATH')   return `path-${item.data.id}`;
-      if (item.type === 'EMPTY')  return `empty-${index}`;
-      return 'header';
+      return `empty-${index}`;
     },
     []
   );
@@ -877,6 +903,8 @@ export default function LearnScreen() {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" />
+
+        {/* ─ Hero gradient header — identical to real screen ─ */}
         <LinearGradient
           colors={['#CCFBF1', '#FFFFFF']}
           start={{ x: 0, y: 0 }}
@@ -897,9 +925,25 @@ export default function LearnScreen() {
                 </TouchableOpacity>
               </View>
             </View>
+
+            {/* Search bar — same position as real screen */}
+            <View style={[styles.searchContainer, { backgroundColor: '#FFFFFF', borderColor: '#E2E8F0', borderWidth: 1 }]}>
+              <Ionicons name="search" size={20} color="#CBD5E1" />
+              <View style={{ flex: 1, height: 20, backgroundColor: '#F1F5F9', borderRadius: 6 }} />
+            </View>
           </SafeAreaView>
         </LinearGradient>
-        <ScrollView showsVerticalScrollIndicator={false}>
+
+        {/* ─ Tab bar skeleton — same position and style as real tabs ─ */}
+        <View style={[styles.tabsScroll, skeletonStyles.tabsRow]}>
+          <Skeleton width={76} height={40} borderRadius={999} />
+          <Skeleton width={106} height={40} borderRadius={999} />
+          <Skeleton width={80}  height={40} borderRadius={999} />
+          <Skeleton width={66}  height={40} borderRadius={999} />
+        </View>
+
+        {/* ─ Body content ─ */}
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
           <LearnHeaderSkeleton />
           {[1, 2, 3].map((i) => <CourseCardSkeleton key={i} />)}
         </ScrollView>
@@ -940,13 +984,13 @@ export default function LearnScreen() {
             <Ionicons name="search" size={20} color="#94A3B8" />
             <TextInput
               value={searchQuery}
-              onChangeText={setSearchQuery}
+              onChangeText={handleSearchChange}
               placeholder="Search courses, paths, topics..."
               placeholderTextColor="#94A3B8"
               style={[styles.searchInput, { color: '#0F172A' }]}
             />
             {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <TouchableOpacity onPress={() => { setSearchQuery(''); setDebouncedQuery(''); }}>
                 <Ionicons name="close-circle" size={18} color="#CBD5E1" />
               </TouchableOpacity>
             )}
@@ -992,19 +1036,19 @@ export default function LearnScreen() {
         })}
       </ScrollView>
 
-      {/* ── FlashList replaces ScrollView — cell recycling + virtualization ── */}
+      {/* ── FlashList ── */}
       {/* @ts-ignore FlashList types omit some valid props */}
       <FlashList
         data={listData}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         getItemType={getItemType}
-        estimatedItemSize={200}
+        ListHeaderComponent={renderHeader}
+        estimatedItemSize={320}
         drawDistance={600}
-        // extraData tells FlashList to re-render cells when these values change,
-        // even if listData itself hasn't changed (e.g. toggling showAllCategories
-        // changes renderHeader output but not the HEADER list item reference)
-        extraData={{ showAllCategories, selectedCategory, stats, busyCourseId, busyPathId }}
+        // extraData: busyCourseId/busyPathId drive enroll spinner; stats drives stat cards;
+        // enrolledCourseIds drives isEnrolled flag without rebuilding listData
+        extraData={{ stats, busyCourseId, busyPathId, enrolledCourseIds }}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         // iOS: removeClippedSubviews causes native layer hide/show jank — Android only

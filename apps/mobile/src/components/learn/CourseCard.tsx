@@ -21,13 +21,11 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   withTiming,
-  interpolate,
 } from 'react-native-reanimated';
 
 import { Avatar } from '@/components/common';
@@ -216,8 +214,8 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           </LinearGradient>
         )}
 
-        {/* Level Badge - Glassmorphism */}
-        <BlurView intensity={24} tint="dark" style={styles.levelBadge}>
+        {/* Level Badge */}
+        <View style={styles.levelBadge}>
           <LinearGradient
             colors={[levelConfig.gradient[0] + 'CC', levelConfig.gradient[1] + 'CC']}
             start={{ x: 0, y: 0 }}
@@ -227,16 +225,16 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             <Ionicons name={levelConfig.icon} size={10} color="#fff" />
             <Text style={styles.levelText}>{levelConfig.label}</Text>
           </LinearGradient>
-        </BlurView>
+        </View>
 
-        {/* Duration Badge - Glassmorphism */}
+        {/* Duration Badge */}
         {(course.duration || 0) > 0 && (
-          <BlurView intensity={30} tint="dark" style={styles.durationBadge}>
+          <View style={styles.durationBadge}>
             <Ionicons name="time-outline" size={12} color="#fff" />
             <Text style={styles.durationText}>
               {Math.floor(course.duration / 60)}h {course.duration % 60}m
             </Text>
-          </BlurView>
+          </View>
         )}
 
         {/* Bookmark */}
@@ -248,13 +246,13 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           }}
           hitSlop={12}
         >
-          <BlurView intensity={40} tint="dark" style={styles.bookmarkCircle}>
+          <View style={styles.bookmarkCircle}>
             <Ionicons
               name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
               size={15}
               color={isBookmarked ? '#F59E0B' : '#fff'}
             />
-          </BlurView>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -449,7 +447,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: 'rgba(0,0,0,0.25)',
   },
   levelBadgeGradient: {
     flexDirection: 'row',
@@ -476,7 +475,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 4,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(0,0,0,0.28)',
     overflow: 'hidden',
   },
   durationText: {
@@ -496,7 +496,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: 'rgba(0,0,0,0.28)',
     overflow: 'hidden',
   },
 
