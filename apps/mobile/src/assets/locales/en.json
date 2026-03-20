@@ -301,6 +301,7 @@
       "recentScores": "Recent Scores",
       "completeQuizzesHint": "Complete quizzes to see trends",
       "learningStreak": "Learning Streak",
+      "streak": "Streak",
       "day": "day",
       "days": "days",
       "bestStreak": "Best: {{count}} days",

@@ -69,7 +69,14 @@ function StatCard({ icon, value, label, index = 0 }: { icon: string; value: stri
                     <Ionicons name={icon as any} size={18} color="#fff" />
                 </View>
                 <Text style={[s.statGridValue, { color: cfg.tint }]}>{value}</Text>
-                <Text style={[s.statGridLabel, { color: cfg.tint, opacity: 0.8 }]}>{label}</Text>
+                <Text 
+                    style={[s.statGridLabel, { color: cfg.tint, opacity: 0.8 }]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
+                >
+                    {label}
+                </Text>
             </View>
         </Animated.View>
     );
@@ -386,10 +393,10 @@ export default function PerformanceTab({
 
                 <View style={s.statGridWrapper}>
                     <View style={s.statGrid}>
-                        <StatCard icon="book-outline" value={quizStats?.totalQuizzes ?? 0} label={t('profile.performance.studyHours')} index={0} />
+                        <StatCard icon="book-outline" value={quizStats?.totalQuizzes ?? 0} label={t('profile.performance.quizzesDone')} index={0} />
                         <StatCard icon="star-outline" value={quizStats?.totalPoints ?? profile?.totalPoints ?? 0} label={t('profile.performance.totalPoints')} index={1} />
                         <StatCard icon="time-outline" value={profile?.totalLearningHours ?? 0} label={t('profile.performance.studyHours')} index={2} />
-                        <StatCard icon="flame-outline" value={streak?.currentStreak ?? profile?.currentStreak ?? 0} label={t('profile.performance.learningStreak')} index={3} />
+                        <StatCard icon="flame-outline" value={streak?.currentStreak ?? profile?.currentStreak ?? 0} label={t('profile.performance.streak')} index={3} />
                         <StatCard icon="trophy-outline" value={achievements?.length || 0} label={t('profile.performance.achievements')} index={4} />
                         <StatCard icon="code-slash-outline" value={(profile as any)?.projects?.length ?? 0} label={t('profile.performance.projects')} index={5} />
                     </View>
@@ -569,16 +576,18 @@ const s = StyleSheet.create({
     },
     statGridCardWrapper: {
         width: CARD_WIDTH,
-        borderRadius: 16,
+        borderRadius: 18, // Match the inner card to fix Android corner glitch
         ...Shadows.sm,
         shadowOpacity: 0.08,
     },
     statGridCard: {
         width: '100%',
-        borderRadius: 16,
-        paddingVertical: 16,
-        paddingHorizontal: 8,
+        height: 120, // Increased height for more breathing room
+        borderRadius: 18,
+        paddingVertical: 18, // Increased padding as requested
+        paddingHorizontal: 12,
         alignItems: 'center',
+        justifyContent: 'center',
     },
     statGridIcon: {
         width: 36,

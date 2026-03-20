@@ -327,7 +327,11 @@ export default function ProfileScreen() {
     return (
       <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: '#fff' }]}>
         <StatusBar style="dark" />
-        <View style={{ flex: 1, backgroundColor: '#F1F5F9' }}>
+        <View style={{ flex: 1 }}>
+          <LinearGradient
+            colors={['#FFFFFF', '#F5F0FF', '#EEF7FF']}
+            style={StyleSheet.absoluteFill}
+          />
 
           {/* Cover shimmer — exact same height as real screen */}
           <View style={{ height: COVER_HEIGHT, backgroundColor: '#E2E8F0' }} />
@@ -339,7 +343,7 @@ export default function ProfileScreen() {
             <View style={styles.avatarSection}>
               <View style={[
                 styles.avatarWrapper,
-                { backgroundColor: '#F1F5F9', shadowOpacity: 0 },
+                { backgroundColor: '#F0F9FF', shadowOpacity: 0 },
               ]}>
                 <Skeleton width={160} height={160} borderRadius={80} />
               </View>
@@ -418,7 +422,16 @@ export default function ProfileScreen() {
       ]}
     >
       <StatusBar style="dark" />
-      <View style={{ flex: 1, backgroundColor: '#F1F5F9' }}>
+      <View style={{ flex: 1 }}>
+        <LinearGradient
+          colors={['#FFFFFF', '#F5F0FF', '#EEF7FF']}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={[styles.bodyWaveWrap, { top: 240, left: -40, opacity: 0.8 }]}>
+          <View style={[styles.bodyGeoSquare, { backgroundColor: '#38BDF8', width: 180, height: 180, opacity: 0.12, borderRadius: 40, transform: [{ rotate: '45deg' }] }]} />
+          <View style={[styles.bodyGeoSquare, { backgroundColor: '#2DD4BF', width: 120, height: 120, top: 100, left: 60, opacity: 0.1, borderRadius: 30, transform: [{ rotate: '45deg' }] }]} />
+          <View style={[styles.bodyGeoSquare, { backgroundColor: '#22D3EE', width: 80, height: 80, top: -20, left: 140, opacity: 0.08, borderRadius: 20, transform: [{ rotate: '45deg' }] }]} />
+        </View>
 
         <FlashList
           data={[{ key: 'tabContent', type: activeTab }]}
@@ -444,14 +457,22 @@ export default function ProfileScreen() {
                     )}
                   </View>
                 ) : (
-                  // Default: clean Facebook-style grey placeholder
-                  <View style={styles.coverPlaceholder}>
+                  // Default: Beautiful gradient + abstract pattern placeholder
+                  <LinearGradient
+                    colors={['#F0F9FF', '#E0F2FE']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.coverPlaceholder}
+                  >
+                    <View style={styles.coverDecorCircle1} />
+                    <View style={styles.coverDecorCircle2} />
+                    <View style={styles.coverDecorCircle3} />
                     {isOwnProfile && (
                       <TouchableOpacity style={styles.coverHint} onPress={handlePickCoverPhoto} activeOpacity={0.7}>
                         {uploadingCover ? <ActivityIndicator color={BRAND_TEAL} /> : <Text style={styles.coverHintText}>{t('profile.addCover')}</Text>}
                       </TouchableOpacity>
                     )}
-                  </View>
+                  </LinearGradient>
                 )}
 
                 {/* Header Buttons */}
@@ -937,6 +958,7 @@ const styles = StyleSheet.create({
   coverSection: {
     height: COVER_HEIGHT,
     position: 'relative',
+    overflow: 'hidden', // Contain decorative elements
   },
   coverGradient: {
     width: '100%',
@@ -997,14 +1019,42 @@ const styles = StyleSheet.create({
   coverPlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#E8EAED',
+    backgroundColor: '#F0F9FF',
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: 60,
+    justifyContent: 'center', // Center the camera hint
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  coverDecorCircle1: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(9, 207, 247, 0.07)',
+    top: -60,
+    right: -40,
+  },
+  coverDecorCircle2: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(9, 207, 247, 0.05)',
+    bottom: -30,
+    left: -20,
+  },
+  coverDecorCircle3: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(9, 207, 247, 0.08)',
+    top: 40,
+    left: 40,
   },
   coverHint: {
     alignItems: 'center',
-    marginBottom: 60,
+    zIndex: 10,
   },
   coverHintText: {
     fontSize: 13,
@@ -1071,6 +1121,15 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: -90,
   },
+  bodyWaveWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
+  bodyGeoSquare: {
+    position: 'absolute',
+  },
   avatarSection: {
     alignItems: 'center',
     marginBottom: 12,
@@ -1084,9 +1143,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
     elevation: 4,
   },
   editAvatarButton: {
