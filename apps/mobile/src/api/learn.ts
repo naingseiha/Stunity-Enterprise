@@ -433,6 +433,18 @@ export const getLearnHub = async (force = false): Promise<LearnHubData> => {
   return data;
 };
 
+/**
+ * Proactively fetches Learn Hub data in the background.
+ * Useful for pre-warming the cache before the user navigates to the screen.
+ */
+export const prefetchLearnHub = async (): Promise<void> => {
+  try {
+    await getLearnHub(true);
+  } catch (error) {
+    // Silently ignore prefetch errors
+  }
+};
+
 /** Call this after an enroll action so the next navigation shows fresh data. */
 export const invalidateLearnHubCache = (): void => {
   _learnHubCache = null;

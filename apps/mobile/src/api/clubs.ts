@@ -127,10 +127,33 @@ export const getClubs = async (params?: {
   return response.data.clubs || response.data;  // Handle both { clubs: [...] } and direct array
 };
 
+
+// ============================================================================
+// Cache Layer (30s TTL)
+// ============================================================================
+
+const CLUBS_CACHE_TTL = 30_000;
+let _clubsCache: Map<string, { data: GetClubsPaginatedResult; ts: number }> = new Map();
+
+const getCacheKey = (params?: GetClubsPaginatedParams): string => {
+  return JSON.stringify(params || {});
+};
+
 /**
  * Get paginated clubs (preferred for large datasets)
+ * Results are cached for 30s to prevent redundant network calls during UI navigation.
  */
-export const getClubsPaginated = async (params?: GetClubsPaginatedParams): Promise<GetClubsPaginatedResult> => {
+export const getClubsPaginated = async (
+  params?: GetClubsPaginatedParams,
+  force = false
+): Promise<GetClubsPaginatedResult> => {
+  const cacheKey = getCacheKey(params);
+  const cached = _clubsCache.get(cacheKey);
+
+  if (!force && cached && Date.now() - cached.ts < CLUBS_CACHE_TTL) {
+    return cached.data;
+  }
+
   const normalizedParams: Record<string, unknown> = { ...(params || {}) };
 
   if (typeof normalizedParams.joined === 'boolean' && normalizedParams.myClubs === undefined) {
@@ -148,10 +171,32 @@ export const getClubsPaginated = async (params?: GetClubsPaginatedParams): Promi
     returned: Array.isArray(clubs) ? clubs.length : 0,
   };
 
-  return {
+  const result: GetClubsPaginatedResult = {
     clubs: Array.isArray(clubs) ? clubs : [],
     pagination,
   };
+
+  _clubsCache.set(cacheKey, { data: result, ts: Date.now() });
+  return result;
+};
+
+/**
+ * Busts the clubs cache (e.g., after join/leave/create).
+ */
+export const invalidateClubsCache = (): void => {
+  _clubsCache.clear();
+};
+
+/**
+ * Background prefetch for common club filters.
+ */
+export const prefetchClubs = async (): Promise<void> => {
+  try {
+    // Prefetch 'all' clubs with default pagination
+    await getClubsPaginated({ page: 1, limit: 20 }, true);
+  } catch (err) {
+    // Silence
+  }
 };
 
 /**

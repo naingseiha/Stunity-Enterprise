@@ -15,6 +15,7 @@ import { LogBox } from 'react-native';
 
 import { RootNavigator } from '@/navigation';
 import { useAuthStore } from '@/stores';
+import { learnApi, clubsApi } from '@/api';
 import i18n from '@/lib/i18n'; // Initialize i18n
 import { SplashScreen } from '@/components/common';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
@@ -68,7 +69,15 @@ export default function App() {
       }
     }
 
-    prepare();
+    prepare().then(() => {
+      // After auth is initialized, check if we're logged in and prefetch
+      const authState = useAuthStore.getState();
+      if (authState.isAuthenticated) {
+        // Prefetch in background to warm up caches
+        learnApi.prefetchLearnHub().catch(() => {});
+        clubsApi.prefetchClubs().catch(() => {});
+      }
+    });
   }, []);
 
   useEffect(() => {

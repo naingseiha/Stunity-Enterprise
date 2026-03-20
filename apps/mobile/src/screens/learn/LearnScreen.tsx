@@ -51,6 +51,8 @@ import { LearnStackScreenProps } from '@/navigation/types';
 import { useNavigationContext } from '@/contexts';
 import { Skeleton } from '@/components/common/Loading';
 import { CourseCard } from '@/components/learn/CourseCard';
+import { PathCard } from '@/components/learn/PathCard';
+import { LearnHeaderSkeleton, CourseCardSkeleton, skeletonStyles } from '@/components/learn/LearnSkeletons';
 
 type NavigationProp = LearnStackScreenProps<'LearnHub'>['navigation'];
 type TabType = 'explore' | 'enrolled' | 'created' | 'paths';
@@ -226,142 +228,6 @@ type ListItem =
   | { type: 'PATH'; data: LearnPath }
   | { type: 'EMPTY'; title: string; subtitle: string; icon: keyof typeof Ionicons.glyphMap };
 
-// ─── Skeleton components ─────────────────────────────────────────────────────
-
-// Header content skeleton — matches renderHeader() output:
-//   Suggested courses (horizontal scroll) → Category grid → Stats row
-// The search bar + tabs are part of the fixed chrome above, not this component.
-const LearnHeaderSkeleton = React.memo(function LearnHeaderSkeleton() {
-  const cardW = FEATURED_CARD_WIDTH;
-  return (
-    <View>
-      {/* ─ Suggested courses ─ */}
-      <View style={skeletonStyles.suggestSection}>
-        {/* Section title */}
-        <View style={skeletonStyles.suggestHeader}>
-          <Skeleton width={160} height={18} borderRadius={8} />
-        </View>
-        {/* Horizontal card strip — mirrors the real horizontal ScrollView */}
-        <View style={skeletonStyles.suggestRow}>
-          <Skeleton width={cardW} height={148} borderRadius={24} style={skeletonStyles.suggestCard} />
-          <Skeleton width={cardW} height={148} borderRadius={24} style={skeletonStyles.suggestCard} />
-        </View>
-      </View>
-
-      {/* ─ Category section ─ */}
-      <View style={skeletonStyles.categorySurface}>
-        {/* Header row */}
-        <View style={skeletonStyles.sectionHeaderRow}>
-          <Skeleton width={148} height={17} borderRadius={8} />
-          <Skeleton width={58} height={28} borderRadius={20} />
-        </View>
-        {/* 2-column chip grid  — 6 chips matching TOP_CATEGORY_LIMIT */}
-        <View style={skeletonStyles.categoryGrid}>
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} style={skeletonStyles.categoryChip} height={76} borderRadius={20} />
-          ))}
-        </View>
-      </View>
-
-      {/* ─ Stats row — 4 cards ─ */}
-      <View style={skeletonStyles.statsSection}>
-        <Skeleton width={140} height={16} borderRadius={8} style={{ marginBottom: 12 }} />
-        <View style={skeletonStyles.statsRow}>
-          {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} style={skeletonStyles.statCard} height={68} borderRadius={14} />
-          ))}
-        </View>
-      </View>
-    </View>
-  );
-});
-
-// Course card skeleton — mirrors actual CourseCard layout:
-//   Thumbnail block (180h) with badge overlays → content area below
-const CourseCardSkeleton = React.memo(function CourseCardSkeleton() {
-  return (
-    <View style={skeletonStyles.card}>
-      {/* Thumbnail area */}
-      <Skeleton width="100%" height={180} borderRadius={0} />
-      {/* Content area */}
-      <View style={skeletonStyles.cardContent}>
-        <Skeleton width="85%" height={16} borderRadius={8} style={{ marginBottom: 8 }} />
-        <Skeleton width="100%" height={12} borderRadius={6} style={{ marginBottom: 5 }} />
-        <Skeleton width="60%" height={12} borderRadius={6} style={{ marginBottom: 14 }} />
-        {/* Stats row */}
-        <View style={skeletonStyles.metaRow}>
-          <Skeleton width={70} height={18} borderRadius={10} />
-          <Skeleton width={55} height={18} borderRadius={10} />
-          <Skeleton width={75} height={18} borderRadius={10} />
-        </View>
-        {/* Footer */}
-        <View style={skeletonStyles.footerRow}>
-          <Skeleton width={90} height={28} borderRadius={14} />
-          <Skeleton width={70} height={28} borderRadius={14} />
-        </View>
-      </View>
-    </View>
-  );
-});
-
-const skeletonStyles = StyleSheet.create({
-  // Suggested courses
-  suggestSection:    { marginBottom: 24 },
-  suggestHeader:     { paddingHorizontal: 12, marginBottom: 10 },
-  suggestRow:        { flexDirection: 'row', gap: FEATURED_CARD_GAP, paddingHorizontal: 12, paddingBottom: 10 },
-  suggestCard:       {},
-  // Category
-  categorySurface:   { marginHorizontal: 12, marginBottom: 24 },
-  sectionHeaderRow:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  categoryGrid:      { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  categoryChip:      { width: '48.5%', marginBottom: 12 },
-  // Stats
-  statsSection:      { paddingHorizontal: 12, marginBottom: 20 },
-  statsRow:          { flexDirection: 'row', gap: 10 },
-  statCard:          { flex: 1 },
-  // Tab bar row (used in skeleton loading screen)
-  tabsRow:           { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16, alignItems: 'center' },
-  // Course card
-  card:              { backgroundColor: '#F0FDFA', borderRadius: 20, borderWidth: 1.5, borderColor: '#E0F2FE', marginBottom: 16, marginHorizontal: 12, overflow: 'hidden' },
-  cardContent:       { padding: 16 },
-  metaRow:           { flexDirection: 'row', gap: 10, marginBottom: 16 },
-  footerRow:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-});
-
-// ─── Path Card (memoized) ─────────────────────────────────────────────────────
-interface PathCardProps {
-  path: LearnPath;
-  isBusy: boolean;
-  onEnroll: (pathId: string) => void;
-}
-
-const PathCard = React.memo(function PathCard({ path, isBusy, onEnroll }: PathCardProps) {
-  return (
-    <View style={styles.pathCard}>
-      <Text style={styles.pathTitle}>{path.title}</Text>
-      <Text style={styles.pathDescription} numberOfLines={2}>{path.description}</Text>
-      <View style={styles.pathMetaRow}>
-        <Text style={styles.pathMetaText}>{path.coursesCount} courses</Text>
-        <Text style={styles.pathMetaDot}>•</Text>
-        <Text style={styles.pathMetaText}>{formatDuration(path.totalDuration)}</Text>
-        <Text style={styles.pathMetaDot}>•</Text>
-        <Text style={styles.pathMetaText}>{formatK(path.enrolledCount)} learners</Text>
-      </View>
-      <TouchableOpacity
-        style={[styles.pathActionButton, (path.isEnrolled || isBusy) && styles.pathActionButtonDisabled]}
-        activeOpacity={0.8}
-        onPress={() => onEnroll(path.id)}
-        disabled={path.isEnrolled || isBusy}
-      >
-        {isBusy ? (
-          <ActivityIndicator size="small" color="#fff" />
-        ) : (
-          <Text style={styles.pathActionText}>{path.isEnrolled ? 'Enrolled' : 'Start Path'}</Text>
-        )}
-      </TouchableOpacity>
-    </View>
-  );
-});
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function LearnScreen() {
@@ -431,15 +297,17 @@ export default function LearnScreen() {
     }
   }, []);
 
-  // Only load once on mount — useFocusEffect fires on every focus, hasFetched guards it
-  useFocusEffect(
-    useCallback(() => {
-      if (!hasFetched.current) {
-        hasFetched.current = true;
-        loadLearningData();
-      }
-    }, [loadLearningData])
-  );
+  // Load once on mount — useEffect starts immediately even before focus transitions finish.
+  // This provides a faster perceived load as data might be ready when animation ends.
+  useEffect(() => {
+    if (!hasFetched.current) {
+      hasFetched.current = true;
+      loadLearningData();
+    }
+  }, [loadLearningData]);
+
+  // Optional: Re-fetch on focus if data is potentially stale (e.g. 5 min old)
+  // Not strictly needed for now as we have the 30s TTL cache on learnApi.
 
   const onRefresh = useCallback(() => {
     if (isRefreshing.current) return;
