@@ -18,9 +18,11 @@ import {
   StatusBar,
   Alert,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import { BackHandler } from 'react-native';
 import { Avatar } from '@/components/common';
 import { useAuthStore } from '@/stores';
 import { useTranslation } from 'react-i18next';
@@ -373,19 +375,29 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
     );
   };
 
-  return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="slide"
-      onRequestClose={onClose}
-      presentationStyle="fullScreen"
-      statusBarTranslucent={true}
-    >
-      <View style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+  // Handle Android back button
+  useEffect(() => {
+    if (visible) {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        onClose();
+        return true;
+      });
+      return () => sub.remove();
+    }
+  }, [visible, onClose]);
 
-        <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
+  if (!visible) return null;
+
+  return (
+    <Animated.View
+      entering={SlideInDown.duration(300)}
+      exiting={SlideOutDown.duration(250)}
+      style={[StyleSheet.absoluteFill, { backgroundColor: '#FFFFFF', zIndex: 99999, elevation: 99999 }]}
+    >
+      <StatusBar barStyle="dark-content" />
+
+      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+        <View style={styles.header}>
           <StunityLogo width={120} height={30} />
           <TouchableOpacity
             onPress={onClose}
@@ -491,14 +503,16 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
           <Text style={styles.versionText}>Stunity v1.0.0</Text>
           <View style={{ height: Math.max(insets.bottom, 20) }} />
         </ScrollView>
-      </View>
-    </Modal>
+      </SafeAreaView>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    width: '100%',
+    height: '100%',
     backgroundColor: '#FFFFFF',
   },
   header: {
