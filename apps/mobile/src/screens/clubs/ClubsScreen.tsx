@@ -11,6 +11,7 @@
  * - renderHeader wrapped in useCallback
  * - removeClippedSubviews on Android only
  * - Skeleton loading on initial load instead of full-page spinner
+ * - Incremental paginated loading with FlashList onEndReached
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -66,6 +67,8 @@ const COLORS = {
   primaryLight:  '#E0F9FD', // Light Cyan
   border:        '#E2E8F0',
 };
+
+const CLUBS_PAGE_SIZE = 20;
 
 // ─── Header Skeleton ─────────────────────────────────────────────────────────
 const ClubsHeaderSkeleton = React.memo(function ClubsHeaderSkeleton() {
@@ -372,49 +375,138 @@ export default function ClubsScreen() {
   const [error, setError]                       = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter]     = useState<ClubFilter>('all');
   const [searchQuery, setSearchQuery]           = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [clubs, setClubs]                       = useState<Club[]>([]);
   const [joinedClubIds, setJoinedClubIds]       = useState<string[]>([]);
   const [busyClubId, setBusyClubId]             = useState<string | null>(null);
+  const [isLoadingMore, setIsLoadingMore]       = useState(false);
+  const [hasMoreClubs, setHasMoreClubs]         = useState(true);
+  const [page, setPage]                         = useState(1);
 
-  // Ref for stable busyClubId inside renderItem without dep churn
-  const busyClubIdRef = useRef(busyClubId);
-  busyClubIdRef.current = busyClubId;
+  const pageRef = useRef(1);
+  const isLoadingMoreRef = useRef(false);
+  const hasMoreClubsRef = useRef(true);
+  const selectedFilterRef = useRef<ClubFilter>(selectedFilter);
+  const debouncedQueryRef = useRef('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    pageRef.current = page;
+  }, [page]);
+
+  useEffect(() => {
+    isLoadingMoreRef.current = isLoadingMore;
+  }, [isLoadingMore]);
+
+  useEffect(() => {
+    hasMoreClubsRef.current = hasMoreClubs;
+  }, [hasMoreClubs]);
+
+  useEffect(() => {
+    selectedFilterRef.current = selectedFilter;
+  }, [selectedFilter]);
+
+  useEffect(() => {
+    debouncedQueryRef.current = debouncedSearchQuery;
+  }, [debouncedSearchQuery]);
 
   const joinedClubSet     = useMemo(() => new Set(joinedClubIds), [joinedClubIds]);
   const normalizedQuery   = searchQuery.trim().toLowerCase();
 
   // ── Data loading ─────────────────────────────────────────────────────────
-  const loadClubs = useCallback(async (options?: { silent?: boolean }) => {
+  const loadClubs = useCallback(async (options?: { silent?: boolean; reset?: boolean; page?: number; filter?: ClubFilter; query?: string }) => {
     const silent = options?.silent ?? false;
+    const reset = options?.reset ?? true;
+    const targetPage = options?.page ?? 1;
+    const targetFilter = options?.filter ?? selectedFilterRef.current;
+    const targetQuery = options?.query ?? debouncedQueryRef.current;
+
     if (!silent) setLoading(true);
+    if (!reset) {
+      isLoadingMoreRef.current = true;
+      setIsLoadingMore(true);
+    }
 
     try {
       setError(null);
-      const [allClubs, myClubs] = await Promise.all([
-        clubsApi.getClubs(),
-        clubsApi.getClubs({ myClubs: true }),
-      ]);
-      setClubs(allClubs);
-      setJoinedClubIds(myClubs.map((club) => club.id));
+      const params: { page: number; limit: number; myClubs?: boolean; discover?: boolean; search?: string } = {
+        page: targetPage,
+        limit: CLUBS_PAGE_SIZE,
+      };
+
+      if (targetFilter === 'joined') params.myClubs = true;
+      if (targetFilter === 'discover') params.discover = true;
+      if (targetQuery.length > 0) params.search = targetQuery;
+
+      const { clubs: pageClubs, pagination } = await clubsApi.getClubsPaginated(params);
+      const joinedIdsFromPage = pageClubs.filter((club) => club.isJoined).map((club) => club.id);
+      setJoinedClubIds((prev) => {
+        const uniqueJoinedIds = new Set(reset ? joinedIdsFromPage : [...prev, ...joinedIdsFromPage]);
+        return Array.from(uniqueJoinedIds);
+      });
+      setClubs((prev) => {
+        if (reset) return pageClubs;
+        const merged = new Map(prev.map((club) => [club.id, club]));
+        pageClubs.forEach((club) => merged.set(club.id, club));
+        return Array.from(merged.values());
+      });
+      setPage(pagination.page);
+      pageRef.current = pagination.page;
+      setHasMoreClubs(Boolean(pagination.hasMore));
+      hasMoreClubsRef.current = Boolean(pagination.hasMore);
     } catch (err: any) {
       setError(err?.message || 'Unable to load clubs');
     } finally {
       setLoading(false);
       setRefreshing(false);
+      isLoadingMoreRef.current = false;
+      setIsLoadingMore(false);
     }
   }, []);
 
-  useEffect(() => { loadClubs(); }, [loadClubs]);
+  useEffect(() => {
+    setPage(1);
+    setHasMoreClubs(true);
+    loadClubs({ reset: true, page: 1, filter: selectedFilter, query: debouncedSearchQuery });
+  }, [loadClubs, selectedFilter, debouncedSearchQuery]);
 
   const onRefresh = useCallback(() => {
+    setPage(1);
+    setHasMoreClubs(true);
     setRefreshing(true);
-    loadClubs({ silent: true });
+    loadClubs({ silent: true, reset: true, page: 1, filter: selectedFilterRef.current, query: debouncedQueryRef.current });
   }, [loadClubs]);
+
+  const loadMoreClubs = useCallback(() => {
+    if (
+      loading ||
+      refreshing ||
+      isLoadingMoreRef.current ||
+      !hasMoreClubsRef.current
+    ) {
+      return;
+    }
+    const nextPage = pageRef.current + 1;
+    loadClubs({
+      silent: true,
+      reset: false,
+      page: nextPage,
+      filter: selectedFilterRef.current,
+      query: debouncedQueryRef.current,
+    });
+  }, [loadClubs, loading, refreshing]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const handleToggleMembership = useCallback(
     async (clubId: string) => {
-      const isJoined = joinedClubSet.has(clubId);
+      const targetClub = clubs.find((club) => club.id === clubId);
+      const isJoined = Boolean(targetClub?.isJoined || joinedClubSet.has(clubId));
       try {
         setBusyClubId(clubId);
         if (isJoined) {
@@ -422,14 +514,20 @@ export default function ClubsScreen() {
         } else {
           await clubsApi.joinClub(clubId);
         }
-        await loadClubs({ silent: true });
+        await loadClubs({
+          silent: true,
+          reset: true,
+          page: 1,
+          filter: selectedFilterRef.current,
+          query: debouncedQueryRef.current,
+        });
       } catch (err: any) {
         Alert.alert('Clubs', err?.message || 'Failed to update membership');
       } finally {
         setBusyClubId(null);
       }
     },
-    [joinedClubSet, loadClubs]
+    [clubs, joinedClubSet, loadClubs]
   );
 
   const handleClubPress = useCallback(
@@ -450,8 +548,8 @@ export default function ClubsScreen() {
   // ── Derived data ─────────────────────────────────────────────────────────
   const filteredClubs = useMemo(() => {
     let data = clubs;
-    if (selectedFilter === 'joined')   data = data.filter((c) => joinedClubSet.has(c.id));
-    if (selectedFilter === 'discover') data = data.filter((c) => !joinedClubSet.has(c.id));
+    if (selectedFilter === 'joined')   data = data.filter((c) => c.isJoined || joinedClubSet.has(c.id));
+    if (selectedFilter === 'discover') data = data.filter((c) => !c.isJoined && !joinedClubSet.has(c.id));
     if (normalizedQuery) {
       data = data.filter((c) => {
         const tags = (c.tags || []).join(' ').toLowerCase();
@@ -519,14 +617,14 @@ export default function ClubsScreen() {
         </View>
       </View>
     );
-  }, [selectedFilter, searchQuery, openSidebar, handleFilterChange, handleCreateClub, loadClubs]);
+  }, [selectedFilter, searchQuery, handleFilterChange, handleCreateClub]);
 
   // ── Render item (memoized card) ───────────────────────────────────────────
   const renderClubCard = useCallback(
     ({ item }: { item: Club }) => (
       <ClubCard
         item={item}
-        isJoined={joinedClubSet.has(item.id)}
+        isJoined={Boolean(item.isJoined || joinedClubSet.has(item.id))}
         isBusy={busyClubId === item.id}
         onPress={handleClubPress}
         onToggleMembership={handleToggleMembership}
@@ -549,6 +647,17 @@ export default function ClubsScreen() {
       </View>
     ),
     [selectedFilter, searchQuery]
+  );
+
+  const renderFooter = useCallback(
+    () =>
+      isLoadingMore ? (
+        <View style={styles.footerLoading}>
+          <ActivityIndicator size="small" color={COLORS.primaryDark} />
+          <Text style={styles.footerLoadingText}>Loading more clubs...</Text>
+        </View>
+      ) : null,
+    [isLoadingMore]
   );
 
   // ── getItemType — bucket by club type for recycling ───────────────────────
@@ -620,8 +729,11 @@ export default function ClubsScreen() {
           getItemType={getItemType}
           ListHeaderComponent={renderHeader}
           ListEmptyComponent={renderEmptyState}
+          ListFooterComponent={renderFooter}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          onEndReached={loadMoreClubs}
+          onEndReachedThreshold={0.4}
           // iOS: removeClippedSubviews causes native layer hide/show jank — Android only
           removeClippedSubviews={Platform.OS === 'android'}
           refreshControl={
@@ -1007,5 +1119,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textMuted,
     marginTop: 4,
+  },
+  footerLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+  },
+  footerLoadingText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textMuted,
   },
 });

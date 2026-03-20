@@ -28,6 +28,7 @@ export interface Club {
     name: string;
   };
   memberCount?: number;
+  isJoined?: boolean;
   isActive: boolean;
   tags?: string[];
   coverImage?: string;
@@ -74,6 +75,30 @@ export interface UpdateClubData {
   isActive?: boolean;
 }
 
+export interface ClubPagination {
+  page: number;
+  limit: number;
+  hasMore: boolean;
+  nextPage: number | null;
+  returned: number;
+}
+
+export interface GetClubsPaginatedParams {
+  joined?: boolean;
+  myClubs?: boolean;
+  discover?: boolean;
+  type?: string;
+  schoolId?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface GetClubsPaginatedResult {
+  clubs: Club[];
+  pagination: ClubPagination;
+}
+
 // ============================================================================
 // API Functions
 // ============================================================================
@@ -84,9 +109,12 @@ export interface UpdateClubData {
 export const getClubs = async (params?: {
   joined?: boolean;
   myClubs?: boolean;
+  discover?: boolean;
   type?: string;
   schoolId?: string;
   search?: string;
+  page?: number;
+  limit?: number;
 }): Promise<Club[]> => {
   const normalizedParams: Record<string, unknown> = { ...(params || {}) };
 
@@ -97,6 +125,33 @@ export const getClubs = async (params?: {
 
   const response = await api.get('/clubs', { params: normalizedParams });
   return response.data.clubs || response.data;  // Handle both { clubs: [...] } and direct array
+};
+
+/**
+ * Get paginated clubs (preferred for large datasets)
+ */
+export const getClubsPaginated = async (params?: GetClubsPaginatedParams): Promise<GetClubsPaginatedResult> => {
+  const normalizedParams: Record<string, unknown> = { ...(params || {}) };
+
+  if (typeof normalizedParams.joined === 'boolean' && normalizedParams.myClubs === undefined) {
+    normalizedParams.myClubs = normalizedParams.joined;
+  }
+  delete normalizedParams.joined;
+
+  const response = await api.get('/clubs', { params: normalizedParams });
+  const clubs = response.data.clubs || response.data || [];
+  const pagination: ClubPagination = response.data.pagination || {
+    page: Number(normalizedParams.page ?? 1),
+    limit: Number((normalizedParams.limit ?? clubs.length) || 0),
+    hasMore: false,
+    nextPage: null,
+    returned: Array.isArray(clubs) ? clubs.length : 0,
+  };
+
+  return {
+    clubs: Array.isArray(clubs) ? clubs : [],
+    pagination,
+  };
 };
 
 /**

@@ -252,11 +252,6 @@ export default function ClubDetailsScreen() {
 
           <View style={styles.detailsSectionSkeleton} />
           <View style={[styles.detailsSectionSkeleton, styles.detailsSectionSkeletonLarge]} />
-
-          <View style={styles.loadingFooter}>
-            <ActivityIndicator size="small" color={COLORS.primary} />
-            <Text style={styles.stateText}>Loading club details...</Text>
-          </View>
         </ScrollView>
       );
     }
@@ -513,10 +508,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     gap: 10,
   },
-  stateText: {
-    fontSize: 14,
-    color: COLORS.textMuted,
-  },
   detailsLoadingContent: {
     paddingHorizontal: 16,
     paddingTop: 14,
@@ -545,12 +536,6 @@ const styles = StyleSheet.create({
   },
   detailsSectionSkeletonLarge: {
     height: 164,
-  },
-  loadingFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
   },
   errorText: {
     fontSize: 14,

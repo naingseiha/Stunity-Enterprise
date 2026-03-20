@@ -138,7 +138,17 @@ export const createClub = async (req: AuthRequest, res: Response) => {
 export const getClubs = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId; // Optional - may be undefined
-    const { type, myClubs, schoolId, search } = req.query;
+    const { type, myClubs, schoolId, search, discover } = req.query;
+    const pageParam = Array.isArray(req.query.page) ? req.query.page[0] : req.query.page;
+    const limitParam = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit;
+    const usePagination = pageParam !== undefined || limitParam !== undefined;
+
+    let page = Number.parseInt(typeof pageParam === 'string' ? pageParam : '1', 10);
+    let limit = Number.parseInt(typeof limitParam === 'string' ? limitParam : '20', 10);
+
+    if (!Number.isFinite(page) || page < 1) page = 1;
+    if (!Number.isFinite(limit) || limit < 1) limit = 20;
+    limit = Math.min(limit, 100);
 
     const where: any = {};
 
@@ -149,6 +159,10 @@ export const getClubs = async (req: AuthRequest, res: Response) => {
       where.members = { some: { userId } };
     }
 
+    if (discover === 'true' && userId) {
+      where.members = { none: { userId } };
+    }
+
     if (search) {
       where.OR = [
         { name: { contains: search as string, mode: 'insensitive' } },
@@ -156,6 +170,8 @@ export const getClubs = async (req: AuthRequest, res: Response) => {
         { subject: { contains: search as string, mode: 'insensitive' } },
       ];
     }
+
+    const skip = (page - 1) * limit;
 
     const clubs = await prisma.studyClub.findMany({
       where,
@@ -177,16 +193,45 @@ export const getClubs = async (req: AuthRequest, res: Response) => {
       orderBy: {
         createdAt: 'desc',
       },
+      ...(usePagination ? { skip, take: limit + 1 } : {}),
     });
 
+    const hasMore = usePagination ? clubs.length > limit : false;
+    const pageItems = usePagination && hasMore ? clubs.slice(0, limit) : clubs;
+
+    let joinedSet = new Set<string>();
+    if (userId && pageItems.length > 0) {
+      const memberships = await prisma.clubMember.findMany({
+        where: {
+          userId,
+          clubId: { in: pageItems.map((club) => club.id) },
+        },
+        select: {
+          clubId: true,
+        },
+      });
+      joinedSet = new Set(memberships.map((membership) => membership.clubId));
+    }
+
     // Transform response to match mobile API expectations
-    const transformedClubs = clubs.map(club => ({
+    const transformedClubs = pageItems.map(club => ({
       ...club,
       type: club.clubType,  // Map clubType to type
       memberCount: club._count.members,  // Map _count.members to memberCount
+      isJoined: joinedSet.has(club.id),
     }));
 
-    res.json({ success: true, clubs: transformedClubs });
+    res.json({
+      success: true,
+      clubs: transformedClubs,
+      pagination: {
+        page: usePagination ? page : 1,
+        limit: usePagination ? limit : transformedClubs.length,
+        hasMore,
+        nextPage: usePagination && hasMore ? page + 1 : null,
+        returned: transformedClubs.length,
+      },
+    });
   } catch (error: any) {
     console.error('Get clubs error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch clubs', error: error.message });
