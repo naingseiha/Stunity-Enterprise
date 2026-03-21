@@ -56,12 +56,24 @@ export const classHubApi = {
     const response = await apiClient.classApi.get<{ success: boolean; data: ClassAnnouncement[] }>(`/classes/${classId}/announcements`);
     return response.data.data;
   },
+  createAnnouncement: async (classId: string, content: string) => {
+    const response = await apiClient.classApi.post<{ success: boolean; data: ClassAnnouncement }>(`/classes/${classId}/announcements`, { content });
+    return response.data.data;
+  },
   getMaterials: async (classId: string) => {
     const response = await apiClient.classApi.get<{ success: boolean; data: ClassMaterial[] }>(`/classes/${classId}/materials`);
     return response.data.data;
   },
+  createMaterial: async (classId: string, data: Partial<ClassMaterial>) => {
+    const response = await apiClient.classApi.post<{ success: boolean; data: ClassMaterial }>(`/classes/${classId}/materials`, data);
+    return response.data.data;
+  },
   getAssignments: async (classId: string) => {
     const response = await apiClient.classApi.get<{ success: boolean; data: ClassAssignment[] }>(`/classes/${classId}/assignments`);
+    return response.data.data;
+  },
+  createAssignment: async (classId: string, data: Partial<ClassAssignment>) => {
+    const response = await apiClient.classApi.post<{ success: boolean; data: ClassAssignment }>(`/classes/${classId}/assignments`, data);
     return response.data.data;
   },
 };

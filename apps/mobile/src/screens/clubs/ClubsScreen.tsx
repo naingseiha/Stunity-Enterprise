@@ -28,6 +28,7 @@ import {
   View,
   Pressable,
   Dimensions,
+  FlatList,
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
@@ -50,29 +51,38 @@ import { ClubsHeaderSkeleton, ClubCardSkeleton } from '@/components/clubs/ClubsS
 
 type ClubFilter = 'all' | 'joined' | 'discover';
 
-const SchoolClassCard = React.memo(
-  ({ item, onPress }: { item: MyClassSummary; onPress: (item: MyClassSummary) => void }) => (
-    <TouchableOpacity style={styles.schoolClassCard} onPress={() => onPress(item)} activeOpacity={0.86}>
-      <View style={styles.schoolClassHeader}>
-        <View style={styles.schoolClassIconWrap}>
-          <Ionicons name="school-outline" size={18} color={COLORS.primaryDark} />
-        </View>
-        <Text style={styles.schoolClassName} numberOfLines={1}>
-          {item.name}
-        </Text>
-        <View style={styles.schoolRolePill}>
-          <Text style={styles.schoolRoleText}>{item.myRole === 'TEACHER' ? 'Teacher' : 'Student'}</Text>
-        </View>
-      </View>
+const CLASS_COLORS = [
+  { bg: '#EEF2FF', text: '#4338CA', iconBg: '#DBEAFE', accent: '#3730A3' }, // Indigo/Blue
+  { bg: '#F5F3FF', text: '#6D28D9', iconBg: '#EDE9FE', accent: '#5B21B6' }, // Purple
+  { bg: '#FFF7ED', text: '#C2410C', iconBg: '#FFEDD5', accent: '#9A3412' }, // Orange
+  { bg: '#F0FDF4', text: '#15803D', iconBg: '#DCFCE7', accent: '#166534' }, // Green
+];
 
-      <Text style={styles.schoolClassMeta}>
-        Grade {item.grade}
-        {item.section ? ` • ${item.section}` : ''}
-        {' • '}
-        {item.studentCount} students
-      </Text>
-    </TouchableOpacity>
-  )
+const SchoolClassCard = React.memo(
+  ({ item, index, onPress }: { item: MyClassSummary; index: number; onPress: (item: MyClassSummary) => void }) => {
+    const colorStyle = CLASS_COLORS[index % CLASS_COLORS.length];
+    
+    return (
+      <TouchableOpacity 
+        style={styles.schoolClassCard} 
+        onPress={() => onPress(item)} 
+        activeOpacity={0.8}
+      >
+        <View style={styles.schoolClassContent}>
+          <Text style={styles.schoolClassName} numberOfLines={1}>
+            {item.name}
+          </Text>
+          <Text style={styles.schoolClassMeta} numberOfLines={1}>
+            G{item.grade}{item.section ? `•${item.section}` : ''} • {item.studentCount}
+          </Text>
+        </View>
+
+        <View style={[styles.schoolClassIconWrap, { backgroundColor: colorStyle.iconBg }]}>
+          <Ionicons name="school" size={18} color={colorStyle.text} />
+        </View>
+      </TouchableOpacity>
+    );
+  }
 );
 
 
@@ -97,6 +107,11 @@ export default function ClubsScreen() {
   const [schoolClasses, setSchoolClasses]       = useState<MyClassSummary[]>([]);
   const [loadingSchoolClasses, setLoadingSchoolClasses] = useState(true);
   const [schoolClassesError, setSchoolClassesError] = useState<string | null>(null);
+  const [academicYears, setAcademicYears]       = useState<any[]>([]);
+  const [selectedYearId, setSelectedYearId]     = useState<string | null>(null);
+  const [adminSearchQuery, setAdminSearchQuery] = useState('');
+  const [adminClasses, setAdminClasses]         = useState<MyClassSummary[]>([]);
+  const [loadingAdminClasses, setLoadingAdminClasses] = useState(false);
 
   const pageRef = useRef(1);
   const isLoadingMoreRef = useRef(false);
@@ -105,6 +120,9 @@ export default function ClubsScreen() {
   const debouncedQueryRef = useRef('');
   const canViewSchoolClasses = Boolean(
     user?.schoolId && (user?.role === 'STUDENT' || user?.role === 'TEACHER')
+  );
+  const isAdminOrStaff = Boolean(
+    user?.role === 'ADMIN' || user?.role === 'STAFF'
   );
 
   useEffect(() => {
@@ -137,6 +155,18 @@ export default function ClubsScreen() {
   const joinedClubSet     = useMemo(() => new Set(joinedClubIds), [joinedClubIds]);
   const normalizedQuery   = searchQuery.trim().toLowerCase();
 
+  const loadAcademicYears = useCallback(async () => {
+    if (!user?.schoolId) return;
+    try {
+      const data = await classesApi.getAcademicYears();
+      setAcademicYears(data);
+      const current = data.find((y) => y.isCurrent);
+      if (current) setSelectedYearId(current.id);
+    } catch (err) {
+      console.error('Failed to load academic years', err);
+    }
+  }, [user?.schoolId]);
+
   const loadSchoolClasses = useCallback(
     async (force = false) => {
       if (!canViewSchoolClasses) {
@@ -149,7 +179,7 @@ export default function ClubsScreen() {
       try {
         setLoadingSchoolClasses(true);
         setSchoolClassesError(null);
-        const data = await classesApi.getMyClasses({ force });
+        const data = await classesApi.getMyClasses({ force, academicYearId: selectedYearId || undefined });
         setSchoolClasses(Array.isArray(data) ? data : []);
       } catch (err: any) {
         setSchoolClassesError(err?.message || 'Unable to load school classes');
@@ -157,8 +187,21 @@ export default function ClubsScreen() {
         setLoadingSchoolClasses(false);
       }
     },
-    [canViewSchoolClasses]
+    [canViewSchoolClasses, selectedYearId]
   );
+
+  const loadAdminClasses = useCallback(async (query = '') => {
+    if (!isAdminOrStaff) return;
+    try {
+      setLoadingAdminClasses(true);
+      const data = await classesApi.getClasses({ search: query });
+      setAdminClasses(data);
+    } catch (err) {
+      console.error('Failed to load admin classes', err);
+    } finally {
+      setLoadingAdminClasses(false);
+    }
+  }, [isAdminOrStaff]);
 
   // ── Data loading ─────────────────────────────────────────────────────────
   const loadClubs = useCallback(async (options?: { silent?: boolean; reset?: boolean; page?: number; filter?: ClubFilter; query?: string }) => {
@@ -220,8 +263,18 @@ export default function ClubsScreen() {
   }, [loadClubs, selectedFilter, debouncedSearchQuery]);
 
   useEffect(() => {
+    loadAcademicYears();
+  }, [loadAcademicYears]);
+
+  useEffect(() => {
     loadSchoolClasses();
   }, [loadSchoolClasses]);
+
+  useEffect(() => {
+    if (isAdminOrStaff) {
+      loadAdminClasses();
+    }
+  }, [loadAdminClasses, isAdminOrStaff]);
 
   const onRefresh = useCallback(() => {
     setPage(1);
@@ -299,6 +352,7 @@ export default function ClubsScreen() {
         myRole: classItem.myRole,
         linkedStudentId: classItem.linkedStudentId,
         linkedTeacherId: classItem.linkedTeacherId,
+        homeroomTeacherId: classItem.homeroomTeacher?.id,
       }),
     [navigation]
   );
@@ -360,36 +414,114 @@ export default function ClubsScreen() {
         {/* Banner Carousel */}
         <BannerCarousel navigation={navigation} />
 
-        {canViewSchoolClasses && (
+        {/* School Classes Section */}
+        {(canViewSchoolClasses || isAdminOrStaff) && (
           <View style={styles.schoolClassesSection}>
             <View style={styles.schoolClassesHeader}>
-              <Text style={styles.schoolClassesTitle}>School Classes</Text>
-              <Text style={styles.schoolClassesSubtitle}>
-                {user?.role === 'TEACHER' ? 'Classes you teach' : 'Classes you study'}
-              </Text>
+              <View style={styles.schoolClassesHeaderInfo}>
+                <Text style={styles.schoolClassesTitle}>
+                  {isAdminOrStaff ? 'School Directory' : 'School Classes'}
+                </Text>
+                <Text style={styles.schoolClassesSubtitle}>
+                  {isAdminOrStaff ? 'Manage and search all classes' : 'Your current class schedule'}
+                </Text>
+              </View>
+
+              {/* Academic Year Selector - Now in its own row for better clarity */}
+              {!isAdminOrStaff && academicYears.length > 1 && (
+                <View style={styles.yearSelectorContainer}>
+                  <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.yearSelector}
+                  >
+                    {academicYears.map((year) => (
+                      <TouchableOpacity
+                        key={year.id}
+                        onPress={() => setSelectedYearId(year.id)}
+                        style={[
+                          styles.yearPill,
+                          selectedYearId === year.id && styles.yearPillActive
+                        ]}
+                      >
+                        {selectedYearId === year.id && (
+                          <Ionicons name="calendar" size={14} color="#FFF" style={{ marginRight: 6 }} />
+                        )}
+                        <Text style={[
+                          styles.yearPillText,
+                          selectedYearId === year.id && styles.yearPillTextActive
+                        ]}>
+                          {year.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
             </View>
 
-            {loadingSchoolClasses ? (
+            {isAdminOrStaff && (
+              <View style={styles.adminSearchWrap}>
+                <View style={styles.adminSearchBar}>
+                  <Ionicons name="search-outline" size={18} color={COLORS.textMuted} />
+                  <TextInput
+                    style={styles.adminSearchInput}
+                    placeholder="Search classes (grade, name)..."
+                    value={adminSearchQuery}
+                    onChangeText={(text) => {
+                      setAdminSearchQuery(text);
+                      loadAdminClasses(text);
+                    }}
+                  />
+                </View>
+              </View>
+            )}
+
+            {loadingSchoolClasses || loadingAdminClasses ? (
               <View style={styles.schoolClassesLoading}>
                 <ActivityIndicator size="small" color={COLORS.primaryDark} />
-                <Text style={styles.schoolClassesLoadingText}>Loading school classes...</Text>
+                <Text style={styles.schoolClassesLoadingText}>Updating classes...</Text>
               </View>
             ) : schoolClassesError ? (
               <View style={styles.schoolClassesLoading}>
                 <Text style={styles.schoolClassesErrorText}>{schoolClassesError}</Text>
-                <TouchableOpacity style={styles.schoolRetryBtn} onPress={() => loadSchoolClasses(true)}>
+                <TouchableOpacity
+                  style={styles.schoolRetryBtn}
+                  onPress={() => isAdminOrStaff ? loadAdminClasses(adminSearchQuery) : loadSchoolClasses(true)}
+                >
                   <Text style={styles.schoolRetryText}>Retry</Text>
                 </TouchableOpacity>
               </View>
-            ) : schoolClasses.length === 0 ? (
+            ) : (isAdminOrStaff ? adminClasses : schoolClasses).length === 0 ? (
               <View style={styles.schoolClassesEmpty}>
-                <Ionicons name="library-outline" size={18} color={COLORS.textMuted} />
-                <Text style={styles.schoolClassesEmptyText}>No classes assigned for current year.</Text>
+                <Ionicons name="information-circle-outline" size={20} color={COLORS.textMuted} />
+                <Text style={styles.schoolClassesEmptyText}>
+                  {isAdminOrStaff 
+                    ? 'No classes found in directory'
+                    : 'No classes found for this academic year'}
+                </Text>
               </View>
             ) : (
-              schoolClasses.map((classItem) => (
-                <SchoolClassCard key={classItem.id} item={classItem} onPress={handleClassPress} />
-              ))
+              <View style={styles.schoolClassesGrid}>
+                {(isAdminOrStaff ? adminClasses : schoolClasses).slice(0, 6).map((item, idx) => (
+                  <View key={item.id} style={styles.gridItemWrapper}>
+                    <SchoolClassCard item={item} index={idx} onPress={handleClassPress} />
+                  </View>
+                ))}
+                
+                {(isAdminOrStaff ? adminClasses : schoolClasses).length > 6 && (
+                  <TouchableOpacity 
+                    style={styles.seeAllGridBtn}
+                    onPress={() => {
+                        Alert.alert('Class Directory', 'Navigate to full class directory...');
+                    }}
+                  >
+                    <Text style={styles.seeAllGridText}>
+                      See all ({(isAdminOrStaff ? adminClasses : schoolClasses).length})
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             )}
           </View>
         )}
@@ -421,17 +553,23 @@ export default function ClubsScreen() {
     );
   }, [
     canViewSchoolClasses,
+    isAdminOrStaff,
+    academicYears,
+    selectedYearId,
+    adminClasses,
+    adminSearchQuery,
     handleClassPress,
     handleCreateClub,
     handleFilterChange,
+    loadAdminClasses,
     loadSchoolClasses,
+    loadingAdminClasses,
     loadingSchoolClasses,
     navigation,
     schoolClasses,
     schoolClassesError,
     searchQuery,
     selectedFilter,
-    user?.role,
   ]);
 
   // ── Render item (memoized card) ───────────────────────────────────────────
@@ -788,120 +926,197 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: COLORS.textPrimary,
   },
+
   schoolClassesSection: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    gap: 10,
+    paddingBottom: 24,
   },
   schoolClassesHeader: {
-    marginBottom: 2,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  schoolClassesHeaderInfo: {
+    marginBottom: 12,
   },
   schoolClassesTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: -0.5,
   },
   schoolClassesSubtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
     marginTop: 2,
+  },
+  yearSelectorContainer: {
+    marginBottom: 8,
+  },
+  yearSelector: {
+    paddingLeft: 16,
+    paddingRight: 16,
+    paddingVertical: 4,
+    gap: 8,
+  },
+  yearPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 99,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+  },
+  yearPillActive: {
+    backgroundColor: COLORS.primaryDark,
+    borderColor: COLORS.primaryDark,
+  },
+  yearPillText: {
     fontSize: 13,
-    color: COLORS.textMuted,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  yearPillTextActive: {
+    color: '#FFFFFF',
+  },
+  adminSearchWrap: {
+    paddingHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  adminSearchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 10,
+  },
+  adminSearchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: COLORS.textPrimary,
     fontWeight: '600',
   },
   schoolClassesLoading: {
-    borderWidth: 1,
+    marginHorizontal: 16,
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    borderRadius: 14,
+    borderRadius: 20,
     backgroundColor: '#FFFFFF',
-    paddingVertical: 14,
-    paddingHorizontal: 12,
+    paddingVertical: 20,
     alignItems: 'center',
-    gap: 6,
+    gap: 10,
   },
   schoolClassesLoadingText: {
-    fontSize: 13,
+    fontSize: 14,
     color: COLORS.textMuted,
-    fontWeight: '600',
-  },
-  schoolClassesErrorText: {
-    fontSize: 13,
-    color: '#DC2626',
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  schoolRetryBtn: {
-    marginTop: 6,
-    backgroundColor: COLORS.primaryLight,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  schoolRetryText: {
-    fontSize: 12,
-    color: COLORS.primaryDark,
     fontWeight: '700',
   },
+  schoolClassesErrorText: {
+    fontSize: 14,
+    color: '#DC2626',
+    fontWeight: '700',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  schoolRetryBtn: {
+    marginTop: 8,
+    backgroundColor: COLORS.primaryLight,
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  schoolRetryText: {
+    fontSize: 13,
+    color: COLORS.primaryDark,
+    fontWeight: '800',
+  },
   schoolClassesEmpty: {
-    borderWidth: 1,
+    marginHorizontal: 16,
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    borderRadius: 14,
+    borderRadius: 20,
     backgroundColor: '#FFFFFF',
-    paddingVertical: 14,
-    paddingHorizontal: 12,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
   },
   schoolClassesEmptyText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 14,
     color: COLORS.textSecondary,
-    fontWeight: '600',
+    fontWeight: '700',
+  },
+  schoolClassesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  gridItemWrapper: {
+    width: '48.5%',
+    marginBottom: 12,
   },
   schoolClassCard: {
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    gap: 8,
-  },
-  schoolClassHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    minHeight: 76,
   },
-  schoolClassIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#E0F9FD',
+  schoolClassContent: {
+    flex: 1,
+    marginRight: 8,
   },
   schoolClassName: {
-    flex: 1,
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '800',
-    color: COLORS.textPrimary,
+    color: '#1E293B',
   },
-  schoolRolePill: {
-    paddingHorizontal: 10,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#EFF6FF',
+  schoolClassMeta: {
+    marginTop: 4,
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '700',
+  },
+  schoolClassIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  schoolRoleText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#1D4ED8',
+  seeAllGridBtn: {
+    width: '48.5%',
+    height: 76,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F8FAFC',
+    marginBottom: 12,
   },
-  schoolClassMeta: {
-    fontSize: 13,
+  seeAllGridText: {
+    fontSize: 12,
+    fontWeight: '700',
     color: COLORS.textSecondary,
-    fontWeight: '600',
+    textAlign: 'center',
   },
 
   // Cards

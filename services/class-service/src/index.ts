@@ -455,6 +455,42 @@ app.get('/classes', async (req: AuthRequest, res: Response) => {
 });
 
 // ===========================
+// GET /classes/academic-years
+// Get all academic years for this school
+// ===========================
+app.get('/classes/academic-years', async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.user!.schoolId;
+    console.log(`📅 [School ${schoolId}] Fetching academic years...`);
+
+    const years = await prisma.academicYear.findMany({
+      where: { schoolId },
+      orderBy: { startDate: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        isCurrent: true,
+        status: true,
+        startDate: true,
+        endDate: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      data: years,
+    });
+  } catch (error: any) {
+    console.error('❌ Error getting academic years:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error getting academic years',
+      error: error.message,
+    });
+  }
+});
+
+// ===========================
 // GET /classes/grade/:grade
 // Get classes by grade
 // ===========================
@@ -510,22 +546,38 @@ app.get('/classes/grade/:grade', async (req: AuthRequest, res: Response) => {
 app.get('/classes/my', async (req: AuthRequest, res: Response) => {
   try {
     const { userId, role, schoolId } = req.user!;
-    console.log(`📚 [School ${schoolId}] Fetching my classes for role ${role}...`);
+    const { academicYearId } = req.query;
+    let selectedYear;
 
-    const currentAcademicYear = await prisma.academicYear.findFirst({
-      where: {
-        schoolId,
-        isCurrent: true,
-      },
-      select: {
-        id: true,
-        name: true,
-        isCurrent: true,
-        status: true,
-      },
-    });
+    if (academicYearId) {
+      selectedYear = await prisma.academicYear.findFirst({
+        where: {
+          id: academicYearId as string,
+          schoolId,
+        },
+        select: {
+          id: true,
+          name: true,
+          isCurrent: true,
+          status: true,
+        },
+      });
+    } else {
+      selectedYear = await prisma.academicYear.findFirst({
+        where: {
+          schoolId,
+          isCurrent: true,
+        },
+        select: {
+          id: true,
+          name: true,
+          isCurrent: true,
+          status: true,
+        },
+      });
+    }
 
-    if (!currentAcademicYear) {
+    if (!selectedYear) {
       return res.json({
         success: true,
         data: [],
@@ -575,7 +627,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
           status: 'ACTIVE',
           class: {
             schoolId,
-            academicYearId: currentAcademicYear.id,
+            academicYearId: selectedYear.id,
           },
         },
         include: {
@@ -642,7 +694,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
         meta: {
           role,
           linked: true,
-          currentAcademicYear,
+          currentAcademicYear: selectedYear,
         },
       });
     }
@@ -663,7 +715,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
       const teacherClasses = await prisma.class.findMany({
         where: {
           schoolId,
-          academicYearId: currentAcademicYear.id,
+          academicYearId: selectedYear.id,
           OR: [
             { homeroomTeacherId: userRecord.teacherId },
             { teacherClasses: { some: { teacherId: userRecord.teacherId } } },
@@ -730,7 +782,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
         meta: {
           role,
           linked: true,
-          currentAcademicYear,
+          currentAcademicYear: selectedYear,
         },
       });
     }

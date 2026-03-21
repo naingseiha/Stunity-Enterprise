@@ -4,7 +4,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { classesApi } from '@/api';
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useMessagingStore } from '@/stores';
 
 const COLORS = {
   background: '#F8FBFF',
@@ -20,6 +20,8 @@ export default function ClassMembersScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuthStore();
   const classId = route.params?.classId;
+  const homeroomTeacherId = route.params?.homeroomTeacherId;
+  const startConversation = useMessagingStore((state) => state.startConversation);
 
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,9 +48,29 @@ export default function ClassMembersScreen() {
     fetchMembers();
   };
 
+  const handleMessage = async (participantId: string, displayName: string) => {
+    try {
+      setLoading(true);
+      const conversation = await startConversation([participantId]);
+      if (conversation) {
+        navigation.navigate('MessagesStack', {
+          screen: 'Chat',
+          params: {
+            conversationId: conversation.id,
+            displayName: displayName,
+          }
+        });
+      }
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleMessageTeacher = () => {
-    // To be deeply integrated with messaging-service Conversation endpoint later
-    navigation.navigate('MessageTeacher', { classId });
+    if (!homeroomTeacherId) return;
+    handleMessage(homeroomTeacherId, 'Homeroom Teacher');
   };
 
   const renderItem = ({ item }: { item: any }) => (
@@ -61,7 +83,10 @@ export default function ClassMembersScreen() {
         <Text style={styles.role}>Student</Text>
       </View>
       {user?.role === 'TEACHER' && (
-        <TouchableOpacity style={styles.actionBtn}>
+        <TouchableOpacity 
+          style={styles.actionBtn}
+          onPress={() => handleMessage(item.id, `${item.firstName} ${item.lastName}`)}
+        >
           <Ionicons name="chatbubble" size={18} color={COLORS.primaryDark} />
         </TouchableOpacity>
       )}

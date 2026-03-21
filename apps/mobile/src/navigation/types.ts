@@ -144,12 +144,21 @@ export type ClubsStackParamList = {
     myRole?: 'STUDENT' | 'TEACHER';
     linkedStudentId?: string;
     linkedTeacherId?: string;
+    homeroomTeacherId?: string;
   };
-  ClassScoreImport: {
+  ClassAnnouncements: { classId: string };
+  ClassAssignments: { classId: string };
+  ClassMaterials: { classId: string };
+  ClassMembers: { classId: string };
+  ClassQuizzes: { classId: string };
+  ClassGrades: { 
     classId: string;
     className?: string;
-    teacherId: string;
+    myRole?: 'STUDENT' | 'TEACHER';
+    linkedStudentId?: string;
+    linkedTeacherId?: string;
   };
+  CreateClub: undefined;
   AssignmentsList: { clubId: string };
   AssignmentDetail: { assignmentId: string; clubId: string };
   CreateAssignment: { clubId: string };

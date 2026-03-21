@@ -223,3 +223,13 @@ This must preserve existing feed algorithm behavior and real-time reliability.
 - Built dedicated, deep-navigable stack screens for Class Announcements, Assignments, Materials, and Members.
 - Upgraded the `class-service` `GET /classes/my` endpoint to successfully resolve teacher classes strictly via `homeroomTeacherId`, `TeacherClass` pivots, and deep `TimetableEntry` relations.
 - Verified tight `schoolId` and active `academicYearId` scoping across all new endpoints to guarantee multi-tenant data isolation.
+
+### 5) Score Import & Management Tools (Shipped)
+- Implemented a complete `ClassGradesScreen.tsx` for teachers to import and save student scores in batch.
+- **Score Import UI & Validation**:
+  - Introduced a polished UI with student avatars, real-time rank badging, and dynamic visual states for active/saved input fields.
+  - Implemented strict frontend validation limiting inputs to positive numbers and automatically capping at `subject.maxScore`.
+  - Upgraded month picker to support strict academic calendar months synced with `grade-service`.
+- **Teacher Tools**:
+  - Added creation modals and "Floating Action Buttons" (FAB) restricted to the `TEACHER` role across `ClassAnnouncementsScreen`, `ClassMaterialsScreen`, and `ClassAssignmentsScreen`.
+  - Integrated `POST` endpoints inside `classHubStore` and `classHubApi` to orchestrate new content creation seamlessly.

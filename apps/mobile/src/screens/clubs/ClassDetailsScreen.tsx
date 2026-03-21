@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 import StunityLogo from '../../../assets/Stunity.svg';
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useMessagingStore } from '@/stores';
 import { classesApi, gradeApi } from '@/api';
 
 const COLORS = {
@@ -39,6 +39,7 @@ type RouteParams = {
   myRole?: 'STUDENT' | 'TEACHER';
   linkedStudentId?: string;
   linkedTeacherId?: string;
+  homeroomTeacherId?: string;
 };
 
 type TeacherSubject = {
@@ -97,6 +98,7 @@ export default function ClassDetailsScreen() {
 
   const classId = params.classId;
   const myRole = params.myRole || (user?.role === 'TEACHER' ? 'TEACHER' : 'STUDENT');
+  const startConversation = useMessagingStore((state) => state.startConversation);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -273,6 +275,32 @@ export default function ClassDetailsScreen() {
     });
   }, [navigation]);
 
+  const handleMessageTeacher = useCallback(async () => {
+    const homeroomTeacherId = params.homeroomTeacherId;
+    if (!homeroomTeacherId) {
+      Alert.alert('Messaging', 'No homeroom teacher assigned to this class.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const conversation = await startConversation([homeroomTeacherId]);
+      if (conversation) {
+        navigation.navigate('MessagesStack', {
+          screen: 'Chat',
+          params: {
+            conversationId: conversation.id,
+            displayName: conversation.displayName,
+          }
+        });
+      }
+    } catch (err: any) {
+      Alert.alert('Messaging', err?.message || 'Failed to start conversation');
+    } finally {
+      setLoading(false);
+    }
+  }, [navigation, startConversation, params.homeroomTeacherId]);
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -360,7 +388,7 @@ export default function ClassDetailsScreen() {
 
             <TouchableOpacity 
               style={styles.bentoItem} 
-              onPress={() => navigation.navigate('ClassMaterials')}
+              onPress={() => navigation.navigate('ClassMaterials', { classId })}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#F0FDF4' }]}>
                 <Ionicons name="folder-open" size={24} color="#22C55E" />
@@ -380,7 +408,13 @@ export default function ClassDetailsScreen() {
 
             <TouchableOpacity 
               style={styles.bentoItem} 
-              onPress={navigateToGrades}
+              onPress={() => navigation.navigate('ClassGrades', { 
+                classId, 
+                className: title,
+                myRole,
+                linkedStudentId: params.linkedStudentId,
+                linkedTeacherId: params.linkedTeacherId
+              })}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#F3E8FF' }]}>
                 <Ionicons name="bar-chart" size={24} color="#A855F7" />
@@ -400,7 +434,10 @@ export default function ClassDetailsScreen() {
 
             <TouchableOpacity 
               style={styles.bentoItem} 
-              onPress={() => navigation.navigate('ClassMembers')}
+              onPress={() => navigation.navigate('ClassMembers', { 
+                classId, 
+                homeroomTeacherId: params.homeroomTeacherId 
+              })}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#FDE4CF' }]}>
                 <Ionicons name="people" size={24} color="#F97316" />
@@ -410,7 +447,7 @@ export default function ClassDetailsScreen() {
 
             <TouchableOpacity 
               style={styles.bentoItem} 
-              onPress={() => navigation.navigate('MessageTeacher')}
+              onPress={handleMessageTeacher}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#F1F5F9' }]}>
                 <Ionicons name="chatbubble-ellipses" size={24} color="#64748B" />

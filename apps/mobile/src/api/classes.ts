@@ -124,16 +124,36 @@ interface MyClassesResponse {
 const CLASSES_CACHE_TTL = 30_000;
 let _myClassesCache: { data: MyClassSummary[]; ts: number } | null = null;
 
-export const getMyClasses = async (options?: { force?: boolean }): Promise<MyClassSummary[]> => {
+export const getMyClasses = async (options?: { force?: boolean; academicYearId?: string }): Promise<MyClassSummary[]> => {
   const force = options?.force ?? false;
-  if (!force && _myClassesCache && Date.now() - _myClassesCache.ts < CLASSES_CACHE_TTL) {
-    return _myClassesCache.data;
+  const academicYearId = options?.academicYearId;
+  
+  // Cache key includes academicYearId to avoid conflicts
+  const cacheKey = academicYearId || 'current';
+  
+  if (!force && _myClassesCache && (Date.now() - _myClassesCache.ts < CLASSES_CACHE_TTL)) {
+    // Basic cache logic — for production, consider a Map based on cacheKey
+    if (!_myClassesCache.academicYearId || _myClassesCache.academicYearId === academicYearId) {
+       return _myClassesCache.data;
+    }
   }
 
-  const response = await classApi.get<MyClassesResponse>('/classes/my');
+  const response = await classApi.get<MyClassesResponse>('/classes/my', {
+    params: { academicYearId }
+  });
   const data = Array.isArray(response.data?.data) ? response.data.data : [];
-  _myClassesCache = { data, ts: Date.now() };
+  _myClassesCache = { data, ts: Date.now(), academicYearId } as any;
   return data;
+};
+
+export const getAcademicYears = async (): Promise<any[]> => {
+  const response = await classApi.get<{ success: boolean; data: any[] }>('/classes/academic-years');
+  return response.data?.data || [];
+};
+
+export const getClasses = async (params?: Record<string, any>): Promise<MyClassSummary[]> => {
+  const response = await classApi.get<{ success: boolean; data: MyClassSummary[] }>('/classes', { params });
+  return response.data?.data || [];
 };
 
 export const invalidateMyClassesCache = (): void => {
