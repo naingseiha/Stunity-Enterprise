@@ -504,6 +504,259 @@ app.get('/classes/grade/:grade', async (req: AuthRequest, res: Response) => {
 });
 
 // ===========================
+// GET /classes/my
+// Get classes for current authenticated user (student/teacher)
+// ===========================
+app.get('/classes/my', async (req: AuthRequest, res: Response) => {
+  try {
+    const { userId, role, schoolId } = req.user!;
+    console.log(`📚 [School ${schoolId}] Fetching my classes for role ${role}...`);
+
+    const currentAcademicYear = await prisma.academicYear.findFirst({
+      where: {
+        schoolId,
+        isCurrent: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        isCurrent: true,
+        status: true,
+      },
+    });
+
+    if (!currentAcademicYear) {
+      return res.json({
+        success: true,
+        data: [],
+        meta: {
+          role,
+          linked: false,
+          reason: 'No current academic year found',
+        },
+      });
+    }
+
+    const userRecord = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        schoolId,
+      },
+      select: {
+        id: true,
+        studentId: true,
+        teacherId: true,
+      },
+    });
+
+    if (!userRecord) {
+      return res.status(404).json({
+        success: false,
+        message: 'Authenticated user not found in school context',
+      });
+    }
+
+    if (role === 'STUDENT') {
+      if (!userRecord.studentId) {
+        return res.json({
+          success: true,
+          data: [],
+          meta: {
+            role,
+            linked: false,
+            reason: 'Student profile is not linked to this account',
+          },
+        });
+      }
+
+      const studentClasses = await prisma.studentClass.findMany({
+        where: {
+          studentId: userRecord.studentId,
+          status: 'ACTIVE',
+          class: {
+            schoolId,
+            academicYearId: currentAcademicYear.id,
+          },
+        },
+        include: {
+          class: {
+            select: {
+              id: true,
+              classId: true,
+              name: true,
+              grade: true,
+              section: true,
+              track: true,
+              capacity: true,
+              homeroomTeacherId: true,
+              academicYear: {
+                select: {
+                  id: true,
+                  name: true,
+                  isCurrent: true,
+                  status: true,
+                },
+              },
+              homeroomTeacher: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  customFields: true,
+                },
+              },
+              _count: {
+                select: {
+                  studentClasses: {
+                    where: {
+                      status: 'ACTIVE',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: [{ class: { grade: 'asc' } }, { class: { section: 'asc' } }],
+      });
+
+      const classes = studentClasses.map((sc) => ({
+        id: sc.class.id,
+        classId: sc.class.classId,
+        name: sc.class.name,
+        grade: sc.class.grade,
+        section: sc.class.section,
+        track: sc.class.track,
+        capacity: sc.class.capacity,
+        academicYear: sc.class.academicYear,
+        homeroomTeacher: sc.class.homeroomTeacher,
+        studentCount: sc.class._count.studentClasses,
+        myRole: 'STUDENT',
+        isHomeroom: false,
+        linkedStudentId: userRecord.studentId,
+      }));
+
+      return res.json({
+        success: true,
+        data: classes,
+        meta: {
+          role,
+          linked: true,
+          currentAcademicYear,
+        },
+      });
+    }
+
+    if (role === 'TEACHER') {
+      if (!userRecord.teacherId) {
+        return res.json({
+          success: true,
+          data: [],
+          meta: {
+            role,
+            linked: false,
+            reason: 'Teacher profile is not linked to this account',
+          },
+        });
+      }
+
+      const teacherClasses = await prisma.teacherClass.findMany({
+        where: {
+          teacherId: userRecord.teacherId,
+          class: {
+            schoolId,
+            academicYearId: currentAcademicYear.id,
+          },
+        },
+        include: {
+          class: {
+            select: {
+              id: true,
+              classId: true,
+              name: true,
+              grade: true,
+              section: true,
+              track: true,
+              capacity: true,
+              homeroomTeacherId: true,
+              academicYear: {
+                select: {
+                  id: true,
+                  name: true,
+                  isCurrent: true,
+                  status: true,
+                },
+              },
+              homeroomTeacher: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  customFields: true,
+                },
+              },
+              _count: {
+                select: {
+                  studentClasses: {
+                    where: {
+                      status: 'ACTIVE',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: [{ class: { grade: 'asc' } }, { class: { section: 'asc' } }],
+      });
+
+      const classes = teacherClasses.map((tc) => ({
+        id: tc.class.id,
+        classId: tc.class.classId,
+        name: tc.class.name,
+        grade: tc.class.grade,
+        section: tc.class.section,
+        track: tc.class.track,
+        capacity: tc.class.capacity,
+        academicYear: tc.class.academicYear,
+        homeroomTeacher: tc.class.homeroomTeacher,
+        studentCount: tc.class._count.studentClasses,
+        myRole: 'TEACHER',
+        isHomeroom: tc.class.homeroomTeacherId === userRecord.teacherId,
+        linkedTeacherId: userRecord.teacherId,
+      }));
+
+      return res.json({
+        success: true,
+        data: classes,
+        meta: {
+          role,
+          linked: true,
+          currentAcademicYear,
+        },
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: [],
+      meta: {
+        role,
+        linked: false,
+        reason: 'Role is not eligible for school class view',
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ Error getting my classes:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error getting my classes',
+      error: error.message,
+    });
+  }
+});
+
+// ===========================
 // GET /classes/unassigned-students/:academicYearId
 // Get students not assigned to any class for a specific academic year.
 // Multi-tenant: academicYearId is validated to belong to req.user.schoolId.
@@ -1656,6 +1909,7 @@ app.listen(PORT, () => {
 ║   Endpoints:                                               ║
 ║   • GET    /classes/lightweight                           ║
 ║   • GET    /classes                                       ║
+║   • GET    /classes/my                                    ║
 ║   • GET    /classes/grade/:grade                          ║
 ║   • GET    /classes/:id                                   ║
 ║   • GET    /classes/:id/students (NEW)                    ║

@@ -38,22 +38,49 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 
-import { clubsApi } from '@/api';
+import { clubsApi, classesApi } from '@/api';
 import type { Club } from '@/api/clubs';
+import type { MyClassSummary } from '@/api/classes';
 import { useNavigationContext } from '@/contexts';
+import { useAuthStore } from '@/stores';
 import StunityLogo from '../../../assets/Stunity.svg';
-import { Skeleton } from '@/components/common/Loading';
 import { ClubCard } from '@/components/clubs/ClubCard';
 import { BannerCarousel, ShortcutItem, COLORS, CLUBS_PAGE_SIZE } from '@/components/clubs/ClubsComponents';
 import { ClubsHeaderSkeleton, ClubCardSkeleton } from '@/components/clubs/ClubsSkeletons';
 
 type ClubFilter = 'all' | 'joined' | 'discover';
 
+const SchoolClassCard = React.memo(
+  ({ item, onPress }: { item: MyClassSummary; onPress: (item: MyClassSummary) => void }) => (
+    <TouchableOpacity style={styles.schoolClassCard} onPress={() => onPress(item)} activeOpacity={0.86}>
+      <View style={styles.schoolClassHeader}>
+        <View style={styles.schoolClassIconWrap}>
+          <Ionicons name="school-outline" size={18} color={COLORS.primaryDark} />
+        </View>
+        <Text style={styles.schoolClassName} numberOfLines={1}>
+          {item.name}
+        </Text>
+        <View style={styles.schoolRolePill}>
+          <Text style={styles.schoolRoleText}>{item.myRole === 'TEACHER' ? 'Teacher' : 'Student'}</Text>
+        </View>
+      </View>
+
+      <Text style={styles.schoolClassMeta}>
+        Grade {item.grade}
+        {item.section ? ` • ${item.section}` : ''}
+        {' • '}
+        {item.studentCount} students
+      </Text>
+    </TouchableOpacity>
+  )
+);
+
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ClubsScreen() {
   const navigation = useNavigation<any>();
   const { openSidebar } = useNavigationContext();
+  const user = useAuthStore((state) => state.user);
 
   const [loading, setLoading]                   = useState(true);
   const [refreshing, setRefreshing]             = useState(false);
@@ -67,12 +94,18 @@ export default function ClubsScreen() {
   const [isLoadingMore, setIsLoadingMore]       = useState(false);
   const [hasMoreClubs, setHasMoreClubs]         = useState(true);
   const [page, setPage]                         = useState(1);
+  const [schoolClasses, setSchoolClasses]       = useState<MyClassSummary[]>([]);
+  const [loadingSchoolClasses, setLoadingSchoolClasses] = useState(true);
+  const [schoolClassesError, setSchoolClassesError] = useState<string | null>(null);
 
   const pageRef = useRef(1);
   const isLoadingMoreRef = useRef(false);
   const hasMoreClubsRef = useRef(true);
   const selectedFilterRef = useRef<ClubFilter>(selectedFilter);
   const debouncedQueryRef = useRef('');
+  const canViewSchoolClasses = Boolean(
+    user?.schoolId && (user?.role === 'STUDENT' || user?.role === 'TEACHER')
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -103,6 +136,29 @@ export default function ClubsScreen() {
 
   const joinedClubSet     = useMemo(() => new Set(joinedClubIds), [joinedClubIds]);
   const normalizedQuery   = searchQuery.trim().toLowerCase();
+
+  const loadSchoolClasses = useCallback(
+    async (force = false) => {
+      if (!canViewSchoolClasses) {
+        setSchoolClasses([]);
+        setSchoolClassesError(null);
+        setLoadingSchoolClasses(false);
+        return;
+      }
+
+      try {
+        setLoadingSchoolClasses(true);
+        setSchoolClassesError(null);
+        const data = await classesApi.getMyClasses({ force });
+        setSchoolClasses(Array.isArray(data) ? data : []);
+      } catch (err: any) {
+        setSchoolClassesError(err?.message || 'Unable to load school classes');
+      } finally {
+        setLoadingSchoolClasses(false);
+      }
+    },
+    [canViewSchoolClasses]
+  );
 
   // ── Data loading ─────────────────────────────────────────────────────────
   const loadClubs = useCallback(async (options?: { silent?: boolean; reset?: boolean; page?: number; filter?: ClubFilter; query?: string }) => {
@@ -152,7 +208,6 @@ export default function ClubsScreen() {
       setError(err?.message || 'Unable to load clubs');
     } finally {
       setLoading(false);
-      setRefreshing(false);
       isLoadingMoreRef.current = false;
       setIsLoadingMore(false);
     }
@@ -164,13 +219,24 @@ export default function ClubsScreen() {
     loadClubs({ reset: true, page: 1, filter: selectedFilter, query: debouncedSearchQuery });
   }, [loadClubs, selectedFilter, debouncedSearchQuery]);
 
+  useEffect(() => {
+    loadSchoolClasses();
+  }, [loadSchoolClasses]);
+
   const onRefresh = useCallback(() => {
     setPage(1);
     setHasMoreClubs(true);
     setRefreshing(true);
     clubsApi.invalidateClubsCache();
-    loadClubs({ silent: true, reset: true, page: 1, filter: selectedFilterRef.current, query: debouncedQueryRef.current });
-  }, [loadClubs]);
+    if (canViewSchoolClasses) {
+      classesApi.invalidateMyClassesCache();
+    }
+
+    Promise.all([
+      loadClubs({ silent: true, reset: true, page: 1, filter: selectedFilterRef.current, query: debouncedQueryRef.current }),
+      loadSchoolClasses(true),
+    ]).finally(() => setRefreshing(false));
+  }, [canViewSchoolClasses, loadClubs, loadSchoolClasses]);
 
   const loadMoreClubs = useCallback(() => {
     if (
@@ -222,6 +288,18 @@ export default function ClubsScreen() {
 
   const handleClubPress = useCallback(
     (clubId: string) => navigation.navigate('ClubDetails', { clubId }),
+    [navigation]
+  );
+
+  const handleClassPress = useCallback(
+    (classItem: MyClassSummary) =>
+      navigation.navigate('ClassDetails', {
+        classId: classItem.id,
+        className: classItem.name,
+        myRole: classItem.myRole,
+        linkedStudentId: classItem.linkedStudentId,
+        linkedTeacherId: classItem.linkedTeacherId,
+      }),
     [navigation]
   );
 
@@ -282,9 +360,43 @@ export default function ClubsScreen() {
         {/* Banner Carousel */}
         <BannerCarousel navigation={navigation} />
 
+        {canViewSchoolClasses && (
+          <View style={styles.schoolClassesSection}>
+            <View style={styles.schoolClassesHeader}>
+              <Text style={styles.schoolClassesTitle}>School Classes</Text>
+              <Text style={styles.schoolClassesSubtitle}>
+                {user?.role === 'TEACHER' ? 'Classes you teach' : 'Classes you study'}
+              </Text>
+            </View>
+
+            {loadingSchoolClasses ? (
+              <View style={styles.schoolClassesLoading}>
+                <ActivityIndicator size="small" color={COLORS.primaryDark} />
+                <Text style={styles.schoolClassesLoadingText}>Loading school classes...</Text>
+              </View>
+            ) : schoolClassesError ? (
+              <View style={styles.schoolClassesLoading}>
+                <Text style={styles.schoolClassesErrorText}>{schoolClassesError}</Text>
+                <TouchableOpacity style={styles.schoolRetryBtn} onPress={() => loadSchoolClasses(true)}>
+                  <Text style={styles.schoolRetryText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : schoolClasses.length === 0 ? (
+              <View style={styles.schoolClassesEmpty}>
+                <Ionicons name="library-outline" size={18} color={COLORS.textMuted} />
+                <Text style={styles.schoolClassesEmptyText}>No classes assigned for current year.</Text>
+              </View>
+            ) : (
+              schoolClasses.map((classItem) => (
+                <SchoolClassCard key={classItem.id} item={classItem} onPress={handleClassPress} />
+              ))
+            )}
+          </View>
+        )}
+
         {/* Section heading + search */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Today's Clubs</Text>
+          <Text style={styles.sectionTitle}>{canViewSchoolClasses ? 'Community Clubs' : "Today's Clubs"}</Text>
           <TouchableOpacity activeOpacity={0.8} onPress={() => handleFilterChange('all')}>
             <Text style={styles.viewAllText}>View all</Text>
           </TouchableOpacity>
@@ -307,7 +419,20 @@ export default function ClubsScreen() {
         </View>
       </View>
     );
-  }, [selectedFilter, searchQuery, handleFilterChange, handleCreateClub]);
+  }, [
+    canViewSchoolClasses,
+    handleClassPress,
+    handleCreateClub,
+    handleFilterChange,
+    loadSchoolClasses,
+    loadingSchoolClasses,
+    navigation,
+    schoolClasses,
+    schoolClassesError,
+    searchQuery,
+    selectedFilter,
+    user?.role,
+  ]);
 
   // ── Render item (memoized card) ───────────────────────────────────────────
   const renderClubCard = useCallback(
@@ -662,6 +787,121 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     color: COLORS.textPrimary,
+  },
+  schoolClassesSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    gap: 10,
+  },
+  schoolClassesHeader: {
+    marginBottom: 2,
+  },
+  schoolClassesTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
+  schoolClassesSubtitle: {
+    marginTop: 2,
+    fontSize: 13,
+    color: COLORS.textMuted,
+    fontWeight: '600',
+  },
+  schoolClassesLoading: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    gap: 6,
+  },
+  schoolClassesLoadingText: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    fontWeight: '600',
+  },
+  schoolClassesErrorText: {
+    fontSize: 13,
+    color: '#DC2626',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  schoolRetryBtn: {
+    marginTop: 6,
+    backgroundColor: COLORS.primaryLight,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  schoolRetryText: {
+    fontSize: 12,
+    color: COLORS.primaryDark,
+    fontWeight: '700',
+  },
+  schoolClassesEmpty: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  schoolClassesEmptyText: {
+    flex: 1,
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+  },
+  schoolClassCard: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  schoolClassHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  schoolClassIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E0F9FD',
+  },
+  schoolClassName: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
+  schoolRolePill: {
+    paddingHorizontal: 10,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  schoolRoleText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1D4ED8',
+  },
+  schoolClassMeta: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
   },
 
   // Cards

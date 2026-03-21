@@ -32,9 +32,20 @@ import { Notification } from '@/types';
 const NOTIFICATION_ICONS: Record<string, { name: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
     LIKE: { name: 'heart', color: '#EF4444', bg: '#FEE2E2' },
     COMMENT: { name: 'chatbubble', color: '#3B82F6', bg: '#DBEAFE' },
+    REPLY: { name: 'chatbubble-ellipses', color: '#2563EB', bg: '#DBEAFE' },
     FOLLOW: { name: 'person-add', color: '#8B5CF6', bg: '#EDE9FE' },
     MENTION: { name: 'at', color: '#0EA5E9', bg: '#E0F2FE' },
     ANNOUNCEMENT: { name: 'megaphone', color: '#6366F1', bg: '#EEF2FF' },
+    GRADE_POSTED: { name: 'school', color: '#4F46E5', bg: '#E0E7FF' },
+    ATTENDANCE_MARKED: { name: 'calendar', color: '#0891B2', bg: '#CFFAFE' },
+    SHARE: { name: 'share-social', color: '#7C3AED', bg: '#F3E8FF' },
+    ACHIEVEMENT_EARNED: { name: 'ribbon', color: '#F59E0B', bg: '#FEF3C7' },
+    ASSIGNMENT_DUE: { name: 'clipboard', color: '#0F766E', bg: '#CCFBF1' },
+    COURSE_ENROLL: { name: 'book', color: '#2563EB', bg: '#DBEAFE' },
+    POLL_RESULT: { name: 'stats-chart', color: '#EC4899', bg: '#FCE7F3' },
+    SKILL_ENDORSED: { name: 'thumbs-up', color: '#0284C7', bg: '#E0F2FE' },
+    RECOMMENDATION_RECEIVED: { name: 'chatbox-ellipses', color: '#4338CA', bg: '#E0E7FF' },
+    PROJECT_LIKED: { name: 'heart-circle', color: '#DC2626', bg: '#FEE2E2' },
     ASSIGNMENT: { name: 'document-text', color: '#10B981', bg: '#D1FAE5' },
     QUIZ: { name: 'help-circle', color: '#EC4899', bg: '#FCE7F3' },
     ACHIEVEMENT: { name: 'trophy', color: '#0EA5E9', bg: '#E0F2FE' },
@@ -42,6 +53,23 @@ const NOTIFICATION_ICONS: Record<string, { name: keyof typeof Ionicons.glyphMap;
 
 const getNotificationIcon = (type: string) => {
     return NOTIFICATION_ICONS[type] || { name: 'notifications' as keyof typeof Ionicons.glyphMap, color: '#6B7280', bg: '#F3F4F6' };
+};
+
+const parseLinkPath = (linkValue: unknown): string => {
+    if (typeof linkValue !== 'string') return '';
+    const trimmed = linkValue.trim();
+    if (!trimmed) return '';
+    try {
+        return new URL(trimmed).pathname || '';
+    } catch {
+        return trimmed.startsWith('/') ? trimmed : '';
+    }
+};
+
+const getLinkPostId = (linkValue: unknown): string | null => {
+    const path = parseLinkPath(linkValue);
+    const match = path.match(/^\/posts\/([^/]+)$/);
+    return match?.[1] || null;
 };
 
 const formatTimeAgo = (dateString: string, t: any): string => {
@@ -88,12 +116,31 @@ export default function NotificationsScreen() {
         if (!notification.isRead) {
             markAsRead(notification.id);
         }
-        // Navigate based on notification data link if available
-        if (notification.data?.postId) {
+        const postIdFromData = typeof notification.data?.postId === 'string' ? notification.data.postId : null;
+        const postIdFromLink = getLinkPostId(notification.data?.link);
+        const postId = postIdFromData || postIdFromLink;
+
+        if (postId) {
             navigation.navigate('FeedTab' as any, {
                 screen: 'PostDetail',
-                params: { postId: notification.data.postId },
+                params: { postId },
             });
+            return;
+        }
+
+        const linkPath = parseLinkPath(notification.data?.link);
+        if (linkPath.startsWith('/attendance')) {
+            navigation.navigate('ProfileTab' as any, {
+                screen: 'AttendanceReport',
+            });
+            return;
+        }
+
+        if (linkPath.includes('/grades') || linkPath.startsWith('/academic') || linkPath.startsWith('/parent/child/')) {
+            navigation.navigate('ProfileTab' as any, {
+                screen: 'AcademicProfile',
+            });
+            return;
         }
     }, [markAsRead, navigation]);
 

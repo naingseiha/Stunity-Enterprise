@@ -16,6 +16,9 @@ interface EnvironmentConfig {
   feedUrl: string;
   mediaUrl: string;
   clubUrl: string;
+  classUrl: string;
+  teacherUrl: string;
+  timetableUrl: string;
   notificationUrl: string;
   quizUrl: string;
   analyticsUrl: string;
@@ -88,6 +91,9 @@ const development: EnvironmentConfig = {
   feedUrl: `http://${API_HOST}:3010`,
   mediaUrl: `http://${API_HOST}:3010`,
   clubUrl: `http://${API_HOST}:3012`,
+  classUrl: `http://${API_HOST}:3005`,
+  teacherUrl: `http://${API_HOST}:3004`,
+  timetableUrl: `http://${API_HOST}:3009`,
   notificationUrl: `http://${API_HOST}:3013`,
   quizUrl: `http://${API_HOST}:3010`,
   analyticsUrl: `http://${API_HOST}:3014`,
@@ -110,6 +116,9 @@ const staging: EnvironmentConfig = {
   feedUrl: 'https://staging-feed.stunity.com',
   mediaUrl: 'https://staging-media.stunity.com',
   clubUrl: 'https://staging-clubs.stunity.com',
+  classUrl: 'https://staging-classes.stunity.com',
+  teacherUrl: 'https://staging-teachers.stunity.com',
+  timetableUrl: 'https://staging-timetable.stunity.com',
   notificationUrl: 'https://staging-notifications.stunity.com',
   quizUrl: 'https://staging-quiz.stunity.com',
   analyticsUrl: 'https://staging-analytics.stunity.com',
@@ -132,6 +141,9 @@ const production: EnvironmentConfig = {
   feedUrl: 'https://stunity-feed-service-936508661701.us-central1.run.app',
   mediaUrl: 'https://stunity-feed-service-936508661701.us-central1.run.app',
   clubUrl: 'https://stunity-club-service-936508661701.us-central1.run.app',
+  classUrl: 'https://stunity-class-service-936508661701.us-central1.run.app',
+  teacherUrl: 'https://stunity-teacher-service-936508661701.us-central1.run.app',
+  timetableUrl: 'https://stunity-timetable-service-936508661701.us-central1.run.app',
   notificationUrl: 'https://stunity-notification-service-936508661701.us-central1.run.app',
   quizUrl: 'https://stunity-feed-service-936508661701.us-central1.run.app',
   analyticsUrl: 'https://stunity-analytics-service-936508661701.us-central1.run.app',

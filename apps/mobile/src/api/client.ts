@@ -174,6 +174,11 @@ export const authApi = createApiClient(Config.authUrl);
 export const feedApi = createApiClient(Config.feedUrl);
 export const mediaApi = createApiClient(Config.mediaUrl);
 export const clubsApi = createApiClient(Config.clubUrl);
+export const classApi = createApiClient(Config.classUrl);
+export const teacherApi = createApiClient(Config.teacherUrl);
+export const timetableApi = createApiClient(Config.timetableUrl);
+export const gradeApi = createApiClient(Config.gradeUrl);
+export const attendanceApi = createApiClient(Config.attendanceUrl);
 export const quizApi = createApiClient(Config.quizUrl);
 export const notificationApi = createApiClient(Config.notificationUrl);
 export const analyticsApi = createApiClient(Config.analyticsUrl);
@@ -291,4 +296,17 @@ const isRetryableError = (error: unknown): boolean => {
   return false;
 };
 
-export default { authApi, feedApi, mediaApi, clubsApi, quizApi, notificationApi, analyticsApi };
+export default {
+  authApi,
+  feedApi,
+  mediaApi,
+  clubsApi,
+  classApi,
+  teacherApi,
+  timetableApi,
+  gradeApi,
+  attendanceApi,
+  quizApi,
+  notificationApi,
+  analyticsApi,
+};

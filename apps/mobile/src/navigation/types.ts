@@ -138,6 +138,18 @@ export type MessagesStackParamList = {
 export type ClubsStackParamList = {
   ClubsList: undefined;
   ClubDetails: { clubId: string };
+  ClassDetails: {
+    classId: string;
+    className?: string;
+    myRole?: 'STUDENT' | 'TEACHER';
+    linkedStudentId?: string;
+    linkedTeacherId?: string;
+  };
+  ClassScoreImport: {
+    classId: string;
+    className?: string;
+    teacherId: string;
+  };
   AssignmentsList: { clubId: string };
   AssignmentDetail: { assignmentId: string; clubId: string };
   CreateAssignment: { clubId: string };

@@ -31,7 +31,7 @@ import { FeedScreen, CreatePostScreen, EditPostScreen, PostDetailScreen, Comment
 import { LearnScreen, CourseDetailScreen, LessonViewerScreen, CreateCourseScreen } from '@/screens/learn';
 import { ProfileScreen, EditProfileScreen, UserCardScreen, SettingsScreen, PasswordSecurityScreen, AcademicProfileScreen, ManageDeadlinesScreen } from '@/screens/profile';
 import { ConversationsScreen, ChatScreen, NewMessageScreen } from '@/screens/messages';
-import { ClubsScreen, ClubDetailsScreen, CreateClubScreen } from '@/screens/clubs';
+import { ClubsScreen, ClubDetailsScreen, CreateClubScreen, ClassDetailsScreen } from '@/screens/clubs';
 import {
   AssignmentsListScreen,
   AssignmentDetailScreen,
@@ -105,6 +105,7 @@ const ClubsStackNavigator = () => (
   <ClubsStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true }}>
     <ClubsStack.Screen name="ClubsList" component={ClubsScreen} />
     <ClubsStack.Screen name="ClubDetails" component={ClubDetailsScreen} />
+    <ClubsStack.Screen name="ClassDetails" component={ClassDetailsScreen} />
     <ClubsStack.Screen name="CreateClub" component={CreateClubScreen} />
     <ClubsStack.Screen name="AssignmentsList" component={AssignmentsListScreen} />
     <ClubsStack.Screen name="AssignmentDetail" component={AssignmentDetailScreen} />

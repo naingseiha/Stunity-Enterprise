@@ -19,8 +19,9 @@
  * tailored for educational / learning content.
  */
 
-import { PrismaClient, Post, User, PostType } from '@prisma/client';
+import { PrismaClient, Post, User, PostType, Prisma } from '@prisma/client';
 import { feedCache } from './redis';
+import { buildFeedVisibilityWhere } from './utils/visibilityScope';
 
 // ─── Scoring Weights (v2 — dynamic per post type) ──────────────────
 interface ScoringWeights {
@@ -123,6 +124,7 @@ interface PostWithRelations extends Post {
 
 interface UserSignals {
     userId: string;
+    schoolId?: string | null;
     topics: Record<string, number>;      // topicId → interest score
     topicDwellTime: Record<string, number>; // topicId → avg view duration (seconds)
     followingIds: string[];
@@ -135,6 +137,15 @@ interface UserSignals {
     classmates: string[];
     studyGroupMembers: string[];
     instructorIds: string[];
+}
+
+function buildQuizPostWhere(userId: string, schoolId: string | null | undefined): Prisma.PostWhereInput {
+    return {
+        AND: [
+            buildFeedVisibilityWhere({ userId, schoolId }),
+            { postType: 'QUIZ' },
+        ],
+    };
 }
 
 export interface ScoredPost {
@@ -235,7 +246,7 @@ export class FeedRanker {
         // Run all 3 pools in parallel for speed — use allSettled so failures don't block
         const [relevanceResult, trendingResult, exploreResult] = await Promise.allSettled([
             this.getCandidates(userId, userSignals, 'FOR_YOU', excludeIds, subject),
-            this.getTrendingContent(excludeIds, subject),
+            this.getTrendingContent(userId, userSignals.schoolId, excludeIds, subject),
             this.getExploreContent(userId, userSignals, excludeIds, subject),
         ]);
 
@@ -461,6 +472,7 @@ export class FeedRanker {
 
     private async getSuggestedQuizzes(userId: string, signals: UserSignals): Promise<any[]> {
         const userTopics = Object.keys(signals.topics).slice(0, 5);
+        const quizVisibilityWhere = buildQuizPostWhere(userId, signals.schoolId);
 
         // Find quizzes the user has already attempted to exclude them
         const attempted = await this.prisma.quizAttempt.findMany({
@@ -494,7 +506,9 @@ export class FeedRanker {
             where: {
                 ...(attemptedIds.length > 0 ? { id: { notIn: attemptedIds } } : {}),
                 post: {
-                    postType: 'QUIZ',
+                    AND: [
+                        quizVisibilityWhere,
+                    ],
                     ...(userTopics.length > 0 && { topicTags: { hasSome: userTopics } })
                 },
             },
@@ -508,7 +522,11 @@ export class FeedRanker {
             suggested = await this.prisma.quiz.findMany({
                 where: {
                     ...(attemptedIds.length > 0 ? { id: { notIn: attemptedIds } } : {}),
-                    post: { postType: 'QUIZ' },
+                    post: {
+                        AND: [
+                            quizVisibilityWhere,
+                        ],
+                    },
                 },
                 include: includeFields,
                 orderBy,
@@ -534,20 +552,26 @@ export class FeedRanker {
 
     // ─── Trending Content (high engagement velocity) ──────────────────
     private async getTrendingContent(
+        userId: string,
+        schoolId: string | null | undefined,
         excludeIds: string[],
         subject?: string
     ): Promise<PostWithRelations[]> {
         const since = new Date(Date.now() - 24 * 60 * 60 * 1000); // last 24 hours
 
         const where: any = {
-            createdAt: { gte: since },
-            visibility: { in: ['PUBLIC', 'SCHOOL'] },
-            trendingScore: { gt: 0.1 }, // Only posts with some traction
-            ...(excludeIds.length > 0 && { id: { notIn: excludeIds } }),
+            AND: [
+                buildFeedVisibilityWhere({ userId, schoolId }),
+                { createdAt: { gte: since } },
+                { trendingScore: { gt: 0.1 } }, // Only posts with some traction
+            ],
         };
 
         if (subject && subject !== 'ALL') {
-            where.topicTags = { hasSome: [subject.toLowerCase()] };
+            where.AND.push({ topicTags: { hasSome: [subject.toLowerCase()] } });
+        }
+        if (excludeIds.length > 0) {
+            where.AND.push({ id: { notIn: excludeIds } });
         }
 
         return await this.prisma.post.findMany({
@@ -581,20 +605,23 @@ export class FeedRanker {
         const userTopics = Object.keys(signals.topics);
 
         const where: any = {
-            createdAt: { gte: since },
-            visibility: { in: ['PUBLIC', 'SCHOOL'] },
-            authorId: { notIn: [userId, ...signals.followingIds] }, // Not from followed users
-            ...(excludeIds.length > 0 && { id: { notIn: excludeIds } }),
+            AND: [
+                buildFeedVisibilityWhere({ userId, schoolId: signals.schoolId }),
+                { createdAt: { gte: since } },
+                { authorId: { notIn: [userId, ...signals.followingIds] } }, // Not from followed users
+            ],
         };
 
         // Exclude user's known topics to surface new content
-        if (userTopics.length > 0) {
-            where.NOT = { topicTags: { hasSome: userTopics.slice(0, 10) } };
+        if (userTopics.length > 0 && (!subject || subject === 'ALL')) {
+            where.AND.push({ NOT: { topicTags: { hasSome: userTopics.slice(0, 10) } } });
         }
 
         if (subject && subject !== 'ALL') {
-            where.topicTags = { hasSome: [subject.toLowerCase()] };
-            delete where.NOT; // If filtering by subject, don't exclude topics
+            where.AND.push({ topicTags: { hasSome: [subject.toLowerCase()] } });
+        }
+        if (excludeIds.length > 0) {
+            where.AND.push({ id: { notIn: excludeIds } });
         }
 
         return await this.prisma.post.findMany({
@@ -634,7 +661,7 @@ export class FeedRanker {
             }),
             this.prisma.user.findUnique({
                 where: { id: userId },
-                select: { interests: true, skills: true, careerGoals: true },
+                select: { schoolId: true, interests: true, skills: true, careerGoals: true },
             }),
             // Author affinity: count interactions per author from likes and comments
             this.prisma.like.groupBy({
@@ -764,6 +791,7 @@ export class FeedRanker {
 
         return {
             userId,
+            schoolId: user?.schoolId ?? null,
             topics,
             topicDwellTime,
             followingIds: follows.map(f => f.followingId),
@@ -788,19 +816,22 @@ export class FeedRanker {
         subject?: string
     ): Promise<PostWithRelations[]> {
         const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000); // 14 days
+        const minimumCandidatePool = 25;
 
-        const baseWhere: any = {
-            createdAt: { gte: since },
-            visibility: { in: ['PUBLIC', 'SCHOOL'] },
-            ...(excludeIds.length > 0 && { id: { notIn: excludeIds } }),
-        };
+        const baseAnd: any[] = [
+            buildFeedVisibilityWhere({ userId, schoolId: signals.schoolId }),
+        ];
 
         if (subject && subject !== 'ALL') {
-            baseWhere.topicTags = { hasSome: [subject.toLowerCase()] };
+            baseAnd.push({ topicTags: { hasSome: [subject.toLowerCase()] } });
+        }
+
+        if (excludeIds.length > 0) {
+            baseAnd.push({ id: { notIn: excludeIds } });
         }
 
         if (mode === 'FOLLOWING') {
-            baseWhere.authorId = { in: signals.followingIds };
+            baseAnd.push({ authorId: { in: signals.followingIds } });
         }
 
         const sharedInclude = {
@@ -844,10 +875,11 @@ export class FeedRanker {
         // Two-pool candidate fetch: 75 established (by trendingScore) + 25 fresh (last 6 hours)
         // This guarantees new posts always enter the feed even before they have engagement.
         const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+        const recentWhere = { AND: [...baseAnd, { createdAt: { gte: since } }] };
 
         const [established, fresh] = await Promise.all([
             this.prisma.post.findMany({
-                where: baseWhere,
+                where: recentWhere,
                 include: sharedInclude,
                 orderBy: [
                     { isPinned: 'desc' },
@@ -858,7 +890,7 @@ export class FeedRanker {
             }),
             // Fresh posts (< 6h) that might not have trendingScore yet
             this.prisma.post.findMany({
-                where: { ...baseWhere, createdAt: { gte: sixHoursAgo } },
+                where: { AND: [...baseAnd, { createdAt: { gte: sixHoursAgo } }] },
                 include: sharedInclude,
                 orderBy: { createdAt: 'desc' },
                 take: 25,
@@ -869,6 +901,33 @@ export class FeedRanker {
         const seen = new Set<string>(established.map(p => p.id));
         const freshOnly = fresh.filter(p => !seen.has(p.id));
         const candidates = [...established, ...freshOnly] as unknown as PostWithRelations[];
+
+        // Sparse datasets can collapse FOR_YOU/FOLLOWING to 0-1 post after the 14-day window.
+        // Backfill with older visible posts so feed stays useful while preserving visibility rules.
+        if (candidates.length < minimumCandidatePool) {
+            const existingIds = candidates.map(post => post.id);
+            const backfillWhere: any = {
+                AND: [...baseAnd, { createdAt: { lt: since } }],
+            };
+
+            if (existingIds.length > 0) {
+                backfillWhere.AND.push({ id: { notIn: existingIds } });
+            }
+
+            const backfill = await this.prisma.post.findMany({
+                where: backfillWhere,
+                include: sharedInclude,
+                orderBy: [
+                    { isPinned: 'desc' },
+                    { createdAt: 'desc' },
+                ],
+                take: Math.max(minimumCandidatePool - candidates.length, 25),
+            }) as unknown as PostWithRelations[];
+
+            if (backfill.length > 0) {
+                candidates.push(...backfill);
+            }
+        }
 
         return candidates;
     }
@@ -1219,12 +1278,21 @@ export class FeedRanker {
         subject?: string
     ): Promise<{ items: FeedItem[]; total: number; hasMore: boolean }> {
         const skip = (page - 1) * limit;
+        const currentUser = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { schoolId: true },
+        });
 
         const where: any = {
-            visibility: { in: ['PUBLIC', 'SCHOOL'] },
+            AND: [
+                buildFeedVisibilityWhere({
+                    userId,
+                    schoolId: currentUser?.schoolId,
+                }),
+            ],
         };
         if (subject && subject !== 'ALL') {
-            where.topicTags = { hasSome: [subject.toLowerCase()] };
+            where.AND.push({ topicTags: { hasSome: [subject.toLowerCase()] } });
         }
 
         const [posts, total] = await Promise.all([
@@ -1379,7 +1447,7 @@ export class FeedRanker {
         const posts = await this.prisma.post.findMany({
             where: {
                 createdAt: { gte: since },
-                visibility: { in: ['PUBLIC', 'SCHOOL'] },
+                visibility: { in: ['PUBLIC', 'SCHOOL', 'CLASS'] },
             },
             include: {
                 _count: { select: { likes: true, comments: true, views: true } },

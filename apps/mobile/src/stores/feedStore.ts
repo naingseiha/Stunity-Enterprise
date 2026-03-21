@@ -40,6 +40,13 @@ const INITIAL_RETRY_BASE_DELAY_MS = 1_200;
 const MAX_INITIAL_FEED_RETRIES = 2;
 let initialFeedRetryAttempts = 0;
 
+// Realtime fallback: if Supabase channel is subscribed but not delivering events,
+// poll RECENT feed periodically so users still receive "New posts" updates.
+const REALTIME_FALLBACK_POLL_INTERVAL_MS = 20_000;
+let realtimeLivenessTimer: ReturnType<typeof setTimeout> | null = null;
+let realtimeFallbackPollTimer: ReturnType<typeof setInterval> | null = null;
+let realtimeFallbackPollInFlight = false;
+
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const isWrappedFeedItem = (item: any): item is { type: string; data: any } =>
@@ -1659,6 +1666,82 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       // Unsubscribe existing if any
       unsubscribeFromFeed();
 
+      const stopRealtimeFallbackPolling = () => {
+        if (realtimeFallbackPollTimer) {
+          clearInterval(realtimeFallbackPollTimer);
+          realtimeFallbackPollTimer = null;
+          if (__DEV__) {
+            console.log('✅ [FeedStore] Realtime recovered — stopped fallback polling');
+          }
+        }
+      };
+
+      const pollForMissedPosts = async () => {
+        if (realtimeFallbackPollInFlight) return;
+        realtimeFallbackPollInFlight = true;
+
+        try {
+          const { lastFeedTimestamp, feedItems, pendingPosts } = get();
+          const firstPost = feedItems.find(i => i.type === 'POST');
+          const latestCreatedAt = lastFeedTimestamp || (firstPost?.type === 'POST' ? firstPost.data.createdAt : undefined);
+          if (!latestCreatedAt) return;
+
+          const response = await feedApi.get('/posts/feed', {
+            params: { mode: 'RECENT', limit: 8, page: 1, fields: 'minimal' },
+            timeout: FEED_RETRY_TIMEOUT_MS,
+            headers: { 'X-No-Retry': 'true' },
+          });
+
+          if (!response.data?.success) return;
+
+          const existingIds = new Set([
+            ...feedItems.filter(i => i.type === 'POST').map(i => i.data.id),
+            ...pendingPosts.map(p => p.id),
+          ]);
+
+          const rawItems: any[] = response.data.data || response.data.posts || [];
+          const normalized = normalizeFeedItems(rawItems);
+          const candidatePosts = normalized
+            .filter(item => item.type === 'POST')
+            .map(item => item.data as Post);
+
+          const dedupMap = new Map<string, Post>();
+          candidatePosts.forEach((post) => {
+            if (!post?.id || dedupMap.has(post.id)) return;
+            if (new Date(post.createdAt) <= new Date(latestCreatedAt)) return;
+            if (existingIds.has(post.id)) return;
+            dedupMap.set(post.id, post);
+          });
+
+          const newPosts = Array.from(dedupMap.values());
+          if (newPosts.length > 0) {
+            set(state => ({
+              pendingPosts: [...newPosts, ...state.pendingPosts],
+            }));
+            if (__DEV__) {
+              console.log(`🛟 [FeedStore] Fallback polling found ${newPosts.length} new post(s)`);
+            }
+          }
+        } catch (pollError) {
+          if (__DEV__) {
+            console.log('⚠️ [FeedStore] Realtime fallback poll failed:', pollError);
+          }
+        } finally {
+          realtimeFallbackPollInFlight = false;
+        }
+      };
+
+      const startRealtimeFallbackPolling = (reason: string) => {
+        if (realtimeFallbackPollTimer) return;
+        if (__DEV__) {
+          console.warn(`🛟 [FeedStore] Starting fallback polling (${reason})`);
+        }
+        pollForMissedPosts().catch(() => { });
+        realtimeFallbackPollTimer = setInterval(() => {
+          pollForMissedPosts().catch(() => { });
+        }, REALTIME_FALLBACK_POLL_INTERVAL_MS);
+      };
+
       const isActuallyNewPost = (postCreatedAt: string): boolean => {
         const { lastFeedTimestamp, feedItems } = get();
         // Use lastFeedTimestamp if available, else fall back to most recent post
@@ -1681,7 +1764,6 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         } catch { return undefined; }
       };
 
-      let _livenessTimer: ReturnType<typeof setTimeout> | null = null;
       let _receivedAnyEvent = false;
 
       const channelName = `feed:realtime:${Date.now()}`; // Unique per subscription
@@ -1693,6 +1775,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           { event: 'INSERT', schema: 'public', table: 'posts' },
           async (payload) => {
             _receivedAnyEvent = true; // Liveness: at least one event arrived
+            stopRealtimeFallbackPolling();
             const newPostRaw = payload.new as any;
             const newPostId = newPostRaw?.id;
             if (!newPostId) return;
@@ -1733,6 +1816,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           { event: 'UPDATE', schema: 'public', table: 'posts' },
           async (payload) => {
             _receivedAnyEvent = true; // Liveness: at least one event arrived
+            stopRealtimeFallbackPolling();
             const updated = payload.new as any;
             if (!updated?.id) return;
 
@@ -1814,6 +1898,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           { event: 'DELETE', schema: 'public', table: 'posts' },
           (payload) => {
             _receivedAnyEvent = true; // Liveness: at least one event arrived
+            stopRealtimeFallbackPolling();
             const deletedId = (payload.old as any)?.id;
             if (!deletedId) return;
 
@@ -1834,8 +1919,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             // Liveness check: if no event arrives within 30s of subscribing,
             // warn about possible RLS blocking (silent failure mode).
             // In production with active users this fires rarely — posts are created often.
-            if (_livenessTimer) clearTimeout(_livenessTimer);
-            _livenessTimer = setTimeout(() => {
+            if (realtimeLivenessTimer) clearTimeout(realtimeLivenessTimer);
+            realtimeLivenessTimer = setTimeout(() => {
               if (!_receivedAnyEvent && __DEV__) {
                 console.warn(
                   '⚠️ [FeedStore] No real-time events received 30s after SUBSCRIBED.\n' +
@@ -1844,13 +1929,18 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
                   '  → See implementation_plan.md for full details.'
                 );
               }
+              if (!_receivedAnyEvent) {
+                startRealtimeFallbackPolling('no realtime events after subscribe');
+              }
             }, 30_000);
           } else if (status === 'CHANNEL_ERROR') {
             console.warn('⚠️ [FeedStore] Realtime CHANNEL_ERROR — check Supabase RLS or network');
-            if (_livenessTimer) { clearTimeout(_livenessTimer); _livenessTimer = null; }
+            if (realtimeLivenessTimer) { clearTimeout(realtimeLivenessTimer); realtimeLivenessTimer = null; }
+            startRealtimeFallbackPolling('channel error');
           } else if (status === 'TIMED_OUT') {
             console.warn('⚠️ [FeedStore] Realtime TIMED_OUT — network issue or Supabase outage');
-            if (_livenessTimer) { clearTimeout(_livenessTimer); _livenessTimer = null; }
+            if (realtimeLivenessTimer) { clearTimeout(realtimeLivenessTimer); realtimeLivenessTimer = null; }
+            startRealtimeFallbackPolling('channel timeout');
           } else {
             console.log(`🔌 [FeedStore] Realtime status: ${status}`);
           }
@@ -1877,10 +1967,28 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       set({ realtimeSubscription: channel });
     } catch (realtimeError) {
       console.warn('⚠️ [FeedStore] Realtime subscription failed (non-fatal), app continues without realtime:', realtimeError);
+      if (!realtimeFallbackPollTimer) {
+        realtimeFallbackPollTimer = setInterval(() => {
+          const { feedItems } = get();
+          if (feedItems.length > 0) {
+            get().fetchPosts(true).catch(() => { });
+          }
+        }, REALTIME_FALLBACK_POLL_INTERVAL_MS);
+      }
     }
   },
 
   unsubscribeFromFeed: () => {
+    if (realtimeLivenessTimer) {
+      clearTimeout(realtimeLivenessTimer);
+      realtimeLivenessTimer = null;
+    }
+    if (realtimeFallbackPollTimer) {
+      clearInterval(realtimeFallbackPollTimer);
+      realtimeFallbackPollTimer = null;
+    }
+    realtimeFallbackPollInFlight = false;
+
     const { realtimeSubscription } = get();
     if (realtimeSubscription) {
       console.log('🔌 [FeedStore] Unsubscribing...');
@@ -1990,7 +2098,22 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   },
 
   // Reset store
-  reset: () => set(initialState),
+  reset: () => {
+    const { realtimeSubscription } = get();
+    if (realtimeSubscription) {
+      supabase.removeChannel(realtimeSubscription);
+    }
+    if (realtimeLivenessTimer) {
+      clearTimeout(realtimeLivenessTimer);
+      realtimeLivenessTimer = null;
+    }
+    if (realtimeFallbackPollTimer) {
+      clearInterval(realtimeFallbackPollTimer);
+      realtimeFallbackPollTimer = null;
+    }
+    realtimeFallbackPollInFlight = false;
+    set(initialState);
+  },
 }));
 
 export default useFeedStore;

@@ -9,6 +9,7 @@ import { prisma, prismaRead, feedRanker, upload } from '../context';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from '../utils/r2';
 import { feedCache, EventPublisher } from '../redis';
+import { buildFeedVisibilityWhere, buildPostAccessWhere } from '../utils/visibilityScope';
 
 const router = Router();
 
@@ -81,22 +82,14 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
     // Cursor-based pagination: use cursor (last post ID) when available
     const useCursor = cursor && typeof cursor === 'string';
 
-    const where: any = {};
-
-    // Visibility filtering
-    if (req.user!.schoolId) {
-      // User has a school - show school posts + public posts
-      where.OR = [
-        { author: { schoolId: req.user!.schoolId } },
-        { visibility: 'PUBLIC' },
-      ];
-    } else {
-      // User has no school - show their own posts + public posts
-      where.OR = [
-        { authorId: req.user!.id },
-        { visibility: 'PUBLIC' },
-      ];
-    }
+    const where: any = {
+      AND: [
+        buildFeedVisibilityWhere({
+          userId: req.user!.id,
+          schoolId: req.user!.schoolId,
+        }),
+      ],
+    };
 
     // Search filter — search in content, title, tags, and post type
     if (search && typeof search === 'string' && search.trim()) {
@@ -112,7 +105,7 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
       if (validPostTypes.includes(upperSearch)) {
         searchOR.push({ postType: upperSearch });
       }
-      where.AND = [{ OR: searchOR }];
+      where.AND.push({ OR: searchOR });
     }
 
     if (process.env.NODE_ENV !== 'production') {
@@ -126,14 +119,16 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
     }
 
     if (type) {
-      where.postType = type;
+      where.AND.push({ postType: type });
     }
 
     // Subject filter support
     if (subject && subject !== 'ALL') {
-      where.topicTags = {
-        hasSome: [String(subject).toLowerCase()],
-      };
+      where.AND.push({
+        topicTags: {
+          hasSome: [String(subject).toLowerCase()],
+        },
+      });
     }
 
     // B4 FIX: Remove expensive COUNT(*) — derive hasMore from posts.length === limit
@@ -296,8 +291,11 @@ router.get('/posts/:postId/difficulty', authenticateToken, async (req: AuthReque
   try {
     const { postId } = req.params;
 
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
+    const post = await prisma.post.findFirst({
+      where: buildPostAccessWhere(postId, {
+        userId: req.user!.id,
+        schoolId: req.user!.schoolId,
+      }),
       select: { difficultyLevel: true, postType: true }
     });
 

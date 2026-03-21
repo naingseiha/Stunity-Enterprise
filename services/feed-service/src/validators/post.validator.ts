@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 
-const VISIBILITY = ['PUBLIC', 'SCHOOL', 'PRIVATE'] as const;
+const VISIBILITY = ['PUBLIC', 'SCHOOL', 'CLASS', 'PRIVATE'] as const;
 const POST_TYPE = [
   'ARTICLE', 'QUESTION', 'ANNOUNCEMENT', 'POLL', 'ACHIEVEMENT', 'PROJECT',
   'COURSE', 'EVENT', 'QUIZ', 'EXAM', 'ASSIGNMENT', 'RESOURCE', 'TUTORIAL',

@@ -11,6 +11,7 @@ import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from '../utils/r2';
 import { feedCache, EventPublisher } from '../redis';
 import { updateUserFeedSignals } from './signals.routes';
 import { createPostSchema, createCommentSchema } from '../validators/post.validator';
+import { buildFeedVisibilityWhere, buildPostAccessWhere } from '../utils/visibilityScope';
 
 const router = Router();
 
@@ -191,8 +192,11 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
 // GET /posts/:id - Get single post
 router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const post = await prisma.post.findUnique({
-      where: { id: req.params.id },
+    const post = await prisma.post.findFirst({
+      where: buildPostAccessWhere(req.params.id, {
+        userId: req.user!.id,
+        schoolId: req.user!.schoolId,
+      }),
       include: {
         author: {
           select: {
@@ -274,10 +278,21 @@ router.post('/posts/:id/like', authenticateToken, async (req: AuthRequest, res: 
   try {
     const postId = req.params.id;
     const userId = req.user!.id;
+    const targetPost = await prisma.post.findFirst({
+      where: buildPostAccessWhere(postId, {
+        userId,
+        schoolId: req.user!.schoolId,
+      }),
+      select: { id: true, authorId: true },
+    });
+
+    if (!targetPost) {
+      return res.status(404).json({ success: false, error: 'Post not found' });
+    }
 
     // Check if already liked
     const existingLike = await prisma.like.findFirst({
-      where: { postId, userId },
+      where: { postId: targetPost.id, userId },
     });
 
     if (existingLike) {
@@ -285,7 +300,7 @@ router.post('/posts/:id/like', authenticateToken, async (req: AuthRequest, res: 
       await prisma.$transaction([
         prisma.like.delete({ where: { id: existingLike.id } }),
         prisma.post.update({
-          where: { id: postId },
+          where: { id: targetPost.id },
           data: { likesCount: { decrement: 1 } },
         }),
       ]);
@@ -293,14 +308,13 @@ router.post('/posts/:id/like', authenticateToken, async (req: AuthRequest, res: 
       res.json({ success: true, liked: false, message: 'Post unliked' });
     } else {
       // Like
-      const [_, post, liker] = await prisma.$transaction([
+      const [, , liker] = await prisma.$transaction([
         prisma.like.create({
-          data: { postId, userId },
+          data: { postId: targetPost.id, userId },
         }),
         prisma.post.update({
-          where: { id: postId },
+          where: { id: targetPost.id },
           data: { likesCount: { increment: 1 } },
-          select: { authorId: true },
         }),
         prisma.user.findUnique({
           where: { id: userId },
@@ -309,28 +323,28 @@ router.post('/posts/:id/like', authenticateToken, async (req: AuthRequest, res: 
       ]);
 
       // 🔔 Create in-app notification + publish SSE event
-      if (post && liker && post.authorId !== userId) {
+      if (liker && targetPost.authorId !== userId) {
         const likerName = `${liker.firstName} ${liker.lastName}`;
 
         // Create DB notification (triggers Supabase Realtime → bell badge)
         await prisma.notification.create({
           data: {
-            recipientId: post.authorId,
+            recipientId: targetPost.authorId,
             actorId: userId,
             type: 'LIKE',
             title: 'New Like',
             message: `${likerName} liked your post`,
-            postId: postId,
-            link: `/posts/${postId}`,
+            postId: targetPost.id,
+            link: `/posts/${targetPost.id}`,
           },
         }).catch(err => console.error('Failed to create like notification:', err));
 
         // SSE event (legacy)
-        EventPublisher.newLike(post.authorId, userId, likerName, postId);
+        EventPublisher.newLike(targetPost.authorId, userId, likerName, targetPost.id);
       }
 
       // Update feed signals for personalization
-      updateUserFeedSignals(userId, postId, 'like');
+      updateUserFeedSignals(userId, targetPost.id, 'like');
 
       res.json({ success: true, liked: true, message: 'Post liked' });
     }
@@ -356,8 +370,11 @@ router.post('/posts/:id/value', authenticateToken, async (req: AuthRequest, res:
     }
 
     // Verify post exists
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
+    const post = await prisma.post.findFirst({
+      where: buildPostAccessWhere(postId, {
+        userId,
+        schoolId: req.user!.schoolId,
+      }),
       select: { id: true, authorId: true },
     });
 
@@ -398,10 +415,21 @@ router.get('/posts/:id/comments', authenticateToken, async (req: AuthRequest, re
   try {
     const { page = 1, limit = 20 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
+    const targetPost = await prisma.post.findFirst({
+      where: buildPostAccessWhere(req.params.id, {
+        userId: req.user!.id,
+        schoolId: req.user!.schoolId,
+      }),
+      select: { id: true },
+    });
+
+    if (!targetPost) {
+      return res.status(404).json({ success: false, error: 'Post not found' });
+    }
 
     const [comments, total] = await Promise.all([
       prisma.comment.findMany({
-        where: { postId: req.params.id, parentId: null },
+        where: { postId: targetPost.id, parentId: null },
         include: {
           author: {
             select: {
@@ -431,7 +459,7 @@ router.get('/posts/:id/comments', authenticateToken, async (req: AuthRequest, re
         skip,
         take: Number(limit),
       }),
-      prisma.comment.count({ where: { postId: req.params.id, parentId: null } }),
+      prisma.comment.count({ where: { postId: targetPost.id, parentId: null } }),
     ]);
 
     res.json({
@@ -458,11 +486,22 @@ router.post('/posts/:id/comments', authenticateToken, async (req: AuthRequest, r
       return res.status(400).json({ success: false, error: msg });
     }
     const { content, parentId } = parsed.data;
+    const targetPost = await prisma.post.findFirst({
+      where: buildPostAccessWhere(req.params.id, {
+        userId: req.user!.id,
+        schoolId: req.user!.schoolId,
+      }),
+      select: { id: true, authorId: true },
+    });
+
+    if (!targetPost) {
+      return res.status(404).json({ success: false, error: 'Post not found' });
+    }
 
     // Create comment
     const newComment = await prisma.comment.create({
       data: {
-        postId: req.params.id,
+        postId: targetPost.id,
         authorId: req.user!.id,
         content,
         parentId: parentId ?? null,
@@ -480,40 +519,39 @@ router.post('/posts/:id/comments', authenticateToken, async (req: AuthRequest, r
     });
 
     // Update post comment count and get author
-    const post = await prisma.post.update({
-      where: { id: req.params.id },
+    await prisma.post.update({
+      where: { id: targetPost.id },
       data: { commentsCount: { increment: 1 } },
-      select: { authorId: true },
     });
 
     // 🔔 Create in-app notification + publish SSE event
-    if (post && newComment.author && post.authorId !== req.user!.id) {
+    if (newComment.author && targetPost.authorId !== req.user!.id) {
       const commenterName = `${newComment.author.firstName} ${newComment.author.lastName}`;
       const preview = content.trim().slice(0, 80);
 
       // Create DB notification (triggers Supabase Realtime → bell badge)
       await prisma.notification.create({
         data: {
-          recipientId: post.authorId,
+          recipientId: targetPost.authorId,
           actorId: req.user!.id,
           type: 'COMMENT',
           title: 'New Comment',
           message: `${commenterName} commented: "${preview}"`,
-          postId: req.params.id,
+          postId: targetPost.id,
           commentId: newComment.id,
-          link: `/posts/${req.params.id}`,
+          link: `/posts/${targetPost.id}`,
         },
       }).catch(err => console.error('Failed to create comment notification:', err));
 
       // SSE event (legacy)
       EventPublisher.newComment(
-        post.authorId, req.user!.id, commenterName,
-        req.params.id, newComment.id, content.trim()
+        targetPost.authorId, req.user!.id, commenterName,
+        targetPost.id, newComment.id, content.trim()
       );
     }
 
     // Update feed signals for personalization
-    updateUserFeedSignals(req.user!.id, req.params.id, 'comment');
+    updateUserFeedSignals(req.user!.id, targetPost.id, 'comment');
 
     res.status(201).json({ success: true, data: newComment });
   } catch (error: any) {
@@ -529,8 +567,11 @@ router.post('/posts/:postId/comments/:commentId/verify', authenticateToken, asyn
     const userId = req.user!.id;
 
     // 1. Get post and verify authorization / state
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
+    const post = await prisma.post.findFirst({
+      where: buildPostAccessWhere(postId, {
+        userId,
+        schoolId: req.user!.schoolId,
+      }),
       select: { authorId: true, postType: true, questionBounty: true },
     });
 
@@ -623,15 +664,18 @@ router.post('/posts/:postId/comments/:commentId/verify', authenticateToken, asyn
 // DELETE /posts/:id - Delete post (only author)
 router.delete('/posts/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const post = await prisma.post.findUnique({
-      where: { id: req.params.id },
+    const post = await prisma.post.findFirst({
+      where: buildPostAccessWhere(req.params.id, {
+        userId: req.user!.id,
+        schoolId: req.user!.schoolId,
+      }),
     });
 
     if (!post) {
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
 
-    if (post.authorId !== req.user!.id && req.user!.role !== 'ADMIN') {
+    if (post.authorId !== req.user!.id && req.user!.role !== 'ADMIN' && req.user!.role !== 'SUPER_ADMIN') {
       return res.status(403).json({ success: false, error: 'Not authorized' });
     }
 
@@ -651,8 +695,11 @@ router.post('/posts/:id/vote', authenticateToken, async (req: AuthRequest, res: 
     const userId = req.user!.id;
 
     // Check if post is a poll
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
+    const post = await prisma.post.findFirst({
+      where: buildPostAccessWhere(postId, {
+        userId,
+        schoolId: req.user!.schoolId,
+      }),
       include: { pollOptions: true },
     });
 
@@ -687,7 +734,7 @@ router.post('/posts/:id/vote', authenticateToken, async (req: AuthRequest, res: 
 
     // Create new vote
     await prisma.pollVote.create({
-      data: { postId, optionId, userId },
+      data: { postId: post.id, optionId, userId },
     });
 
     res.json({ success: true, message: 'Vote recorded', userVotedOptionId: optionId });
@@ -703,8 +750,11 @@ router.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
     const { content, visibility, mediaUrls, mediaDisplayMode, pollOptions } = req.body;
     const postId = req.params.id;
 
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
+    const post = await prisma.post.findFirst({
+      where: buildPostAccessWhere(postId, {
+        userId: req.user!.id,
+        schoolId: req.user!.schoolId,
+      }),
       include: { pollOptions: true },
     });
 
@@ -712,7 +762,7 @@ router.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
 
-    if (post.authorId !== req.user!.id && req.user!.role !== 'ADMIN') {
+    if (post.authorId !== req.user!.id && req.user!.role !== 'ADMIN' && req.user!.role !== 'SUPER_ADMIN') {
       return res.status(403).json({ success: false, error: 'Not authorized to edit this post' });
     }
 
@@ -831,10 +881,21 @@ router.post('/posts/:id/bookmark', authenticateToken, async (req: AuthRequest, r
   try {
     const postId = req.params.id;
     const userId = req.user!.id;
+    const targetPost = await prisma.post.findFirst({
+      where: buildPostAccessWhere(postId, {
+        userId,
+        schoolId: req.user!.schoolId,
+      }),
+      select: { id: true },
+    });
+
+    if (!targetPost) {
+      return res.status(404).json({ success: false, error: 'Post not found' });
+    }
 
     // Check if already bookmarked
     const existingBookmark = await prisma.bookmark.findFirst({
-      where: { postId, userId },
+      where: { postId: targetPost.id, userId },
     });
 
     if (existingBookmark) {
@@ -844,11 +905,11 @@ router.post('/posts/:id/bookmark', authenticateToken, async (req: AuthRequest, r
     } else {
       // Add bookmark
       await prisma.bookmark.create({
-        data: { postId, userId },
+        data: { postId: targetPost.id, userId },
       });
 
       // Update feed signals for personalization
-      updateUserFeedSignals(userId, postId, 'bookmark');
+      updateUserFeedSignals(userId, targetPost.id, 'bookmark');
 
       res.json({ success: true, bookmarked: true, message: 'Post bookmarked' });
     }
@@ -866,7 +927,13 @@ router.get('/bookmarks', authenticateToken, async (req: AuthRequest, res: Respon
 
     const [bookmarks, total] = await Promise.all([
       prisma.bookmark.findMany({
-        where: { userId: req.user!.id },
+        where: {
+          userId: req.user!.id,
+          post: buildFeedVisibilityWhere({
+            userId: req.user!.id,
+            schoolId: req.user!.schoolId,
+          }),
+        },
         include: {
           post: {
             include: {
@@ -892,7 +959,15 @@ router.get('/bookmarks', authenticateToken, async (req: AuthRequest, res: Respon
         skip,
         take: Number(limit),
       }),
-      prisma.bookmark.count({ where: { userId: req.user!.id } }),
+      prisma.bookmark.count({
+        where: {
+          userId: req.user!.id,
+          post: buildFeedVisibilityWhere({
+            userId: req.user!.id,
+            schoolId: req.user!.schoolId,
+          }),
+        },
+      }),
     ]);
 
     const posts = bookmarks.map(b => ({
@@ -977,9 +1052,20 @@ router.get('/my-posts', authenticateToken, async (req: AuthRequest, res: Respons
 router.post('/posts/:id/share', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const postId = req.params.id;
+    const targetPost = await prisma.post.findFirst({
+      where: buildPostAccessWhere(postId, {
+        userId: req.user!.id,
+        schoolId: req.user!.schoolId,
+      }),
+      select: { id: true },
+    });
+
+    if (!targetPost) {
+      return res.status(404).json({ success: false, error: 'Post not found' });
+    }
 
     await prisma.post.update({
-      where: { id: postId },
+      where: { id: targetPost.id },
       data: { sharesCount: { increment: 1 } },
     });
 
@@ -1027,8 +1113,11 @@ router.post('/posts/:id/repost', authenticateToken, async (req: AuthRequest, res
     const { comment } = req.body; // Optional repost comment
 
     // Check original post exists
-    const originalPost = await prisma.post.findUnique({
-      where: { id: originalPostId },
+    const originalPost = await prisma.post.findFirst({
+      where: buildPostAccessWhere(originalPostId, {
+        userId,
+        schoolId: req.user!.schoolId,
+      }),
       select: { id: true, authorId: true, content: true, postType: true },
     });
     if (!originalPost) {

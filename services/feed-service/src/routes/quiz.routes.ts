@@ -9,6 +9,7 @@ import { prisma, prismaRead, feedRanker, upload } from '../context';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from '../utils/r2';
 import { feedCache, EventPublisher } from '../redis';
+import { buildFeedVisibilityWhere, buildPostAccessWhere } from '../utils/visibilityScope';
 
 const router = Router();
 
@@ -25,15 +26,25 @@ router.get('/quizzes', authenticateToken, async (req: AuthRequest, res: Response
     const skip = (parseInt(page) - 1) * take;
 
     const postWhere: any = {
-      postType: 'QUIZ',
-      ...(category && category !== 'ALL' ? { topicTags: { has: category } } : {}),
-      ...(search ? {
+      AND: [
+        buildFeedVisibilityWhere({
+          userId,
+          schoolId: req.user!.schoolId,
+        }),
+        { postType: 'QUIZ' },
+      ],
+    };
+    if (category && category !== 'ALL') {
+      postWhere.AND.push({ topicTags: { has: category } });
+    }
+    if (search) {
+      postWhere.AND.push({
         OR: [
           { title: { contains: search, mode: 'insensitive' } },
           { content: { contains: search, mode: 'insensitive' } },
-        ]
-      } : {}),
-    };
+        ],
+      });
+    }
 
     const [quizzes, total] = await Promise.all([
       prisma.quiz.findMany({
@@ -86,7 +97,15 @@ router.get('/quizzes/recommended', authenticateToken, async (req: AuthRequest, r
     const quizzes = await prisma.quiz.findMany({
       where: {
         ...(attemptedIds.length > 0 ? { id: { notIn: attemptedIds } } : {}),
-        post: { postType: 'QUIZ' },
+        post: {
+          AND: [
+            buildFeedVisibilityWhere({
+              userId,
+              schoolId: req.user!.schoolId,
+            }),
+            { postType: 'QUIZ' },
+          ],
+        },
       },
       include: {
         post: { select: { id: true, title: true, content: true, topicTags: true, likesCount: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true } }, createdAt: true } },
@@ -134,7 +153,16 @@ router.get('/quizzes/daily', authenticateToken, async (req: AuthRequest, res: Re
 
     const quiz = await prisma.quiz.findFirst({
       where: {
-        post: { postType: 'QUIZ', createdAt: { gte: sevenDaysAgo } },
+        post: {
+          AND: [
+            buildFeedVisibilityWhere({
+              userId,
+              schoolId: req.user!.schoolId,
+            }),
+            { postType: 'QUIZ' },
+            { createdAt: { gte: sevenDaysAgo } },
+          ],
+        },
         ...(passedIds.length > 0 ? { id: { notIn: passedIds } } : {}),
       },
       include: {
@@ -236,6 +264,17 @@ router.get('/quizzes/:id', authenticateToken, async (req: AuthRequest, res: Resp
     });
 
     if (!quiz) return res.status(404).json({ success: false, error: 'Quiz not found' });
+    const visibleQuizPost = await prisma.post.findFirst({
+      where: buildPostAccessWhere(quiz.postId, {
+        userId,
+        schoolId: req.user!.schoolId,
+      }),
+      select: { id: true },
+    });
+
+    if (!visibleQuizPost) {
+      return res.status(404).json({ success: false, error: 'Quiz not found' });
+    }
 
     res.json({
       success: true,
@@ -295,6 +334,17 @@ router.post('/quizzes/:id/submit', authenticateToken, async (req: AuthRequest, r
 
     if (!quiz) {
       console.log('❌ [QUIZ SUBMIT] Quiz not found:', quizId);
+      return res.status(404).json({ success: false, error: 'Quiz not found' });
+    }
+    const visibleQuizPost = await prisma.post.findFirst({
+      where: buildPostAccessWhere(quiz.postId, {
+        userId,
+        schoolId: req.user!.schoolId,
+      }),
+      select: { id: true },
+    });
+
+    if (!visibleQuizPost) {
       return res.status(404).json({ success: false, error: 'Quiz not found' });
     }
 
