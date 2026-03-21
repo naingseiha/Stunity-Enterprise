@@ -9,3 +9,4 @@ export { default as ClassMembersScreen } from './ClassMembersScreen';
 export { default as ClassGradesScreen } from './ClassGradesScreen';
 export { default as ClassAttendanceScreen } from './ClassAttendanceScreen';
 export { default as ClassDirectoryScreen } from './ClassDirectoryScreen';
+export { default as ClassAssignmentDetailScreen } from './ClassAssignmentDetailScreen';

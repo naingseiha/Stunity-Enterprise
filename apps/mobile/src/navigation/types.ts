@@ -152,6 +152,7 @@ export type ClubsStackParamList = {
   ClassMaterials: { classId: string };
   ClassMembers: { classId: string };
   ClassQuizzes: { classId: string };
+  ClassAssignmentDetail: { assignment: any };
   ClassGrades: { 
     classId: string;
     className?: string;

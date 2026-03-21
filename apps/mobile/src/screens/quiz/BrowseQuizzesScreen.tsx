@@ -166,6 +166,7 @@ export default function BrowseQuizzesScreen() {
 
   const initialCategory = route.params?.category || 'ALL';
   const initialSearch   = route.params?.search   || '';
+  const classId         = route.params?.classId;
 
   const [search,           setSearch]           = useState(initialSearch);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
@@ -188,6 +189,7 @@ export default function BrowseQuizzesScreen() {
       const result = await browseQuizzes({
         category: cat !== 'ALL' ? cat : undefined,
         search:   q || undefined,
+        classId:  classId || undefined,
         page:     newPage,
         limit:    15,
       });
@@ -282,8 +284,8 @@ export default function BrowseQuizzesScreen() {
             <Ionicons name="chevron-back" size={24} color={TEAL_DARK} />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>Browse Quizzes</Text>
-            <Text style={styles.headerSubtitle}>Find your next challenge</Text>
+            <Text style={styles.headerTitle}>{classId ? 'Class Quizzes' : 'Browse Quizzes'}</Text>
+            <Text style={styles.headerSubtitle}>{classId ? 'Quizzes for your class' : 'Find your next challenge'}</Text>
           </View>
         </View>
 

@@ -19,6 +19,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useClassHubStore } from '@/stores/classHubStore';
+import { ClassAssignment } from '@/api/classHub';
 import { useAuthStore } from '@/stores';
 
 const COLORS = {
@@ -65,8 +66,12 @@ export default function ClassAssignmentsScreen() {
     if (classId) fetchAssignments(classId, true);
   };
 
-  const openAssignment = (url?: string) => {
-    if (url) Linking.openURL(url).catch(() => {});
+  const openAssignment = (item: ClassAssignment) => {
+    if (item.deepLinkUrl) {
+      Linking.openURL(item.deepLinkUrl).catch(() => {});
+    } else {
+      navigation.navigate('ClassAssignmentDetail', { assignment: item });
+    }
   };
 
   const handleCreate = async () => {
@@ -122,7 +127,7 @@ export default function ClassAssignmentsScreen() {
     }
 
     return (
-      <TouchableOpacity style={styles.card} onPress={() => openAssignment(item.deepLinkUrl)}>
+      <TouchableOpacity style={styles.card} onPress={() => openAssignment(item)}>
         <View style={styles.cardHeader}>
           <View style={styles.titleRow}>
             <Ionicons name="clipboard" size={20} color={COLORS.primaryDark} style={{ marginRight: 8 }} />

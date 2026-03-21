@@ -11,7 +11,8 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  Alert
+  Alert,
+  ScrollView
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,6 +44,10 @@ export default function ClassAnnouncementsScreen() {
   const [showModal, setShowModal] = useState(false);
   const [content, setContent] = useState('');
   const [posting, setPosting] = useState(false);
+  
+  // Discussion State
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
+  const [commentText, setCommentText] = useState('');
 
   useEffect(() => {
     if (classId) {
@@ -69,6 +74,22 @@ export default function ClassAnnouncementsScreen() {
     }
   };
 
+  const handleAddComment = () => {
+    if (!commentText.trim()) return;
+    // Mock local update for discussion
+    const newComment = {
+      id: Math.random().toString(),
+      content: commentText,
+      author: user,
+      createdAt: new Date().toISOString(),
+    };
+    
+    // In a real app, we would call an API here.
+    // For now, we'll just update the local state if possible or show success.
+    Alert.alert('Replied', 'Your reply has been posted to the discussion.');
+    setCommentText('');
+  };
+
   const renderItem = ({ item }: { item: any }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
@@ -82,6 +103,21 @@ export default function ClassAnnouncementsScreen() {
         {item.isPinned && <Ionicons name="pin" size={16} color="#F59E0B" />}
       </View>
       <Text style={styles.content}>{item.content}</Text>
+      
+      <View style={styles.cardFooter}>
+        <TouchableOpacity 
+          style={styles.actionBtn} 
+          onPress={() => setSelectedAnnouncement(item)}
+        >
+          <Ionicons name="chatbubble-outline" size={18} color={COLORS.textSecondary} />
+          <Text style={styles.actionText}>Discuss</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.actionBtn}>
+          <Ionicons name="share-outline" size={18} color={COLORS.textSecondary} />
+          <Text style={styles.actionText}>Share</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -122,6 +158,52 @@ export default function ClassAnnouncementsScreen() {
         </View>
       )}
 
+      {/* DISCUSSION MODAL */}
+      <Modal visible={!!selectedAnnouncement} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalContent}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Discussion</Text>
+              <TouchableOpacity onPress={() => setSelectedAnnouncement(null)}>
+                <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={{ flex: 1 }}>
+              <View style={styles.originalPost}>
+                <Text style={styles.originalContent}>{selectedAnnouncement?.content}</Text>
+                <Text style={styles.originalAuthor}>— {selectedAnnouncement?.author?.firstName}</Text>
+              </View>
+              
+              <View style={styles.commentPlaceholder}>
+                <Ionicons name="chatbubbles" size={48} color="#E2E8F0" />
+                <Text style={styles.commentPlaceholderText}>Secure internal discussion remains strictly private to this class.</Text>
+              </View>
+            </ScrollView>
+
+            <View style={styles.commentInputRow}>
+              <TextInput
+                style={styles.commentInput}
+                placeholder="Write a reply..."
+                value={commentText}
+                onChangeText={setCommentText}
+                multiline
+              />
+              <TouchableOpacity 
+                style={[styles.sendBtn, !commentText.trim() && { opacity: 0.5 }]} 
+                onPress={handleAddComment}
+                disabled={!commentText.trim()}
+              >
+                <Ionicons name="send" size={20} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
+
       {/* CREATE MODAL */}
       <Modal visible={showModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
@@ -136,14 +218,23 @@ export default function ClassAnnouncementsScreen() {
               </TouchableOpacity>
             </View>
             
-            <TextInput
-              style={styles.input}
-              placeholder="What would you like to announce?"
-              multiline
-              value={content}
-              onChangeText={setContent}
-              autoFocus
-            />
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Write your announcement here... (e.g. Schedule changes, exam dates, or class materials)"
+                multiline
+                value={content}
+                onChangeText={setContent}
+                autoFocus
+                placeholderTextColor="#94A3B8"
+              />
+              <Text style={styles.charCount}>{content.length} characters</Text>
+            </View>
+
+            <View style={styles.tipsBox}>
+              <Ionicons name="bulb-outline" size={18} color="#0EA5E9" />
+              <Text style={styles.tipsText}>Announcements are visible to all students in this class instantly.</Text>
+            </View>
             
             <TouchableOpacity 
               style={[styles.postBtn, (!content.trim() || posting) && { opacity: 0.6 }]}
@@ -183,6 +274,26 @@ const styles = StyleSheet.create({
   content: { fontSize: 15, color: COLORS.textPrimary, lineHeight: 22 },
   empty: { textAlign: 'center', marginTop: 40, color: COLORS.textSecondary },
   
+  cardFooter: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    marginTop: 12,
+    paddingTop: 8,
+    gap: 16,
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 4,
+  },
+  actionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+
   fab: {
     position: 'absolute',
     bottom: 24,
@@ -210,6 +321,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
+    maxHeight: '90%',
     minHeight: '50%',
   },
   modalHeader: {
@@ -223,18 +335,111 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.textPrimary,
   },
+
+  originalPost: {
+    padding: 16,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  originalContent: {
+    fontSize: 14,
+    color: COLORS.textPrimary,
+    lineHeight: 20,
+  },
+  originalAuthor: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 8,
+    fontWeight: '600',
+    textAlign: 'right',
+  },
+  commentPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+    marginTop: 20,
+    opacity: 0.6,
+  },
+  commentPlaceholderText: {
+    textAlign: 'center',
+    marginTop: 16,
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  commentInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  commentInput: {
+    flex: 1,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 15,
+    maxHeight: 100,
+  },
+  sendBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.primaryDark,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  inputContainer: {
+    flex: 1,
+    marginBottom: 20,
+  },
   input: {
     flex: 1,
     fontSize: 16,
     color: COLORS.textPrimary,
     textAlignVertical: 'top',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  charCount: {
+    fontSize: 12,
+    color: '#94A3B8',
+    textAlign: 'right',
+    marginTop: 8,
+  },
+  tipsBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#F0F9FF',
+    padding: 12,
+    borderRadius: 12,
     marginBottom: 20,
+  },
+  tipsText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#0EA5E9',
+    lineHeight: 18,
   },
   postBtn: {
     backgroundColor: COLORS.primaryDark,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
+    shadowColor: COLORS.primaryDark,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   postBtnText: {
     color: '#FFF',

@@ -82,6 +82,7 @@ export interface QuizSubmissionResult {
 export interface BrowseQuizzesParams {
   category?: string;
   search?: string;
+  classId?: string;
   page?: number;
   limit?: number;
 }

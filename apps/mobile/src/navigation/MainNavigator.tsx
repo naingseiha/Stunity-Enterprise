@@ -43,6 +43,7 @@ import {
   ClassGradesScreen,
   ClassAttendanceScreen,
   ClassDirectoryScreen,
+  ClassAssignmentDetailScreen,
 } from '@/screens/clubs';
 import {
   AssignmentsListScreen,
@@ -126,6 +127,7 @@ const ClubsStackNavigator = () => (
     <ClubsStack.Screen name="ClassGrades" component={ClassGradesScreen} />
     <ClubsStack.Screen name="ClassAttendance" component={ClassAttendanceScreen} />
     <ClubsStack.Screen name="ClassQuizzes" component={BrowseQuizzesScreen} />
+    <ClubsStack.Screen name="ClassAssignmentDetail" component={ClassAssignmentDetailScreen} />
     <ClubsStack.Screen name="CreateClub" component={CreateClubScreen} />
     <ClubsStack.Screen name="AssignmentsList" component={AssignmentsListScreen} />
     <ClubsStack.Screen name="AssignmentDetail" component={AssignmentDetailScreen} />

@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 import StunityLogo from '../../../assets/Stunity.svg';
@@ -432,49 +433,57 @@ export default function ClassDetailsScreen() {
             />
           }
         >
-          {/* DYNAMIC PREMIUM HERO CARD */}
+          {/* PREMIUM HERO CARD */}
           <View style={styles.heroCard}>
-            {/* Abstract Background Shapes */}
-            <View style={styles.heroDecoCircle1} />
-            <View style={styles.heroDecoCircle2} />
+            <LinearGradient
+              colors={['#0891B2', '#06B6D4']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.heroGlowBlob} />
 
-            <View style={styles.heroContent}>
-              <View style={styles.heroTop}>
-                <View style={styles.heroBadge}>
-                  <Text style={styles.heroBadgeText}>Grade {timetable?.class?.grade || '-'}</Text>
-                </View>
-                <View style={styles.heroIconBadge}>
-                  <Ionicons name="star" size={16} color="#FFF" />
-                </View>
-              </View>
-              
-              <View style={styles.heroBottom}>
-                <Text style={styles.heroSubtitle}>
-                  {myRole === 'TEACHER' ? 'Teaching Class' : 'Study Class'}
+            {/* Top row: label pill + grade pill */}
+            <View style={styles.heroHeader}>
+              <View style={styles.heroRolePill}>
+                <Ionicons
+                  name={myRole === 'TEACHER' ? 'school-outline' : 'book-outline'}
+                  size={11}
+                  color="#fff"
+                />
+                <Text style={styles.heroRoleText}>
+                  {myRole === 'TEACHER' ? 'Teaching' : 'Studying'}
                 </Text>
-                <Text style={styles.heroTitle} numberOfLines={2}>{title}</Text>
-                {timetable?.class?.track ? (
-                  <View style={styles.trackBadge}>
-                    <Text style={styles.trackBadgeText}>{timetable.class.track}</Text>
-                  </View>
-                ) : null}
+              </View>
+              <View style={styles.heroGradePill}>
+                <Text style={styles.heroGradePillText}>
+                  Grade {timetable?.class?.grade || '—'}
+                </Text>
               </View>
             </View>
-            
-            {/* Frosted Stats Bar */}
-            <View style={styles.heroStatsBox}>
-              <View style={styles.heroStatCol}>
-                <Text style={styles.heroStatVal}>{studentStats.total}</Text>
-                <Text style={styles.heroStatLabel}>Total</Text>
+
+            {/* Main title */}
+            <View style={styles.heroBody}>
+              <Text style={styles.heroTitle} numberOfLines={2}>{title}</Text>
+              {timetable?.class?.track ? (
+                <Text style={styles.heroTrack}>{timetable.class.track}</Text>
+              ) : null}
+            </View>
+
+            {/* Stats row */}
+            <View style={styles.heroStatsRow}>
+              <View style={styles.heroStatItem}>
+                <Text style={styles.heroStatNum}>{studentStats.total}</Text>
+                <Text style={styles.heroStatLabel}>Students</Text>
               </View>
-              <View style={styles.heroStatDivider} />
-              <View style={styles.heroStatCol}>
-                <Text style={styles.heroStatVal}>{studentStats.male}</Text>
+              <View style={styles.heroStatSep} />
+              <View style={styles.heroStatItem}>
+                <Text style={styles.heroStatNum}>{studentStats.male}</Text>
                 <Text style={styles.heroStatLabel}>Male</Text>
               </View>
-              <View style={styles.heroStatDivider} />
-              <View style={styles.heroStatCol}>
-                <Text style={styles.heroStatVal}>{studentStats.female}</Text>
+              <View style={styles.heroStatSep} />
+              <View style={styles.heroStatItem}>
+                <Text style={styles.heroStatNum}>{studentStats.female}</Text>
                 <Text style={styles.heroStatLabel}>Female</Text>
               </View>
             </View>
@@ -487,7 +496,7 @@ export default function ClassDetailsScreen() {
           <View style={styles.bentoGrid}>
             <TouchableOpacity 
               style={styles.bentoItem} 
-              onPress={() => navigation.navigate('ClassAnnouncements')}
+              onPress={() => navigation.navigate('ClassAnnouncements', { classId })}
               activeOpacity={0.8}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#EFF6FF' }]}>
@@ -498,7 +507,7 @@ export default function ClassDetailsScreen() {
 
             <TouchableOpacity 
               style={styles.bentoItem} 
-              onPress={() => navigation.navigate('ClassAssignments')}
+              onPress={() => navigation.navigate('ClassAssignments', { classId })}
               activeOpacity={0.8}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#FEF2F2' }]}>
@@ -548,7 +557,7 @@ export default function ClassDetailsScreen() {
 
             <TouchableOpacity 
               style={styles.bentoItem} 
-              onPress={() => navigation.navigate('ClassQuizzes')}
+              onPress={() => navigation.navigate('ClassQuizzes', { classId })}
               activeOpacity={0.8}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#ECFEFF' }]}>
@@ -813,139 +822,113 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   
-  // -- BEAUTIFUL PREMIUM HERO CARD --
+  // ─── PREMIUM HERO CARD ───────────────────────────────────────
   heroCard: {
-    backgroundColor: '#E0F7FA', // Material Light Teal / Cyan 50
-    borderRadius: 24,
+    borderRadius: 28,
     overflow: 'hidden',
-    shadowColor: '#00BCD4',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.3,
     shadowRadius: 20,
-    elevation: 6,
-    borderWidth: 1,
-    borderColor: '#B2EBF2',
-    marginTop: 4,
+    elevation: 8,
   },
-  heroDecoCircle1: {
+  heroGlowBlob: {
     position: 'absolute',
-    width: 240, height: 240,
-    borderRadius: 120,
-    backgroundColor: '#FFCA28', // Material Amber 400 (Yellow)
-    opacity: 0.25,
-    top: -60, right: -40,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: '#FFFFFF',
+    opacity: 0.08,
+    top: -80,
+    right: -60,
   },
-  heroDecoCircle2: {
-    position: 'absolute',
-    width: 200, height: 200,
-    borderRadius: 100,
-    backgroundColor: '#00BCD4', // Material Cyan 500
-    opacity: 0.1,
-    bottom: -60, left: -40,
-  },
-  heroContent: {
-    padding: 24,
-    paddingTop: 28,
-  },
-  heroTop: {
+  heroHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    paddingTop: 36,
+    paddingHorizontal: 20,
   },
-  heroBadge: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#B2EBF2',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  heroBadgeText: {
-    color: '#006064',
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  heroIconBadge: {
-    width: 32, height: 32,
-    borderRadius: 16,
-    backgroundColor: '#FFCA28',
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#FFCA28',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  heroBottom: {
-    marginTop: 24,
-  },
-  heroSubtitle: {
-    color: '#0097A7', // Cyan 700
-    fontSize: 12,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  heroTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#006064', // Deep Teal / Cyan 900
-    letterSpacing: -0.5,
-    marginTop: 2,
-    paddingTop: 4,
-  },
-  trackBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginTop: 6,
-  },
-  trackBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFF',
-    textTransform: 'uppercase',
-  },
-  heroStatsBox: {
+  heroRolePill: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF', // White bar at the bottom
-    borderTopWidth: 1,
-    borderTopColor: '#B2EBF2',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    justifyContent: 'space-around',
     alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 99,
   },
-  heroStatCol: {
-    alignItems: 'center',
-    gap: 2,
-  },
-  heroStatVal: {
-    color: '#00838F', // Cyan 800
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  heroStatLabel: {
-    color: '#00ACC1', // Cyan 600
+  heroRoleText: {
+    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  heroGradePill: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 99,
+  },
+  heroGradePillText: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  heroBody: {
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 14,
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+    lineHeight: 42,   // Generous line-height so top of Khmer chars never clips
+  },
+  heroTrack: {
+    marginTop: 6,
+    fontSize: 13,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.5)',
+    letterSpacing: 0.2,
+  },
+  heroStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.07)',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  heroStatItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  heroStatNum: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  heroStatLabel: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 10,
+    fontWeight: '600',
     textTransform: 'uppercase',
+    marginTop: 2,
     letterSpacing: 0.5,
   },
-  heroStatDivider: {
+  heroStatSep: {
     width: 1,
-    height: 30,
-    backgroundColor: '#B2EBF2',
+    height: 28,
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
 
   sectionWrap: {
