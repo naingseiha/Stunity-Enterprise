@@ -142,21 +142,35 @@ export type ClubsStackParamList = {
   ClassDetails: {
     classId: string;
     className?: string;
-    myRole?: 'STUDENT' | 'TEACHER';
+    myRole?: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
     linkedStudentId?: string;
     linkedTeacherId?: string;
     homeroomTeacherId?: string;
   };
   ClassAnnouncements: { classId: string };
-  ClassAssignments: { classId: string };
+  ClassReport: {
+    classId: string;
+    className?: string;
+    myRole?: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
+    linkedStudentId?: string;
+  };
+  ClassAssignments: {
+    classId: string;
+    myRole?: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
+    linkedStudentId?: string;
+  };
   ClassMaterials: { classId: string };
   ClassMembers: { classId: string };
   ClassQuizzes: { classId: string };
-  ClassAssignmentDetail: { assignment: any };
+  ClassAssignmentDetail: {
+    assignment: any;
+    myRole?: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
+    linkedStudentId?: string;
+  };
   ClassGrades: { 
     classId: string;
     className?: string;
-    myRole?: 'STUDENT' | 'TEACHER';
+    myRole?: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
     linkedStudentId?: string;
     linkedTeacherId?: string;
   };

@@ -3,6 +3,7 @@ export { default as ClubDetailsScreen } from './ClubDetailsScreen';
 export { default as CreateClubScreen } from './CreateClubScreen';
 export { default as ClassDetailsScreen } from './ClassDetailsScreen';
 export { default as ClassAnnouncementsScreen } from './ClassAnnouncementsScreen';
+export { default as ClassReportScreen } from './ClassReportScreen';
 export { default as ClassAssignmentsScreen } from './ClassAssignmentsScreen';
 export { default as ClassMaterialsScreen } from './ClassMaterialsScreen';
 export { default as ClassMembersScreen } from './ClassMembersScreen';

@@ -152,7 +152,7 @@ export default function ClassDirectoryScreen() {
     const { startDate, endDate } = getCurrentRange();
     classesApi.prefetchClassDetailBundle({
       classId: item.id,
-      myRole: 'TEACHER',
+      myRole: 'ADMIN',
       startDate,
       endDate,
       semester: 1,
@@ -161,7 +161,7 @@ export default function ClassDirectoryScreen() {
     navigation.navigate('ClassDetails', {
       classId: item.id,
       className: item.name,
-      myRole: 'TEACHER', // Admin sees as teacher-level access
+      myRole: 'ADMIN',
       homeroomTeacherId: item.homeroomTeacher?.id,
     });
   };

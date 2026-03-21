@@ -30,6 +30,7 @@ export const useClassHubStore = create<ClassHubState>((set, get) => ({
       const data = await classHubApi.getAnnouncements(classId);
       set((state) => ({
         announcements: { ...state.announcements, [classId]: data },
+        error: { ...state.error, [`announcements_${classId}`]: null },
         loading: { ...state.loading, [`announcements_${classId}`]: false },
       }));
     } catch (err: any) {
@@ -46,6 +47,7 @@ export const useClassHubStore = create<ClassHubState>((set, get) => ({
       const data = await classHubApi.createAnnouncement(classId, content);
       set((state) => ({
         announcements: { ...state.announcements, [classId]: [data, ...(state.announcements[classId] || [])] },
+        error: { ...state.error, [`announcements_${classId}`]: null },
         loading: { ...state.loading, [`announcements_${classId}`]: false },
       }));
     } catch (err: any) {
@@ -64,6 +66,7 @@ export const useClassHubStore = create<ClassHubState>((set, get) => ({
       const data = await classHubApi.getMaterials(classId);
       set((state) => ({
         materials: { ...state.materials, [classId]: data },
+        error: { ...state.error, [`materials_${classId}`]: null },
         loading: { ...state.loading, [`materials_${classId}`]: false },
       }));
     } catch (err: any) {
@@ -80,6 +83,7 @@ export const useClassHubStore = create<ClassHubState>((set, get) => ({
       const data = await classHubApi.createMaterial(classId, payload);
       set((state) => ({
         materials: { ...state.materials, [classId]: [data, ...(state.materials[classId] || [])] },
+        error: { ...state.error, [`materials_${classId}`]: null },
         loading: { ...state.loading, [`materials_${classId}`]: false },
       }));
     } catch (err: any) {
@@ -98,6 +102,7 @@ export const useClassHubStore = create<ClassHubState>((set, get) => ({
       const data = await classHubApi.getAssignments(classId);
       set((state) => ({
         assignments: { ...state.assignments, [classId]: data },
+        error: { ...state.error, [`assignments_${classId}`]: null },
         loading: { ...state.loading, [`assignments_${classId}`]: false },
       }));
     } catch (err: any) {
@@ -114,6 +119,7 @@ export const useClassHubStore = create<ClassHubState>((set, get) => ({
       const data = await classHubApi.createAssignment(classId, payload);
       set((state) => ({
         assignments: { ...state.assignments, [classId]: [data, ...(state.assignments[classId] || [])] },
+        error: { ...state.error, [`assignments_${classId}`]: null },
         loading: { ...state.loading, [`assignments_${classId}`]: false },
       }));
     } catch (err: any) {

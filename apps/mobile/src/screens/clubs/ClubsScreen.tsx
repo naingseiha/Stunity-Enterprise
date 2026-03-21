@@ -72,7 +72,7 @@ const getCurrentRange = (): { startDate: string; endDate: string } => {
 };
 
 const canUseInitialSchoolClasses = (user: ReturnType<typeof useAuthStore.getState>['user']) =>
-  Boolean(user?.schoolId && (user.role === 'STUDENT' || user.role === 'TEACHER'));
+  Boolean(user?.schoolId && (user.role === 'STUDENT' || user.role === 'TEACHER' || user.role === 'PARENT'));
 
 const SchoolClassCard = React.memo(
   ({ item, index, onPress }: { item: MyClassSummary; index: number; onPress: (item: MyClassSummary) => void }) => {
@@ -146,10 +146,10 @@ export default function ClubsScreen() {
   const selectedFilterRef = useRef<ClubFilter>(selectedFilter);
   const debouncedQueryRef = useRef('');
   const canViewSchoolClasses = Boolean(
-    user?.schoolId && (user?.role === 'STUDENT' || user?.role === 'TEACHER')
+    user?.schoolId && (user?.role === 'STUDENT' || user?.role === 'TEACHER' || user?.role === 'PARENT')
   );
   const isAdminOrStaff = Boolean(
-    user?.role === 'ADMIN' || user?.role === 'STAFF'
+    user?.role === 'ADMIN' || user?.role === 'STAFF' || user?.role === 'SUPER_ADMIN' || user?.role === 'SCHOOL_ADMIN'
   );
 
   useEffect(() => {
@@ -326,9 +326,9 @@ export default function ClubsScreen() {
 
     Promise.all([
       loadClubs({ silent: true, reset: true, page: 1, filter: selectedFilterRef.current, query: debouncedQueryRef.current }),
-      loadSchoolClasses(true),
+      isAdminOrStaff ? loadAdminClasses(adminSearchQuery) : loadSchoolClasses(true),
     ]).finally(() => setRefreshing(false));
-  }, [canViewSchoolClasses, loadClubs, loadSchoolClasses]);
+  }, [adminSearchQuery, isAdminOrStaff, loadAdminClasses, loadClubs, loadSchoolClasses]);
 
   const loadMoreClubs = useCallback(() => {
     if (
@@ -394,7 +394,7 @@ export default function ClubsScreen() {
         startDate,
         endDate,
         semester: 1,
-        monthLabel: classItem.myRole === 'STUDENT' ? getCurrentMonthLabel() : undefined,
+        monthLabel: classItem.myRole === 'STUDENT' || classItem.myRole === 'PARENT' ? getCurrentMonthLabel() : undefined,
       });
 
       navigation.navigate('ClassDetails', {
@@ -439,6 +439,14 @@ export default function ClubsScreen() {
 
   // ── Header ────────────────────────────────────────────────────────────────
   const renderHeader = useCallback(() => {
+    const schoolClassesSubtitle = isAdminOrStaff
+      ? 'Manage and search all classes'
+      : user?.role === 'TEACHER'
+        ? 'Classes you teach this year'
+        : user?.role === 'PARENT'
+          ? "Your child's classes this year"
+          : 'Classes you study this year';
+
     const shortcuts = [
       { id: 'all',      label: 'All clubs', icon: 'sparkles',    color: COLORS.primary,     bgInner: COLORS.primaryLight },
       { id: 'joined',   label: 'My clubs',  icon: 'heart',       color: '#FB7185',          bgInner: '#FFF1F2' },
@@ -475,7 +483,7 @@ export default function ClubsScreen() {
                   {isAdminOrStaff ? 'School Directory' : 'School Classes'}
                 </Text>
                 <Text style={styles.schoolClassesSubtitle}>
-                  {isAdminOrStaff ? 'Manage and search all classes' : 'Your current class schedule'}
+                  {schoolClassesSubtitle}
                 </Text>
               </View>
 
@@ -550,7 +558,9 @@ export default function ClubsScreen() {
                 <Text style={styles.schoolClassesEmptyText}>
                   {isAdminOrStaff 
                     ? 'No classes found in directory'
-                    : 'No classes found for this academic year'}
+                    : user?.role === 'PARENT'
+                      ? 'No linked child classes found for this academic year'
+                      : 'No classes found for this academic year'}
                 </Text>
               </View>
             ) : (
@@ -622,6 +632,7 @@ export default function ClubsScreen() {
     schoolClassesError,
     searchQuery,
     selectedFilter,
+    user?.role,
   ]);
 
   // ── Render item (memoized card) ───────────────────────────────────────────

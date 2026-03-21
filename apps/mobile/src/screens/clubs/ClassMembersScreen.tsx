@@ -203,15 +203,6 @@ export default function ClassMembersScreen() {
             </View>
           </View>
         </View>
-        
-        {user?.role === 'TEACHER' && (
-          <TouchableOpacity 
-            style={styles.actionBtn}
-            onPress={() => handleMessage(item.id, `${item.firstName} ${item.lastName}`)}
-          >
-            <Ionicons name="chatbubble-ellipses" size={20} color={COLORS.primaryDark} />
-          </TouchableOpacity>
-        )}
       </View>
     );
   };

@@ -9,10 +9,16 @@ export interface MyClassSummary {
   track?: string | null;
   capacity?: number | null;
   studentCount: number;
-  myRole: 'STUDENT' | 'TEACHER';
+  myRole: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
   isHomeroom: boolean;
   linkedStudentId?: string;
+  linkedStudentIds?: string[];
   linkedTeacherId?: string;
+  linkedChildren?: Array<{
+    id: string;
+    firstName: string;
+    lastName: string;
+  }>;
   homeroomTeacher?: {
     id: string;
     firstName: string;
@@ -119,7 +125,7 @@ export interface ClassGradesReport {
 
 export interface GetClassDetailBundleOptions {
   classId: string;
-  myRole: 'STUDENT' | 'TEACHER';
+  myRole: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
   linkedStudentId?: string;
   linkedTeacherId?: string;
   startDate: string;
@@ -374,7 +380,7 @@ export const getClassDetailBundle = async (
       semester: options.semester,
       year: options.year,
     }),
-    options.myRole === 'STUDENT' && options.linkedStudentId && options.monthLabel
+    (options.myRole === 'STUDENT' || options.myRole === 'PARENT') && options.linkedStudentId && options.monthLabel
       ? getStudentMonthlySummary(options.linkedStudentId, options.monthLabel)
       : Promise.resolve(null),
     options.myRole === 'TEACHER' && options.linkedTeacherId

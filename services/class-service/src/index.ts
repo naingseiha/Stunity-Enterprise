@@ -263,6 +263,202 @@ app.post('/classes/batch', async (req: Request, res: Response) => {
 // Apply auth middleware to all routes below
 app.use(authMiddleware);
 
+const CLASS_ADMIN_ROLES = new Set(['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN']);
+const CLASS_WRITE_ROLES = new Set(['TEACHER', 'ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN']);
+
+type ScopedUserRecord = {
+  id: string;
+  role: string;
+  studentId: string | null;
+  teacherId: string | null;
+  parentId: string | null;
+};
+
+type ClassAccessResolution = {
+  classData: {
+    id: string;
+    schoolId: string;
+    academicYearId: string;
+  };
+  userRecord: ScopedUserRecord;
+  canView: boolean;
+  canEdit: boolean;
+  linkedStudentIds: string[];
+  linkedTeacherId?: string | null;
+  reason?: string;
+};
+
+const getScopedUserRecord = async (userId: string, schoolId: string): Promise<ScopedUserRecord | null> =>
+  prisma.user.findFirst({
+    where: {
+      id: userId,
+      schoolId,
+    },
+    select: {
+      id: true,
+      role: true,
+      studentId: true,
+      teacherId: true,
+      parentId: true,
+    },
+  });
+
+const resolveClassAccess = async (
+  classId: string,
+  authUser: NonNullable<AuthRequest['user']>
+): Promise<ClassAccessResolution | null> => {
+  const [classData, userRecord] = await Promise.all([
+    prisma.class.findFirst({
+      where: {
+        id: classId,
+        schoolId: authUser.schoolId,
+      },
+      select: {
+        id: true,
+        schoolId: true,
+        academicYearId: true,
+      },
+    }),
+    getScopedUserRecord(authUser.userId, authUser.schoolId),
+  ]);
+
+  if (!classData || !userRecord) {
+    return null;
+  }
+
+  const role = authUser.role;
+
+  if (CLASS_ADMIN_ROLES.has(role)) {
+    return {
+      classData,
+      userRecord,
+      canView: true,
+      canEdit: CLASS_WRITE_ROLES.has(role),
+      linkedStudentIds: [],
+      linkedTeacherId: userRecord.teacherId,
+    };
+  }
+
+  if (role === 'STUDENT') {
+    if (!userRecord.studentId) {
+      return {
+        classData,
+        userRecord,
+        canView: false,
+        canEdit: false,
+        linkedStudentIds: [],
+        reason: 'Student profile is not linked to this account',
+      };
+    }
+
+    const enrollment = await prisma.studentClass.findFirst({
+      where: {
+        classId,
+        studentId: userRecord.studentId,
+        status: 'ACTIVE',
+        class: {
+          schoolId: authUser.schoolId,
+        },
+      },
+      select: { id: true },
+    });
+
+    return {
+      classData,
+      userRecord,
+      canView: Boolean(enrollment),
+      canEdit: false,
+      linkedStudentIds: enrollment ? [userRecord.studentId] : [],
+      reason: enrollment ? undefined : 'Student is not enrolled in this class',
+    };
+  }
+
+  if (role === 'TEACHER') {
+    if (!userRecord.teacherId) {
+      return {
+        classData,
+        userRecord,
+        canView: false,
+        canEdit: false,
+        linkedStudentIds: [],
+        reason: 'Teacher profile is not linked to this account',
+      };
+    }
+
+    const teacherAccess = await prisma.class.findFirst({
+      where: {
+        id: classId,
+        schoolId: authUser.schoolId,
+        OR: [
+          { homeroomTeacherId: userRecord.teacherId },
+          { teacherClasses: { some: { teacherId: userRecord.teacherId } } },
+          { timetableEntries: { some: { teacherId: userRecord.teacherId } } },
+        ],
+      },
+      select: { id: true },
+    });
+
+    return {
+      classData,
+      userRecord,
+      canView: Boolean(teacherAccess),
+      canEdit: Boolean(teacherAccess),
+      linkedStudentIds: [],
+      linkedTeacherId: userRecord.teacherId,
+      reason: teacherAccess ? undefined : 'Teacher is not assigned to this class',
+    };
+  }
+
+  if (role === 'PARENT') {
+    if (!userRecord.parentId) {
+      return {
+        classData,
+        userRecord,
+        canView: false,
+        canEdit: false,
+        linkedStudentIds: [],
+        reason: 'Parent profile is not linked to this account',
+      };
+    }
+
+    const childrenInClass = await prisma.studentParent.findMany({
+      where: {
+        parentId: userRecord.parentId,
+        student: {
+          schoolId: authUser.schoolId,
+          studentClasses: {
+            some: {
+              classId,
+              status: 'ACTIVE',
+            },
+          },
+        },
+      },
+      select: {
+        studentId: true,
+      },
+    });
+
+    return {
+      classData,
+      userRecord,
+      canView: childrenInClass.length > 0,
+      canEdit: false,
+      linkedStudentIds: childrenInClass.map((entry) => entry.studentId),
+      reason: childrenInClass.length > 0 ? undefined : 'No linked child is enrolled in this class',
+    };
+  }
+
+  return {
+    classData,
+    userRecord,
+    canView: false,
+    canEdit: false,
+    linkedStudentIds: [],
+    reason: 'Role is not eligible for class hub access',
+  };
+};
+
 // ===========================
 // GET /classes/lightweight
 // Ultra-fast loading for dropdowns
@@ -377,9 +573,13 @@ app.get('/classes', async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.user!.schoolId;
     const academicYearId = req.query.academicYearId as string | undefined;
+    const search = (req.query.search as string | undefined)?.trim();
     console.log(`📚 [School ${schoolId}] Fetching all classes (full data)...`);
     if (academicYearId) {
       console.log(`📅 Filtering by Academic Year: ${academicYearId}`);
+    }
+    if (search) {
+      console.log(`🔎 Searching classes by: ${search}`);
     }
 
     const where: any = {
@@ -389,6 +589,16 @@ app.get('/classes', async (req: AuthRequest, res: Response) => {
     // Add academic year filter if provided
     if (academicYearId) {
       where.academicYearId = academicYearId;
+    }
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { classId: { contains: search, mode: 'insensitive' } },
+        { grade: { contains: search, mode: 'insensitive' } },
+        { section: { contains: search, mode: 'insensitive' } },
+        { track: { contains: search, mode: 'insensitive' } },
+      ];
     }
 
     const classes = await prisma.class.findMany({
@@ -598,6 +808,7 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
         id: true,
         studentId: true,
         teacherId: true,
+        parentId: true,
       },
     });
 
@@ -779,6 +990,213 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
       return res.json({
         success: true,
         data: classes,
+        meta: {
+          role,
+          linked: true,
+          currentAcademicYear: selectedYear,
+        },
+      });
+    }
+
+    if (role === 'PARENT') {
+      if (!userRecord.parentId) {
+        return res.json({
+          success: true,
+          data: [],
+          meta: {
+            role,
+            linked: false,
+            reason: 'Parent profile is not linked to this account',
+          },
+        });
+      }
+
+      const parentLinks = await prisma.studentParent.findMany({
+        where: {
+          parentId: userRecord.parentId,
+          student: {
+            schoolId,
+          },
+        },
+        select: {
+          studentId: true,
+          student: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              studentClasses: {
+                where: {
+                  status: 'ACTIVE',
+                  class: {
+                    schoolId,
+                    academicYearId: selectedYear.id,
+                  },
+                },
+                select: {
+                  classId: true,
+                  class: {
+                    select: {
+                      id: true,
+                      classId: true,
+                      name: true,
+                      grade: true,
+                      section: true,
+                      track: true,
+                      capacity: true,
+                      homeroomTeacherId: true,
+                      academicYear: {
+                        select: {
+                          id: true,
+                          name: true,
+                          isCurrent: true,
+                          status: true,
+                        },
+                      },
+                      homeroomTeacher: {
+                        select: {
+                          id: true,
+                          firstName: true,
+                          lastName: true,
+                          customFields: true,
+                        },
+                      },
+                      _count: {
+                        select: {
+                          studentClasses: {
+                            where: {
+                              status: 'ACTIVE',
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const parentClassesMap = new Map<string, any>();
+      parentLinks.forEach((link) => {
+        link.student.studentClasses.forEach((studentClass) => {
+          const existing = parentClassesMap.get(studentClass.class.id);
+          const child = {
+            id: link.student.id,
+            firstName: link.student.firstName,
+            lastName: link.student.lastName,
+          };
+
+          if (!existing) {
+            parentClassesMap.set(studentClass.class.id, {
+              id: studentClass.class.id,
+              classId: studentClass.class.classId,
+              name: studentClass.class.name,
+              grade: studentClass.class.grade,
+              section: studentClass.class.section,
+              track: studentClass.class.track,
+              capacity: studentClass.class.capacity,
+              academicYear: studentClass.class.academicYear,
+              homeroomTeacher: studentClass.class.homeroomTeacher,
+              studentCount: studentClass.class._count.studentClasses,
+              myRole: 'PARENT',
+              isHomeroom: false,
+              linkedStudentId: link.studentId,
+              linkedStudentIds: [link.studentId],
+              linkedChildren: [child],
+            });
+            return;
+          }
+
+          if (!existing.linkedStudentIds.includes(link.studentId)) {
+            existing.linkedStudentIds.push(link.studentId);
+          }
+
+          if (!existing.linkedChildren.some((linkedChild: any) => linkedChild.id === child.id)) {
+            existing.linkedChildren.push(child);
+          }
+        });
+      });
+
+      const classes = Array.from(parentClassesMap.values()).sort((a, b) => {
+        const gradeCompare = String(a.grade).localeCompare(String(b.grade), undefined, { numeric: true });
+        if (gradeCompare !== 0) return gradeCompare;
+        return String(a.section || '').localeCompare(String(b.section || ''));
+      });
+
+      return res.json({
+        success: true,
+        data: classes,
+        meta: {
+          role,
+          linked: true,
+          currentAcademicYear: selectedYear,
+        },
+      });
+    }
+
+    if (CLASS_ADMIN_ROLES.has(role)) {
+      const classes = await prisma.class.findMany({
+        where: {
+          schoolId,
+          academicYearId: selectedYear.id,
+        },
+        select: {
+          id: true,
+          classId: true,
+          name: true,
+          grade: true,
+          section: true,
+          track: true,
+          capacity: true,
+          homeroomTeacherId: true,
+          academicYear: {
+            select: {
+              id: true,
+              name: true,
+              isCurrent: true,
+              status: true,
+            },
+          },
+          homeroomTeacher: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              customFields: true,
+            },
+          },
+          _count: {
+            select: {
+              studentClasses: {
+                where: {
+                  status: 'ACTIVE',
+                },
+              },
+            },
+          },
+        },
+        orderBy: [{ grade: 'asc' }, { section: 'asc' }],
+      });
+
+      return res.json({
+        success: true,
+        data: classes.map((c) => ({
+          id: c.id,
+          classId: c.classId,
+          name: c.name,
+          grade: c.grade,
+          section: c.section,
+          track: c.track,
+          capacity: c.capacity,
+          academicYear: c.academicYear,
+          homeroomTeacher: c.homeroomTeacher,
+          studentCount: c._count.studentClasses,
+          myRole: role,
+          isHomeroom: false,
+        })),
         meta: {
           role,
           linked: true,
@@ -1446,18 +1864,18 @@ app.get('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: R
     const schoolId = req.user!.schoolId;
     console.log(`📋 [School ${schoolId}] Fetching students for class: ${id}`);
 
-    // Verify class belongs to school
-    const classData = await prisma.class.findFirst({
-      where: {
-        id,
-        schoolId: schoolId,
-      },
-    });
-
-    if (!classData) {
+    const access = await resolveClassAccess(id, req.user!);
+    if (!access) {
       return res.status(404).json({
         success: false,
         message: 'Class not found or does not belong to your school',
+      });
+    }
+
+    if (!access.canView) {
+      return res.status(403).json({
+        success: false,
+        message: access.reason || 'You do not have access to this class',
       });
     }
 
@@ -1950,13 +2368,11 @@ app.post('/classes/:id/students/batch-remove', authMiddleware, async (req: AuthR
 app.get('/classes/:id/announcements', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const schoolId = req.user!.schoolId;
-
-    const classData = await prisma.class.findFirst({
-      where: { id, schoolId },
-    });
-
-    if (!classData) return res.status(404).json({ success: false, message: 'Class not found' });
+    const access = await resolveClassAccess(id, req.user!);
+    if (!access) return res.status(404).json({ success: false, message: 'Class not found' });
+    if (!access.canView) {
+      return res.status(403).json({ success: false, message: access.reason || 'You do not have access to this class' });
+    }
 
     const announcements = await prisma.classAnnouncement.findMany({
       where: { classId: id },
@@ -1977,18 +2393,20 @@ app.get('/classes/:id/announcements', authMiddleware, async (req: AuthRequest, r
 app.post('/classes/:id/announcements', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const schoolId = req.user!.schoolId;
     const userId = req.user!.userId;
     const { content, mediaUrls = [], mediaKeys = [], isPinned = false } = req.body;
 
-    const classData = await prisma.class.findFirst({
-      where: { id, schoolId },
-    });
-
-    if (!classData) return res.status(404).json({ success: false, message: 'Class not found' });
+    const access = await resolveClassAccess(id, req.user!);
+    if (!access) return res.status(404).json({ success: false, message: 'Class not found' });
+    if (!access.canEdit) {
+      return res.status(403).json({ success: false, message: access.reason || 'You do not have permission to post announcements for this class' });
+    }
+    if (!String(content || '').trim()) {
+      return res.status(400).json({ success: false, message: 'Announcement content is required' });
+    }
 
     // Validate academic year
-    const academicYear = await prisma.academicYear.findUnique({ where: { id: classData.academicYearId } });
+    const academicYear = await prisma.academicYear.findUnique({ where: { id: access.classData.academicYearId } });
     if (!academicYear?.isCurrent) {
       return res.status(403).json({ success: false, message: 'Cannot modify archived classes.' });
     }
@@ -1997,7 +2415,7 @@ app.post('/classes/:id/announcements', authMiddleware, async (req: AuthRequest, 
       data: {
         classId: id,
         authorId: userId,
-        content,
+        content: String(content).trim(),
         mediaUrls,
         mediaKeys,
         isPinned,
@@ -2017,13 +2435,11 @@ app.post('/classes/:id/announcements', authMiddleware, async (req: AuthRequest, 
 app.get('/classes/:id/materials', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const schoolId = req.user!.schoolId;
-
-    const classData = await prisma.class.findFirst({
-      where: { id, schoolId },
-    });
-
-    if (!classData) return res.status(404).json({ success: false, message: 'Class not found' });
+    const access = await resolveClassAccess(id, req.user!);
+    if (!access) return res.status(404).json({ success: false, message: 'Class not found' });
+    if (!access.canView) {
+      return res.status(403).json({ success: false, message: access.reason || 'You do not have access to this class' });
+    }
 
     const materials = await prisma.classMaterial.findMany({
       where: { classId: id },
@@ -2042,17 +2458,22 @@ app.get('/classes/:id/materials', authMiddleware, async (req: AuthRequest, res: 
 app.post('/classes/:id/materials', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const schoolId = req.user!.schoolId;
     const userId = req.user!.userId;
     const { title, description, fileUrl, fileKey, linkUrl, type } = req.body;
 
-    const classData = await prisma.class.findFirst({
-      where: { id, schoolId },
-    });
+    const access = await resolveClassAccess(id, req.user!);
+    if (!access) return res.status(404).json({ success: false, message: 'Class not found' });
+    if (!access.canEdit) {
+      return res.status(403).json({ success: false, message: access.reason || 'You do not have permission to add materials to this class' });
+    }
+    if (!String(title || '').trim()) {
+      return res.status(400).json({ success: false, message: 'Material title is required' });
+    }
+    if (!String(fileUrl || '').trim() && !String(linkUrl || '').trim()) {
+      return res.status(400).json({ success: false, message: 'A file URL or link URL is required' });
+    }
 
-    if (!classData) return res.status(404).json({ success: false, message: 'Class not found' });
-
-    const academicYear = await prisma.academicYear.findUnique({ where: { id: classData.academicYearId } });
+    const academicYear = await prisma.academicYear.findUnique({ where: { id: access.classData.academicYearId } });
     if (!academicYear?.isCurrent) {
       return res.status(403).json({ success: false, message: 'Cannot modify archived classes.' });
     }
@@ -2061,12 +2482,15 @@ app.post('/classes/:id/materials', authMiddleware, async (req: AuthRequest, res:
       data: {
         classId: id,
         uploaderId: userId,
-        title,
+        title: String(title).trim(),
         description,
         fileUrl,
         fileKey,
         linkUrl,
         type: type || 'DOCUMENT',
+      },
+      include: {
+        uploader: { select: { id: true, firstName: true, lastName: true } },
       },
     });
 
@@ -2080,13 +2504,11 @@ app.post('/classes/:id/materials', authMiddleware, async (req: AuthRequest, res:
 app.get('/classes/:id/assignments', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const schoolId = req.user!.schoolId;
-
-    const classData = await prisma.class.findFirst({
-      where: { id, schoolId },
-    });
-
-    if (!classData) return res.status(404).json({ success: false, message: 'Class not found' });
+    const access = await resolveClassAccess(id, req.user!);
+    if (!access) return res.status(404).json({ success: false, message: 'Class not found' });
+    if (!access.canView) {
+      return res.status(403).json({ success: false, message: access.reason || 'You do not have access to this class' });
+    }
 
     const assignments = await prisma.classAssignment.findMany({
       where: { classId: id },
@@ -2108,17 +2530,25 @@ app.get('/classes/:id/assignments', authMiddleware, async (req: AuthRequest, res
 app.post('/classes/:id/assignments', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const schoolId = req.user!.schoolId;
     const userId = req.user!.userId;
     const { title, description, dueDate, maxPoints, deepLinkUrl, quizId } = req.body;
 
-    const classData = await prisma.class.findFirst({
-      where: { id, schoolId },
-    });
+    const access = await resolveClassAccess(id, req.user!);
+    if (!access) return res.status(404).json({ success: false, message: 'Class not found' });
+    if (!access.canEdit) {
+      return res.status(403).json({ success: false, message: access.reason || 'You do not have permission to create assignments for this class' });
+    }
+    if (!String(title || '').trim()) {
+      return res.status(400).json({ success: false, message: 'Assignment title is required' });
+    }
+    if (maxPoints !== undefined && (Number.isNaN(Number(maxPoints)) || Number(maxPoints) <= 0)) {
+      return res.status(400).json({ success: false, message: 'maxPoints must be a positive number' });
+    }
+    if (dueDate && Number.isNaN(new Date(dueDate).getTime())) {
+      return res.status(400).json({ success: false, message: 'dueDate must be a valid date' });
+    }
 
-    if (!classData) return res.status(404).json({ success: false, message: 'Class not found' });
-
-    const academicYear = await prisma.academicYear.findUnique({ where: { id: classData.academicYearId } });
+    const academicYear = await prisma.academicYear.findUnique({ where: { id: access.classData.academicYearId } });
     if (!academicYear?.isCurrent) {
       return res.status(403).json({ success: false, message: 'Cannot modify archived classes.' });
     }
@@ -2127,12 +2557,18 @@ app.post('/classes/:id/assignments', authMiddleware, async (req: AuthRequest, re
       data: {
         classId: id,
         creatorId: userId,
-        title,
+        title: String(title).trim(),
         description,
         dueDate: dueDate ? new Date(dueDate) : null,
-        maxPoints,
+        maxPoints: maxPoints === undefined ? null : Number(maxPoints),
         deepLinkUrl,
         quizId,
+      },
+      include: {
+        creator: { select: { id: true, firstName: true, lastName: true } },
+        submissions: {
+          select: { studentId: true, status: true, score: true },
+        },
       },
     });
 

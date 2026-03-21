@@ -1,5 +1,7 @@
 import React from 'react';
 import {
+  Alert,
+  Linking,
   View,
   Text,
   StyleSheet,
@@ -18,27 +20,42 @@ import { useAuthStore } from '@/stores';
 export default function ClassAssignmentDetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { assignment }: { assignment: ClassAssignment } = route.params;
+  const {
+    assignment,
+    myRole,
+    linkedStudentId,
+  }: {
+    assignment: ClassAssignment;
+    myRole?: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
+    linkedStudentId?: string;
+  } = route.params;
   const { user } = useAuthStore();
 
-  const isTeacher = user?.role === 'TEACHER';
+  const viewerRole = myRole || user?.role;
+  const isTeacher = viewerRole === 'TEACHER';
+  const isStudentViewer = viewerRole === 'STUDENT';
   const dueDate = assignment.dueDate ? new Date(assignment.dueDate) : null;
   const isOverdue = dueDate ? dueDate < new Date() : false;
+  const effectiveStudentId = linkedStudentId || user?.student?.id;
 
   const mySubmission = !isTeacher 
-    ? assignment.submissions?.find(s => s.studentId === user?.id)
+    ? assignment.submissions?.find(s => s.studentId === effectiveStudentId)
     : null;
 
   const handleBack = () => navigation.goBack();
 
   const handleSubmit = () => {
-    navigation.navigate('SubmissionForm', { 
-      assignmentId: assignment.id,
-      // For class assignments, we might need a different way to identify the context,
-      // but let's assume it maps to the club-style submission for now if integrated.
-      // Or we can just show a "Coming Soon" if the backend doesn't support it yet.
-      isClassAssignment: true 
-    });
+    if (assignment.deepLinkUrl) {
+      Linking.openURL(assignment.deepLinkUrl).catch(() => {
+        Alert.alert('Assignment', 'Unable to open the linked task right now.');
+      });
+      return;
+    }
+
+    Alert.alert(
+      'Assignment',
+      'This class assignment is read-only here unless it links to a quiz or course.'
+    );
   };
 
   return (
@@ -114,14 +131,14 @@ export default function ClassAssignmentDetailScreen() {
         )}
       </ScrollView>
 
-      {!isTeacher && !mySubmission && (
+      {isStudentViewer && assignment.deepLinkUrl && !mySubmission && (
         <View style={styles.footer}>
           <TouchableOpacity 
             style={[styles.submitBtn, isOverdue && styles.submitBtnOverdue]} 
             onPress={handleSubmit}
           >
             <Text style={styles.submitBtnText}>
-              {isOverdue ? 'Submit Late' : 'Submit Assignment'}
+              {isOverdue ? 'Open Linked Task' : 'Open Linked Task'}
             </Text>
             <Ionicons name="arrow-forward" size={18} color="#FFF" />
           </TouchableOpacity>

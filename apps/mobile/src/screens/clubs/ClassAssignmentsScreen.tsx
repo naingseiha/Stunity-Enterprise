@@ -40,8 +40,10 @@ export default function ClassAssignmentsScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuthStore();
   const classId = route.params?.classId;
-  const isTeacher = user?.role === 'TEACHER';
-  const studentId = (user as any)?.studentId || (user as any)?.student?.id;
+  const viewerRole = route.params?.myRole || user?.role;
+  const isTeacher = viewerRole === 'TEACHER';
+  const linkedStudentId = route.params?.linkedStudentId;
+  const studentId = linkedStudentId || (user as any)?.studentId || (user as any)?.student?.id;
 
   const { assignments, loading, error, fetchAssignments, createAssignment } = useClassHubStore();
   const data = assignments[classId] || [];
@@ -70,7 +72,11 @@ export default function ClassAssignmentsScreen() {
     if (item.deepLinkUrl) {
       Linking.openURL(item.deepLinkUrl).catch(() => {});
     } else {
-      navigation.navigate('ClassAssignmentDetail', { assignment: item });
+      navigation.navigate('ClassAssignmentDetail', {
+        assignment: item,
+        myRole: viewerRole,
+        linkedStudentId: studentId,
+      });
     }
   };
 

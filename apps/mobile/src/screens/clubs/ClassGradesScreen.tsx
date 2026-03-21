@@ -16,7 +16,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { classesApi, gradeApi } from '@/api';
-import { useAuthStore } from '@/stores';
 
 const COLORS = {
   background: '#F8FBFF',
@@ -42,14 +41,14 @@ const MONTHS = [
 export default function ClassGradesScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const { user } = useAuthStore();
-  const { classId, className, myRole, linkedTeacherId } = route.params || {};
+  const { classId, className, myRole, linkedTeacherId, linkedStudentId } = route.params || {};
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [students, setStudents] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<any>(null);
+  const [classReport, setClassReport] = useState<classesApi.ClassGradesReport | null>(null);
   
   // Default to the current real month name
   const currentMonthName = new Date().toLocaleString('default', { month: 'long' });
@@ -61,19 +60,21 @@ export default function ClassGradesScreen() {
   const [existingGrades, setExistingGrades] = useState<any[]>([]);
 
   const isTeacher = myRole === 'TEACHER';
+  const reportStudents = classReport?.students || [];
+  const reportStats = classReport?.statistics;
 
   const loadInitialData = useCallback(async () => {
     try {
       setLoading(true);
-      const [studentsData, timetableData] = await Promise.all([
-        classesApi.getClassStudents(classId),
-        classesApi.getClassTimetable(classId),
-      ]);
+      if (isTeacher) {
+        const [studentsData, timetableData] = await Promise.all([
+          classesApi.getClassStudents(classId),
+          classesApi.getClassTimetable(classId),
+        ]);
 
-      setStudents(studentsData || []);
+        setStudents(studentsData || []);
 
-      // Extract subjects for this teacher from timetable entries
-      if (isTeacher && linkedTeacherId) {
+        // Extract subjects for this teacher from timetable entries
         const entries = timetableData?.entries || [];
         const teacherSubjectsMap = new Map();
         
@@ -88,6 +89,9 @@ export default function ClassGradesScreen() {
         if (teacherSubjects.length > 0) {
           setSelectedSubject(teacherSubjects[0]);
         }
+      } else {
+        const report = await classesApi.getClassGradesReport(classId, { semester: 1 });
+        setClassReport(report || null);
       }
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to load class data');
@@ -97,7 +101,7 @@ export default function ClassGradesScreen() {
   }, [classId, isTeacher, linkedTeacherId]);
 
   const loadGrades = useCallback(async () => {
-    if (!selectedSubject) return;
+    if (!isTeacher || !selectedSubject) return;
 
     try {
       setLoading(true);
@@ -121,7 +125,7 @@ export default function ClassGradesScreen() {
     } finally {
       setLoading(false);
     }
-  }, [classId, selectedSubject, selectedMonth]);
+  }, [classId, isTeacher, selectedSubject, selectedMonth]);
 
   useEffect(() => {
     loadInitialData();
@@ -294,6 +298,47 @@ export default function ClassGradesScreen() {
     );
   };
 
+  const renderReadOnlyStudent = ({
+    item,
+  }: {
+    item: NonNullable<classesApi.ClassGradesReport['students']>[number];
+  }) => {
+    const isLinkedStudent = Boolean(
+      linkedStudentId && (item.student?.id === linkedStudentId || item.studentId === linkedStudentId)
+    );
+
+    return (
+      <View style={[styles.studentCard, isLinkedStudent && styles.studentCardHighlight]}>
+        <View style={styles.studentInfo}>
+          {item.student?.photoUrl ? (
+            <Image source={{ uri: item.student.photoUrl }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: COLORS.primaryDark + '20' }]}>
+              <Text style={[styles.avatarText, { color: COLORS.primaryDark }]}>
+                {item.student?.firstName?.[0] || 'S'}
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.studentNameContainer}>
+            <Text style={styles.studentName} numberOfLines={1}>
+              {item.student?.firstName} {item.student?.lastName}
+            </Text>
+            <Text style={styles.studentId}>ID: {item.student?.studentId || 'N/A'}</Text>
+          </View>
+        </View>
+
+        <View style={styles.readOnlyScoreWrap}>
+          <View style={styles.rankPill}>
+            <Text style={styles.rankPillText}>#{item.rank || '-'}</Text>
+          </View>
+          <Text style={styles.averageText}>{Number(item.average || 0).toFixed(1)}</Text>
+          <Text style={styles.gradeLevelText}>{item.gradeLevel || 'N/A'}</Text>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -302,7 +347,7 @@ export default function ClassGradesScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Score Import</Text>
+          <Text style={styles.headerTitle}>{isTeacher ? 'Score Import' : (className ? `${className} Scores` : 'Class Scores')}</Text>
           {isTeacher ? (
             <TouchableOpacity 
               onPress={handleSave} 
@@ -320,53 +365,89 @@ export default function ClassGradesScreen() {
           )}
         </View>
 
-        {/* Filters */}
-        <View style={styles.filterSection}>
-          <Text style={styles.sectionLabel}>Select Subject</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-            {subjects.map(subject => (
-              <TouchableOpacity
-                key={subject.id}
-                style={[styles.chip, selectedSubject?.id === subject.id && styles.chipActive]}
-                onPress={() => setSelectedSubject(subject)}
-              >
-                <Ionicons 
-                  name={selectedSubject?.id === subject.id ? "book" : "book-outline"} 
-                  size={14} 
-                  color={selectedSubject?.id === subject.id ? COLORS.surface : COLORS.textSecondary} 
-                  style={{ marginRight: 6 }} 
-                />
-                <Text style={[styles.chipText, selectedSubject?.id === subject.id && styles.chipTextActive]}>
-                  {subject.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-            {subjects.length === 0 && (
-              <Text style={styles.noSubjectsText}>No subjects assigned to you in this class.</Text>
-            )}
-          </ScrollView>
+        {isTeacher && (
+          <View style={styles.filterSection}>
+            <Text style={styles.sectionLabel}>Select Subject</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+              {subjects.map(subject => (
+                <TouchableOpacity
+                  key={subject.id}
+                  style={[styles.chip, selectedSubject?.id === subject.id && styles.chipActive]}
+                  onPress={() => setSelectedSubject(subject)}
+                >
+                  <Ionicons 
+                    name={selectedSubject?.id === subject.id ? "book" : "book-outline"} 
+                    size={14} 
+                    color={selectedSubject?.id === subject.id ? COLORS.surface : COLORS.textSecondary} 
+                    style={{ marginRight: 6 }} 
+                  />
+                  <Text style={[styles.chipText, selectedSubject?.id === subject.id && styles.chipTextActive]}>
+                    {subject.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+              {subjects.length === 0 && (
+                <Text style={styles.noSubjectsText}>No subjects assigned to you in this class.</Text>
+              )}
+            </ScrollView>
 
-          <Text style={[styles.sectionLabel, { marginTop: 8 }]}>Academic Month</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-            {MONTHS.map(month => (
-              <TouchableOpacity
-                key={month}
-                style={[styles.monthChip, selectedMonth === month && styles.monthChipActive]}
-                onPress={() => setSelectedMonth(month)}
-              >
-                <Text style={[styles.monthChipText, selectedMonth === month && styles.monthChipTextActive]}>
-                  {month}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+            <Text style={[styles.sectionLabel, { marginTop: 8 }]}>Academic Month</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+              {MONTHS.map(month => (
+                <TouchableOpacity
+                  key={month}
+                  style={[styles.monthChip, selectedMonth === month && styles.monthChipActive]}
+                  onPress={() => setSelectedMonth(month)}
+                >
+                  <Text style={[styles.monthChipText, selectedMonth === month && styles.monthChipTextActive]}>
+                    {month}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
       </SafeAreaView>
 
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={COLORS.primaryDark} />
           <Text style={styles.loadingText}>Loading scores...</Text>
+        </View>
+      ) : !isTeacher ? (
+        <View style={{ flex: 1 }}>
+          <View style={styles.readOnlySummaryRow}>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>Class Avg</Text>
+              <Text style={styles.summaryValue}>{Number(reportStats?.classAverage || 0).toFixed(1)}</Text>
+            </View>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>Pass Rate</Text>
+              <Text style={styles.summaryValue}>{Math.round(Number(reportStats?.passRate || 0))}%</Text>
+            </View>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>Students</Text>
+              <Text style={styles.summaryValue}>{reportStudents.length}</Text>
+            </View>
+          </View>
+
+          <View style={styles.listHeader}>
+            <Text style={styles.listHeaderTitle}>Performance Overview</Text>
+            <Text style={styles.listHeaderSubtitle}>Semester snapshot</Text>
+          </View>
+          <FlatList
+            data={reportStudents}
+            keyExtractor={item => item.student.id}
+            renderItem={renderReadOnlyStudent}
+            contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.center}>
+                <Ionicons name="bar-chart-outline" size={48} color={COLORS.border} />
+                <Text style={styles.emptyText}>No score report is available for this class yet.</Text>
+              </View>
+            }
+          />
         </View>
       ) : (
         <View style={{ flex: 1 }}>
@@ -477,6 +558,32 @@ const styles = StyleSheet.create({
   },
   monthChipText: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '500' },
   monthChipTextActive: { color: '#FFF', fontWeight: '700' },
+  readOnlySummaryRow: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  summaryCard: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  summaryLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.textMuted,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  summaryValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
   
   listHeader: {
     flexDirection: 'row',
@@ -504,6 +611,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.03,
     shadowRadius: 4,
     elevation: 1,
+  },
+  studentCardHighlight: {
+    borderColor: COLORS.primaryDark,
+    backgroundColor: '#F0F9FF',
   },
   studentRankBadge: {
     width: 24,
@@ -569,6 +680,31 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary 
   },
   maxScore: { fontSize: 13, color: COLORS.textMuted, marginLeft: 8, fontWeight: '600', width: 40 },
+  readOnlyScoreWrap: {
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  rankPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: COLORS.primaryDark + '14',
+  },
+  rankPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.primaryDark,
+  },
+  averageText: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
+  gradeLevelText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+  },
   
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   loadingText: { marginTop: 12, color: COLORS.textSecondary, fontWeight: '600' },
